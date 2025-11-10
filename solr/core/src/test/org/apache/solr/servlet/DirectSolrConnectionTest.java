@@ -17,15 +17,17 @@
 package org.apache.solr.servlet;
 
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 
+@Deprecated
 public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
@@ -39,7 +41,7 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   // Check that a request gets back the echoParams call
   public void testSimpleRequest() throws Exception {
-    String pathAndParams = "/select?wt=xml&version=2.2&echoParams=explicit&q=*:*";
+    String pathAndParams = "/select?wt=xml&echoParams=explicit&q=*:*";
 
     String got = direct.request(pathAndParams, null);
 
@@ -65,7 +67,11 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
     // Test using the Stream body parameter
     for (String cmd : cmds) {
       direct.request(
-          "/update?" + CommonParams.STREAM_BODY + "=" + URLEncoder.encode(cmd, "UTF-8"), null);
+          "/update?"
+              + CommonParams.STREAM_BODY
+              + "="
+              + URLEncoder.encode(cmd, StandardCharsets.UTF_8),
+          null);
     }
     String got = direct.request(getIt, null);
     assertTrue(got.indexOf(value) > 0);

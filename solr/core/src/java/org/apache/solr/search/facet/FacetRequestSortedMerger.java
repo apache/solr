@@ -108,7 +108,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
     } else {
       final String key = sort.sortVariable;
 
-      /**
+      /*
        * final FacetSortableMerger[] arr = new FacetSortableMerger[buckets.size()]; final int[]
        * index = new int[arr.length]; int start = 0; int nullStart = index.length; int i=0; for
        * (FacetBucket bucket : buckets.values()) { FacetMerger merger =
@@ -237,7 +237,7 @@ abstract class FacetRequestSortedMerger<FacetRequestT extends FacetRequestSorted
         // Perhaps that would make more sense in the 'overrequest' heuristic calc?
         //
         // Maybe we should look at how many buckets were fully populated in phase#1 AND
-        // already meet the 'mincount', and use the the difference between that number
+        // already meet the 'mincount', and use the difference between that number
         // and 'limit' to decide a scaling factor for 'overrefine' ?
 
       } else { // user requested an explicit amount of overrefinement

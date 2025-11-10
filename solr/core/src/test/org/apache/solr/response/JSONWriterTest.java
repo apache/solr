@@ -16,6 +16,7 @@
  */
 package org.apache.solr.response;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.reflect.Method;
@@ -38,7 +39,7 @@ import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Test some aspects of JSON/python writer output (very incomplete) */
+/** Test some aspects of JSON writer output */
 public class JSONWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -52,25 +53,17 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testTypes() throws IOException {
-    SolrQueryRequest req = req("q", "dummy", "indent", "off");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    QueryResponseWriter w = new PythonResponseWriter();
+  public void testSimpleJson() throws IOException {
+    var req = req("q", "dummy", "indent", "off");
+    var rsp = new SolrQueryResponse();
+    var w = new JSONResponseWriter();
 
     StringWriter buf = new StringWriter();
+
     rsp.add("data1", Float.NaN);
     rsp.add("data2", Double.NEGATIVE_INFINITY);
     rsp.add("data3", Float.POSITIVE_INFINITY);
-    w.write(buf, req, rsp);
-    jsonEq(buf.toString(), "{'data1':float('NaN'),'data2':-float('Inf'),'data3':float('Inf')}");
 
-    w = new RubyResponseWriter();
-    buf = new StringWriter();
-    w.write(buf, req, rsp);
-    jsonEq(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
-
-    w = new JSONResponseWriter();
-    buf = new StringWriter();
     w.write(buf, req, rsp);
     jsonEq(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
     req.close();
@@ -313,5 +306,91 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     assertEquals("arrmap", JSONWriter.JSON_NL_ARROFMAP);
     assertEquals("arrntv", JSONWriter.JSON_NL_ARROFNTV);
     assertEquals("json.wrf", JSONWriter.JSON_WRAPPER_FUNCTION);
+  }
+
+  @Test
+  public void testWfrJacksonJsonWriter() throws IOException {
+    SolrQueryRequest req = req("wt", "json", JSONWriter.JSON_WRAPPER_FUNCTION, "testFun");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("param0", "v0");
+    rsp.add("param1", 42);
+
+    JacksonJsonWriter w = new JacksonJsonWriter();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    w.write(baos, req, rsp);
+    String received = baos.toString(StandardCharsets.UTF_8);
+    String expected = "testFun( {\n  \"param0\":\"v0\",\n  \"param1\":42\n} )";
+    jsonEq(expected, received);
+    req.close();
+  }
+
+  @Test
+  public void testWfrJSONWriter() throws IOException {
+    SolrQueryRequest req = req("wt", "json", JSONWriter.JSON_WRAPPER_FUNCTION, "testFun");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("param0", "v0");
+    rsp.add("param1", 42);
+
+    JSONResponseWriter w = new JSONResponseWriter();
+    StringWriter buf = new StringWriter();
+    w.write(buf, req, rsp);
+    String expected = "testFun({\n  \"param0\":\"v0\",\n  \"param1\":42})";
+    jsonEq(expected, buf.toString());
+    req.close();
+  }
+
+  @Test
+  public void testResponseValuesProperlyQuoted() throws Exception {
+    assertU(
+        adoc(
+            "id",
+            "1",
+            "name",
+            "John Doe",
+            "cat",
+            "foo\"b'ar",
+            "uuid",
+            "6e2fb55b-dd42-4e2d-84ca-71a599403aa3",
+            "bsto",
+            "true",
+            "isto",
+            "42",
+            "price",
+            "3.14",
+            "severity",
+            "High",
+            "dateRange",
+            "[2024-03-01 TO 2024-03-31]",
+            "timestamp",
+            "2024-03-20T12:34:56Z"));
+    assertU(commit());
+
+    String expected =
+        "{\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"start\":0,\n"
+            + "    \"numFoundExact\":true,\n"
+            + "    \"docs\":[{\n"
+            + "      \"id\":\"1\",\n"
+            + "      \"name\":[\"John Doe\"],\n"
+            + "      \"cat\":[\"foo\\\"b'ar\"],\n"
+            + "      \"uuid\":[\"6e2fb55b-dd42-4e2d-84ca-71a599403aa3\"],\n"
+            + "      \"bsto\":[true],\n"
+            + "      \"isto\":[42],\n"
+            + "      \"price\":3.14,\n"
+            + "      \"severity\":\"High\",\n"
+            + "      \"dateRange\":[\"[2024-03-01 TO 2024-03-31]\"],\n"
+            + "      \"timestamp\":\"2024-03-20T12:34:56Z\"\n"
+            + "    }]\n"
+            + "  }\n"
+            + "}";
+
+    String fl = "id,name,cat,uuid,bsto,isto,amount,price,severity,dateRange,timestamp";
+    var req = req("q", "id:*", "fl", fl, "wt", "json", "omitHeader", "true");
+    try (req) {
+      String response = h.query("/select", req);
+      jsonEq(expected, response);
+    }
   }
 }

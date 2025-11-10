@@ -28,11 +28,24 @@
     <writeLockTimeout>1000</writeLockTimeout>
     <commitLockTimeout>10000</commitLockTimeout>
     <lockType>${solr.tests.lockType:single}</lockType>
-    <query>
-      <useColdSearcher>false</useColdSearcher>
-      <maxWarmingSearchers>1</maxWarmingSearchers>
-    </query>
   </indexConfig>
+  <query>
+    <useColdSearcher>false</useColdSearcher>
+    <maxWarmingSearchers>1</maxWarmingSearchers>
+    <listener event="firstSearcher" class="solr.QuerySenderListener">
+      <arr name="queries">
+        <lst>
+          <str name="qt">/spellCheckCompRH</str>
+          <str name="q">documemtsss broens</str>
+          <str name="spellcheck">true</str>
+          <str name="spellcheck.dictionary">direct_lowerfilt</str>
+          <str name="spellcheck.collate">true</str>
+          <str name="spellcheck.maxCollations">10</str>
+          <str name="spellcheck.maxCollationTries">10</str>
+        </lst>
+      </arr>
+    </listener>
+  </query>
   <requestHandler name="/select"
      class="solr.SearchHandler"></requestHandler>
 
@@ -44,7 +57,7 @@
   <!--  The DirectoryFactory to use for indexes.
         solr.StandardDirectoryFactory, the default, is filesystem based.
         solr.RAMDirectoryFactory is memory based and not persistent. -->
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <searchComponent name="spellcheck" class="org.apache.solr.handler.component.SpellCheckComponent">
@@ -83,7 +96,7 @@
       <str name="field">lowerfilt</str>
       <str name="combineWords">true</str>
       <str name="breakWords">true</str>
-      <str name="breakSugestionTieBreaker">MAX_FREQ</str>
+      <str name="breakSuggestionTieBreaker">MAX_FREQ</str>
       <int name="maxChanges">10</int>
     </lst>
     <lst name="spellchecker">
@@ -122,13 +135,14 @@
       <str name="sourceLocation">spellings.txt</str>
       <str name="characterEncoding">UTF-8</str>
       <str name="spellcheckIndexDir">spellchecker3</str>
+      <float name="accuracy">0.5</float>
     </lst>
     <!-- Comparator -->
     <lst name="spellchecker">
       <str name="name">freq</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFreq</str>
-      <!-- comparatorClass be one of:
+      <!-- comparatorClass can be one of:
         1. score (default)
         2. freq (Frequency first, then score)
         3. A fully qualified class name

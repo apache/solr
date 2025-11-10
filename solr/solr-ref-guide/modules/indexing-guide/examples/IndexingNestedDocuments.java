@@ -17,7 +17,6 @@
 
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -49,7 +48,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     configureCluster(1)
         // when indexing 'anonymous' kids, we need a schema that doesn't use _nest_path_ so
         // that we can use [child] transformer with a parentFilter...
-        .addConfig(ANON_KIDS_CONFIG, new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+        .addConfig(ANON_KIDS_CONFIG, ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .configure();
   }
 
@@ -71,7 +70,6 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
     final String collection = "test_anon";
 
     CollectionAdminRequest.createCollection(collection, ANON_KIDS_CONFIG, 1, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     // configure the client with the default collection name, to simplify our example below.

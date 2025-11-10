@@ -37,9 +37,11 @@ public interface CommonParams {
 
   /**
    * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
-   * the request
+   * the request.
+   *
+   * @deprecated route requests by path instead, not using this parameter
    */
-  String QT = "qt";
+  @Deprecated String QT = "qt";
 
   /** the response writer type - the format of the response */
   String WT = "wt";
@@ -69,6 +71,8 @@ public interface CommonParams {
 
   int ROWS_DEFAULT = 10;
 
+  String INDENT = "indent";
+
   // SOLR-4228 start
   /** handler value for SolrPing */
   String PING_HANDLER = "/admin/ping";
@@ -84,13 +88,11 @@ public interface CommonParams {
 
   /** "ping" value for SolrPing action */
   String PING = "ping";
+
   // SOLR-4228 end
 
   /** stylesheet to apply to XML results */
   String XSL = "xsl";
-
-  /** version parameter to check request-response compatibility */
-  String VERSION = "version";
 
   /** query and init param for field list */
   String FL = "fl";
@@ -110,21 +112,26 @@ public interface CommonParams {
 
   /** {@link #DEBUG} value indicating an interest in debug output related to timing */
   String TIMING = "timing";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
    */
   String RESULTS = "results";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing,
    * etc.)
    */
   String QUERY = "query";
+
   /**
    * {@link #DEBUG} value indicating an interest in debug output related to the distributed tracking
    */
   String TRACK = "track";
+
   /**
-   * boolean indicating whether score explanations should structured (true), or plain text (false)
+   * boolean indicating whether score explanations should be structured (true), or plain text
+   * (false)
    */
   String EXPLAIN_STRUCT = "debug.explain.structured";
 
@@ -146,13 +153,37 @@ public interface CommonParams {
    */
   String STREAM_CONTENTTYPE = "stream.contentType";
 
-  /** Whether or not the search may be terminated early within a segment. */
+  /** Whether the search may be terminated early within a segment. */
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
 
   boolean SEGMENT_TERMINATE_EARLY_DEFAULT = false;
 
-  /** Timeout value in milliseconds. If not set, or the value is &gt; 0, there is no timeout. */
+  /**
+   * If true then allow returning partial results. If false and full results can't be produced
+   * return no results / error.
+   */
+  String PARTIAL_RESULTS = "partialResults";
+
+  /** Timeout value in milliseconds. If not set, or the value is &lt; 0, there is no timeout. */
   String TIME_ALLOWED = "timeAllowed";
+
+  /** Whether the search may use the multi-threaded logic */
+  String MULTI_THREADED = "multiThreaded";
+
+  /**
+   * Maximum query CPU usage value in milliseconds. If not set, or the value is &lt; 0, there is no
+   * timeout.
+   */
+  String CPU_ALLOWED = "cpuAllowed";
+
+  /**
+   * Max query memory allocation value in mebibytes (float). If not set, or the value is &lt;= 0.0,
+   * there is no limit.
+   */
+  String MEM_ALLOWED = "memAllowed";
+
+  /** The max hits to be collected per shard. */
+  String MAX_HITS_ALLOWED = "maxHitsAllowed";
 
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
@@ -195,6 +226,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
+  /** /admin paths which don't require a target collection */
   Set<String> ADMIN_PATHS =
       Set.of(
           CORES_HANDLER_PATH,
@@ -207,6 +239,7 @@ public interface CommonParams {
           AUTHC_PATH,
           AUTHZ_PATH,
           METRICS_PATH);
+
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -246,9 +279,6 @@ public interface CommonParams {
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
 
-  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. * */
-  String TYPE = "type";
-
   /**
    * Used as a local parameter on queries. cache=false means don't check any query or filter caches.
    * cache=true is the default.
@@ -257,8 +287,8 @@ public interface CommonParams {
 
   /**
    * Used as a local param on filter queries in conjunction with cache=false. Filters are checked in
-   * order, from smallest cost to largest. If cost&gt;=100 and the query implements PostFilter, then
-   * that interface will be used to do post query filtering.
+   * order, from the smallest cost to largest. If cost&gt;=100 and the query implements PostFilter,
+   * then that interface will be used to do post query filtering.
    */
   String COST = "cost";
 
@@ -266,7 +296,9 @@ public interface CommonParams {
    * Request ID parameter added to all distributed queries (that do not opt out)
    *
    * @see #DISABLE_REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String REQUEST_ID = "rid";
 
   /**
@@ -275,8 +307,19 @@ public interface CommonParams {
    * <p>Defaults to 'false' if not specified.
    *
    * @see #REQUEST_ID
+   * @deprecated this was replaced by the auto-generated trace ids
    */
+  @Deprecated(since = "9.4")
   String DISABLE_REQUEST_ID = "disableRequestId";
+
+  /**
+   * Parameter to control the distributed term statistics request for current query when distributed
+   * IDF is enabled in solrconfig
+   *
+   * <p>Defaults to 'true' if not specified. Distributed stats request will be disabled by setting
+   * to 'false'
+   */
+  String DISTRIB_STATS_CACHE = "distrib.statsCache";
 
   /** Request Purpose parameter added to each internal shard request when using debug=track */
   String REQUEST_PURPOSE = "requestPurpose";

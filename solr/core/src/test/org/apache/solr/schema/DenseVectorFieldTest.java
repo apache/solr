@@ -18,15 +18,35 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
+import java.io.ByteArrayOutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.KnnByteVectorQuery;
+import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PatienceKnnVectorQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SeededKnnVectorQuery;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.handler.loader.JavabinLoader;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.neural.KnnQParser;
+import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.processor.UpdateRequestProcessor;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.vector.DenseVectorParser;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -92,9 +112,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertNotNull(vector);
 
       DenseVectorField type = (DenseVectorField) vector.getType();
-      MatcherAssert.assertThat(
-          type.getSimilarityFunction(), is(VectorSimilarityFunction.EUCLIDEAN));
-      MatcherAssert.assertThat(type.getDimension(), is(4));
+      assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.EUCLIDEAN));
+      assertThat(type.getDimension(), is(4));
 
       assertTrue(vector.indexed());
       assertTrue(vector.stored());
@@ -113,8 +132,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertNotNull(vector);
 
       DenseVectorField type = (DenseVectorField) vector.getType();
-      MatcherAssert.assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      MatcherAssert.assertThat(type.getDimension(), is(4));
+      assertThat(type.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type.getDimension(), is(4));
 
       assertTrue(vector.indexed());
       assertTrue(vector.stored());
@@ -133,43 +152,42 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertNotNull(vector);
 
       DenseVectorField type1 = (DenseVectorField) vector.getType();
-      MatcherAssert.assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      MatcherAssert.assertThat(type1.getDimension(), is(4));
-      MatcherAssert.assertThat(type1.getKnnAlgorithm(), is("hnsw"));
-      MatcherAssert.assertThat(type1.getHnswMaxConn(), is(10));
-      MatcherAssert.assertThat(type1.getHnswBeamWidth(), is(40));
+      assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type1.getDimension(), is(4));
+      assertThat(type1.getKnnAlgorithm(), is("hnsw"));
+      assertThat(type1.getHnswMaxConn(), is(10));
+      assertThat(type1.getHnswBeamWidth(), is(40));
 
       SchemaField vector2 = schema.getField("vector2");
       assertNotNull(vector2);
 
       DenseVectorField type2 = (DenseVectorField) vector2.getType();
-      MatcherAssert.assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      MatcherAssert.assertThat(type2.getDimension(), is(4));
-      MatcherAssert.assertThat(type2.getKnnAlgorithm(), is("hnsw"));
-      MatcherAssert.assertThat(type2.getHnswMaxConn(), is(6));
-      MatcherAssert.assertThat(type2.getHnswBeamWidth(), is(60));
+      assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type2.getDimension(), is(4));
+      assertThat(type2.getKnnAlgorithm(), is("hnsw"));
+      assertThat(type2.getHnswMaxConn(), is(6));
+      assertThat(type2.getHnswBeamWidth(), is(60));
 
       SchemaField vector3 = schema.getField("vector3");
       assertNotNull(vector3);
 
       DenseVectorField type3 = (DenseVectorField) vector3.getType();
-      MatcherAssert.assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      MatcherAssert.assertThat(type3.getDimension(), is(5));
+      assertThat(type3.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(type3.getDimension(), is(5));
 
-      MatcherAssert.assertThat(type3.getKnnAlgorithm(), is("hnsw"));
-      MatcherAssert.assertThat(type3.getHnswMaxConn(), is(8));
-      MatcherAssert.assertThat(type3.getHnswBeamWidth(), is(46));
+      assertThat(type3.getKnnAlgorithm(), is("hnsw"));
+      assertThat(type3.getHnswMaxConn(), is(8));
+      assertThat(type3.getHnswBeamWidth(), is(46));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
 
       DenseVectorField typeDefault = (DenseVectorField) vectorDefault.getType();
-      MatcherAssert.assertThat(
-          typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
-      MatcherAssert.assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
-      MatcherAssert.assertThat(typeDefault.getDimension(), is(4));
-      MatcherAssert.assertThat(typeDefault.getHnswMaxConn(), is(16));
-      MatcherAssert.assertThat(typeDefault.getHnswBeamWidth(), is(100));
+      assertThat(typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
+      assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
+      assertThat(typeDefault.getDimension(), is(4));
+      assertThat(typeDefault.getHnswMaxConn(), is(16));
+      assertThat(typeDefault.getHnswBeamWidth(), is(100));
     } finally {
       deleteCore();
     }
@@ -186,7 +204,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder("string", DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
@@ -200,7 +218,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder("string", DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -214,7 +232,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder(1.5f, DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
@@ -228,7 +246,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder("1", DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -250,7 +268,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                       DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[f1,f2..f3]' where each element f is a float"));
@@ -269,7 +287,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                       DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector format. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -288,7 +306,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder(Arrays.asList(1.0f, 1.5f), DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 3"));
@@ -302,7 +320,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                   .getVectorBuilder(Arrays.asList(2, 1), DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector dimension. The vector value has size 2 while it is expected a vector with size 3"));
@@ -321,7 +339,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                       DenseVectorParser.BuilderPhase.INDEX)
                   .getFloatVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector element: 'string'. The expected format is:'[f1,f2..f3]' where each element f is a float"));
@@ -336,7 +354,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                       Arrays.asList("1", "string", "string2"), DenseVectorParser.BuilderPhase.INDEX)
                   .getByteVector();
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "incorrect vector element: 'string'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -350,7 +368,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_StringArrayList_shouldParseFloatArray() {
     float[] expected = new float[] {1.1f, 2.2f, 3.3f};
-    MatcherAssert.assertThat(
+    assertThat(
         toTestFloatEncoding
             .getVectorBuilder(
                 Arrays.asList("1.1", "2.2", "3.3"), DenseVectorParser.BuilderPhase.INDEX)
@@ -361,7 +379,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_StringArrayList_shouldParseByteArray() {
     byte[] expected = new byte[] {1, 2, 3};
-    MatcherAssert.assertThat(
+    assertThat(
         toTestByteEncoding
             .getVectorBuilder(Arrays.asList("1", "2", "3"), DenseVectorParser.BuilderPhase.INDEX)
             .getByteVector(),
@@ -375,7 +393,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_DoubleArrayList_shouldParseFloatArray() {
     float[] expected = new float[] {1.7f, 5.4f, 6.6f};
-    MatcherAssert.assertThat(
+    assertThat(
         toTestFloatEncoding
             .getVectorBuilder(Arrays.asList(1.7d, 5.4d, 6.6d), DenseVectorParser.BuilderPhase.INDEX)
             .getFloatVector(),
@@ -391,7 +409,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     toTestFloatEncoding = new DenseVectorField(3);
     float[] expected = new float[] {5.5f, 7.7f, 9.8f};
 
-    MatcherAssert.assertThat(
+    assertThat(
         toTestFloatEncoding
             .getVectorBuilder(Arrays.asList(5.5f, 7.7f, 9.8f), DenseVectorParser.BuilderPhase.INDEX)
             .getFloatVector(),
@@ -401,7 +419,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
   @Test
   public void parseVector_IntArrayList_shouldParseByteArray() {
     byte[] expected = new byte[] {5, 7, 9};
-    MatcherAssert.assertThat(
+    assertThat(
         toTestByteEncoding
             .getVectorBuilder(Arrays.asList(5, 7, 9), DenseVectorParser.BuilderPhase.INDEX)
             .getByteVector(),
@@ -449,6 +467,25 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       SolrInputDocument correctDoc = new SolrInputDocument();
       correctDoc.addField("id", "0");
       correctDoc.addField("vector", Arrays.asList(1, 2, 3, 4));
+
+      assertU(adoc(correctDoc));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void indexing_highDimensionalityVectorDocument_shouldBeIndexed() throws Exception {
+    try {
+      initCore("solrconfig_codec.xml", "schema-densevector-high-dimensionality.xml");
+
+      List<Float> highDimensionalityVector = new ArrayList<>();
+      for (float i = 0; i < 2048f; i++) {
+        highDimensionalityVector.add(i);
+      }
+      SolrInputDocument correctDoc = new SolrInputDocument();
+      correctDoc.addField("id", "0");
+      correctDoc.addField("vector", highDimensionalityVector);
 
       assertU(adoc(correctDoc));
     } finally {
@@ -582,24 +619,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
     }
   }
 
-  /** Not Supported */
-  @Test
-  public void query_functionQueryUsage_shouldThrowException() throws Exception {
-    try {
-      initCore("solrconfig-basic.xml", "schema-densevector.xml");
-
-      assertQEx(
-          "Running Function queries on a dense vector field should raise an Exception",
-          "Function queries are not supported for Dense Vector fields.",
-          req("q", "*:*", "fl", "id,field(vector)"),
-          SolrException.ErrorCode.BAD_REQUEST);
-    } finally {
-      deleteCore();
-    }
-  }
-
   @Test
   public void denseVectorField_shouldBePresentAfterAtomicUpdate() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("solr.index.updatelog.enabled")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
@@ -636,6 +660,9 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void denseVectorFieldOnAtomicUpdate_shouldBeUpdatedCorrectly() throws Exception {
+    assumeTrue(
+        "update log must be enabled for atomic update",
+        Boolean.getBoolean(System.getProperty("solr.index.updatelog.enabled")));
     try {
       initCore("solrconfig.xml", "schema-densevector.xml");
       SolrInputDocument doc = new SolrInputDocument();
@@ -688,12 +715,12 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc));
               });
 
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getMessage(),
           is(
               "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[128, 6, 7, 8]'"));
 
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '128'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -710,11 +737,11 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc1));
               });
 
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getMessage(),
           is(
               "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1, -129, 7, 8]'"));
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '-129'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
@@ -739,15 +766,361 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
                 assertU(adoc(doc));
               });
 
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getMessage(),
           is(
               "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[14.3, 6.2, 7.2, 8.1]'"));
 
-      MatcherAssert.assertThat(
+      assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
               "incorrect vector element: '14.3'. The expected format is:'[b1,b2..b3]' where each element b is a byte (-128 to 127)"));
+    } finally {
+      deleteCore();
+    }
+  }
+
+  private void addDocWithJavaBin(SolrInputDocument doc) throws Exception {
+    UpdateRequest ur = new UpdateRequest();
+    ur.add(doc);
+
+    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+    JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();
+    codec.marshal(ur, bos);
+
+    byte[] payload = bos.toByteArray();
+
+    ContentStreamBase.ByteArrayStream cs =
+        new ContentStreamBase.ByteArrayStream(payload, "application/javabin");
+
+    try (SolrQueryRequest sreq = req()) {
+      SolrQueryResponse srsp = new SolrQueryResponse();
+      UpdateRequestProcessorChain chain =
+          h.getCore().getUpdateProcessorChain(new ModifiableSolrParams());
+      try (UpdateRequestProcessor proc = chain.createProcessor(sreq, srsp)) {
+        new JavabinLoader().load(sreq, srsp, cs, proc);
+        proc.finish();
+      }
+      h.getCore().getUpdateHandler().commit(new CommitUpdateCommand(sreq, false));
+    }
+  }
+
+  @Test
+  public void testIndexingViaJavaBin() throws Exception {
+    try {
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+
+      int variant = random().nextInt(3);
+      Object vector;
+      String id;
+
+      switch (variant) {
+        case 0:
+          vector = new float[] {1.1f, 2.2f, 3.3f, 4.4f};
+          id = "pf_jb";
+          break;
+        case 1:
+          vector = new double[] {1.1d, 2.2d, 3.3d, 4.4d};
+          id = "pd_jb";
+          break;
+        default:
+          vector = Arrays.asList(1.1f, 2.2f, 3.3f, 4.4f);
+          id = "lf_jb";
+          break;
+      }
+
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", id);
+      doc.addField("vector", vector);
+
+      addDocWithJavaBin(doc);
+
+      assertJQ(
+          req("q", "id:" + id, "fl", "vector"), "/response/docs/[0]/vector==[1.1,2.2,3.3,4.4]");
+
+      assertJQ(
+          req("q", "{!knn f=vector topK=1}[1.1,2.2,3.3,4.4]", "fl", "id"),
+          "/response/numFound==1",
+          "/response/docs/[0]/id==\"" + id + "\"");
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_floatNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnFloatVectorQuery vectorQuery =
+          (KnnFloatVectorQuery)
+              type.getKnnVectorQuery("vector", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_floatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnFloatVectorQuery vectorQuery =
+          (KnnFloatVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, null, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_seededFloatThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SeededKnnVectorQuery vectorQuery =
+          (SeededKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, seedQuery, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector", "[2, 1, 3, 4]", 3, null, null, earlyTermination, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_byteNoThresholdInInput_shouldSetDefaultThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = KnnSearchStrategy.DEFAULT_FILTERED_SEARCH_THRESHOLD;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnByteVectorQuery vectorQuery =
+          (KnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, null, null, null);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_byteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      KnnByteVectorQuery vectorQuery =
+          (KnnByteVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding", "[2, 1, 3, 4]", 3, null, null, null, expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void testFilteredSearchThreshold_seededByteThresholdInInput_shouldSetCustomThreshold()
+      throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      SeededKnnVectorQuery vectorQuery =
+          (SeededKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  null,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  null,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
+    } finally {
+      deleteCore();
+    }
+  }
+
+  @Test
+  public void
+      testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
+    try {
+      Query seedQuery = new BooleanQuery.Builder().build();
+      KnnQParser.EarlyTerminationParams earlyTermination =
+          new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
+      Integer expectedThreshold = 30;
+
+      initCore("solrconfig-basic.xml", "schema-densevector.xml");
+      IndexSchema schema = h.getCore().getLatestSchema();
+      SchemaField vectorField = schema.getField("vector_byte_encoding");
+      assertNotNull(vectorField);
+      DenseVectorField type = (DenseVectorField) vectorField.getType();
+      PatienceKnnVectorQuery vectorQuery =
+          (PatienceKnnVectorQuery)
+              type.getKnnVectorQuery(
+                  "vector_byte_encoding",
+                  "[2, 1, 3, 4]",
+                  3,
+                  null,
+                  seedQuery,
+                  earlyTermination,
+                  expectedThreshold);
+      KnnSearchStrategy.Hnsw strategy = (KnnSearchStrategy.Hnsw) vectorQuery.getSearchStrategy();
+      Integer threshold = strategy.filteredSearchThreshold();
+
+      assertEquals(expectedThreshold, threshold);
     } finally {
       deleteCore();
     }

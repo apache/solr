@@ -49,6 +49,7 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RTimerTree;
@@ -223,10 +224,11 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
     SchemaField keyField = schema.getUniqueKeyField();
     if (keyField != null) {
       SolrReturnFields returnFields = new SolrReturnFields(keyField.getName(), null);
+      SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
       String[] uniqueKeys = new String[docIDs.length];
       for (int i = 0; i < docIDs.length; i++) {
         int docid = docIDs[i];
-        SolrDocument solrDoc = searcher.getDocFetcher().solrDoc(docid, returnFields);
+        SolrDocument solrDoc = docFetcher.solrDoc(docid, returnFields);
         uniqueKeys[i] = schema.printableUniqueKey(solrDoc);
       }
       return uniqueKeys;
@@ -393,12 +395,12 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
             "language is required if country or variant is specified");
       } else if (country == null && variant != null) {
         throw new IllegalArgumentException("To specify variant, country is required");
-      } else if (country != null && variant != null) {
-        return new Locale(language, country, variant);
-      } else if (country != null) {
-        return new Locale(language, country);
       } else {
-        return new Locale(language);
+        return new Locale.Builder()
+            .setLanguage(language)
+            .setRegion(country)
+            .setVariant(variant)
+            .build();
       }
     }
 
@@ -446,7 +448,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       if (queryFieldPattern != null && queryFieldPattern.length != 0) {
 
         Supplier<Collection<String>> indexedFieldsSupplier =
-            () -> solrIndexSearcher.getDocFetcher().getIndexedFieldNames();
+            () ->
+                solrIndexSearcher.interrogateDocFetcher(SolrDocumentFetcher::getIndexedFieldNames);
 
         Set<String> fields =
             Set.of(expandWildcardsInFields(indexedFieldsSupplier, queryFieldPattern));

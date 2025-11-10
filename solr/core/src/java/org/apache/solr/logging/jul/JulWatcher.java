@@ -145,11 +145,6 @@ public class JulWatcher extends LogWatcher<LogRecord> {
   }
 
   @Override
-  public long getTimestamp(LogRecord event) {
-    return event.getMillis();
-  }
-
-  @Override
   public SolrDocument toSolrDocument(LogRecord event) {
     SolrDocument doc = new SolrDocument();
     doc.setField("time", new Date(event.getMillis()));

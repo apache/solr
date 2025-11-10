@@ -33,7 +33,7 @@ public class GetBoundarySizeEvaluator extends RecursiveObjectEvaluator implement
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof ConvexHull2D)) {
+    if (!(value instanceof ConvexHull2D convexHull2D)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -41,7 +41,6 @@ public class GetBoundarySizeEvaluator extends RecursiveObjectEvaluator implement
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      ConvexHull2D convexHull2D = (ConvexHull2D) value;
       return convexHull2D.createRegion().getBoundarySize();
     }
   }

@@ -33,6 +33,7 @@ import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.macro.MacroExpander;
+import org.apache.solr.search.QueryParsing;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
 
@@ -75,9 +76,9 @@ public class RequestUtil {
       String[] jsonFromParams = map.remove(JSON);
 
       for (ContentStream cs : req.getContentStreams()) {
-        // if BinaryResponseParser.BINARY_CONTENT_TYPE, let the following fail below - we may have
+        // if BinaryResponseParser.JAVABIN_CONTENT_TYPE, let the following fail below - we may have
         // adjusted the content without updating the content type
-        // problem in this case happens in a few tests, one seems to happen with kerberos and remote
+        // problem in this case happens in a few tests including a remote
         // node query (HttpSolrCall's request proxy)
 
         String contentType = cs.getContentType();
@@ -217,6 +218,11 @@ public class RequestUtil {
         if ("query".equals(key)) {
           out = "q";
           isQuery = true;
+          // if the value is not a String, then it'll get converted to a localParams query String.
+          // Only the "lucene" query parser can parse it.  Ignore anything else that may exist.
+          if (!(entry.getValue() instanceof String)) {
+            newMap.put(QueryParsing.DEFTYPE, new String[] {"lucene"});
+          }
         } else if ("filter".equals(key)) {
           out = "fq";
           arr = true;
@@ -357,8 +363,7 @@ public class RequestUtil {
 
         if (val == null) {
           params.remove(key);
-        } else if (val instanceof List) {
-          List<?> lst = (List<?>) val;
+        } else if (val instanceof List<?> lst) {
           String[] vals = new String[lst.size()];
           for (int i = 0; i < vals.length; i++) {
             vals[i] = lst.get(i).toString();

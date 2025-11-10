@@ -22,14 +22,18 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.jersey.ErrorInfo;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
 public class ResponseUtils {
   private ResponseUtils() {}
+
+  // System property to use if the Solr core does not exist or solr.hideStackTrace is not
+  // configured. (i.e.: a lot of unit test).
+  private static final boolean SYSTEM_HIDE_STACK_TRACES = Boolean.getBoolean("solr.hideStackTrace");
 
   /**
    * Adds the given Throwable's message to the given NamedList.
@@ -45,20 +49,39 @@ public class ResponseUtils {
    * @see #getTypedErrorInfo(Throwable, Logger)
    */
   public static int getErrorInfo(Throwable ex, NamedList<Object> info, Logger log) {
+    return getErrorInfo(ex, info, log, false);
+  }
+
+  /**
+   * Adds the given Throwable's message to the given NamedList.
+   *
+   * <p>Primarily used by v1 code; v2 endpoints or dispatch code should call {@link
+   * #getTypedErrorInfo(Throwable, Logger)}
+   *
+   * <p>If the response code is not a regular code, the Throwable's stack trace is both logged and
+   * added to the given NamedList.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
+   *
+   * <p>Stack trace will not be output if hideTrace=true OR system property
+   * solr.hideStackTrace=true.
+   *
+   * @see #getTypedErrorInfo(Throwable, Logger)
+   */
+  public static int getErrorInfo(
+      Throwable ex, NamedList<Object> info, Logger log, boolean hideTrace) {
     int code = 500;
-    if (ex instanceof SolrException) {
-      SolrException solrExc = (SolrException) ex;
+    if (ex instanceof SolrException solrExc) {
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
       if (errorMetadata == null) {
         errorMetadata = new NamedList<>();
       }
-      errorMetadata.add(SolrException.ERROR_CLASS, ex.getClass().getName());
+      errorMetadata.add(ErrorInfo.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(
-          SolrException.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
+          ErrorInfo.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
-      if (ex instanceof ApiBag.ExceptionWithErrObject) {
-        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
         info.add("details", exception.getErrs());
       }
     }
@@ -73,10 +96,13 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      StringWriter sw = new StringWriter();
-      ex.printStackTrace(new PrintWriter(sw));
+      // hide all stack traces, as configured
+      if (!hideStackTrace(hideTrace)) {
+        StringWriter sw = new StringWriter();
+        ex.printStackTrace(new PrintWriter(sw));
+        info.add("trace", sw.toString());
+      }
       log.error("500 Exception", ex);
-      info.add("trace", sw.toString());
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
@@ -99,16 +125,30 @@ public class ResponseUtils {
    * @see #getErrorInfo(Throwable, NamedList, Logger)
    */
   public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log) {
+    return getTypedErrorInfo(ex, log, false);
+  }
+
+  /**
+   * Adds information about the given Throwable to a returned {@link ErrorInfo}
+   *
+   * <p>Primarily used by v2 API code, which can handle such typed information.
+   *
+   * <p>Status codes less than 100 are adjusted to be 500.
+   *
+   * <p>Stack trace will not be output if hideTrace=true OR system property
+   * solr.hideStackTrace=true.
+   *
+   * @see #getErrorInfo(Throwable, NamedList, Logger)
+   */
+  public static ErrorInfo getTypedErrorInfo(Throwable ex, Logger log, boolean hideTrace) {
     final ErrorInfo errorInfo = new ErrorInfo();
     int code = 500;
-    if (ex instanceof SolrException) {
-      SolrException solrExc = (SolrException) ex;
+    if (ex instanceof SolrException solrExc) {
       code = solrExc.code();
       errorInfo.metadata = new ErrorInfo.ErrorMetadata();
       errorInfo.metadata.errorClass = ex.getClass().getName();
       errorInfo.metadata.rootErrorClass = SolrException.getRootCause(ex).getClass().getName();
-      if (ex instanceof ApiBag.ExceptionWithErrObject) {
-        ApiBag.ExceptionWithErrObject exception = (ApiBag.ExceptionWithErrObject) ex;
+      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
         errorInfo.details = exception.getErrs();
       }
     }
@@ -123,22 +163,24 @@ public class ResponseUtils {
 
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
-      log.error("500 Exception", ex);
-      errorInfo.trace = new ErrorInfo.ErrorStackTrace();
-      errorInfo.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+      if (!hideStackTrace(hideTrace)) {
+        errorInfo.trace = new ErrorInfo.ErrorStackTrace();
+        errorInfo.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
 
-      ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
-      Throwable causedBy = ex.getCause();
-      while (causedBy != null) {
-        ErrorInfo.ErrorCausedBy errorCausedBy = new ErrorInfo.ErrorCausedBy();
-        lastTrace.causedBy = errorCausedBy;
-        errorCausedBy.errorClass = causedBy.getClass().getName();
-        errorCausedBy.msg = causedBy.getMessage();
-        errorCausedBy.trace = new ErrorInfo.ErrorStackTrace();
-        errorCausedBy.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
-        lastTrace = errorCausedBy.trace;
-        causedBy = causedBy.getCause();
+        ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
+        Throwable causedBy = ex.getCause();
+        while (causedBy != null) {
+          ErrorInfo.ErrorCausedBy errorCausedBy = new ErrorInfo.ErrorCausedBy();
+          lastTrace.causedBy = errorCausedBy;
+          errorCausedBy.errorClass = causedBy.getClass().getName();
+          errorCausedBy.msg = causedBy.getMessage();
+          errorCausedBy.trace = new ErrorInfo.ErrorStackTrace();
+          errorCausedBy.trace.stackTrace = Arrays.stream(causedBy.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+          lastTrace = errorCausedBy.trace;
+          causedBy = causedBy.getCause();
+        }
       }
+      log.error("500 Exception", ex);
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
@@ -149,5 +191,9 @@ public class ResponseUtils {
 
     errorInfo.code = code;
     return errorInfo;
+  }
+
+  private static boolean hideStackTrace(final boolean hideTrace) {
+    return hideTrace || SYSTEM_HIDE_STACK_TRACES;
   }
 }

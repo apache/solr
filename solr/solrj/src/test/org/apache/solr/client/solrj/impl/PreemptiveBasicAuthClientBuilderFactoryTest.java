@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 
 public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
 
@@ -88,8 +89,7 @@ public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
           "tmp properties file for PreemptiveBasicAuthClientBuilderFactoryTest.testCredentialsFromConfigFile");
     }
     System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG,
-        f.toFile().getAbsolutePath());
+        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG, f.toString());
     PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver credentialsResolver =
         new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver();
     assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));

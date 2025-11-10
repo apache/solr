@@ -23,7 +23,6 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -35,7 +34,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     JSONTestUtil.failRepeatedKeys = true;
 
     // we need DVs on point fields to compute stats & facets
@@ -55,7 +54,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
     JSONTestUtil.failRepeatedKeys = false;
     if (servers != null) {
       servers.stop();
@@ -64,7 +63,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   }
 
   public void indexSimple(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(
         sdoc(
             "id",
@@ -131,7 +130,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   }
 
   public void doTestErrors(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
 
     SolrException e =
         assertThrows(
@@ -151,7 +150,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testDomainErrors() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     // using assertQEx so that, status code and error message can be asserted
@@ -216,7 +215,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testRangeFacetsErrorCases() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     SolrParams params = params("q", "*:*", "rows", "0");
@@ -404,7 +403,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
   @Test
   public void testOtherErrorCases() throws Exception {
     Client client = Client.localClient();
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     indexSimple(client);
 
     // test for sort
@@ -588,7 +587,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{bleh:'div(2,4)'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Expected multi-doc aggregation from 'div' but got per-doc function in input ('div(2,4)"));
@@ -600,7 +599,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'agg(div(2,4))'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(),
         containsString(
             "Expected multi-doc aggregation from 'div' but got per-doc function in input ('agg(div(2,4))"));
@@ -612,7 +611,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'agg(bleh(2,4))'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
+    assertThat(
         e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('agg(bleh(2,4))"));
 
     e =
@@ -622,8 +621,7 @@ public class TestJsonFacetErrors extends SolrTestCaseHS {
               h.query(req("q", "*:*", "json.facet", "{b:'bleh(2,4)'}"));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    MatcherAssert.assertThat(
-        e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
+    assertThat(e.getMessage(), containsString("Unknown aggregation 'bleh' in input ('bleh(2,4)"));
 
     resetExceptionIgnores();
   }

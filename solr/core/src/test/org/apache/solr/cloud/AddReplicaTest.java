@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.CoreDescriptor;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -186,5 +187,38 @@ public class AddReplicaTest extends SolrCloudTestCase {
       }
       assertSame(coll + "\n" + replica, replica.getState(), Replica.State.ACTIVE);
     }
+  }
+
+  @Test
+  public void testAddReplicaWithUserDefinedProperties() throws Exception {
+    // When creating a collection with user-defined properties
+    CloudSolrClient cloudClient = cluster.getSolrClient();
+    String collectionName = "testAddReplicaWithUserDefinedProperties";
+    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1)
+        .withProperty("customProp1", "val1")
+        .withProperty("customProp2", "val2")
+        .process(cloudClient);
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    // When adding a replica to the collection with user-defined properties
+    CollectionAdminRequest.AddReplica addReplica =
+        CollectionAdminRequest.addReplicaToShard(collectionName, "shard1");
+    addReplica.withProperty("customProp2", "val2.1");
+    addReplica.withProperty("customProp3", "val3");
+    addReplica.setWaitForFinalState(true);
+    addReplica.process(cloudClient);
+
+    // Verify that the new core was created with user-defined properties coming from the request
+    // and inherited from the collection (the former taking precedence over the latter).
+    Replica replica =
+        cloudClient.getClusterState().getCollection(collectionName).getReplicas().get(1);
+    CoreDescriptor coreDescriptor =
+        cluster
+            .getReplicaJetty(replica)
+            .getCoreContainer()
+            .getCoreDescriptor(replica.getCoreName());
+    assertEquals("val1", coreDescriptor.getCoreProperty("customProp1", ""));
+    assertEquals("val2.1", coreDescriptor.getCoreProperty("customProp2", ""));
+    assertEquals("val3", coreDescriptor.getCoreProperty("customProp3", ""));
   }
 }

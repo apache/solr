@@ -51,7 +51,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void setUp() throws Exception {
     super.setUp();
     setupTestInit(solrconfig, schema, true);
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
 
     int numberOfShards = random().nextInt(4) + 1;
     int numberOfReplicas = random().nextInt(2) + 1;
@@ -323,9 +323,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   }
 
   private void setupSolrCluster(int numShards, int numReplicas, int numServers) throws Exception {
-    JettyConfig jc = buildJettyConfig("/solr");
-    jc = JettyConfig.builder(jc).build();
-    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome, jc);
+    solrCluster = new MiniSolrCloudCluster(numServers, tmpSolrHome, JettyConfig.builder().build());
     Path configDir = tmpSolrHome.resolve("collection1/conf");
     solrCluster.uploadConfigSet(configDir, "conf1");
 

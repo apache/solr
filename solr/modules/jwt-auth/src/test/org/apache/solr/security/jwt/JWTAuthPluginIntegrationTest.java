@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -53,14 +55,15 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TimeOut;
@@ -86,7 +89,6 @@ import org.junit.Test;
  */
 @SolrTestCaseJ4.SuppressSSL
 public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
-  private final String COLLECTION = "jwtColl";
 
   private static String mockOAuthToken;
   private static Path pemFilePath;
@@ -103,6 +105,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     pemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_cert.pem");
     wrongPemFilePath = JWT_TEST_PATH().resolve("security").resolve("jwt_plugin_idp_wrongcert.pem");
 
+    Path tempDir = FilterPath.unwrap(createTempDir());
+    Path modifiedP12Cert = tempDir.resolve(p12Cert.getFileName());
+    new KeystoreGenerator()
+        .generateKeystore(
+            p12Cert, modifiedP12Cert, InetAddress.getLoopbackAddress().getCanonicalHostName());
+    p12Cert = modifiedP12Cert;
+
     mockOAuth2Server = createMockOAuthServer(p12Cert, "secret");
     mockOAuth2Server.start();
     mockOAuthToken =
@@ -113,7 +122,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClass() {
     if (mockOAuth2Server != null) {
       mockOAuth2Server.shutdown();
     }
@@ -127,7 +136,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15484")
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-15484")
   public void mockOAuth2Server() throws Exception {
     MiniSolrCloudCluster myCluster = configureClusterMockOauth(2, pemFilePath, 10000);
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
@@ -143,7 +152,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   @Test
-  public void mockOAuth2ServerWrongPEMInTruststore() throws Exception {
+  public void mockOAuth2ServerWrongPEMInTruststore() {
     // JWTAuthPlugin throws SSLHandshakeException when fetching JWK, so this trips cluster init
     assertThrows(Exception.class, () -> configureClusterMockOauth(2, wrongPemFilePath, 2000));
   }
@@ -162,6 +171,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
@@ -184,6 +195,8 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
     assertEquals(
         "{\n"
+            + "  \"tokenEndpoint\":\"http://acmepaymentscorp/oauth/oauth20/token\",\n"
+            + "  \"authorization_flow\":\"code_pkce\",\n"
             + "  \"scope\":\"solr:admin\",\n"
             + "  \"redirect_uris\":[],\n"
             + "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n"
@@ -205,6 +218,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
     CloseableHttpClient cl = HttpClientUtil.createClient(null);
 
+    String COLLECTION = "jwtColl";
     createCollection(cluster, COLLECTION);
 
     // Missing token
@@ -276,8 +290,74 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     HttpClientUtil.close(cl);
   }
 
+  /**
+   * Test if JWTPrincipal is passed correctly on internode communication. Setup a cluster with more
+   * nodes using jwtAuth for both authentication and authorization. Add a collection with restricted
+   * access and with less replicas and shards then the number of nodes. Test if we can query the
+   * collection on every node.
+   */
+  @Test
+  public void testInternodeAuthorization() throws Exception {
+    // Start cluster with security.json that contains permissions for a collection with restricted
+    // access
+    cluster = configureClusterStaticKeys("jwt_plugin_jwk_security_with_authorization.json", 3);
+    // Get a random url to use for general requests to the cluster
+    String randomBaseUrl = cluster.getRandomJetty(random()).getBaseUrl().toString();
+
+    // Add the collection to the cluster
+    String COLLECTION = "jwtColl";
+    createCollection(cluster, COLLECTION);
+
+    // Now update three documents
+    Pair<String, Integer> result =
+        post(
+            randomBaseUrl + "/" + COLLECTION + "/update?commit=true",
+            "[{\"id\" : \"1\"}, {\"id\": \"2\"}, {\"id\": \"3\"}]",
+            jwtStaticTestToken);
+    assertEquals(Integer.valueOf(200), result.second());
+
+    // Run query on every node.
+    // This will force the nodes to transfer the query to another node when they do not have the
+    // collection themselves.
+    for (JettySolrRunner node : cluster.getJettySolrRunners()) {
+      // Get the base url for this node
+      String nodeBaseUrl = node.getBaseUrl().toString();
+
+      // Do a query, using JWTAuth for inter-node
+      result = get(nodeBaseUrl + "/" + COLLECTION + "/query?q=*:*", jwtStaticTestToken);
+      assertEquals(Integer.valueOf(200), result.second());
+    }
+
+    // Delete
+    assertEquals(
+        200,
+        get(
+                randomBaseUrl + "/admin/collections?action=DELETE&name=" + COLLECTION,
+                jwtStaticTestToken)
+            .second()
+            .intValue());
+  }
+
   static String getBearerAuthHeader(JsonWebSignature jws) throws JoseException {
     return "Bearer " + jws.getCompactSerialization();
+  }
+
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        JWTAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
   }
 
   /**
@@ -320,8 +400,13 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    */
   private MiniSolrCloudCluster configureClusterStaticKeys(String securityJsonFilename)
       throws Exception {
+    return configureClusterStaticKeys(securityJsonFilename, 2);
+  }
+
+  private MiniSolrCloudCluster configureClusterStaticKeys(
+      String securityJsonFilename, int numberOfNodes) throws Exception {
     MiniSolrCloudCluster myCluster =
-        configureCluster(2) // nodes
+        configureCluster(numberOfNodes)
             .withSecurityJson(JWT_TEST_PATH().resolve("security").resolve(securityJsonFilename))
             .addConfig(
                 "conf1",
@@ -376,7 +461,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Pair<String, Integer> get(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection createConn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) createConn.setRequestProperty("Authorization", "Bearer " + token);
     BufferedReader br2 =
@@ -389,7 +474,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Map<String, String> getHeaders(String url, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
     if (token != null) conn.setRequestProperty("Authorization", "Bearer " + token);
     conn.connect();
@@ -402,7 +487,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   }
 
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
-    URL createUrl = new URL(url);
+    URL createUrl = URI.create(url).toURL();
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
     con.setRequestMethod("POST");
     con.setRequestProperty(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
@@ -462,7 +547,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(
         "Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
 
     // HACK (continued)...
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -481,11 +566,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
    * and trusting its SSL
    */
   private static String createMockOAuthSecurityJson(Path pemFilePath) throws IOException {
-    String wellKnown =
-        mockOAuth2Server
-            .wellKnownUrl("default")
-            .toString()
-            .replace(".localdomain", ""); // Use only 'localhost' to match our SSL cert
+    String wellKnown = mockOAuth2Server.wellKnownUrl("default").toString();
     String pemCert =
         CryptoKeys.extractCertificateFromPem(Files.readString(pemFilePath))
             .replace("\\n", "\\\\n"); // Use literal \n to play well with JSON
@@ -520,8 +601,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
           TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
       trustManagerFactory.init(keystore);
 
-      MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper();
-      MockWebServer mockWebServer = mockWebServerWrapper.getMockWebServer();
+      MockWebServer mockWebServer;
+      try (MockWebServerWrapper mockWebServerWrapper = new MockWebServerWrapper()) {
+        mockWebServer = mockWebServerWrapper.getMockWebServer();
+      }
       SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
       sslContext.init(
           keyManagerFactory.getKeyManagers(), /*trustManagerFactory.getTrustManagers()*/

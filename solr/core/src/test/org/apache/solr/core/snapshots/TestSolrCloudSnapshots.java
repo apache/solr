@@ -70,7 +70,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   @BeforeClass
   public static void setupClass() throws Exception {
     useFactory("solr.StandardDirectoryFactory");
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
     configureCluster(NUM_NODES) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -83,7 +83,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
   public static void teardownClass() {
     System.clearProperty("test.build.data");
     System.clearProperty("test.cache.data");
-    System.clearProperty("solr.allowPaths");
+    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test
@@ -183,7 +183,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       BackupRestoreUtils.verifyDocs(0, solrClient, collectionName);
     }
 
-    String backupLocation = createTempDir().toFile().getAbsolutePath();
+    String backupLocation = createTempDir().toString();
     String backupName = "mytestbackup";
     String restoreCollectionName = collectionName + "_restored";
 

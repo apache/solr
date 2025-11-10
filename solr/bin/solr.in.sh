@@ -55,14 +55,8 @@
 #-XX:SurvivorRatio=4 \
 #-XX:TargetSurvivorRatio=90 \
 #-XX:MaxTenuringThreshold=8 \
-#-XX:+UseConcMarkSweepGC \
-#-XX:ConcGCThreads=4 -XX:ParallelGCThreads=4 \
-#-XX:+CMSScavengeBeforeRemark \
+#-XX:ParallelGCThreads=4 \
 #-XX:PretenureSizeThreshold=64m \
-#-XX:+UseCMSInitiatingOccupancyOnly \
-#-XX:CMSInitiatingOccupancyFraction=50 \
-#-XX:CMSMaxAbortablePrecleanTime=6000 \
-#-XX:+CMSParallelRemarkEnabled \
 #-XX:+ParallelRefProcEnabled        etc.
 
 # Set the ZooKeeper connection string if using an external ZooKeeper ensemble
@@ -81,7 +75,13 @@
 #SOLR_HOST="192.168.1.1"
 
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
-#SOLR_WAIT_FOR_ZK="30"
+#SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
+
+# By default Solr will log a warning for cores that are not registered in Zookeeper at startup
+# but otherwise ignore them. This protects against misconfiguration (e.g. connecting to the
+# wrong Zookeeper instance or chroot), however you need to manually delete the cores if
+# they are no longer required. Set to "true" to have Solr automatically delete unknown cores.
+#SOLR_DELETE_UNKNOWN_CORES=false
 
 # By default the start script uses UTC; override the timezone if needed
 #SOLR_TIMEZONE="UTC"
@@ -91,15 +91,18 @@
 # (false is recommended in production environments)
 #ENABLE_REMOTE_JMX_OPTS="false"
 
-# The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+# The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
 
 # Anything you add to the SOLR_OPTS variable will be included in the java
 # start command line as-is, in ADDITION to other options. If you specify the
-# -a option on start script, those options will be appended as well. Examples:
+# --jvm-opts option on start script, those options will be appended as well. Examples:
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=3000"
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.autoCommit.maxTime=60000"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.clustering.enabled=true"
+
+# Most properties have an environment variable equivalent.
+# A naming convention is that SOLR_FOO_BAR maps to solr.foo.bar
+#SOLR_CLUSTERING_ENABLED=true
 
 # Location where the bin/solr script will save PID files for running instances
 # If not set, the script will create PID files in $SOLR_TIP/bin
@@ -129,7 +132,7 @@
 #SOLR_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
-#SOLR_PORT=8983
+#SOLR_PORT_LISTEN=8983
 
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
@@ -147,7 +150,9 @@
 # set this value as narrowly as required before going to production. In
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
-#SOLR_JETTY_HOST="127.0.0.1"
+#SOLR_HOST_BIND="127.0.0.1"
+# Sets the network interface the Embedded ZK binds to.
+#SOLR_ZOOKEEPER_EMBEDDED_HOST="127.0.0.1"
 
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
@@ -165,11 +170,13 @@
 # Verify client's hostname during SSL handshake
 #SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
-# this to false can be useful to disable these checks when re-using a certificate on many hosts
+# this to false can be useful to disable these checks when re-using a certificate on many hosts.
+# This will also be used for the default value of whether SNI Host checking should be enabled.
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
 #SOLR_SSL_KEY_STORE_TYPE=PKCS12
 #SOLR_SSL_TRUST_STORE_TYPE=PKCS12
+#SOLR_SSL_RELOAD_ENABLED=true
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
@@ -180,23 +187,11 @@
 #SOLR_SSL_CLIENT_KEY_STORE_TYPE=
 #SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
-# Sets path of Hadoop credential provider (hadoop.security.credential.provider.path property) and
-# enables usage of credential store.
-# Credential provider should store the following keys:
-# * solr.jetty.keystore.password
-# * solr.jetty.truststore.password
-# Set the two below if you want to set specific store passwords for HTTP client
-# * javax.net.ssl.keyStorePassword
-# * javax.net.ssl.trustStorePassword
-# More info: https://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-common/CredentialProviderAPI.html
-#SOLR_HADOOP_CREDENTIAL_PROVIDER_PATH=localjceks://file/home/solr/hadoop-credential-provider.jceks
-#SOLR_OPTS=" -Dsolr.ssl.credential.provider.chain=hadoop"
-
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
 #SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
 #SOLR_AUTH_TYPE="basic"
-#SOLR_AUTHENTICATION_OPTS="-Dbasicauth=solr:SolrRocks"
+#SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 
 # Settings for ZK ACL
 #SOLR_ZK_CREDS_AND_ACLS="-DzkACLProvider=org.apache.solr.common.cloud.DigestZkACLProvider \
@@ -232,9 +227,9 @@
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 # list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
-# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
-# Alternatively host checking can be disabled by using the system property "solr.disable.allowUrls"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.security.allow.urls".
+# Alternatively host checking can be disabled by setting the system property "solr.security.allow.urls.enabled=false"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.urls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
@@ -249,30 +244,36 @@
 # Runs solr in java security manager sandbox. This can protect against some attacks.
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
-# This is experimental! It may not work at all with Hadoop/HDFS features.
+# This is experimental!
 #SOLR_SECURITY_MANAGER_ENABLED=true
-# This variable provides you with the option to disable the Admin UI. if you uncomment the variable below and
-# change the value to true. The option is configured as a system property as defined in SOLR_START_OPTS in the start
+
+# This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
+# change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
-# SOLR_ADMIN_UI_DISABLED=false
+# SOLR_UI_ENABLED=true
+
+# This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
+# below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
+# new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
+# SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.paths=/mnt/bigdisk,/other/path"
 
 # Solr can attempt to take a heap dump on out of memory errors. To enable this, uncomment the line setting
 # SOLR_HEAP_DUMP below. Heap dumps will be saved to SOLR_LOG_DIR/dumps by default. Alternatively, you can specify any
 # other directory, which will implicitly enable heap dumping. Dump name pattern will be solr-[timestamp]-pid[###].hprof
 # When using this feature, it is recommended to have an external service monitoring the given dir.
 # If more fine grained control is required, you can manually add the appropriate flags to SOLR_OPTS
-# See https://docs.oracle.com/en/java/javase/11/troubleshoot/command-line-options1.html
-# You can test this behaviour by setting SOLR_HEAP=25m
+# See https://docs.oracle.com/en/java/javase/21/troubleshoot/command-line-options1.html
+# You can test this behavior by setting SOLR_HEAP=25m
 #SOLR_HEAP_DUMP=true
 #SOLR_HEAP_DUMP_DIR=/var/log/dumps
 
 # Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
-# To restore the old behaviour, set the variable below to true
+# To restore the old behavior, set the variable below to true
 #SOLR_SOLRXML_REQUIRED=false
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
@@ -286,6 +287,6 @@
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 #SOLR_PLACEMENTPLUGIN_DEFAULT=simple
 
-# Solr internally doesn't use cookies other than for modules such as Kerberos/Hadoop Auth. If you don't need any of those
-# And you don't need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+# Solr internally doesn't use cookies. If you don't need any of those, and you don't 
+# need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
 # SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"

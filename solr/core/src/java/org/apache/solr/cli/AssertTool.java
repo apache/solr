@@ -17,42 +17,134 @@
 package org.apache.solr.cli;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.FileOwnerAttributeView;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionGroup;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Asserts various conditions and exists with error code if fails, else continues with no output */
+/**
+ * Supports assert command in the bin/solr script. Asserts various conditions and exists with error
+ * code if there are failures, else continues with no output.
+ */
 public class AssertTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static String message = null;
   private static boolean useExitCode = false;
   private static Long timeoutMs = 1000L;
 
-  public AssertTool() {
-    this(CLIO.getOutStream());
-  }
+  private static final Option IS_NOT_ROOT_OPTION =
+      Option.builder().desc("Asserts that we are NOT the root user.").longOpt("not-root").build();
 
-  public AssertTool(PrintStream stdout) {
-    super(stdout);
+  private static final Option IS_ROOT_OPTION =
+      Option.builder().desc("Asserts that we are the root user.").longOpt("root").build();
+
+  private static final OptionGroup ROOT_OPTION =
+      new OptionGroup().addOption(IS_NOT_ROOT_OPTION).addOption(IS_ROOT_OPTION);
+
+  private static final Option IS_NOT_RUNNING_ON_OPTION =
+      Option.builder()
+          .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
+          .longOpt("not-started")
+          .hasArg()
+          .argName("url")
+          .build();
+
+  private static final Option IS_RUNNING_ON_OPTION =
+      Option.builder()
+          .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
+          .longOpt("started")
+          .hasArg()
+          .argName("url")
+          .build();
+
+  private static final OptionGroup RUNNING_OPTION =
+      new OptionGroup().addOption(IS_NOT_RUNNING_ON_OPTION).addOption(IS_RUNNING_ON_OPTION);
+
+  private static final Option SAME_USER_OPTION =
+      Option.builder()
+          .desc("Asserts that we run as same user that owns <directory>.")
+          .longOpt("same-user")
+          .hasArg()
+          .argName("directory")
+          .build();
+
+  private static final Option DIRECTORY_EXISTS_OPTION =
+      Option.builder()
+          .desc("Asserts that directory <directory> exists.")
+          .longOpt("exists")
+          .hasArg()
+          .argName("directory")
+          .build();
+
+  private static final Option DIRECTORY_NOT_EXISTS_OPTION =
+      Option.builder()
+          .desc("Asserts that directory <directory> does NOT exist.")
+          .longOpt("not-exists")
+          .hasArg()
+          .argName("directory")
+          .build();
+
+  private static final OptionGroup DIRECTORY_OPTION =
+      new OptionGroup().addOption(DIRECTORY_EXISTS_OPTION).addOption(DIRECTORY_NOT_EXISTS_OPTION);
+
+  private static final Option IS_CLOUD_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+          .longOpt("cloud")
+          .hasArg()
+          .argName("url")
+          .build();
+
+  private static final Option IS_NOT_CLOUD_OPTION =
+      Option.builder()
+          .desc(
+              "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
+          .longOpt("not-cloud")
+          .hasArg()
+          .argName("url")
+          .build();
+
+  private static final OptionGroup CLOUD_OPTION =
+      new OptionGroup().addOption(IS_CLOUD_OPTION).addOption(IS_NOT_CLOUD_OPTION);
+
+  private static final Option MESSAGE_OPTION =
+      Option.builder()
+          .desc("Exception message to be used in place of the default error message.")
+          .longOpt("message")
+          .hasArg()
+          .argName("message")
+          .build();
+
+  private static final Option TIMEOUT_OPTION =
+      Option.builder()
+          .desc("Timeout in ms for commands supporting a timeout.")
+          .longOpt("timeout")
+          .hasArg()
+          .type(Long.class)
+          .argName("ms")
+          .build();
+
+  private static final Option EXIT_CODE_OPTION =
+      Option.builder()
+          .desc("Return an exit code instead of printing error message on assert fail.")
+          .longOpt("exitcode")
+          .build();
+
+  public AssertTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
   @Override
@@ -61,88 +153,38 @@ public class AssertTool extends ToolBase {
   }
 
   @Override
-  public List<Option> getOptions() {
-    return List.of(
-        Option.builder("R")
-            .desc("Asserts that we are NOT the root user.")
-            .longOpt("not-root")
-            .build(),
-        Option.builder("r").desc("Asserts that we are the root user.").longOpt("root").build(),
-        Option.builder("S")
-            .desc("Asserts that Solr is NOT running on a certain URL. Default timeout is 1000ms.")
-            .longOpt("not-started")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("s")
-            .desc("Asserts that Solr is running on a certain URL. Default timeout is 1000ms.")
-            .longOpt("started")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("u")
-            .desc("Asserts that we run as same user that owns <directory>.")
-            .longOpt("same-user")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("x")
-            .desc("Asserts that directory <directory> exists.")
-            .longOpt("exists")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("X")
-            .desc("Asserts that directory <directory> does NOT exist.")
-            .longOpt("not-exists")
-            .hasArg(true)
-            .argName("directory")
-            .build(),
-        Option.builder("c")
-            .desc(
-                "Asserts that Solr is running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-            .longOpt("cloud")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("C")
-            .desc(
-                "Asserts that Solr is not running in cloud mode.  Also fails if Solr not running.  URL should be for root Solr path.")
-            .longOpt("not-cloud")
-            .hasArg(true)
-            .argName("url")
-            .build(),
-        Option.builder("m")
-            .desc("Exception message to be used in place of the default error message.")
-            .longOpt("message")
-            .hasArg(true)
-            .argName("message")
-            .build(),
-        Option.builder("t")
-            .desc("Timeout in ms for commands supporting a timeout.")
-            .longOpt("timeout")
-            .hasArg(true)
-            .type(Long.class)
-            .argName("ms")
-            .build(),
-        Option.builder("e")
-            .desc("Return an exit code instead of printing error message on assert fail.")
-            .longOpt("exitcode")
-            .build());
+  public Options getOptions() {
+    return super.getOptions()
+        .addOptionGroup(ROOT_OPTION)
+        .addOptionGroup(RUNNING_OPTION)
+        .addOption(SAME_USER_OPTION)
+        .addOptionGroup(DIRECTORY_OPTION)
+        .addOptionGroup(CLOUD_OPTION)
+        .addOption(MESSAGE_OPTION)
+        .addOption(TIMEOUT_OPTION)
+        .addOption(EXIT_CODE_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION);
   }
 
+  /**
+   * Returns 100 error code for a true "error", otherwise returns the number of tests that failed.
+   * Otherwise, very similar to the parent runTool method.
+   *
+   * @param cli the command line object
+   * @return 0 on success, or a number corresponding to number of tests that failed, or 100 for an
+   *     Error
+   * @throws Exception if a tool failed, e.g. authentication failure
+   */
   @Override
   public int runTool(CommandLine cli) throws Exception {
-    verbose = cli.hasOption(SolrCLI.OPTION_VERBOSE.getOpt());
-
-    int toolExitStatus = 0;
+    int toolExitStatus;
     try {
       toolExitStatus = runAssert(cli);
     } catch (Exception exc) {
       // since this is a CLI, spare the user the stacktrace
       String excMsg = exc.getMessage();
       if (excMsg != null) {
-        if (verbose) {
+        if (isVerbose()) {
           CLIO.err("\nERROR: " + exc + "\n");
         } else {
           CLIO.err("\nERROR: " + excMsg + "\n");
@@ -168,60 +210,59 @@ public class AssertTool extends ToolBase {
    * @throws Exception if a tool failed, e.g. authentication failure
    */
   protected int runAssert(CommandLine cli) throws Exception {
-    if (cli.getOptions().length == 0 || cli.getArgs().length > 0 || cli.hasOption("h")) {
-      new HelpFormatter()
-          .printHelp(
-              "bin/solr assert [-m <message>] [-e] [-rR] [-s <url>] [-S <url>] [-c <url>] [-C <url>] [-u <dir>] [-x <dir>] [-X <dir>]",
-              SolrCLI.getToolOptions(this));
-      return 1;
-    }
-    if (cli.hasOption("m")) {
-      message = cli.getOptionValue("m");
-    }
-    if (cli.hasOption("t")) {
-      timeoutMs = Long.parseLong(cli.getOptionValue("t"));
-    }
-    if (cli.hasOption("e")) {
-      useExitCode = true;
-    }
+    message = cli.getOptionValue(MESSAGE_OPTION);
+    timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs);
+    useExitCode = cli.hasOption(EXIT_CODE_OPTION);
 
     int ret = 0;
-    if (cli.hasOption("r")) {
+    if (cli.hasOption(IS_ROOT_OPTION)) {
       ret += assertRootUser();
     }
-    if (cli.hasOption("R")) {
+    if (cli.hasOption(IS_NOT_ROOT_OPTION)) {
       ret += assertNotRootUser();
     }
-    if (cli.hasOption("x")) {
-      ret += assertFileExists(cli.getOptionValue("x"));
+    if (cli.hasOption(DIRECTORY_EXISTS_OPTION)) {
+      ret += assertFileExists(cli.getOptionValue(DIRECTORY_EXISTS_OPTION));
     }
-    if (cli.hasOption("X")) {
-      ret += assertFileNotExists(cli.getOptionValue("X"));
+    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION)) {
+      ret += assertFileNotExists(cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION));
     }
-    if (cli.hasOption("u")) {
-      ret += sameUser(cli.getOptionValue("u"));
+    if (cli.hasOption(SAME_USER_OPTION)) {
+      ret += sameUser(cli.getOptionValue(SAME_USER_OPTION));
     }
-    if (cli.hasOption("s")) {
-      ret += assertSolrRunning(cli.getOptionValue("s"));
+    if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
+      ret +=
+          assertSolrRunning(
+              cli.getOptionValue(IS_RUNNING_ON_OPTION),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
-    if (cli.hasOption("S")) {
-      ret += assertSolrNotRunning(cli.getOptionValue("S"));
+    if (cli.hasOption(IS_NOT_RUNNING_ON_OPTION)) {
+      ret +=
+          assertSolrNotRunning(
+              cli.getOptionValue(IS_NOT_RUNNING_ON_OPTION),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
-    if (cli.hasOption("c")) {
-      ret += assertSolrRunningInCloudMode(cli.getOptionValue("c"));
+    if (cli.hasOption(IS_CLOUD_OPTION)) {
+      ret +=
+          assertSolrRunningInCloudMode(
+              CLIUtils.normalizeSolrUrl(cli.getOptionValue(IS_CLOUD_OPTION)),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
-    if (cli.hasOption("C")) {
-      ret += assertSolrNotRunningInCloudMode(cli.getOptionValue("C"));
+    if (cli.hasOption(IS_NOT_CLOUD_OPTION)) {
+      ret +=
+          assertSolrNotRunningInCloudMode(
+              CLIUtils.normalizeSolrUrl(cli.getOptionValue(IS_NOT_CLOUD_OPTION)),
+              cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     }
     return ret;
   }
 
-  public static int assertSolrRunning(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrRunning(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
-      status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
+      status.waitToSeeSolrUp(url, credentials, timeoutMs, TimeUnit.MILLISECONDS);
     } catch (Exception se) {
-      if (SolrCLI.exceptionIsAuthRelated(se)) {
+      if (CLIUtils.exceptionIsAuthRelated(se)) {
         throw se;
       }
       return exitOrException(
@@ -234,23 +275,21 @@ public class AssertTool extends ToolBase {
     return 0;
   }
 
-  public static int assertSolrNotRunning(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  public int assertSolrNotRunning(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     long timeout =
         System.nanoTime() + TimeUnit.NANOSECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS);
-    try (SolrClient solrClient = SolrCLI.getSolrClient(url)) {
+    try (SolrClient solrClient = CLIUtils.getSolrClient(url, credentials)) {
       NamedList<Object> response = solrClient.request(new HealthCheckRequest());
-      Integer statusCode = (Integer) response.findRecursive("responseHeader", "status");
-      SolrCLI.checkCodeForAuthError(statusCode);
-    } catch (SolrException se) {
-      throw se;
+      Integer statusCode = (Integer) response._get(List.of("responseHeader", "status"), null);
+      CLIUtils.checkCodeForAuthError(statusCode);
     } catch (IOException | SolrServerException e) {
       log.debug("Opening connection to {} failed, Solr does not seem to be running", url, e);
       return 0;
     }
     while (System.nanoTime() < timeout) {
       try {
-        status.waitToSeeSolrUp(url, 1, TimeUnit.SECONDS);
+        status.waitToSeeSolrUp(url, credentials, 1, TimeUnit.SECONDS);
         try {
           log.debug("Solr still up. Waiting before trying again to see if it was stopped");
           Thread.sleep(1000L);
@@ -258,7 +297,7 @@ public class AssertTool extends ToolBase {
           timeout = 0; // stop looping
         }
       } catch (Exception se) {
-        if (SolrCLI.exceptionIsAuthRelated(se)) {
+        if (CLIUtils.exceptionIsAuthRelated(se)) {
           throw se;
         }
         return exitOrException(se.getMessage());
@@ -272,8 +311,8 @@ public class AssertTool extends ToolBase {
             + " seconds");
   }
 
-  public static int assertSolrRunningInCloudMode(String url) throws Exception {
-    if (!isSolrRunningOn(url)) {
+  public int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
+    if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
               + url
@@ -282,14 +321,14 @@ public class AssertTool extends ToolBase {
               + " seconds");
     }
 
-    if (!runningSolrIsCloud(url)) {
+    if (!runningSolrIsCloud(url, credentials)) {
       return exitOrException("Solr is not running in cloud mode on " + url);
     }
     return 0;
   }
 
-  public static int assertSolrNotRunningInCloudMode(String url) throws Exception {
-    if (!isSolrRunningOn(url)) {
+  public int assertSolrNotRunningInCloudMode(String url, String credentials) throws Exception {
+    if (!isSolrRunningOn(url, credentials)) {
       return exitOrException(
           "Solr is not running on url "
               + url
@@ -298,15 +337,15 @@ public class AssertTool extends ToolBase {
               + " seconds");
     }
 
-    if (runningSolrIsCloud(url)) {
+    if (runningSolrIsCloud(url, credentials)) {
       return exitOrException("Solr is not running in standalone mode on " + url);
     }
     return 0;
   }
 
   public static int sameUser(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
-      String userForDir = userForDir(Paths.get(directory));
+    if (Files.exists(Path.of(directory))) {
+      String userForDir = userForDir(Path.of(directory));
       if (!currentUser().equals(userForDir)) {
         return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
       }
@@ -317,14 +356,14 @@ public class AssertTool extends ToolBase {
   }
 
   public static int assertFileExists(String directory) throws Exception {
-    if (!Files.exists(Paths.get(directory))) {
+    if (!Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " does not exist.");
     }
     return 0;
   }
 
   public static int assertFileNotExists(String directory) throws Exception {
-    if (Files.exists(Paths.get(directory))) {
+    if (Files.exists(Path.of(directory))) {
       return exitOrException("Directory " + directory + " should not exist.");
     }
     return 0;
@@ -358,38 +397,36 @@ public class AssertTool extends ToolBase {
     }
   }
 
-  private static int exitOrException(String msg) throws SolrCLI.AssertionFailureException {
+  private static int exitOrException(String msg) throws AssertionFailureException {
     if (useExitCode) {
       return 1;
     } else {
-      throw new SolrCLI.AssertionFailureException(message != null ? message : msg);
+      throw new AssertionFailureException(message != null ? message : msg);
     }
   }
 
-  private static boolean isSolrRunningOn(String url) throws Exception {
-    StatusTool status = new StatusTool();
+  private boolean isSolrRunningOn(String url, String credentials) throws Exception {
+    StatusTool status = new StatusTool(runtime);
     try {
-      status.waitToSeeSolrUp(url, timeoutMs, TimeUnit.MILLISECONDS);
+      status.waitToSeeSolrUp(url, credentials, timeoutMs, TimeUnit.MILLISECONDS);
       return true;
     } catch (Exception se) {
-      if (SolrCLI.exceptionIsAuthRelated(se)) {
+      if (CLIUtils.exceptionIsAuthRelated(se)) {
         throw se;
       }
       return false;
     }
   }
 
-  private static boolean runningSolrIsCloud(String url) throws Exception {
-    try (final SolrClient client = new Http2SolrClient.Builder(url).build()) {
-      final SolrRequest<CollectionAdminResponse> request =
-          new CollectionAdminRequest.ClusterStatus();
-      final CollectionAdminResponse response = request.process(client);
-      return true; // throws an exception otherwise
-    } catch (Exception e) {
-      if (SolrCLI.exceptionIsAuthRelated(e)) {
-        throw e;
-      }
-      return false;
+  private static boolean runningSolrIsCloud(String url, String credentials) throws Exception {
+    try (final SolrClient client = CLIUtils.getSolrClient(url, credentials)) {
+      return CLIUtils.isCloudMode(client);
+    }
+  }
+
+  public static class AssertionFailureException extends Exception {
+    public AssertionFailureException(String message) {
+      super(message);
     }
   }
 }

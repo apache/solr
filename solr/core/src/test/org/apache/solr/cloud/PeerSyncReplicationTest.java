@@ -20,19 +20,16 @@ package org.apache.solr.cloud;
 import static java.util.Collections.singletonList;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -43,11 +40,10 @@ import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,7 +130,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // node failure and recovery via PeerSync
       log.info("Forcing PeerSync");
-      CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(false);
+      CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(true);
 
       // add a few more docs
       indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
@@ -154,11 +150,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
       log.info("Updating mappings from zk");
-      waitForNewLeader(
-          cloudClient,
-          "shard1",
-          (Replica) initialLeaderJetty.client.info,
-          new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME));
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       updateMappingsFromZk(jettys, clients, true);
       assertEquals(
           "PeerSynced node did not become leader",
@@ -185,26 +177,43 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
       // assert metrics
       SolrMetricManager manager = nodePeerSynced.jetty.getCoreContainer().getMetricManager();
-      MetricRegistry registry = null;
+      MeterProvider registry = null;
       for (String name : manager.registryNames()) {
         if (name.startsWith("solr.core.collection1")) {
-          registry = manager.registry(name);
+          registry = manager.meterProvider(name);
           break;
         }
       }
       assertNotNull(registry);
-      Map<String, Metric> metrics = registry.getMetrics();
-      assertTrue(
-          "REPLICATION.peerSync.time present", metrics.containsKey("REPLICATION.peerSync.time"));
-      assertTrue(
-          "REPLICATION.peerSync.errors present",
-          metrics.containsKey("REPLICATION.peerSync.errors"));
-
-      Counter counter = (Counter) metrics.get("REPLICATION.peerSync.errors");
-      assertEquals(0L, counter.getCount());
+      CoreContainer cc = nodePeerSynced.jetty.getCoreContainer();
+      String coreName =
+          cc.getAllCoreNames().stream()
+              .filter(n -> n.contains(DEFAULT_TEST_COLLECTION_NAME))
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalStateException(
+                          "Couldn't find core for " + nodePeerSynced.coreNodeName));
+      try (SolrCore core = cc.getCore(coreName)) {
+        assertTrue(
+            SolrMetricTestUtils.getHistogramDatapoint(
+                    core,
+                    "solr_core_sync_with_leader_time_milliseconds",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "REPLICATION")
+                        .build())
+                .hasCount());
+        assertNull(
+            SolrMetricTestUtils.getCounterDatapoint(
+                core,
+                "solr_core_sync_with_leader_sync_errors",
+                SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                    .label("category", "REPLICATION")
+                    .build()));
+      }
       success = true;
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
   }
 
@@ -270,7 +279,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     nodesDown.addAll(replicasToShutDown);
   }
 
-  private CloudJettyRunner forceNodeFailureAndDoPeerSync(boolean disableFingerprint)
+  private CloudJettyRunner forceNodeFailureAndDoPeerSync(boolean enableFingerprint)
       throws Exception {
     // kill non leader - new leader could have all the docs or be missing one
     CloudJettyRunner leaderJetty = shardToLeaderJetty.get("shard1");
@@ -286,15 +295,16 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
     commit();
 
-    bringUpDeadNodeAndEnsureNoReplication(replicaToShutDown, disableFingerprint);
+    bringUpDeadNodeAndEnsureNoReplication(replicaToShutDown, enableFingerprint);
 
     return replicaToShutDown;
   }
 
   private void bringUpDeadNodeAndEnsureNoReplication(
-      CloudJettyRunner nodeToBringUp, boolean disableFingerprint) throws Exception {
+      CloudJettyRunner nodeToBringUp, boolean enableFingerprint) throws Exception {
     // disable fingerprint check if needed
-    System.setProperty("solr.disableFingerprint", String.valueOf(disableFingerprint));
+    System.setProperty(
+        "solr.index.replication.fingerprint.enabled", String.valueOf(enableFingerprint));
     // we wait a little while, so socket between leader -> replica will be timeout
     Thread.sleep(3000);
     IndexInBackGround iib = new IndexInBackGround(50, nodeToBringUp);
@@ -332,7 +342,7 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
             + "/data/replication.properties";
     assertTrue(
         "PeerSync failed. Had to fail back to replication",
-        Files.notExists(Paths.get(replicationProperties)));
+        Files.notExists(Path.of(replicationProperties)));
   }
 
   private void waitTillNodesActive() throws Exception {
@@ -375,8 +385,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
 
     UpdateRequest ureq = new UpdateRequest();
     ureq.add(doc);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    ureq.setParams(params);
     ureq.process(cloudClient);
   }
 

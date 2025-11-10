@@ -89,19 +89,17 @@ public class StreamingTest extends SolrCloudTestCase {
 
   private static String zkHost;
 
-  private static int numShards;
   private static int numWorkers;
   private static boolean useAlias;
 
   @BeforeClass
   public static void configureCluster() throws Exception {
-    numShards = random().nextInt(2) + 1; // 1 - 3
+    int numShards = random().nextInt(2) + 1; // 1 - 3
     numWorkers = numShards > 2 ? random().nextInt(numShards - 1) + 1 : numShards;
     configureCluster(numShards)
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
@@ -627,7 +625,6 @@ public class StreamingTest extends SolrCloudTestCase {
   }
 
   @Test
-  @Ignore
   public void testExceptionStream() throws Exception {
 
     helloDocsUpdateRequest.commit(cluster.getSolrClient(), COLLECTIONORALIAS);
@@ -635,8 +632,8 @@ public class StreamingTest extends SolrCloudTestCase {
     StreamContext streamContext = new StreamContext();
     SolrClientCache solrClientCache = new SolrClientCache();
     streamContext.setSolrClientCache(solrClientCache);
-    // Test an error that comes originates from the /select handler
     try {
+      // Test an error that originates from the /select handler
       SolrParams sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc");
       CloudSolrStream stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       ExceptionStream estream = new ExceptionStream(stream);
@@ -646,16 +643,45 @@ public class StreamingTest extends SolrCloudTestCase {
       assertTrue(t.EXCEPTION);
       assertTrue(t.getException().contains("sort param field can't be found: blah"));
 
-      // Test an error that comes originates from the /export handler
-      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,score", "sort", "a_s asc", "qt", "/export");
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "wt", "javabin");
       stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
       estream = new ExceptionStream(stream);
       estream.setStreamContext(streamContext);
       t = getTuple(estream);
       assertTrue(t.EOF);
       assertTrue(t.EXCEPTION);
-      // The /export handler will pass through a real exception.
-      assertTrue(t.getException().contains("undefined field:"));
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA = params("q", "*:*", "fl", "a_s,a_i,a_f,blah", "sort", "blah asc", "qt", "/export");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
+
+      // Test an error that originates from the /export handler
+      sParamsA =
+          params(
+              "q",
+              "*:*",
+              "fl",
+              "a_s,a_i,a_f,blah",
+              "sort",
+              "blah asc",
+              "qt",
+              "/export",
+              "wt",
+              "javabin");
+      stream = new CloudSolrStream(zkHost, COLLECTIONORALIAS, sParamsA);
+      estream = new ExceptionStream(stream);
+      estream.setStreamContext(streamContext);
+      t = getTuple(estream);
+      assertTrue(t.EOF);
+      assertTrue(t.EXCEPTION);
+      assertTrue(t.getException().contains("sort param field can't be found: blah"));
     } finally {
       solrClientCache.close();
     }
@@ -1321,7 +1347,7 @@ public class StreamingTest extends SolrCloudTestCase {
     }
   }
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] ascOrder =
       new String[] {
         "aaa1", "aaa2", "aaa3", "eee1",
@@ -1334,7 +1360,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "aaa8", "eee8", "iii8", "ooo8"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] descOrder =
       new String[] {
         "aaa8", "eee8", "iii8", "ooo8",
@@ -1347,7 +1373,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "iii3", "ooo1", "ooo2", "ooo3"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] ascOrderBool =
       new String[] {
         "aaa1", "aaa2", "aaa3", "eee1",
@@ -1360,7 +1386,7 @@ public class StreamingTest extends SolrCloudTestCase {
         "iii8", "ooo4", "ooo6", "ooo8"
       };
 
-  // Goes away after after LUCENE-7548
+  // Goes away after LUCENE-7548
   static final String[] descOrderBool =
       new String[] {
         "aaa4", "aaa6", "aaa8", "eee4",
@@ -1391,7 +1417,7 @@ public class StreamingTest extends SolrCloudTestCase {
         .add(id, "aaa3")
         .add(id, "ooo3")
 
-        // Docs with values in for all of the types we want to sort on.
+        // Docs with values for all the types we want to sort on.
 
         .add(docPairs(4, "iii"))
         .add(docPairs(4, "eee"))
@@ -2795,7 +2821,7 @@ public class StreamingTest extends SolrCloudTestCase {
     streamContext.setSolrClientCache(new SolrClientCache());
     streamContext.setRequestReplicaListTransformerGenerator(
         new RequestReplicaListTransformerGenerator(
-            ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null));
+            ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null, null));
 
     streamContext.setRequestParams(
         params(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));

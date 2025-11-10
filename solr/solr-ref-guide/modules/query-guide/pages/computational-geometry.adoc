@@ -37,7 +37,7 @@ An investigation of the border around the rat sightings can be done to better un
 
 ==== Scatter Plot
 
-Before visualizing the convex hull its often useful to visualize the 2D points as a scatter plot.
+Before visualizing the convex hull it's often useful to visualize the 2D points as a scatter plot.
 
 In this example the `random` function draws a sample of records from the NYC311 (complaints database) collection where the complaint description matches "rat sighting" and the zip code is 11238.
 The latitude and longitude fields are then vectorized and plotted as a scatter plot with longitude on x-axis and latitude on the y-axis.
@@ -59,7 +59,7 @@ The convex hull is set a variable called `hull`.
 Once the convex hull has been created the `getVertices` function can be used to
 retrieve the matrix of points in the scatter plot that comprise the convex border around the scatter plot.
 The `colAt` function can then be used to retrieve the latitude and longitude vectors from the matrix
-so they can visualized by the `zplot` function.
+so they can be visualized by the `zplot` function.
 In the example below the convex hull points are visualized as a scatter plot.
 
 image::math-expressions/hullplot.png[]
@@ -68,8 +68,8 @@ Notice that the 15 points in the scatter plot describe that latitude and longitu
 
 ==== Projecting and Clustering
 
-The once a convex hull as been calculated the `projectToBorder` can then be used to project points to the nearest point on the border.
-In the example below the `projectToBorder` function is used to project the original scatter scatter plot points to the nearest border.
+Once a convex hull has been calculated the `projectToBorder` can then be used to project points to the nearest point on the border.
+In the example below the `projectToBorder` function is used to project the original scatter plot points to the nearest border.
 
 The `projectToBorder` function returns a matrix of lat/lon points for the border projections.
 In the example the matrix of border points is then clustered into 7 clusters using kmeans clustering.

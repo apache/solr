@@ -107,6 +107,7 @@ public class MultipleAdditiveTreesModel extends LTRScoringModel {
    * etc.
    */
   private final HashMap<String, Integer> fname2index;
+
   /**
    * trees is part of the LTRScoringModel params map and therefore here it does not individually
    * influence the class hashCode, equals, etc.

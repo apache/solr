@@ -20,14 +20,15 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.COPY_FILES_STRATEGY;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
-/** Unit tests for {@link CreateCollectionBackupAPI} */
+/** Unit tests for {@link CreateCollectionBackup} */
 public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
   @Test
   public void testCreateRemoteMessageWithAllProperties() {
-    final var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+    final var requestBody = new CreateCollectionBackupRequestBody();
     requestBody.location = "/some/location";
     requestBody.repository = "someRepoName";
     requestBody.followAliases = true;
@@ -38,7 +39,7 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     requestBody.async = "someId";
 
     var message =
-        CreateCollectionBackupAPI.createRemoteMessage(
+        CreateCollectionBackup.createRemoteMessage(
             "someCollectionName", "someBackupName", requestBody);
     var messageProps = message.getProperties();
 
@@ -58,11 +59,11 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreateRemoteMessageOmitsNullValues() {
-    final var requestBody = new CreateCollectionBackupAPI.CreateCollectionBackupRequestBody();
+    final var requestBody = new CreateCollectionBackupRequestBody();
     requestBody.location = "/some/location";
 
     var message =
-        CreateCollectionBackupAPI.createRemoteMessage(
+        CreateCollectionBackup.createRemoteMessage(
             "someCollectionName", "someBackupName", requestBody);
     var messageProps = message.getProperties();
 
@@ -86,7 +87,7 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     params.set("maxNumBackupPoints", "123");
     params.set("async", "someId");
 
-    final var requestBody = CreateCollectionBackupAPI.createRequestBodyFromV1Params(params);
+    final var requestBody = CreateCollectionBackup.createRequestBodyFromV1Params(params);
 
     assertEquals("/some/location", requestBody.location);
     assertEquals("someRepoName", requestBody.repository);

@@ -16,8 +16,8 @@
  */
 package org.apache.solr.handler.sql;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
@@ -32,24 +32,23 @@ import org.junit.Test;
 
 public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
 
-  private static File createSolrHome() throws Exception {
-    File workDir = createTempDir().toFile();
+  private static Path createSolrHome() throws Exception {
+    Path workDir = createTempDir();
     setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
     return workDir;
   }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    File solrHome = createSolrHome();
-    solrHome.deleteOnExit();
-    createAndStartJetty(solrHome.getAbsolutePath());
+    Path solrHome = createSolrHome();
+    createAndStartJetty(solrHome);
   }
 
   @Test
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
-    String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
+    String url = getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
     IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));

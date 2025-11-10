@@ -17,8 +17,9 @@
 package org.apache.solr.cloud;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,12 +43,15 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -67,12 +71,11 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -759,7 +762,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.addFacetField(tsort);
     query.setFacetMissing(false);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     List<FacetField> ffs = resp.getFacetFields();
     for (FacetField ff : ffs) {
       if (ff.getName().equals(tsort) == false) continue;
@@ -792,7 +795,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     query.addField("*");
     query.addField("eoe_sortable");
     query.addField(tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
 
     SolrDocumentList docs = resp.getResults();
 
@@ -809,7 +812,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     SolrQuery query = new SolrQuery("*:*");
     query.add("group", "true");
     query.add("group.field", tsort);
-    QueryResponse resp = queryServer(query);
+    QueryResponse resp = queryRandomShard(query);
     GroupResponse groupResp = resp.getGroupResponse();
     List<GroupCommand> grpCmds = groupResp.getValues();
     for (GroupCommand grpCmd : grpCmds) {
@@ -911,7 +914,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     for (Slice slice : dColl.getActiveSlices()) {
       long sliceDocCount = -1;
       for (Replica rep : slice.getReplicas()) {
-        try (SolrClient one = getHttpSolrClient(rep.getCoreUrl())) {
+        try (SolrClient one = getHttpSolrClient(rep)) {
           SolrQuery query = new SolrQuery("*:*");
           query.setDistrib(false);
           QueryResponse resp = one.query(query);
@@ -1116,16 +1119,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     }
   }
 
-  protected String getBaseUrl(SolrClient client) {
-    String url2 =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
-    return url2;
-  }
-
   @Override
   protected CollectionAdminResponse createCollection(
       Map<String, List<Integer>> collectionInfos,
@@ -1159,14 +1152,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl =
-          ((HttpSolrClient) clients.get(clientIndex))
-              .getBaseURL()
-              .substring(
-                  0,
-                  ((HttpSolrClient) clients.get(clientIndex)).getBaseURL().length()
-                      - DEFAULT_COLLECTION.length()
-                      - 1);
+      final String baseUrl = ((HttpSolrClient) clients.get(clientIndex)).getBaseURL();
 
       try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(aClient.request(request));
@@ -1178,13 +1164,13 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected ZkCoreNodeProps getLeaderUrlFromZk(String collection, String slice) {
+  protected Replica getLeaderFromZk(String collection, String slice) {
     ClusterState clusterState = getCommonCloudSolrClient().getClusterState();
-    ZkNodeProps leader = clusterState.getCollection(collection).getLeader(slice);
+    Replica leader = clusterState.getCollection(collection).getLeader(slice);
     if (leader == null) {
       throw new RuntimeException("Could not find leader:" + collection + " " + slice);
     }
-    return new ZkCoreNodeProps(leader);
+    return leader;
   }
 
   /**
@@ -1219,7 +1205,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     // query for each doc, and check both fields to ensure the value is correct
     for (int i = 1; i < numLoops; i++) {
       final String query = id + ":" + i;
-      QueryResponse qres = queryServer(new SolrQuery(query));
+      QueryResponse qres = queryRandomShard(new SolrQuery(query));
       assertEquals(chain + ": query failed: " + query, 0, qres.getStatus());
       assertEquals(
           chain + ": didn't find correct # docs with query: " + query,
@@ -1283,43 +1269,45 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .get(0)
             .request(
                 new StreamingUpdateRequest(
-                        "/update", getFile("books_numeric_ids.csv").toPath(), "application/csv")
+                        "/update", getFile("books_numeric_ids.csv"), "application/csv")
                     .setCommitWithin(900000)
                     .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 
     long endCommits = getNumCommits((HttpSolrClient) clients.get(0));
-
     assertEquals(startCommits + 1L, endCommits);
   }
 
   private Long getNumCommits(HttpSolrClient sourceClient) throws SolrServerException, IOException {
-    // construct the /admin/metrics URL
-    URL url = new URL(sourceClient.getBaseURL());
-    String path = url.getPath().substring(1);
-    String[] elements = path.split("/");
-    String collection = elements[elements.length - 1];
-    String urlString = url.toString();
-    urlString = urlString.substring(0, urlString.length() - collection.length() - 1);
+    String collection = sourceClient.getDefaultCollection();
     try (SolrClient client =
-        new HttpSolrClient.Builder(urlString)
+        new HttpSolrClient.Builder(sourceClient.getBaseURL())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      // params.set("qt", "/admin/metrics?prefix=UPDATE.updateHandler&registry=solr.core." +
-      // collection);
-      params.set("qt", "/admin/metrics");
-      params.set("prefix", "UPDATE.updateHandler");
-      params.set("registry", "solr.core." + collection);
-      // use generic request to avoid extra processing of queries
-      QueryRequest req = new QueryRequest(params);
+      var req =
+          new GenericSolrRequest(
+              SolrRequest.METHOD.GET,
+              "/admin/metrics",
+              SolrRequest.SolrRequestType.ADMIN,
+              SolrParams.of("wt", "prometheus"));
+      req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
       NamedList<Object> resp = client.request(req);
-      NamedList<?> metrics = (NamedList<?>) resp.get("metrics");
-      NamedList<?> uhandlerCat = (NamedList<?>) metrics.getVal(0);
-      @SuppressWarnings({"unchecked"})
-      Map<String, Object> commits =
-          (Map<String, Object>) uhandlerCat.get("UPDATE.updateHandler.commits");
-      return (Long) commits.get("count");
+      try (InputStream in = (InputStream) resp.get("stream")) {
+        String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        String metricName = "solr_core_update_commit_ops";
+
+        return (long)
+            output
+                .lines()
+                .filter(
+                    l ->
+                        l.startsWith(metricName)
+                            && l.contains("collection=\"" + collection + "\"")
+                            && l.contains("ops=\"commits\""))
+                .mapToDouble(s -> Double.parseDouble(s.substring(s.lastIndexOf(" "))))
+                .sum();
+      }
     }
   }
 
@@ -1393,12 +1381,11 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
         zkStateReader.getClusterState().getCollection(oneInstanceCollection2).getSlicesMap();
     assertNotNull(slices);
 
-    ZkCoreNodeProps props =
-        new ZkCoreNodeProps(
-            getCommonCloudSolrClient()
-                .getClusterState()
-                .getCollection(oneInstanceCollection2)
-                .getLeader("shard1"));
+    Replica leader =
+        getCommonCloudSolrClient()
+            .getClusterState()
+            .getCollection(oneInstanceCollection2)
+            .getLeader("shard1");
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
@@ -1407,9 +1394,9 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
       Unload unloadCmd = new Unload(true);
-      unloadCmd.setCoreName(props.getCoreName());
+      unloadCmd.setCoreName(leader.getCoreName());
 
-      String leader = props.getCoreUrl();
+      String leaderUrl = leader.getCoreUrl();
 
       testExecutor.execute(
           new Runnable() {
@@ -1434,7 +1421,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
                 TimeUnit.MILLISECONDS,
                 (n, c) -> {
                   try {
-                    if (leader.equals(
+                    if (leaderUrl.equals(
                         zkStateReader.getLeaderUrl(oneInstanceCollection2, "shard1", 10000))) {
                       return false;
                     }
@@ -1454,12 +1441,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   private void testSearchByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testSearchByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1473,12 +1455,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testUpdateByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl =
-        ((HttpSolrClient) client)
-            .getBaseURL()
-            .substring(
-                0,
-                ((HttpSolrClient) client).getBaseURL().length() - DEFAULT_COLLECTION.length() - 1);
+    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1535,11 +1512,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
     IOUtils.close(collectionClients);
   }
 
-  private void createCollection(
-      String collection, List<SolrClient> collectionClients, String baseUrl, int num) {
-    createSolrCore(collection, collectionClients, baseUrl, num, null);
-  }
-
   private void createSolrCore(
       final String collection,
       List<SolrClient> collectionClients,
@@ -1551,7 +1523,6 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
           try (SolrClient client = getHttpSolrClient(baseUrl)) {
             // client.setConnectionTimeout(15000);
             Create createCmd = new Create();
-            createCmd.setRoles("none");
             createCmd.setCoreName(collection + num);
             createCmd.setCollection(collection);
 
@@ -1563,7 +1534,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
             if (shardId == null) {
               createCmd.setNumShards(2);
             }
-            createCmd.setDataDir(getDataDir(createTempDir(collection).toFile().getAbsolutePath()));
+            createCmd.setDataDir(getDataDir(createTempDir(collection).toString()));
             if (shardId != null) {
               createCmd.setShardId(shardId);
             }
@@ -1713,16 +1684,25 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   @Override
   protected SolrClient createNewSolrClient(String collection, String baseUrl) {
 
-    SolrClient client = getHttpSolrClient(baseUrl + "/" + collection);
+    SolrClient client = getHttpSolrClient(baseUrl, collection);
 
     return client;
   }
 
+  /**
+   * @param collection the name of a collection or core to set as the "default" on the created
+   *     client.
+   * @param baseUrl the "base" URL of a Solr node. Should <em>not</em> contain a collection or core
+   *     name.
+   * @param connectionTimeoutMillis the HTTP connection timeout in milliseconds
+   * @param socketTimeoutMillis the HTTP socket-read timeout in milliseconds
+   */
   protected SolrClient createNewSolrClient(
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
 
     SolrClient client =
-        new HttpSolrClient.Builder(baseUrl + "/" + collection)
+        new HttpSolrClient.Builder(baseUrl)
+            .withDefaultCollection(collection)
             .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
             .build();
@@ -1731,10 +1711,10 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   }
 
   @Override
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
 
-    if (r.nextBoolean()) return super.queryServer(params);
+    if (r.nextBoolean()) return super.queryRandomShard(params);
 
     if (r.nextBoolean()) params.set("collection", DEFAULT_COLLECTION);
 

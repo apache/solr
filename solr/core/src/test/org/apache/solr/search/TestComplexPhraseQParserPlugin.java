@@ -351,6 +351,7 @@ public class TestComplexPhraseQParserPlugin extends SolrTestCaseJ4 {
         "//doc[./str[@name='id']='3']",
         "//doc[./str[@name='id']='4']");
   }
+
   /** the query "sulfur-reducing bacteria" was crashing due to the dash inside the phrase. */
   @Test
   public void testHyphenInPhrase() {

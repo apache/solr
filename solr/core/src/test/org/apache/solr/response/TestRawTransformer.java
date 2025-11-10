@@ -19,21 +19,23 @@ package org.apache.solr.response;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -59,7 +61,11 @@ public class TestRawTransformer extends SolrCloudTestCase {
     if (random().nextBoolean()) {
       initStandalone();
       JSR.start();
-      CLIENT = JSR.newClient();
+      if (random().nextBoolean()) {
+        CLIENT = JSR.newClient();
+      } else {
+        CLIENT = new EmbeddedSolrServer(JSR.getCoreContainer(), null);
+      }
     } else {
       initCloud();
       CLIENT = JSR.newClient();
@@ -74,7 +80,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
     final Path collDir = homeDir.resolve("collection1");
     final Path confDir = collDir.resolve("conf");
     Files.createDirectories(confDir);
-    Files.copy(Path.of(SolrTestCaseJ4.TEST_HOME(), "solr.xml"), homeDir.resolve("solr.xml"));
+    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
     Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
@@ -84,7 +90,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
           "stopwords.txt",
           "synonyms.txt",
           "protwords.txt",
-          "currency.xml"
+          "currency.xml",
+          "enumsConfig.xml"
         }) {
       Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
@@ -93,12 +100,12 @@ public class TestRawTransformer extends SolrCloudTestCase {
     nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, buildJettyConfig("/solr"));
+            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {
     final String configName = DEBUG_LABEL + "_config-set";
-    final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    final Path configDir = TEST_HOME().resolve("collection1").resolve("conf");
 
     final int numNodes = 3;
     MiniSolrCloudCluster cloud =
@@ -109,7 +116,6 @@ public class TestRawTransformer extends SolrCloudTestCase {
     collectionProperties.put("schema", "schema_latest.xml");
     CloudSolrClient cloudSolrClient = cloud.getSolrClient();
     CollectionAdminRequest.createCollection("collection1", configName, numNodes, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cloudSolrClient);
 
@@ -118,10 +124,14 @@ public class TestRawTransformer extends SolrCloudTestCase {
 
   @AfterClass
   public static void afterClass() throws Exception {
+    if (CLIENT != null) {
+      org.apache.solr.common.util.IOUtils.closeQuietly(CLIENT);
+      CLIENT = null;
+    }
     if (JSR != null) {
       JSR.stop();
+      JSR = null;
     }
-    // NOTE: CLOUD_CLIENT should be stopped automatically in `SolrCloudTestCase.shutdownCluster()`
   }
 
   @After
@@ -175,8 +185,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
                     new String[] {"xml"})));
-    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
-    String strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
+    NamedList<Object> rsp = CLIENT.request(req, "collection1");
+    String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
     assertTrue(
         "response does not contain raw XML encoding: " + strResponse,
         strResponse.contains(
@@ -198,8 +210,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author,content_type"},
                     "wt",
                     new String[] {"xml"})));
-    req.setResponseParser(XML_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
     assertTrue(
         "response does not contain escaped XML encoding: " + strResponse,
         strResponse.contains("<str name=\"author\">&lt;root&gt;&lt;child1"));
@@ -219,8 +233,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
     assertTrue(
         "unexpected serialization of XML field value in JSON response: " + strResponse,
         strResponse.contains("\"author\":\"<root><child1>some</child1>"));
@@ -242,8 +258,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"subject:[json],links:[json]"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    String strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    NamedList<Object> rsp = CLIENT.request(req, "collection1");
+    String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("\"subject\":{poffL:[{offL:[{oGUID:\"7"));
@@ -263,8 +281,10 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     new String[] {"id", "subject,links"},
                     "wt",
                     new String[] {"json"})));
-    req.setResponseParser(JSON_NOOP_RESPONSE_PARSER);
-    strResponse = (String) CLIENT.request(req, "collection1").get("response");
+    req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
+    rsp = CLIENT.request(req, "collection1");
+    strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
+
     assertTrue(
         "response does not contain right JSON encoding: " + strResponse,
         strResponse.contains("subject\":\""));
@@ -273,12 +293,8 @@ public class TestRawTransformer extends SolrCloudTestCase {
         strResponse.contains("\"links\":[\""));
   }
 
-  private static final NoOpResponseParser XML_NOOP_RESPONSE_PARSER = new NoOpResponseParser();
-  private static final NoOpResponseParser JSON_NOOP_RESPONSE_PARSER =
-      new NoOpResponseParser() {
-        @Override
-        public String getWriterType() {
-          return "json";
-        }
-      };
+  private static final InputStreamResponseParser XML_STREAM_RESPONSE_PARSER =
+      new InputStreamResponseParser("xml");
+  private static final InputStreamResponseParser JSON_STREAM_RESPONSE_PARSER =
+      new InputStreamResponseParser("json");
 }

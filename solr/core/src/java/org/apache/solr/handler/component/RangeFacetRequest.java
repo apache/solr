@@ -65,8 +65,10 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
 
   /** The computed start value of this range */
   protected final Object startObj;
+
   /** The computed end value of this range taking into account facet.range.hardend */
   protected final Object endObj;
+
   /** The computed gap between each range */
   protected final Object gapObj;
 
@@ -401,6 +403,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
         String name = otherKey.toString();
         Integer shardValue = (Integer) rangeFromShard.get(name);
         if (shardValue != null && shardValue > 0) {
+          // TODO: rangeFacet.merge(name, shardValue, (a, b) -> ((Integer)a) + ((Integer)b));
           Integer existingValue = (Integer) rangeFacet.get(name);
           // shouldn't be null
           int idx = rangeFacet.indexOf(name, 0);
@@ -803,7 +806,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
       if (!(this.field.getType() instanceof CurrencyFieldType)) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "Cannot perform range faceting over non CurrencyField fields");
+            "Cannot perform range faceting over non CurrencyFieldType fields");
       }
       defaultCurrencyCode = ((CurrencyFieldType) this.field.getType()).getDefaultCurrency();
       exchangeRateProvider = ((CurrencyFieldType) this.field.getType()).getProvider();

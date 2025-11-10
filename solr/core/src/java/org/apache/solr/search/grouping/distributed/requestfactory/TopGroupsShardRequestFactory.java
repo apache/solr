@@ -70,7 +70,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       }
     }
 
-    return createRequest(rb, uniqueShards.toArray(new String[uniqueShards.size()]));
+    return createRequest(rb, uniqueShards.toArray(new String[0]));
   }
 
   private ShardRequest[] createRequestForAllShards(ResponseBuilder rb) {
@@ -82,6 +82,22 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
     sreq.shards = shards;
     sreq.purpose = ShardRequest.PURPOSE_GET_TOP_IDS;
     sreq.params = new ModifiableSolrParams(rb.req.getParams());
+
+    // TODO: should eventually all components that send sub-requests be subject to similar
+    //  logic if we are running with timeAllowed?
+    int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);
+    if (origTimeAllowed > 0) {
+      int remainingTimeAllowed = origTimeAllowed - rb.firstPhaseElapsedTime;
+      // at least 1 ms to be useful
+      if (remainingTimeAllowed <= 1) {
+        // We've already used up our time budget
+        rb.rsp.setPartialResults(rb.req);
+        rb.rsp.addPartialResponseDetail(
+            getClass().getSimpleName() + ": timeAllowed exhausted in first phase");
+        return new ShardRequest[0];
+      }
+      sreq.params.set(CommonParams.TIME_ALLOWED, remainingTimeAllowed);
+    }
 
     // If group.format=simple group.offset doesn't make sense
     Grouping.Format responseFormat = rb.getGroupingSpec().getResponseFormat();
@@ -130,12 +146,6 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
       sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName() + ",score");
     } else {
       sreq.params.set(CommonParams.FL, schema.getUniqueKeyField().getName());
-    }
-
-    int origTimeAllowed = sreq.params.getInt(CommonParams.TIME_ALLOWED, -1);
-    if (origTimeAllowed > 0) {
-      sreq.params.set(
-          CommonParams.TIME_ALLOWED, Math.max(1, origTimeAllowed - rb.firstPhaseElapsedTime));
     }
 
     return new ShardRequest[] {sreq};

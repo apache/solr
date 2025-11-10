@@ -43,6 +43,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.APIConfigProviderBinder;
 import org.apache.solr.jersey.JerseyApplications;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
@@ -237,8 +239,7 @@ public class PluginBag<T> implements AutoCloseable {
     if (loadV2ApisIfPresent) {
       if (plugin.isLoaded()) {
         T inst = plugin.get();
-        if (inst instanceof ApiSupport) {
-          ApiSupport apiSupport = (ApiSupport) inst;
+        if (inst instanceof ApiSupport apiSupport) {
           if (registerApi == null) registerApi = apiSupport.registerV2();
           if (disableHandler == null) disableHandler = !apiSupport.registerV1();
 
@@ -264,9 +265,13 @@ public class PluginBag<T> implements AutoCloseable {
                 // See RequestMetricHandling javadocs for a better understanding of this
                 // resource->RH
                 // mapping
-                if (inst instanceof RequestHandlerBase) {
-                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) inst);
+                if (apiSupport instanceof RequestHandlerBase) {
+                  jaxrsResourceRegistry.put(jerseyClazz, (RequestHandlerBase) apiSupport);
                 }
+              }
+              if (apiSupport instanceof APIConfigProvider) {
+                jerseyResources.register(
+                    new APIConfigProviderBinder((APIConfigProvider<?>) apiSupport));
               }
             }
           }
@@ -360,8 +365,7 @@ public class PluginBag<T> implements AutoCloseable {
 
   private void registerMBean(Object inst, SolrCore core, String pluginKey) {
     if (core == null) return;
-    if (inst instanceof SolrInfoBean) {
-      SolrInfoBean mBean = (SolrInfoBean) inst;
+    if (inst instanceof SolrInfoBean mBean) {
       String name = (inst instanceof SolrRequestHandler) ? pluginKey : mBean.getName();
       core.registerInfoBean(name, mBean);
     }

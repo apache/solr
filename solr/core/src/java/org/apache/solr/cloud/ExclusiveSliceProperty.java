@@ -151,6 +151,12 @@ class ExclusiveSliceProperty {
           }
           continue;
         }
+        // omit replicas that cannot potentially be leader from preferredLeader
+        // candidates
+        if (SliceMutator.PREFERRED_LEADER_PROP.equals(property)
+            && !replica.getType().leaderEligible) {
+          continue;
+        }
         allHosts.add(replica.getNodeName());
         String nodeName = replica.getNodeName();
         if (StrUtils.isNotBlank(replica.getStr(property))) {
@@ -349,6 +355,7 @@ class ExclusiveSliceProperty {
     }
     return replica;
   }
+
   // Main entry point for carrying out the action. Returns "true" if we have actually moved
   // properties around.
 

@@ -55,7 +55,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
       threads[i].join();
     }
 
-    // some of the commits could have failed because maxWarmingSearchers exceeded,
+    // some commits could have failed because maxWarmingSearchers exceeded,
     // so do a final commit to make sure everything is visible.
     // This should no longer be true as of SOLR-9712 (Solr 6.4)
     // client.commit();

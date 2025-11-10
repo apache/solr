@@ -23,7 +23,7 @@ This allows for local images to be completely compatible with the official Solr 
 
 In order to build/test/tag your Docker images using local Solr source code, please refer to `./gradlew helpDocker` in a git checkout or a source-release download.
 
-Please refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr-in-docker.html) for information on using the Solr Docker image.
+Please refer to the [Solr Reference Guide](https://solr.apache.org/guide/solr/latest/deployment-guide/solr-in-docker.html) for information on using the Solr Docker image.
 
 Building from the Solr Binary Distribution
 ----
@@ -47,7 +47,7 @@ When building the image, Solr accepts arguments for customization. Currently onl
 - `BASE_IMAGE`: Change the base java image for Solr. This can be used to change java versions, jvms, etc.
 
 ```bash
-docker build --build-arg BASE_IMAGE=custom/jdk:17-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
+docker build --build-arg BASE_IMAGE=custom/jdk:21-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
 ```
 
 Official Image Management

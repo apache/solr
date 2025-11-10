@@ -31,9 +31,6 @@ public interface CollectionAdminParams {
 
   String ROLE = "role";
 
-  /** Predefined system collection name. */
-  String SYSTEM_COLL = ".system";
-
   /**
    * A parameter to specify list of Solr nodes to be used (e.g. for collection creation or restore
    * operation).
@@ -48,6 +45,8 @@ public interface CollectionAdminParams {
   String TLOG_REPLICAS = "tlogReplicas";
 
   String REPLICATION_FACTOR = "replicationFactor";
+
+  String REPLICA_TYPE = "type";
 
   /**
    * A parameter which specifies if the provided list of Solr nodes (via {@linkplain
@@ -107,6 +106,7 @@ public interface CollectionAdminParams {
 
   /** Option to follow aliases when deciding the target of a collection admin command. */
   String FOLLOW_ALIASES = "followAliases";
+
   /**
    * When AddReplica is called with this set to true, then we do not try to find node assignments
    * for the add replica API. If set to true, a valid "node" should be specified.

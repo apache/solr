@@ -17,7 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.RANDOM;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -28,7 +27,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.DE
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,7 +38,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -63,6 +60,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.PlainIdRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ReplicaCount;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -72,6 +70,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -94,7 +93,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
   public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
-      "solr.shardSplit.checkDiskSpace.enabled";
+      "solr.cloud.shardsplit.checkdiskspace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -195,8 +194,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      // check disk space for shard split
-      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      // check disk space before shard split
+      if (EnvUtils.getPropertyAsBool(SHARDSPLIT_CHECKDISKSPACE_ENABLED, true)) {
         // 1. verify that there is enough space on disk to create sub-shards
         log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
@@ -228,44 +227,24 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     List<String> subShardNames = new ArrayList<>();
 
     // reproduce the currently existing number of replicas per type
-    AtomicInteger numNrt = new AtomicInteger();
-    AtomicInteger numTlog = new AtomicInteger();
-    AtomicInteger numPull = new AtomicInteger();
-    parentSlice
-        .getReplicas()
-        .forEach(
-            r -> {
-              switch (r.getType()) {
-                case NRT:
-                  numNrt.incrementAndGet();
-                  break;
-                case TLOG:
-                  numTlog.incrementAndGet();
-                  break;
-                case PULL:
-                  numPull.incrementAndGet();
-              }
-            });
-    int repFactor = numNrt.get() + numTlog.get() + numPull.get();
+    ReplicaCount numReplicas = ReplicaCount.empty();
+    parentSlice.getReplicas().forEach(r -> numReplicas.increment(r.getType()));
+    int repFactor = numReplicas.total();
 
     boolean success = false;
     try {
       // type of the first subreplica will be the same as leader
-      boolean firstNrtReplica = parentShardLeader.getType() == Replica.Type.NRT;
+      Replica.Type leaderReplicaType = parentShardLeader.getType();
       // verify that we indeed have the right number of correct replica types
-      if ((firstNrtReplica && numNrt.get() < 1) || (!firstNrtReplica && numTlog.get() < 1)) {
+      if (numReplicas.get(leaderReplicaType) < 1) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "aborting split - inconsistent replica types in collection "
                 + collectionName
-                + ": nrt="
-                + numNrt.get()
-                + ", tlog="
-                + numTlog.get()
-                + ", pull="
-                + numPull.get()
+                + ": "
+                + numReplicas
                 + ", shard leader type is "
-                + parentShardLeader.getType());
+                + leaderReplicaType);
       }
 
       // check for the lock
@@ -340,7 +319,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               subRanges,
               subSlices,
               subShardNames,
-              firstNrtReplica);
+              leaderReplicaType);
       t.stop();
 
       // 3. if this shard has attempted a split before and failed, there will be lingering INACTIVE
@@ -431,9 +410,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
         propMap.put(COLLECTION_PROP, collectionName);
         propMap.put(SHARD_ID_PROP, subSlice);
-        propMap.put(
-            REPLICA_TYPE,
-            firstNrtReplica ? Replica.Type.NRT.toString() : Replica.Type.TLOG.toString());
+        propMap.put(REPLICA_TYPE, leaderReplicaType.toString());
         propMap.put("node", nodeName);
         propMap.put(CoreAdminParams.NAME, subShardName);
         propMap.put(CommonAdminParams.WAIT_FOR_FINAL_STATE, Boolean.toString(waitForFinalState));
@@ -565,25 +542,19 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
       // we have already created one subReplica for each subShard on the parent node.
       // identify locations for the remaining replicas
-      if (firstNrtReplica) {
-        numNrt.decrementAndGet();
-      } else {
-        numTlog.decrementAndGet();
-      }
+      numReplicas.decrement(leaderReplicaType);
 
       t = timings.sub("identifyNodesForReplicas");
       Assign.AssignRequest assignRequest =
           new Assign.AssignRequestBuilder()
               .forCollection(collectionName)
               .forShard(subSlices)
-              .assignNrtReplicas(numNrt.get())
-              .assignTlogReplicas(numTlog.get())
-              .assignPullReplicas(numPull.get())
+              .assignReplicas(numReplicas)
               .onNodes(
                   Assign.getLiveOrLiveAndCreateNodeSetList(
                       clusterState.getLiveNodes(),
                       message,
-                      RANDOM,
+                      Utils.RANDOM,
                       ccc.getSolrCloudManager().getDistribStateManager()))
               .build();
       Assign.AssignStrategy assignStrategy = Assign.createAssignStrategy(ccc.getCoreContainer());
@@ -746,7 +717,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         // state switch as per SOLR-13945 so that sub shards don't come up empty, momentarily, after
         // being marked active)
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
@@ -826,7 +801,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       // when the sub-shard replicas come up
       if (repFactor > 1) {
         t = timings.sub("finalCommit");
-        CollectionHandlingUtils.commit(results, slice.get(), parentShardLeader);
+        CollectionHandlingUtils.commit(
+            ccc.getCoreContainer().getUpdateShardHandler().getUpdateOnlyHttpClient(),
+            results,
+            slice.get(),
+            parentShardLeader);
         t.stop();
       }
 
@@ -873,8 +852,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       Replica parentShardLeader,
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
-      throws SolrException, IOException {
-
+      throws Exception {
+    if (true) {
+      log.warn("checkDiskSpace disabled SOLR-17458 SOLR-17955");
+      return;
+    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
@@ -888,17 +870,19 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
     SolrResponse rsp =
-        cloudManager.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/metrics", params));
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
+            .process(cloudManager.getSolrClient());
 
-    Number size = (Number) rsp.getResponse().findRecursive("metrics", indexSizeMetricName);
+    Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
     if (size == null) {
       log.warn("cannot verify information for parent shard leader");
       return;
     }
     double indexSize = size.doubleValue();
 
-    Number freeSize = (Number) rsp.getResponse().findRecursive("metrics", freeDiskSpaceMetricName);
+    Number freeSize =
+        (Number) rsp.getResponse()._get(List.of("metrics", freeDiskSpaceMetricName), null);
     if (freeSize == null) {
       log.warn("missing node disk space information for parent shard leader");
       return;
@@ -1089,7 +1073,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       List<DocRouter.Range> subRanges,
       List<String> subSlices,
       List<String> subShardNames,
-      boolean firstReplicaNrt) {
+      Replica.Type replicaType) {
     String splitKey = message.getStr("split.key");
     String rangesStr = message.getStr(CoreAdminParams.RANGES);
     String fuzzStr = message.getStr(CommonAdminParams.SPLIT_FUZZ, "0");
@@ -1155,8 +1139,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         }
       }
     } else if (splitKey != null) {
-      if (router instanceof CompositeIdRouter) {
-        CompositeIdRouter compositeIdRouter = (CompositeIdRouter) router;
+      if (router instanceof CompositeIdRouter compositeIdRouter) {
         List<DocRouter.Range> tmpSubRanges = compositeIdRouter.partitionRangeByKey(splitKey, range);
         if (tmpSubRanges.size() == 1) {
           throw new SolrException(
@@ -1211,10 +1194,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       subSlices.add(subSlice);
       String subShardName =
           Assign.buildSolrCoreName(
-              cloudManager.getDistribStateManager(),
-              collection,
-              subSlice,
-              firstReplicaNrt ? Replica.Type.NRT : Replica.Type.TLOG);
+              cloudManager.getDistribStateManager(), collection, subSlice, replicaType);
       subShardNames.add(subShardName);
     }
     return rangesStr;

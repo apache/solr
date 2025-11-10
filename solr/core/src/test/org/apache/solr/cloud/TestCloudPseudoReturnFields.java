@@ -16,16 +16,21 @@
  */
 package org.apache.solr.cloud;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -56,16 +61,21 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   private static final String DEBUG_LABEL = MethodHandles.lookup().lookupClass().getName();
   private static final String COLLECTION_NAME = DEBUG_LABEL + "_collection";
 
+  // randomized for testing '[shards]' behavior...
+  private static int repFactor;
+
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // multi replicas should matter...
-    final int repFactor = usually() ? 1 : 2;
-    // ... but we definitely want to ensure forwarded requests to other shards work ...
+    // replication factor will impact wether we expect a list of urls from the '[shard]'
+    // augmenter...
+    repFactor = usually() ? 1 : 2;
+    // ... and we definitely want to ensure forwarded requests to other shards work ...
     final int numShards = 2;
     // ... including some forwarded requests from nodes not hosting a shard
     final int numNodes = 1 + (numShards * repFactor);
@@ -87,7 +97,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     waitForRecoveriesToFinish(COLLECTION_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
     }
 
     assertEquals(
@@ -698,9 +708,18 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
     for (SolrParams p :
         Arrays.asList(
-            params("q", "*:*", "fl", "[docid],[shard],[explain],x_alias:[value v=10 t=int]"),
             params(
-                "q", "*:*", "fl", "[docid],[shard]", "fl", "[explain],x_alias:[value v=10 t=int]"),
+                "q",
+                "*:*",
+                "fl",
+                "[docid],[shard],replica_urls:[shard style='urls'],shard_id:[shard style='id'],[explain],x_alias:[value v=10 t=int]"),
+            params(
+                "q",
+                "*:*",
+                "fl",
+                "[docid],[shard]",
+                "fl",
+                "replica_urls:[shard style='urls'],shard_id:[shard style='id'],[explain],x_alias:[value v=10 t=int]"),
             params(
                 "q",
                 "*:*",
@@ -708,6 +727,10 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
                 "[docid]",
                 "fl",
                 "[shard]",
+                "fl",
+                "replica_urls:[shard style='urls']",
+                "fl",
+                "shard_id:[shard style='id']",
                 "fl",
                 "[explain]",
                 "fl",
@@ -717,13 +740,71 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       // shouldn't matter what doc we pick...
       for (SolrDocument doc : docs) {
         String msg = p + " => " + doc;
-        assertEquals(msg, 4, doc.size());
+        assertEquals(msg, 6, doc.size());
         assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
-        assertTrue(msg, doc.getFieldValue("[shard]") instanceof String);
+
+        assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+
+        assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
+        assertThat(
+            doc.getFieldValue("replica_urls").toString(),
+            containsString(
+                "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
+        if (1 < repFactor) {
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
+        }
+
+        assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));
+
         assertTrue(msg, doc.getFieldValue("[explain]") instanceof String);
         assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
         assertEquals(msg, 10, doc.getFieldValue("x_alias"));
       }
+    }
+
+    // [shard] should still work with routing options
+    for (SolrParams p :
+        Arrays.asList(
+            params(
+                "q",
+                "*:*",
+                "_route_",
+                "blah!", // doesn't matter, just forcing a single shard
+                "fl",
+                "id,[shard],replica_urls:[shard style='urls'],shard_id:[shard style='id']"),
+            params(
+                "q",
+                "*:*",
+                "shards",
+                "shard1", // doesn't matter, just forcing a single shard
+                "fl",
+                "id,[shard],replica_urls:[shard style='urls'],shard_id:[shard style='id']"))) {
+      docs = assertSearch(p);
+      // Don't make assumptions about exact shard distribution, just assert we got at least one doc
+      assertTrue(
+          "Not enough docs in shard -- did routing rules change? => " + docs, 1 <= docs.size());
+      Set<Object> shardsSeen = new HashSet<>();
+      for (SolrDocument doc : docs) {
+        String msg = p + " => " + doc;
+
+        assertTrue(msg, doc.getFieldValue("shard_id") instanceof String);
+        assertThat(doc.getFieldValue("shard_id").toString(), startsWith("shard"));
+
+        assertTrue(msg, doc.getFieldValue("replica_urls") instanceof String);
+        assertThat(
+            doc.getFieldValue("replica_urls").toString(),
+            containsString(
+                "/solr/org.apache.solr.cloud.TestCloudPseudoReturnFields_collection_shard"));
+        if (1 < repFactor) {
+          assertThat(doc.getFieldValue("replica_urls").toString(), containsString("|"));
+        }
+
+        assertEquals(msg, doc.getFieldValue("shard_id"), doc.getFieldValue("[shard]"));
+
+        shardsSeen.add(doc.getFieldValue("shard_id"));
+      }
+      assertEquals("Only expected results from one shard => " + docs, 1, shardsSeen.size());
     }
   }
 
@@ -831,7 +912,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
   }
 
   public void testAugmentersAndScore() throws Exception {
-    SolrParams params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],score");
+    SolrParams params =
+        params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score");
     SolrDocumentList docs = assertSearch(params);
     assertEquals(params + " => " + docs, 5, docs.getNumFound());
     // shouldn't matter what doc we pick...
@@ -841,7 +923,8 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
       assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
       assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
       assertEquals(msg, 10, doc.getFieldValue("x_alias"));
-      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
     }
     for (SolrParams p :
         Arrays.asList(
@@ -879,6 +962,22 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
         assertTrue(msg, doc.getFieldValue("[explain]") instanceof String);
         assertTrue(msg, doc.getFieldValue("score") instanceof Float);
       }
+    }
+    params = params("q", "*:*", "fl", "[docid],x_alias:[value v=10 t=int],s_alias:score,score");
+    docs = assertSearch(params);
+    assertEquals(params + " => " + docs, 5, docs.getNumFound());
+    // shouldn't matter what doc we pick...
+    for (SolrDocument doc : docs) {
+      String msg = params + " => " + doc;
+      assertEquals(msg, 4, doc.size());
+      assertTrue(msg, doc.getFieldValue("[docid]") instanceof Integer);
+      assertTrue(msg, doc.getFieldValue("x_alias") instanceof Integer);
+      assertEquals(msg, 10, doc.getFieldValue("x_alias"));
+      assertTrue(msg, doc.getFieldValue("s_alias") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("s_alias") > 0);
+      assertTrue(msg, doc.getFieldValue("score") instanceof Float);
+      assertTrue(msg, (Float) doc.getFieldValue("score") > 0);
+      assertEquals(msg, doc.getFieldValue("score"), doc.getFieldValue("s_alias"));
     }
   }
 

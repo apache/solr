@@ -34,6 +34,7 @@ package org.apache.solr.schema;
 public abstract class CoordinateFieldType extends AbstractSubTypeFieldType {
   /** The dimension of the coordinate system */
   protected int dimension;
+
   /** 2 dimensional by default */
   public static final int DEFAULT_DIMENSION = 2;
 

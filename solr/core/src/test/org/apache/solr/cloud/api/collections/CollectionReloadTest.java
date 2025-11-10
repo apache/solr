@@ -25,25 +25,21 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.lucene.tests.util.LuceneTestCase.BadApple;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Verifies cluster state remains consistent after collection reload. */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-@BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-16784")
-@Ignore
 public class CollectionReloadTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -65,7 +61,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     Replica leader =
         cluster.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
 
-    long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+    long coreStartTime = getCoreStatus(leader).startTime.getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
 
     RetryUtil.retryUntil(
@@ -76,7 +72,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
         () -> {
           long restartTime;
           try {
-            restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
+            restartTime = getCoreStatus(leader).startTime.getTime();
           } catch (Exception e) {
             log.warn("Exception getting core start time: ", e);
             return false;
@@ -91,7 +87,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     waitForState(
         "Timed out waiting for core to re-register as ACTIVE after session expiry",
         testCollectionName,
-        (n, c) -> {
+        c -> {
           log.info("Collection state: {}", c);
           Replica expiredReplica = c.getReplica(leader.getName());
           return expiredReplica.getState() == Replica.State.ACTIVE
@@ -180,15 +176,14 @@ public class CollectionReloadTest extends SolrCloudTestCase {
       case 2:
         log.info("Creating collection with V2 API");
         // Sometimes use V2 API
-        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/collections";
         String requestBody =
             String.format(
                 Locale.ROOT,
-                "{create:{name:%s, config:%s, numShards:%s, maxShardsPerNode:%s, nrtReplicas:%s, tlogReplicas:%s, pullReplicas:%s}}",
+                "{\"name\":\"%s\", \"config\":\"%s\", \"numShards\":%s, \"nrtReplicas\":%s, \"tlogReplicas\":%s, \"pullReplicas\":%s}",
                 collectionName,
                 "conf",
                 numShards, // numShards
-                100, // maxShardsPerNode
                 nrtReplicas,
                 tlogReplicas,
                 pullReplicas);

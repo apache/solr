@@ -34,10 +34,12 @@ class FrontierQuery {
     this.query = query;
     this.frontierSize = frontierSize;
   }
+
   /** Return the query that represents the frontier at the current level. */
   public Query getQuery() {
     return query;
   }
+
   /** Return the number of edges in the frontier query. */
   public Integer getFrontierSize() {
     return frontierSize;

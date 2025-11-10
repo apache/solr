@@ -29,16 +29,6 @@
   <!-- Consult the javadoc of o.e.j.util.thread.QueuedThreadPool   -->
   <!-- for all configuration that may be set here.                 -->
   <!-- =========================================================== -->
-  <Arg name="threadpool">
-    <New id="threadpool" class="io.dropwizard.metrics.jetty10.InstrumentedQueuedThreadPool">
-      <Arg name="registry">
-        <Call id="solrJettyMetricRegistry" name="getOrCreate" class="com.codahale.metrics.SharedMetricRegistries">
-          <Arg>solr.jetty</Arg>
-        </Call>
-      </Arg>
-    </New>
-  </Arg>
-
   <Get name="ThreadPool">
     <Set name="minThreads" type="int"><Property name="solr.jetty.threads.min" default="10"/></Set>
     <Set name="maxThreads" type="int"><Property name="solr.jetty.threads.max" default="10000"/></Set>
@@ -47,6 +37,8 @@
     <Set name="detailedDump">false</Set>
   </Get>
 
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="removeHandlersForRootLogger"/>
+  <Call class="org.slf4j.bridge.SLF4JBridgeHandler" name="install"/>
 
   <!-- =========================================================== -->
   <!-- Http Configuration.                                         -->
@@ -74,6 +66,7 @@
     <Set name="sendDateHeader"><Property name="solr.jetty.send.date.header" default="false" /></Set>
     <Set name="headerCacheSize"><Property name="solr.jetty.header.cache.size" default="512" /></Set>
     <Set name="delayDispatchUntilContent"><Property name="solr.jetty.delayDispatchUntilContent" default="false"/></Set>
+    <Set name="relativeRedirectAllowed">true</Set><!-- can remove in Jetty 12, which has this default -->
     <!-- Uncomment to enable handling of X-Forwarded- style headers
     <Call name="addCustomizer">
       <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
@@ -85,8 +78,6 @@
     <!-- RewriteHandle to set headers, redirect root to Solr         -->
     <!-- =========================================================== -->
      <New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
-      <Set name="rewriteRequestURI">true</Set>
-      <Set name="rewritePathInfo">false</Set>
       <Set name="originalPathAttribute">requestedPath</Set>
 
       <!-- security-related headers -->
@@ -94,8 +85,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">Content-Security-Policy</Set>
-            <Set name="value">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
+            <Set name="headerName">Content-Security-Policy</Set>
+            <Set name="headerValue">default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; font-src 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; worker-src 'self';</Set>
           </New>
         </Arg>
       </Call>
@@ -103,8 +94,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-Content-Type-Options</Set>
-            <Set name="value">nosniff</Set>
+            <Set name="headerName">X-Content-Type-Options</Set>
+            <Set name="headerValue">nosniff</Set>
           </New>
         </Arg>
       </Call>
@@ -112,8 +103,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-Frame-Options</Set>
-            <Set name="value">SAMEORIGIN</Set>
+            <Set name="headerName">X-Frame-Options</Set>
+            <Set name="headerValue">SAMEORIGIN</Set>
           </New>
         </Arg>
       </Call>
@@ -121,8 +112,8 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">/solr/*</Set>
-            <Set name="name">X-XSS-Protection</Set>
-            <Set name="value">1; mode=block</Set>
+            <Set name="headerName">X-XSS-Protection</Set>
+            <Set name="headerValue">1; mode=block</Set>
           </New>
         </Arg>
       </Call>
@@ -153,7 +144,7 @@
          </Arg>
        </Call>
        <Set name="handler">
-         <New id="Handlers" class="org.eclipse.jetty.server.handler.HandlerCollection">
+         <New id="Handlers" class="org.eclipse.jetty.server.Handler$Sequence">
            <Set name="handlers">
              <Array type="org.eclipse.jetty.server.Handler">
                <Item>
@@ -174,14 +165,6 @@
                    </Call>
                    <Set name="handler">
                      <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
-                   </Set>
-                 </New>
-               </Item>
-               <Item>
-                 <New id="InstrumentedHandler" class="io.dropwizard.metrics.jetty10.InstrumentedHandler">
-                   <Arg><Ref refid="solrJettyMetricRegistry"/></Arg>
-                   <Set name="handler">
-                     <New id="DefaultHandler" class="org.eclipse.jetty.server.handler.DefaultHandler"/>
                    </Set>
                  </New>
                </Item>
@@ -211,22 +194,18 @@
           <Set name="contexts">
             <Ref refid="Contexts" />
           </Set>
-          <Call name="setContextAttribute">
-            <Arg>org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern</Arg>
-            <Arg>.*/servlet-api-[^/]*\.jar$</Arg>
-          </Call>
-
           <Call name="addAppProvider">
             <Arg>
-              <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
+              <New class="org.eclipse.jetty.deploy.providers.ContextProvider">
+                <Set name="EnvironmentName">core</Set>
                 <Set name="monitoredDirName"><Property name="jetty.base" default="."/>/contexts</Set>
                 <Set name="scanInterval">0</Set>
               </New>
             </Arg>
           </Call>
-          
+
           <!-- Add a customize step to the deployment lifecycle -->
-          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class 
+          <!-- uncomment and replace DebugBinding with your extended AppLifeCycle.Binding class
           <Call name="insertLifeCycleNode">
             <Arg>deployed</Arg>
             <Arg>starting</Arg>
@@ -240,9 +219,9 @@
             </Arg>
           </Call>
           -->
-          
+
         </New>
       </Arg>
     </Call>
-    
+
 </Configure>

@@ -91,7 +91,7 @@ However, if you are running your own ZooKeeper ensemble, you would supply your o
 
 == Files Screen
 
-The Files screen in the Admin UI lets you browse & view configuration files (such `solrconfig.xml` and the schema file) for the collection you selected.
+The Files screen in the Admin UI lets you browse & view configuration files (such as `solrconfig.xml` and the schema file) for the collection you selected.
 
 .The Files Screen
 image::configuration-files/files-screen.png[Files screen,height=400]

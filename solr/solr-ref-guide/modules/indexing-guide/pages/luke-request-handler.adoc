@@ -89,7 +89,7 @@ All of the examples in this section assume you are running the "techproducts" So
 
 [source,bash]
 ----
-bin/solr -e techproducts
+bin/solr start -e techproducts
 ----
 
 To return summary information about the index:

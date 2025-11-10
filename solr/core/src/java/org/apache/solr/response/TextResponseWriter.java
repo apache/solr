@@ -94,6 +94,7 @@ public abstract class TextResponseWriter implements TextWriter {
       this.rawReturnFields = returnFields;
     }
   }
+
   // only for test purposes
   TextResponseWriter(Writer writer, boolean indent) {
     this.writer = writer == null ? null : FastWriter.wrap(writer);
@@ -175,8 +176,7 @@ public abstract class TextResponseWriter implements TextWriter {
       return;
     }
 
-    if (val instanceof IndexableField) {
-      IndexableField f = (IndexableField) val;
+    if (val instanceof IndexableField f) {
       SchemaField sf = schema.getFieldOrNull(f.name());
       if (sf != null) {
         sf.getType().write(raw ? rawShim : this, name, f);
@@ -205,13 +205,13 @@ public abstract class TextResponseWriter implements TextWriter {
       // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
       writeSolrDocumentList(name, (SolrDocumentList) val, returnFields);
-    } else if (val instanceof BytesRef) {
-      BytesRef arr = (BytesRef) val;
+    } else if (val instanceof BytesRef arr) {
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
     } else {
       TextWriter.super.writeVal(name, val, raw);
     }
   }
+
   // names are passed when writing primitives like writeInt to allow many different
   // types of formats, including those where the name may come after the value (like
   // some XML formats).

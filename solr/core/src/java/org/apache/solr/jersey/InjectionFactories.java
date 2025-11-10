@@ -18,48 +18,40 @@
 package org.apache.solr.jersey;
 
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_CORE;
+import static org.apache.solr.jersey.RequestContextKeys.SOLR_PARAMS;
 
-import javax.inject.Inject;
-import javax.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.core.Context;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.IndexSchema;
 import org.glassfish.hk2.api.Factory;
+import org.glassfish.hk2.api.ServiceLocator;
 
 public class InjectionFactories {
 
-  public static class SolrQueryRequestFactory implements Factory<SolrQueryRequest> {
-
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public SolrQueryRequestFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+  public static class SolrQueryRequestFactory extends RequestContextBasedFactory
+      implements Factory<SolrQueryRequest> {
 
     @Override
     public SolrQueryRequest provide() {
       return (SolrQueryRequest)
-          containerRequestContext.getProperty(RequestContextKeys.SOLR_QUERY_REQUEST);
+          getRequestContext().getProperty(RequestContextKeys.SOLR_QUERY_REQUEST);
     }
 
     @Override
     public void dispose(SolrQueryRequest instance) {}
   }
 
-  public static class SolrQueryResponseFactory implements Factory<SolrQueryResponse> {
-
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public SolrQueryResponseFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+  public static class SolrQueryResponseFactory extends RequestContextBasedFactory
+      implements Factory<SolrQueryResponse> {
 
     @Override
     public SolrQueryResponse provide() {
       return (SolrQueryResponse)
-          containerRequestContext.getProperty(RequestContextKeys.SOLR_QUERY_RESPONSE);
+          getRequestContext().getProperty(RequestContextKeys.SOLR_QUERY_RESPONSE);
     }
 
     @Override
@@ -67,22 +59,58 @@ public class InjectionFactories {
   }
 
   /** Fetch the (existing) SolrCore from the request context */
-  public static class ReuseFromContextSolrCoreFactory implements Factory<SolrCore> {
-
-    private final ContainerRequestContext containerRequestContext;
-
-    @Inject
-    public ReuseFromContextSolrCoreFactory(ContainerRequestContext containerRequestContext) {
-      this.containerRequestContext = containerRequestContext;
-    }
+  public static class ReuseFromContextSolrCoreFactory extends RequestContextBasedFactory
+      implements Factory<SolrCore> {
 
     @Override
     public SolrCore provide() {
-      return (SolrCore) containerRequestContext.getProperty(SOLR_CORE);
+      return (SolrCore) getRequestContext().getProperty(SOLR_CORE);
     }
 
     @Override
     public void dispose(SolrCore instance) {}
+  }
+
+  public static class ReuseFromContextIndexSchemaFactory implements Factory<IndexSchema> {
+    @Context ServiceLocator serviceLocator;
+
+    @Override
+    public IndexSchema provide() {
+      return doProvide(serviceLocator.getService(SolrCore.class));
+    }
+
+    private IndexSchema doProvide(SolrCore solrCore) {
+      return solrCore.getLatestSchema();
+    }
+
+    @Override
+    public void dispose(IndexSchema instance) {}
+  }
+
+  public static class ReuseFromContextSolrParamsFactory extends RequestContextBasedFactory
+      implements Factory<SolrParams> {
+
+    @Override
+    public SolrParams provide() {
+      return (SolrParams) getRequestContext().getProperty(SOLR_PARAMS);
+    }
+
+    @Override
+    public void dispose(SolrParams instance) {}
+  }
+
+  /**
+   * Allows access to a {@link ContainerRequestContext} via a {@link ServiceLocator}
+   *
+   * <p>ServiceLocator must be used util https://github.com/eclipse-ee4j/jersey/issues/3503 is
+   * resolved.
+   */
+  public static class RequestContextBasedFactory {
+    @Context ServiceLocator serviceLocator;
+
+    public ContainerRequestContext getRequestContext() {
+      return serviceLocator.getService(ContainerRequestContext.class);
+    }
   }
 
   public static class SingletonFactory<T> implements Factory<T> {

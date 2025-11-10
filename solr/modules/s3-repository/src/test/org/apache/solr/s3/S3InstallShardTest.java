@@ -21,6 +21,7 @@ import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.api.collections.AbstractInstallShardTest;
+import org.apache.solr.handler.admin.api.InstallShardData;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import software.amazon.awssdk.regions.Region;
@@ -29,7 +30,7 @@ import software.amazon.awssdk.regions.Region;
  * Tests validating that the 'Install Shard API' works when used with {@link S3BackupRepository}
  *
  * @see org.apache.solr.cloud.api.collections.AbstractInstallShardTest
- * @see org.apache.solr.handler.admin.api.InstallShardDataAPI
+ * @see InstallShardData
  */
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
@@ -53,12 +54,9 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
       AbstractInstallShardTest.defaultSolrXmlTextWithBackupRepository(BACKUP_REPOSITORY_XML);
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
-      S3MockRule.builder()
-          .silent()
-          .withInitialBuckets(BUCKET_NAME)
-          .withSecureConnection(false)
-          .build();
+      S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
   @BeforeClass
   public static void setupClass() throws Exception {
@@ -68,7 +66,7 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
     AbstractS3ClientTest.setS3ConfFile();
 
     configureCluster(1) // nodes
-        .addConfig("conf1", getFile("conf/solrconfig.xml").getParentFile().toPath())
+        .addConfig("conf1", getFile("conf/solrconfig.xml").getParent())
         .withSolrXml(
             SOLR_XML
                 .replace("BUCKET", BUCKET_NAME)

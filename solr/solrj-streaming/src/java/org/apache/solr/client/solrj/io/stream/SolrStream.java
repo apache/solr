@@ -24,11 +24,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -42,12 +39,11 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StreamParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Queries a single Solr instance and maps SolrDocs to a Stream of Tuples.
- *
- * <p>TODO: Move this to Http2SolrClient
  *
  * @since 5.1.0
  */
@@ -62,15 +58,15 @@ public class SolrStream extends TupleStream {
   private boolean trace;
   private Map<String, String> fieldMappings;
   private transient TupleStreamParser tupleStreamParser;
-  private transient SolrClient client;
-  private transient SolrClientCache cache;
   private String slice;
   private long checkpoint = -1;
-  private CloseableHttpResponse closeableHttpResponse;
   private boolean distrib = true;
   private String user;
   private String password;
   private String core;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   /**
    * @param baseUrl Base URL of the stream.
@@ -104,7 +100,7 @@ public class SolrStream extends TupleStream {
     this.distrib = !context.isLocal();
     this.numWorkers = context.numWorkers;
     this.workerID = context.workerID;
-    this.cache = context.getSolrClientCache();
+    this.clientCache = context.getSolrClientCache();
   }
 
   public void setCredentials(String user, String password) {
@@ -115,12 +111,11 @@ public class SolrStream extends TupleStream {
   /** Opens the stream to a single Solr instance. */
   @Override
   public void open() throws IOException {
-
-    // Reuse the same client per node vs. having one per replica
-    if (cache == null) {
-      client = new HttpSolrClient.Builder(baseUrl).build();
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
     } else {
-      client = cache.getHttpSolrClient(baseUrl);
+      doCloseCache = false;
     }
 
     try {
@@ -190,11 +185,9 @@ public class SolrStream extends TupleStream {
   /** Closes the Stream to a single Solr Instance */
   @Override
   public void close() throws IOException {
-    if (closeableHttpResponse != null) {
-      closeableHttpResponse.close();
-    }
-    if (cache == null && client != null) {
-      client.close();
+    IOUtils.closeQuietly(tupleStreamParser);
+    if (doCloseCache) {
+      IOUtils.closeQuietly(clientCache);
     }
   }
 
@@ -303,15 +296,15 @@ public class SolrStream extends TupleStream {
       query.setBasicAuthCredentials(user, password);
     }
 
+    var client = clientCache.getHttpSolrClient(baseUrl);
     NamedList<Object> genericResponse = client.request(query);
-    InputStream stream = (InputStream) genericResponse.get("stream");
-    CloseableHttpResponse httpResponse =
-        (CloseableHttpResponse) genericResponse.get("closeableResponse");
+    InputStream stream = (InputStream) genericResponse.get(InputStreamResponseParser.STREAM_KEY);
+    // since 9.4 the updated format has a dedicated status field
+    final Integer statusCode = (Integer) genericResponse.get("responseStatus");
 
-    final int statusCode = httpResponse.getStatusLine().getStatusCode();
-    if (statusCode != 200) {
+    if (statusCode == 401
+        || statusCode == 403) { // auth response comes as html, so propagate as string
       String errMsg = consumeStreamAsErrorMessage(stream);
-      httpResponse.close();
       throw new IOException(
           "Query to '"
               + query.getPath()
@@ -323,7 +316,6 @@ public class SolrStream extends TupleStream {
               + errMsg);
     }
 
-    this.closeableHttpResponse = httpResponse;
     if (CommonParams.JAVABIN.equals(wt)) {
       return new JavabinTupleStreamParser(stream, true);
     } else {

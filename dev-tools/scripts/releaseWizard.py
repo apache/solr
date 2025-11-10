@@ -47,14 +47,16 @@ import textwrap
 import time
 import urllib
 from collections import OrderedDict
-from datetime import datetime
+from datetime import date
 from datetime import timedelta
+from datetime import UTC
+from datetime import datetime
 
 try:
     import holidays
     import yaml
     from ics import Calendar, Event
-    from jinja2 import Environment
+    from jinja2 import Environment, Undefined
 except:
     print("You lack some of the module dependencies to run this script.")
     print("Please run 'pip3 install -r requirements.txt' and try again.")
@@ -63,14 +65,33 @@ except:
 import scriptutil
 from consolemenu import ConsoleMenu
 from consolemenu.items import FunctionItem, SubmenuItem, ExitItem
-from scriptutil import BranchType, Version, download, run
+from scriptutil import BranchType, Version, download, run, CommitterPgp
 
 # Solr-to-Java version mapping
-java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 11}
+java_versions = {6: 8, 7: 8, 8: 8, 9: 11, 10: 21}
 editor = None
 state = None
 templates = None
 solr_news_file = None
+
+
+class ReadableUndefined(Undefined):
+    """Custom Undefined handler that renders undefined variables as {{ varname }}
+
+    This allows users to see which variables are not yet defined when displaying
+    command templates before execution, particularly useful for persist_vars
+    that haven't been captured yet.
+    """
+    def __str__(self):
+        return "{{ %s }}" % self._undefined_name
+
+    def __getattr__(self, name):
+        # Handle special Python attributes normally
+        if name[:2] == '__':
+            raise AttributeError(name)
+        # Chain undefined attribute access for nested vars like {{ todo_id.var_name }}
+        return ReadableUndefined(name="%s.%s" % (self._undefined_name, name))
+
 
 # Edit this to add other global jinja2 variables or filters
 def expand_jinja(text, vars=None):
@@ -106,20 +127,27 @@ def expand_jinja(text, vars=None):
         'state': state,
         'gpg_key' : state.get_gpg_key(),
         'gradle_cmd' : 'gradlew.bat' if is_windows() else './gradlew',
-        'epoch': unix_time_millis(datetime.utcnow()),
+        'epoch': unix_time_millis(datetime.now(UTC)),
         'get_next_version': state.get_next_version(),
         'current_git_rev': state.get_current_git_rev(),
         'keys_downloaded': keys_downloaded(),
+        'docker_version_to_remove': state.get_docker_version_to_remove(),
         'editor': get_editor(),
         'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
         'vote_close_72h_holidays': vote_close_72h_holidays(),
-        'solr_news_file': solr_news_file,
+        'solr_news_file': state.get_solr_news_file(),
         'load_lines': load_lines,
         'set_java_home': set_java_home,
-        'latest_version': state.get_latest_version(),
-        'latest_lts_version': state.get_latest_lts_version(),
+        'latest_version': state.latest_version,
+        'latest_version_major': state.latest_version_major,
+        'latest_version_minor': state.latest_version_minor,
+        'latest_version_bugfix': state.latest_version_bugfix,
+        'latest_lts_version': state.latest_lts_version,
+        'latest_lts_version_major': state.latest_lts_version_major,
+        'latest_lts_version_minor': state.latest_lts_version_minor,
+        'latest_lts_version_bugfix': state.latest_lts_version_bugfix,
         'main_version': state.get_main_version(),
         'mirrored_versions': state.get_mirrored_versions(),
         'mirrored_versions_to_delete': state.get_mirrored_versions_to_delete(),
@@ -132,7 +160,7 @@ def expand_jinja(text, vars=None):
     filled = replace_templates(text)
 
     try:
-        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True)
+        env = Environment(lstrip_blocks=True, keep_trailing_newline=False, trim_blocks=True, undefined=ReadableUndefined)
         env.filters['path_join'] = lambda paths: os.path.join(*paths)
         env.filters['expanduser'] = lambda path: os.path.expanduser(path)
         env.filters['formatdate'] = lambda date: (datetime.strftime(date, "%-d %B %Y") if date else "<date>" )
@@ -206,7 +234,7 @@ def check_prerequisites(todo=None):
     return True
 
 
-epoch = datetime.utcfromtimestamp(0)
+epoch = datetime.fromtimestamp(0, UTC)
 
 
 def unix_time_millis(dt):
@@ -286,7 +314,7 @@ class ReleaseState:
         self.latest_version = None
         self.previous_rcs = {}
         self.rc_number = 1
-        self.start_date = unix_time_millis(datetime.utcnow())
+        self.start_date = unix_time_millis(datetime.now(UTC))
         self.script_branch = run("git rev-parse --abbrev-ref HEAD").strip()
         self.mirrored_versions = None
         try:
@@ -295,6 +323,9 @@ class ReleaseState:
             print("WARNING: This script shold (ideally) run from the release branch, not a feature branch (%s)" % self.script_branch)
             self.script_branch_type = 'feature'
         self.set_release_version(release_version)
+        self.set_latest_version()
+        self.set_latest_lts_version()
+
 
     def set_release_version(self, version):
         self.validate_release_version(self.script_branch_type, self.script_branch, version)
@@ -335,58 +366,66 @@ class ReleaseState:
         else:
             return release_date.isoformat()[:10]
 
-    def get_latest_version(self):
-        if self.latest_version is None:
-            versions = self.get_mirrored_versions()
-            latest = versions[0]
-            for ver in versions:
-                if Version.parse(ver).gt(Version.parse(latest)):
-                    latest = ver
-            self.latest_version = latest
-            self.save()
-        return state.latest_version
-
-    def get_mirrored_versions(self):
-        if state.mirrored_versions is None:
-            # Add the solr release versions from lucene and solr projects
-            releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
-            releases_lucene_solr = json.loads(releases_str)['lucene']
-            releases_solr = json.loads(releases_str)['solr']
-            versions_l_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
-            versions_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
-            state.mirrored_versions = versions_l_s + versions_s
-        return state.mirrored_versions
-
-    def get_mirrored_versions_to_delete(self):
+    def set_latest_version(self):
         versions = self.get_mirrored_versions()
-        to_keep = versions
-        if state.release_type == 'major':
-          to_keep = [self.release_version, self.get_latest_version()]
-        if state.release_type == 'minor':
-          to_keep = [self.release_version, self.get_latest_lts_version()]
-        if state.release_type == 'bugfix':
-          if Version.parse(state.release_version).major == Version.parse(state.get_latest_version()).major:
-            to_keep = [self.release_version, self.get_latest_lts_version()]
-          elif Version.parse(state.release_version).major == Version.parse(state.get_latest_lts_version()).major:
-            to_keep = [self.get_latest_version(), self.release_version]
-          else:
-            raise Exception("Release version %s must have same major version as current minor or lts release")
-        return [ver for ver in versions if ver not in to_keep]
+        latest = versions[0]
+        for ver in versions:
+            if Version.parse(ver).gt(Version.parse(latest)):
+                latest = ver
+        self.latest_version = latest
+        v = Version.parse(latest)
+        self.latest_version_major = v.major
+        self.latest_version_minor = v.minor
+        self.latest_version_bugfix = v.bugfix
+        self.latest_release_branch = "branch_%s_%s" % (v.major, v.minor)
 
-    def get_main_version(self):
-        v = Version.parse(self.get_latest_version())
-        return "%s.%s.%s" % (v.major + 1, 0, 0)
-
-    def get_latest_lts_version(self):
+    def set_latest_lts_version(self):
         versions = self.get_mirrored_versions()
-        latest = self.get_latest_version()
+        latest = self.latest_version
         lts_prefix = "%s." % (Version.parse(latest).major - 1)
         lts_versions = list(filter(lambda x: x.startswith(lts_prefix), versions))
         latest_lts = lts_versions[0]
         for ver in lts_versions:
             if Version.parse(ver).gt(Version.parse(latest_lts)):
                 latest_lts = ver
-        return latest_lts
+        self.latest_lts_version =latest_lts
+        v = Version.parse(latest_lts)
+        self.latest_lts_version_major = v.major
+        self.latest_lts_version_minor = v.minor
+        self.latest_lts_version_bugfix = v.bugfix
+        self.latest_lts_release_branch = "branch_%s_%s" % (v.major, v.minor)
+
+    def get_mirrored_versions(self):
+        if self.mirrored_versions is None:
+            # Add the solr release versions from lucene and solr projects
+            releases_str = load("https://projects.apache.org/json/foundation/releases.json", "utf-8")
+            releases_lucene_solr = json.loads(releases_str)['lucene']
+            releases_solr = json.loads(releases_str)['solr']
+            versions_l_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: x.startswith('solr-'), list(releases_lucene_solr.keys())))) ]
+            versions_s = [ r for r in list(map(lambda y: y[5:], filter(lambda x: re.match(r'^solr-(9|1\d)\.', x), list(releases_solr.keys())))) ]
+            self.mirrored_versions = versions_l_s + versions_s
+        return self.mirrored_versions
+
+    def get_mirrored_versions_to_delete(self):
+        versions = self.get_mirrored_versions()
+        to_keep = versions
+        if state.release_type == 'major':
+          to_keep = [self.release_version, self.latest_version]
+        if state.release_type == 'minor':
+          to_keep = [self.release_version, self.latest_lts_version]
+        if state.release_type == 'bugfix':
+          if state.release_version_major == state.latest_version_major:
+            to_keep = [self.release_version, self.latest_lts_version]
+          elif state.release_version_major == state.latest_lts_version_major:
+            to_keep = [self.latest_version, self.release_version]
+          else:
+            raise Exception("Release version %s must have same major version as current minor or lts release")
+        return [ver for ver in versions if ver not in to_keep]
+
+    def get_main_version(self):
+        v = Version.parse(self.latest_version)
+        return "%s.%s.%s" % (v.major + 1, 0, 0)
+
 
     def validate_release_version(self, branch_type, branch, release_version):
         ver = Version.parse(release_version)
@@ -416,7 +455,7 @@ class ReleaseState:
             return 'main'
         elif v.is_minor_release():
             return self.get_stable_branch_name()
-        elif v.major == Version.parse(self.get_latest_version()).major:
+        elif v.major == Version.parse(self.latest_version).major:
             return self.get_minor_branch_name()
         else:
             return self.release_branch
@@ -464,6 +503,16 @@ class ReleaseState:
         }
         if self.latest_version:
             dict['latest_version'] = self.latest_version
+            dict['latest_version_major'] = self.latest_version_major
+            dict['latest_version_minor'] = self.latest_version_minor
+            dict['latest_version_bugfix'] = self.latest_version_bugfix
+            dict['latest_release_branch'] = self.latest_release_branch
+        if self.latest_lts_version:
+            dict['latest_lts_version'] = self.latest_lts_version
+            dict['latest_lts_version_major'] = self.latest_lts_version_major
+            dict['latest_lts_version_minor'] = self.latest_lts_version_minor
+            dict['latest_lts_version_bugfix'] = self.latest_lts_version_bugfix
+            dict['latest_lts_release_branch'] = self.latest_lts_release_branch
         return dict
 
     def restore_from_dict(self, dict):
@@ -579,7 +628,7 @@ class ReleaseState:
         return folder
 
     def get_minor_branch_name(self):
-        latest = state.get_latest_version()
+        latest = state.latest_version
         if latest is not None:
           v = Version.parse(latest)
           return "branch_%s_%s" % (v.major, v.minor)
@@ -590,7 +639,7 @@ class ReleaseState:
         if self.release_type == 'major':
             v = Version.parse(self.get_main_version())
         else:
-            v = Version.parse(self.get_latest_version())
+            v = Version.parse(self.latest_version)
         return "branch_%sx" % v.major
 
     def get_next_version(self):
@@ -601,6 +650,12 @@ class ReleaseState:
         if self.release_type == 'bugfix':
             return "%s.%s.%s" % (self.release_version_major, self.release_version_minor, self.release_version_bugfix + 1)
         return None
+
+    def get_docker_version_to_remove(self):
+        if self.release_type == 'minor' and self.release_version_minor >= 2:
+            return "%s.%s" % (self.release_version_major, self.release_version_minor - 2)
+        else:
+            return None
 
     def get_refguide_release(self):
         return "%s_%s" % (self.release_version_major, self.release_version_minor)
@@ -629,6 +684,10 @@ class ReleaseState:
 
     def get_java_cmd(self):
         return os.path.join(self.get_java_home(), "bin", "java")
+
+    def get_solr_news_file(self):
+        return os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
+                     "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
 
     def get_todo_states(self):
         states = {}
@@ -770,7 +829,7 @@ class Todo(SecretYamlObject):
 
     def set_done(self, is_done):
         if is_done:
-            self.state['done_date'] = unix_time_millis(datetime.utcnow())
+            self.state['done_date'] = unix_time_millis(datetime.now(UTC))
             if self.persist_vars:
                 for k in self.persist_vars:
                     self.state[k] = self.get_vars()[k]
@@ -964,13 +1023,13 @@ def expand_multiline(cmd_txt, indent=0):
 
 
 def unix_to_datetime(unix_stamp):
-    return datetime.utcfromtimestamp(unix_stamp / 1000)
+    return datetime.fromtimestamp(unix_stamp / 1000, UTC)
 
 
 def generate_asciidoc():
     base_filename = os.path.join(state.get_release_folder(),
                                  "solr_release_%s"
-                                 % (state.release_version.replace("\.", "_")))
+                                 % (state.release_version.replace("\\.", "_")))
 
     filename_adoc = "%s.adoc" % base_filename
     filename_html = "%s.html" % base_filename
@@ -978,7 +1037,7 @@ def generate_asciidoc():
 
     fh.write("= Solr Release %s\n\n" % state.release_version)
     fh.write("(_Generated by releaseWizard.py v%s at %s_)\n\n"
-             % (getScriptVersion(), datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")))
+             % (getScriptVersion(), datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")))
     fh.write(":numbered:\n\n")
     fh.write("%s\n\n" % template('help'))
     for group in state.todo_groups:
@@ -1085,7 +1144,7 @@ def file_to_string(filename):
         return f.read().strip()
 
 def download_keys():
-    download('KEYS', "https://archive.apache.org/dist/solr/KEYS", state.config_path)
+    download('KEYS', "https://downloads.apache.org/solr/KEYS", state.config_path)
 
 def keys_downloaded():
     return os.path.exists(os.path.join(state.config_path, "KEYS"))
@@ -1129,20 +1188,12 @@ def configure_pgp(gpg_todo):
     id = str(input("Please enter your Apache id: (ENTER=skip) "))
     if id.strip() == '':
         return False
-    key_url = "https://home.apache.org/keys/committer/%s.asc" % id.strip()
-    committer_key = load(key_url)
-    lines = committer_key.splitlines()
-    keyid_linenum = None
-    for idx, line in enumerate(lines):
-        if line == 'ASF ID: %s' % id:
-            keyid_linenum = idx+1
-            break
-    if keyid_linenum:
-        keyid_line = lines[keyid_linenum]
-        assert keyid_line.startswith('LDAP PGP key: ')
-        gpg_fingerprint = keyid_line[14:].replace(" ", "")
-        gpg_id = gpg_fingerprint[-8:]
-        print("Found gpg key id %s on file at Apache (%s)" % (gpg_id, key_url))
+
+    committer_pgp = CommitterPgp(id.strip())
+    gpg_id = committer_pgp.get_short_fingerprint()
+    gpg_fingerprint = committer_pgp.get_fingerprint()
+    if gpg_id is not None:
+        print("Found gpg key id %s on file at Apache" % gpg_id)
     else:
         print(textwrap.dedent("""\
             Could not find your GPG key from Apache servers.
@@ -1315,13 +1366,9 @@ def main():
 
     state.save()
 
-    # Smoketester requires JAVA11_HOME to point to Java11
+    # Smoketester requires JAVA21_HOME to point to Java21
     os.environ['JAVA_HOME'] = state.get_java_home()
     os.environ['JAVACMD'] = state.get_java_cmd()
-
-    global solr_news_file
-    solr_news_file = os.path.join(state.get_website_git_folder(), 'content', 'solr', 'solr_news',
-      "%s-%s-available.md" % (state.get_release_date_iso(), state.release_version.replace(".", "-")))
 
     main_menu = ConsoleMenu(title="Solr ReleaseWizard",
                             subtitle=get_releasing_text,
@@ -1392,19 +1439,22 @@ def tail_file(file, lines):
                 break
 
 
-def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False, shell=None):
+def run_with_log_tail(command, cwd, logfile=None, tail_lines=10, tee=False, live=False, shell=None, capture_output=False):
     fh = sys.stdout
     if logfile:
         logdir = os.path.dirname(logfile)
         if not os.path.exists(logdir):
             os.makedirs(logdir)
         fh = open(logfile, 'w')
-    rc = run_follow(command, cwd, fh=fh, tee=tee, live=live, shell=shell)
+
+    rc, captured_output = run_follow(command, cwd, fh=fh, tee=tee, live=live, shell=shell, capture_output=capture_output)
+
     if logfile:
         fh.close()
         if not tee and tail_lines and tail_lines > 0:
             tail_file(logfile, tail_lines)
-    return rc
+
+    return rc, captured_output
 
 
 def ask_yes_no(text):
@@ -1435,7 +1485,7 @@ def print_line_cr(line, linenum, stdout=True, tee=False):
             print(line.rstrip())
 
 
-def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=None):
+def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=None, capture_output=False):
     doShell = '&&' in command or '&' in command or shell is not None
     if not doShell and not isinstance(command, list):
         command = shlex.split(command)
@@ -1451,6 +1501,7 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
 
     endstdout = endstderr = False
     errlines = []
+    captured_lines = [] if capture_output else None
     while not (endstderr and endstdout):
         lines_before = lines_written
         if not endstdout:
@@ -1462,6 +1513,8 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                     else:
                         fh.write(chars)
                         fh.flush()
+                        if capture_output:
+                            captured_lines.append(chars)
                         if '\n' in chars:
                             lines_written += 1
                 else:
@@ -1471,6 +1524,8 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
                     else:
                         fh.write("%s\n" % line.rstrip())
                         fh.flush()
+                        if capture_output:
+                            captured_lines.append(line)
                         lines_written += 1
                         print_line_cr(line, lines_written, stdout=(fh == sys.stdout), tee=tee)
 
@@ -1508,7 +1563,12 @@ def run_follow(command, cwd=None, fh=sys.stdout, tee=False, live=False, shell=No
         for line in errlines:
             fh.write("%s\n" % line.rstrip())
             fh.flush()
-    return rc
+
+    captured_output = None
+    if capture_output and captured_lines is not None:
+        captured_output = "".join(captured_lines)
+
+    return rc, captured_output
 
 
 def is_windows():
@@ -1609,6 +1669,7 @@ class Commands(SecretYamlObject):
                         logfilename = cmd.logfile
                         logfile = None
                         cmd_to_run = "%s%s" % ("echo Dry run, command is: " if dry_run else "", cmd.get_cmd())
+                        need_capture = cmd.persist_vars and not dry_run
                         if cmd.redirect:
                             try:
                                 out = run(cmd_to_run, cwd=cwd)
@@ -1617,6 +1678,7 @@ class Commands(SecretYamlObject):
                                     outfile.write(out)
                                     outfile.flush()
                                 print("Wrote %s bytes to redirect file %s" % (len(out), cmd.get_redirect()))
+                                cmd_output = out
                             except Exception as e:
                                 print("Command %s failed: %s" % (cmd_to_run, e))
                                 success = False
@@ -1640,8 +1702,8 @@ class Commands(SecretYamlObject):
                                 if cmd.comment:
                                     print("# %s\n" % cmd.get_comment())
                             start_time = time.time()
-                            returncode = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25,
-                                                           live=cmd.live, shell=cmd.shell)
+                            returncode, cmd_output = run_with_log_tail(cmd_to_run, cwd, logfile=logfile, tee=cmd.tee, tail_lines=25,
+                                                                       live=cmd.live, shell=cmd.shell, capture_output=need_capture)
                             elapsed = time.time() - start_time
                             if not returncode == 0:
                                 if cmd.should_fail:
@@ -1656,9 +1718,23 @@ class Commands(SecretYamlObject):
                                     print("Expected command to fail, but it succeeded.")
                                     success = False
                                     break
-                                else:
-                                    if elapsed > 30:
-                                        print("Command completed in %s seconds" % elapsed)
+
+                        # Handle persist_vars: capture stdout and parse for --wizard-var markers
+                        if cmd.persist_vars and not dry_run and cmd_output:
+                            try:
+                                parsed_vars = parse_wizard_vars(cmd_output)
+                                if parsed_vars:
+                                    todo = state.get_todo_by_id(self.todo_id)
+                                    if todo:
+                                        for var_name, var_value in parsed_vars.items():
+                                            todo.state[var_name] = var_value
+                                        state.save()
+                                        for var_name, var_value in parsed_vars.items():
+                                            print("Saved variable '%s' = '%s'" % (var_name, var_value))
+                            except Exception as e:
+                                print("WARNING: Failed to persist variables: %s" % e)
+                        if elapsed > 30:
+                            print("Command completed in %s seconds" % elapsed)
             if not success:
                 print("WARNING: One or more commands failed, you may want to check the logs")
             return success
@@ -1691,7 +1767,7 @@ class Commands(SecretYamlObject):
             return None
         v = self.get_vars()
         if self.todo_id:
-            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+            v.update(state.get_todo_by_id(self.todo_id).get_vars_and_state())
         if isinstance(data, list):
             if join:
                 return expand_jinja(" ".join(data), v)
@@ -1716,11 +1792,37 @@ def abbreviate_homedir(line):
         return re.sub(r'([^/]|\b)%s' % os.path.expanduser('~'), "\\1~", line)
 
 
+def parse_wizard_vars(stdout_text):
+    """Parse --wizard-var markers from command stdout.
+
+    Format: --wizard-var KEY=VALUE
+
+    Returns a dict of extracted variables, with last value winning for duplicates.
+    """
+    variables = {}
+    if not stdout_text:
+        return variables
+
+    for line in stdout_text.splitlines():
+        # Check if line starts with --wizard-var marker
+        if line.startswith("--wizard-var "):
+            # Extract the KEY=VALUE part
+            var_part = line[len("--wizard-var "):].strip()
+            if '=' in var_part:
+                key, _, value = var_part.partition('=')
+                key = key.strip()
+                value = value.strip()
+                if key:  # Only store if key is not empty
+                    variables[key] = value
+
+    return variables
+
+
 class Command(SecretYamlObject):
     yaml_tag = u'!Command'
     hidden_fields = ['todo_id']
     def __init__(self, cmd, cwd=None, stdout=None, logfile=None, tee=None, live=None, comment=None, vars=None,
-                 todo_id=None, should_fail=None, redirect=None, redirect_append=None, shell=None):
+                 todo_id=None, should_fail=None, redirect=None, redirect_append=None, shell=None, persist_vars=None):
         self.cmd = cmd
         self.cwd = cwd
         self.comment = comment
@@ -1734,6 +1836,7 @@ class Command(SecretYamlObject):
         self.todo_id = todo_id
         self.redirect_append = redirect_append
         self.redirect = redirect
+        self.persist_vars = persist_vars
         if tee and stdout:
             self.stdout = None
             print("Command %s specifies 'tee' and 'stdout', using only 'tee'" % self.cmd)
@@ -1778,7 +1881,7 @@ class Command(SecretYamlObject):
     def jinjaify(self, data, join=False):
         v = self.get_vars()
         if self.todo_id:
-            v.update(state.get_todo_by_id(self.todo_id).get_vars())
+            v.update(state.get_todo_by_id(self.todo_id).get_vars_and_state())
         if isinstance(data, list):
             if join:
                 return expand_jinja(" ".join(data), v)
@@ -1852,9 +1955,9 @@ def create_ical(todo): # pylint: disable=unused-argument
     return True
 
 
-today = datetime.utcnow().date()
+today = datetime.now(UTC).date()
 sundays = {(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6}
-y = datetime.utcnow().year
+y = today.year
 years = [y, y+1]
 non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.UK(years=years) \
               + holidays.DE(years=years) + holidays.NO(years=years) + holidays.IND(years=years) + holidays.RU(years=years)
@@ -1862,7 +1965,7 @@ non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.UK(
 
 def vote_close_72h_date():
     # Voting open at least 72 hours according to ASF policy
-    return datetime.utcnow() + timedelta(hours=73)
+    return datetime.now(UTC) + timedelta(hours=73)
 
 
 def vote_close_72h_holidays():
@@ -1885,9 +1988,9 @@ def vote_close_72h_holidays():
 
 
 def prepare_announce_solr(todo): # pylint: disable=unused-argument
-    if not os.path.exists(solr_news_file):
+    if not os.path.exists(state.get_solr_news_file()):
         solr_text = expand_jinja("(( template=announce_solr ))")
-        with open(solr_news_file, 'w') as fp:
+        with open(state.get_solr_news_file(), 'w') as fp:
             fp.write(solr_text)
         # print("Wrote Solr announce draft to %s" % solr_news_file)
     else:

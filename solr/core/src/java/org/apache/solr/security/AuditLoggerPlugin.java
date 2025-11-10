@@ -16,12 +16,10 @@
  */
 package org.apache.solr.security;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -32,10 +30,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +41,10 @@ import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongGauge;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.util.TimeOut;
 import org.slf4j.Logger;
@@ -76,18 +76,16 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private ExecutorService executorService;
   private boolean closed;
   private MuteRules muteRules;
 
   protected SolrMetricsContext solrMetricsContext;
-  protected Meter numErrors = new Meter();
-  protected Meter numLost = new Meter();
-  protected Meter numLogged = new Meter();
-  protected Timer requestTimes = new Timer();
-  protected Timer queuedTime = new Timer();
-  protected Counter totalTime = new Counter();
+  protected AttributedLongCounter numLogged;
+  protected AttributedLongCounter numErrors;
+  protected AttributedLongCounter numLost;
+  protected AttributedLongTimer requestTimes;
+  private AttributedLongTimer queuedTime;
 
   // Event types to be logged by default
   protected List<String> eventTypes =
@@ -134,7 +132,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       queue = new ArrayBlockingQueue<>(blockingQueueSize);
       executorService =
           ExecutorUtil.newMDCAwareFixedThreadPool(numThreads, new SolrNamedThreadFactory("audit"));
-      executorService.submit(this);
+      executorService.execute(this);
     }
     pluginConfig.remove("class");
     log.debug(
@@ -162,15 +160,16 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     if (async) {
       auditAsync(event);
     } else {
-      Timer.Context timer = requestTimes.time();
-      numLogged.mark();
+      AttributedLongTimer.MetricTimer timer = requestTimes.start(TimeUnit.NANOSECONDS);
+      numLogged.inc();
       try {
         audit(event);
       } catch (Exception e) {
-        numErrors.mark();
+        numErrors.inc();
         log.error("Exception when attempting to audit log", e);
       } finally {
-        totalTime.inc(timer.stop());
+        // Record the timing metric
+        timer.stop();
       }
     }
   }
@@ -206,7 +205,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
             "Audit log async queue is full (size={}), not blocking since {}==false",
             blockingQueueSize,
             PARAM_BLOCKASYNC);
-        numLost.mark();
+        numLost.inc();
       }
     }
   }
@@ -221,19 +220,21 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
         auditsInFlight.incrementAndGet();
         if (event == null) continue;
         if (event.getDate() != null) {
-          queuedTime.update(
-              new Date().getTime() - event.getDate().getTime(), TimeUnit.MILLISECONDS);
+          long queueTimeNanos =
+              TimeUnit.MILLISECONDS.toNanos(new Date().getTime() - event.getDate().getTime());
+          queuedTime.record(queueTimeNanos);
         }
-        Timer.Context timer = requestTimes.time();
+        AttributedLongTimer.MetricTimer timer = requestTimes.start(TimeUnit.NANOSECONDS);
         audit(event);
-        numLogged.mark();
-        totalTime.inc(timer.stop());
+        numLogged.inc();
+        // Record the timing metric
+        timer.stop();
       } catch (InterruptedException e) {
         log.warn("Interrupted while waiting for next audit log event");
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
         log.error("Exception when attempting to audit log asynchronously", ex);
-        numErrors.mark();
+        numErrors.inc();
       } finally {
         auditsInFlight.decrementAndGet();
       }
@@ -261,36 +262,71 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, final String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);
-    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope, className);
-    numLost = solrMetricsContext.meter("lost", getCategory().toString(), scope, className);
-    numLogged = solrMetricsContext.meter("count", getCategory().toString(), scope, className);
+
+    Attributes attrsWithCategory =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, Category.SECURITY.toString())
+            .put(PLUGIN_NAME_ATTR, this.getClass().getSimpleName())
+            .build();
+
+    numLogged =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_auditlogger_count",
+                "The number of audit events that were successfully logged."),
+            attrsWithCategory);
+    numErrors =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_auditlogger_errors", "The number of audit events that resulted in errors."),
+            attrsWithCategory);
+    numLost =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_auditlogger_lost",
+                "The number of audit events that were lost due to async queue being full."),
+            attrsWithCategory);
     requestTimes =
-        solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, className);
-    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, className);
+        new AttributedLongTimer(
+            this.solrMetricsContext.longHistogram(
+                "solr_auditlogger_request_times",
+                "Distribution of audit event request durations",
+                OtelUnit.NANOSECONDS),
+            attrsWithCategory);
+
     if (async) {
-      solrMetricsContext.gauge(
-          () -> blockingQueueSize,
-          true,
-          "queueCapacity",
-          getCategory().toString(),
-          scope,
-          className);
-      solrMetricsContext.gauge(
-          () -> blockingQueueSize - queue.remainingCapacity(),
-          true,
-          "queueSize",
-          getCategory().toString(),
-          scope,
-          className);
+      solrMetricsContext.observableLongGauge(
+          "solr_auditlogger_queue",
+          "Metrics around the audit logger queue when running in async mode",
+          (observableLongMeasurement -> {
+            observableLongMeasurement.record(
+                blockingQueueSize,
+                attrsWithCategory.toBuilder().put(TYPE_ATTR, "capacity").build());
+            observableLongMeasurement.record(
+                blockingQueueSize - queue.remainingCapacity(),
+                attrsWithCategory.toBuilder().put(TYPE_ATTR, "size").build());
+          }));
       queuedTime =
-          solrMetricsContext.timer("queuedTime", getCategory().toString(), scope, className);
+          new AttributedLongTimer(
+              solrMetricsContext.longHistogram(
+                  "solr_auditlogger_queued_time",
+                  "Distribution of time events spend queued before processing",
+                  OtelUnit.NANOSECONDS),
+              attrsWithCategory);
     }
-    solrMetricsContext.gauge(
-        () -> async, true, "async", getCategory().toString(), scope, className);
+
+    AttributedLongGauge asyncEnabledGauge =
+        new AttributedLongGauge(
+            solrMetricsContext.longGauge(
+                "solr_auditlogger_async_enabled",
+                "Whether the audit logger is running in async mode (1) or not (0)"),
+            attrsWithCategory);
+    asyncEnabledGauge.set(async ? 1L : 0L);
   }
 
   @Override

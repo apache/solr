@@ -30,7 +30,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.DocSet;
-import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -50,8 +49,8 @@ public class TestJsonRequest extends SolrTestCaseHS {
   @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
-    System.setProperty("solr.enableStreamBody", "true");
+    systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     JSONTestUtil.failRepeatedKeys = true;
     initCore("solrconfig-tlog.xml", "schema_latest.xml");
   }
@@ -70,7 +69,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
       servers.stop();
       servers = null;
     }
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test
@@ -103,8 +102,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     SolrException ex =
         expectThrows(SolrException.class, () -> client.testJQ(params("q", "*:*", "json", "5")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    MatcherAssert.assertThat(
-        ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
+    assertThat(ex.getMessage(), containsString("Expected JSON Object but got Long=5"));
 
     // this is to verify other json params are not affected
     client.testJQ(params("q", "cat_s:A", "json.limit", "1"), "response/numFound==2");
@@ -223,6 +221,22 @@ public class TestJsonRequest extends SolrTestCaseHS {
             "{params:{sort:'where_s asc'}}"),
         "response/numFound==2",
         "response/docs==[{id:'4', x:5.5}]");
+
+    // test defType will parse the query string
+    client.testJQ(
+        params(
+            "json",
+            "{\n"
+                + "    'query': '+all:NY',\n"
+                + "    'fields': '*',\n"
+                + "    'offset': 0,\n"
+                + "    'limit': 10,\n"
+                + "    'params': {\n"
+                + "        'defType': 'edismax',\n"
+                + "        'f.all.qf': 'id cat_s where_s'\n"
+                + "   }\n"
+                + "}"),
+        "response/numFound==2");
 
     // test offset/limit/sort/fields
     client.testJQ(
@@ -563,7 +577,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
             () -> {
               client.testJQ(params("json", "{query:{'lucene':'foo_s:ignore_exception'}}"));
             });
-    MatcherAssert.assertThat(e.getMessage(), containsString("foo_s"));
+    assertThat(e.getMessage(), containsString("foo_s"));
 
     // test failure on unknown parameter
     e =
@@ -574,7 +588,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
                   params("json", "{query:'cat_s:A', foobar_ignore_exception:5}"),
                   "response/numFound==2");
             });
-    MatcherAssert.assertThat(e.getMessage(), containsString("foobar"));
+    assertThat(e.getMessage(), containsString("foobar"));
 
     resetExceptionIgnores();
   }
@@ -850,7 +864,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
   }
 
   private static void addDocs(Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
     client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY"), null);
     client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ"), null);
     client.add(sdoc("id", "3"), null);

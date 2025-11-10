@@ -31,7 +31,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     String home = setupSolrHome();
-    initCore("solrconfig.xml", "schema.xml", home);
+    initCore("solrconfig.xml", "schema.xml", Path.of(home));
     // add some docs
     assertU(adoc("id", "1", "text", "\u0633\u0627\u0628"));
     assertU(adoc("id", "2", "text", "I WİLL USE TURKİSH CASING"));
@@ -63,10 +63,10 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
 
     // copy over configuration files
     Files.copy(
-        getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml").toPath(),
+        getFile("analysis-extras/solr/collection1/conf/solrconfig-icucollate.xml"),
         confDir.resolve("solrconfig.xml"));
     Files.copy(
-        getFile("analysis-extras/solr/collection1/conf/schema-icucollate-dv.xml").toPath(),
+        getFile("analysis-extras/solr/collection1/conf/schema-icucollate-dv.xml"),
         confDir.resolve("schema.xml"));
 
     // generate custom collation rules (DIN 5007-2), saving to customrules.dat
@@ -145,6 +145,7 @@ public class TestICUCollationFieldDocValues extends SolrTestCaseJ4 {
         req("fl", "id", "q", "sort_ar:[\u062F TO \u0698]", "sort", "id asc"),
         "//*[@numFound='0']");
   }
+
   /**
    * Test canonical decomposition with turkish primary strength. With this sort order, İ is the
    * uppercase form of i, and I is the uppercase form of ı. We index a decomposed form of İ.

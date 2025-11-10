@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -26,6 +25,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -49,7 +49,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), buildJettyConfig("/solr"));
+    solrCluster = new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build());
   }
 
   @Override
@@ -92,12 +92,7 @@ public class TestConfigSetsAPIExclusivity extends SolrTestCaseJ4 {
   private void setupBaseConfigSet(String baseConfigSetName) throws Exception {
     solrCluster.uploadConfigSet(configset("configset-2"), baseConfigSetName);
     // Make configset untrusted
-    solrCluster
-        .getZkClient()
-        .setData(
-            "/configs/" + baseConfigSetName,
-            "{\"trusted\": false}".getBytes(StandardCharsets.UTF_8),
-            true);
+    solrCluster.getZkClient();
   }
 
   private Exception getFirstExceptionOrNull(List<Exception> list) {

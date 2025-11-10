@@ -67,8 +67,7 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
       second = objects[1];
     }
 
-    if (first instanceof MarkovChainEvaluator.MarkovChain) {
-      MarkovChainEvaluator.MarkovChain markovChain = (MarkovChainEvaluator.MarkovChain) first;
+    if (first instanceof MarkovChainEvaluator.MarkovChain markovChain) {
       if (second != null) {
         return Arrays.stream(markovChain.sample(((Number) second).intValue()))
             .mapToObj(item -> item)
@@ -76,8 +75,7 @@ public class SampleEvaluator extends RecursiveObjectEvaluator implements ManyVal
       } else {
         return markovChain.sample();
       }
-    } else if (first instanceof RealDistribution) {
-      RealDistribution realDistribution = (RealDistribution) first;
+    } else if (first instanceof RealDistribution realDistribution) {
       if (second != null) {
         return Arrays.stream(realDistribution.sample(((Number) second).intValue()))
             .mapToObj(item -> item)

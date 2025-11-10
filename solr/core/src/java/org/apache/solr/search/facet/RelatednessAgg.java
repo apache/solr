@@ -118,10 +118,9 @@ public class RelatednessAgg extends AggValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof RelatednessAgg)) {
+    if (!(o instanceof RelatednessAgg that)) {
       return false;
     }
-    RelatednessAgg that = (RelatednessAgg) o;
     return Objects.equals(fgQ, that.fgQ)
         && Objects.equals(bgQ, that.bgQ)
         && min_pop == that.min_pop;
@@ -514,11 +513,13 @@ public class RelatednessAgg extends AggValueSource {
      * @see #getRelatedness
      */
     private double relatedness = Double.NaN;
+
     /**
      * @see #computeDerivedValues
      * @see #getForegroundPopularity
      */
     private double fg_pop;
+
     /**
      * @see #computeDerivedValues
      * @see #getBackgroundPopularity
@@ -551,6 +552,7 @@ public class RelatednessAgg extends AggValueSource {
       fg_count += fgInc;
       bg_count += bgInc;
     }
+
     /**
      * Increment both the foreground &amp; background <em>sizes</em> for the current bucket,
      * reseting any derived values that may be cached
@@ -568,10 +570,9 @@ public class RelatednessAgg extends AggValueSource {
 
     @Override
     public boolean equals(Object other) {
-      if (!(other instanceof BucketData)) {
+      if (!(other instanceof BucketData that)) {
         return false;
       }
-      BucketData that = (BucketData) other;
       // we will most certainly be compared to other buckets of the same Agg instance, so compare
       // counts first
       return this.implied == that.implied
@@ -769,6 +770,7 @@ public class RelatednessAgg extends AggValueSource {
             + 0.2 * sigmoidHelper(z, 80, 50);
     return roundTo5Digits(result);
   }
+
   /**
    * Helper function for rounding/truncating relatedness &amp; popularity values to 5 decimal
    * digits, since these values are all probabilistic more then 5 digits aren't really relevant and

@@ -20,7 +20,7 @@
 
 allprojects { prj ->
   plugins.withId("java", {
-    prj.apply plugin: 'ca.cutterslade.analyze'
+    prj.apply plugin: libs.plugins.cutterslade.analyze.get().pluginId
 
     analyzeClassesDependencies {
       warnUsedUndeclared = false // means fail build if UsedUndeclared found

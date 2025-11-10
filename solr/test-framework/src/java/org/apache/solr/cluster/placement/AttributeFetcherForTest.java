@@ -25,7 +25,7 @@ public class AttributeFetcherForTest implements AttributeFetcher {
 
   private final AttributeValues attributeValues;
 
-  AttributeFetcherForTest(AttributeValues attributeValues) {
+  public AttributeFetcherForTest(AttributeValues attributeValues) {
     this.attributeValues = attributeValues;
   }
 

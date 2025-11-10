@@ -125,6 +125,7 @@ class SerializationUtil {
   public static byte packVersionByte(final int schemaVersion, final int typeOrdinal) {
     return (byte) (((NIBBLE_MASK & schemaVersion) << NIBBLE_BITS) | (NIBBLE_MASK & typeOrdinal));
   }
+
   /**
    * Generates a byte that encodes the log-base-2 of the explicit cutoff or sentinel values for
    * 'explicit-disabled' or 'auto', as well as the boolean indicating whether to use {@link

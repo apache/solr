@@ -19,31 +19,33 @@ package org.apache.solr.core;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
 import static org.apache.solr.common.cloud.ZkStateReader.HTTPS_PORT_PROP;
 
-import java.io.File;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,17 +68,16 @@ public class ZkContainer {
   private ExecutorService coreZkRegister =
       ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("coreZkRegister"));
 
-  // see ZkController.zkRunOnly
-  private boolean zkRunOnly = Boolean.getBoolean("zkRunOnly"); // expert
-
   private SolrMetricProducer metricProducer;
+
+  private List<AutoCloseable> toClose;
 
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
-    String zkRun = System.getProperty("zkRun");
+    boolean zkRun = EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
 
-    if (zkRun != null && config == null)
+    if (zkRun && config == null)
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Cannot start Solr in cloud mode - no cloud config provided");
@@ -90,16 +91,18 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
-    String solrHome = cc.getSolrHome();
-    if (zkRun != null) {
+    Path solrHome = cc.getSolrHome();
+    if (zkRun) {
       String zkDataHome =
-          System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
-      String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
+          EnvUtils.getProperty(
+              "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+      String zkConfHome =
+          EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
       zkServer =
           new SolrZkServer(
-              stripChroot(zkRun),
+              zkRun,
               stripChroot(config.getZkHost()),
-              new File(zkDataHome),
+              Path.of(zkDataHome),
               zkConfHome,
               config.getSolrHostPort());
       zkServer.parseConfig();
@@ -111,44 +114,31 @@ public class ZkContainer {
       }
     }
 
-    int zkClientConnectTimeout = 30000;
+    int zkClientConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
 
     if (zookeeperHost != null) {
 
       // we are ZooKeeper enabled
       try {
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun != null && zkServer.getServers().size() > 1) {
+        if (zkRun && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000; // 1 day for embedded ensemble
           log.info("Zookeeper client={}  Waiting for a quorum.", zookeeperHost);
         } else {
           log.info("Zookeeper client={}", zookeeperHost);
         }
-        boolean createRoot = Boolean.getBoolean("createZkChroot");
+        boolean createRoot = EnvUtils.getPropertyAsBool("solr.zookeeper.chroot.create", false);
 
-        // We may have already loaded NodeConfig from zookeeper with same connect string, so no need
-        // to recheck chroot
-        boolean alreadyUsedChroot =
-            (cc.getConfig().isFromZookeeper()
-                && zookeeperHost.equals(cc.getConfig().getDefaultZkHost()));
-        if (!alreadyUsedChroot
-            && !ZkController.checkChrootPath(zookeeperHost, zkRunOnly || createRoot)) {
+        if (!ZkController.checkChrootPath(zookeeperHost, createRoot)) {
           throw new ZooKeeperException(
               SolrException.ErrorCode.SERVER_ERROR,
               "A chroot was specified in ZkHost but the znode doesn't exist. " + zookeeperHost);
         }
 
-        Supplier<List<CoreDescriptor>> descriptorsSupplier =
-            () ->
-                cc.getCores().stream()
-                    .map(SolrCore::getCoreDescriptor)
-                    .collect(Collectors.toList());
-
         ZkController zkController =
-            new ZkController(
-                cc, zookeeperHost, zkClientConnectTimeout, config, descriptorsSupplier);
+            new ZkController(cc, zookeeperHost, zkClientConnectTimeout, config);
 
-        if (zkRun != null) {
+        if (zkRun) {
           if (StrUtils.isNotNullOrEmpty(System.getProperty(HTTPS_PORT_PROP))) {
             // Embedded ZK and probably running with SSL
             new ClusterProperties(zkController.getZkClient())
@@ -157,16 +147,92 @@ public class ZkContainer {
         }
 
         this.zkController = zkController;
-        MetricsMap metricsMap = new MetricsMap(zkController.getZkClient().getMetrics());
+
         metricProducer =
             new SolrMetricProducer() {
               SolrMetricsContext ctx;
 
               @Override
-              public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+              public void initializeMetrics(
+                  SolrMetricsContext parentContext, Attributes attributes) {
+                final List<AutoCloseable> observables = new ArrayList<>();
                 ctx = parentContext.getChildContext(this);
-                ctx.gauge(
-                    metricsMap, true, scope, null, SolrInfoBean.Category.CONTAINER.toString());
+
+                var metricsListener = zkController.getZkClient().getMetrics();
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_ops",
+                        "Total number of ZooKeeper operations",
+                        measurement -> {
+                          measurement.record(
+                              metricsListener.getReads(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "read").build());
+                          measurement.record(
+                              metricsListener.getDeletes(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "delete").build());
+                          measurement.record(
+                              metricsListener.getWrites(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "write").build());
+                          measurement.record(
+                              metricsListener.getMultiOps(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "multi").build());
+                          measurement.record(
+                              metricsListener.getExistsChecks(),
+                              attributes.toBuilder().put(OPERATION_ATTR, "exists").build());
+                        }));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_read",
+                        "Total bytes read from ZooKeeper",
+                        measurement -> {
+                          measurement.record(metricsListener.getBytesRead(), attributes);
+                        },
+                        OtelUnit.BYTES));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_watches_fired",
+                        "Total number of ZooKeeper watches fired",
+                        measurement -> {
+                          measurement.record(metricsListener.getWatchesFired(), attributes);
+                        }));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_written",
+                        "Total bytes written to ZooKeeper",
+                        measurement -> {
+                          measurement.record(metricsListener.getBytesWritten(), attributes);
+                        },
+                        OtelUnit.BYTES));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_cumulative_multi_ops_total",
+                        "Total cumulative multi-operations count",
+                        measurement -> {
+                          measurement.record(metricsListener.getCumulativeMultiOps(), attributes);
+                        }));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_child_fetches",
+                        "Total number of ZooKeeper child node fetches",
+                        measurement -> {
+                          measurement.record(metricsListener.getChildFetches(), attributes);
+                        }));
+
+                observables.add(
+                    ctx.observableLongCounter(
+                        "solr_zk_cumulative_children_fetched",
+                        "Total cumulative children fetched count",
+                        measurement -> {
+                          measurement.record(
+                              metricsListener.getCumulativeChildrenFetched(), attributes);
+                        }));
+                toClose = Collections.unmodifiableList(observables);
               }
 
               @Override
@@ -190,7 +256,7 @@ public class ZkContainer {
   }
 
   private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().length() == 0 || zkRun.lastIndexOf('/') < 0) return zkRun;
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
     return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
@@ -222,7 +288,7 @@ public class ZkContainer {
               log.error("Interrupted", e);
             } catch (KeeperException e) {
               log.error("KeeperException registering core {}", core.getName(), e);
-            } catch (AlreadyClosedException ignore) {
+            } catch (IllegalStateException ignore) {
 
             } catch (Exception e) {
               log.error("Exception registering core {}", core.getName(), e);
@@ -254,17 +320,18 @@ public class ZkContainer {
   public void close() {
 
     try {
-      if (zkController != null) {
-        zkController.close();
-      }
+      ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
     } finally {
       try {
+        if (zkController != null) {
+          zkController.close();
+        }
+      } finally {
         if (zkServer != null) {
           zkServer.stop();
         }
-      } finally {
-        ExecutorUtil.shutdownAndAwaitTermination(coreZkRegister);
       }
+      IOUtils.closeQuietly(toClose);
     }
   }
 

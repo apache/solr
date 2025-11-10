@@ -26,7 +26,7 @@ See comments from Yonik on SOLR-9083. It costs us nothing to leave these in give
 that just finds leaf <fieldType> and <field> nodes and there's no reason to break schemas for people who leave
 <fields> and <types> tags in their schema for no good purpose.
 -->
-<schema name="test" version="1.0">
+<schema name="test" version="1.7">
   <types>  <!-- Intentionally left in. see comment above -->
     <fieldType name="string" class="solr.StrField" />
     <fieldType name="text" class="solr.TextField">

@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 <solr>
-  <shardHandlerFactory name="shardHandlerFactory" class="solr.HttpShardHandlerFactory">
+  <shardHandlerFactory name="shardHandlerFactory" class="${solr.tests.defaultShardHandlerFactory:solr.HttpShardHandlerFactory}">
     <int   name="loadBalancerRequestsMinimumAbsolute">${solr.tests.loadBalancerRequestsMinimumAbsolute:0}</int>
     <float name="loadBalancerRequestsMaximumFraction">${solr.tests.loadBalancerRequestsMaximumFraction:1.0}</float>
   </shardHandlerFactory>

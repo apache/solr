@@ -1,0 +1,83 @@
+= Technology Overview
+:toc: left
+
+This document lists information about the technologies used in the UI module.
+
+== Kotlin
+
+Kotlin is a modern, statically typed programming language that runs on the Java Virtual
+Machine (JVM) and can also be compiled to JavaScript or native code. It is designed to be
+fully interoperable with Java, making it an excellent choice for UI and
+server-side development.
+
+If you are new to Kotlin, it is strongly recommended to browse and go through the
+https://kotlinlang.org/[language documentation]. Since the UI module makes use of Kotlin's
+Multiplatform capabilities, you should also have a look at https://kotlinlang.org/docs/multiplatform.html[Kotlin Multiplatform].
+
+=== Coroutines
+
+Kotlin Coroutines provide a powerful and flexible way to manage asynchronous programming.
+They allow developers to write code that is sequential in nature but non-blocking under the hood,
+enabling efficient and straightforward concurrent programming. Coroutines simplify tasks such as
+making network requests, processing large datasets, or handling multiple user interactions
+simultaneously. They are integrated into the Kotlin language through libraries like
+kotlinx.coroutines.
+
+To get started with Kotlin Coroutines, you can have a look at https://kotlinlang.org/docs/coroutines-overview.html[Coroutines Overview].
+
+=== Ktor
+
+https://ktor.io/[Ktor] is a Kotlin framework designed for building asynchronous servers and clients.
+It provides a robust toolkit for making HTTP requests and handling responses, making it an
+excellent choice for frontend applications that need to communicate with a backend server.
+Ktor's client library is highly customizable and supports various features essential for
+frontend development.
+
+== Compose Multiplatform
+
+Compose Multiplatform is a UI framework that enables developers to create user interfaces
+for Android, iOS, desktop, and web applications using a single codebase. It is built on
+the principles of Jetpack Compose, providing a declarative way to build UIs.
+
+To get started with Compose Multiplatform, see the https://www.jetbrains.com/lp/compose-multiplatform/[Compose Multiplatform page].
+Many resources from https://developer.android.com/compose[Jetpack Compose] may be used for learning
+and as reference, but keep in mind that some of the information may not have a multiplatform
+integration yet.
+
+=== Material 3
+
+Material 3, also known as Material You, is the latest version of Google's Material Design system.
+It offers new components, dynamic theming, and updated guidelines to create a more personalized
+and adaptive user experience.
+
+The https://m3.material.io/[Material 3 website] gives a good introduction into user interface
+design and Material 3.
+
+=== Decompose
+
+Decompose is a library for managing the lifecycle of components in Compose Multiplatform
+applications. It provides tools for navigating between screens and managing state across
+different parts of an application.
+
+The main features of Decompose include navigation, state management and component lifecycle.
+You can find out more and get started via the https://arkivanov.github.io/Decompose/[Decompose documentation].
+
+=== MVIKotlin
+
+MVIKotlin is a library for implementing the Model-View-Intent (MVI) architecture pattern in
+Kotlin applications. It is particularly useful for managing complex state and side effects in a
+predictable manner. In combination with Decompose it provides a great foundation and
+unified structure for the UI components.
+
+You can find out more at https://arkivanov.github.io/MVIKotlin/.
+
+=== Essenty
+
+Essenty is a collection of utility libraries that complement the Kotlin ecosystem,
+particularly useful in Compose Multiplatform projects. It includes tools for handling events,
+lifecycles, and other common tasks in a type-safe and idiomatic way.
+
+Similar to MVIKotlin, it adds the foundation and structure of the UI module and plays an
+essential part in Decompose.
+
+For more information, you can have a look at https://github.com/arkivanov/Essenty[GitHub - Essenty].

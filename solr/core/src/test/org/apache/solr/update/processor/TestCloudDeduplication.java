@@ -43,6 +43,7 @@ public class TestCloudDeduplication extends SolrCloudTestCase {
 
   /** One client per node */
   private static final List<SolrClient> NODE_CLIENTS = new ArrayList<>(7);
+
   /**
    * clients (including cloud client) for easy randomization and looping of collection level
    * requests

@@ -16,14 +16,16 @@
  */
 package org.apache.solr.response;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.Writer;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 /**
- * Implementations of <code>QueryResponseWriter</code> are used to format responses to query
- * requests.
+ * Used to format responses to the client (not necessarily a "query").
  *
  * <p>Different <code>QueryResponseWriter</code>s are registered with the <code>SolrCore</code>. One
  * way to register a QueryResponseWriter with the core is through the <code>solrconfig.xml</code>
@@ -39,22 +41,24 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * <p>A single instance of any registered QueryResponseWriter is created via the default constructor
  * and is reused for all relevant queries.
  */
+@ThreadSafe
 public interface QueryResponseWriter extends NamedListInitializedPlugin {
   public static String CONTENT_TYPE_XML_UTF8 = "application/xml; charset=UTF-8";
   public static String CONTENT_TYPE_TEXT_UTF8 = "text/plain; charset=UTF-8";
-  public static String CONTENT_TYPE_TEXT_ASCII = "text/plain; charset=US-ASCII";
 
   /**
-   * Write a SolrQueryResponse, this method must be thread save.
-   *
-   * <p>Information about the request (in particular: formatting options) may be obtained from
-   * <code>req</code> but the dominant source of information should be <code>rsp</code>.
-   *
-   * <p>There are no mandatory actions that write must perform. An empty write implementation would
-   * fulfill all interface obligations.
+   * Writes the response to the {@link OutputStream}. {@code contentType} is from {@link
+   * #getContentType(SolrQueryRequest, SolrQueryResponse)}, and it's often ignored.
    */
-  public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response)
+  void write(
+      OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException;
+
+  // should be "final" if interfaces allowed that
+  default void write(OutputStream out, SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    write(out, request, response, getContentType(request, response));
+  }
 
   /**
    * Return the applicable Content Type for a request, this method must be thread safe.
@@ -64,5 +68,13 @@ public interface QueryResponseWriter extends NamedListInitializedPlugin {
    *
    * @return a Content-Type string, which may not be null.
    */
-  public String getContentType(SolrQueryRequest request, SolrQueryResponse response);
+  String getContentType(SolrQueryRequest request, SolrQueryResponse response);
+
+  /** Writes a String for debugging / testing purposes. */
+  default String writeToString(SolrQueryRequest request, SolrQueryResponse response)
+      throws IOException {
+    var buffer = new ByteArrayOutputStream(32000);
+    write(buffer, request, response);
+    return buffer.toString(StandardCharsets.UTF_8);
+  }
 }

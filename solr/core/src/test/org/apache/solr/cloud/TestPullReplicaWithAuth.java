@@ -16,18 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import static java.util.Collections.singletonList;
-import static java.util.Collections.singletonMap;
 import static org.apache.solr.cloud.TestPullReplica.assertNumberOfReplicas;
 import static org.apache.solr.cloud.TestPullReplica.assertUlogPresence;
 import static org.apache.solr.cloud.TestPullReplica.waitForDeletion;
 import static org.apache.solr.cloud.TestPullReplica.waitForNumDocsInAllReplicas;
-import static org.apache.solr.security.Sha256AuthenticationProvider.getSaltedHashedValue;
 
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -43,48 +39,28 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.util.Utils;
-import org.apache.solr.security.BasicAuthPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPlugin;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SecurityJson;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class TestPullReplicaWithAuth extends SolrCloudTestCase {
 
-  private static final String USER = "solr";
-  private static final String PASS = "SolrRocksAgain";
   private static final String collectionName = "testPullReplicaWithAuth";
 
   @BeforeClass
   public static void setupClusterWithSecurityEnabled() throws Exception {
-    final String SECURITY_JSON =
-        Utils.toJSONString(
-            Map.of(
-                "authorization",
-                Map.of(
-                    "class",
-                    RuleBasedAuthorizationPlugin.class.getName(),
-                    "user-role",
-                    singletonMap(USER, "admin"),
-                    "permissions",
-                    singletonList(Map.of("name", "all", "role", "admin"))),
-                "authentication",
-                Map.of(
-                    "class",
-                    BasicAuthPlugin.class.getName(),
-                    "blockUnknown",
-                    true,
-                    "credentials",
-                    singletonMap(USER, getSaltedHashedValue(PASS)))));
-
     configureCluster(2)
         .addConfig("conf", configset("cloud-minimal"))
-        .withSecurityJson(SECURITY_JSON)
+        .withSecurityJson(SecurityJson.SIMPLE)
         .configure();
   }
 
   private <T extends SolrRequest<? extends SolrResponse>> T withBasicAuth(T req) {
-    req.setBasicAuthCredentials(USER, PASS);
+    req.setBasicAuthCredentials(SecurityJson.USER, SecurityJson.PASS);
     return req;
   }
 
@@ -117,28 +93,46 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
       ureq.commit(solrClient, collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (SolrClient leaderClient = getHttpSolrClient(s.getLeader())) {
         assertEquals(
             numDocs,
             queryWithBasicAuth(leaderClient, new SolrQuery("*:*")).getResults().getNumFound());
       }
 
       List<Replica> pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
-      waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
+      waitForNumDocsInAllReplicas(
+          numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
-      for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r.getCoreUrl())) {
-          QueryResponse statsResponse =
-              queryWithBasicAuth(
-                  pullReplicaClient, new SolrQuery("qt", "/admin/plugins", "stats", "true"));
-          // the 'adds' metric is a gauge, which is null for PULL replicas
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.adds"));
-          assertEquals(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              0L,
-              getUpdateHandlerMetric(statsResponse, "UPDATE.updateHandler.cumulativeAdds.count"));
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            var cumulativeAddsDatapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    core,
+                    "solr_core_update_cumulative_ops",
+                    SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+              assertNull(cumulativeAddsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+              assertNotNull(cumulativeAddsDatapoint);
+            }
+          }
         }
       }
     }
@@ -170,19 +164,10 @@ public class TestPullReplicaWithAuth extends SolrCloudTestCase {
     s = docCollection.getSlices().iterator().next();
     pullReplicas = s.getReplicas(EnumSet.of(Replica.Type.PULL));
     assertEquals(numPullReplicas, pullReplicas.size());
-    waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", USER, PASS);
+    waitForNumDocsInAllReplicas(numDocs, pullReplicas, "*:*", SecurityJson.USER, SecurityJson.PASS);
 
     withBasicAuth(CollectionAdminRequest.deleteCollection(collectionName))
         .process(cluster.getSolrClient());
     waitForDeletion(collectionName);
-  }
-
-  @SuppressWarnings("unchecked")
-  private Object getUpdateHandlerMetric(QueryResponse statsResponse, String metric) {
-    return ((Map<String, Object>)
-            statsResponse
-                .getResponse()
-                .findRecursive("plugins", "UPDATE", "updateHandler", "stats"))
-        .get(metric);
   }
 }

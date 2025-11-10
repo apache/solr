@@ -114,19 +114,15 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
             "{"
                 + "\"rejoin-leader-election\": {"
                 + "\"collection\": \"someCollection\", "
-                + "\"shard\": \"someShard\","
                 + "\"coreNodeName\": \"someNodeName\","
                 + "\"core\": \"someCore\","
-                + "\"electionNode\": \"someElectionNode\","
                 + "\"rejoinAtHead\": true"
                 + "}}");
 
     assertEquals("rejoinleaderelection", v1Params.get(ACTION));
     assertEquals("someCollection", v1Params.get("collection"));
-    assertEquals("someShard", v1Params.get("shard"));
     assertEquals("someNodeName", v1Params.get("core_node_name"));
     assertEquals("someCore", v1Params.get("core"));
-    assertEquals("someElectionNode", v1Params.get("election_node"));
     assertEquals("true", v1Params.get("rejoinAtHead"));
   }
 

@@ -34,7 +34,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelector;
 import org.apache.solr.search.CollapsingQParserPlugin.GroupHeadSelectorType;
-import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -107,17 +106,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         "*[count(//doc)=2]",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='4']");
-
-    // tie broken by index order
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field=group_s sort='test_l desc'}");
-    params.add("sort", "id_i desc");
-    assertQ(
-        req(params),
-        "*[count(//doc)=2]",
-        "//result/doc[1]/str[@name='id'][.='6']",
-        "//result/doc[2]/str[@name='id'][.='2']");
 
     // score, then tiebreakers; note top level sort by score ASCENDING (just for weirdness)
     params = new ModifiableSolrParams();
@@ -975,8 +963,7 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                           "id")));
             });
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    MatcherAssert.assertThat(
-        ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
+    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));

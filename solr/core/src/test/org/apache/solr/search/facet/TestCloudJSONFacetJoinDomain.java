@@ -78,6 +78,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
    * Multivalued string field suffixes that can be randomized for testing diff facet/join code paths
    */
   private static final String[] STR_FIELD_SUFFIXES = new String[] {"_ss", "_sds", "_sdsS"};
+
   /**
    * Multivalued int field suffixes that can be randomized for testing diff facet/join code paths
    */
@@ -85,6 +86,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
 
   /** A basic client for operations at the cloud level, default collection will be set */
   private static CloudSolrClient CLOUD_CLIENT;
+
   /** One client per node */
   private static final ArrayList<SolrClient> CLIENTS = new ArrayList<>(5);
 
@@ -114,7 +116,6 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     collectionProperties.put("config", "solrconfig-tlog.xml");
     collectionProperties.put("schema", "schema_latest.xml");
     CollectionAdminRequest.createCollection(COLLECTION_NAME, configName, numShards, repFactor)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
@@ -123,7 +124,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
     for (JettySolrRunner jetty : cluster.getJettySolrRunners())
-      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl() + "/" + COLLECTION_NAME + "/"));
+      CLIENTS.add(getHttpSolrClient(jetty.getBaseUrl().toString(), COLLECTION_NAME));
 
     final int numDocs = atLeast(100);
     for (int id = 0; id < numDocs; id++) {

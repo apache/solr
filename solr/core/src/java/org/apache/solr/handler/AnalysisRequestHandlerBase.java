@@ -236,7 +236,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       final List<AttributeSource> tokenList, AnalysisContext context) {
     final List<NamedList> tokensNamedLists = new ArrayList<>();
     final FieldType fieldType = context.getFieldType();
-    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[tokenList.size()]);
+    final AttributeSource[] tokens = tokenList.toArray(new AttributeSource[0]);
 
     // sort the tokens by absolute position
     ArrayUtil.timSort(
@@ -305,8 +305,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
                 k = ATTRIBUTE_MAPPING.get(k);
               }
 
-              if (value instanceof BytesRef) {
-                final BytesRef p = (BytesRef) value;
+              if (value instanceof BytesRef p) {
                 value = p.toString();
               }
 

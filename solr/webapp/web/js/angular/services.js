@@ -23,8 +23,22 @@ solrAdminServices.factory('System',
   }])
 .factory('Metrics',
     ['$resource', function($resource) {
-      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "_":Date.now()});
+      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "core":"@core", "_":Date.now()}, {
+        "prometheus": {
+          method: 'GET',
+          params: {wt: 'prometheus', core: '@core'},
+          transformResponse: function(data) {
+            return {data: data};
+          }
+        }
+      });
     }])
+.factory('CollectionsV2',
+    function() {
+      solrApi.ApiClient.instance.basePath = '/api';
+      delete solrApi.ApiClient.instance.defaultHeaders["User-Agent"];
+      return new solrApi.CollectionsApi();
+    })
 .factory('Collections',
   ['$resource', function($resource) {
     return $resource('admin/collections',
@@ -194,25 +208,6 @@ solrAdminServices.factory('System',
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
   }])
-.factory('Mbeans',
-  ['$resource', function($resource) {
-    return $resource(':core/admin/mbeans', {'wt':'json', core: '@core', '_':Date.now()}, {
-        stats: {params: {stats: true}},
-        info: {},
-        reference: {
-            params: {wt: "xml", stats: true}, transformResponse: function (data) {
-                return {reference: data}
-            }
-        },
-        delta: {method: "POST",
-                params: {stats: true, diff:true},
-                headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                transformRequest: function(data) {
-                    return "stream.body=" + encodeURIComponent(data);
-                }
-        }
-    });
-  }])
 .factory('Files',
   ['$resource', function($resource) {
     return $resource(':core/admin/file', {'wt':'json', core: '@core', '_':Date.now()}, {
@@ -286,8 +281,75 @@ solrAdminServices.factory('System',
         })
 }])
 .factory('AuthenticationService',
-    ['base64', function (base64) {
-        var service = {};
+    ['base64', '$resource', function (base64, $resource) {
+      var service = {};
+
+      service.getOAuthTokens = function (url, data) {
+        var serializedData = serialize(data);
+        var resource = $resource(url, {}, {
+          getToken: {
+            method: 'POST',
+            timeout: 10000,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-Requested-With': undefined // Set this header to undefined to prevent preflight requests
+            },
+            transformResponse: function (data) {
+              return angular.fromJson(data);
+            }
+          }
+        });
+        return resource.getToken({}, serializedData).$promise;
+      };
+
+      var codeChallengeMethod = "S256";
+      service.getCodeChallengeMethod = function getCodeChallengeMethod() {
+        return codeChallengeMethod;
+      }
+
+      service.generateCodeVerifier = function generateCodeVerifier() {
+        var codeVerifier = '';
+        var possibleChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+        for (var i = 0; i < 96; i++) {
+          codeVerifier += possibleChars.charAt(Math.floor(Math.random() * possibleChars.length));
+        }
+        return codeVerifier;
+      }
+
+      service.generateCodeChallengeFromVerifier = async function generateCodeChallengeFromVerifier(v) {
+        var hashed = await sha256(v);
+        var base64encoded = base64urlencode(hashed);
+        return base64encoded;
+      }
+
+      function sha256(str) {
+        const shaObj = new jsSHA("SHA-256", "TEXT", { encoding: "UTF8" });
+        shaObj.update(str);
+        return shaObj.getHash("UINT8ARRAY");
+      }
+
+      function base64urlencode(a) {
+        var str = "";
+        var bytes = new Uint8Array(a);
+        var len = bytes.byteLength;
+        for (var i = 0; i < len; i++) {
+          str += String.fromCharCode(bytes[i]);
+        }
+        return btoa(str)
+          .replace(/\+/g, "-")
+          .replace(/\//g, "_")
+          .replace(/=+$/, "");
+      }
+
+      var serialize = function (obj) {
+        var str = [];
+        for (var p in obj) {
+          if (obj.hasOwnProperty(p)) {
+            str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));
+          }
+        }
+        return str.join("&");
+      };
 
         service.SetCredentials = function (username, password) {
           var authdata = base64.encode(username + ':' + password);
@@ -305,6 +367,7 @@ solrAdminServices.factory('System',
           sessionStorage.removeItem("auth.statusText");
           localStorage.removeItem("auth.stateRandom");
           sessionStorage.removeItem("auth.nonce");
+          sessionStorage.removeItem("auth.flow");
         };
 
         service.getAuthDataHeader = function () {
@@ -330,11 +393,11 @@ solrAdminServices.factory('System',
         service.isJwtCallback = function (hash) {
           var hp = this.decodeHashParams(hash);
           // console.log("Decoded hash as " + JSON.stringify(hp, undefined, 2)); // For debugging callbacks
-          return (hp['access_token'] && hp['token_type'] && hp['state']) || hp['error'];
+          return (hp['access_token'] && hp['token_type'] && hp['state']) || (hp['code'] && hp['state'])|| hp['error'];
         };
-        
+
         service.decodeHashParams = function(hash) {
-          // access_token, token_type, expires_in, state
+          // access_token, token_type, expires_in, state, code
           if (hash == null || hash.length === 0) {
             return {};
           }
@@ -350,6 +413,6 @@ solrAdminServices.factory('System',
           }
           return params;
         };
-        
+
         return service;
       }]);

@@ -42,8 +42,7 @@ public class RowAtEvaluator extends RecursiveObjectEvaluator implements TwoValue
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
 
-    if (value1 instanceof Matrix) {
-      Matrix matrix = (Matrix) value1;
+    if (value1 instanceof Matrix matrix) {
       Number index = (Number) value2;
       double[] row = matrix.getData()[index.intValue()];
       List<Number> list = new ArrayList<>();

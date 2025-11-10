@@ -16,86 +16,107 @@
  */
 package org.apache.solr.search.neural;
 
-import java.io.IOException;
-import java.util.List;
+import java.util.Optional;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
-import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
 
-public class KnnQParser extends QParser {
+public class KnnQParser extends AbstractVectorQParserBase {
 
   // retrieve the top K results based on the distance similarity function
-  static final String TOP_K = "topK";
-  static final int DEFAULT_TOP_K = 10;
+  protected static final String TOP_K = "topK";
+  protected static final int DEFAULT_TOP_K = 10;
+  protected static final String SEED_QUERY = "seedQuery";
+  protected static final String FILTERED_SEARCH_THRESHOLD = "filteredSearchThreshold";
 
-  /**
-   * Constructor for the QParser
-   *
-   * @param qstr The part of the query string specific to this parser
-   * @param localParams The set of parameters that are specific to this QParser. See
-   *     https://solr.apache.org/guide/solr/latest/query-guide/local-params.html
-   * @param params The rest of the {@link SolrParams}
-   * @param req The original {@link SolrQueryRequest}.
-   */
+  // parameters for PatienceKnnVectorQuery, a version of knn vector query that exits early when HNSW
+  // queue saturates over a {@code #saturationThreshold} for more than {@code #patience} times.
+  protected static final String EARLY_TERMINATION = "earlyTermination";
+  protected static final boolean DEFAULT_EARLY_TERMINATION = false;
+  protected static final String SATURATION_THRESHOLD = "saturationThreshold";
+  protected static final String PATIENCE = "patience";
+
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
-  @Override
-  public Query parse() throws SyntaxError {
-    String denseVectorField = localParams.get(QueryParsing.F);
-    String vectorToSearch = localParams.get(QueryParsing.V);
-    int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+  public static class EarlyTerminationParams {
+    private final boolean enabled;
+    private final Double saturationThreshold;
+    private final Integer patience;
 
-    if (denseVectorField == null || denseVectorField.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector field 'f' is missing");
+    public EarlyTerminationParams(boolean enabled, Double saturationThreshold, Integer patience) {
+      this.enabled = enabled;
+      this.saturationThreshold = saturationThreshold;
+      this.patience = patience;
     }
 
-    if (vectorToSearch == null || vectorToSearch.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "the Dense Vector value 'v' to search is missing");
+    public boolean isEnabled() {
+      return enabled;
     }
 
-    SchemaField schemaField = req.getCore().getLatestSchema().getField(denseVectorField);
-    FieldType fieldType = schemaField.getType();
-    if (!(fieldType instanceof DenseVectorField)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "only DenseVectorField is compatible with Knn Query Parser");
+    public Double getSaturationThreshold() {
+      return saturationThreshold;
     }
 
-    DenseVectorField denseVectorType = (DenseVectorField) fieldType;
-
-    return denseVectorType.getKnnVectorQuery(
-        schemaField.getName(), vectorToSearch, topK, getFilterQuery());
+    public Integer getPatience() {
+      return patience;
+    }
   }
 
-  private Query getFilterQuery() throws SolrException, SyntaxError {
-    boolean isSubQuery = recurseCount != 0;
-    if (!isFilter() && !isSubQuery) {
-      String[] filterQueries = req.getParams().getParams(CommonParams.FQ);
-      if (filterQueries != null && filterQueries.length != 0) {
-        try {
-          List<Query> filters = QueryUtils.parseFilterQueries(req);
-          SolrIndexSearcher.ProcessedFilter processedFilter =
-              req.getSearcher().getProcessedFilter(filters);
-          return processedFilter.filter;
-        } catch (IOException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-        }
-      }
+  public EarlyTerminationParams getEarlyTerminationParams() {
+    final Double saturationThreshold =
+        Optional.ofNullable(localParams.get(SATURATION_THRESHOLD))
+            .map(Double::parseDouble)
+            .orElse(null);
+
+    final Integer patience =
+        Optional.ofNullable(localParams.get(PATIENCE)).map(Integer::parseInt).orElse(null);
+
+    final boolean useExplicitParams = (saturationThreshold != null && patience != null);
+    if ((saturationThreshold == null) != (patience == null)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Parameters 'saturationThreshold' and 'patience' must both be provided, or neither.");
     }
-    return null;
+
+    final boolean enabled =
+        localParams.getBool(EARLY_TERMINATION, DEFAULT_EARLY_TERMINATION) || useExplicitParams;
+    return new EarlyTerminationParams(enabled, saturationThreshold, patience);
+  }
+
+  protected Query getSeedQuery() throws SolrException, SyntaxError {
+    String seed = localParams.get(SEED_QUERY);
+    if (seed == null) return null;
+    if (seed.isBlank()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "'seedQuery' parameter is present but is blank: please provide a valid query");
+    }
+    final QParser seedParser = subQuery(seed, null);
+    return seedParser.getQuery();
+  }
+
+  @Override
+  public Query parse() throws SyntaxError {
+    final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
+    final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
+    final String vectorToSearch = getVectorToSearch();
+    final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+    final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
+
+    return denseVectorType.getKnnVectorQuery(
+        schemaField.getName(),
+        vectorToSearch,
+        topK,
+        getFilterQuery(),
+        getSeedQuery(),
+        getEarlyTerminationParams(),
+        filteredSearchThreshold);
   }
 }

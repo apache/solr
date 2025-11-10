@@ -50,6 +50,7 @@ public abstract class SolrSpellChecker {
   public static final String DEFAULT_DICTIONARY_NAME = "default";
   public static final String FIELD = "field";
   public static final String FIELD_TYPE = "fieldType";
+
   /** Dictionary name */
   protected String name;
 

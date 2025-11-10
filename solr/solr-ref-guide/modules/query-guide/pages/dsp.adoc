@@ -162,8 +162,8 @@ image::math-expressions/noise.png[]
 In the next example the random noise is added to the sine wave using the `ebeAdd` function.
 The result of this is plotted in the image below.
 Notice that the sine wave has been hidden somewhat within the noise.
-Its difficult to say for sure if there is structure.
-As plots becomes more dense it can become harder to see a pattern hidden within noise.
+It's difficult to say for sure if there is structure.
+As plots become more dense it can become harder to see a pattern hidden within noise.
 
 image::math-expressions/hidden-signal.png[]
 
@@ -249,7 +249,7 @@ In the second example the `fft` function is called on a vector of random data si
 The plot of the real values of the `fft` response is shown below.
 
 Notice that in is this response there is no clear peak.
-Instead all frequencies have accumulated a random level of power.
+Instead, all frequencies have accumulated a random level of power.
 This `fft` shows no clear sign of signal and appears to be noise.
 
 image::math-expressions/noise-fft.png[]
@@ -259,6 +259,6 @@ The plot of the real values of the `fft` response is shown below.
 
 Notice that there are two clear mirrored peaks, at the same locations as the `fft` of the pure signal.
 But there is also now considerable noise on the frequencies.
-The `fft` has found the signal and but also shows that there is considerable noise along with the signal.
+The `fft` has found the signal and also shows that there is considerable noise along with the signal.
 
 image::math-expressions/hidden-signal-fft.png[]

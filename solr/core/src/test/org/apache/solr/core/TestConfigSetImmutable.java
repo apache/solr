@@ -46,31 +46,23 @@ public class TestConfigSetImmutable extends RestTestBase {
   public void before() throws Exception {
     Path tmpSolrHome = createTempDir();
     Path tmpConfDir = tmpSolrHome.resolve(confDir);
-    PathUtils.copyDirectory(Path.of(TEST_HOME()), tmpSolrHome);
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
     // make the ConfigSet immutable
     Files.writeString(
         tmpConfDir.resolve("configsetprops.json"),
-        new StringBuilder("{\"immutable\":\"true\"}"),
+        "{\"immutable\":\"true\"}",
         StandardCharsets.UTF_8);
 
     System.setProperty("managed.schema.mutable", "true");
 
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(),
-        "solrconfig-schemaless.xml",
-        "schema-rest.xml",
-        "/solr",
-        true,
-        null);
+        tmpSolrHome, "solrconfig-schemaless.xml", "schema-rest.xml", "/solr", true, null);
   }
 
   @After
   public void after() throws Exception {
-    if (jetty != null) {
-      jetty.stop();
-      jetty = null;
-    }
-    client = null;
+    solrClientTestRule.reset();
+
     if (restTestHarness != null) {
       restTestHarness.close();
     }

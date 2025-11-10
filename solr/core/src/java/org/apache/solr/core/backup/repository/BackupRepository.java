@@ -31,7 +31,6 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.backup.Checksum;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -204,13 +203,21 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
     }
   }
 
+  /**
+   * Copies an index file from a specified {@link Directory} to a destination {@link Directory}.
+   *
+   * @param sourceDir The source directory hosting the file to be copied.
+   * @param sourceFileName The name of the file to be copied
+   * @param destDir The destination directory.
+   * @throws CorruptIndexException in case checksum of the file does not match with precomputed
+   *     checksum stored at the end of the file
+   */
   default void copyIndexFileFrom(
       Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
       throws IOException {
     boolean success = false;
-    try (ChecksumIndexInput is =
-            sourceDir.openChecksumInput(sourceFileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-        IndexOutput os = destDir.createOutput(destFileName, DirectoryFactory.IOCONTEXT_NO_CACHE)) {
+    try (ChecksumIndexInput is = sourceDir.openChecksumInput(sourceFileName);
+        IndexOutput os = destDir.createOutput(destFileName, IOContext.READONCE)) {
       os.copyBytes(is, is.length() - CodecUtil.footerLength());
 
       // ensure that index file is not corrupted
@@ -227,10 +234,9 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
   /**
    * Delete {@code files} at {@code path}
    *
-   * @since 8.3.0
+   * @since 9.3.0
    */
-  default void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
+  default void delete(URI path, Collection<String> files) throws IOException {
     throw new UnsupportedOperationException();
   }
 
@@ -241,7 +247,7 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
    * @since 8.3.0
    */
   default Checksum checksum(Directory dir, String fileName) throws IOException {
-    try (IndexInput in = dir.openChecksumInput(fileName, IOContext.READONCE)) {
+    try (IndexInput in = dir.openChecksumInput(fileName)) {
       return new Checksum(CodecUtil.retrieveChecksum(in), in.length());
     }
   }
@@ -277,5 +283,29 @@ public interface BackupRepository extends NamedListInitializedPlugin, Closeable 
       URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
       throws IOException {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * Copy a file from a source {@link Directory} to a destination {@link Directory} without
+   * verifying the checksum.
+   *
+   * @param sourceDir The source directory hosting the file to be copied.
+   * @param sourceFileName The name of the file to be copied.
+   * @param destDir The destination directory to copy the file to.
+   * @param destFileName The name of the copied file at destination.
+   */
+  default void copyFileNoChecksum(
+      Directory sourceDir, String sourceFileName, Directory destDir, String destFileName)
+      throws IOException {
+    boolean success = false;
+    try (IndexInput is = sourceDir.openInput(sourceFileName, IOContext.READONCE);
+        IndexOutput os = destDir.createOutput(destFileName, IOContext.READONCE)) {
+      os.copyBytes(is, is.length());
+      success = true;
+    } finally {
+      if (!success) {
+        IOUtils.deleteFilesIgnoringExceptions(destDir, destFileName);
+      }
+    }
   }
 }

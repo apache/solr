@@ -29,8 +29,7 @@ public class TestMinimalConfig extends SolrTestCaseJ4 {
     initCore("solrconfig-minimal.xml", "schema-minimal.xml");
   }
 
-  // Make sure the content of the lib/ core subfolder is loaded even if there is no <lib> node in
-  // the solrconfig
+  // Make sure the content of the lib/ core subfolder is loaded
   @Test
   public void testLib() throws IOException {
     SolrResourceLoader loader = h.getCore().getResourceLoader();

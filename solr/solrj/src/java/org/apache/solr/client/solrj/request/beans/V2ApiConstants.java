@@ -23,6 +23,7 @@ public class V2ApiConstants {
 
   /** Parent key for collection or alias properties to set. */
   public static final String PROPERTIES_KEY = "properties";
+
   /** Parent key for v2 params used to create a collection. */
   public static final String CREATE_COLLECTION_KEY = "create-collection";
 

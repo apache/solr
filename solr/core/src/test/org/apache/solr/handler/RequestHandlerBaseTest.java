@@ -17,17 +17,24 @@
 
 package org.apache.solr.handler;
 
+import static org.apache.solr.metrics.SolrMetricProducer.HANDLER_ATTR;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
+import io.opentelemetry.api.metrics.LongHistogram;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -42,8 +49,11 @@ import org.junit.Test;
 /** Unit tests for the metric and exception handling in {@link RequestHandlerBase} */
 public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
+  public static final AttributeKey<String> SOURCE_ATTR = AttributeKey.stringKey("source");
   private SolrCore solrCore;
   private CoreContainer coreContainer;
+  private LongCounter mockLongCounter;
+  private LongHistogram mockLongHistogram;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -54,6 +64,8 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   public void initMocks() {
     solrCore = mock(SolrCore.class);
     coreContainer = mock(CoreContainer.class);
+    mockLongCounter = mock(LongCounter.class);
+    mockLongHistogram = mock(LongHistogram.class);
   }
 
   @Test
@@ -63,9 +75,9 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verify(metrics.numErrors).mark();
-    verify(metrics.numServerErrors).mark();
-    verifyNoInteractions(metrics.numClientErrors);
+    verify(mockLongCounter, never())
+        .add(
+            eq(1L), argThat(attrs -> "source".equals(attrs.get(AttributeKey.stringKey("client")))));
   }
 
   @Test
@@ -75,9 +87,10 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verifyNoInteractions(metrics.numErrors);
-    verifyNoInteractions(metrics.numServerErrors);
-    verifyNoInteractions(metrics.numClientErrors);
+    verify(mockLongCounter, never())
+        .add(eq(1L), argThat(attrs -> "client".equals(attrs.get(SOURCE_ATTR))));
+    verify(mockLongCounter, never())
+        .add(eq(1L), argThat(attrs -> "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
@@ -87,9 +100,11 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
 
     RequestHandlerBase.processErrorMetricsOnException(e, metrics);
 
-    verify(metrics.numErrors).mark();
-    verify(metrics.numClientErrors).mark();
-    verifyNoInteractions(metrics.numServerErrors);
+    verify(mockLongCounter, times(1))
+        .add(eq(1L), argThat(attrs -> "client".equals(attrs.get(SOURCE_ATTR))));
+
+    verify(mockLongCounter, never())
+        .add(eq(1L), argThat(attrs -> "server".equals(attrs.get(SOURCE_ATTR))));
   }
 
   @Test
@@ -103,7 +118,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new SyntaxError("Some syntax error");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(SolrException.class, normalized.getClass());
     final SolrException normalizedSolrException = (SolrException) normalized;
@@ -121,7 +136,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(normalized, e);
   }
@@ -138,11 +153,30 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
         };
     final Exception e = new RuntimeException("Some generic, non-SolrException");
 
-    final Exception normalized = RequestHandlerBase.normalizeReceivedException(solrQueryRequest, e);
+    final Exception normalized = RequestHandlerBase.processReceivedException(solrQueryRequest, e);
 
     assertEquals(SolrException.class, normalized.getClass());
     final SolrException normalizedSolrException = (SolrException) normalized;
     assertEquals(SolrException.ErrorCode.SERVER_ERROR.code, normalizedSolrException.code());
+  }
+
+  @Test
+  public void testIsInternalShardRequest() {
+    final SolrQueryRequest solrQueryRequest =
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
+          @Override
+          public CoreContainer getCoreContainer() {
+            return coreContainer;
+          }
+        };
+
+    assertFalse(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
+
+    solrQueryRequest.setParams(new MapSolrParams(Map.of("isShard", "true")));
+    assertTrue(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
+
+    solrQueryRequest.setParams(new MapSolrParams(Map.of("distrib.from", "http://foo:1234/solr")));
+    assertTrue(RequestHandlerBase.isInternalShardRequest(solrQueryRequest));
   }
 
   // Ideally we wouldn't need to use mocks here, but HandlerMetrics requires a SolrMetricsContext,
@@ -150,10 +184,13 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   //  requires a MetricsManager, which requires ...
   private RequestHandlerBase.HandlerMetrics createHandlerMetrics() {
     final SolrMetricsContext metricsContext = mock(SolrMetricsContext.class);
-    when(metricsContext.timer(any(), any())).thenReturn(mock(Timer.class));
-    when(metricsContext.meter(any(), any())).then(invocation -> mock(Meter.class));
-    when(metricsContext.counter(any(), any())).thenReturn(mock(Counter.class));
 
-    return new RequestHandlerBase.HandlerMetrics(metricsContext, "someBaseMetricPath");
+    when(metricsContext.getRegistryName()).thenReturn("solr.core");
+
+    when(metricsContext.longCounter(any(), any())).thenReturn(mockLongCounter);
+    when(metricsContext.longHistogram(any(), any())).thenReturn(mockLongHistogram);
+
+    return new RequestHandlerBase.HandlerMetrics(
+        metricsContext, Attributes.of(HANDLER_ATTR, "/someBaseMetricPath"), false);
   }
 }

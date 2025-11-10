@@ -220,7 +220,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
     }
 
     List<LeafReaderContext> leafList = fcontext.searcher.getTopReaderContext().leaves();
-    leaves = leafList.toArray(new LeafReaderContext[leafList.size()]);
+    leaves = leafList.toArray(new LeafReaderContext[0]);
   }
 
   private SimpleOrderedMap<Object> nextBucket() {
@@ -301,7 +301,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
             for (int subindex = 0; subindex < numSubs; subindex++) {
               MultiPostingsEnum.EnumWithSlice sub = subs[subindex];
               if (sub.postingsEnum == null) continue;
-              int base = sub.slice.start;
+              int base = sub.slice.start();
               int docid;
 
               if (countOnly) {
@@ -309,7 +309,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
                   if (fastForRandomSet.get(docid + base)) c++;
                 }
               } else {
-                setNextReader(leaves[sub.slice.readerIndex]);
+                setNextReader(leaves[sub.slice.readerIndex()]);
                 while ((docid = sub.postingsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                   if (fastForRandomSet.get(docid + base)) {
                     c++;

@@ -392,7 +392,7 @@ It was designed specifically to work with models trained using the xref:stream-s
 The `classify` function uses the xref:stream-source-reference.adoc#model[`model` function] to retrieve a stored model and then scores a stream of tuples using the model.
 The tuples read by the classifier must contain a text field that can be used for classification.
 The classify function uses a Lucene analyzer to extract the features from the text so the model can be applied.
-By default the `classify` function looks for the analyzer using the name of text field in the tuple.
+By default, the `classify` function looks for the analyzer using the name of text field in the tuple.
 If the Solr schema on the worker node does not contain this field, the analyzer can be looked up in another field by specifying the `analyzerField` parameter.
 
 Each tuple that is classified is assigned two scores:
@@ -400,7 +400,7 @@ Each tuple that is classified is assigned two scores:
 * probability_d*: A float between 0 and 1 which describes the probability that the tuple belongs to the class.
 This is useful in the classification use case.
 
-* score_d*: The score of the document that has not be squashed between 0 and 1.
+* score_d*: The score of the document that has not been squashed between 0 and 1.
 The score may be positive or negative.
 The higher the score the better the document fits the class.
 This un-squashed score will be useful in query re-ranking and recommendation use cases.
@@ -410,7 +410,7 @@ This score is particularly useful when multiple high ranking documents have a pr
 
 * `model expression`: (Mandatory) Retrieves the stored logistic regression model.
 * `field`: (Mandatory) The field in the tuples to apply the classifier to.
-By default the analyzer for this field in the schema will be used extract the features.
+By default, the analyzer for this field in the schema will be used extract the features.
 * `analyzerField`: (Optional) Specifies a different field to find the analyzer from in the schema.
 
 === classify Syntax
@@ -428,7 +428,7 @@ classify(model(modelCollection,
              field="text_t")
 ----
 
-In the example above the `classify expression` is retrieving the model using the `model` function.
+In the example above the `classify expression` is retrieving the model using the `api` function.
 It is then classifying tuples returned by the `search` function.
 The `text_t` field is used for the text classification and the analyzer for the `text_t` field in the Solr schema is used to analyze the text and extract the features.
 
@@ -526,7 +526,7 @@ daemon(id="uniqueId",
 ----
 
 The sample code above shows a `daemon` function wrapping an `update` function, which is wrapping a `topic` function.
-When this expression is sent to the `/stream` handler, the `/stream` hander sees the `daemon` function and keeps it in memory where it will run at intervals.
+When this expression is sent to the `/stream` handler, the `/stream` handler sees the `daemon` function and keeps it in memory where it will run at intervals.
 In this particular example, the `daemon` function will run the `update` function every second.
 The `update` function is wrapping a xref:stream-source-reference.adoc#topic[`topic` function], which will stream tuples that match the `topic` function query in batches.
 Each subsequent call to the topic will return the next batch of tuples for the topic.
@@ -596,7 +596,7 @@ DaemonStream daemonStream = new DaemonStream(topicStream,             // The und
                                              "daemonId",              // The id of the daemon
                                              1000,                    // The interval at which to run the internal stream
                                              500);                    // The internal queue size for the daemon stream. Tuples will be placed in the queue
-                                                                      // as they are read by the internal internal thread.
+                                                                      // as they are read by the internal thread.
                                                                       // Calling read() on the daemon stream reads records from the internal queue.
 
 daemonStream.setStreamContext(context);
@@ -636,7 +636,7 @@ This is similar to the `<<update,update()>>` function described below.
 
 === delete Parameters
 
-* `destinationCollection`: (Mandatory) The collection where the tuples will deleted.
+* `destinationCollection`: (Mandatory) The collection where the tuples will be deleted.
 * `batchSize`: (Optional, defaults to `250`) The delete batch size.
 * `pruneVersionField`: (Optional, defaults to `false`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)
@@ -727,7 +727,7 @@ The `executor` function has an internal thread pool that runs tasks that compile
 This function can also be parallelized across worker nodes by wrapping it in the <<parallel,`parallel`>> function to provide parallel execution of expressions across a cluster.
 
 The `executor` function does not do anything specific with the output of the expressions that it runs.
-Therefore the expressions that are executed must contain the logic for pushing tuples to their destination.
+Therefore, the expressions that are executed must contain the logic for pushing tuples to their destination.
 The <<update,update function>> can be included in the expression being executed to send the tuples to a SolrCloud collection for storage.
 
 This model allows for asynchronous execution of jobs where the output is stored in a SolrCloud collection where it can be accessed as the job progresses.
@@ -786,6 +786,118 @@ fetch(addresses,
 
 The example above fetches addresses for users by matching the username in the tuple with the userId field in the addresses collection.
 
+== fullOuterJoin
+
+The `fullOuterJoin` function wraps two streams, Left and Right, and emits tuples from both.
+If there is a tuple in Right equal to that in the Left (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in one stream *need not* exist for a tuple in the other to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many full outer join scenarios.
+The tuples are emitted in the order in which they appear in the streams.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== fullOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== fullOuterJoin Syntax
+
+[source,text]
+----
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+fullOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
+)
+----
+
+=== Reciprocal Rank Fusion (RRF) using fullOuterJoin
+
+The `fullOuterJoin` function can be used to construct an RRF algorithm for merging together result sets, as illustrated below.
+
+(In a real-world example the two `sort/list/tuple` blocks would likely use `search` instead.)
+
+[source,text]
+----
+top(
+    n=10,
+    sort(
+        select(
+            fullOuterJoin(
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=1, title="L 1", left="a", score=4.5),
+                                tuple(id=2, title="L 2", left="b", score=3.5),
+                                tuple(id=3, title="L 3", left="c", score=2.5),
+                                tuple(id=4, title="L 4", left="d", score=2.5),
+                                tuple(id=5, title="L 5", left="e", score=2.5),
+                                tuple(id=6, title="L 6", left="f", score=2.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreL,
+                        add(recNum(),1) as rankL,
+                        div(1,add(rankL,60)) as rrL
+                    ),
+                    by="id asc"
+                ),
+                sort(
+                    select(
+                        sort(
+                            list(
+                                tuple(id=3, title="R 3", right="g", score=0.9),
+                                tuple(id=2, title="R 2", right="h", score=0.8),
+                                tuple(id=4, title="R 4", right="i", score=0.7),
+                                tuple(id=7, title="R 7", right="j", score=0.6),
+                                tuple(id=8, title="R 8", right="k", score=0.5),
+                                tuple(id=9, title="R 9", right="l", score=0.5),
+                            ),
+                            by="score desc"
+                        ),
+                        *,
+                        score as scoreR,
+                        add(recNum(),1) as rankR,
+                        div(1,add(rankR,60)) as rrR
+                    ),
+                    by="id asc"
+                ),
+                on="id"
+            ),
+            *,
+            replace(rrL,null,withValue=0),
+            replace(rrR,null,withValue=0),
+            add(rrL,rrR) as rrf,
+        ),
+        by="rrf desc"
+    ),
+    sort="rrf desc"
+)
+----
+
 == having
 
 The `having` expression wraps a stream and applies a boolean operation to each tuple.
@@ -815,53 +927,7 @@ having(rollup(over=a_s,
 
 ----
 
-In this example, the `having` expression iterates the aggregated tuples from the `rollup` expression and emits all tuples where the field `sum(a_i)` is greater then 100 and less then 110.
-
-== leftOuterJoin
-
-The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
-If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
-An equal tuple in Right *need not* exist for the Left tuple to be emitted.
-This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
-The tuples are emitted in the order in which they appear in the Left stream.
-Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
-If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
-
-You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
-
-=== leftOuterJoin Parameters
-
-* `StreamExpression for StreamLeft`
-* `StreamExpression for StreamRight`
-* `on`: Fields to be used for checking equality of tuples between Left and Right.
-Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
-
-=== leftOuterJoin Syntax
-
-[source,text]
-----
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
-  on="personId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
-  on="personId=ownerId"
-)
-
-leftOuterJoin(
-  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
-  select(
-    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
-    ownerId,
-    name as petName
-  ),
-  on="personId=ownerId"
-)
-----
+In this example, the `having` expression iterates the aggregated tuples from the `rollup` expression and emits all tuples where the field `sum(a_i)` is greater than 100 and less than 110.
 
 == hashJoin
 
@@ -983,6 +1049,52 @@ intersect(
   search(collection1, q="a_s:(setA || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   search(collection1, q="a_s:(setB || setAB)", qt="/export", fl="id,a_s,a_i", sort="a_i asc, a_s asc"),
   on="a_i,a_s"
+)
+----
+
+== leftOuterJoin
+
+The `leftOuterJoin` function wraps two streams, Left and Right, and emits tuples from Left.
+If there is a tuple in Right equal (as defined by `on`) then the values in that tuple will be included in the emitted tuple.
+An equal tuple in Right *need not* exist for the Left tuple to be emitted.
+This supports one-to-one, one-to-many, many-to-one, and many-to-many left outer join scenarios.
+The tuples are emitted in the order in which they appear in the Left stream.
+Both streams must be sorted by the fields being used to determine equality (using the `on` parameter).
+If both tuples contain a field of the same name then the value from the Right stream will be used in the emitted tuple.
+
+You can wrap the incoming streams with a `select` function to be specific about which field values are included in the emitted tuple.
+
+=== leftOuterJoin Parameters
+
+* `StreamExpression for StreamLeft`
+* `StreamExpression for StreamRight`
+* `on`: Fields to be used for checking equality of tuples between Left and Right.
+Can be of the format `on="fieldName"`, `on="fieldNameInLeft=fieldNameInRight"`, or `on="fieldName, otherFieldName=rightOtherFieldName"`.
+
+=== leftOuterJoin Syntax
+
+[source,text]
+----
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="personId,petName", sort="personId asc"),
+  on="personId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  search(pets, q="type:cat", qt="/export", fl="ownerId,petName", sort="ownerId asc"),
+  on="personId=ownerId"
+)
+
+leftOuterJoin(
+  search(people, q="*:*", qt="/export", fl="personId,name", sort="personId asc"),
+  select(
+    search(pets, q="type:cat", qt="/export", fl="ownerId,name", sort="ownerId asc"),
+    ownerId,
+    name as petName
+  ),
+  on="personId=ownerId"
 )
 ----
 
@@ -1167,7 +1279,7 @@ The `parallel` function maintains the sort order of the tuples returned by the w
 For example if you sort on year, month and day you could partition on year only as long as there are enough different years to spread the tuples around the worker nodes.
 
 Solr allows sorting on more than 4 fields, but you cannot specify more than 4 partitionKeys for speed considerations.
-Also it's overkill to specify many `partitionKeys` when we one or two keys could be enough to spread the tuples.
+Also, it's overkill to specify many `partitionKeys` when we one or two keys could be enough to spread the tuples.
 
 Parallel stream was designed when the underlying search stream will emit a lot of tuples from the collection.
 If the search stream only emits a small subset of the data from the collection using `parallel` could potentially be slower.
@@ -1187,6 +1299,7 @@ Worker collections can be empty collections that exist only to execute streaming
 * `StreamExpression`: Expression to send to the worker collection.
 * `workers`: Number of workers in the worker collection to send the expression to.
 * `zkHost`: (Optional) The ZooKeeper connect string where the worker collection resides.
+Zookeeper Credentials and ACLs will only be included if the same ZkHost is used as the Solr instance that you are connecting to (the `chroot` can be different).
 * `sort`: The sort criteria for ordering tuples returned by the worker nodes.
 
 === parallel Syntax
@@ -1212,7 +1325,7 @@ It executes on all the documents and the result bitset is cached in the filterCa
 
 For a `parallel` stream with the same number of workers and `partitionKeys` the first query would be slower than subsequent queries.
 A trick to not pay the penalty for the first slow query would be to use a warmup query for every new searcher.
-The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partionKeys`.
+The following is a `solrconfig.xml` snippet for 2 workers and "year_i" as the `partitionKeys`.
 
 [source,text]
 ----
@@ -1299,7 +1412,7 @@ The group operation also serves as an example reduce operation that can be refer
 [IMPORTANT]
 ====
 The reduce function relies on the sort order of the underlying stream.
-Accordingly the sort order of the underlying stream must be aligned with the group by field.
+Accordingly, the sort order of the underlying stream must be aligned with the group by field.
 ====
 
 === reduce Parameters
@@ -1375,7 +1488,7 @@ One can provide a list of operations and evaluators to perform on any fields, su
 === select Parameters
 
 * `StreamExpression`
-* `fieldName`: name of field to include in the output tuple (can include multiple of these), such as `outputTuple[fieldName] = inputTuple[fieldName]`
+* `fieldName`: name of field to include in the output tuple (can include multiple of these), such as `outputTuple[fieldName] = inputTuple[fieldName]`. The `fieldName` can be a wildcard pattern, e.g. `a_*` to select all fields that start with `a_`.
 * `fieldName as aliasFieldName`: aliased field name to include in the output tuple (can include multiple of these), such as `outputTuple[aliasFieldName] = incomingTuple[fieldName]`
 * `replace(fieldName, value, withValue=replacementValue)`: if `incomingTuple[fieldName] == value` then `outgoingTuple[fieldName]` will be set to `replacementValue`.
 `value` can be the string "null" to replace a null value with some other value.
@@ -1490,7 +1603,7 @@ The `update` function wraps another functions and sends the tuples to a SolrClou
 
 === update Parameters
 
-* `destinationCollection`: (Mandatory) The collection where the tuples will indexed.
+* `destinationCollection`: (Mandatory) The collection where the tuples will be indexed.
 * `batchSize`: (Optional, defaults to `250`) The indexing batch size.
 * `pruneVersionField`: (Optional, defaults to `true`) Whether to prune `\_version_` values from tuples
 * `StreamExpression`: (Mandatory)

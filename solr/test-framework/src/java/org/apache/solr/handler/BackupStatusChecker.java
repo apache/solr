@@ -22,8 +22,10 @@ import static org.apache.lucene.tests.util.LuceneTestCase.assertTrue;
 import static org.apache.solr.SolrTestCaseJ4.params;
 
 import java.lang.invoke.MethodHandles;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.util.NamedList;
@@ -123,7 +125,7 @@ public final class BackupStatusChecker {
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the the most recently reported status to the a particular backup
+   * reliable way to determine if the most recently reported status to the a particular backup
    * request.
    *
    * @param directoryName to compare to, may be null
@@ -159,7 +161,7 @@ public final class BackupStatusChecker {
    *
    * <p><b>NOTE:</b> this method is <em>NOT</em> suitable/safe to use in a test where multiple
    * backups are being taken/deleted concurrently, because the replication handler API provides no
-   * reliable way to determine if the the most recently reported status to the a particular backup
+   * reliable way to determine if the most recently reported status to the a particular backup
    * request.
    *
    * @return the "directoryName" of the backup if the response indicates that a is completed
@@ -189,13 +191,18 @@ public final class BackupStatusChecker {
   private String _checkBackupSuccess(final String backupName) throws Exception {
     final String label = (null == backupName ? "latest backup" : backupName);
     final SimpleSolrResponse rsp =
-        new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path, params("command", "details"))
+        new GenericSolrRequest(
+                GenericSolrRequest.METHOD.GET,
+                path,
+                SolrRequest.SolrRequestType.ADMIN,
+                params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Status of {}: {}", label, data);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData =
-        (NamedList<String>) data.findRecursive("details", "backup");
+        (NamedList<String>) data._get(List.of("details", "backup"), null);
     if (null == backupData) {
       // no backup has finished yet
       return null;
@@ -265,13 +272,18 @@ public final class BackupStatusChecker {
   public boolean checkBackupDeletionSuccess(final String backupName) throws Exception {
     assertNotNull("backumpName must not be null", backupName);
     final SimpleSolrResponse rsp =
-        new GenericSolrRequest(GenericSolrRequest.METHOD.GET, path, params("command", "details"))
+        new GenericSolrRequest(
+                GenericSolrRequest.METHOD.GET,
+                path,
+                SolrRequest.SolrRequestType.ADMIN,
+                params("command", "details"))
+            .setRequiresCollection(true)
             .process(client);
     final NamedList<?> data = rsp.getResponse();
     log.info("Checking Deletion Status of {}: {}", backupName, data);
     @SuppressWarnings({"unchecked"})
     final NamedList<String> backupData =
-        (NamedList<String>) data.findRecursive("details", "backup");
+        (NamedList<String>) data._get(List.of("details", "backup"), null);
     if (null == backupData
         || null == backupData.get("status")
         || !backupName.equals(backupData.get("snapshotName"))) {

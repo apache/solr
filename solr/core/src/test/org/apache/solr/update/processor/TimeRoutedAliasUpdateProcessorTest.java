@@ -72,7 +72,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059") // TBD
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -349,7 +349,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     boolean[] threadFinished = new boolean[2];
     try {
       CountDownLatch starter = new CountDownLatch(1);
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[0] = true;
             try {
@@ -361,7 +361,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
             threadFinished[0] = true;
           });
 
-      executorService.submit(
+      executorService.execute(
           () -> {
             threadStarted[1] = true;
             try {

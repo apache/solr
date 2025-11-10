@@ -208,6 +208,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     sdoc.put("another_boolean", "" + r.nextBoolean());
     return sdoc;
   }
+
   // common-case ascii
   static String str(Random r, int sz) {
     StringBuilder sb = new StringBuilder(sz);

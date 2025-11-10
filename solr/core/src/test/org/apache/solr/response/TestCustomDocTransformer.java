@@ -24,6 +24,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
+import org.apache.solr.search.DocIterationInfo;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -101,7 +102,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
 
     /** This transformer simply concatenates the values of multiple fields */
     @Override
-    public void transform(SolrDocument doc, int docid) {
+    public void transform(SolrDocument doc, int docid, DocIterationInfo docInfo) {
       str.setLength(0);
       for (String s : extra) {
         String v = getAsString(s, doc);

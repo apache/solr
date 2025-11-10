@@ -50,10 +50,9 @@ public class PayloadUtils {
     // component that encodes payloads as floats
     String encoder = null;
     Analyzer a = fieldType.getIndexAnalyzer();
-    if (a instanceof TokenizerChain) {
+    if (a instanceof TokenizerChain tc) {
       // examine the indexing analysis chain for DelimitedPayloadTokenFilterFactory or
       // NumericPayloadTokenFilterFactory
-      TokenizerChain tc = (TokenizerChain) a;
       TokenFilterFactory[] factories = tc.getTokenFilterFactories();
       for (TokenFilterFactory factory : factories) {
         if (factory instanceof DelimitedPayloadTokenFilterFactory) {
@@ -142,9 +141,9 @@ public class PayloadUtils {
     } else if (terms.size() == 1) {
       query = terms.get(0);
     } else if (operator != null && operator.equalsIgnoreCase("or")) {
-      query = new SpanOrQuery(terms.toArray(new SpanTermQuery[terms.size()]));
+      query = new SpanOrQuery(terms.toArray(new SpanTermQuery[0]));
     } else {
-      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[terms.size()]), 0, true);
+      query = new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
     }
     return query;
   }

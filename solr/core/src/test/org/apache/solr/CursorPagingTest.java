@@ -45,11 +45,11 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CursorMarkParams;
 import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.BeforeClass;
 
@@ -58,8 +58,10 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
   /** solrconfig.xml file name, shared with other cursor related tests */
   public static final String TEST_SOLRCONFIG_NAME = "solrconfig-deeppaging.xml";
+
   /** schema.xml file name, shared with other cursor related tests */
   public static final String TEST_SCHEMAXML_NAME = "schema-sorts.xml";
+
   /** values from enumConfig.xml */
   public static final List<String> SEVERITY_ENUM_VALUES =
       List.of("Not Available", "Low", "Medium", "High", "Critical");
@@ -713,30 +715,19 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     final Collection<String> allFieldNames = getAllSortFieldNames();
 
-    final MetricsMap filterCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.filterCache"))
-                .getGauge();
-    assertNotNull(filterCacheStats);
-    final MetricsMap queryCacheStats =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.queryResultCache"))
-                .getGauge();
-    assertNotNull(queryCacheStats);
+    SolrCore solrCore = h.getCore();
 
-    final long preQcIn = (Long) queryCacheStats.getValue().get("inserts");
-    final long preFcIn = (Long) filterCacheStats.getValue().get("inserts");
-    final long preFcHits = (Long) filterCacheStats.getValue().get("hits");
+    // Get initial metrics for filter and query cache
+    var preFilterInserts =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
+    var preFilterHits =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
+    var preQueryInserts =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
+            .getValue();
 
     SentinelIntSet ids =
         assertFullWalkNoDups(
@@ -751,13 +742,21 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
 
     assertEquals(6, ids.size());
 
-    final long postQcIn = (Long) queryCacheStats.getValue().get("inserts");
-    final long postFcIn = (Long) filterCacheStats.getValue().get("inserts");
-    final long postFcHits = (Long) filterCacheStats.getValue().get("hits");
+    var postFilterInserts =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
+    var postFilterHits =
+        SolrMetricTestUtils.getCacheSearcherOpsHits(solrCore, SolrMetricTestUtils.FILTER_CACHE)
+            .getValue();
+    var postQueryInserts =
+        SolrMetricTestUtils.getCacheSearcherOpsInserts(
+                solrCore, SolrMetricTestUtils.QUERY_RESULT_CACHE)
+            .getValue();
 
-    assertEquals("query cache inserts changed", preQcIn, postQcIn);
-    assertEquals("filter cache did not grow correctly", 2, postFcIn - preFcIn);
-    assertTrue("filter cache did not have any new cache hits", 0 < postFcHits - preFcHits);
+    assertEquals("query cache inserts changed", preQueryInserts, postQueryInserts, 0.0);
+    assertEquals(
+        "filter cache did not grow correctly", 2, postFilterInserts - preFilterInserts, 0.0);
+    assertTrue("filter cache did not have any new cache hits", 0 < postFilterHits - preFilterHits);
   }
 
   /** randomized testing of a non-trivial number of docs using assertFullWalkNoDups */
@@ -1115,9 +1114,9 @@ public class CursorPagingTest extends SolrTestCaseJ4 {
       if (null != previousFacets) {
         assertEquals(
             "Facets not the same as on previous page:\nprevious page facets: "
-                + Arrays.toString(facets.toArray(new Object[facets.size()]))
+                + Arrays.toString(facets.toArray(new Object[0]))
                 + "\ncurrent page facets: "
-                + Arrays.toString(previousFacets.toArray(new Object[previousFacets.size()])),
+                + Arrays.toString(previousFacets.toArray(new Object[0])),
             previousFacets,
             facets);
       }

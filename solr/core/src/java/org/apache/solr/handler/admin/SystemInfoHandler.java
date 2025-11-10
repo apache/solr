@@ -18,14 +18,19 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import com.codahale.metrics.Gauge;
-import java.io.File;
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -34,14 +39,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
@@ -53,7 +63,6 @@ import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
 import org.apache.solr.util.RTimer;
-import org.apache.solr.util.RedactionUtils;
 import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,8 +75,6 @@ import org.slf4j.LoggerFactory;
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static String REDACT_STRING = RedactionUtils.getRedactString();
-
   /**
    * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
    * This property will be logged as a suggested workaround if any problems are noticed when doing
@@ -78,8 +85,15 @@ public class SystemInfoHandler extends RequestHandlerBase {
    *
    * @see #initHostname
    */
-  private static final String PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP =
-      "solr.dns.prevent.reverse.lookup";
+  private static final String REVERSE_DNS_OF_LOCALHOST_SYSPROP =
+      "solr.admin.handler.systeminfo.dns.reverse.lookup.enabled";
+
+  /**
+   * Local cache for BeanInfo instances that are created to scan for system metrics. List of
+   * properties is not supposed to change for the JVM lifespan, so we can keep already create
+   * BeanInfo instance for future calls.
+   */
+  private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
   // on some platforms, resolving canonical hostname can cause the thread
   // to block for several seconds if nameservices aren't available
@@ -99,11 +113,81 @@ public class SystemInfoHandler extends RequestHandlerBase {
     initHostname();
   }
 
+  /**
+   * Iterates over properties of the given MXBean and invokes the provided consumer with each
+   * property name and its current value.
+   *
+   * @param obj an instance of MXBean
+   * @param interfaces interfaces that it may implement. Each interface will be tried in turn, and
+   *     only if it exists and if it contains unique properties then they will be added as metrics.
+   * @param consumer consumer for each property name and value
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void forEachGetterValue(
+      T obj, String[] interfaces, BiConsumer<String, Object> consumer) {
+    for (String clazz : interfaces) {
+      try {
+        final Class<? extends PlatformManagedObject> intf =
+            Class.forName(clazz).asSubclass(PlatformManagedObject.class);
+        forEachGetterValue(obj, intf, consumer);
+      } catch (ClassNotFoundException e) {
+        // ignore
+      }
+    }
+  }
+
+  /**
+   * Iterates over properties of the given MXBean and invokes the provided consumer with each
+   * property name and its current value.
+   *
+   * @param obj an instance of MXBean
+   * @param intf MXBean interface, one of {@link PlatformManagedObject}-s
+   * @param consumer consumer for each property name and value
+   * @param <T> formal type
+   */
+  public static <T extends PlatformManagedObject> void forEachGetterValue(
+      T obj, Class<? extends T> intf, BiConsumer<String, Object> consumer) {
+    if (intf.isInstance(obj)) {
+      BeanInfo beanInfo =
+          beanInfos.computeIfAbsent(
+              intf,
+              clazz -> {
+                try {
+                  return Introspector.getBeanInfo(
+                      clazz, clazz.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
+
+                } catch (IntrospectionException e) {
+                  log.warn("Unable to fetch properties of MXBean {}", obj.getClass().getName());
+                  return null;
+                }
+              });
+
+      // if BeanInfo retrieval failed, return early
+      if (beanInfo == null) {
+        return;
+      }
+      for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {
+        try {
+          Method readMethod = desc.getReadMethod();
+          if (readMethod == null) {
+            continue; // skip properties without a read method
+          }
+
+          final String name = desc.getName();
+          Object value = readMethod.invoke(obj);
+          consumer.accept(name, value);
+        } catch (Exception e) {
+          // didn't work, skip it...
+        }
+      }
+    }
+  }
+
   private void initHostname() {
-    if (null != System.getProperty(PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP, null)) {
+    if (!EnvUtils.getPropertyAsBool(REVERSE_DNS_OF_LOCALHOST_SYSPROP, true)) {
       log.info(
           "Resolving canonical hostname for local host prevented due to '{}' sysprop",
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP);
       hostname = null;
       return;
     }
@@ -114,9 +198,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
       hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
       log.warn(
-          "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. SET THE '{}' {}",
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
-          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.",
+          "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP,
           e);
       hostname = null;
       return;
@@ -126,10 +209,9 @@ public class SystemInfoHandler extends RequestHandlerBase {
     if (15000D < timer.getTime()) {
       String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
       log.warn(
-          "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' {}",
+          "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
           readableTime,
-          PREVENT_REVERSE_DNS_OF_LOCALHOST_SYSPROP,
-          " sysprop to true on startup to prevent future lookups if DNS can not be fixed.");
+          REVERSE_DNS_OF_LOCALHOST_SYSPROP);
     }
   }
 
@@ -148,11 +230,12 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
     if (cc != null) {
       rsp.add("solr_home", cc.getSolrHome());
-      rsp.add("core_root", cc.getCoreRootDirectory().toString());
+      rsp.add("core_root", cc.getCoreRootDirectory());
     }
 
     rsp.add("lucene", getLuceneInfo());
-    rsp.add("jvm", getJvmInfo());
+    NodeConfig nodeConfig = getCoreContainer(req).getNodeConfig();
+    rsp.add("jvm", getJvmInfo(nodeConfig));
     rsp.add("security", getSecurityInfo(req));
     rsp.add("system", getSystemInfo());
     if (solrCloudMode) {
@@ -194,7 +277,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", new File(System.getProperty("user.dir")).getAbsolutePath());
+    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
     dirs.add("instance", core.getInstancePath().toString());
     try {
       dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
@@ -219,15 +302,15 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
     info.add(NAME, os.getName()); // add at least this one
+
     // add remaining ones dynamically using Java Beans API
     // also those from JVM implementation-specific classes
-    MetricUtils.addMXBeanMetrics(
+    forEachGetterValue(
         os,
         MetricUtils.OS_MXBEAN_CLASSES,
-        null,
-        (name, metric) -> {
+        (name, value) -> {
           if (info.get(name) == null) {
-            info.add(name, ((Gauge) metric).getValue());
+            info.add(name, value);
           }
         });
 
@@ -235,7 +318,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   }
 
   /** Get JVM Info - including memory info */
-  public static SimpleOrderedMap<Object> getJvmInfo() {
+  public static SimpleOrderedMap<Object> getJvmInfo(NodeConfig nodeConfig) {
     SimpleOrderedMap<Object> jvm = new SimpleOrderedMap<>();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
@@ -304,7 +387,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
-      jmx.add("commandLineArgs", getInputArgumentsRedacted(mx));
+      jmx.add("commandLineArgs", getInputArgumentsRedacted(nodeConfig, mx));
 
       jmx.add("startTime", new Date(mx.getStartTime()));
       jmx.add("upTimeMS", mx.getUptime());
@@ -337,8 +420,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
       // Mapped roles for this principal
       @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc == null ? null : cc.getAuthorizationPlugin();
-      if (auth instanceof RuleBasedAuthorizationPluginBase) {
-        RuleBasedAuthorizationPluginBase rbap = (RuleBasedAuthorizationPluginBase) auth;
+      if (auth instanceof RuleBasedAuthorizationPluginBase rbap) {
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
         info.add("roles", roles);
         if (roles == null) {
@@ -408,14 +490,18 @@ public class SystemInfoHandler extends RequestHandlerBase {
     return newSizeAndUnits;
   }
 
-  private static List<String> getInputArgumentsRedacted(RuntimeMXBean mx) {
+  private static List<String> getInputArgumentsRedacted(NodeConfig nodeConfig, RuntimeMXBean mx) {
     List<String> list = new ArrayList<>();
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && RedactionUtils.isSystemPropertySensitive(arg.substring(2, arg.indexOf('=')))) {
+          && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('=')))) {
         list.add(
-            String.format(Locale.ROOT, "%s=%s", arg.substring(0, arg.indexOf('=')), REDACT_STRING));
+            String.format(
+                Locale.ROOT,
+                "%s=%s",
+                arg.substring(0, arg.indexOf('=')),
+                NodeConfig.REDACTED_SYS_PROP_VALUE));
       } else {
         list.add(arg);
       }

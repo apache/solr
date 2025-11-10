@@ -25,22 +25,47 @@ teardown() {
   # save a snapshot of SOLR_HOME for failed tests
   save_home_on_failure
 
-  solr stop -all >/dev/null 2>&1
+  solr stop --all >/dev/null 2>&1
 }
 
 @test "status detects locally running solr" {
   run solr status
   assert_output --partial "No Solr nodes are running."
-  run solr start
+  solr start
   run solr status
-  assert_output --partial "Found 1 Solr nodes:"
-  run solr stop
+  assert_output --partial "running on port ${SOLR_PORT}"
+  solr stop
   run solr status
   assert_output --partial "No Solr nodes are running."
-
 }
 
-@test "status does not expose cli parameters to end user" {
-  run solr status -solr http://localhost:8983/solr
-  assert_output --partial "ERROR: Unrecognized or misplaced argument: -solr!"
+@test "status with --solr-url from user" {
+  solr start
+  run solr status --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "\"solr_home\":"
+  solr stop
+}
+
+@test "status with --port from user" {
+  solr start
+  run solr status --port ${SOLR_PORT}
+  assert_output --partial "running on port ${SOLR_PORT}"
+  solr stop
+}
+
+@test "multiple connection options are prevented" {
+  run solr status --port ${SOLR_PORT} --solr-url http://localhost:${SOLR_PORT}
+  assert_output --partial "The option 's' was specified but an option from this group has already been selected: 'p'"
+}
+
+@test "status with invalid --solr-url from user" {
+  run solr status --solr-url http://invalidhost:${SOLR_PORT}
+  assert_output --partial "Solr at http://invalidhost:${SOLR_PORT} not online"
+}
+
+@test "status with --short format" {
+  solr start
+  run solr status --port ${SOLR_PORT} --short
+  assert_output --partial "http://localhost:${SOLR_PORT}/solr"
+  solr stop
 }

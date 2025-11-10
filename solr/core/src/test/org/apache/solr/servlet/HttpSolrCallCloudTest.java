@@ -17,24 +17,25 @@
 
 package org.apache.solr.servlet;
 
+import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.net.HttpURLConnection;
-import java.net.URL;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.Set;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.UnavailableException;
-import javax.servlet.WriteListener;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @SolrTestCaseJ4.SuppressSSL
 public class HttpSolrCallCloudTest extends SolrCloudTestCase {
@@ -44,6 +45,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     configureCluster(1)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -57,9 +59,9 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   @Test
   public void testCoreChosen() throws Exception {
-    assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update"));
-    assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update/json"));
-    assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
+    assertCoreChosen(NUM_SHARD, newRequest("/collection1/update"));
+    assertCoreChosen(NUM_SHARD, newRequest("/collection1/update/json"));
+    assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, newRequest("/collection1/select"));
   }
 
   // https://issues.apache.org/jira/browse/SOLR-16019
@@ -67,12 +69,14 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
   public void testWrongUtf8InQ() throws Exception {
     var baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     var request =
-        new URL(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0"); // Illegal UTF-8 string
+        URI.create(baseUrl.toString() + "/" + COLLECTION + "/select?q=%C0")
+            .toURL(); // Illegal UTF-8 string
     var connection = (HttpURLConnection) request.openConnection();
     assertEquals(400, connection.getResponseCode());
   }
 
-  private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
+  private void assertCoreChosen(int numCores, HttpServletRequest testRequest)
+      throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
@@ -80,7 +84,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
       if (coreNames.size() == numCores) return;
       HttpSolrCall httpSolrCall =
           new HttpSolrCall(
-              dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+              dispatchFilter, dispatchFilter.getCores(), testRequest, newResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {
@@ -92,83 +96,34 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     assertEquals(numCores, coreNames.size());
   }
 
-  private static class TestResponse extends Response {
-
-    public TestResponse() {
-      super(null, null);
+  private static HttpServletRequest newRequest(String path) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getMethod()).thenReturn("GET");
+    Mockito.when(req.getRequestURI()).thenReturn(path);
+    Mockito.when(req.getServletPath()).thenReturn(path);
+    Mockito.when(req.getQueryString()).thenReturn("version=2");
+    Mockito.when(req.getContentType()).thenReturn("application/json");
+    Mockito.when(req.getHeader("Content-Type")).thenReturn("application/json");
+    try {
+      Mockito.when(req.getInputStream())
+          .thenReturn(ServletUtils.ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM);
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
+      throw new RuntimeException(e);
     }
-
-    @Override
-    public ServletOutputStream getOutputStream() {
-      return new ServletOutputStream() {
-        @Override
-        public boolean isReady() {
-          return true;
-        }
-
-        @Override
-        public void setWriteListener(WriteListener writeListener) {}
-
-        @Override
-        public void write(int b) {}
-      };
-    }
-
-    @Override
-    public boolean isCommitted() {
-      return true;
-    }
+    return req;
   }
 
-  private static class TestRequest extends Request {
-    private String path;
-
-    public TestRequest(String path) {
-      super(null, null);
-      this.path = path;
+  @SuppressForbidden(reason = "tests needn't comply")
+  private static HttpServletResponse newResponse() {
+    HttpServletResponse resp = Mockito.mock(HttpServletResponse.class);
+    try {
+      Mockito.when(resp.getOutputStream())
+          .thenReturn(ServletUtils.ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM);
+      Mockito.when(resp.getWriter())
+          .thenReturn(new PrintWriter(System.out, false, StandardCharsets.UTF_8));
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
+      throw new RuntimeException(e);
     }
-
-    @Override
-    public String getQueryString() {
-      return "version=2";
-    }
-
-    @Override
-    public String getContentType() {
-      return "application/json";
-    }
-
-    @Override
-    public String getServletPath() {
-      return path;
-    }
-
-    @Override
-    public String getRequestURI() {
-      return path;
-    }
-
-    @Override
-    public ServletInputStream getInputStream() {
-      return new ServletInputStream() {
-        @Override
-        public boolean isFinished() {
-          return true;
-        }
-
-        @Override
-        public boolean isReady() {
-          return true;
-        }
-
-        @Override
-        public void setReadListener(ReadListener readListener) {}
-
-        @Override
-        public int read() {
-          return 0;
-        }
-      };
-    }
+    return resp;
   }
 }

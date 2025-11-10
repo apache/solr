@@ -19,10 +19,16 @@ package org.apache.solr.search.facet;
 import org.apache.solr.SolrTestCaseHS;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS {
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTests() throws Exception {
@@ -36,7 +42,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS {
   }
 
   private static void indexDocs(final Client client) throws Exception {
-    client.deleteByQuery("*:*", null);
+    client.deleteByQuery("*:*");
 
     SolrInputDocument book1 =
         sdoc(

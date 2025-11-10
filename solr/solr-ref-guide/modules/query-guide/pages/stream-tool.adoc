@@ -1,0 +1,202 @@
+= Stream Tool
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+The Stream tool allows you to run a xref:streaming-expressions.adoc[] in Solr and see the results from the command line.
+It is very similar to the xref:stream-screen.adoc[], but is part of the `bin/solr` CLI.
+Being a CLI, you can pipe content into it similar to other Unix style tools, as well as run actually RUN many kinds of expressions locally as well. 
+
+NOTE: The Stream Tool is classified as "experimental".
+It may change in backwards-incompatible ways as it evolves to cover additional functionality.
+
+To run it, open a terminal and enter:
+
+[,console]
+----
+$ bin/solr stream -c techproducts --header --fields price,name --delimiter=\| 'search(techproducts,q="iPod",fl="name,price")'
+----
+
+This will run the provided streaming expression on the `techproducts` collection on your local Solr and produce:  
+
+[,console]
+----
+price|name
+11.5|iPod & iPod Mini USB 2.0 Cable
+19.95|Belkin Mobile Power Cord for iPod w/ Dock
+399.0|Apple 60 GB iPod with Video Playback Black
+----
+
+TIP: Notice how we used the pipe character (|) as the delimiter?  It required a backslash for escaping it so it wouldn't be treated as a pipe within the shell script.
+
+You can also specify a file with the suffix `.expr` containing your streaming expression.
+This is useful for longer expressions or if you are experiencing shell character-escaping issues with your expression.
+
+Assuming you have create the file `stream.expr` with the contents:
+
+----
+# Stream a search
+
+/*
+ You can have
+ multi-line comments as well.
+*/
+
+search(
+  techproducts,
+  q="name:memory",
+  fl="name,price",
+  sort="price desc"
+)
+
+// the end
+----
+
+Notice the various ways to format comments in the file?
+
+Then you can run it on the Solr collection `techproducts`, specifying you want a header row:
+
+[,console]
+----
+$ bin/solr stream --header -c techproducts stream.expr
+----
+
+And this will produce:
+
+[,console]
+----
+name   price
+CORSAIR  XMS 2GB (2 x 1GB) 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) Dual Channel Kit System Memory - Retail   185.0
+CORSAIR ValueSelect 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - Retail   74.99
+A-DATA V-Series 1GB 184-Pin DDR SDRAM Unbuffered DDR 400 (PC 3200) System Memory - OEM
+----
+
+== Using the bin/solr stream Tool
+
+To use the tool you need to provide the streaming expression either inline as the last argument, or provide a file ending in `.expr` that contains the expression.
+
+The `--help` (or simply `-h`) option will output information on its usage (i.e., `bin/solr stream --help)`:
+
+[source,plain]
+----
+usage: bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields
+       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]
+
+List of options:
+    --array-delimiter <CHARACTER>   The delimiter multi-valued fields. Default to using a pipe (|) delimiter.
+ -c,--name <NAME>                   Name of the specific collection to execute expression on if the execution is set
+                                    to 'remote'. Required for 'remote' execution environment.
+    --delimiter <CHARACTER>         The output delimiter. Default to using three spaces.
+    --execution <ENVIRONMENT>       Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr
+                                    server. Default environment is 'remote'.
+    --fields <FIELDS>               The fields in the tuples to output. Defaults to fields in the first tuple of result
+                                    set.
+ -h,--help                          Print this message.
+    --header                        Specify to include a header line.
+ -s,--solr-url <HOST>               Base Solr URL, which can be used to determine the zk-host if that's not known;
+                                    defaults to: http://localhost:8983.
+ -u,--credentials <credentials>     Credentials in the format username:password. Example: --credentials solr:SolrRocks
+ -v,--verbose                       Enable verbose command output.
+ -z,--zk-host <HOST>                Zookeeper connection string; unnecessary if ZK_HOST is defined in solr.in.sh;
+                                    otherwise, defaults to localhost:9983.
+----
+
+== Examples Using bin/solr stream
+
+There are several ways to use `bin/solr stream`.
+This section presents several examples.
+
+=== Executing Expression Locally
+
+Streaming Expressions by default are executed in the Solr cluster.  
+However there are use cases where you want to interact with data in your local environment, or even run a streaming expression independent of Solr.
+
+The Stream Tool allows you to specify `--execution local` to process the expression in the Solr CLI's JVM.
+
+However, "local" processing does not imply a networking sandbox.
+Many streaming expressions, such as `search` and `update`, will make network requests to remote Solr nodes if configured to do so, even in "local" execution mode.
+
+Assuming you have create the file `load_data.expr` with the contents:
+
+----
+# Index CSV File
+
+update(
+  gettingstarted,
+  parseCSV(
+    cat(./example/exampledocs/books.csv, maxLines=2)
+  )
+)
+----
+
+Running this expression will read in the local file and send the first two lines to the collection `gettingstarted`.
+
+TIP: Want to send data to a remote Solr?  pass in `--solr-url http://solr.remote:8983`.
+
+
+[,console]
+----
+$ bin/solr stream --execution local --header load_data.expr
+----
+
+
+The StreamTool adds some Streaming Expressions specifically for local use:
+
+* stdin() lets you pipe data directly into the streaming expression.
+* cat() that allows you to read ANY file on your local system.  This is different from the xref:stream-source-reference.adoc#cat[`cat`] operator that runs in Solr that only accesses `$SOLR_HOME/userfiles/`.
+
+Caveats:
+
+ * You don't get to use any of the parallelization support that is available when you run the expression on the cluster.
+ * Anything that requires Solr internals access won't work with the `--execution local` context.
+
+=== Piping data to an expression
+
+Index a CSV file into `gettingstarted` collection.
+
+[,console]
+----
+$ cat example/exampledocs/books.csv | bin/solr stream -e local 'update(gettingstarted,parseCSV(stdin()))'
+----
+
+=== Variable interpolation
+
+You can do variable interpolation via having `$1`, `$2` etc in your streaming expression, and then passing those values as arguments.
+
+[,console]
+----
+$ bin/solr stream -c techproducts 'echo("$1")' "Hello World"
+Hello World
+----
+
+This also works when using `.expr` files.  You can nest as many variables you want.
+Here is an example of passing in both the file and the number of lines to process:
+
+----
+# Index CSV File
+
+update(
+  gettingstarted,
+  parseCSV(
+    cat($1, maxLines=$2)
+  )
+)
+----
+
+[,console]
+----
+$ bin/solr stream -c techproducts file.expr ./example/exampledocs/books.csv 10
+----

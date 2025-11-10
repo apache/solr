@@ -17,18 +17,19 @@
 
 package org.apache.solr.search;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -45,9 +46,9 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setUpCore() throws Exception {
-    String tmpSolrHome = createTempDir().toFile().getAbsolutePath();
-    FileUtils.copyDirectory(new File(TEST_HOME()), new File(tmpSolrHome).getAbsoluteFile());
-    initCore("solrconfig.xml", "schema.xml", new File(tmpSolrHome).getAbsolutePath());
+    Path tmpSolrHome = createTempDir();
+    PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome);
+    initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
 
   /**
@@ -67,11 +68,8 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     SolrCore emptyCore = h.getCore();
     QParserPlugin qParserPlugin =
         QParserPlugin.standardPlugins.get(SignificantTermsQParserPlugin.NAME);
-    Map<String, String> params = new HashMap<>();
-    params.put("field", "cat");
     QParser parser =
-        qParserPlugin.createParser(
-            "", new MapSolrParams(params), new MapSolrParams(new HashMap<>()), null);
+        qParserPlugin.createParser("", SolrParams.of("field", "cat"), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
@@ -81,7 +79,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
           query.getAnalyticsCollector(
               new ResponseBuilder(null, resp, Collections.emptyList()), searcher.get());
       assertNotNull(analyticsCollector);
-      analyticsCollector.finish();
+      analyticsCollector.complete();
       LinkedHashMap<String, Object> expectedValues = new LinkedHashMap<>();
       expectedValues.put("numDocs", 0);
       expectedValues.put("sterms", new ArrayList<String>());
@@ -104,8 +102,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     Map<String, String> params = new HashMap<>();
     params.put("field", "cat");
     QParser parser =
-        qParserPlugin.createParser(
-            "", new MapSolrParams(params), new MapSolrParams(new HashMap<>()), null);
+        qParserPlugin.createParser("", new MapSolrParams(params), SolrParams.of(), null);
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
@@ -116,7 +113,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
       DelegatingCollector analyticsCollector =
           query.getAnalyticsCollector(responseBuilder, searcher.get());
       assertNotNull(analyticsCollector);
-      analyticsCollector.finish();
+      analyticsCollector.complete();
 
       LinkedHashMap<String, Object> expectedValues = new LinkedHashMap<>();
       expectedValues.put("numDocs", 1);

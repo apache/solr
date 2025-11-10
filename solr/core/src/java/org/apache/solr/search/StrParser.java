@@ -164,6 +164,23 @@ public class StrParser {
     return Integer.parseInt(new String(arr, 0, i));
   }
 
+  public byte getByte() {
+    eatws();
+    char[] arr = new char[end - pos];
+    int i;
+    for (i = 0; i < arr.length; i++) {
+      char ch = val.charAt(pos);
+      if ((ch >= '0' && ch <= '9') || ch == '+' || ch == '-') {
+        pos++;
+        arr[i] = ch;
+      } else {
+        break;
+      }
+    }
+
+    return Byte.parseByte(new String(arr, 0, i));
+  }
+
   public String getId() throws SyntaxError {
     return getId("Expected identifier");
   }

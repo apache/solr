@@ -58,6 +58,10 @@ public class MDCLoggingContext {
     }
   }
 
+  public static String getTraceId() {
+    return MDC.get(TRACE_ID);
+  }
+
   public static void setShard(String shard) {
     if (shard != null) {
       MDC.put(SHARD_ID_PROP, shard);

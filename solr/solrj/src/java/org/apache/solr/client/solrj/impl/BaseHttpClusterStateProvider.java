@@ -17,82 +17,104 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
+import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.time.Instant;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.Utils;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.URLUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  protected static final String SYS_PROP_CACHE_TIMEOUT_SECONDS = "solr.solrj.cache.timeout.sec";
+
   private String urlScheme;
-  volatile Set<String> liveNodes;
-  long liveNodesTimestamp = 0;
+  private List<URL> configuredNodes;
+  volatile Set<String> liveNodes; // initially null then never null
+  volatile long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
   volatile Map<String, Map<String, String>> aliasProperties;
   long aliasesTimestamp = 0;
 
-  private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
+  // the liveNodes and aliases cache will be invalidated after 5 secs
+  private int cacheTimeout = EnvUtils.getPropertyAsInteger(SYS_PROP_CACHE_TIMEOUT_SECONDS, 5);
 
-  public void init(List<String> solrUrls) throws Exception {
-    for (String solrUrl : solrUrls) {
-      urlScheme = solrUrl.startsWith("https") ? "https" : "http";
-      try (SolrClient initialClient = getSolrClient(solrUrl)) {
-        this.liveNodes = fetchLiveNodes(initialClient);
-        liveNodesTimestamp = System.nanoTime();
-        break;
-      } catch (SolrServerException | IOException e) {
-        log.warn("Attempt to fetch cluster state from {} failed.", solrUrl, e);
-      }
-    }
+  volatile boolean liveNodeReloadingScheduled = false;
+  private final ScheduledExecutorService liveNodeReloadingService =
+      Executors.newSingleThreadScheduledExecutor(
+          new SolrNamedThreadFactory("liveNodeReloadingExecutor"));
 
-    if (this.liveNodes == null || this.liveNodes.isEmpty()) {
-      throw new RuntimeException(
-          "Tried fetching live_nodes using Solr URLs provided, i.e. "
-              + solrUrls
-              + ". However, "
-              + "succeeded in obtaining the cluster state from none of them."
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
+  protected void initConfiguredNodes(List<String> solrUrls) throws Exception {
+    this.configuredNodes =
+        solrUrls.stream()
+            .map(BaseHttpClusterStateProvider::stringToUrl)
+            .collect(Collectors.toList());
+  }
+
+  private static URL stringToUrl(String solrUrl) {
+    try {
+      return new URI(solrUrl).toURL();
+    } catch (MalformedURLException | URISyntaxException e) {
+      throw new IllegalArgumentException("Failed to parse base Solr URL " + solrUrl, e);
     }
   }
 
+  @Override
+  public void connect() {
+    getLiveNodes();
+  }
+
+  /** Create a SolrClient implementation that uses the specified Solr node URL */
   protected abstract SolrClient getSolrClient(String baseUrl);
 
   @Override
+  public DocCollection getCollection(String collection) {
+    // This change is to prevent BaseHttpCSP make a call to fetch the entire cluster state, as the
+    // default implementation calls getClusterState().getCollectionOrNull(name)
+    return getState(collection).get();
+  }
+
+  @Override
   public ClusterState.CollectionRef getState(String collection) {
-    for (String nodeName : liveNodes) {
-      String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
+    for (String nodeName : getLiveNodes()) {
+      String baseUrl = URLUtil.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        ClusterState cs = fetchClusterState(client, collection, null);
-        return cs.getCollectionRef(collection);
+        DocCollection docCollection = fetchCollectionState(client, collection);
+        return new ClusterState.CollectionRef(docCollection);
       } catch (SolrServerException | IOException e) {
         log.warn(
             "Attempt to fetch cluster state from {} failed.",
-            Utils.getBaseUrlForNodeName(nodeName, urlScheme),
+            URLUtil.getBaseUrlForNodeName(nodeName, urlScheme),
             e);
       } catch (RemoteSolrException e) {
         if ("NOT_FOUND".equals(e.getMetadata("CLUSTERSTATUS"))) {
@@ -101,7 +123,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
         // Cluster state for the given collection was not found, could be an alias.
-        // Lets fetch/update our aliases:
+        // Let's fetch/update our aliases:
         getAliases(true);
         return null;
       }
@@ -113,64 +135,44 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
   @SuppressWarnings("unchecked")
-  private ClusterState fetchClusterState(
-      SolrClient client, String collection, Map<String, Object> clusterProperties)
+  private ClusterState fetchClusterState(SolrClient client)
       throws SolrServerException, IOException, NotACollectionException {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    if (collection != null) {
-      params.set("collection", collection);
-    }
-    params.set("action", "CLUSTERSTATUS");
-    params.set("prs", "true");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    SimpleOrderedMap<?> cluster = (SimpleOrderedMap<?>) client.request(request).get("cluster");
-    Map<String, Object> collectionsMap;
-    if (collection != null) {
-      collectionsMap =
-          Collections.singletonMap(
-              collection, ((NamedList<?>) cluster.get("collections")).get(collection));
-    } else {
-      collectionsMap = ((NamedList<?>) cluster.get("collections")).asMap(10);
-    }
-    int znodeVersion;
-    Map<String, Object> collFromStatus = (Map<String, Object>) (collectionsMap).get(collection);
-    if (collection != null && collFromStatus == null) {
-      throw new NotACollectionException(); // probably an alias
-    }
-    if (collection != null) { // can be null if alias
-      znodeVersion = (int) collFromStatus.get("znodeVersion");
-    } else {
-      znodeVersion = -1;
-    }
-    Set<String> liveNodes = new HashSet<>((List<String>) (cluster.get("live_nodes")));
-    this.liveNodes = liveNodes;
-    liveNodesTimestamp = System.nanoTime();
-    ClusterState cs = new ClusterState(liveNodes, new HashMap<>());
-    for (Map.Entry<String, Object> e : collectionsMap.entrySet()) {
-      @SuppressWarnings("rawtypes")
-      Map m = (Map) e.getValue();
-      cs = cs.copyWith(e.getKey(), fillPrs(znodeVersion, e, m));
+    SimpleOrderedMap<?> cluster =
+        submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_CLUSTER_STATE);
+
+    List<String> liveNodesList = (List<String>) cluster.get("live_nodes");
+    if (liveNodesList != null) {
+      this.liveNodes = Set.copyOf(liveNodesList);
+      liveNodesTimestamp = System.nanoTime();
     }
 
-    if (clusterProperties != null) {
-      Map<String, Object> properties = (Map<String, Object>) cluster.get("properties");
-      if (properties != null) {
-        clusterProperties.putAll(properties);
-      }
-    }
-    return cs;
+    var collectionsMap = (Map<String, Map<String, Object>>) cluster.get("collections");
+
+    Map<String, DocCollection> collStateByName =
+        CollectionUtil.newLinkedHashMap(collectionsMap.size());
+    collectionsMap.forEach(
+        (key, value) -> collStateByName.put(key, getDocCollectionFromObjects(key, value)));
+    return new ClusterState(this.liveNodes, collStateByName);
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private DocCollection fillPrs(int znodeVersion, Map.Entry<String, Object> e, Map m) {
+  @SuppressWarnings("unchecked")
+  private DocCollection getDocCollectionFromObjects(
+      String collectionName, Map<String, Object> collStateMap) {
+    collStateMap.remove("health");
+
+    int zNodeVersion = (int) collStateMap.remove("znodeVersion");
+
+    Long creationTimeMillis = (Long) collStateMap.remove("creationTimeMillis");
+    Instant creationTime =
+        creationTimeMillis == null ? Instant.EPOCH : Instant.ofEpochMilli(creationTimeMillis);
+
     DocCollection.PrsSupplier prsSupplier = null;
-    if (m.containsKey("PRS")) {
-      Map prs = (Map) m.remove("PRS");
+    Map<String, Object> prs = (Map<String, Object>) collStateMap.remove("PRS");
+    if (prs != null) {
       prsSupplier =
           () ->
               new PerReplicaStates(
@@ -179,53 +181,117 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
                   (List<String>) prs.get("states"));
     }
 
-    return ClusterState.collectionFromObjects(e.getKey(), m, znodeVersion, prsSupplier);
+    return ClusterState.collectionFromObjects(
+        collectionName, collStateMap, zNodeVersion, creationTime, prsSupplier);
+  }
+
+  @SuppressWarnings("unchecked")
+  private DocCollection fetchCollectionState(SolrClient client, String collection)
+      throws SolrServerException, IOException, NotACollectionException {
+
+    SimpleOrderedMap<?> cluster =
+        submitClusterStateRequest(client, collection, ClusterStateRequestType.FETCH_COLLECTION);
+
+    var collStateMap = (Map<String, Object>) cluster._get(List.of("collections", collection), null);
+    if (collStateMap == null) {
+      throw new NotACollectionException(); // probably an alias
+    }
+    return getDocCollectionFromObjects(collection, collStateMap);
+  }
+
+  private SimpleOrderedMap<?> submitClusterStateRequest(
+      SolrClient client, String collection, ClusterStateRequestType requestType)
+      throws SolrServerException, IOException {
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("action", "CLUSTERSTATUS");
+
+    params.set("includeAll", false); // will flip flor CLUSTER_STATE
+    switch (requestType) {
+      case FETCH_CLUSTER_STATE -> params.set("includeAll", true);
+      case FETCH_COLLECTION -> {
+        if (collection != null) params.set("collection", collection);
+      }
+      case FETCH_LIVE_NODES -> params.set("liveNodes", true);
+      case FETCH_CLUSTER_PROP -> params.set("clusterProperties", true);
+      case FETCH_NODE_ROLES -> params.set("roles", true);
+    }
+    params.set("prs", true);
+    var request = new GenericSolrRequest(METHOD.GET, "/admin/collections", params);
+    return (SimpleOrderedMap<?>) client.request(request).get("cluster");
   }
 
   @Override
   public Set<String> getLiveNodes() {
-    if (liveNodes == null) {
-      throw new RuntimeException(
-          "We don't know of any live_nodes to fetch the"
-              + " latest live_nodes information from. "
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
+    // Use cached liveNodes if cached and still valid
+    if (liveNodes == null
+        || (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
+            > getCacheTimeout())) {
+      // Do synchronized fetch when there is no cached value or the cached value is expired
+      fetchLiveNodes(false);
     }
-    if (TimeUnit.SECONDS.convert((System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
-        > getCacheTimeout()) {
-      for (String nodeName : liveNodes) {
-        String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
-        try (SolrClient client = getSolrClient(baseUrl)) {
-          Set<String> liveNodes = fetchLiveNodes(client);
-          this.liveNodes = (liveNodes);
-          liveNodesTimestamp = System.nanoTime();
-          return liveNodes;
-        } catch (Exception e) {
-          log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
-        }
+    return liveNodes;
+  }
+
+  private synchronized void fetchLiveNodes(boolean force) {
+    if (!liveNodeReloadingScheduled) {
+      // Method is synchronized, so this is safe
+      liveNodeReloadingScheduled = true;
+      long liveNodeReloadDelayMs = (1000L * getCacheTimeout()) / 2;
+      liveNodeReloadingService.scheduleWithFixedDelay(
+          () -> fetchLiveNodes(true),
+          liveNodeReloadDelayMs,
+          liveNodeReloadDelayMs,
+          TimeUnit.MILLISECONDS);
+    }
+
+    // only in the initial state, liveNodes is null
+    if (liveNodes != null) {
+      // Don't use the cached value if force is enabled
+      if (!force
+          && TimeUnit.SECONDS.convert(
+                  (System.nanoTime() - liveNodesTimestamp), TimeUnit.NANOSECONDS)
+              <= getCacheTimeout()) {
+        // Check the cached value again, as the live nodes might have been updated while blocked on
+        // synchronization
+        return; // cached copy is fresh enough
       }
-      throw new RuntimeException(
-          "Tried fetching live_nodes using all the node names we knew of, i.e. "
-              + liveNodes
-              + ". However, "
-              + "succeeded in obtaining the cluster state from none of them."
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
-    } else {
-      return liveNodes; // cached copy is fresh enough
+
+      if (liveNodes.stream()
+          .map(node -> URLUtil.getBaseUrlForNodeName(node, urlScheme))
+          .map(BaseHttpClusterStateProvider::stringToUrl)
+          .anyMatch(this::updateLiveNodes)) return;
+
+      log.warn("Failed fetching live_nodes from {}. Trying configured nodes...", liveNodes);
+    }
+
+    if (configuredNodes.stream().anyMatch(this::updateLiveNodes)) return;
+
+    throw new RuntimeException(
+        "Failed fetching live_nodes from "
+            + configuredNodes
+            + ". If you think your Solr cluster is up and is accessible,"
+            + " you could try re-creating a new CloudSolrClient using working"
+            + " solr URLs.");
+  }
+
+  private boolean updateLiveNodes(URL url) {
+    try (SolrClient client = getSolrClient(url.toString())) {
+      this.liveNodes = fetchLiveNodes(client);
+      liveNodesTimestamp = System.nanoTime();
+      urlScheme = url.getProtocol();
+      return true;
+    } catch (Exception e) {
+      log.warn("Attempt to fetch live_nodes from {} failed.", url, e);
+      return false;
     }
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  private static Set<String> fetchLiveNodes(SolrClient client) throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("action", "CLUSTERSTATUS");
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
-    NamedList cluster = (SimpleOrderedMap) client.request(request).get("cluster");
-    return (Set<String>) new HashSet((List<String>) (cluster.get("live_nodes")));
+  @SuppressWarnings({"unchecked"})
+  private Set<String> fetchLiveNodes(SolrClient client) throws Exception {
+    SimpleOrderedMap<?> cluster =
+        submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_LIVE_NODES);
+    return Set.copyOf((List<String>) cluster.get("live_nodes"));
   }
 
   @Override
@@ -243,23 +309,13 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   private Map<String, List<String>> getAliases(boolean forceFetch) {
-    if (this.liveNodes == null) {
-      throw new RuntimeException(
-          "We don't know of any live_nodes to fetch the"
-              + " latest aliases information from. "
-              + "If you think your Solr cluster is up and is accessible,"
-              + " you could try re-creating a new CloudSolrClient using working"
-              + " solrUrl(s) or zkHost(s).");
-    }
-
     if (forceFetch
         || this.aliases == null
         || TimeUnit.SECONDS.convert((System.nanoTime() - aliasesTimestamp), TimeUnit.NANOSECONDS)
             > getCacheTimeout()) {
-      for (String nodeName : liveNodes) {
-        String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
+      for (String nodeName : getLiveNodes()) {
+        String baseUrl = URLUtil.getBaseUrlForNodeName(nodeName, urlScheme);
         try (SolrClient client = getSolrClient(baseUrl)) {
-
           CollectionAdminResponse response =
               new CollectionAdminRequest.ListAliases().process(client);
           this.aliases = response.getAliasesAsLists();
@@ -271,7 +327,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
           if (e instanceof RemoteSolrException && ((RemoteSolrException) e).code() == 400) {
             log.warn(
                 "LISTALIASES not found, possibly using older Solr server. Aliases won't work {}",
-                "unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server",
+                "unless you upgrade Solr server",
                 e);
             this.aliases = Collections.emptyMap();
             this.aliasProperties = Collections.emptyMap();
@@ -289,7 +345,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
               + "succeeded in obtaining the cluster state from none of them."
               + "If you think your Solr cluster is up and is accessible,"
               + " you could try re-creating a new CloudSolrClient using a working"
-              + " solrUrl or zkHost.");
+              + " solrUrl.");
     } else {
       return Collections.unmodifiableMap(this.aliases); // cached copy is fresh enough
     }
@@ -303,14 +359,14 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public ClusterState getClusterState() {
-    for (String nodeName : liveNodes) {
-      String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
+    for (String nodeName : getLiveNodes()) {
+      String baseUrl = URLUtil.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        return fetchClusterState(client, null, null);
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+        return fetchClusterState(client);
+      } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
       } catch (NotACollectionException e) {
-        // not possible! (we passed in null for collection so it can't be an alias)
+        // not possible! (we passed in null for collection, so it can't be an alias)
         throw new RuntimeException(
             "null should never cause NotACollectionException in "
                 + "fetchClusterState() Please report this as a bug!");
@@ -323,24 +379,20 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
+  @SuppressWarnings("unchecked")
   @Override
   public Map<String, Object> getClusterProperties() {
-    for (String nodeName : liveNodes) {
-      String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
+    for (String nodeName : getLiveNodes()) {
+      String baseUrl = URLUtil.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {
-        Map<String, Object> clusterProperties = new HashMap<>();
-        fetchClusterState(client, null, clusterProperties);
-        return clusterProperties;
-      } catch (SolrServerException | BaseHttpSolrClient.RemoteSolrException | IOException e) {
+        SimpleOrderedMap<?> cluster =
+            submitClusterStateRequest(client, null, ClusterStateRequestType.FETCH_CLUSTER_PROP);
+        return (Map<String, Object>) cluster.get("properties");
+      } catch (SolrServerException | RemoteSolrException | IOException e) {
         log.warn("Attempt to fetch cluster state from {} failed.", baseUrl, e);
-      } catch (NotACollectionException e) {
-        // not possible! (we passed in null for collection so it can't be an alias)
-        throw new RuntimeException(
-            "null should never cause NotACollectionException in "
-                + "fetchClusterState() Please report this as a bug!");
       }
     }
     throw new RuntimeException(
@@ -350,7 +402,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             + "succeeded in obtaining the cluster state from none of them."
             + "If you think your Solr cluster is up and is accessible,"
             + " you could try re-creating a new CloudSolrClient using working"
-            + " solrUrl(s) or zkHost(s).");
+            + " solrUrl(s).");
   }
 
   @Override
@@ -369,15 +421,8 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     return getClusterProperties().get(propertyName);
   }
 
-  @Override
-  public void connect() {}
-
   public int getCacheTimeout() {
     return cacheTimeout;
-  }
-
-  public void setCacheTimeout(int cacheTimeout) {
-    this.cacheTimeout = cacheTimeout;
   }
 
   // This exception is not meant to escape this class it should be caught and wrapped.
@@ -389,5 +434,23 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       return null;
     }
     return String.join(",", this.liveNodes);
+  }
+
+  @Override
+  public boolean isClosed() {
+    return liveNodeReloadingService.isShutdown();
+  }
+
+  @Override
+  public void close() throws IOException {
+    liveNodeReloadingService.shutdown();
+  }
+
+  private enum ClusterStateRequestType {
+    FETCH_LIVE_NODES,
+    FETCH_CLUSTER_PROP,
+    FETCH_NODE_ROLES,
+    FETCH_COLLECTION,
+    FETCH_CLUSTER_STATE
   }
 }

@@ -32,13 +32,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.EarlyTerminatingCollectorException;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.QueryLimits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -84,6 +83,7 @@ public class SpellCheckCollator {
       IndexReader reader = ultimateResponse.req.getSearcher().getIndexReader();
       maxDocId = reader.maxDoc();
     }
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
 
     int tryNo = 0;
     int collNo = 0;
@@ -94,6 +94,10 @@ public class SpellCheckCollator {
             maxCollationEvaluations,
             suggestionsMayOverlap);
     while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
+
+      if (queryLimits.maybeExitWithPartialResults("SpellCheck collator")) {
+        return List.of();
+      }
 
       PossibilityIterator.RankedSpellPossibility possibility = possibilityIter.next();
       String collationQueryStr = getCollation(originalQuery, possibility.corrections);
@@ -120,6 +124,9 @@ public class SpellCheckCollator {
         params.set(CommonParams.Q, collationQueryStr);
         params.remove(CommonParams.START);
         params.set(CommonParams.ROWS, "" + docCollectionLimit);
+        if (docCollectionLimit > 0) {
+          params.set(CommonParams.MAX_HITS_ALLOWED, docCollectionLimit);
+        }
         // we don't want any stored fields
         params.set(CommonParams.FL, ID);
         // we'll sort by doc id to ensure no scoring is done.
@@ -142,35 +149,27 @@ public class SpellCheckCollator {
         // creating a request here... make sure to close it!
         ResponseBuilder checkResponse =
             new ResponseBuilder(
-                new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params),
+                ultimateResponse.req.subRequest(params),
                 new SolrQueryResponse(),
                 Arrays.asList(queryComponent));
         checkResponse.setQparser(ultimateResponse.getQparser());
         checkResponse.setFilters(ultimateResponse.getFilters());
         checkResponse.setQueryString(collationQueryStr);
         checkResponse.components = Arrays.asList(queryComponent);
+        checkResponse.rsp.addResponseHeader(new SimpleOrderedMap<>());
 
         try {
           queryComponent.prepare(checkResponse);
-          if (docCollectionLimit > 0) {
-            int f = checkResponse.getFieldFlags();
-            checkResponse.setFieldFlags(f |= SolrIndexSearcher.TERMINATE_EARLY);
-          }
           queryComponent.process(checkResponse);
-          hits = ((Number) checkResponse.rsp.getToLog().get("hits")).longValue();
-        } catch (EarlyTerminatingCollectorException etce) {
-          assert (docCollectionLimit > 0);
-          assert 0 < etce.getNumberScanned();
-          assert 0 < etce.getNumberCollected();
-
-          if (etce.getNumberScanned() == maxDocId) {
-            hits = etce.getNumberCollected();
-          } else {
-            hits =
-                (long)
-                    (((float) (maxDocId * etce.getNumberCollected()))
-                        / (float) etce.getNumberScanned());
-          }
+          hits =
+              ((Number)
+                      checkResponse
+                          .rsp
+                          .getResponseHeader()
+                          .getOrDefault(
+                              SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY,
+                              checkResponse.rsp.getToLog().get("hits")))
+                  .longValue();
         } catch (Exception e) {
           log.warn(
               "Exception trying to re-query to check if a spell check possibility would return any hits.",

@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 /**
  * An interface that can be extended to provide a callback mechanism for informing an {@link
  * IndexSchema} instance of changes to it, dynamically performed at runtime.

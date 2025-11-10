@@ -50,7 +50,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
   @Before
   public void beforeTest() throws Exception {
     backupPath = createTempDir(getTestClass().getSimpleName() + "_backups");
-    System.setProperty("solr.allowPaths", backupPath.toString());
+    System.setProperty("solr.security.allow.paths", backupPath.toString());
 
     // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
     // bring myself to deal with the nonsense that is SolrJettyTestBase.
@@ -81,7 +81,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
             .iterator()
             .next();
     coreName = r.getCoreName();
-    coreClient = getHttpSolrClient(r.getCoreUrl());
+    coreClient = getHttpSolrClient(r);
   }
 
   @After
@@ -96,7 +96,7 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
       coreClient.close();
     }
 
-    System.clearProperty("solr.allowPaths");
+    System.clearProperty("solr.security.allow.paths");
   }
 
   @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread

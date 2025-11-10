@@ -16,16 +16,13 @@
  */
 package org.apache.solr.util;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -37,19 +34,15 @@ import org.apache.solr.core.CorePropertiesLocator;
 import org.apache.solr.core.CoresLocator;
 import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCSnapshot;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BinaryQueryResponseWriter;
-import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -92,6 +85,11 @@ public class TestHarness extends BaseTestHarness {
     return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
+  public TestHarness(CoreContainer coreContainer) {
+    this.container = coreContainer;
+    this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
+  }
+
   /**
    * @param coreName to initialize
    * @param dataDirectory path for index data, will not be cleaned up
@@ -115,6 +113,7 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(String dataDirectory, SolrConfig solrConfig, String schemaFile) {
     this(dataDirectory, solrConfig, IndexSchemaFactory.buildIndexSchema(schemaFile, solrConfig));
   }
+
   /**
    * @param dataDirectory path for index data, will not be cleaned up
    * @param solrConfig solrconfig instance
@@ -137,7 +136,7 @@ public class TestHarness extends BaseTestHarness {
               + SOLR_HOME
               + " sys prop to be set by test first");
     }
-    return Paths.get(home).toAbsolutePath().normalize();
+    return Path.of(home).toAbsolutePath().normalize();
   }
 
   /**
@@ -169,7 +168,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   public TestHarness(NodeConfig nodeConfig) {
-    this(nodeConfig, new CorePropertiesLocator(nodeConfig.getCoreRootDirectory()));
+    this(nodeConfig, new CorePropertiesLocator(nodeConfig));
   }
 
   /**
@@ -189,22 +188,12 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"),
-                    Integer.getInteger("hostPort", 8983),
-                    System.getProperty("hostContext", ""))
-                .setZkClientTimeout(Integer.getInteger("zkClientTimeout", 30000))
+                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
+                .setZkClientTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT)
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
 
-    // universal default metric reporter
-    Map<String, Object> attributes = new HashMap<>();
-    attributes.put("name", "default");
-    attributes.put("class", SolrJmxReporter.class.getName());
-    PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-    MetricsConfig metricsConfig =
-        new MetricsConfig.MetricsConfigBuilder()
-            .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
-            .build();
+    MetricsConfig metricsConfig = new MetricsConfig.MetricsConfigBuilder().build();
 
     return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
@@ -349,18 +338,7 @@ public class TestHarness extends BaseTestHarness {
       if (rsp.getException() != null) {
         throw rsp.getException();
       }
-      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-      if (responseWriter instanceof BinaryQueryResponseWriter) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream(32000);
-        BinaryQueryResponseWriter writer = (BinaryQueryResponseWriter) responseWriter;
-        writer.write(byteArrayOutputStream, req, rsp);
-        return new String(byteArrayOutputStream.toByteArray(), StandardCharsets.UTF_8);
-      } else {
-        StringWriter sw = new StringWriter(32000);
-        responseWriter.write(sw, req, rsp);
-        return sw.toString();
-      }
-
+      return req.getResponseWriter().writeToString(req, rsp);
     } finally {
       req.close();
       SolrRequestInfo.clearRequestInfo();
@@ -428,6 +406,7 @@ public class TestHarness extends BaseTestHarness {
     public Map<String, String> args = new HashMap<>();
 
     public LocalRequestFactory() {}
+
     /**
      * Creates a LocalSolrQueryRequest based on variable args; for historical reasons, this method
      * has some peculiar behavior:

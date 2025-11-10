@@ -411,8 +411,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       expression.addParameter(
           new StreamExpressionNamedParameter("maxDocFreq", Integer.toString(maxDocFreq)));
     }
-    if (tupleStream instanceof NodeStream) {
-      NodeStream nodeStream = (NodeStream) tupleStream;
+    if (tupleStream instanceof NodeStream nodeStream) {
       expression.addParameter(
           new StreamExpressionNamedParameter("walk", nodeStream.toString() + "->" + traverseTo));
 
@@ -653,7 +652,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];
@@ -684,7 +683,7 @@ public class GatherNodesStream extends TupleStream implements Expressible {
       }
 
       List<String> laggedWindow = windowList.subList(lag, windowList.size());
-      return laggedWindow.toArray(new String[laggedWindow.size()]);
+      return laggedWindow.toArray(new String[0]);
     } catch (ParseException e) {
       log.warn("Unparseable date:{}", String.valueOf(start));
       return new String[0];

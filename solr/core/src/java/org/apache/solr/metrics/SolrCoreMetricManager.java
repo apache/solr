@@ -16,22 +16,27 @@
  */
 package org.apache.solr.metrics;
 
-import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean;
 
 /**
- * Helper class for managing registration of {@link SolrMetricProducer}'s and {@link
- * SolrMetricReporter}'s specific to a {@link SolrCore} instance.
+ * Helper class for managing registration of {@link SolrMetricProducer}'s specific to a {@link
+ * SolrCore} instance.
  */
 public class SolrCoreMetricManager implements Closeable {
+
+  public static final AttributeKey<String> COLLECTION_ATTR = AttributeKey.stringKey("collection");
+  public static final AttributeKey<String> CORE_ATTR = AttributeKey.stringKey("core");
+  public static final AttributeKey<String> SHARD_ATTR = AttributeKey.stringKey("shard");
+  public static final AttributeKey<String> REPLICA_TYPE_ATTR =
+      AttributeKey.stringKey("replica_type");
 
   private final SolrCore core;
   private SolrMetricsContext solrMetricsContext;
@@ -39,8 +44,13 @@ public class SolrCoreMetricManager implements Closeable {
   private String collectionName;
   private String shardName;
   private String replicaName;
-  private String leaderRegistryName;
   private boolean cloudMode;
+
+  // Track all metric producers registered for this core so we can re-initialize them during core
+  // rename
+  private final List<MetricProducerInfo> registeredProducers = new ArrayList<>();
+
+  private record MetricProducerInfo(SolrMetricProducer producer, Attributes attributes) {}
 
   /**
    * Constructs a metric manager.
@@ -53,8 +63,7 @@ public class SolrCoreMetricManager implements Closeable {
     metricManager = core.getCoreContainer().getMetricManager();
     String registryName =
         createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
-    leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
+    solrMetricsContext = new SolrMetricsContext(metricManager, registryName);
   }
 
   private void initCloudMode() {
@@ -73,79 +82,56 @@ public class SolrCoreMetricManager implements Closeable {
   }
 
   /**
-   * Load reporters configured globally and specific to {@link
-   * org.apache.solr.core.SolrInfoBean.Group#core} group or with a registry name specific to this
-   * core.
+   * Re-register all metric producers associated with this core. This recreates the metric registry
+   * resetting its state and recreating its attributes for all tracked registered producers.
    */
-  public void loadReporters() {
-    CoreContainer coreContainer = core.getCoreContainer();
-    NodeConfig nodeConfig = coreContainer.getConfig();
-    PluginInfo[] pluginInfos = nodeConfig.getMetricsConfig().getMetricReporters();
-    metricManager.loadReporters(
-        pluginInfos,
-        core.getResourceLoader(),
-        coreContainer,
-        core,
-        solrMetricsContext.getTag(),
-        SolrInfoBean.Group.core,
-        solrMetricsContext.getRegistryName());
-    if (cloudMode) {
-      metricManager.loadShardReporters(pluginInfos, core);
-    }
+  public void reregisterCoreMetrics() {
+    this.solrMetricsContext =
+        new SolrMetricsContext(
+            metricManager,
+            createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName()));
+    metricManager.removeRegistry(solrMetricsContext.getRegistryName());
+
+    // TODO: We are going to recreate the attributes and re-initialize/reregister metrics from
+    // tracked producers.
+    // There is some possible improvement that can be done here to not have to duplicate code in
+    // registerMetricProducer
+    core.initializeMetrics(solrMetricsContext, core.getCoreAttributes());
+
+    registeredProducers.forEach(
+        metricProducer -> {
+          metricProducer.producer.initializeMetrics(
+              solrMetricsContext,
+              metricProducer.attributes.toBuilder().putAll(core.getCoreAttributes()).build());
+        });
   }
 
   /**
-   * Make sure that metrics already collected that correspond to the old core name are carried over
-   * and will be used under the new core name. This method also reloads reporters so that they use
-   * the new core name.
-   */
-  public void afterCoreRename() {
-    assert core.getCoreDescriptor().getCloudDescriptor() == null;
-    String oldRegistryName = solrMetricsContext.getRegistryName();
-    String oldLeaderRegistryName = leaderRegistryName;
-    String newRegistryName =
-        createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
-    if (oldRegistryName.equals(newRegistryName)) {
-      return;
-    }
-    // close old reporters
-    metricManager.closeReporters(oldRegistryName, solrMetricsContext.getTag());
-    if (oldLeaderRegistryName != null) {
-      metricManager.closeReporters(oldLeaderRegistryName, solrMetricsContext.getTag());
-    }
-    solrMetricsContext =
-        new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag());
-    // load reporters again, using the new core name
-    loadReporters();
-  }
-
-  /**
-   * Registers a mapping of name/metric's with the manager's metric registry.
+   * Registers a mapping of name/metric's with the manager's metric registry and creates the base
+   * set of attributes for core level metrics. All metric producers are tracked for re-registering
+   * in the case of core swapping/renaming
    *
-   * @param scope the scope of the metrics to be registered (e.g. `/admin/ping`)
    * @param producer producer of metrics to be registered
    */
-  public void registerMetricProducer(String scope, SolrMetricProducer producer) {
-    if (scope == null || producer == null) {
+  public void registerMetricProducer(SolrMetricProducer producer, Attributes attributes) {
+    if (attributes == null || producer == null) {
       throw new IllegalArgumentException(
           "registerMetricProducer() called with illegal arguments: "
-              + "scope = "
-              + scope
+              + "attributes = "
+              + attributes
               + ", producer = "
               + producer);
     }
-    // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(solrMetricsContext, scope);
-  }
 
-  /** Return the registry used by this SolrCore. */
-  public MetricRegistry getRegistry() {
-    if (solrMetricsContext != null) {
-      return solrMetricsContext.getMetricRegistry();
-    } else {
-      return null;
-    }
+    // Track this producer for potential re-initialization during core rename
+    registeredProducers.add(new MetricProducerInfo(producer, attributes));
+
+    // TODO: We initialize metrics with attributes of the core. This happens again in
+    // reregisterCoreMetrics
+    // There is some possible improvement that can be done here to not have to duplicate code in
+    // reregisterCoreMetrics
+    producer.initializeMetrics(
+        solrMetricsContext, attributes.toBuilder().putAll(core.getCoreAttributes()).build());
   }
 
   /**
@@ -153,12 +139,7 @@ public class SolrCoreMetricManager implements Closeable {
    */
   @Override
   public void close() throws IOException {
-    metricManager.closeReporters(solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
-    if (getLeaderRegistryName() != null) {
-      metricManager.closeReporters(getLeaderRegistryName(), solrMetricsContext.getTag());
-    }
-    metricManager.unregisterGauges(
-        solrMetricsContext.getRegistryName(), solrMetricsContext.getTag());
+    solrMetricsContext.unregister();
   }
 
   public SolrMetricsContext getSolrMetricsContext() {
@@ -188,27 +169,13 @@ public class SolrCoreMetricManager implements Closeable {
     return solrMetricsContext != null ? solrMetricsContext.getRegistryName() : null;
   }
 
-  /**
-   * Metric registry name for leader metrics. This is null if not in cloud mode.
-   *
-   * @return metric registry name for leader metrics
-   */
-  public String getLeaderRegistryName() {
-    return leaderRegistryName;
-  }
-
-  /** Return a tag specific to this instance. */
-  public String getTag() {
-    return solrMetricsContext.getTag();
-  }
-
   public static String createRegistryName(
       boolean cloud, String collectionName, String shardName, String replicaName, String coreName) {
     if (cloud) { // build registry name from logical names
-      return SolrMetricManager.getRegistryName(
-          SolrInfoBean.Group.core, collectionName, shardName, replicaName);
+      return SolrMetricManager.enforcePrefix(
+          "core." + collectionName + "." + shardName + "." + replicaName);
     } else {
-      return SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, coreName);
+      return SolrMetricManager.enforcePrefix("core." + coreName);
     }
   }
 
@@ -231,15 +198,5 @@ public class SolrCoreMetricManager implements Closeable {
         cd != null ? cd.getShardId() : null,
         replicaName,
         coreName);
-  }
-
-  public static String createLeaderRegistryName(
-      boolean cloud, String collectionName, String shardName) {
-    if (cloud) {
-      return SolrMetricManager.getRegistryName(
-          SolrInfoBean.Group.collection, collectionName, shardName, "leader");
-    } else {
-      return null;
-    }
   }
 }

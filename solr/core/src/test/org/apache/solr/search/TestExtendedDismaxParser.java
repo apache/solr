@@ -25,6 +25,7 @@ import static org.apache.solr.util.QueryMatchers.termQuery;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.isA;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -41,6 +42,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
@@ -51,7 +53,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.SolrPluginUtils;
-import org.hamcrest.MatcherAssert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -59,7 +60,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     index();
   }
@@ -141,6 +143,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           req("defType", "edismax", "q", "doesnotexist_s:( * * * )", "sow", sow),
           "/response/numFound==0" // nothing should be found
           );
+    }
+  }
+
+  @Test
+  public void testMatchAllDocs() throws Exception {
+    for (String sow : Arrays.asList("true", "false")) {
+      for (String q : Arrays.asList("*:*", "*")) {
+        try (SolrQueryRequest req = req("sow", sow, "qf", "id")) {
+          QParser qParser = QParser.getParser(q, "edismax", req);
+          assertThat(qParser.getQuery(), isA(MatchAllDocsQuery.class));
+        }
+      }
     }
   }
 
@@ -364,6 +378,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q.op", "AND",
             "q", "the big"),
         oner);
+
+    // test for ignoring stopwords when all query terms are stopwords
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the"), oner);
+
+    // test for not ignoring stopwords when all query terms are stopwords and alwaysStopwords is set
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the", "alwaysStopwords", "true"), nor);
 
     // searching for a literal colon value when clearly not used for a field
     assertQ(
@@ -1385,19 +1405,19 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         "phrase field queries spanning multiple fields should be within their own dismax queries",
         parsedquery,
         anyOf(
             containsString("(phrase_sw:\"aaaa bbbb\" | phrase1_sw:\"aaaa bbbb\")"),
             containsString("(phrase1_sw:\"aaaa bbbb\" | phrase_sw:\"aaaa bbbb\")")));
-    MatcherAssert.assertThat(
+    assertThat(
         "phrase field queries spanning multiple fields should be within their own dismax queries",
         parsedquery,
         anyOf(
             containsString("(phrase_sw:\"bbbb cccc\" | phrase1_sw:\"bbbb cccc\")"),
             containsString("(phrase1_sw:\"bbbb cccc\" | phrase_sw:\"bbbb cccc\")")));
-    MatcherAssert.assertThat(
+    assertThat(
         "phrase field queries spanning multiple fields should be within their own dismax queries",
         parsedquery,
         anyOf(
@@ -2301,20 +2321,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "false",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:barking | title:barking))"),
             containsString("((title:barking | name:barking))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:curds | title:curds))"),
             containsString("((title:curds | name:curds))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(containsString("((name:of | title:of))"), containsString("((title:of | name:of))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:stigma | title:stigma))"),
@@ -2332,20 +2352,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "true",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:barking | title:barking))"),
             containsString("((title:barking | name:barking))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:curds | title:curds))"),
             containsString("((title:curds | name:curds))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(containsString("((name:of | title:of))"), containsString("((title:of | name:of))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:stigma | title:stigma))"),
@@ -2361,20 +2381,20 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "edismax",
                 "debugQuery",
                 "true")); // Default sow=false
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:barking | title:barking))"),
             containsString("((title:barking | name:barking))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:curds | title:curds))"),
             containsString("((title:curds | name:curds))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(containsString("((name:of | title:of))"), containsString("((title:of | name:of))")));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((name:stigma | title:stigma))"),
@@ -2499,13 +2519,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "true",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((text_sw:oliv | title:olive))"),
             containsString("((title:olive | text_sw:oliv))")));
-    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
-    MatcherAssert.assertThat(
+    assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((text_sw:other | title:other))"),
@@ -2524,7 +2544,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "false",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString(
@@ -2551,18 +2571,18 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "100%",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((text_sw:oliv | title:olive))"),
             containsString("((title:olive | text_sw:oliv))")));
-    MatcherAssert.assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
-    MatcherAssert.assertThat(
+    assertThat(parsedquery, containsString("DisjunctionMaxQuery((title:the))"));
+    assertThat(
         parsedquery,
         anyOf(
             containsString("((text_sw:other | title:other))"),
             containsString("((title:other | text_sw:other))")));
-    MatcherAssert.assertThat(parsedquery, containsString("))~3"));
+    assertThat(parsedquery, containsString("))~3"));
 
     parsedquery =
         getParsedQuery(
@@ -2579,7 +2599,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                 "100%",
                 "debugQuery",
                 "true"));
-    MatcherAssert.assertThat(
+    assertThat(
         parsedquery,
         anyOf(
             containsString(
@@ -2603,17 +2623,17 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
                   sow,
                   "debugQuery",
                   "true"));
-      MatcherAssert.assertThat(
+      assertThat(
           parsedquery,
           anyOf(
               containsString("((text_sw:oliv | title:olive))"),
               containsString("((title:olive | text_sw:oliv))")));
-      MatcherAssert.assertThat(
+      assertThat(
           parsedquery,
           anyOf(
               containsString("((text_sw:blah | title:blah))"),
               containsString("((title:blah | text_sw:blah))")));
-      MatcherAssert.assertThat(
+      assertThat(
           parsedquery,
           anyOf(
               containsString("((text_sw:other | title:other))"),
@@ -3026,7 +3046,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       try (SolrQueryRequest req = req(params)) {
         QParser qParser = QParser.getParser("grackle", "edismax", req);
         Query q = qParser.getQuery();
-        MatcherAssert.assertThat(
+        assertThat(
             q,
             booleanQuery(
                 disjunctionOf(
@@ -3036,7 +3056,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
         qParser = QParser.getParser("grackle wi fi", "edismax", req);
         q = qParser.getQuery();
-        MatcherAssert.assertThat(
+        assertThat(
             q,
             booleanQuery(
                 disjunctionOf(
@@ -3050,7 +3070,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req(sowTrueParams)) {
       QParser qParser = QParser.getParser("grackle", "edismax", req);
       Query q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               disjunctionOf(
@@ -3060,7 +3080,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
       qParser = QParser.getParser("grackle wi fi", "edismax", req);
       q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               booleanQuery(
@@ -3078,7 +3098,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               booleanQuery(
@@ -3089,7 +3109,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject title^5")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               booleanQuery(
@@ -3100,7 +3120,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^3 title")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               booleanQuery(
@@ -3111,7 +3131,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
     try (SolrQueryRequest req = req("sow", "false", "qf", "subject^10 title^20")) {
       QParser qParser = QParser.getParser("one two", "edismax", req);
       Query q = qParser.getQuery();
-      MatcherAssert.assertThat(
+      assertThat(
           q,
           booleanQuery(
               booleanQuery(
@@ -3125,8 +3145,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       Query query, String field, String value, int boost, boolean fuzzy) {
 
     float queryBoost = 1f;
-    if (query instanceof BoostQuery) {
-      BoostQuery bq = (BoostQuery) query;
+    if (query instanceof BoostQuery bq) {
       query = bq.getQuery();
       queryBoost = bq.getBoost();
     }
@@ -3160,7 +3179,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   private boolean containsClause(
       BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
     for (BooleanClause clause : query) {
-      if (containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
+      if (containsClause(clause.query(), field, value, boost, fuzzy)) {
         return true;
       }
     }
@@ -3273,13 +3292,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
           for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-            Query subQ = clause.getQuery();
+            Query subQ = clause.query();
             if (subQ instanceof TermQuery) {
               Term subTerm = ((TermQuery) subQ).getTerm();
               if (frequentlyMisspelledWords.contains(subTerm.text())) {
                 rewrittenSubQ = true;
                 Query fuzzySubQ = newFuzzyQuery(subTerm, MIN_SIMILARITY, getFuzzyPrefixLength());
-                clause = newBooleanClause(fuzzySubQ, clause.getOccur());
+                clause = newBooleanClause(fuzzySubQ, clause.occur());
               }
             }
             builder.add(clause);
@@ -3344,7 +3363,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
     // test valid field names
     String response = h.query(req(params));
-    MatcherAssert.assertThat(
+    assertThat(
         response,
         allOf(
             containsString("+(+DisjunctionMaxQuery(("),

@@ -37,6 +37,8 @@ import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.FileTypeMagicUtil;
+import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +51,7 @@ import org.slf4j.LoggerFactory;
  */
 public class FileSystemConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** .metadata.json hidden file where metadata is stored */
   public static final String METADATA_FILE = ".metadata.json";
 
@@ -80,8 +83,7 @@ public class FileSystemConfigSetService extends ConfigSetService {
 
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
-    Path solrConfigXmlFile = getConfigDir(configName).resolve("solrconfig.xml");
-    return Files.exists(solrConfigXmlFile);
+    return Files.exists(getConfigDir(configName));
   }
 
   @Override
@@ -148,19 +150,45 @@ public class FileSystemConfigSetService extends ConfigSetService {
       String configName, String fileName, byte[] data, boolean overwriteOnExists)
       throws IOException {
     if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(fileName)) {
-      log.warn("Not including uploading file to config, as it is a forbidden type: {}", fileName);
-    } else {
-      Path filePath = getConfigDir(configName).resolve(normalizePathToOsSeparator(fileName));
-      if (!Files.exists(filePath) || overwriteOnExists) {
-        Files.write(filePath, data);
-      }
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "The file type provided for upload, '"
+              + fileName
+              + "', is forbidden for use in uploading configsets.");
+    }
+    if (FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
+      String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(data);
+      log.warn(
+          "Not including uploading file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+          fileName,
+          mimeType);
+      return;
+    }
+    final var configsetBasePath = getConfigDir(configName);
+    final var configsetFilePath = configsetBasePath.resolve(normalizePathToOsSeparator(fileName));
+    if (!FileUtils.isPathAChildOfParent(
+        configsetBasePath, configsetFilePath)) { // See SOLR-17543 for context
+      log.warn(
+          "Not uploading file [{}], as it resolves to a location [{}] outside of the configset root directory [{}]",
+          fileName,
+          configsetFilePath,
+          configsetBasePath);
+      return;
+    }
+
+    if (overwriteOnExists || !Files.exists(configsetFilePath)) {
+      Files.write(configsetFilePath, data);
     }
   }
 
   @Override
   public void setConfigMetadata(String configName, Map<String, Object> data) throws IOException {
     // store metadata in .metadata.json file
-    Path metadataPath = getConfigDir(configName).resolve(METADATA_FILE);
+    Path configDir = getConfigDir(configName);
+    if (!Files.exists(configDir)) {
+      Files.createDirectory(configDir);
+    }
+    Path metadataPath = configDir.resolve(METADATA_FILE);
     Files.write(metadataPath, Utils.toJSON(data));
   }
 
@@ -205,8 +233,16 @@ public class FileSystemConfigSetService extends ConfigSetService {
                     "Not including uploading file to config, as it is a forbidden type: {}",
                     file.getFileName());
               } else {
-                Files.copy(
-                    file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+                if (!FileTypeMagicUtil.isFileForbiddenInConfigset(file)) {
+                  Files.copy(
+                      file, target.resolve(source.relativize(file).toString()), REPLACE_EXISTING);
+                } else {
+                  String mimeType = FileTypeMagicUtil.INSTANCE.guessMimeType(file);
+                  log.warn(
+                      "Not copying file {}, as it matched the MAGIC signature of a forbidden mime type {}",
+                      file.getFileName(),
+                      mimeType);
+                }
               }
               return FileVisitResult.CONTINUE;
             }

@@ -87,19 +87,13 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         .addConfig(
             "conf",
             getFile("solrj")
-                .toPath()
                 .resolve("solr")
                 .resolve("configsets")
                 .resolve("streaming")
                 .resolve("conf"))
         .addConfig(
             "ml",
-            getFile("solrj")
-                .toPath()
-                .resolve("solr")
-                .resolve("configsets")
-                .resolve("ml")
-                .resolve("conf"))
+            getFile("solrj").resolve("solr").resolve("configsets").resolve("ml").resolve("conf"))
         .configure();
 
     String collection;
@@ -111,7 +105,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     }
 
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
 
     cluster.waitForActiveCollection(collection, 2, 2);
@@ -2373,8 +2366,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
                   + "search("
                   + COLLECTIONORALIAS
-                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-                  + "on=\"ident_s=right.ident_s\")");
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right_id, join1_i=right_join1_i, join2_s=right_join2_s, ident_s=right_ident_s\"),"
+                  + "on=\"ident_s=right_ident_s\")");
       stream = new InnerJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -2495,8 +2488,8 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
                   + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
                   + "search("
                   + COLLECTIONORALIAS
-                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right.id, join1_i=right.join1_i, join2_s=right.join2_s, ident_s=right.ident_s\"),"
-                  + "on=\"ident_s=right.ident_s\")");
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"id=right_id, join1_i=right_join1_i, join2_s=right_join2_s, ident_s=right_ident_s\"),"
+                  + "on=\"ident_s=right_ident_s\")");
       stream = new LeftOuterJoinStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
@@ -2519,6 +2512,164 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       tuples = getTuples(stream);
       assertEquals(10, tuples.size());
       assertOrder(tuples, 1, 1, 15, 15, 2, 3, 4, 5, 6, 7);
+
+      // Basic mixed order, with id in right (compare fullOuterJoin ordering)
+      expression =
+          StreamExpressionParser.parse(
+              "leftOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc, id desc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc, id desc\"),"
+                  + "on=\"join1_i, join2_s\")");
+      stream = new LeftOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(10, tuples.size());
+      assertOrder(tuples, 14, 6, 10, 11, 12, 9, 8, 9, 8, 2);
+
+    } finally {
+      solrClientCache.close();
+    }
+  }
+
+  @Test
+  public void testFullOuterJoinStream() throws Exception {
+
+    new UpdateRequest()
+        .add(id, "1", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(
+            id, "15", "side_s", "left", "join1_i", "0", "join2_s", "a", "ident_s", "left_1") // 8, 9
+        .add(id, "2", "side_s", "left", "join1_i", "0", "join2_s", "b", "ident_s", "left_2")
+        .add(id, "3", "side_s", "left", "join1_i", "1", "join2_s", "a", "ident_s", "left_3") // 10
+        .add(id, "4", "side_s", "left", "join1_i", "1", "join2_s", "b", "ident_s", "left_4") // 11
+        .add(id, "5", "side_s", "left", "join1_i", "1", "join2_s", "c", "ident_s", "left_5") // 12
+        .add(id, "6", "side_s", "left", "join1_i", "2", "join2_s", "d", "ident_s", "left_6")
+        .add(id, "7", "side_s", "left", "join1_i", "3", "join2_s", "e", "ident_s", "left_7") // 14
+        .add(
+            id, "8", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_1",
+            "join3_i", "0") // 1,15
+        .add(
+            id, "9", "side_s", "right", "join1_i", "0", "join2_s", "a", "ident_s", "right_2",
+            "join3_i", "0") // 1,15
+        .add(
+            id, "10", "side_s", "right", "join1_i", "1", "join2_s", "a", "ident_s", "right_3",
+            "join3_i", "1") // 3
+        .add(
+            id, "11", "side_s", "right", "join1_i", "1", "join2_s", "b", "ident_s", "right_4",
+            "join3_i", "1") // 4
+        .add(
+            id, "12", "side_s", "right", "join1_i", "1", "join2_s", "c", "ident_s", "right_5",
+            "join3_i", "1") // 5
+        .add(
+            id, "13", "side_s", "right", "join1_i", "2", "join2_s", "dad", "ident_s", "right_6",
+            "join3_i", "2")
+        .add(
+            id, "14", "side_s", "right", "join1_i", "3", "join2_s", "e", "ident_s", "right_7",
+            "join3_i", "3") // 7
+        .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
+
+    StreamExpression expression;
+    TupleStream stream;
+    List<Tuple> tuples;
+    StreamContext streamContext = new StreamContext();
+    SolrClientCache solrClientCache = new SolrClientCache();
+    streamContext.setSolrClientCache(solrClientCache);
+
+    StreamFactory factory =
+        new StreamFactory()
+            .withCollectionZkHost(COLLECTIONORALIAS, cluster.getZkServer().getZkAddress())
+            .withFunctionName("search", CloudSolrStream.class)
+            .withFunctionName("fullOuterJoin", FullOuterJoinStream.class);
+
+    // Basic test
+    try {
+      expression =
+          StreamExpressionParser.parse(
+              "fullOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                  + "on=\"join1_i=join1_i, join2_s=join2_s\")");
+      stream = new FullOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(11, tuples.size());
+      assertOrder(tuples, 8, 9, 8, 9, 2, 10, 11, 12, 6, 13, 14);
+
+      // Basic desc
+      expression =
+          StreamExpressionParser.parse(
+              "fullOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc\"),"
+                  + "on=\"join1_i, join2_s\")");
+      stream = new FullOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(11, tuples.size());
+      assertOrder(tuples, 14, 6, 13, 10, 11, 12, 9, 8, 9, 8, 2);
+
+      // Results in both searches, no join matches
+      expression =
+          StreamExpressionParser.parse(
+              "fullOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"ident_s asc\", aliases=\"ident_s=right_ident_s\"),"
+                  + "on=\"ident_s=right_ident_s\")");
+      stream = new FullOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(15, tuples.size());
+      assertOrder(tuples, 1, 15, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14);
+
+      // Differing field names
+      expression =
+          StreamExpressionParser.parse(
+              "fullOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc, id asc\", aliases=\"join3_i=aliasesField\"),"
+                  + "on=\"join1_i=aliasesField, join2_s=join2_s\")");
+      stream = new FullOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(11, tuples.size());
+      assertOrder(tuples, 8, 9, 8, 9, 2, 10, 11, 12, 6, 13, 14);
+
+      // Basic mixed order, with id in right (compare leftOuterJoin order above)
+      expression =
+          StreamExpressionParser.parse(
+              "fullOuterJoin("
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc, id desc\"),"
+                  + "search("
+                  + COLLECTIONORALIAS
+                  + ", q=\"side_s:right\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i desc, join2_s asc, id desc\"),"
+                  + "on=\"join1_i, join2_s\")");
+      stream = new FullOuterJoinStream(expression, factory);
+      stream.setStreamContext(streamContext);
+      tuples = getTuples(stream);
+      assertEquals(11, tuples.size());
+      assertOrder(tuples, 14, 6, 13, 10, 11, 12, 9, 8, 9, 8, 2);
+
     } finally {
       solrClientCache.close();
     }
@@ -2932,14 +3083,14 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       clause =
           "innerJoin("
               + "select("
-              + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+              + "id, join1_i as left_join1, join2_s as left_join2, ident_s as left_ident,"
               + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
               + "),"
               + "select("
-              + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+              + "join3_i as right_join1, join2_s as right_join2, ident_s as right_ident,"
               + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
               + "),"
-              + "on=\"left.join1=right.join1, left.join2=right.join2\""
+              + "on=\"left_join1=right_join1, left_join2=right_join2\""
               + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
@@ -2947,34 +3098,34 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       assertFields(
           tuples,
           "id",
-          "left.join1",
-          "left.join2",
-          "left.ident",
-          "right.join1",
-          "right.join2",
-          "right.ident");
+          "left_join1",
+          "left_join2",
+          "left_ident",
+          "right_join1",
+          "right_join2",
+          "right_ident");
 
       // Wrapped select test
       clause =
           "select("
-              + "id, left.ident, right.ident,"
+              + "id, left_ident, right_ident,"
               + "innerJoin("
               + "select("
-              + "id, join1_i as left.join1, join2_s as left.join2, ident_s as left.ident,"
+              + "id, join1_i as left_join1, join2_s as left_join2, ident_s as left_ident,"
               + "search(collection1, q=\"side_s:left\", fl=\"id,join1_i,join2_s,ident_s\", sort=\"join1_i asc, join2_s asc, id asc\")"
               + "),"
               + "select("
-              + "join3_i as right.join1, join2_s as right.join2, ident_s as right.ident,"
+              + "join3_i as right_join1, join2_s as right_join2, ident_s as right_ident,"
               + "search(collection1, q=\"side_s:right\", fl=\"join3_i,join2_s,ident_s\", sort=\"join3_i asc, join2_s asc\"),"
               + "),"
-              + "on=\"left.join1=right.join1, left.join2=right.join2\""
+              + "on=\"left_join1=right_join1, left_join2=right_join2\""
               + ")"
               + ")";
       stream = factory.constructStream(clause);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
-      assertFields(tuples, "id", "left.ident", "right.ident");
-      assertNotFields(tuples, "left.join1", "left.join2", "right.join1", "right.join2");
+      assertFields(tuples, "id", "left_ident", "right_ident");
+      assertNotFields(tuples, "left_join1", "left_join2", "right_join1", "right_join2");
     } finally {
       solrClientCache.close();
     }
@@ -3115,7 +3266,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
@@ -3227,7 +3377,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
@@ -3349,7 +3498,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelDaemonUpdateStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -3549,7 +3697,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -3759,7 +3906,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("destinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("destinationCollection", 2, 2);
 
@@ -3870,7 +4016,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection", 2, 2);
 
@@ -3994,7 +4139,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   public void testParallelDaemonCommitStream() throws Exception {
 
     CollectionAdminRequest.createCollection("parallelDestinationCollection1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("parallelDestinationCollection1", 2, 2);
 
@@ -4240,15 +4384,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     Assume.assumeTrue(!useAlias);
 
     CollectionAdminRequest.createCollection("modelCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("modelCollection", 2, 2);
     CollectionAdminRequest.createCollection("uknownCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("uknownCollection", 2, 2);
     CollectionAdminRequest.createCollection("checkpointCollection", "ml", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("checkpointCollection", 2, 2);
 
@@ -4492,15 +4633,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("workQueue", 2, 2);
     CollectionAdminRequest.createCollection("mainCorpus", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("mainCorpus", 2, 2);
     CollectionAdminRequest.createCollection("destination", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection("destination", 2, 2);
 
@@ -4573,15 +4711,12 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
   @Test
   public void testParallelExecutorStream() throws Exception {
     CollectionAdminRequest.createCollection("workQueue1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     CollectionAdminRequest.createCollection("mainCorpus1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     CollectionAdminRequest.createCollection("destination1", "conf", 2, 1)
-        .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster.waitForActiveCollection("workQueue1", 2, 2);
@@ -5169,12 +5304,11 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
     return tuples;
   }
 
-  protected boolean assertOrder(List<Tuple> tuples, int... ids) throws Exception {
-    return assertOrderOf(tuples, "id", ids);
+  protected void assertOrder(List<Tuple> tuples, int... ids) throws Exception {
+    assertOrderOf(tuples, "id", ids);
   }
 
-  protected boolean assertOrderOf(List<Tuple> tuples, String fieldName, int... ids)
-      throws Exception {
+  protected void assertOrderOf(List<Tuple> tuples, String fieldName, int... ids) throws Exception {
     int i = 0;
     for (int val : ids) {
       Tuple t = tuples.get(i);
@@ -5184,10 +5318,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
       }
       ++i;
     }
-    return true;
   }
 
-  protected boolean assertFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (!tuple.getFields().containsKey(field)) {
@@ -5195,10 +5328,9 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
-  protected boolean assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
+  protected void assertNotFields(List<Tuple> tuples, String... fields) throws Exception {
     for (Tuple tuple : tuples) {
       for (String field : fields) {
         if (tuple.getFields().containsKey(field)) {
@@ -5206,7 +5338,6 @@ public class StreamDecoratorTest extends SolrCloudTestCase {
         }
       }
     }
-    return true;
   }
 
   protected boolean assertGroupOrder(Tuple tuple, int... ids) throws Exception {

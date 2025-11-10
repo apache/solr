@@ -203,7 +203,7 @@ public abstract class AbstractChaosMonkeySafeLeaderTestBase extends AbstractFull
     List<Integer> numShardsNumReplicas = new ArrayList<>(2);
     numShardsNumReplicas.add(1);
     numShardsNumReplicas.add(1);
-    checkForCollection("testcollection", numShardsNumReplicas, null);
+    checkForCollection("testcollection", numShardsNumReplicas);
   }
 
   private void tryDelete() throws Exception {

@@ -16,6 +16,9 @@
  */
 package org.apache.solr.core;
 
+import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
+import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,6 +27,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -93,11 +97,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/mbeans"), "solr.SolrInfoMBeanHandler");
-      ++ihCount;
       assertEquals(pathToClassMap.get("/admin/ping"), "solr.PingRequestHandler");
-      ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/plugins"), "solr.PluginInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount;
@@ -128,6 +128,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       assertEquals(pathToClassMap.get("/update/json"), "solr.UpdateRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/update/json/docs"), "solr.UpdateRequestHandler");
+      ++ihCount;
+      assertEquals(pathToClassMap.get("/update/cbor"), "solr.UpdateRequestHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/analysis/document"), "solr.DocumentAnalysisRequestHandler");
       ++ihCount;
@@ -292,6 +294,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     assertEquals(
         "wrong config for slowQueryThresholdMillis", 2000, solrConfig.slowQueryThresholdMillis);
     assertEquals("wrong config for maxBooleanClauses", 1024, solrConfig.booleanQueryMaxClauseCount);
+    assertEquals(
+        "wrong config for minPrefixQueryTermLength", -1, solrConfig.prefixQueryMinPrefixLength);
     assertTrue("wrong config for enableLazyFieldLoading", solrConfig.enableLazyFieldLoading);
     assertEquals("wrong config for queryResultWindowSize", 10, solrConfig.queryResultWindowSize);
   }
@@ -323,6 +327,70 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     // Check that all cores are closed and no searcher references are leaked.
     assertTrue("SolrCore " + core + " is not closed", core.isClosed());
     assertTrue(core.areAllSearcherReferencesEmpty());
+  }
+
+  /**
+   * Best effort attempt to recreate a deadlock between SolrCore initialization and Index metrics
+   * poll.
+   *
+   * <p>See https://issues.apache.org/jira/browse/SOLR-17060
+   */
+  @Test
+  public void testCoreInitDeadlockMetrics() throws Exception {
+    CoreContainer coreContainer = h.getCoreContainer();
+
+    String coreName = "tmpCore";
+    AtomicBoolean created = new AtomicBoolean(false);
+    AtomicBoolean atLeastOnePoll = new AtomicBoolean(false);
+
+    final ExecutorService executor =
+        ExecutorUtil.newMDCAwareFixedThreadPool(
+            1, new SolrNamedThreadFactory("testCoreInitDeadlockMetrics"));
+    executor.execute(
+        () -> {
+          while (!created.get()) {
+            try {
+              PrometheusMetricReader reader =
+                  coreContainer
+                      .getMetricManager()
+                      .getPrometheusMetricReader("solr.core." + coreName);
+              if (reader != null) {
+                MetricSnapshots snapshots = reader.collect();
+                for (var snapshot : snapshots) {
+                  if (snapshot instanceof GaugeSnapshot gaugeSnapshot) {
+                    var dataPoints = gaugeSnapshot.getDataPoints();
+                    if (!dataPoints.isEmpty()) {
+                      atLeastOnePoll.compareAndSet(false, true);
+                    }
+                  }
+                }
+              }
+            } catch (Exception ignore) {
+              // Ignore in case the core may not be fully initialized
+            }
+
+            try {
+              TimeUnit.MILLISECONDS.sleep(5);
+            } catch (InterruptedException e1) {
+              throw new RuntimeException(e1);
+            }
+          }
+        });
+
+    TimeUnit.MILLISECONDS.sleep(25);
+    try (var tmpCore = coreContainer.create(coreName, Map.of("configSet", "minimal"))) {
+      tmpCore.open();
+      for (int i = 0; i < 10; i++) {
+        TimeUnit.MILLISECONDS.sleep(50); // to allow metrics to be checked at least once
+        if (atLeastOnePoll.get()) {
+          break;
+        }
+      }
+    } finally {
+      created.set(true);
+      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    }
+    assertTrue(atLeastOnePoll.get());
   }
 
   private static class NewSearcherRunnable implements Runnable {

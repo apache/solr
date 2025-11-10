@@ -53,9 +53,8 @@ public final class LastFieldValueUpdateProcessorFactory
 
     T result = null;
 
-    if (values instanceof List) {
+    if (values instanceof List<T> l) {
       // optimize index lookup
-      List<T> l = (List<T>) values;
       result = l.get(l.size() - 1);
     } else if (values instanceof SortedSet) {
       // optimize tail lookup

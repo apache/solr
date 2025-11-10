@@ -37,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
@@ -55,6 +56,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
+import org.apache.lucene.search.Pruning;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Scorable;
@@ -73,7 +75,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.component.QueryElevationComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.FieldType;
@@ -234,6 +235,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      * for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be null.
      */
     public final String selectorText;
+
     /** The type for this selector, will never be null */
     public final GroupHeadSelectorType type;
 
@@ -247,8 +249,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public boolean equals(final Object other) {
-      if (other instanceof GroupHeadSelector) {
-        final GroupHeadSelector that = (GroupHeadSelector) other;
+      if (other instanceof GroupHeadSelector that) {
         return (this.type == that.type) && this.selectorText.equals(that.selectorText);
       }
       return false;
@@ -521,11 +522,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               new FieldInfo(
                   fieldInfo.name,
                   fieldInfo.number,
-                  fieldInfo.hasVectors(),
+                  fieldInfo.hasTermVectors(),
                   fieldInfo.hasNorms(),
                   fieldInfo.hasPayloads(),
                   fieldInfo.getIndexOptions(),
                   DocValuesType.NONE,
+                  DocValuesSkipIndexType.NONE,
                   fieldInfo.getDocValuesGen(),
                   fieldInfo.attributes(),
                   fieldInfo.getPointDimensionCount(),
@@ -534,13 +536,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                   fieldInfo.getVectorDimension(),
                   fieldInfo.getVectorEncoding(),
                   fieldInfo.getVectorSimilarityFunction(),
-                  fieldInfo.isSoftDeletesField());
+                  fieldInfo.isSoftDeletesField(),
+                  fieldInfo.isParentField());
           newInfos.add(f);
         } else {
           newInfos.add(fieldInfo);
         }
       }
-      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[newInfos.size()]));
+      FieldInfos infos = new FieldInfos(newInfos.toArray(new FieldInfo[0]));
       this.fieldInfos = infos;
     }
 
@@ -578,11 +581,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public float score() {
       return score;
-    }
-
-    @Override
-    public int docID() {
-      return docId;
     }
   }
 
@@ -712,7 +710,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -803,7 +801,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -919,7 +917,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -993,7 +991,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1196,7 +1194,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1278,7 +1276,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1443,7 +1441,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       if (contexts.length == 0) {
         return;
       }
@@ -1507,7 +1505,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).finish();
+        ((DelegatingCollector) delegate).complete();
       }
     }
   }
@@ -1553,13 +1551,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         delegateCollect();
       }
     }
+
     /** Immediately delegate the collection of the current doc */
     protected void delegateCollect() throws IOException {
       // ensure we have the 'correct' scorer
       // (our supper class may have set the "real" scorer on our leafDelegate
       // and it may have an incorrect docID)
       leafDelegate.setScorer(currentGroupState);
-      leafDelegate.collect(currentGroupState.docID());
+      leafDelegate.collect(currentGroupState.docId);
     }
 
     /**
@@ -1587,11 +1586,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void finish() throws IOException {
+    public void complete() throws IOException {
       // Deal with last group (if any)...
       maybeDelegateCollect();
 
-      super.finish();
+      super.complete();
     }
 
     /**
@@ -1601,7 +1600,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected static final class BlockGroupState extends ScoreAndDoc {
       /**
        * Specific values have no intrinsic meaning, but can <em>only</em> be considered if the
-       * current docID in {@link #docID} is non-negative
+       * current docID is non-negative
        */
       private int currentGroup = 0;
 
@@ -1612,7 +1611,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public int getCurrentGroup() {
-        assert -1 < docID();
+        assert -1 < this.docId;
         return this.currentGroup;
       }
 
@@ -1628,7 +1627,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       public boolean hasBoostedDocs() {
-        assert -1 < docID();
+        assert -1 < this.docId;
         return groupHasBoostedDocs;
       }
 
@@ -1638,7 +1637,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
        * collected)
        */
       public boolean isCurrentDocCollectable() {
-        return (-1 < docID() && !groupHasBoostedDocs);
+        return (-1 < this.docId && !groupHasBoostedDocs);
       }
     }
   }
@@ -1675,7 +1674,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {
@@ -1774,6 +1773,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -1899,7 +1899,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       final boolean isBoosted = isBoostedAdvanceExact(contextDoc);
 
-      if (-1 < currentGroupState.docID() && docGroup == currentGroupState.getCurrentGroup()) {
+      if (-1 < currentGroupState.docId && docGroup == currentGroupState.getCurrentGroup()) {
         // we have an existing group, and contextDoc is in that group.
 
         if (isBoosted) {
@@ -2003,6 +2003,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
   }
+
   /**
    * A block based score collector that uses a field's numeric value as the group ids
    *
@@ -2125,8 +2126,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           minMaxFieldType = searcher.getSchema().getField(text).getType();
         } else {
           SolrParams params = new ModifiableSolrParams();
-          try (SolrQueryRequest request = new LocalSolrQueryRequest(searcher.getCore(), params)) {
-            FunctionQParser functionQParser = new FunctionQParser(text, null, null, request);
+          try (SolrQueryRequest request = SolrQueryRequest.wrapSearcher(searcher, params)) {
+            FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
             funcQuery = (FunctionQuery) functionQParser.parse();
           } catch (SyntaxError e) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
@@ -3387,9 +3388,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         public void purgeGroupsThatHaveBoostedDocs(
             final FixedBitSet collapsedSet,
             final IntProcedure removeGroupKey,
-            final Runnable resetNullGroupHead) {
-          return;
-        }
+            final Runnable resetNullGroupHead) {}
       };
     }
 
@@ -3532,12 +3531,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public void setScorer(Scorable s) throws IOException {
       inner.setScorer(s);
     }
+
     /**
      * @see SortFieldsCompare#setGroupValues
      */
     public void setGroupValues(int contextDoc) throws IOException {
       inner.setNullGroupValues(contextDoc);
     }
+
     /**
      * @see SortFieldsCompare#testAndSetGroupValues
      */
@@ -3566,8 +3567,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final Object[] nullGroupValues;
 
     /**
-     * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used, and an
-     * initial number of expected groups (will grow as needed).
+     * Constructs an instance based on the (raw, un-rewritten) SortFields to be used, and an initial
+     * number of expected groups (will grow as needed).
      */
     @SuppressWarnings({"rawtypes"})
     public SortFieldsCompare(SortField[] sorts, int initNumGroups) {
@@ -3579,7 +3580,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       for (int clause = 0; clause < numClauses; clause++) {
         SortField sf = sorts[clause];
         // we only need one slot for every comparator
-        fieldComparators[clause] = sf.getComparator(1, clause == 0);
+        fieldComparators[clause] =
+            sf.getComparator(
+                1,
+                clause == 0
+                    ? (numClauses > 1 ? Pruning.GREATER_THAN : Pruning.GREATER_THAN_OR_EQUAL_TO)
+                    : Pruning.NONE);
+
         reverseMul[clause] = sf.getReverse() ? -1 : 1;
       }
       groupHeadValues = new Object[initNumGroups][];

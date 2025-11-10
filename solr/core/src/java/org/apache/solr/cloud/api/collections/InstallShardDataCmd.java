@@ -91,7 +91,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
             "Could not install data to collection [%s] and shard [%s]",
             typedMessage.collection,
             typedMessage.shard);
-    shardRequestTracker.processResponses(new NamedList<>(), shardHandler, true, errorMessage);
+    shardRequestTracker.processResponses(results, shardHandler, true, errorMessage);
   }
 
   /** A value-type representing the message received by {@link InstallShardDataCmd} */

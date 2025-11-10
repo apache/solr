@@ -85,7 +85,7 @@ The name can be anything other than `schema.xml`, as that name is reserved for t
 === ClassicIndexSchemaFactory
 
 An alternative to using a managed schema is to explicitly configure a `ClassicIndexSchemaFactory`.
-This requires the use of a `schema.xml` file, and disallows any programatic changes to the Schema at run time.
+This requires the use of a `schema.xml` file, and disallows any programmatic changes to the Schema at run time.
 The `schema.xml` file must be edited manually and is loaded only when the collection is loaded.
 
 [source,xml]

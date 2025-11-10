@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import java.util.List;
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.data.ACL;
 
 /**
@@ -26,16 +27,52 @@ import org.apache.zookeeper.data.ACL;
 public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
   public static final String SECURITY_ZNODE_PATH = "/security";
 
-  private List<ACL> nonSecurityACLsToAdd;
-  private List<ACL> securityACLsToAdd;
+  private volatile List<ACL> nonSecurityACLsToAdd;
+  private volatile List<ACL> securityACLsToAdd;
+
+  private final String securityConfPath;
+  private final String securityZNodePath;
+  private final String securityZNodePathDir;
+
   protected ZkCredentialsInjector zkCredentialsInjector;
 
   public SecurityAwareZkACLProvider() {
     this(new DefaultZkCredentialsInjector());
   }
 
+  public SecurityAwareZkACLProvider(String chroot) {
+    this(new DefaultZkCredentialsInjector(), chroot);
+  }
+
   public SecurityAwareZkACLProvider(ZkCredentialsInjector zkCredentialsInjector) {
+    this(zkCredentialsInjector, null);
+  }
+
+  public SecurityAwareZkACLProvider(ZkCredentialsInjector zkCredentialsInjector, String chroot) {
     this.zkCredentialsInjector = zkCredentialsInjector;
+    if (chroot != null) {
+      this.securityConfPath = ZKPaths.makePath(chroot, ZkStateReader.SOLR_SECURITY_CONF_PATH);
+      this.securityZNodePath = ZKPaths.makePath(chroot, SECURITY_ZNODE_PATH);
+      this.securityZNodePathDir = securityZNodePath + "/";
+    } else {
+      this.securityConfPath = null;
+      this.securityZNodePath = null;
+      this.securityZNodePathDir = null;
+    }
+  }
+
+  public SecurityAwareZkACLProvider withChroot(String chroot) {
+    return new SecurityAwareZkACLProvider(chroot) {
+      @Override
+      protected List<ACL> createNonSecurityACLsToAdd() {
+        return SecurityAwareZkACLProvider.this.createNonSecurityACLsToAdd();
+      }
+
+      @Override
+      protected List<ACL> createSecurityACLsToAdd() {
+        return SecurityAwareZkACLProvider.this.createSecurityACLsToAdd();
+      }
+    };
   }
 
   @Override
@@ -52,11 +89,16 @@ public abstract class SecurityAwareZkACLProvider implements ZkACLProvider {
     }
   }
 
+  @Override
+  public final List<ACL> getDefaultAcl() {
+    return getNonSecurityACLsToAdd();
+  }
+
   protected boolean isSecurityZNodePath(String zNodePath) {
     return zNodePath != null
-        && (zNodePath.equals(ZkStateReader.SOLR_SECURITY_CONF_PATH)
-            || zNodePath.equals(SECURITY_ZNODE_PATH)
-            || zNodePath.startsWith(SECURITY_ZNODE_PATH + "/"));
+        && (zNodePath.equals(securityConfPath)
+            || zNodePath.equals(securityZNodePath)
+            || (securityZNodePathDir != null && zNodePath.startsWith(securityZNodePathDir)));
   }
 
   /**

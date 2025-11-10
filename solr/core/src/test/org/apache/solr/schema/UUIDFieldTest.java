@@ -64,4 +64,21 @@ public class UUIDFieldTest extends SolrTestCaseJ4 {
     }
     assertTrue("Bad UUID check failed", ok);
   }
+
+  public void testBadRequest() {
+    try {
+      new UUIDField()
+          .createField(
+              new SchemaField(
+                  "test",
+                  new StrField() {
+                    {
+                      properties = (STORED | INDEXED);
+                    }
+                  }),
+              "bad request");
+    } catch (SolrException s) {
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, s.code());
+    }
+  }
 }

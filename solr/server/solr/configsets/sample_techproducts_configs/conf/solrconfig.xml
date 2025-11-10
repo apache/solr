@@ -35,62 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.5</luceneMatchVersion>
-
-  <!-- <lib/> directives can be used to instruct Solr to load any Jars
-       identified and use them to resolve any "plugins" specified in
-       your solrconfig.xml or schema.xml (ie: Analyzers, Request
-       Handlers, etc...).
-
-       All directories and paths are resolved relative to the
-       instanceDir.
-
-       Please note that <lib/> directives are processed in the order
-       that they appear in your solrconfig.xml file, and are "stacked"
-       on top of each other when building a ClassLoader - so if you have
-       plugin jars with dependencies on other jars, the "lower level"
-       dependency jars should be loaded first.
-
-       If a "./lib" directory exists in your instanceDir, all files
-       found in it are included as if you had used the following
-       syntax...
-
-              <lib dir="./lib" />
-    -->
-
-  <!-- A 'dir' option by itself adds any files found in the directory
-       to the classpath, this is useful for including all jars in a
-       directory.
-
-       When a 'regex' is specified in addition to a 'dir', only the
-       files in that directory which completely match the regex
-       (anchored on both ends) will be included.
-
-       If a 'dir' option (with or without a regex) is used and nothing
-       is found that matches, a warning will be logged.
-
-       The examples below can be used to load some Solr Modules along
-       with their external dependencies as an alternative to using a
-       startup parameter to define the modules to load globally.  For more info
-       see https://solr.apache.org/guide/solr/latest/configuration-guide/solr-modules.html.
-    -->
-  <lib dir="${solr.install.dir:../../../..}/modules/extraction/lib" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/clustering/lib/" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/langid/lib/" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/ltr/lib/" regex=".*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/modules/scripting/lib/" regex=".*\.jar" />
-
-  <!-- an exact 'path' can be used instead of a 'dir' to specify a
-       specific jar file.  This will cause a serious error to be logged
-       if it can't be loaded.
-    -->
-  <!--
-     <lib path="../a-jar-that-does-not-exist.jar" />
-  -->
+  <luceneMatchVersion>10.3</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -268,16 +213,9 @@
          is recommended (see below).
          "dir" - the target directory for transaction logs, defaults to the
                 solr data directory.
-         "numVersionBuckets" - sets the number of buckets used to keep
-                track of max version values when checking for re-ordered
-                updates; increase this value to reduce the cost of
-                synchronizing access to version buckets during high-volume
-                indexing, this requires 8 bytes (long) * numVersionBuckets
-                of heap space per Solr core.
     -->
     <updateLog>
       <str name="dir">${solr.ulog.dir:}</str>
-      <int name="numVersionBuckets">${solr.ulog.numVersionBuckets:65536}</int>
     </updateLog>
 
     <!-- AutoCommit
@@ -313,7 +251,7 @@
       -->
 
      <autoSoftCommit>
-       <maxTime>${solr.autoSoftCommit.maxTime:-1}</maxTime>
+       <maxTime>${solr.autoSoftCommit.maxTime:3000}</maxTime>
      </autoSoftCommit>
 
     <!-- Update Related Event Listeners
@@ -453,7 +391,7 @@
                         />
       -->
 
-    <!-- Feature Values Cache
+    <!-- Feature Vector Cache
 
          Cache used by the Learning To Rank (LTR) module.
 
@@ -463,12 +401,11 @@
 
          https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
-    <cache enable="${solr.ltr.enabled:false}" name="QUERY_DOC_FV"
+    <featureVectorCache enable="${solr.ltr.enabled:false}"
            class="solr.CaffeineCache"
            size="4096"
            initialSize="2048"
-           autowarmCount="4096"
-           regenerator="solr.search.NoOpRegenerator" />
+           autowarmCount="0" />
 
     <!-- Custom Cache
 
@@ -579,52 +516,6 @@
 
   </query>
 
-  <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-     Circuit Breaker Section - This section consists of configurations for
-     circuit breakers
-     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ -->
-  <!-- Circuit breakers are designed to allow stability and predictable query
-     execution. They prevent operations that can take down the node and cause
-     noisy neighbour issues.
-
-     The CircuitBreakerManager is the default manager for all circuit breakers.
-     The enabled flag here controls the activation/deactivation of all circuit
-     breakers specified within.
-  -->
-  <circuitBreaker class="solr.CircuitBreakerManager" enabled="true">
-    <!-- Memory Circuit Breaker
-
-     Specific configuration for max JVM heap usage circuit breaker. This configuration defines
-     whether the circuit breaker is enabled and the threshold percentage of maximum heap allocated
-     beyond which queries will be rejected until the current JVM usage goes below the threshold.
-     The valid value for this range is 50-95.
-
-     Consider a scenario where the max heap allocated is 4 GB and memThreshold is defined as 75.
-     Threshold JVM usage will be 4 * 0.75 = 3 GB. Its generally a good idea to keep this value
-     between 75 - 80% of maximum heap allocated.
-
-     If, at any point, the current JVM heap usage goes above 3 GB, queries will be rejected until
-     the heap usage goes below 3 GB again. If you see queries getting rejected with 503 error code,
-     check for "Circuit Breakers tripped" in logs and the corresponding error message should tell
-     you what transpired (if the failure was caused by tripped circuit breakers).
-    -->
-    <!--
-    <str name="memEnabled">true</str>
-    <str name="memThreshold">75</str>
-    -->
-
-    <!-- CPU Circuit Breaker Configuration
-
-     Specific configuration for CPU utilization based circuit breaker. This configuration defines
-     whether the circuit breaker is enabled and the average load over the last minute at which the
-     circuit breaker should start rejecting queries.
-    -->
-    <!--
-    <str name="cpuEnabled">true</str>
-    <str name="cpuThreshold">75</str>
-    -->
-  </circuitBreaker>
-
   <!-- Request Dispatcher
 
        This section contains instructions for how the SolrDispatchFilter
@@ -646,17 +537,10 @@
          POST. You can use POST to pass request parameters not
          fitting into the URL.
 
-         addHttpRequestToContext - if set to true, it will instruct
-         the requestParsers to include the original HttpServletRequest
-         object in the context map of the SolrQueryRequest under the
-         key "httpRequest". It will not be used by any of the existing
-         Solr components, but may be useful when developing custom
-         plugins.
        -->
     <requestParsers
                     multipartUploadLimitInKB="-1"
-                    formdataUploadLimitInKB="-1"
-                    addHttpRequestToContext="false"/>
+                    formdataUploadLimitInKB="-1"/>
 
     <!-- HTTP Caching
 
@@ -789,6 +673,9 @@
   <requestHandler name="/update/extract"
                   startup="lazy"
                   class="solr.extraction.ExtractingRequestHandler" >
+    <!-- Assuming user has started a Tika Server locally -->
+    <str name="tikaserver.url">http://localhost:9998</str>
+
     <lst name="defaults">
       <str name="lowernames">true</str>
       <str name="uprefix">ignored_</str>
@@ -874,7 +761,7 @@
 
     <!-- a spellchecker that use an alternate comparator
 
-         comparatorClass be one of:
+         comparatorClass can be one of:
           1. score (default)
           2. freq (Frequency first, then score)
           3. A fully qualified class name
@@ -1248,7 +1135,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
     -->
     <!--
      <updateRequestProcessorChain name="langid">
-       <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
+       <processor class="org.apache.solr.update.processor.LangDetectLanguageIdentifierUpdateProcessorFactory">
          <str name="langid.fl">text,title,subject,description</str>
          <str name="langid.langField">language_s</str>
          <str name="langid.fallback">en</str>
@@ -1296,10 +1183,6 @@ via parameters.  The below configuration supports hl.method=original and fastVec
                           default="true"
                           class="solr.XMLResponseWriter" />
      <queryResponseWriter name="json" class="solr.JSONResponseWriter"/>
-     <queryResponseWriter name="python" class="solr.PythonResponseWriter"/>
-     <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
-     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
-     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
      <queryResponseWriter name="csv" class="solr.CSVResponseWriter"/>
      <queryResponseWriter name="schema.xml" class="solr.SchemaXmlResponseWriter"/>
     -->
@@ -1392,6 +1275,5 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
     <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
-      <str name="fvCacheName">QUERY_DOC_FV</str>
     </transformer>
 </config>

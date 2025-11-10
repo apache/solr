@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.FilterScorable;
 import org.apache.lucene.search.LeafCollector;
 import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.ScoreMode;
@@ -57,9 +58,22 @@ public class DelegatingCollector extends SimpleCollector {
 
   @Override
   public void setScorer(Scorable scorer) throws IOException {
-    this.scorer = scorer;
+    // Inspired by Lucene's MultiLeafCollector
+    if (scoreMode() == ScoreMode.TOP_SCORES) {
+      this.scorer = scorer;
+    } else {
+      this.scorer =
+          new FilterScorable(scorer) {
+            @Override
+            public void setMinCompetitiveScore(float minScore) throws IOException {
+              // Ignore calls to setMinCompetitiveScore so that if we wrap a
+              // collector that wants to skip low-scoring hits, then the
+              // outer collector (that set scoreMode) still sees all hits.
+            }
+          };
+    }
     if (leafDelegate != null) {
-      leafDelegate.setScorer(scorer);
+      leafDelegate.setScorer(this.scorer);
     }
   }
 
@@ -80,9 +94,23 @@ public class DelegatingCollector extends SimpleCollector {
     leafDelegate = delegate.getLeafCollector(context);
   }
 
-  public void finish() throws IOException {
+  /**
+   * From Solr 9.4 using Lucene 9.8 onwards <code>DelegatingCollector.finish</code> clashes with the
+   * super class's <code>LeafCollector.finish</code> method. Please relocate any finishing logic
+   * into the <code>DelegatingCollector.complete</code> replacement completion method.
+   */
+  @Override
+  public final void finish() throws IOException {
+    if (leafDelegate != null) {
+      leafDelegate.finish();
+    }
+    super.finish();
+  }
+
+  /** since 9.4 */
+  public void complete() throws IOException {
     if (delegate instanceof DelegatingCollector) {
-      ((DelegatingCollector) delegate).finish();
+      ((DelegatingCollector) delegate).complete();
     }
   }
 }

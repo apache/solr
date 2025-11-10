@@ -89,7 +89,7 @@ class CloudReplicaSource implements ReplicaSource {
       addSlices(sliceMap, clusterState, params, builder.collection, shardKeys, false);
     }
 
-    this.slices = sliceMap.keySet().toArray(new String[sliceMap.size()]);
+    this.slices = sliceMap.keySet().toArray(new String[0]);
     this.replicas = newReplicasArray(slices.length);
     for (int i = 0; i < slices.length; i++) {
       String sliceName = slices[i];

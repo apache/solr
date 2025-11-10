@@ -17,13 +17,11 @@
 package org.apache.solr.bench;
 
 import static org.apache.solr.bench.Docs.docs;
-import static org.apache.solr.bench.generators.SourceDSL.booleans;
 import static org.apache.solr.bench.generators.SourceDSL.integers;
 import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.bench.generators.Distribution;
@@ -55,9 +53,10 @@ public class DockMakerTest extends SolrTestCaseJ4 {
 
     Docs docs = docs();
 
-    int cardinality = 2;
+    int maxCardinality = 2;
 
-    docs.field("AlphaCard3", strings().alpha().maxCardinality(cardinality).ofLengthBetween(1, 6));
+    docs.field(
+        "AlphaCard3", strings().alpha().maxCardinality(maxCardinality).ofLengthBetween(1, 6));
 
     Set<String> values = new HashSet<>();
     for (int i = 0; i < 10; i++) {
@@ -66,18 +65,19 @@ public class DockMakerTest extends SolrTestCaseJ4 {
       values.add(field.getValue().toString());
     }
 
-    assertEquals(values.toString(), cardinality, values.size());
+    // the cardinality we see is <= maxCardinality specified, albeit almost always equal to
+    assertTrue(values.toString(), values.size() <= maxCardinality);
   }
 
   @Test
   public void testBasicCardinalityUnicode() throws Exception {
     Docs docs = docs();
-    int cardinality = 4;
+    int maxCardinality = 4;
     docs.field(
         "UnicodeCard3",
         strings()
             .basicMultilingualPlaneAlphabet()
-            .maxCardinality(cardinality)
+            .maxCardinality(maxCardinality)
             .ofLengthBetween(1, 6));
 
     HashSet<Object> values = new HashSet<>();
@@ -88,15 +88,16 @@ public class DockMakerTest extends SolrTestCaseJ4 {
       values.add(field.getValue().toString());
     }
 
-    assertEquals(values.toString(), cardinality, values.size());
+    // the cardinality we see is <= maxCardinality specified, albeit almost always equal to
+    assertTrue(values.toString(), values.size() <= maxCardinality);
   }
 
   @Test
   public void testBasicCardinalityInteger() throws Exception {
     Docs docs = docs();
-    int cardinality = 3;
+    int maxCardinality = 3;
 
-    docs.field("IntCard2", integers().allWithMaxCardinality(cardinality));
+    docs.field("IntCard2", integers().allWithMaxCardinality(maxCardinality));
 
     HashSet<Object> values = new HashSet<>();
     for (int i = 0; i < 30; i++) {
@@ -104,7 +105,9 @@ public class DockMakerTest extends SolrTestCaseJ4 {
       SolrInputField field = doc.getField("IntCard2");
       values.add(field.getValue().toString());
     }
-    assertEquals(values.toString(), cardinality, values.size());
+
+    // the cardinality we see is <= maxCardinality specified, albeit almost always equal to
+    assertTrue(values.toString(), values.size() <= maxCardinality);
 
     if (log.isInfoEnabled()) {
       log.info(values.toString());
@@ -144,9 +147,7 @@ public class DockMakerTest extends SolrTestCaseJ4 {
     }
 
     Integer lastVal = null;
-    Iterator<Integer> it = values.iterator();
-    while (it.hasNext()) {
-      Integer val = it.next();
+    for (Integer val : values) {
       if (lastVal != null) {
         assertTrue(val > lastVal);
       }
@@ -199,26 +200,5 @@ public class DockMakerTest extends SolrTestCaseJ4 {
     SolrInputField field = doc.getField("wordList");
 
     assertNotNull(field.getValue().toString());
-  }
-
-  @Test
-  public void testGenDoc() {
-    Docs docMaker =
-        docs()
-            .field("id", integers().incrementing())
-            .field(
-                "facet_s",
-                strings()
-                    .basicMultilingualPlaneAlphabet()
-                    .maxCardinality(integers().between(5, 16))
-                    .ofLengthBetween(1, 128))
-            .field(booleans().all());
-
-    for (int i = 0; i < 10; i++) {
-      SolrInputDocument doc = docMaker.inputDocument();
-      if (log.isInfoEnabled()) {
-        log.info("doc:\n{}", doc);
-      }
-    }
   }
 }

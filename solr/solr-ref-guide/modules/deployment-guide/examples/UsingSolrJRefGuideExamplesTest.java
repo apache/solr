@@ -17,7 +17,6 @@
  */
 package org.apache.solr.client.ref_guide_examples;
 
-import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,8 +31,8 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -66,12 +65,11 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setUpCluster() throws Exception {
     configureCluster(NUM_LIVE_NODES)
-        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
+        .addConfig("conf", ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .configure();
 
     CollectionAdminResponse response =
         CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
-            .setPerReplicaState(SolrCloudTestCase.USE_PER_REPLICA_STATE)
             .process(cluster.getSolrClient());
     cluster.waitForActiveCollection("techproducts", 1, 1);
   }
@@ -244,9 +242,9 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private SolrClient getTechProductSolrClient() {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
-    return new HttpSolrClient.Builder(solrUrl)
+    return new Http2SolrClient.Builder(solrUrl)
         .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
-        .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
+        .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
     // end::solrj-solrclient-timeouts[]
   }
@@ -256,7 +254,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add("http://solr1:8983/solr");
     solrUrls.add("http://solr2:8983/solr");
-    return new CloudSolrClient.Builder(solrUrls).build();
+    return new CloudHttp2SolrClient.Builder(solrUrls).build();
     // end::solrj-cloudsolrclient-baseurl[]
   }
 
@@ -266,7 +264,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
+    return new CloudHttp2SolrClient.Builder(zkServers, Optional.empty()).build();
     // end::solrj-cloudsolrclient-zookeepernoroot[]
   }
 
@@ -276,7 +274,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     zkServers.add("zookeeper1:2181");
     zkServers.add("zookeeper2:2181");
     zkServers.add("zookeeper3:2181");
-    return new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
+    return new CloudHttp2SolrClient.Builder(zkServers, Optional.of("/solr")).build();
     // end::solrj-cloudsolrclient-zookeeperroot[]
   }
 
@@ -297,6 +295,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
 
     public TechProduct() {}
   }
+
   // end::solrj-techproduct-value-type[]
 
   private void expectLine(String expectedLine) {
@@ -319,7 +318,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
     final StringBuilder builder = new StringBuilder();
     builder.append("Leftover output was expected but not printed:");
     for (String expectedLine : expectedLines) {
-      builder.append("\n\t" + expectedLine);
+      builder.append("\n\t").append(expectedLine);
     }
     fail(builder.toString());
   }

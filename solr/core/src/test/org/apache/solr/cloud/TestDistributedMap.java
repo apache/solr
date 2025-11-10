@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -214,6 +215,36 @@ public class TestDistributedMap extends SolrTestCaseJ4 {
       map.put("bar", new byte[0]);
       assertEquals(2, map.size());
       map.clear();
+      assertEquals(0, map.size());
+    }
+  }
+
+  public void testMalformed() throws InterruptedException, KeeperException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      String path = getAndMakeInitialPath(zkClient);
+      DistributedMap map = createMap(zkClient, path);
+      expectThrows(SolrException.class, () -> map.put("has/slash", new byte[0]));
+    }
+  }
+
+  public void testRemoveMalformed() throws InterruptedException, KeeperException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkHost())
+            .withTimeout(10000, TimeUnit.MILLISECONDS)
+            .build()) {
+      String path = getAndMakeInitialPath(zkClient);
+      // Add a "legacy" / malformed key
+      final var key = "slash/test/0";
+      zkClient.makePath(path + "/" + DistributedMap.PREFIX + key, new byte[0], true);
+
+      DistributedMap map = createMap(zkClient, path);
+      assertEquals(1, map.size());
+      map.remove("slash");
       assertEquals(0, map.size());
     }
   }

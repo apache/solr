@@ -17,6 +17,8 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.addExceptionToNamedList;
+import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logFailedOperation;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -42,6 +44,7 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
 import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ConfigSetParams;
@@ -49,7 +52,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -62,8 +64,8 @@ import org.slf4j.LoggerFactory;
  * going through Overseer and {@link OverseerCollectionMessageHandler} or {@link
  * org.apache.solr.cloud.OverseerConfigSetMessageHandler}.
  *
- * <p>This class is only called when Collection and Config Set API calls are configured to be
- * distributed, which implies cluster state updates are distributed as well.
+ * <p>This class is only called when the Overseer is disabled, which implies cluster state updates
+ * are distributed as well.
  */
 public class DistributedCollectionConfigSetCommandRunner {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -81,6 +83,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   private static final String ZK_ASYNC_ROOT = ZK_DISTRIBUTED_API_ROOT + "/async";
 
   private final ExecutorService distributedCollectionApiExecutorService;
+
   /**
    * All Collection API commands are executed as if they are asynchronous to stick to the same
    * behavior as the Overseer based Collection API execution. The difference between sync and async
@@ -104,15 +107,10 @@ public class DistributedCollectionConfigSetCommandRunner {
 
   private volatile boolean shuttingDown = false;
 
-  public DistributedCollectionConfigSetCommandRunner(CoreContainer coreContainer) {
+  public DistributedCollectionConfigSetCommandRunner(
+      CoreContainer coreContainer, SolrZkClient zkClient) {
+    // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
-
-    if (log.isInfoEnabled()) {
-      // Note is it hard to print a log when Collection API is handled by Overseer because Overseer
-      // is started regardless of how Collection API is handled, so it doesn't really know...
-      log.info(
-          "Creating DistributedCollectionConfigSetCommandRunner. Collection and ConfigSet APIs are running distributed (not Overseer based)");
-    }
 
     // TODO we should look at how everything is getting closed when the node is shutdown. But it
     // seems that CollectionsHandler (that creates instances of this class) is not really closed, so
@@ -142,8 +140,7 @@ public class DistributedCollectionConfigSetCommandRunner {
         new DistributedCollectionCommandContext(
             this.coreContainer, this.distributedCollectionApiExecutorService);
     commandMapper = new CollApiCmds.CommandMap(ccc);
-    asyncTaskTracker =
-        new DistributedApiAsyncTracker(ccc.getZkStateReader().getZkClient(), ZK_ASYNC_ROOT);
+    asyncTaskTracker = new DistributedApiAsyncTracker(zkClient, ZK_ASYNC_ROOT);
   }
 
   /** See {@link DistributedApiAsyncTracker#getAsyncTaskRequestStatus(String)} */
@@ -275,10 +272,9 @@ public class DistributedCollectionConfigSetCommandRunner {
     // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
     // execute.
     if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
-      NamedList<Object> resp = new NamedList<>();
-      resp.add("error", "Task with the same requestid already exists. (" + asyncId + ")");
-      resp.add(CoreAdminParams.REQUESTID, asyncId);
-      return new OverseerSolrResponse(resp);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Task with the same requestid already exists. (" + asyncId + ")");
     }
 
     CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
@@ -346,8 +342,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   /**
    * Collection name can be found in either of two message parameters (why??). Return it from where
    * it's defined. (see also parameter {@code collectionNameParamName} of {@link
-   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(CollectionParams.CollectionAction,
-   * String)})
+   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(String)})
    */
   public static String getCollectionName(ZkNodeProps message) {
     return message.containsKey(COLLECTION_PROP)
@@ -452,18 +447,8 @@ public class DistributedCollectionConfigSetCommandRunner {
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
-        // Output some error logs
-        if (collName == null) {
-          log.error("Operation {} failed", action, e);
-        } else {
-          log.error("Collection {}}, operation {} failed", collName, action, e);
-        }
-
-        results.add("Operation " + action + " caused exception:", e);
-        SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
-        nl.add("msg", e.getMessage());
-        nl.add("rspCode", e instanceof SolrException ? ((SolrException) e).code() : -1);
-        results.add("exception", nl);
+        logFailedOperation(action, e, collName);
+        addExceptionToNamedList(action, e, results);
       }
 
       OverseerSolrResponse res = new OverseerSolrResponse(results);

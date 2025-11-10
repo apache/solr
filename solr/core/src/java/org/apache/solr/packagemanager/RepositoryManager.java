@@ -17,6 +17,7 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.cli.SolrCLI.printGreen;
 import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
@@ -24,11 +25,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
+import java.net.URI;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,19 +38,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.apache.solr.cli.SolrCLI;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.BlobRepository;
-import org.apache.solr.filestore.PackageStoreAPI;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
@@ -121,17 +125,17 @@ public class RepositoryManager {
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
       packageManager.zkClient.create(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           CreateMode.PERSISTENT,
           true);
     } else {
       packageManager.zkClient.setData(
           PackageUtils.REPOSITORIES_ZK_PATH,
-          getMapper().writeValueAsString(repos).getBytes("UTF-8"),
+          getMapper().writeValueAsString(repos).getBytes(StandardCharsets.UTF_8),
           true);
     }
 
-    try (InputStream is = new URL(uri + "/publickey.der").openStream()) {
+    try (InputStream is = new URI(uri + "/publickey.der").toURL().openStream()) {
       addKey(is.readAllBytes(), repoName + ".der");
     }
   }
@@ -144,17 +148,24 @@ public class RepositoryManager {
     String solrHome = (String) systemInfo.get("solr_home");
 
     // put the public key into package store's trusted key store and request a sync.
-    String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Paths.get(solrHome));
-    PackageUtils.getJsonStringFromUrl(
-        solrClient, "/api/node/files" + path, new ModifiableSolrParams().add("sync", "true"));
+    String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
+    PackageUtils.uploadKey(key, path, Path.of(solrHome));
+    final var syncRequest = new FileStoreApi.SyncFile(path);
+    final var syncResponse = syncRequest.process(solrClient);
+    final var status = syncResponse.responseHeader.status;
+    if (status != 0) {
+      throw new SolrException(
+          ErrorCode.getErrorCode(status),
+          "Unexpected status " + status + " while syncing filestore upload.");
+    }
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient)
       throws UnsupportedEncodingException, KeeperException, InterruptedException {
     if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
       return new String(
-          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
+          zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true),
+          StandardCharsets.UTF_8);
     }
     return "[]";
   }
@@ -177,7 +188,7 @@ public class RepositoryManager {
 
     try {
       // post the manifest
-      PackageUtils.printGreen("Posting manifest...");
+      printGreen("Posting manifest...");
 
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromJarsAsString(downloaded, "manifest.json");
@@ -190,15 +201,15 @@ public class RepositoryManager {
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 =
-          BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+          Utils.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)));
       PackageUtils.postFile(
           solrClient,
-          ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
+          ByteBuffer.wrap(manifestJson.getBytes(StandardCharsets.UTF_8)),
           String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"),
           null);
 
       // post the artifacts
-      PackageUtils.printGreen("Posting artifacts...");
+      printGreen("Posting artifacts...");
       for (int i = 0; i < release.artifacts.size(); i++) {
         PackageUtils.postFile(
             solrClient,
@@ -213,7 +224,7 @@ public class RepositoryManager {
       }
 
       // Call Package API to add this version of the package
-      PackageUtils.printGreen("Executing Package API to register this package...");
+      printGreen("Executing Package API to register this package...");
       PackagePayload.AddVersion add = new PackagePayload.AddVersion();
       add.version = version;
       add.pkg = packageName;
@@ -232,7 +243,7 @@ public class RepositoryManager {
       add.manifestSHA512 = manifestSHA512;
 
       GenericSolrRequest request =
-          new GenericSolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
+          new GenericV2SolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
             @Override
             public RequestWriter.ContentWriter getContentWriter(String expectedType) {
               return new RequestWriter.StringPayloadContentWriter(
@@ -241,7 +252,7 @@ public class RepositoryManager {
           };
       try {
         NamedList<Object> resp = solrClient.request(request);
-        PackageUtils.printGreen("Response: " + resp.jsonStr());
+        printGreen("Response: " + resp.jsonStr());
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
@@ -287,7 +298,7 @@ public class RepositoryManager {
       return getLastPackageRelease(pkg);
     }
     for (SolrPackageRelease release : pkg.versions) {
-      if (PackageUtils.compareVersions(version, release.version) == 0) {
+      if (SolrVersion.compareVersions(version, release.version) == 0) {
         return release;
       }
     }
@@ -310,7 +321,7 @@ public class RepositoryManager {
       if (latest == null) {
         latest = release;
       } else {
-        if (PackageUtils.compareVersions(latest.version, release.version) < 0) {
+        if (SolrVersion.compareVersions(latest.version, release.version) < 0) {
           latest = release;
         }
       }
@@ -329,7 +340,7 @@ public class RepositoryManager {
     }
     String installedVersion = packageManager.getPackageInstance(packageName, null).version;
     SolrPackageRelease last = getLastPackageRelease(packageName);
-    return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
+    return last != null && SolrVersion.compareVersions(last.version, installedVersion) > 0;
   }
 
   /**
@@ -339,7 +350,7 @@ public class RepositoryManager {
   public boolean install(String packageName, String version) throws SolrException {
     SolrPackageRelease pkg = getLastPackageRelease(packageName);
     if (pkg == null) {
-      PackageUtils.printRed(
+      SolrCLI.printRed(
           "Package "
               + packageName
               + " not found in any repository. Check list of available packages via \"solr package list-available\".");
@@ -355,7 +366,7 @@ public class RepositoryManager {
                     collectionsDeployedIn.get(collection).equals(SolrPackageLoader.LATEST))
             .collect(Collectors.toList());
     if (!collectionsPeggedToLatest.isEmpty()) {
-      PackageUtils.printGreen(
+      printGreen(
           "Collections that will be affected (since they are configured to use $LATEST): "
               + collectionsPeggedToLatest);
     }
@@ -376,7 +387,7 @@ public class RepositoryManager {
               false,
               new String
                   [] {}); // Cluster level plugins don't work with peggedToLatest functionality
-      PackageUtils.printGreen(
+      printGreen(
           "Verifying version "
               + updatedPackage.version
               + " on "
@@ -384,7 +395,7 @@ public class RepositoryManager {
               + ", result: "
               + res);
       if (!res) {
-        PackageUtils.printRed("Failed verification after deployment");
+        SolrCLI.printRed("Failed verification after deployment");
         return false;
       }
     }

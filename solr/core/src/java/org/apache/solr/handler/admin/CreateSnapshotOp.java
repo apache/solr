@@ -17,10 +17,11 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.client.api.model.CreateCoreSnapshotResponse;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.api.CoreSnapshotAPI;
+import org.apache.solr.handler.admin.api.CoreSnapshot;
 import org.apache.solr.handler.api.V2ApiUtils;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
@@ -31,10 +32,10 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
     final String commitName = params.required().get(CoreAdminParams.COMMIT_NAME);
 
     final CoreContainer coreContainer = it.handler.getCoreContainer();
-    final CoreSnapshotAPI coreSnapshotAPI =
-        new CoreSnapshotAPI(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
+    final CoreSnapshot coreSnapshotAPI =
+        new CoreSnapshot(it.req, it.rsp, coreContainer, it.handler.getCoreAdminAsyncTracker());
 
-    final CoreSnapshotAPI.CreateSnapshotResponse response =
+    final CreateCoreSnapshotResponse response =
         coreSnapshotAPI.createSnapshot(coreName, commitName, null);
 
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);

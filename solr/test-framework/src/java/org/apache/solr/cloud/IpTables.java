@@ -54,7 +54,7 @@ public class IpTables {
   public static void unblockAllPorts() throws IOException, InterruptedException {
     if (ENABLED) {
       log.info("Unblocking any ports previously blocked with iptables...");
-      final Integer[] ports = BLOCK_PORTS.toArray(new Integer[BLOCK_PORTS.size()]);
+      final Integer[] ports = BLOCK_PORTS.toArray(new Integer[0]);
       for (Integer port : ports) {
         IpTables.unblockPort(port);
       }

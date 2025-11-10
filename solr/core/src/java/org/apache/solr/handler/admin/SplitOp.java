@@ -71,6 +71,11 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
+  public boolean isExpensive() {
+    return true;
+  }
+
+  @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
     String splitKey = params.get("split.key");
@@ -153,8 +158,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         }
         Object routerObj =
             collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
-        if (routerObj instanceof Map) {
-          Map<?, ?> routerProps = (Map<?, ?>) routerObj;
+        if (routerObj instanceof Map<?, ?> routerProps) {
           routeFieldName = (String) routerProps.get("field");
         }
       }
@@ -270,8 +274,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
 
         Object routerObj =
             collection.get(CollectionStateProps.DOC_ROUTER); // for back-compat with Solr 4.4
-        if (routerObj instanceof Map) {
-          Map<?, ?> routerProps = (Map<?, ?>) routerObj;
+        if (routerObj instanceof Map<?, ?> routerProps) {
           routeFieldName = (String) routerProps.get("field");
         }
         if (routeFieldName == null) {

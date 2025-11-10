@@ -319,6 +319,7 @@ public class PingRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
   }
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override

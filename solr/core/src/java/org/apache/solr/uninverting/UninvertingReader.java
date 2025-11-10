@@ -27,6 +27,7 @@ import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -37,7 +38,6 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.uninverting.FieldCache.CacheEntry;
 
 /**
@@ -228,7 +228,7 @@ public class UninvertingReader extends FilterLeafReader {
     ArrayList<FieldInfo> newFieldInfos = new ArrayList<>(in.getFieldInfos().size());
     for (FieldInfo fi : in.getFieldInfos()) {
       DocValuesType type = fi.getDocValuesType();
-      // fields which currently don't have docValues, but are uninvertable (indexed or points data
+      // fields which currently don't have docValues, but are uninvertible (indexed or points data
       // present)
       if (type == DocValuesType.NONE
           && (fi.getIndexOptions() != IndexOptions.NONE
@@ -285,11 +285,12 @@ public class UninvertingReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 type,
+                DocValuesSkipIndexType.NONE,
                 fi.getDocValuesGen(),
                 fi.attributes(),
                 fi.getPointDimensionCount(),
@@ -298,7 +299,8 @@ public class UninvertingReader extends FilterLeafReader {
                 fi.getVectorDimension(),
                 fi.getVectorEncoding(),
                 fi.getVectorSimilarityFunction(),
-                fi.isSoftDeletesField()));
+                fi.isSoftDeletesField(),
+                fi.isParentField()));
       } else {
         newFieldInfos.add(fi);
       }
@@ -306,8 +308,7 @@ public class UninvertingReader extends FilterLeafReader {
     if (!wrap) {
       return in;
     } else {
-      FieldInfos fieldInfos =
-          new FieldInfos(newFieldInfos.toArray(new FieldInfo[newFieldInfos.size()]));
+      FieldInfos fieldInfos = new FieldInfos(newFieldInfos.toArray(new FieldInfo[0]));
       return new UninvertingReader(in, mapping, fieldInfos);
     }
   }
@@ -465,8 +466,7 @@ public class UninvertingReader extends FilterLeafReader {
       info[i] = entries[i].toString();
       totalBytesUsed += entries[i].getValue().ramBytesUsed();
     }
-    String totalSize = RamUsageEstimator.humanReadableUnits(totalBytesUsed);
-    return new FieldCacheStats(totalSize, info);
+    return new FieldCacheStats(totalBytesUsed, info);
   }
 
   public static int getUninvertedStatsSize() {
@@ -479,10 +479,10 @@ public class UninvertingReader extends FilterLeafReader {
    * @lucene.internal
    */
   public static class FieldCacheStats {
-    public String totalSize;
+    public Long totalSize;
     public String[] info;
 
-    public FieldCacheStats(String totalSize, String[] info) {
+    public FieldCacheStats(Long totalSize, String[] info) {
       this.totalSize = totalSize;
       this.info = info;
     }

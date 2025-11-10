@@ -37,7 +37,7 @@ public class TestPrepRecovery extends SolrCloudTestCase {
     // the default is 180s and our waitForState times out in 90s,
     // so we lower this so that we can still test timeouts
     System.setProperty("leaderConflictResolveWait", "5000");
-    System.setProperty("prepRecoveryReadTimeoutExtraWait", "1000");
+    System.setProperty("solr.cloud.prep.recovery.read.timeout.additional.ms", "1000");
 
     configureCluster(2)
         .addConfig(
@@ -110,9 +110,9 @@ public class TestPrepRecovery extends SolrCloudTestCase {
       waitForState(
           "Expected collection: testLeaderNotResponding to be live with 1 shard and 2 replicas",
           collectionName,
-          clusterShape(1, 2),
           30,
-          TimeUnit.SECONDS);
+          TimeUnit.SECONDS,
+          clusterShape(1, 2));
     } finally {
       TestInjection.prepRecoveryOpPauseForever = null;
       TestInjection.notifyPauseForeverDone();

@@ -22,10 +22,10 @@ import java.util.EnumSet;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
@@ -44,11 +44,12 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
     // smaller queue size hits locks more often
-    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getServerUrl())
+    return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withQueueSize(2)
         .withThreadCount(5)
         .withResponseParser(new XMLResponseParser())
-        .withRequestWriter(new RequestWriter())
+        .withRequestWriter(new XMLRequestWriter())
         .build();
   }
 
@@ -56,7 +57,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
     // SOLR-3903
     // TODO these failures are not the same as recorded by the client
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = jetty.getBaseUrl().toString() + "/collection1";
+    final String serverUrl = getCoreUrl();
     try (ConcurrentUpdateSolrClient concurrentClient =
         new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl)
             .withQueueSize(2)

@@ -184,9 +184,7 @@ public class VectorDistanceFunction extends ValueSource {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof VectorDistanceFunction)) return false;
-
-    VectorDistanceFunction that = (VectorDistanceFunction) o;
+    if (!(o instanceof VectorDistanceFunction that)) return false;
 
     if (Float.compare(that.power, power) != 0) return false;
     if (!source1.equals(that.source1)) return false;

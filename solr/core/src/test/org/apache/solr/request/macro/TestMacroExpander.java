@@ -37,8 +37,7 @@ public class TestMacroExpander extends SolrTestCase {
       me = new MacroExpander(testParams, failOnMissingParams);
     }
 
-    // default examples: https://cwiki.apache.org/confluence/display/solr/Parameter+Substitution
-    // and http://yonik.com/solr-query-parameter-substitution/
+    // default examples: https://yonik.com/solr-query-parameter-substitution/
 
     // using params
     String[] lowParams = {"50"};
@@ -139,8 +138,8 @@ public class TestMacroExpander extends SolrTestCase {
     request.put("three_ref", new String[] {"three"});
     // I believe that so long as this is sure to be reset before the end of the test we should
     // be fine with respect to other tests.
-    String oldVal = System.getProperty("StreamingExpressionMacros", "false");
-    System.setProperty("StreamingExpressionMacros", "true");
+    String oldVal = System.getProperty("solr.streamingexpressions.macros.enabled", "false");
+    System.setProperty("solr.streamingexpressions.macros.enabled", "true");
     try {
       Map<String, String[]> expanded = MacroExpander.expand(request);
       assertEquals("zero", expanded.get("fq")[0]);
@@ -149,7 +148,7 @@ public class TestMacroExpander extends SolrTestCase {
       assertEquals("three", expanded.get("fq")[3]);
       assertEquals("one", expanded.get("expr")[0]);
     } finally {
-      System.setProperty("StreamingExpressionMacros", oldVal);
+      System.setProperty("solr.streamingexpressions.macros.enabled", oldVal);
     }
   }
 

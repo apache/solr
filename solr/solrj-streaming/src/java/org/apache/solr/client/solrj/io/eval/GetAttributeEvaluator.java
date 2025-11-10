@@ -32,7 +32,7 @@ public class GetAttributeEvaluator extends RecursiveObjectEvaluator implements T
 
   @Override
   public Object doWork(Object value1, Object value2) throws IOException {
-    if (!(value1 instanceof Attributes)) {
+    if (!(value1 instanceof Attributes attributes)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -40,7 +40,6 @@ public class GetAttributeEvaluator extends RecursiveObjectEvaluator implements T
               toExpression(constructingFactory),
               value1.getClass().getSimpleName()));
     } else {
-      Attributes attributes = (Attributes) value1;
       String key = (String) value2;
       return attributes.getAttribute(key.replace("\"", ""));
     }

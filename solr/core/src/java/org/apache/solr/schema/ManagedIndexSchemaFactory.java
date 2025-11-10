@@ -17,13 +17,11 @@
 package org.apache.solr.schema;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map.Entry;
 import net.jcip.annotations.NotThreadSafe;
@@ -32,7 +30,7 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
@@ -148,12 +146,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    */
   public Path lookupLocalManagedSchemaPath() {
     final Path legacyManagedSchemaPath =
-        Paths.get(
-            loader.getConfigPath().toString(),
-            ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
+        loader
+            .getConfigPath()
+            .resolve(ManagedIndexSchemaFactory.LEGACY_MANAGED_SCHEMA_RESOURCE_NAME);
 
-    Path managedSchemaPath =
-        Paths.get(loader.getConfigPath().toString(), managedSchemaResourceName);
+    Path managedSchemaPath = loader.getConfigPath().resolve(managedSchemaResourceName);
 
     // check if we are using the legacy managed-schema file name.
     if (Files.exists(legacyManagedSchemaPath)) {
@@ -177,6 +174,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
 
     return managedSchemaPath;
   }
+
   /**
    * First, try to locate the managed schema file named in the managedSchemaResourceName param. If
    * the managed schema file exists and is accessible, it is used to instantiate an IndexSchema.
@@ -208,12 +206,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       }
 
       int schemaZkVersion = -1;
-      if (!(loader instanceof ZkSolrResourceLoader)) {
+      if (!(loader instanceof ZkSolrResourceLoader zkLoader)) {
         Entry<String, InputStream> localSchemaInput = readSchemaLocally();
         loadedResource = localSchemaInput.getKey();
         schemaInputStream = localSchemaInput.getValue();
       } else { // ZooKeeper
-        final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         final SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
         final String managedSchemaPath = lookupZKManagedSchemaPath();
         managedSchemaResourceName =
@@ -346,8 +343,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     if (!resourceName.equals(managedSchemaResourceName)) {
       boolean exists = false;
       SolrResourceLoader loader = config.getResourceLoader();
-      if (loader instanceof ZkSolrResourceLoader) {
-        ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
+      if (loader instanceof ZkSolrResourceLoader zkLoader) {
         String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
         try {
           exists = zkLoader.getZkController().pathExists(nonManagedSchemaPath);
@@ -402,7 +398,7 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
             "On upgrading to managed schema, did not rename non-managed schema '{}' because it's the same as the managed schema's name.",
             resourceName);
       } else {
-        final File nonManagedSchemaFile = locateConfigFile(resourceName);
+        final Path nonManagedSchemaFile = locateConfigFile(resourceName);
         if (null == nonManagedSchemaFile) {
           // Don't throw an exception for failure to rename the non-managed schema
           log.warn(
@@ -412,17 +408,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
               "nor under SolrConfig.getConfigDir() or the current directory. ",
               "PLEASE REMOVE THIS FILE.");
         } else {
-          File upgradedSchemaFile = new File(nonManagedSchemaFile + UPGRADED_SCHEMA_EXTENSION);
-          if (nonManagedSchemaFile.renameTo(upgradedSchemaFile)) {
+          Path upgradedSchemaFile =
+              nonManagedSchemaFile.resolveSibling(
+                  nonManagedSchemaFile.getFileName() + UPGRADED_SCHEMA_EXTENSION);
+          try {
+            Files.move(nonManagedSchemaFile, upgradedSchemaFile);
             // Set the resource name to the managed schema so that the CoreAdminHandler returns a
             // findable filename
             schema.setResourceName(managedSchemaResourceName);
-
             log.info(
                 "After upgrading to managed schema, renamed the non-managed schema {} to {}",
                 nonManagedSchemaFile,
                 upgradedSchemaFile);
-          } else {
+          } catch (Exception e) {
             // Don't throw an exception for failure to rename the non-managed schema
             log.warn(
                 "Can't rename {} to {} - PLEASE REMOVE THIS FILE.",
@@ -442,11 +440,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
    *
    * @return the File for the named resource, or null if it can't be found
    */
-  private File locateConfigFile(String resource) {
+  private Path locateConfigFile(String resource) {
     String location = config.getResourceLoader().resourceLocation(resource);
     if (location == null || location.equals(resource) || location.startsWith("classpath:"))
       return null;
-    return new File(location);
+    return Path.of(location);
   }
 
   /**
@@ -485,12 +483,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       // Rename the non-managed schema znode in ZooKeeper
       final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
       try {
-        ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());
         if (zkController.pathExists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
           byte[] bytes = zkController.getZkClient().getData(nonManagedSchemaPath, null, null, true);
           final String upgradedSchemaPath = nonManagedSchemaPath + UPGRADED_SCHEMA_EXTENSION;
-          zkCmdExecutor.ensureExists(upgradedSchemaPath, zkController.getZkClient());
+          ZkMaintenanceUtils.ensureExists(upgradedSchemaPath, zkController.getZkClient());
           zkController.getZkClient().setData(upgradedSchemaPath, bytes, true);
           // Then delete the non-managed schema znode
           if (zkController.getZkClient().exists(nonManagedSchemaPath, true)) {
@@ -544,9 +541,8 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
   @Override
   public void inform(SolrCore core) {
     this.core = core;
-    if (loader instanceof ZkSolrResourceLoader) {
+    if (loader instanceof ZkSolrResourceLoader zkLoader) {
       this.zkIndexSchemaReader = new ZkIndexSchemaReader(this, core);
-      ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
       zkLoader.setZkIndexSchemaReader(this.zkIndexSchemaReader);
       try {
         zkIndexSchemaReader.refreshSchemaFromZk(-1); // update immediately if newer is available

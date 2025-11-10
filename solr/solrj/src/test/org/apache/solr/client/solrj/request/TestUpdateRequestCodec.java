@@ -110,8 +110,11 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
   }
 
+  // Allow method reference to return a reference to a functional interface (Iterable<String>),
+  // rather than a reference to a List<String> object
+  @SuppressWarnings("UnnecessaryMethodReference")
   @Test
-  public void testIteratable() throws IOException {
+  public void testIterable() throws IOException {
     final List<String> values = new ArrayList<>();
     values.add("iterItem1");
     values.add("iterItem2");
@@ -122,7 +125,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", 1);
     doc.addField("desc", "one");
-    // imagine someone adding a custom Bean that implements Iterable
+    // imagine someone adds a custom Bean that implements Iterable
     // but is not a Collection
     doc.addField("iter", (Iterable<String>) values::iterator);
     doc.addField("desc", "1");
@@ -244,13 +247,14 @@ public class TestUpdateRequestCodec extends SolrTestCase {
 
     InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
     assertNotNull("updateReq_4_5.bin was not found", is);
+    List<SolrInputDocument> unmarshalledDocs = new ArrayList<>();
     UpdateRequest updateUnmarshalled =
         new JavaBinUpdateRequestCodec()
             .unmarshal(
                 is,
                 (document, req, commitWithin, override) -> {
                   if (commitWithin == null) {
-                    req.add(document);
+                    unmarshalledDocs.add(document);
                   }
                   System.err.println(
                       "Doc"
@@ -260,6 +264,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
                           + " , override:"
                           + override);
                 });
+    updateUnmarshalled.add(unmarshalledDocs);
 
     System.err.println(updateUnmarshalled.getDocumentsMap());
     System.err.println(updateUnmarshalled.getDocuments());
@@ -284,7 +289,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       Object expectedVal = expectedField.getValue();
       Object actualVal = actualField.getValue();
       if (expectedVal instanceof Set && actualVal instanceof Collection) {
-        // unmarshaled documents never contain Sets, they are just a
+        // unmarshalled documents never contain Sets, they are just a
         // List in an arbitrary order based on what the iterator of
         // the original Set returned, so we need a comparison that is
         // order agnostic.

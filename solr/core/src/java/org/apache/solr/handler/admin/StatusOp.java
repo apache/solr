@@ -17,49 +17,23 @@
 
 package org.apache.solr.handler.admin;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.CoreContainer;
+import org.apache.solr.handler.admin.api.CoreStatus;
+import org.apache.solr.handler.api.V2ApiUtils;
 
 class StatusOp implements CoreAdminHandler.CoreAdminOp {
+
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
     SolrParams params = it.req.getParams();
-
     String cname = params.get(CoreAdminParams.CORE);
     String indexInfo = params.get(CoreAdminParams.INDEX_INFO);
     boolean isIndexInfoNeeded = Boolean.parseBoolean(null == indexInfo ? "true" : indexInfo);
-    NamedList<Object> status = new SimpleOrderedMap<>();
-    Map<String, Exception> failures = new HashMap<>();
-    for (Map.Entry<String, CoreContainer.CoreLoadFailure> failure :
-        it.handler.coreContainer.getCoreInitFailures().entrySet()) {
-      failures.put(failure.getKey(), failure.getValue().exception);
-    }
-    if (cname == null) {
-      List<String> nameList = it.handler.coreContainer.getAllCoreNames();
-      nameList.sort(null);
-      for (String name : nameList) {
-        status.add(
-            name,
-            CoreAdminOperation.getCoreStatus(it.handler.coreContainer, name, isIndexInfoNeeded));
-      }
-      it.rsp.add("initFailures", failures);
-    } else {
-      failures =
-          failures.containsKey(cname)
-              ? Collections.singletonMap(cname, failures.get(cname))
-              : Collections.<String, Exception>emptyMap();
-      it.rsp.add("initFailures", failures);
-      status.add(
-          cname,
-          CoreAdminOperation.getCoreStatus(it.handler.coreContainer, cname, isIndexInfoNeeded));
-    }
-    it.rsp.add("status", status);
+
+    final var response =
+        CoreStatus.fetchStatusInfo(it.handler.coreContainer, cname, isIndexInfoNeeded);
+
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(it.rsp, response);
   }
 }

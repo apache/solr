@@ -322,7 +322,7 @@ You may also be interested in the {solr-javadocs}/core/org/apache/solr/handler/c
 
 == Terms Component Examples
 
-All of the following sample queries work with Solr's "`bin/solr -e techproducts`" example.
+All of the following sample queries work with Solr's "`bin/solr start -e techproducts`" example.
 
 === Get Top 10 Terms
 

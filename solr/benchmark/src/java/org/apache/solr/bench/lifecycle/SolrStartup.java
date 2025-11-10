@@ -76,7 +76,7 @@ public class SolrStartup {
           Path.of("src/resources/configs/minimal/conf"), defaultConfigsetDir.resolve("conf"));
       PathUtils.copyFileToDirectory(Path.of("src/resources/solr.xml"), tmpSolrHome);
 
-      solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig("/solr"));
+      solrRunner = new JettySolrRunner(tmpSolrHome.toString(), buildJettyConfig());
       solrRunner.start(false);
       try (SolrClient client = solrRunner.newClient()) {
         for (int i = 0; i < NUM_CORES; i++) {
@@ -113,8 +113,8 @@ public class SolrStartup {
       IOUtils.rm(tmpSolrHome);
     }
 
-    private static JettyConfig buildJettyConfig(String context) {
-      return JettyConfig.builder().setContext(context).stopAtShutdown(true).build();
+    private static JettyConfig buildJettyConfig() {
+      return JettyConfig.builder().stopAtShutdown(true).build();
     }
   }
 }

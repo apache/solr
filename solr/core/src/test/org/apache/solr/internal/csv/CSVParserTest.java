@@ -45,6 +45,7 @@ public class CSVParserTest extends SolrTestCase {
     TestCSVParser(Reader in, CSVStrategy strategy) {
       super(in, strategy);
     }
+
     /**
      * Calls super.nextToken() and prints out a String representation of token type and content.
      *

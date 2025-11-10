@@ -36,6 +36,16 @@ public class ResolveAnalyzerByNameTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testAnalyzerUsableForQueries() throws Exception {
+    assertQ(req("text2:bogus"), "//*[@numFound='0']");
+  }
+
+  public void testAnalyzerUsableForIndexing() throws Exception {
+    assertU(adoc("text2", "fat cat"));
+    assertU(commit());
+  }
+
+  @Test
   public void testSchemaLoadingSimpleAnalyzer() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getLatestSchema();

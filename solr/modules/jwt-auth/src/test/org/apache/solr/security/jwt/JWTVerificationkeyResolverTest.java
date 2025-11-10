@@ -43,6 +43,7 @@ import org.mockito.junit.MockitoJUnit;
 import org.mockito.junit.MockitoRule;
 
 /** Tests the multi jwks resolver that can fetch keys from multiple JWKs */
+@SuppressWarnings("ArraysAsListWithZeroOrOneArgument")
 public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
   private JWTVerificationkeyResolver resolver;
 
@@ -117,6 +118,7 @@ public class JWTVerificationkeyResolverTest extends SolrTestCaseJ4 {
     resolver.resolveKey(k5.getJws(), null);
   }
 
+  @SuppressWarnings("NewClassNamingConvention")
   public static class KeyHolder {
     private final RsaJsonWebKey key;
     private final String kid;

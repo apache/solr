@@ -16,7 +16,7 @@
  limitations under the License.
 -->
 
-<schema name="bad-schema-uniquekey-diff-type-root" version="1.4">
+<schema name="bad-schema-uniquekey-diff-type-root" version="1.7">
   <!-- NOTE: these fieldTypes are defined with same class, and same props, but schema should
        still error because the type *names* used not identical.
        this is risky, because it means the types could diverge over time, and we wnat to

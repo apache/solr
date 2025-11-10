@@ -18,7 +18,7 @@ Typical usage of the script is:
 1. Copy the script to a location outside the `./solr/` working copy such as `<GIT_CHECKOUT>/../solr-testing`. Trying to use it from within the working copy will leave you fighting version control to avoid checking in files.
 2. Edit the script to provide a proper back reference to your working copy for `DEFAULT_VCS_WORKSPACE` (the default is `../code/solr`)
 3. Start a local zookeeper instance. This zookeeper must be running on localhost, but the port can be adjusted with a `-z` option passed to the script.  `docker run -p 2181:2181 zookeeper` is one option to start up a local Zookeeper.
-4. run ./cloud.sh new -r
+4. run `./cloud.sh new -r`
 
 The command in the final step will:
 

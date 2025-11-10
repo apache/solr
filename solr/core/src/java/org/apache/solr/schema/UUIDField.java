@@ -92,17 +92,4 @@ public class UUIDField extends StrField {
   public String toInternal(UUID uuid) {
     return uuid.toString().toLowerCase(Locale.ROOT);
   }
-
-  @Override
-  public UUID toObject(IndexableField f) {
-    return UUID.fromString(toExternal(f));
-  }
-
-  @Override
-  public Object toNativeType(Object val) {
-    if (val instanceof CharSequence) {
-      return UUID.fromString(val.toString());
-    }
-    return val;
-  }
 }

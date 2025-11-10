@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_10_0.dtd">
-<Configure class="org.eclipse.jetty.webapp.WebAppContext">
+<Configure class="org.eclipse.jetty.ee10.webapp.WebAppContext">
   <Set name="contextPath"><Property name="hostContext" default="/solr"/></Set>
   <Set name="war"><Property name="jetty.base"/>/solr-webapp/webapp</Set>
   <Set name="defaultsDescriptor"><Property name="jetty.base"/>/etc/webdefault.xml</Set>
@@ -16,17 +16,14 @@
   Therefore, if we want to deduplicate these Jetty jars, we need to remove the class packages that Solr uses from the
   Jetty "server" class matcher, using the "-" prefix in from of the sub-package name.
 
-  The default server class matcher can be found here:
-  https://github.com/eclipse/jetty.project/blob/jetty-10.0.12/jetty-webapp/src/main/java/org/eclipse/jetty/webapp/WebAppContext.java#L178
-
   Setting parentLoaderPriority=true is also necessary in order to be able to use these classes from the server classloader.
 
-  Documentation for this can be found here: https://www.eclipse.org/jetty/documentation/jetty-10/old_docs/index.html#jetty-classloading
+  Documentation for this can be found here: https://jetty.org/docs/jetty/12.1/programming-guide/server/http.html#handler-use-webapp-context-class-loading
   -->
   <Set name="parentLoaderPriority">true</Set>
-  <Call name="addServerClassMatcher">
+  <Call name="addHiddenClassMatcher">
     <Arg>
-      <New id="removeServerClasses" class="org.eclipse.jetty.webapp.ClassMatcher">
+      <New id="removeServerClasses" class="org.eclipse.jetty.util.ClassMatcher">
         <Arg>
           <Array type="java.lang.String">
             <Item>-org.eclipse.jetty.</Item>

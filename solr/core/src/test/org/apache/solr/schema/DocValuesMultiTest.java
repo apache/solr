@@ -96,14 +96,13 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         assertEquals(0, dv.nextDoc());
         assertEquals(0, dv.nextOrd());
         assertEquals(1, dv.nextOrd());
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
+        assertEquals(2, dv.docValueCount());
 
         dv = reader.getSortedSetDocValues("booldv");
         assertEquals(0, dv.nextDoc());
         assertEquals(0, dv.nextOrd());
         assertEquals(1, dv.nextOrd());
-        assertEquals(SortedSetDocValues.NO_MORE_ORDS, dv.nextOrd());
-
+        assertEquals(2, dv.docValueCount());
       } finally {
         searcherRef.decref();
       }
@@ -197,6 +196,7 @@ public class DocValuesMultiTest extends SolrTestCaseJ4 {
         "//result/doc[5]/arr[@name='booldv']/bool[1][.='false']",
         "//result/doc[5]/arr[@name='booldv']/bool[2][.='true']");
   }
+
   /**
    * Tests the ability to do basic queries (without scoring, just match-only) on float docvalues
    * fields that are not inverted (indexed "forward" only)

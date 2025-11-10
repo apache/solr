@@ -32,9 +32,8 @@ public class Checksum {
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof Checksum)) return false;
-    Checksum checksum = (Checksum) o;
-    return size == checksum.size && this.checksum == checksum.checksum;
+    if (!(o instanceof Checksum cs)) return false;
+    return size == cs.size && this.checksum == cs.checksum;
   }
 
   @Override

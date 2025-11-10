@@ -16,13 +16,15 @@
  */
 package org.apache.solr.security.jwt;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.Principal;
 import java.security.cert.X509Certificate;
 import java.time.Instant;
@@ -42,13 +44,6 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.protocol.HttpContext;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -63,8 +58,10 @@ import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.ConfigEditablePlugin;
 import org.apache.solr.security.jwt.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode;
 import org.apache.solr.security.jwt.api.ModifyJWTAuthPluginConfigAPI;
+import org.apache.solr.servlet.LoadAdminUiServlet;
 import org.apache.solr.util.CryptoKeys;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
 import org.jose4j.jwt.JwtClaims;
@@ -103,9 +100,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
   static final String PRIMARY_ISSUER = "PRIMARY";
 
-  @Deprecated(since = "9.0") // Remove in 10.0
-  private static final String PARAM_ALG_WHITELIST = "algWhitelist";
-
   private static final Set<String> PROPS =
       Set.of(
           PARAM_BLOCK_UNKNOWN,
@@ -130,7 +124,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
           JWTIssuerConfig.PARAM_CLIENT_ID,
           JWTIssuerConfig.PARAM_WELL_KNOWN_URL,
           JWTIssuerConfig.PARAM_AUDIENCE,
-          JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT);
+          JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT,
+          JWTIssuerConfig.PARAM_TOKEN_ENDPOINT,
+          JWTIssuerConfig.PARAM_AUTHORIZATION_FLOW);
 
   private JwtConsumer jwtConsumer;
   private boolean requireExpirationTime;
@@ -187,14 +183,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
     rolesClaim = (String) pluginConfig.get(PARAM_ROLES_CLAIM);
     algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_ALLOWLIST);
-    // TODO: Remove deprecated warning in Solr 10.0
-    if ((algAllowlist == null || algAllowlist.isEmpty())
-        && pluginConfig.containsKey(PARAM_ALG_WHITELIST)) {
-      log.warn(
-          "Found use of deprecated parameter algWhitelist. Please use {} instead.",
-          PARAM_ALG_ALLOWLIST);
-      algAllowlist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
-    }
     realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
@@ -254,9 +242,9 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     issuerConfigs.addAll(parseIssuers(pluginConfig));
     verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
 
-    if (issuerConfigs.size() > 0 && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
+    if (!issuerConfigs.isEmpty() && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
       adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
-      if (adminUiScope == null && requiredScopes.size() > 0) {
+      if (adminUiScope == null && !requiredScopes.isEmpty()) {
         adminUiScope = requiredScopes.get(0);
         log.warn(
             "No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
@@ -280,8 +268,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     }
 
     initConsumer();
+    registerTokenEndpointForCsp();
 
     lastInitTime = Instant.now();
+  }
+
+  /**
+   * Record Issuer token URL as a system property so it can be picked up and sent to Admin UI as CSP
+   */
+  protected void registerTokenEndpointForCsp() {
+    final String syspropName = LoadAdminUiServlet.SYSPROP_CSP_CONNECT_SRC_URLS;
+    String url = !issuerConfigs.isEmpty() ? getPrimaryIssuer().getTokenEndpoint() : null;
+    if (url != null) {
+      System.setProperty(syspropName, url);
+    } else {
+      System.clearProperty(syspropName);
+    }
   }
 
   /**
@@ -319,7 +321,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return list of certificates found in file
    */
   Collection<? extends X509Certificate> parseCertsFromFile(String certFileName) throws IOException {
-    Path certFilePath = Paths.get(certFileName);
+    Path certFilePath = Path.of(certFileName);
     if (coreContainer != null) {
       coreContainer.assertPathAllowed(certFilePath);
     }
@@ -336,6 +338,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin
               .setJwksUrl(conf.get(JWTIssuerConfig.PARAM_JWKS_URL))
               .setAuthorizationEndpoint(
                   (String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT))
+              .setTokenEndpoint((String) conf.get(JWTIssuerConfig.PARAM_TOKEN_ENDPOINT))
+              .setAuthorizationFlow((String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_FLOW))
               .setClientId((String) conf.get(JWTIssuerConfig.PARAM_CLIENT_ID))
               .setWellKnownUrl((String) conf.get(JWTIssuerConfig.PARAM_WELL_KNOWN_URL));
       if (conf.get(JWTIssuerConfig.PARAM_JWK) != null) {
@@ -365,7 +369,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
    * @return JWTIssuerConfig object for the primary issuer
    */
   JWTIssuerConfig getPrimaryIssuer() {
-    if (issuerConfigs.size() == 0) {
+    if (issuerConfigs.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
     }
     return issuerConfigs.get(0);
@@ -409,7 +413,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   public boolean doAuthenticate(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
-    String header = request.getHeader(HttpHeaders.AUTHORIZATION);
+    String header = request.getHeader(HttpHeader.AUTHORIZATION.asString());
 
     if (jwtConsumer == null) {
       if (header == null && !blockUnknown) {
@@ -428,7 +432,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
       if (jwtConsumer == null) {
         log.warn("JWTAuth not configured");
-        numErrors.mark();
+        numErrors.inc();
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "JWTAuth plugin not correctly configured");
       }
@@ -469,7 +473,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
         final Principal principal = authResponse.getPrincipal();
         request = wrapWithPrincipal(request, principal);
         if (!(principal instanceof JWTPrincipal)) {
-          numErrors.mark();
+          numErrors.inc();
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "JWTAuth plugin says AUTHENTICATED but no token extracted");
@@ -495,7 +499,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             "Authentication failed. {}, {}",
             authResponse.getAuthCode(),
             authResponse.getAuthCode().getMsg());
-        numErrors.mark();
+        numErrors.inc();
         authenticationFailure(
             response,
             authResponse.getAuthCode().getMsg(),
@@ -671,7 +675,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
                 }
               }
             }
-            if (finalRoles.size() > 0) {
+            if (!finalRoles.isEmpty()) {
               return new JWTAuthenticationResponse(
                   AuthCode.AUTHENTICATED,
                   new JWTPrincipalWithUserRoles(
@@ -837,7 +841,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
     }
-    headers.put(HttpHeaders.WWW_AUTHENTICATE, String.join(", ", wwwAuthParams));
+    headers.put(HttpHeader.WWW_AUTHENTICATE.asString(), String.join(", ", wwwAuthParams));
     headers.put(AuthenticationPlugin.HTTP_HEADER_X_SOLR_AUTHDATA, generateAuthDataHeader());
     return headers;
   }
@@ -847,9 +851,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin
     Map<String, Object> data = new HashMap<>();
     data.put(
         JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
+    data.put(JWTIssuerConfig.PARAM_TOKEN_ENDPOINT, primaryIssuer.getTokenEndpoint());
     data.put("client_id", primaryIssuer.getClientId());
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
+    data.put("authorization_flow", primaryIssuer.getAuthorizationFlow());
     String headerJson = Utils.toJSONString(data);
     return Base64.getEncoder().encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
   }
@@ -934,24 +940,11 @@ public class JWTAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    if (httpContext instanceof HttpClientContext) {
-      HttpClientContext httpClientContext = (HttpClientContext) httpContext;
-      if (httpClientContext.getUserToken() instanceof JWTPrincipal) {
-        JWTPrincipal jwtPrincipal = (JWTPrincipal) httpClientContext.getUserToken();
-        httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
-        return true;
-      }
-    }
-    return false;
-  }
-
-  @Override
   protected boolean interceptInternodeRequest(Request request) {
     Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
-    if (userToken instanceof JWTPrincipal) {
-      JWTPrincipal jwtPrincipal = (JWTPrincipal) userToken;
-      request.header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtPrincipal.getToken());
+    if (userToken instanceof JWTPrincipal jwtPrincipal) {
+      request.headers(
+          h -> h.put(HttpHeader.AUTHORIZATION.asString(), "Bearer " + jwtPrincipal.getToken()));
       return true;
     }
     return false;

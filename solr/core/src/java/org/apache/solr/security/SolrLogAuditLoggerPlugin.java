@@ -42,34 +42,32 @@ public class SolrLogAuditLoggerPlugin extends AuditLoggerPlugin {
     super.init(pluginConfig);
     setFormatter(
         event ->
-            new StringBuilder()
-                .append("type=\"")
-                .append(event.getEventType().name())
-                .append("\"")
-                .append(" message=\"")
-                .append(event.getMessage())
-                .append("\"")
-                .append(" method=\"")
-                .append(event.getHttpMethod())
-                .append("\"")
-                .append(" status=\"")
-                .append(event.getStatus())
-                .append("\"")
-                .append(" requestType=\"")
-                .append(event.getRequestType())
-                .append("\"")
-                .append(" username=\"")
-                .append(event.getUsername())
-                .append("\"")
-                .append(" resource=\"")
-                .append(event.getResource())
-                .append("\"")
-                .append(" queryString=\"")
-                .append(event.getHttpQueryString())
-                .append("\"")
-                .append(" collections=")
-                .append(event.getCollections())
-                .toString());
+            "type=\""
+                + event.getEventType().name()
+                + "\""
+                + " message=\""
+                + event.getMessage()
+                + "\""
+                + " method=\""
+                + event.getHttpMethod()
+                + "\""
+                + " status=\""
+                + event.getStatus()
+                + "\""
+                + " requestType=\""
+                + event.getRequestType()
+                + "\""
+                + " username=\""
+                + event.getUsername()
+                + "\""
+                + " resource=\""
+                + event.getResource()
+                + "\""
+                + " queryString=\""
+                + event.getHttpQueryString()
+                + "\""
+                + " collections="
+                + event.getCollections());
     if (pluginConfig.size() > 0) {
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE,

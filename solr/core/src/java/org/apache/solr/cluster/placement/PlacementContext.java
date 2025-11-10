@@ -39,4 +39,7 @@ public interface PlacementContext {
 
   /** Factory used to create instances of {@link PlacementPlan} to return computed decision. */
   PlacementPlanFactory getPlacementPlanFactory();
+
+  /** Factory used to create instances of {@link BalancePlan} to return computed decision. */
+  BalancePlanFactory getBalancePlanFactory();
 }

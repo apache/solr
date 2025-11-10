@@ -24,13 +24,17 @@ import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
 import org.apache.solr.common.util.Utils;
+import org.noggit.JSONWriter;
 
 /**
  * Use this class to push all entries of a Map into an output. This avoids creating map instances
  * and is supposed to be memory efficient. If the entries are primitives, unnecessary boxing is also
  * avoided.
  */
-public interface MapWriter extends MapSerializable, NavigableObject {
+public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.Writable {
+
+  /** Writes this object's entries out to {@code ew}. */
+  void writeMap(EntryWriter ew) throws IOException;
 
   default String jsonStr() {
     return Utils.toJSONString(this);
@@ -41,14 +45,33 @@ public interface MapWriter extends MapSerializable, NavigableObject {
     return Utils.convertToMap(this, map);
   }
 
-  void writeMap(EntryWriter ew) throws IOException;
+  /** For implementing Noggit {@link org.noggit.JSONWriter.Writable}. */
+  @Override
+  default void write(JSONWriter writer) {
+    writer.startObject();
+    try {
+      writeMap(
+          new MapWriter.EntryWriter() {
+            boolean first = true;
 
-  default MapWriter append(MapWriter another) {
-    MapWriter m = this;
-    return ew -> {
-      m.writeMap(ew);
-      another.writeMap(ew);
-    };
+            @Override
+            public MapWriter.EntryWriter put(CharSequence k, Object v) {
+              if (first) {
+                first = false;
+              } else {
+                writer.writeValueSeparator();
+              }
+              writer.indent();
+              writer.writeString(k.toString());
+              writer.writeNameSeparator();
+              writer.write(v);
+              return this;
+            }
+          });
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+    writer.endObject();
   }
 
   /**
@@ -129,5 +152,6 @@ public interface MapWriter extends MapSerializable, NavigableObject {
     }
   }
 
+  @Deprecated // use SimpleOrderedMap.of()
   MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
 }

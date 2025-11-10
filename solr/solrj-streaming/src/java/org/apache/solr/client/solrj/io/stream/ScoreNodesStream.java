@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -59,7 +60,6 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   protected String zkHost;
   private TupleStream stream;
-  private transient SolrClientCache clientCache;
   private Map<String, Tuple> nodes = new HashMap<>();
   private Iterator<Tuple> tuples;
   private String termFreq;
@@ -67,6 +67,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   private String bucket;
   private String facetCollection;
+
+  private transient SolrClientCache clientCache;
+  private transient boolean doCloseCache;
 
   public ScoreNodesStream(TupleStream tupleStream, String nodeFreqField) throws IOException {
     init(tupleStream, nodeFreqField);
@@ -107,8 +110,7 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
   private void init(TupleStream tupleStream, String termFreq) throws IOException {
     this.stream = tupleStream;
     this.termFreq = termFreq;
-    if (stream instanceof FacetStream) {
-      FacetStream facetStream = (FacetStream) stream;
+    if (stream instanceof FacetStream facetStream) {
 
       if (facetStream.getBuckets().length != 1) {
         throw new IOException(
@@ -176,6 +178,13 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   @Override
   public void open() throws IOException {
+    if (clientCache == null) {
+      doCloseCache = true;
+      clientCache = new SolrClientCache();
+    } else {
+      doCloseCache = false;
+    }
+
     stream.open();
     Tuple node = null;
     StringBuilder builder = new StringBuilder();
@@ -222,7 +231,6 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
     QueryRequest request = new QueryRequest(params);
 
     try {
-
       // Get the response from the terms component
       NamedList<?> response = client.request(request, collection);
       @SuppressWarnings({"unchecked"})
@@ -231,28 +239,23 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
       @SuppressWarnings({"unchecked"})
       NamedList<NamedList<Number>> fields = (NamedList<NamedList<Number>>) response.get("terms");
 
-      int size = fields.size();
-      for (int i = 0; i < size; i++) {
-        String fieldName = fields.getName(i);
-        NamedList<Number> terms = fields.get(fieldName);
-        int tsize = terms.size();
-        for (int t = 0; t < tsize; t++) {
-          String term = terms.getName(t);
-          Number docFreq = terms.get(term);
-          Tuple tuple = nodes.get(term);
-          if (!tuple.getFields().containsKey(termFreq)) {
-            throw new Exception("termFreq field not present in the Tuple");
-          }
-          Number termFreqValue = (Number) tuple.get(termFreq);
-          float score =
-              (float) (Math.log(termFreqValue.floatValue()) + 1.0)
-                  * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
-          tuple.put("nodeScore", score);
-          tuple.put("docFreq", docFreq);
-          tuple.put("numDocs", numDocs);
-        }
-      }
-    } catch (Exception e) {
+      fields.forEach(
+          (fieldName, terms) ->
+              terms.forEach(
+                  (term, docFreq) -> {
+                    Tuple tuple = nodes.get(term);
+                    if (!tuple.getFields().containsKey(termFreq)) {
+                      throw new RuntimeException("termFreq field not present in the Tuple");
+                    }
+                    Number termFreqValue = (Number) tuple.get(termFreq);
+                    float score =
+                        (float) (Math.log(termFreqValue.floatValue()) + 1.0)
+                            * (float) (Math.log((numDocs + 1) / (docFreq.doubleValue() + 1)) + 1.0);
+                    tuple.put("nodeScore", score);
+                    tuple.put("docFreq", docFreq);
+                    tuple.put("numDocs", numDocs);
+                  }));
+    } catch (SolrServerException e) {
       throw new IOException(e);
     }
 
@@ -261,6 +264,9 @@ public class ScoreNodesStream extends TupleStream implements Expressible {
 
   @Override
   public void close() throws IOException {
+    if (doCloseCache) {
+      clientCache.close();
+    }
     stream.close();
   }
 

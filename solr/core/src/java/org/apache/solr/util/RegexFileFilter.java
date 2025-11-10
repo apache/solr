@@ -16,12 +16,11 @@
  */
 package org.apache.solr.util;
 
-import java.io.File;
-import java.io.FileFilter;
+import java.nio.file.Path;
 import java.util.regex.Pattern;
 
 /** Accepts any file whose name matches the pattern */
-public final class RegexFileFilter implements FileFilter {
+public final class RegexFileFilter {
 
   final Pattern pattern;
 
@@ -33,9 +32,8 @@ public final class RegexFileFilter implements FileFilter {
     pattern = regex;
   }
 
-  @Override
-  public boolean accept(File f) {
-    return pattern.matcher(f.getName()).matches();
+  public boolean accept(Path f) {
+    return pattern.matcher(f.getFileName().toString()).matches();
   }
 
   @Override

@@ -16,35 +16,40 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Date;
-import org.apache.solr.common.util.NamedList;
+import java.util.Map;
+import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.JacksonContentWriter;
 
 /**
  * @since solr 1.3
  */
 public class CoreAdminResponse extends SolrResponseBase {
-  @SuppressWarnings("unchecked")
-  public NamedList<NamedList<Object>> getCoreStatus() {
-    return (NamedList<NamedList<Object>>) getResponse().get("status");
+
+  public Map<String, CoreStatusResponse.SingleCoreData> getCoreStatus() {
+    final var allCoreStatus = getResponse().get("status");
+    return JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+        allCoreStatus, new TypeReference<Map<String, CoreStatusResponse.SingleCoreData>>() {});
   }
 
-  public NamedList<Object> getCoreStatus(String core) {
+  public CoreStatusResponse.SingleCoreData getCoreStatus(String core) {
     return getCoreStatus().get(core);
   }
 
   public Date getStartTime(String core) {
-    NamedList<Object> v = getCoreStatus(core);
+    final var v = getCoreStatus(core);
     if (v == null) {
       return null;
     }
-    return (Date) v.get("startTime");
+    return v.startTime;
   }
 
   public Long getUptime(String core) {
-    NamedList<Object> v = getCoreStatus(core);
+    final var v = getCoreStatus(core);
     if (v == null) {
       return null;
     }
-    return (Long) v.get("uptime");
+    return v.uptime;
   }
 }

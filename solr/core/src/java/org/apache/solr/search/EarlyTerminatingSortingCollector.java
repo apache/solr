@@ -68,6 +68,7 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
 
   /** Sort used to sort the search results */
   private final Sort sort;
+
   /** Number of documents to collect in each segment */
   private final int numDocsToCollect;
 
@@ -95,7 +96,7 @@ final class EarlyTerminatingSortingCollector extends FilterCollector {
 
   @Override
   public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-    Sort segmentSort = context.reader().getMetaData().getSort();
+    Sort segmentSort = context.reader().getMetaData().sort();
     if (segmentSort != null && canEarlyTerminate(sort, segmentSort) == false) {
       throw new IllegalStateException(
           "Cannot early terminate with sort order "

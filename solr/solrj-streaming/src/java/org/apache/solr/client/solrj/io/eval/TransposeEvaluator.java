@@ -42,8 +42,7 @@ public class TransposeEvaluator extends RecursiveObjectEvaluator implements OneV
   public Object doWork(Object value) throws IOException {
     if (null == value) {
       return null;
-    } else if (value instanceof Matrix) {
-      Matrix matrix = (Matrix) value;
+    } else if (value instanceof Matrix matrix) {
       double[][] data = matrix.getData();
       Array2DRowRealMatrix amatrix = new Array2DRowRealMatrix(data, false);
       Array2DRowRealMatrix tmatrix = (Array2DRowRealMatrix) amatrix.transpose();

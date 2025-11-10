@@ -38,7 +38,8 @@ public class TestFiltering extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTests() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema_latest.xml");
   }
 
@@ -89,15 +90,13 @@ public class TestFiltering extends SolrTestCaseJ4 {
         cmd.setQuery(QParser.getParser(qstr, null, req).getQuery());
         cmd.setLen(random().nextInt(30));
         cmd.setNeedDocSet(true);
-        QueryResult res = new QueryResult();
-        searcher.search(res, cmd);
+        QueryResult res = searcher.search(cmd);
         set = res.getDocSet();
         assertSame(set, live);
 
         cmd.setQuery(QParser.getParser(qstr + " OR id:0", null, req).getQuery());
         cmd.setFilterList(QParser.getParser(qstr + " OR id:1", null, req).getQuery());
-        res = new QueryResult();
-        searcher.search(res, cmd);
+        res = searcher.search(cmd);
         set = res.getDocSet();
         assertSame(set, live);
       }
@@ -539,7 +538,7 @@ public class TestFiltering extends SolrTestCaseJ4 {
           }
         }
 
-        SolrQueryRequest sreq = req(params.toArray(new String[params.size()]));
+        SolrQueryRequest sreq = req(params.toArray(new String[0]));
         long expected = model.answer.cardinality();
         long expectedMultiSelect = model.multiSelect.cardinality();
         long expectedFacetQuery = model.facetQuery.cardinality();

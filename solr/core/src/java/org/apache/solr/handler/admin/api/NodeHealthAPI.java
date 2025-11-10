@@ -18,7 +18,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.HEALTH_PERM;
 
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.HealthCheckHandler;
@@ -41,7 +41,7 @@ public class NodeHealthAPI {
   @EndPoint(
       path = {"/node/health"},
       method = GET,
-      permission = CONFIG_READ_PERM)
+      permission = HEALTH_PERM)
   public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     handler.handleRequestBody(req, rsp);
   }

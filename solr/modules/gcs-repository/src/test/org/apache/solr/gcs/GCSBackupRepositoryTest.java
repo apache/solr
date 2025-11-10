@@ -35,14 +35,25 @@ import org.junit.Test;
 public class GCSBackupRepositoryTest extends AbstractBackupRepositoryTest {
 
   @AfterClass
-  public static void tearDownClass() throws Exception {
+  public static void tearDownClass() {
     LocalStorageGCSBackupRepository.clearStashedStorage();
   }
 
   @Override
-  protected BackupRepository getRepository() {
+  protected Class<? extends BackupRepository> getRepositoryClass() {
+    return LocalStorageGCSBackupRepository.class;
+  }
+
+  @Override
+  protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     final NamedList<Object> config = new NamedList<>();
     config.add(BACKUP_LOCATION, "backup1");
+    return config;
+  }
+
+  @Override
+  protected BackupRepository getRepository() {
+    NamedList<Object> config = getBaseBackupRepositoryConfiguration();
     final GCSBackupRepository repository = new LocalStorageGCSBackupRepository();
     repository.init(config);
 

@@ -25,20 +25,21 @@ import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.DocumentAnalysisResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 
 /**
  * A request for the org.apache.solr.handler.DocumentAnalysisRequestHandler.
  *
  * @since solr 1.4
  */
-public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisResponse> {
+public class DocumentAnalysisRequest
+    extends CollectionRequiringSolrRequest<DocumentAnalysisResponse> {
 
   private List<SolrInputDocument> documents = new ArrayList<>();
   private String query;
@@ -46,7 +47,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
 
   /** Constructs a new request with a default uri of "/documentanalysis". */
   public DocumentAnalysisRequest() {
-    super(METHOD.POST, "/analysis/document");
+    super(METHOD.POST, "/analysis/document", SolrRequestType.QUERY);
   }
 
   /**
@@ -55,7 +56,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
    * @param uri The of the request handler.
    */
   public DocumentAnalysisRequest(String uri) {
-    super(METHOD.POST, uri);
+    super(METHOD.POST, uri, SolrRequestType.QUERY);
   }
 
   @Override
@@ -80,12 +81,12 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
   }
 
   @Override
-  protected DocumentAnalysisResponse createResponse(SolrClient client) {
+  protected DocumentAnalysisResponse createResponse(NamedList<Object> namedList) {
     return new DocumentAnalysisResponse();
   }
 
   @Override
-  public ModifiableSolrParams getParams() {
+  public SolrParams getParams() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     if (query != null) {
       params.add(AnalysisParams.QUERY, query);
@@ -97,9 +98,9 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
   // ===== Helper Methods =====
 
   /**
-   * Returns the xml be be set as the request body.
+   * Returns the xml being set as the request body.
    *
-   * @return The xml be be set as the request body.
+   * @return The xml being set as the request body.
    * @throws IOException When constructing the xml fails
    */
   String getXML(Writer writer) throws IOException {
@@ -141,7 +142,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
   }
 
   /**
-   * Sets the query to be analyzed. By default the query is set to null, meaning no query analysis
+   * Sets the query to be analyzed. By default, the query is set to null, meaning no query analysis
    * will be performed.
    *
    * @param query The query to be analyzed.
@@ -154,7 +155,7 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
 
   /**
    * Sets whether index time tokens that match query time tokens should be marked as a "match". By
-   * default this is set to {@code false}. Obviously, this flag is ignored if when the query is set
+   * default, this is set to {@code false}. Obviously, this flag is ignored if when the query is set
    * to {@code null}.
    *
    * @param showMatch Sets whether index time tokens that match query time tokens should be marked
@@ -195,10 +196,5 @@ public class DocumentAnalysisRequest extends SolrRequest<DocumentAnalysisRespons
    */
   public boolean isShowMatch() {
     return showMatch;
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.QUERY.toString();
   }
 }

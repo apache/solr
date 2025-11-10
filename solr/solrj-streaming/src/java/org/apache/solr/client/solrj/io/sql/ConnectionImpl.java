@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.io.sql;
 
+import java.lang.invoke.MethodHandles;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.CallableStatement;
@@ -38,8 +39,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class ConnectionImpl implements Connection {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String url;
   private final SolrClientCache solrClientCache = new SolrClientCache();
@@ -325,21 +330,52 @@ class ConnectionImpl implements Connection {
   }
 
   @Override
-  public boolean isValid(int timeout) throws SQLException {
+  public boolean isValid(int timeoutSec) throws SQLException {
     // check that the connection isn't closed and able to connect within the timeout
     try {
       if (!isClosed()) {
-        if (timeout == 0) {
-          this.client.connect();
-        } else {
-          this.client.connect(timeout, TimeUnit.SECONDS);
-        }
+        connect(client, timeoutSec, TimeUnit.SECONDS);
         return true;
       }
     } catch (InterruptedException | TimeoutException ignore) {
       // Ignore error since connection is not valid
     }
     return false;
+  }
+
+  /**
+   * Connect to a cluster. If the cluster is not ready, retry connection up to a given timeout.
+   *
+   * @param duration the timeout. 0 means try once; no timeout.
+   * @param timeUnit the units of the timeout
+   * @throws TimeoutException if the cluster is not ready after the timeout
+   * @throws InterruptedException if the wait is interrupted
+   */
+  static void connect(CloudSolrClient client, long duration, TimeUnit timeUnit)
+      throws TimeoutException, InterruptedException {
+    var clusterStateProvider = client.getClusterStateProvider();
+    if (duration == 0) {
+      clusterStateProvider.getLiveNodes();
+      return;
+    }
+
+    log.info(
+        "Waiting for {} {} for cluster at {} to be ready",
+        duration,
+        timeUnit,
+        clusterStateProvider);
+    long timeout = System.nanoTime() + timeUnit.toNanos(duration);
+    while (System.nanoTime() < timeout) {
+      try {
+        clusterStateProvider.getLiveNodes();
+        log.info("Cluster at {} ready", clusterStateProvider);
+        return;
+      } catch (RuntimeException e) {
+        // not ready yet, then...
+      }
+      TimeUnit.MILLISECONDS.sleep(250);
+    }
+    throw new TimeoutException("Timed out waiting for cluster");
   }
 
   @Override

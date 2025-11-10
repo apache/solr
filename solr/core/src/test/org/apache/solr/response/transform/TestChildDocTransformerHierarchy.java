@@ -29,10 +29,13 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BasicResultContext;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
 
@@ -48,6 +51,9 @@ public class TestChildDocTransformerHierarchy extends SolrTestCaseJ4 {
   // filter documents that were created for random segments to ensure the transformer works with
   // multiple segments.
   private static final String fqToExcludeNonTestedDocs = "{!frange l=0}id_i";
+
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {

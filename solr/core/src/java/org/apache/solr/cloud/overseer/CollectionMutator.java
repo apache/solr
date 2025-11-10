@@ -18,7 +18,6 @@ package org.apache.solr.cloud.overseer;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CONFIGNAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 
@@ -34,7 +33,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
 import org.apache.solr.common.cloud.PerReplicaStates;
-import org.apache.solr.common.cloud.PerReplicaStatesFetcher;
 import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -128,7 +126,7 @@ public class CollectionMutator {
           log.error("trying to set perReplicaState to {} from {}", val, coll.isPerReplicaState());
           continue;
         }
-        PerReplicaStates prs = PerReplicaStatesFetcher.fetch(coll.getZNode(), zkClient, null);
+        PerReplicaStates prs = PerReplicaStatesOps.fetch(coll.getZNode(), zkClient, null);
         replicaOps =
             enable ? PerReplicaStatesOps.enable(coll, prs) : PerReplicaStatesOps.disable(prs);
         if (!enable) {
@@ -150,7 +148,8 @@ public class CollectionMutator {
         }
         // SOLR-11676 : keep NRT_REPLICAS and REPLICATION_FACTOR in sync
         if (prop.equals(REPLICATION_FACTOR)) {
-          props.put(NRT_REPLICAS, message.get(REPLICATION_FACTOR));
+          props.put(
+              Replica.Type.defaultType().numReplicasPropertyName, message.get(REPLICATION_FACTOR));
         }
       }
     }
@@ -177,6 +176,7 @@ public class CollectionMutator {
             props,
             coll.getRouter(),
             coll.getZNodeVersion(),
+            coll.getCreationTime(),
             stateManager.getPrsSupplier(coll.getName()));
     if (replicaOps == null) {
       return new ZkWriteCommand(coll.getName(), collection);

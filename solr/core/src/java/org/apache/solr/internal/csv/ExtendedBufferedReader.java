@@ -34,13 +34,16 @@ class ExtendedBufferedReader extends BufferedReader {
 
   /** the end of stream symbol */
   public static final int END_OF_STREAM = -1;
+
   /** undefined state for the lookahead char */
   public static final int UNDEFINED = -2;
 
   /** the lookahead chars */
   private int lookaheadChar = UNDEFINED;
+
   /** the last char returned */
   private int lastChar = UNDEFINED;
+
   /** the line counter */
   private int lineCounter = 0;
 

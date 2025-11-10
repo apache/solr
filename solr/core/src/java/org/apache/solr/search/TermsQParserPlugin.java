@@ -21,12 +21,11 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -35,9 +34,10 @@ import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchNoDocsQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
@@ -45,6 +45,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -53,6 +54,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,7 +83,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     termsFilter {
       @Override
       Query makeFilter(String fname, BytesRef[] bytesRefs) {
-        return new TermInSetQuery(fname, bytesRefs); // constant scores
+        return new TermInSetQuery(fname, Arrays.asList(bytesRefs)); // constant scores
       }
     },
     booleanQuery {
@@ -120,7 +122,8 @@ public class TermsQParserPlugin extends QParserPlugin {
     docValuesTermsFilterPerSegment {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return disableCacheByDefault(new DocValuesTermsQuery(fname, byteRefs));
+        return disableCacheByDefault(
+            SortedSetDocValuesField.newSlowSetQuery(fname, Arrays.asList(byteRefs)));
       }
     };
 
@@ -189,14 +192,14 @@ public class TermsQParserPlugin extends QParserPlugin {
     };
   }
 
-  private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
+  private static class TopLevelDocValuesTermsQuery extends TermInSetQuery {
     private final String fieldName;
     private SortedSetDocValues topLevelDocValues;
     private LongBitSet topLevelTermOrdinals;
     private boolean matchesAtLeastOneTerm = false;
 
     public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
-      super(field, terms);
+      super(MultiTermQuery.DOC_VALUES_REWRITE, field, Arrays.asList(terms));
       this.fieldName = field;
     }
 
@@ -213,7 +216,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       topLevelDocValues =
           DocValues.getSortedSet(((SolrIndexSearcher) searcher).getSlowAtomicReader(), fieldName);
       topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
-      PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
+      BytesRefIterator iterator = getBytesRefIterator();
 
       long lastTermOrdFound = 0;
       for (BytesRef term = iterator.next(); term != null; term = iterator.next()) {
@@ -227,7 +230,7 @@ public class TermsQParserPlugin extends QParserPlugin {
 
       return new ConstantScoreWeight(this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           if (!matchesAtLeastOneTerm) {
             return null;
           }
@@ -238,30 +241,31 @@ public class TermsQParserPlugin extends QParserPlugin {
           }
 
           final int docBase = context.docBase;
-          return new ConstantScoreScorer(
-              this,
-              this.score(),
-              scoreMode,
-              new TwoPhaseIterator(segmentDocValues) {
-                @Override
-                public boolean matches() throws IOException {
-                  topLevelDocValues.advanceExact(docBase + approximation.docID());
-                  for (long ord = topLevelDocValues.nextOrd();
-                      ord != -1L;
-                      ord = topLevelDocValues.nextOrd()) {
-                    if (topLevelTermOrdinals.get(ord)) {
-                      return true;
+          return new SolrDefaultScorerSupplier(
+              new ConstantScoreScorer(
+                  this.score(),
+                  scoreMode,
+                  new TwoPhaseIterator(segmentDocValues) {
+                    @Override
+                    public boolean matches() throws IOException {
+                      final var hasMatch =
+                          topLevelDocValues.advanceExact(docBase + approximation.docID());
+                      if (hasMatch) {
+                        for (int o = 0; o < topLevelDocValues.docValueCount(); o++) {
+                          final long ord = topLevelDocValues.nextOrd();
+                          if (topLevelTermOrdinals.get(ord)) {
+                            return true;
+                          }
+                        }
+                      }
+                      return false;
                     }
-                  }
 
-                  return false;
-                }
-
-                @Override
-                public float matchCost() {
-                  return 10.0F;
-                }
-              });
+                    @Override
+                    public float matchCost() {
+                      return 10.0F;
+                    }
+                  }));
         }
 
         @Override

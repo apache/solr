@@ -16,7 +16,7 @@
  */
 package org.apache.solr.core;
 
-import static org.apache.solr.core.SolrResourceLoader.SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM;
+import static org.apache.solr.core.SolrResourceLoader.SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM;
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
 import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.nio.charset.CharacterCodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -45,7 +44,6 @@ import org.apache.solr.handler.admin.LukeRequestHandler;
 import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -53,13 +51,13 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    setUnsafeResourceLoading(false);
+    setUnsafeResourceLoadingEnabled(false);
   }
 
   public void testInstanceDir() throws Exception {
     final Path dir = createTempDir();
     try (SolrResourceLoader loader = new SolrResourceLoader(dir.toAbsolutePath())) {
-      MatcherAssert.assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
+      assertThat(loader.getInstancePath(), is(dir.toAbsolutePath()));
     }
   }
 
@@ -70,7 +68,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
 
-    setUnsafeResourceLoading(false);
+    setUnsafeResourceLoadingEnabled(false);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       // Path traversal
       assertTrue(
@@ -89,7 +87,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
       assertNull(loader.resourceLocation("\\\\192.168.10.10\\foo"));
     }
 
-    setUnsafeResourceLoading(true);
+    setUnsafeResourceLoadingEnabled(true);
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       // Path traversal - unsafe but allowed
       loader.openResource("../../dummy.txt").close();
@@ -106,11 +104,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void setUnsafeResourceLoading(boolean unsafe) {
+  private void setUnsafeResourceLoadingEnabled(boolean unsafe) {
     if (unsafe) {
-      System.setProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM, "true");
+      System.setProperty(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM, "false");
     } else {
-      System.clearProperty(SOLR_ALLOW_UNSAFE_RESOURCELOADING_PARAM);
+      System.clearProperty(SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM);
     }
   }
 
@@ -257,7 +255,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   @SuppressWarnings("deprecation")
   public void testLoadDeprecatedFactory() throws Exception {
     SolrResourceLoader loader =
-        new SolrResourceLoader(Paths.get("solr/collection1").toAbsolutePath());
+        new SolrResourceLoader(Path.of("solr/collection1").toAbsolutePath());
     // ensure we get our exception
     loader.newInstance(
         DeprecatedTokenFilterFactory.class.getName(),

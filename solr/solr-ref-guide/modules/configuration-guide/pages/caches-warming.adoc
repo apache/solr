@@ -43,7 +43,7 @@ These settings are all configured in child elements of the `<query>` element in 
 
 Solr caches are associated with a specific instance of an Index Searcher, a specific view of an index that doesn't change during the lifetime of that searcher.
 As long as that Index Searcher is being used, any items in its cache will be valid and available for reuse.
-By default cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher.
+By default, cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher.
 Idle time-based expiration can be enabled by using `maxIdleTime` option.
 
 When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache.
@@ -56,8 +56,8 @@ The old searcher will be closed once it has finished servicing all its requests.
 Solr comes with a default `SolrCache` implementation that is used for different types of caches.
 
 The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library].
-By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint.
-Generally this cache usually offers lower memory footprint, higher hit ratio, and better multi-threaded performance over legacy caches.
+By default, it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint.
+Generally this cache usually offers lower memory footprint, higher hit ratio, and better multithreaded performance over legacy caches.
 
 `CaffeineCache` uses an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
 
@@ -86,7 +86,6 @@ The async cache provides most significant improvement with many concurrent queri
 However, the async cache will not prevent data races for time-limited queries, since those are expected to provide partial results.
 
 All caches can be disabled using the parameter `enabled` with a value of `false`.
-Caches can also be disabled on a query-by-query basis with the `cache` parameter, as described in the section xref:query-guide:common-query-parameters.adoc#cache-local-parameter[cache Local Parameter].
 
 Details of each cache are described below.
 
@@ -95,10 +94,12 @@ Details of each cache are described below.
 This cache holds parsed queries paired with an unordered set of all documents that match it.
 Unless such a set is trivially small, the set implementation is a bitset.
 
-The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other cases as well.
+The most typical way Solr uses the `filterCache` is to cache results of each `fq` search parameter, though there are some other use cases as well.
 Subsequent queries using the same parameter filter query result in cache hits and rapid returns of results.
 See xref:query-guide:common-query-parameters.adoc#fq-filter-query-parameter[fq (Filter Query) Parameter] for a detailed discussion of `fq`.
-Use of this cache can be disabled for a `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
+
+[TIP]
+Use of this cache can be disabled for a specific query's `fq` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
 
 Another Solr feature using this cache is the `filter(...)` syntax in the default Lucene query parser.
 
@@ -144,8 +145,6 @@ This lets you specify the maximum heap size, in megabytes, used by the contents 
 When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit.
 If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
 
-Use of this cache can be disabled on a query-by-query basis in `q` using the xref:query-guide:common-query-parameters.adoc#cache-local-parameter[`cache` local parameter].
-
 [source,xml]
 ----
 <queryResultCache class="solr.CaffeineCache"
@@ -169,6 +168,9 @@ The more fields you store in your documents, the higher the memory usage of this
                initialSize="512"
                autowarmCount="0"/>
 ----
+
+[NOTE]
+Do not use the `maxRamMB` setting for the `documentCache`. The amount of memory required for the cached documents will not be calculated properly, which can lead to the cache using much more memory than anticipated.
 
 === User Defined Caches
 
@@ -226,12 +228,24 @@ Query strings that specify more clauses than this will result in an error.
 If this per-collection limit is greater than the xref:configuring-solr-xml.adoc#global-maxbooleanclauses[global `maxBooleanClauses` limit] specified in `solr.xml`, it will have no effect, as that setting also limits the size of user specified boolean queries.
 
 In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.
-This is the same system property used in the xref:configuring-solr-xml#global-maxbooleanclauses[global `maxBooleanClauses` setting] in the default `solr.xml` making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update the `solrconfig.xml` files in each collection.
+This is the same system property used in the xref:configuring-solr-xml.adoc#global-maxbooleanclauses[global `maxBooleanClauses` setting] in the default `solr.xml` making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update the `solrconfig.xml` files in each collection.
 
 [source,xml]
 ----
 <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 ----
+
+=== <minPrefixQueryTermLength> Element
+
+Prefix-based queries consume resources proportional to the number of terms in the index that start with the specified prefix.
+Particularly short prefixes, those with only one or two characters for instance, tend to match such a large proportion of the index that they're a frequent cause of resource contention and instability.
+This setting establishes a minimum prefix length for queries, giving administrators a way to block queries that might otherwise cause stability issues.
+Queries that don't match this minimum prefix length trigger an error.
+The setting can be overridden on a per-query basis by providing a `minPrefixQueryTermLength` "local-param" with a different value.
+
+The setting aims to govern all prefix-based queries (e.g. `val_s:a*`, `{!prefix f=val_s}a`, `{!complexphrase}val_s:"a*"`).
+
+In the default configset the minimum-prefix is set to '-1' (a flag value with the semantics of "no limit"), or the value of the `solr.query.minPrefixLength` system property (if specified).
 
 === <enableLazyFieldLoading> Element
 
@@ -279,7 +293,7 @@ This parameter sets the maximum number of documents to cache for any entry in th
 === <useColdSearcher> Element
 
 This setting controls whether search requests for which there is not a currently registered searcher should wait for a new searcher to warm up (`false`) or proceed immediately (`true`).
-When set to "false`, requests will block until the searcher has warmed its caches.
+When set to `false`, requests will block until the searcher has warmed its caches.
 
 [source,xml]
 ----

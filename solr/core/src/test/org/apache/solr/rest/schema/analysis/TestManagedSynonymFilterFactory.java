@@ -29,7 +29,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,14 +42,14 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
   @Before
   public void before() throws Exception {
     tmpSolrHome = createTempDir();
-    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome);
 
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(),
+        tmpSolrHome,
         "solrconfig-managed-schema.xml",
         "schema-rest.xml",
         "/solr",
@@ -59,16 +59,13 @@ public class TestManagedSynonymFilterFactory extends RestTestBase {
 
   @After
   public void after() throws Exception {
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
 
     if (restTestHarness != null) {
       restTestHarness.close();

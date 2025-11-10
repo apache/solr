@@ -23,8 +23,6 @@ import org.apache.solr.cluster.placement.Metric;
 /** Base class for {@link Metric} implementations. */
 public abstract class MetricImpl<T> implements Metric<T> {
 
-  public static final double GB = 1024 * 1024 * 1024;
-
   /**
    * Identity converter. It returns the raw value unchanged IFF the value's type can be cast to the
    * generic type of this attribute, otherwise it returns null.
@@ -40,30 +38,32 @@ public abstract class MetricImpl<T> implements Metric<T> {
       };
 
   /**
-   * Bytes to gigabytes converter. Supports converting number or string representations of raw
-   * values expressed in bytes.
+   * Megabytes to gigabytes converter. Supports converting number or string representations of raw
+   * values expressed in megabytes.
    */
-  public static final Function<Object, Double> BYTES_TO_GB_CONVERTER =
+  public static final Function<Object, Double> MB_TO_GB_CONVERTER =
       v -> {
-        double sizeInBytes;
+        double sizeInMB;
         if (!(v instanceof Number)) {
           if (v == null) {
             return null;
           }
           try {
-            sizeInBytes = Double.parseDouble(String.valueOf(v));
+            sizeInMB = Double.parseDouble(String.valueOf(v));
           } catch (Exception nfe) {
             return null;
           }
         } else {
-          sizeInBytes = ((Number) v).doubleValue();
+          sizeInMB = ((Number) v).doubleValue();
         }
-        return sizeInBytes / GB;
+        return sizeInMB / 1024.0;
       };
 
   protected final String name;
   protected final String internalName;
   protected final Function<Object, T> converter;
+  protected final String labelKey;
+  protected final String labelValue;
 
   /**
    * Create a metric attribute.
@@ -72,7 +72,7 @@ public abstract class MetricImpl<T> implements Metric<T> {
    * @param internalName internal name of a Solr metric.
    */
   public MetricImpl(String name, String internalName) {
-    this(name, internalName, null);
+    this(name, internalName, null, null, null);
   }
 
   /**
@@ -84,10 +84,31 @@ public abstract class MetricImpl<T> implements Metric<T> {
    *     used.
    */
   public MetricImpl(String name, String internalName, Function<Object, T> converter) {
+    this(name, internalName, null, null, converter);
+  }
+
+  /**
+   * Create a metric attribute with labels.
+   *
+   * @param name short-hand name that identifies this attribute.
+   * @param internalName internal name of a Solr metric.
+   * @param labelKey optional label key for Prometheus format labeled metrics.
+   * @param labelValue optional label value for Prometheus format labeled metrics.
+   * @param converter optional raw value converter. If null then {@link #IDENTITY_CONVERTER} will be
+   *     used.
+   */
+  public MetricImpl(
+      String name,
+      String internalName,
+      String labelKey,
+      String labelValue,
+      Function<Object, T> converter) {
     Objects.requireNonNull(name);
     Objects.requireNonNull(internalName);
     this.name = name;
     this.internalName = internalName;
+    this.labelKey = labelKey;
+    this.labelValue = labelValue;
     if (converter == null) {
       this.converter = IDENTITY_CONVERTER;
     } else {
@@ -106,6 +127,21 @@ public abstract class MetricImpl<T> implements Metric<T> {
   }
 
   @Override
+  public String getLabelKey() {
+    return labelKey;
+  }
+
+  @Override
+  public String getLabelValue() {
+    return labelValue;
+  }
+
+  @Override
+  public boolean hasLabels() {
+    return labelKey != null && labelValue != null;
+  }
+
+  @Override
   public T convert(Object value) {
     return converter.apply(value);
   }
@@ -115,28 +151,31 @@ public abstract class MetricImpl<T> implements Metric<T> {
     if (this == o) {
       return true;
     }
-    if (!(o instanceof MetricImpl)) {
+    if (!(o instanceof MetricImpl<?> that)) {
       return false;
     }
-    MetricImpl<?> that = (MetricImpl<?>) o;
     return name.equals(that.getName())
         && internalName.equals(that.getInternalName())
-        && converter.equals(that.converter);
+        && Objects.equals(labelKey, that.labelKey)
+        && Objects.equals(labelValue, that.labelValue);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(name, internalName, converter);
+    return Objects.hash(name, internalName, labelKey, labelValue);
   }
 
   @Override
   public String toString() {
-    return getClass().getSimpleName()
-        + "{"
-        + "name="
-        + name
-        + ", internalName="
-        + internalName
-        + "}";
+    String result =
+        getClass().getSimpleName() + "{" + "name=" + name + ", internalName=" + internalName;
+    if (labelKey != null) {
+      result += ", labelKey='" + labelKey + '\'';
+    }
+    if (labelValue != null) {
+      result += ", labelValue='" + labelValue + '\'';
+    }
+    result += "}";
+    return result;
   }
 }

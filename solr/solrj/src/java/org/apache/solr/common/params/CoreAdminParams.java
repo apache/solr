@@ -91,8 +91,6 @@ public abstract class CoreAdminParams {
 
   public static final String GET_RANGES = "getRanges";
 
-  public static final String ROLES = "roles";
-
   public static final String REQUESTID = "requestid";
 
   public static final String CORE_NODE_NAME = "coreNodeName";
@@ -108,8 +106,6 @@ public abstract class CoreAdminParams {
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
 
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
-
-  public static final String TRANSIENT = "transient";
 
   // Node to create a replica on for ADDREPLICA at least.
   public static final String NODE = "node";
@@ -150,6 +146,9 @@ public abstract class CoreAdminParams {
   /** A boolean parameter specifying if a core is being created as part of a new collection */
   public static final String NEW_COLLECTION = "newCollection";
 
+  /** A parameter to specify if Configsets should be included in the backup or not */
+  public static final String BACKUP_CONFIGSET = "backupConfigset";
+
   /**
    * Tells the CoreAdminHandler that the new Core will be a replica of a particular {@link
    * org.apache.solr.common.cloud.Replica.Type}
@@ -168,15 +167,12 @@ public abstract class CoreAdminParams {
     PREPRECOVERY,
     REQUESTRECOVERY,
     REQUESTSYNCSHARD,
-    DELETEALIAS,
     REQUESTBUFFERUPDATES,
     REQUESTAPPLYUPDATES,
     OVERSEEROP,
     REQUESTSTATUS(true),
     REJOINLEADERELECTION,
-    // internal API used by force shard leader election
-    FORCEPREPAREFORLEADERSHIP,
-    // Internal APIs to backup and restore a core
+    // Internal APIs to back up and restore a core
     BACKUPCORE,
     RESTORECORE,
     INSTALLCOREDATA,

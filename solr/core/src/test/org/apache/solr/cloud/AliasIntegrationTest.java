@@ -38,8 +38,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
@@ -238,9 +238,8 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
   public void testModifyPropertiesV2() throws Exception {
     final String aliasName = getSaferTestName();
     ZkStateReader zkStateReader = createColectionsAndAlias(aliasName);
-    final String baseUrl =
-        cluster.getRandomJetty(random()).getBaseUrl().toString().replace("/solr", "");
-    String aliasApi = String.format(Locale.ENGLISH, "/api/aliases/%s/properties", aliasName);
+    final String baseUrl = cluster.getRandomJetty(random()).getBaseURLV2().toString();
+    String aliasApi = String.format(Locale.ENGLISH, "/aliases/%s/properties", aliasName);
 
     HttpPut withoutBody = new HttpPut(baseUrl + aliasApi);
     assertEquals(400, httpClient.execute(withoutBody).getStatusLine().getStatusCode());
@@ -260,7 +259,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     checkFooAndBarMeta(aliasName, zkStateReader, "baz", "bam");
 
     String aliasPropertyApi =
-        String.format(Locale.ENGLISH, "/api/aliases/%s/properties/%s", aliasName, "foo");
+        String.format(Locale.ENGLISH, "/aliases/%s/properties/%s", aliasName, "foo");
     HttpPut updateByProperty = new HttpPut(baseUrl + aliasPropertyApi);
     updateByProperty.setEntity(
         new StringEntity("{ \"value\": \"zab\" }", ContentType.APPLICATION_JSON));
@@ -517,6 +516,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       }
     }
   }
+
   // Rather a long title, but it's common to recommend when people need to re-index for any reason
   // that they:
   // 1> create a new collection
@@ -967,8 +967,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
       // HttpSolrClient
       JettySolrRunner jetty = cluster.getRandomJetty(random());
       if (random().nextBoolean()) {
-        try (SolrClient client =
-            getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + collectionList)) {
+        try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString(), collectionList)) {
           responseConsumer.accept(client.query(null, solrQuery));
         }
       } else {

@@ -25,7 +25,6 @@ import com.google.cloud.storage.StorageException;
 import com.google.cloud.storage.contrib.nio.testing.LocalStorageHelper;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -58,21 +57,11 @@ public class LocalStorageGCSBackupRepository extends GCSBackupRepository {
   // production use cases, but
   // isn't supported by the in-memory Storage implementation provided by LocalStorageHelper
   @Override
-  public void delete(URI path, Collection<String> files, boolean ignoreNoSuchFileException)
-      throws IOException {
-    final List<Boolean> results = new ArrayList<>();
-
+  public void delete(URI path, Collection<String> files) {
     final List<String> filesOrdered = new ArrayList<>(files);
     for (String file : filesOrdered) {
-      final String prefix = path.toString().endsWith("/") ? path.toString() : path.toString() + "/";
-      results.add(storage.delete(BlobId.of(bucketName, prefix + file)));
-    }
-
-    if (!ignoreNoSuchFileException) {
-      int failedDelete = results.indexOf(Boolean.FALSE);
-      if (failedDelete != -1) {
-        throw new NoSuchFileException("File " + filesOrdered.get(failedDelete) + " was not found");
-      }
+      final String prefix = path.toString().endsWith("/") ? path.toString() : path + "/";
+      storage.delete(BlobId.of(bucketName, prefix + file));
     }
   }
 

@@ -120,14 +120,20 @@ public class TestRerankBase extends RestTestBase {
     if (bulkIndex) bulkIndex();
   }
 
+  protected static void setupFeatureVectorCacheTest(boolean bulkIndex) throws Exception {
+    chooseDefaultFeatureFormat();
+    setuptest("solrconfig-ltr-featurevectorcache.xml", "schema.xml");
+    if (bulkIndex) bulkIndex();
+  }
+
   public static ManagedFeatureStore getManagedFeatureStore() {
-    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedFeatureStore.getManagedFeatureStore(core);
     }
   }
 
   public static ManagedModelStore getManagedModelStore() {
-    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedModelStore.getManagedModelStore(core);
     }
   }
@@ -136,8 +142,7 @@ public class TestRerankBase extends RestTestBase {
       throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    tmpConfDir.toFile().deleteOnExit();
-    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome.toAbsolutePath());
+    PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome);
 
     final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
     final Path mstore = tmpConfDir.resolve(MODEL_FILE_NAME);
@@ -149,13 +154,13 @@ public class TestRerankBase extends RestTestBase {
 
     if (Files.exists(fstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove feature store config file in {}", fstore.toAbsolutePath());
+        log.info("remove feature store config file in {}", fstore);
       }
       Files.delete(fstore);
     }
     if (Files.exists(mstore)) {
       if (log.isInfoEnabled()) {
-        log.info("remove model store config file in {}", mstore.toAbsolutePath());
+        log.info("remove model store config file in {}", mstore);
       }
       Files.delete(mstore);
     }
@@ -176,18 +181,16 @@ public class TestRerankBase extends RestTestBase {
   public static void setuptest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, false);
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, solrconfig, schema, "/solr", true, null);
   }
 
   public static void setupPersistentTest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, true);
 
-    createJettyAndHarness(
-        tmpSolrHome.toAbsolutePath().toString(), solrconfig, schema, "/solr", true, null);
+    createJettyAndHarness(tmpSolrHome, solrconfig, schema, "/solr", true, null);
   }
 
   protected static void aftertest() throws Exception {
@@ -195,16 +198,13 @@ public class TestRerankBase extends RestTestBase {
       restTestHarness.close();
       restTestHarness = null;
     }
-    if (null != jetty) {
-      jetty.stop();
-      jetty = null;
-    }
+    solrClientTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
-    // System.clearProperty("enable.update.log");
+    // System.clearProperty("solr.index.updatelog.enabled");
     unchooseDefaultFeatureFormat();
   }
 

@@ -263,10 +263,9 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected String translateIsNullOrIsNotNull(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       List<RexNode> operands = call.getOperands();
       if (operands.size() != 1) {
         throw new AssertionError("expected 1 operand for " + node);
@@ -531,10 +530,9 @@ class SolrFilter extends Filter implements SolrRel {
 
     protected Pair<Pair<String, RexLiteral>, Character> getFieldValuePairWithEscapeCharacter(
         RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
-      RexCall call = (RexCall) node;
       if (call.getOperands().size() == 3) {
         RexNode escapeNode = call.getOperands().get(2);
         Character escapeChar = null;
@@ -552,11 +550,10 @@ class SolrFilter extends Filter implements SolrRel {
     }
 
     protected Pair<String, RexLiteral> getFieldValuePair(RexNode node) {
-      if (!(node instanceof RexCall)) {
+      if (!(node instanceof RexCall call)) {
         throw new AssertionError("expected RexCall for predicate but found: " + node);
       }
 
-      RexCall call = (RexCall) node;
       Pair<String, RexLiteral> binaryTranslated =
           call.getOperands().size() == 2 ? translateBinary(call) : null;
       if (binaryTranslated == null) {
@@ -654,15 +651,13 @@ class SolrFilter extends Filter implements SolrRel {
           !expanded.getOperands().isEmpty() ? expanded.getOperands().get(0) : null;
       if (expanded.op.kind == SqlKind.AND) {
         // See if NOT IN was translated into a big AND not
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.NOT_EQUALS) {
             return "*:* -" + fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }
         }
       } else if (expanded.op.kind == SqlKind.OR) {
-        if (peekAt0 instanceof RexCall) {
-          RexCall op0 = (RexCall) peekAt0;
+        if (peekAt0 instanceof RexCall op0) {
           if (op0.op.kind == SqlKind.EQUALS) {
             return fieldName + ":" + toOrSetOnSameField(fieldName, expanded);
           }

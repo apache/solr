@@ -105,8 +105,7 @@ public class GeohashHaversineFunction extends ValueSource {
 
   @Override
   public boolean equals(Object o) {
-    if (!(o instanceof GeohashHaversineFunction)) return false;
-    GeohashHaversineFunction other = (GeohashHaversineFunction) o;
+    if (!(o instanceof GeohashHaversineFunction other)) return false;
     return Objects.equals(this.name(), other.name())
         && Objects.equals(geoHash1, other.geoHash1)
         && Objects.equals(geoHash2, other.geoHash2)

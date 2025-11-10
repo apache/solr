@@ -67,6 +67,9 @@ solrAdminApp.config([
         templateUrl: 'partials/index.html',
         controller: 'IndexController'
       }).
+      when('/ui', {
+        redirectTo: 'ui/index.html'
+      }).
       when('/unknown', {
         templateUrl: 'partials/unknown.html',
         controller: 'UnknownController'
@@ -589,6 +592,10 @@ solrAdminApp.controller('MainController', function($scope, $route, $rootScope, $
     $scope.showingCloud = page.lastIndexOf("cloud", 0) === 0;
     $scope.page = page;
     $scope.currentUser = sessionStorage.getItem("auth.username");
+    $scope.http401 = sessionStorage.getItem("http401");
+  };
+
+  $scope.showHideMenu = function() {
     $scope.http401 = sessionStorage.getItem("http401");
   };
 

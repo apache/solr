@@ -35,7 +35,7 @@ public class GetSupportPointsEvaluator extends RecursiveObjectEvaluator implemen
 
   @Override
   public Object doWork(Object value) throws IOException {
-    if (!(value instanceof EnclosingBall)) {
+    if (!(value instanceof EnclosingBall<?, ?> enclosingBall)) {
       throw new IOException(
           String.format(
               Locale.ROOT,
@@ -43,7 +43,6 @@ public class GetSupportPointsEvaluator extends RecursiveObjectEvaluator implemen
               toExpression(constructingFactory),
               value.getClass().getSimpleName()));
     } else {
-      EnclosingBall<?, ?> enclosingBall = (EnclosingBall<?, ?>) value;
       Point<?>[] points = enclosingBall.getSupport();
       double[][] data = new double[points.length][2];
       int i = 0;

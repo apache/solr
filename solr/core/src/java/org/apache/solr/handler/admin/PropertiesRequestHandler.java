@@ -25,43 +25,47 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.NodeConfig;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodePropertiesAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.RedactionUtils;
 
 /**
  * @since solr 1.2
  */
 public class PropertiesRequestHandler extends RequestHandlerBase {
 
-  public static final String REDACT_STRING = RedactionUtils.getRedactString();
+  private CoreContainer cc;
+
+  public PropertiesRequestHandler() {
+    this(null);
+  }
+
+  public PropertiesRequestHandler(CoreContainer cc) {
+    super();
+    this.cc = cc;
+  }
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
     NamedList<String> props = new SimpleOrderedMap<>();
     String name = req.getParams().get(NAME);
+    NodeConfig nodeConfig = getCoreContainer(req).getNodeConfig();
     if (name != null) {
-      String property = getSecuredPropertyValue(name);
+      String property = nodeConfig.getRedactedSysPropValue(name);
       props.add(name, property);
     } else {
       Enumeration<?> enumeration = System.getProperties().propertyNames();
       while (enumeration.hasMoreElements()) {
         name = (String) enumeration.nextElement();
-        props.add(name, getSecuredPropertyValue(name));
+        props.add(name, nodeConfig.getRedactedSysPropValue(name));
       }
     }
     rsp.add("system.properties", props);
     rsp.setHttpCaching(false);
-  }
-
-  private String getSecuredPropertyValue(String name) {
-    if (RedactionUtils.isSystemPropertySensitive(name)) {
-      return REDACT_STRING;
-    }
-    return System.getProperty(name);
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -89,5 +93,10 @@ public class PropertiesRequestHandler extends RequestHandlerBase {
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.CONFIG_READ_PERM;
+  }
+
+  private CoreContainer getCoreContainer(SolrQueryRequest req) {
+    CoreContainer coreContainer = req.getCoreContainer();
+    return coreContainer == null ? cc : coreContainer;
   }
 }

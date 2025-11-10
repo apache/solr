@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -72,7 +72,10 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   */
   @Test
   public void monitorZookeeper()
-      throws IOException, SolrServerException, InterruptedException, ExecutionException,
+      throws IOException,
+          SolrServerException,
+          InterruptedException,
+          ExecutionException,
           TimeoutException {
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseUrl();
     HttpSolrClient solr = new HttpSolrClient.Builder(baseUrl.toString()).build();

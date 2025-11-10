@@ -23,14 +23,15 @@ import static org.apache.solr.jersey.RequestContextKeys.SOLR_JERSEY_RESPONSE;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.container.ContainerRequestContext;
+import jakarta.ws.rs.container.ResourceContext;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.ext.ExceptionMapper;
 import java.lang.invoke.MethodHandles;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.container.ContainerRequestContext;
-import javax.ws.rs.container.ResourceContext;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.ext.ExceptionMapper;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -62,10 +63,10 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
     // success/failure for AuditLogging, and other logic.
     final SolrQueryResponse solrQueryResponse =
         (SolrQueryResponse) containerRequestContext.getProperty(SOLR_QUERY_RESPONSE);
+
     final SolrQueryRequest solrQueryRequest =
         (SolrQueryRequest) containerRequestContext.getProperty(SOLR_QUERY_REQUEST);
-    if (exception instanceof WebApplicationException) {
-      final WebApplicationException wae = (WebApplicationException) exception;
+    if (exception instanceof WebApplicationException wae) {
       final SolrException solrException =
           new SolrException(getErrorCode(wae.getResponse().getStatus()), wae.getMessage());
       solrQueryResponse.setException(solrException);
@@ -87,7 +88,7 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
       ContainerRequestContext containerRequestContext) {
     // First, handle any exception-related metrics
     final Exception normalizedException =
-        RequestHandlerBase.normalizeReceivedException(solrQueryRequest, exception);
+        RequestHandlerBase.processReceivedException(solrQueryRequest, exception);
     final RequestHandlerBase.HandlerMetrics metrics =
         (RequestHandlerBase.HandlerMetrics) containerRequestContext.getProperty(HANDLER_METRICS);
     if (metrics != null) {
@@ -107,11 +108,16 @@ public class CatchAllExceptionMapper implements ExceptionMapper<Exception> {
         containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE) == null
             ? new SolrJerseyResponse()
             : (SolrJerseyResponse) containerRequestContext.getProperty(SOLR_JERSEY_RESPONSE);
-
-    response.error = ResponseUtils.getTypedErrorInfo(normalizedException, log);
+    response.error =
+        ResponseUtils.getTypedErrorInfo(
+            normalizedException,
+            log,
+            solrQueryRequest.getCore() != null
+                && solrQueryRequest.getCore().getCoreContainer().hideStackTrace());
     response.responseHeader.status = response.error.code;
     final String mediaType =
-        V2ApiUtils.getMediaTypeFromWtParam(solrQueryRequest, MediaType.APPLICATION_JSON);
+        V2ApiUtils.getMediaTypeFromWtParam(
+            solrQueryRequest.getParams(), MediaType.APPLICATION_JSON);
     return Response.status(response.error.code).type(mediaType).entity(response).build();
   }
 

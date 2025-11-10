@@ -24,11 +24,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.opentracing.noop.NoopSpan;
+import io.opentelemetry.api.trace.Span;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -41,19 +43,20 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link AddReplicaPropertyAPI} */
+/** Unit tests for {@link AddReplicaProperty} */
 public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
-  private static final AddReplicaPropertyAPI.AddReplicaPropertyRequestBody ANY_REQ_BODY =
-      new AddReplicaPropertyAPI.AddReplicaPropertyRequestBody("anyValue");
+  private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
+      new AddReplicaPropertyRequestBody("anyValue");
 
   private CoreContainer mockCoreContainer;
+  private ZkController mockZkController;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
   private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
-  private AddReplicaPropertyAPI addReplicaPropApi;
+  private AddReplicaProperty addReplicaPropApi;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -66,18 +69,18 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockCoreContainer = mock(CoreContainer.class);
+    mockZkController = mock(ZkController.class);
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
+    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
+    when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
     when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);
-    when(mockQueryRequest.getSpan()).thenReturn(NoopSpan.INSTANCE);
+    when(mockQueryRequest.getSpan()).thenReturn(Span.getInvalid());
     queryResponse = new SolrQueryResponse();
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
 
-    addReplicaPropApi =
-        new AddReplicaPropertyAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    addReplicaPropApi = new AddReplicaProperty(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test

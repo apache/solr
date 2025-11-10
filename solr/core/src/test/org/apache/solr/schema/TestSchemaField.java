@@ -17,6 +17,10 @@
 
 package org.apache.solr.schema;
 
+import org.apache.lucene.codecs.DocValuesFormat;
+import org.apache.lucene.codecs.PostingsFormat;
+import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
+import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -36,7 +40,7 @@ public class TestSchemaField extends SolrTestCaseJ4 {
   public void testFieldTypes() {
     assertFieldTypeFormats("str_none", null, null);
     assertFieldTypeFormats("str_direct_asserting", "Direct", "Asserting");
-    assertFieldTypeFormats("str_standard_simple", "Lucene84", "SimpleTextDocValuesFormat");
+    assertFieldTypeFormats("str_standard_simple", "Lucene84", "Lucene80");
   }
 
   private void assertFieldTypeFormats(
@@ -64,10 +68,10 @@ public class TestSchemaField extends SolrTestCaseJ4 {
   public void testFields() {
     assertFieldFormats("str_none_f", null, null);
     assertFieldFormats("str_direct_asserting_f", "Direct", "Asserting");
-    assertFieldFormats("str_standard_simple_f", "Lucene84", "SimpleTextDocValuesFormat");
+    assertFieldFormats("str_standard_simple_f", "Lucene84", "Lucene80");
 
     assertFieldFormats("str_none_lucene80_f", "Lucene80", null);
-    assertFieldFormats("str_standard_lucene80_f", "Lucene80", "SimpleTextDocValuesFormat");
+    assertFieldFormats("str_standard_lucene90_f", "Lucene90", "Lucene80");
 
     assertFieldFormats("str_none_asserting_f", null, "Asserting");
     assertFieldFormats("str_standard_asserting_f", "Lucene84", "Asserting");
@@ -79,7 +83,7 @@ public class TestSchemaField extends SolrTestCaseJ4 {
     assertFieldFormats("any_lucene70", "Lucene70", null);
 
     assertFieldFormats("any_asserting", null, "Asserting");
-    assertFieldFormats("any_simple", "Direct", "SimpleTextDocValuesFormat");
+    assertFieldFormats("any_simple", "Direct", "Lucene80");
   }
 
   private void assertFieldFormats(
@@ -102,5 +106,23 @@ public class TestSchemaField extends SolrTestCaseJ4 {
             + "  - schema got changed?",
         expectedDocValuesFormat,
         f.getDocValuesFormat());
+  }
+
+  public void testSchemaCodecFactory() {
+    // Verify that the PostingsFormat is the one overridden in the field, not the field type.
+    PostingsFormat postingsFormat = h.getCore().getCodec().postingsFormat();
+    assertTrue(postingsFormat instanceof PerFieldPostingsFormat);
+    PerFieldPostingsFormat perFieldPostingsFormat = (PerFieldPostingsFormat) postingsFormat;
+    assertEquals(
+        "Lucene90",
+        perFieldPostingsFormat.getPostingsFormatForField("str_standard_lucene90_f").getName());
+
+    // Verify that the DocValuesFormat is the one overridden in the field, not the field type.
+    DocValuesFormat docValuesFormat = h.getCore().getCodec().docValuesFormat();
+    assertTrue(docValuesFormat instanceof PerFieldDocValuesFormat);
+    PerFieldDocValuesFormat perFieldPDocValuesFormat = (PerFieldDocValuesFormat) docValuesFormat;
+    assertEquals(
+        "Asserting",
+        perFieldPDocValuesFormat.getDocValuesFormatForField("str_standard_asserting_f").getName());
   }
 }

@@ -17,26 +17,18 @@
 
 package org.apache.solr.handler.admin;
 
-import com.codahale.metrics.Counter;
-import java.util.Arrays;
-import java.util.HashMap;
+import io.opentelemetry.api.common.Attributes;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.PluginBag;
-import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -44,327 +36,67 @@ import org.junit.Test;
 public class MetricsHandlerTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-
     initCore("solrconfig-minimal.xml", "schema.xml");
     h.getCoreContainer().waitForLoadingCoresToFinish(30000);
-
-    // manually register & seed some metrics in solr.jvm and solr.jetty for testing via handler
-    // (use "solrtest_" prefix just in case the jvm or jetty adds a "foo" metric at some point)
-    Counter c = h.getCoreContainer().getMetricManager().counter(null, "solr.jvm", "solrtest_foo");
-    c.inc();
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo");
-    c.inc(2);
-    // test escapes
-    c = h.getCoreContainer().getMetricManager().counter(null, "solr.jetty", "solrtest_foo:bar");
-    c.inc(3);
-  }
-
-  @AfterClass
-  public static void cleanupMetrics() {
-    if (null != h) {
-      h.getCoreContainer().getMetricManager().registry("solr.jvm").remove("solrtest_foo");
-      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo");
-      h.getCoreContainer().getMetricManager().registry("solr.jetty").remove("solrtest_foo:bar");
-    }
   }
 
   @Test
-  public void test() throws Exception {
+  public void testMetricNamesFiltering() throws Exception {
+    String expectedRequestsMetricName = "solr_core_requests";
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json"),
-        resp);
-    NamedList<?> values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection1");
-    assertNotNull(nl);
-    Object o = nl.get("SEARCHER.new.errors");
-    assertNotNull(o); // counter type
-    assertTrue(o instanceof MapWriter);
-    // response wasn't serialized, so we get here whatever MetricUtils produced instead of NamedList
-    assertNotNull(((MapWriter) o)._get("count", null));
-    assertEquals(0L, ((MapWriter) nl.get("SEARCHER.new.errors"))._get("count", null));
-    nl = (NamedList<?>) values.get("solr.node");
-    assertNotNull(nl.get("CONTAINER.cores.loaded")); // int gauge
-    assertEquals(1, ((MapWriter) nl.get("CONTAINER.cores.loaded"))._get("value", null));
-    assertNotNull(nl.get("ADMIN./admin/authorization.clientErrors")); // timer type
-    Map<String, Object> map = new HashMap<>();
-    ((MapWriter) nl.get("ADMIN./admin/authorization.clientErrors")).toMap(map);
-    assertEquals(5, map.size());
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "jvm,jetty"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(2, values.size());
-    assertNotNull(values.get("solr.jetty"));
-    assertNotNull(values.get("solr.jvm"));
-
-    resp = new SolrQueryResponse();
-    // "collection" works too, because it's a prefix for "collection1"
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "registry",
-            "solr.core.collection,solr.jvm"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(2, values.size());
-    assertNotNull(values.get("solr.core.collection1"));
-    assertNotNull(values.get("solr.jvm"));
-
-    resp = new SolrQueryResponse();
-    // "collection" works too, because it's a prefix for "collection1"
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "registry",
-            "solr.core.collection",
-            "registry",
-            "solr.jvm"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(2, values.size());
-    assertNotNull(values.get("solr.core.collection1"));
-    assertNotNull(values.get("solr.jvm"));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "jvm,jetty"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(2, values.size());
-    assertNotNull(values.get("solr.jetty"));
-    assertNotNull(values.get("solr.jvm"));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "jvm",
-            "group",
-            "jetty"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(2, values.size());
-    assertNotNull(values.get("solr.jetty"));
-    assertNotNull(values.get("solr.jvm"));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "node",
-            "type",
-            "counter"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(1, values.size());
-    values = (NamedList<?>) values.get("solr.node");
-    assertNotNull(values);
-    assertNull(values.get("ADMIN./admin/authorization.errors")); // this is a timer node
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "prefix",
-            "CONTAINER.cores,CONTAINER.threadPool"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(1, values.size());
-    assertNotNull(values.get("solr.node"));
-    values = (NamedList<?>) values.get("solr.node");
-    assertEquals(27, values.size());
-    assertNotNull(values.get("CONTAINER.cores.lazy")); // this is a gauge node
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
-    assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "prefix",
-            "CONTAINER.cores",
-            "regex",
-            "C.*thread.*completed"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertNotNull(values.get("solr.node"));
-    values = (NamedList<?>) values.get("solr.node");
-    assertEquals(7, values.size());
-    assertNotNull(values.get("CONTAINER.threadPool.coreContainerWorkExecutor.completed"));
-    assertNotNull(values.get("CONTAINER.threadPool.coreLoadExecutor.completed"));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            "prefix",
-            "CACHE.core.fieldCache",
-            "property",
-            "entries_count",
-            MetricsHandler.COMPACT_PARAM,
-            "true"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertNotNull(values.get("solr.core.collection1"));
-    values = (NamedList<?>) values.get("solr.core.collection1");
-    assertEquals(1, values.size());
-    MapWriter writer = (MapWriter) values.get("CACHE.core.fieldCache");
-    assertNotNull(writer);
-    assertNotNull(writer._get("entries_count", null));
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "jvm",
-            "prefix",
-            "CONTAINER.cores"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    assertEquals(0, values.size());
-
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            MetricsHandler.COMPACT_PARAM,
-            "false",
-            CommonParams.WT,
-            "json",
-            "group",
-            "node",
-            "type",
-            "timer",
-            "prefix",
-            "CONTAINER.cores"),
-        resp);
-    values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    SimpleOrderedMap<?> map1 = (SimpleOrderedMap<?>) values.get("metrics");
-    assertEquals(0, map1.size());
-    handler.close();
-  }
-
-  @Test
-  public void testCompact() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true"),
-        resp);
-    NamedList<?> values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection1");
-    assertNotNull(nl);
-    Object o = nl.get("SEARCHER.new.errors");
-    assertNotNull(o); // counter type
-    assertTrue(o instanceof Number);
-    handler.close();
-  }
-
-  @Test
-  public void testPropertyFilter() throws Exception {
     assertQ(req("*:*"), "//result[@numFound='0']");
 
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedRequestsMetricName),
+        resp);
+    var metrics = resp.getValues().get("metrics");
+    MetricSnapshots snapshots = (MetricSnapshots) metrics;
+    assertEquals(1, snapshots.size());
+    assertEquals(expectedRequestsMetricName, snapshots.get(0).getMetadata().getPrometheusName());
+
+    handler.close();
+  }
+
+  @Test
+  public void testMultipleMetricNamesFiltering() throws Exception {
+    String expectedRequestsMetricName = "solr_core_requests";
+    String expectedSearcherMetricName = "solr_core_searcher_new";
+    var expected = Set.of(expectedRequestsMetricName, expectedSearcherMetricName);
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedRequestsMetricName + "," + expectedSearcherMetricName),
+        resp);
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(2, metrics.size());
+    Set<String> actual =
+        metrics.stream().map(m -> m.getMetadata().getPrometheusName()).collect(Collectors.toSet());
+    assertEquals(expected, actual);
+
+    handler.close();
+  }
+
+  @Test
+  public void testNonExistentMetricNameFiltering() throws Exception {
+    String nonexistentMetricName = "nonexistent_metric_name";
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -373,326 +105,81 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             "/admin/metrics",
             CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true",
-            "group",
-            "core",
-            "prefix",
-            "CACHE.searcher"),
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.METRIC_NAME_PARAM,
+            nonexistentMetricName),
         resp);
-    NamedList<?> values = resp.getValues();
-    assertNotNull(values.get("metrics"));
-    values = (NamedList<?>) values.get("metrics");
-    NamedList<?> nl = (NamedList<?>) values.get("solr.core.collection1");
-    assertNotNull(nl);
-    assertTrue(nl.size() > 0);
-    nl.forEach(
-        (k, v) -> {
-          assertTrue(v instanceof MapWriter);
-          Map<String, Object> map = new HashMap<>();
-          ((MapWriter) v).toMap(map);
-          assertTrue(map.size() > 2);
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(0, metrics.size());
+    handler.close();
+  }
+
+  @Test
+  public void testLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "QUERY"),
+        resp);
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertEquals("QUERY", dp.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+                  });
         });
 
-    resp = new SolrQueryResponse();
+    handler.close();
+  }
+
+  @Test
+  public void testMultipleLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
         req(
             CommonParams.QT,
             "/admin/metrics",
             CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true",
-            "group",
-            "core",
-            "prefix",
-            "CACHE.searcher",
-            "property",
-            "inserts",
-            "property",
-            "size"),
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "QUERY" + "," + "SEARCHER"),
         resp);
-    values = resp.getValues();
-    values = (NamedList<?>) values.get("metrics");
-    nl = (NamedList<?>) values.get("solr.core.collection1");
-    assertNotNull(nl);
-    assertTrue(nl.size() > 0);
-    nl.forEach(
-        (k, v) -> {
-          assertTrue(v instanceof MapWriter);
-          Map<String, Object> map = new HashMap<>();
-          ((MapWriter) v).toMap(map);
-          assertEquals("k=" + k + ", v=" + map, 2, map.size());
-          assertNotNull(map.get("inserts"));
-          assertNotNull(map.get("size"));
+
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertTrue(
+                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("QUERY")
+                            || dp.getLabels()
+                                .get(MetricsHandler.CATEGORY_PARAM)
+                                .equals("SEARCHER"));
+                  });
         });
-    handler.close();
-  }
-
-  @Test
-  public void testKeyMetrics() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-
-    String key1 = "solr.core.collection1:CACHE.core.fieldCache";
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            key1),
-        resp);
-    NamedList<?> values = resp.getValues();
-    Object val = values.findRecursive("metrics", key1);
-    assertNotNull(val);
-    assertTrue(val instanceof MapWriter);
-    assertTrue(((MapWriter) val)._size() >= 2);
-
-    String key2 = "solr.core.collection1:CACHE.core.fieldCache:entries_count";
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            key2),
-        resp);
-    val = resp.getValues()._get("metrics/" + key2, null);
-    assertNotNull(val);
-    assertTrue(val instanceof Number);
-
-    String key3 = "solr.jetty:solrtest_foo\\:bar";
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            key3),
-        resp);
-
-    val = resp.getValues()._get("metrics/" + key3, null);
-    assertNotNull(val);
-    assertTrue(val instanceof Number);
-    assertEquals(3, ((Number) val).intValue());
-
-    // test multiple keys
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            key1,
-            MetricsHandler.KEY_PARAM,
-            key2,
-            MetricsHandler.KEY_PARAM,
-            key3),
-        resp);
-
-    val = resp.getValues()._get("metrics/" + key1, null);
-    assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key2, null);
-    assertNotNull(val);
-    val = resp.getValues()._get("metrics/" + key3, null);
-    assertNotNull(val);
-
-    String key4 = "solr.core.collection1:QUERY./select.requestTimes:1minRate";
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            key4),
-        resp);
-    // the key contains a slash, need explicit list of path elements
-    val = resp.getValues()._get(Arrays.asList("metrics", key4), null);
-    assertNotNull(val);
-    assertTrue(val instanceof Number);
-
-    // test errors
-
-    // invalid keys
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            "foo",
-            MetricsHandler.KEY_PARAM,
-            "foo:bar:baz:xyz"),
-        resp);
-    values = resp.getValues();
-    NamedList<?> metrics = (NamedList<?>) values.get("metrics");
-    assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo"));
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz:xyz"));
-
-    // unknown registry
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            "foo:bar:baz"),
-        resp);
-    values = resp.getValues();
-    metrics = (NamedList<?>) values.get("metrics");
-    assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "foo:bar:baz"));
-
-    // unknown metric
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.KEY_PARAM,
-            "solr.jetty:unknown:baz"),
-        resp);
-    values = resp.getValues();
-    metrics = (NamedList<?>) values.get("metrics");
-    assertEquals(0, metrics.size());
-    assertNotNull(values.findRecursive("errors", "solr.jetty:unknown:baz"));
 
     handler.close();
   }
 
   @Test
-  @SuppressWarnings("unchecked")
-  public void testExprMetrics() throws Exception {
-    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
-
-    String key1 = "solr\\.core\\..*:.*/select\\.request.*:.*Rate";
-    SolrQueryResponse resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.EXPR_PARAM,
-            key1),
-        resp);
-    // response structure is like in the case of non-key params
-    Object val =
-        resp.getValues()
-            .findRecursive("metrics", "solr.core.collection1", "QUERY./select.requestTimes");
-    assertNotNull(val);
-    assertTrue(val instanceof MapWriter);
-    Map<String, Object> map = new HashMap<>();
-    ((MapWriter) val).toMap(map);
-    assertEquals(map.toString(), 4, map.size()); // mean, 1, 5, 15
-    assertNotNull(map.toString(), map.get("meanRate"));
-    assertNotNull(map.toString(), map.get("1minRate"));
-    assertNotNull(map.toString(), map.get("5minRate"));
-    assertNotNull(map.toString(), map.get("15minRate"));
-    assertEquals(map.toString(), ((Number) map.get("1minRate")).doubleValue(), 0.0, 0.0);
-    map.clear();
-
-    String key2 = "solr\\.core\\..*:.*/select\\.request.*";
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.EXPR_PARAM,
-            key2),
-        resp);
-    // response structure is like in the case of non-key params
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
-    assertNotNull(val);
-    Object v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requestTimes");
-    assertNotNull(v);
-    assertTrue(v instanceof MapWriter);
-    ((MapWriter) v).toMap(map);
-    assertEquals(map.toString(), 14, map.size());
-    assertNotNull(map.toString(), map.get("1minRate"));
-    assertEquals(map.toString(), ((Number) map.get("1minRate")).doubleValue(), 0.0, 0.0);
-    map.clear();
-    // select requests counter
-    v = ((SimpleOrderedMap<Object>) val).get("QUERY./select.requests");
-    assertNotNull(v);
-    assertTrue(v instanceof Number);
-
-    // test multiple expressions producing overlapping metrics - should be no dupes
-
-    // this key matches also sub-metrics of /select, eg. /select[shard], ...
-    String key3 = "solr\\.core\\..*:.*/select.*\\.requestTimes:count";
-    resp = new SolrQueryResponse();
-    // ORDER OF PARAMS MATTERS HERE! see the refguide
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.EXPR_PARAM,
-            key2,
-            MetricsHandler.EXPR_PARAM,
-            key1,
-            MetricsHandler.EXPR_PARAM,
-            key3),
-        resp);
-    val = resp.getValues().findRecursive("metrics", "solr.core.collection1");
-    assertNotNull(val);
-    // for requestTimes only the full set of values from the first expr should be present
-    assertNotNull(val);
-    SimpleOrderedMap<Object> values = (SimpleOrderedMap<Object>) val;
-    assertEquals(values.jsonStr(), 3, values.size());
-    v = values.get("QUERY./select.requestTimes");
-    assertTrue(v instanceof MapWriter);
-    ((MapWriter) v).toMap(map);
-    assertTrue(map.toString(), map.containsKey("count"));
-    map.clear();
-    v = values.get("QUERY./select[shard].requestTimes");
-    assertTrue(v instanceof MapWriter);
-    ((MapWriter) v).toMap(map);
-    assertTrue(map.toString(), map.containsKey("count"));
-  }
-
-  @Test
-  public void testMetricsUnload() throws Exception {
-
-    SolrCore core = h.getCoreContainer().getCore("collection1");
-    // .getRequestHandlers().put("/dumphandler", new DumpRequestHandler());
-    RefreshablePluginHolder pluginHolder = null;
-    try {
-      PluginInfo info =
-          new PluginInfo(
-              SolrRequestHandler.TYPE,
-              Map.of("name", "/dumphandler", "class", DumpRequestHandler.class.getName()));
-      DumpRequestHandler requestHandler = new DumpRequestHandler();
-      requestHandler.gaugevals = Map.of("d_k1", "v1", "d_k2", "v2");
-      pluginHolder = new RefreshablePluginHolder(info, requestHandler);
-      core.getRequestHandlers().put("/dumphandler", pluginHolder);
-
-    } finally {
-      core.close();
-    }
-
+  public void testNonExistentLabelFiltering() throws Exception {
     MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
     SolrQueryResponse resp = new SolrQueryResponse();
@@ -701,121 +188,76 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
             CommonParams.QT,
             "/admin/metrics",
             CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true",
-            "key",
-            "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CORE_PARAM,
+            "nonexistent_core_name"),
         resp);
 
-    assertEquals(
-        "v1",
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k1"),
-                null));
-    assertEquals(
-        "v2",
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k2"),
-                null));
-    pluginHolder.closeHandler();
-    resp = new SolrQueryResponse();
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(0, metrics.size());
+    handler.close();
+  }
+
+  @Test
+  public void testMixedLabelFiltering() throws Exception {
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
+
+    assertQ(req("*:*"), "//result[@numFound='0']");
+
+    SolrQueryResponse resp = new SolrQueryResponse();
     handler.handleRequestBody(
         req(
             CommonParams.QT,
             "/admin/metrics",
             CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true",
-            "key",
-            "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CORE_PARAM,
+            "collection1",
+            MetricsHandler.CATEGORY_PARAM,
+            "SEARCHER"),
         resp);
 
-    assertNull(
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k1"),
-                null));
-    assertNull(
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k2"),
-                null));
-
-    DumpRequestHandler requestHandler = new DumpRequestHandler();
-    requestHandler.gaugevals = Map.of("d_k1", "v1.1", "d_k2", "v2.1");
-    pluginHolder.reset(requestHandler);
-    resp = new SolrQueryResponse();
-    handler.handleRequestBody(
-        req(
-            CommonParams.QT,
-            "/admin/metrics",
-            CommonParams.WT,
-            "json",
-            MetricsHandler.COMPACT_PARAM,
-            "true",
-            "key",
-            "solr.core.collection1:QUERY./dumphandler.dumphandlergauge"),
-        resp);
-
-    assertEquals(
-        "v1.1",
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k1"),
-                null));
-    assertEquals(
-        "v2.1",
-        resp.getValues()
-            ._getStr(
-                Arrays.asList(
-                    "metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge", "d_k2"),
-                null));
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    metrics.forEach(
+        (ms) -> {
+          ms.getDataPoints()
+              .forEach(
+                  (dp) -> {
+                    assertTrue(
+                        dp.getLabels().get(MetricsHandler.CATEGORY_PARAM).equals("SEARCHER")
+                            && dp.getLabels().get(MetricsHandler.CORE_PARAM).equals("collection1"));
+                  });
+        });
 
     handler.close();
   }
 
-  static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
+  @Test
+  public void testMetricNamesAndLabelFiltering() throws Exception {
+    String expectedMetricName = "solr_core_segments";
+    MetricsHandler handler = new MetricsHandler(h.getCoreContainer());
 
-    private DumpRequestHandler rh;
-    private SolrMetricsContext metricsInfo;
+    assertQ(req("*:*"), "//result[@numFound='0']");
 
-    public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
-      super(info);
-      this.rh = rh;
-    }
+    SolrQueryResponse resp = new SolrQueryResponse();
+    handler.handleRequestBody(
+        req(
+            CommonParams.QT,
+            "/admin/metrics",
+            CommonParams.WT,
+            MetricsHandler.PROMETHEUS_METRICS_WT,
+            MetricsHandler.CATEGORY_PARAM,
+            "CORE",
+            MetricsHandler.METRIC_NAME_PARAM,
+            expectedMetricName),
+        resp);
 
-    @Override
-    public boolean isLoaded() {
-      return true;
-    }
-
-    void closeHandler() throws Exception {
-      this.metricsInfo = rh.getSolrMetricsContext();
-      //      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
-      //        //this created a new child metrics
-      //        metricsInfo = metricsInfo.getParent();
-      //      }
-      this.rh.close();
-    }
-
-    void reset(DumpRequestHandler rh) {
-      this.rh = rh;
-      if (metricsInfo != null) this.rh.initializeMetrics(metricsInfo, "/dumphandler");
-    }
-
-    @Override
-    public SolrRequestHandler get() {
-      return rh;
-    }
+    var metrics = (MetricSnapshots) resp.getValues().get("metrics");
+    assertEquals(1, metrics.size());
+    var actualDatapoint = metrics.get(0).getDataPoints().getFirst();
+    assertEquals(expectedMetricName, metrics.get(0).getMetadata().getPrometheusName());
+    assertEquals("CORE", actualDatapoint.getLabels().get(MetricsHandler.CATEGORY_PARAM));
+    handler.close();
   }
 
   public static class DumpRequestHandler extends RequestHandlerBase {
@@ -834,10 +276,8 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-      super.initializeMetrics(parentContext, scope);
-      MetricsMap metrics = new MetricsMap(map -> gaugevals.forEach((k, v) -> map.putNoEx(k, v)));
-      solrMetricsContext.gauge(metrics, true, "dumphandlergauge", getCategory().toString(), scope);
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      super.initializeMetrics(parentContext, attributes);
     }
 
     @Override

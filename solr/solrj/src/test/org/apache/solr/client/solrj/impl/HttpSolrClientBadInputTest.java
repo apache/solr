@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,15 +35,12 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    JettyConfig jettyConfig =
-        JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client =
-        getHttpSolrClient(jetty.getBaseUrl().toString() + "/" + ANY_COLLECTION)) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl(), ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
@@ -69,7 +67,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
           });
     }
 
-    try (SolrClient client = getHttpSolrClient(jetty.getBaseUrl().toString())) {
+    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

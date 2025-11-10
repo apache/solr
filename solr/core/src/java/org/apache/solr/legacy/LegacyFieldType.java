@@ -114,8 +114,7 @@ public final class LegacyFieldType extends FieldType {
     if (!super.equals(obj)) {
       return false;
     }
-    if (!(obj instanceof LegacyFieldType)) return false;
-    LegacyFieldType other = (LegacyFieldType) obj;
+    if (!(obj instanceof LegacyFieldType other)) return false;
     if (numericPrecisionStep != other.numericPrecisionStep) return false;
     return numericType == other.numericType;
   }

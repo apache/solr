@@ -24,6 +24,7 @@ public interface QueryElevationParams {
   String FORCE_ELEVATION = "forceElevation";
   String IDS = "elevateIds";
   String EXCLUDE = "excludeIds";
+
   /**
    * The name of the field that editorial results will be written out as when using the
    * QueryElevationComponent, which automatically configures the EditorialMarkerFactory. The default

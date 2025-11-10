@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -43,7 +43,7 @@ public class TestV2Request extends SolrCloudTestCase {
   public void setupCluster() throws Exception {
     configureCluster(4)
         .withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+        .addConfig("config", getFile("solrj/solr/collection1/conf"))
         .configure();
   }
 
@@ -54,7 +54,7 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.GET)
             .build()
             .process(cluster.getSolrClient());
-    List<?> l = (List<?>) rsp._get("nodes", null);
+    List<?> l = (List<?>) rsp._get("nodes");
     assertNotNull(l);
     assertFalse(l.isEmpty());
   }
@@ -164,7 +164,7 @@ public class TestV2Request extends SolrCloudTestCase {
 
     try (SolrClient client1 = new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
       V2Response rsp = v2r.process(client1);
-      assertEquals("0", rsp._getStr("responseHeader/status", null));
+      assertEquals("0", rsp._getStr("responseHeader/status"));
     }
   }
 }

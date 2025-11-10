@@ -37,6 +37,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
@@ -50,12 +51,19 @@ import org.apache.solr.legacy.LegacyIntField;
 import org.apache.solr.legacy.LegacyLongField;
 import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.apache.solr.util.RandomMergePolicy;
 
 public class TestUninvertingReader extends SolrTestCase {
 
+  private static IndexWriterConfig newIndexConfig() {
+    // don't allow random doc re-orders; this test isn't tolerant to that
+    final var allowMockMP = false;
+    return newIndexWriterConfig(null).setMergePolicy(new RandomMergePolicy(allowMockMP));
+  }
+
   public void testSortedSetInteger() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", 5, Field.Store.NO));
@@ -78,12 +86,12 @@ public class TestUninvertingReader extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToInt(value));
@@ -97,7 +105,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetFloat() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyIntField("foo", Float.floatToRawIntBits(5f), Field.Store.NO));
@@ -121,12 +129,12 @@ public class TestUninvertingReader extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(Float.floatToRawIntBits(-3f), LegacyNumericUtils.prefixCodedToInt(value));
@@ -140,7 +148,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetLong() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", 5, Field.Store.NO));
@@ -163,12 +171,12 @@ public class TestUninvertingReader extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(-3, LegacyNumericUtils.prefixCodedToLong(value));
@@ -182,7 +190,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetDouble() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     doc.add(new LegacyLongField("foo", Double.doubleToRawLongBits(5d), Field.Store.NO));
@@ -205,12 +213,12 @@ public class TestUninvertingReader extends SolrTestCase {
 
     assertEquals(0, v.nextDoc());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(1, v.docValueCount());
 
     assertEquals(1, v.nextDoc());
     assertEquals(0, v.nextOrd());
     assertEquals(1, v.nextOrd());
-    assertEquals(SortedSetDocValues.NO_MORE_ORDS, v.nextOrd());
+    assertEquals(2, v.docValueCount());
 
     BytesRef value = v.lookupOrd(0);
     assertEquals(Double.doubleToRawLongBits(-3d), LegacyNumericUtils.prefixCodedToLong(value));
@@ -227,7 +235,7 @@ public class TestUninvertingReader extends SolrTestCase {
    */
   public void testSortedSetIntegerManyValues() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     final LegacyFieldType NO_TRIE_TYPE = new LegacyFieldType(LegacyIntField.TYPE_NOT_STORED);
     NO_TRIE_TYPE.setNumericPrecisionStep(Integer.MAX_VALUE);
@@ -328,7 +336,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testSortedSetEmptyIndex() throws IOException {
     final Directory dir = newDirectory();
-    final IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    final IndexWriter iw = new IndexWriter(dir, newIndexConfig());
     iw.close();
 
     final Map<String, Type> UNINVERT_MAP = new LinkedHashMap<>();
@@ -364,7 +372,7 @@ public class TestUninvertingReader extends SolrTestCase {
 
   public void testFieldInfos() throws IOException {
     Directory dir = newDirectory();
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));
+    IndexWriter iw = new IndexWriter(dir, newIndexConfig());
 
     Document doc = new Document();
     BytesRef idBytes = new BytesRef("id");

@@ -16,18 +16,18 @@
  */
 package org.apache.solr.security;
 
+import io.opentelemetry.api.common.Attributes;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
@@ -40,7 +40,8 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.api.ModifyMultiPluginAuthConfigAPI;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpHeader;
 
 /**
  * Authentication plugin that supports multiple Authorization schemes, such as Bearer and Basic. The
@@ -59,6 +60,8 @@ public class MultiAuthPlugin extends AuthenticationPlugin
   private static final String UNKNOWN_SCHEME = "";
 
   private final Map<String, AuthenticationPlugin> pluginMap = new LinkedHashMap<>();
+  private final Map<String, String> realms = new LinkedHashMap<>();
+  private final List<String> WWWAuthenticateHeaders = new ArrayList<>();
   private final ResourceLoader loader;
   // the first of our plugins that allows anonymous requests
   private AuthenticationPlugin allowsUnknown = null;
@@ -128,11 +131,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
 
     List<Object> schemeList = (List<Object>) o;
-    // if you only have one scheme, then you don't need to use this class
-    if (schemeList.size() < 2) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Invalid config: MultiAuthPlugin requires at least two schemes!");
-    }
 
     for (Object s : schemeList) {
       if (!(s instanceof Map)) {
@@ -141,6 +139,7 @@ public class MultiAuthPlugin extends AuthenticationPlugin
       }
       initPluginForScheme((Map<String, Object>) s);
     }
+    initWWWAuthenticateHeaders();
   }
 
   protected void initPluginForScheme(Map<String, Object> schemeMap) {
@@ -158,6 +157,11 @@ public class MultiAuthPlugin extends AuthenticationPlugin
           ErrorCode.SERVER_ERROR, "'class' is a required attribute: " + schemeMap);
     }
 
+    String realm = (String) schemeConfig.remove("realm");
+    if (!StrUtils.isNullOrEmpty(realm)) {
+      realms.put(scheme, realm);
+    }
+
     AuthenticationPlugin pluginForScheme = loader.newInstance(clazz, AuthenticationPlugin.class);
     pluginForScheme.init(schemeConfig);
     pluginMap.put(scheme.toLowerCase(Locale.ROOT), pluginForScheme);
@@ -171,11 +175,26 @@ public class MultiAuthPlugin extends AuthenticationPlugin
     }
   }
 
-  @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    for (AuthenticationPlugin plugin : pluginMap.values()) {
-      plugin.initializeMetrics(parentContext, scope);
+  private void initWWWAuthenticateHeaders() {
+    for (String scheme : pluginMap.keySet()) {
+      String realm = realms.get(scheme);
+      String realmStr = realm == null ? "" : " realm=\"" + realm + "\"";
+      WWWAuthenticateHeaders.add(scheme + realmStr);
     }
+  }
+
+  private void addWWWAuthenticateHeaders(HttpServletResponse response) {
+    for (String wwwAuthHeader : WWWAuthenticateHeaders) {
+      response.addHeader(HttpHeader.WWW_AUTHENTICATE.asString(), wwwAuthHeader);
+    }
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    for (AuthenticationPlugin plugin : pluginMap.values()) {
+      plugin.initializeMetrics(parentContext, Attributes.empty());
+    }
+    super.initializeMetrics(parentContext, attributes);
   }
 
   private String getSchemeFromAuthHeader(final String authHeader) {
@@ -202,14 +221,23 @@ public class MultiAuthPlugin extends AuthenticationPlugin
         pluginInRequest.set(plugin);
         result = plugin.doAuthenticate(request, response, filterChain);
       } else {
+        addWWWAuthenticateHeaders(response);
         response.sendError(ErrorCode.UNAUTHORIZED.code, "No Authorization header");
       }
       return result;
     }
 
     final String scheme = getSchemeFromAuthHeader(authHeader);
-    final AuthenticationPlugin plugin = pluginMap.get(scheme);
+    AuthenticationPlugin plugin = pluginMap.get(scheme);
+
+    if (plugin == null && scheme.equalsIgnoreCase("basic")) {
+      // In case no plugin found try looking up custom scheme xBasic when scheme is Basic, so that
+      // clients that use "Basic ..." are resolved with plugin "xBasic ..." if configured
+      plugin = pluginMap.get("x" + scheme);
+    }
+
     if (plugin == null) {
+      addWWWAuthenticateHeaders(response);
       response.sendError(
           ErrorCode.UNAUTHORIZED.code, "Authorization scheme '" + scheme + "' not supported!");
       return false;
@@ -244,16 +272,6 @@ public class MultiAuthPlugin extends AuthenticationPlugin
       plugin.closeRequest();
       pluginInRequest.remove();
     }
-  }
-
-  @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    for (AuthenticationPlugin plugin : pluginMap.values()) {
-      if (plugin.interceptInternodeRequest(httpRequest, httpContext)) {
-        return true; // first one to fire wins
-      }
-    }
-    return false;
   }
 
   @Override

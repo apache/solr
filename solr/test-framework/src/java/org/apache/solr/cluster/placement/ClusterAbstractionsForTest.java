@@ -96,8 +96,7 @@ class ClusterAbstractionsForTest {
     @Override
     public boolean equals(Object obj) {
       if (obj == this) return true;
-      if (!(obj instanceof NodeImpl)) return false;
-      NodeImpl other = (NodeImpl) obj;
+      if (!(obj instanceof NodeImpl other)) return false;
       return Objects.equals(this.nodeName, other.nodeName);
     }
 
@@ -109,6 +108,7 @@ class ClusterAbstractionsForTest {
 
   static class SolrCollectionImpl implements SolrCollection {
     private final String collectionName;
+
     /** Map from {@link Shard#getShardName()} to {@link Shard} */
     private Map<String, Shard> shards;
 
@@ -218,8 +218,7 @@ class ClusterAbstractionsForTest {
     @Override
     public boolean equals(Object obj) {
       if (obj == this) return true;
-      if (!(obj instanceof ShardImpl)) return false;
-      ShardImpl other = (ShardImpl) obj;
+      if (!(obj instanceof ShardImpl other)) return false;
       return Objects.equals(this.shardName, other.shardName)
           && Objects.equals(this.collection, other.collection)
           && Objects.equals(this.shardState, other.shardState)
@@ -230,6 +229,11 @@ class ClusterAbstractionsForTest {
     @Override
     public int hashCode() {
       return Objects.hash(shardName, collection, shardState);
+    }
+
+    @Override
+    public String toString() {
+      return "ShardImpl{" + "shardName='" + shardName + '\'' + '}';
     }
   }
 
@@ -289,8 +293,7 @@ class ClusterAbstractionsForTest {
     @Override
     public boolean equals(Object obj) {
       if (obj == this) return true;
-      if (!(obj instanceof ReplicaImpl)) return false;
-      ReplicaImpl other = (ReplicaImpl) obj;
+      if (!(obj instanceof ReplicaImpl other)) return false;
       return Objects.equals(this.replicaName, other.replicaName)
           && Objects.equals(this.coreName, other.coreName)
           && Objects.equals(this.shard, other.shard)

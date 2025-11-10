@@ -1,5 +1,6 @@
 = Implicit Request Handlers
 :page-children: system-info-handler
+:tabs-sync-option:
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -73,17 +74,6 @@ This handler must have a collection name in the path to the endpoint.
 |`solr/<collection>/admin/luke` |{solr-javadocs}/core/org/apache/solr/handler/admin/LukeRequestHandler.html[LukeRequestHandler] |`_ADMIN_LUKE`
 |===
 
-MBeans:: Provide info about all registered {solr-javadocs}/core/org/apache/solr/core/SolrInfoBean.html[SolrInfoMBeans].
-This handler must have a collection name in the path to the endpoint.
-+
-*Documentation*: xref:deployment-guide:mbean-request-handler.adoc[]
-+
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/mbeans` |{solr-javadocs}/core/org/apache/solr/handler/admin/SolrInfoMBeanHandler.html[SolrInfoMBeanHandler] |`_ADMIN_MBEANS`
-|===
-
 Ping:: Health check.
 This handler must have a collection name in the path to the endpoint.
 +
@@ -93,15 +83,6 @@ This handler must have a collection name in the path to the endpoint.
 |===
 |API Endpoint |Class & Javadocs |Paramset
 |`solr/<collection>/admin/ping` |{solr-javadocs}/core/org/apache/solr/handler/PingRequestHandler.html[PingRequestHandler] |`_ADMIN_PING`
-|===
-
-Plugins:: Return info about all registered plugins.
-This handler must have a collection name in the path to the endpoint.
-+
-[cols="3*.",frame=none,grid=cols,options="header"]
-|===
-|API Endpoint |Class & Javadocs |Paramset
-|`solr/<collection>/admin/plugins` |{solr-javadocs}/core/org/apache/solr/handler/admin/PluginInfoHandler.html[PluginInfoHandler] | None.
 |===
 
 System Properties:: Return JRE system properties.
@@ -326,28 +307,26 @@ To include the expanded paramset in the response, as well as the effective param
 
 For example, for the `/export` request handler, you can make a request like this:
 
-[.dynamic-tabs]
---
-[example.tab-pane#v1expandparams]
+[tabs#expandparams]
+======
+V1 API::
++
 ====
-[.tab-label]*V1 API*
-
 [source,bash]
 ----
 http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
 ----
 ====
 
-[example.tab-pane#v2expandparams]
+V2 API::
++
 ====
-[.tab-label]*V2 API*
-
 [source,bash]
 ----
 http://localhost:8983/api/collections/gettingstarted/config/requestHandler?componentName=/export&expandParams=true
 ----
 ====
---
+======
 
 The response will look similar to:
 

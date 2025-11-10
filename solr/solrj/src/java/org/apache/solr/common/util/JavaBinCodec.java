@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.LongAdder;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.apache.solr.client.api.util.ReflectWritable;
 import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
@@ -94,7 +95,7 @@ public class JavaBinCodec implements PushWriter {
       SOLRDOCLST = 12,
       BYTEARR = 13,
       ITERATOR = 14,
-      /** this is a special tag signals an end. No value is associated with it */
+      /* this is a special tag signals an end. No value is associated with it */
       END = 15,
       SOLRINPUTDOC = 16,
       MAP_ENTRY_ITER = 17,
@@ -102,6 +103,7 @@ public class JavaBinCodec implements PushWriter {
       MAP_ENTRY = 19,
       UUID = 20, // This is reserved to be used only in LogCodec
       // types that combine tag + length (or other info) in a single byte
+      PRIMITIVE_ARR = 21,
       TAG_AND_LEN = (byte) (1 << 5),
       STR = (byte) (1 << 5),
       SINT = (byte) (2 << 5),
@@ -121,6 +123,9 @@ public class JavaBinCodec implements PushWriter {
   private boolean alreadyMarshalled;
   private boolean alreadyUnmarshalled;
   protected boolean readStringAsCharSeq = false;
+
+  private boolean readMapAsNamedList =
+      EnvUtils.getPropertyAsBool("solr.solrj.javabin.readMapAsNamedList", false);
 
   public JavaBinCodec() {
     resolver = null;
@@ -268,10 +273,11 @@ public class JavaBinCodec implements PushWriter {
         if (writeKnownType(tmpVal)) return;
       }
     }
-    // Fallback to do *something*.
+    // Fallback to do *something*, either use a reflection writer or write as a string
+    // representation.
     // note: if the user of this codec doesn't want this (e.g. UpdateLog) it can supply an
     // ObjectResolver that does something else like throw an exception.
-    writeVal(val.getClass().getName() + ':' + val.toString());
+    writeVal(Utils.getReflectWriter(val));
   }
 
   protected static final Object END_OBJ = new Object();
@@ -346,6 +352,8 @@ public class JavaBinCodec implements PushWriter {
         return readMapEntry(dis);
       case MAP_ENTRY_ITER:
         return readMapIter(dis);
+      case PRIMITIVE_ARR:
+        return readPrimitiveArray(dis);
     }
 
     throw new RuntimeException("Unknown type " + tagByte);
@@ -391,6 +399,10 @@ public class JavaBinCodec implements PushWriter {
       writeMap((MapWriter) val);
       return true;
     }
+    if (val instanceof ReflectWritable) {
+      writeVal(Utils.getReflectWriter(val));
+      return true;
+    }
     if (val instanceof Map) {
       writeMap((Map) val);
       return true;
@@ -432,7 +444,148 @@ public class JavaBinCodec implements PushWriter {
       writeBoolean(((AtomicBoolean) val).get());
       return true;
     }
+    if (val instanceof float[] ff) {
+      writeFloatArr(ff);
+      return true;
+    }
+    if (val instanceof int[] ii) {
+      writeIntArr(ii);
+      return true;
+    }
+    if (val instanceof long[] ll) {
+      writeLongArr(ll);
+      return true;
+    }
+    if (val instanceof double[] dd) {
+      writeDoubleArr(dd);
+      return true;
+    }
+    if (val instanceof short[] ss) {
+      writeShortArr(ss);
+      return true;
+    }
+    if (val instanceof boolean[] bb) {
+      writeBoolArr(bb);
+      return true;
+    }
     return false;
+  }
+
+  public Object readPrimitiveArray(DataInputInputStream dis) throws IOException {
+    tagByte = dis.readByte();
+    int len = readVInt(dis);
+    switch (tagByte) {
+      case FLOAT:
+        {
+          float[] v = new float[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readFloat();
+          }
+          return v;
+        }
+      case INT:
+        {
+          int[] v = new int[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readInt();
+          }
+          return v;
+        }
+
+      case LONG:
+        {
+          long[] v = new long[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readLong();
+          }
+          return v;
+        }
+      case DOUBLE:
+        {
+          double[] v = new double[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readDouble();
+          }
+          return v;
+        }
+      case SHORT:
+        {
+          short[] v = new short[len];
+          for (int i = 0; i < len; i++) {
+            v[i] = dis.readShort();
+          }
+          return v;
+        }
+      case BOOL_TRUE:
+      case BOOL_FALSE:
+        {
+          boolean[] v = new boolean[len];
+          for (int i = 0; i < len; i++) {
+            byte b = dis.readByte();
+            v[i] = b == BOOL_FALSE ? false : true;
+          }
+          return v;
+        }
+      case BYTE:
+        {
+          // it should be possible to serialize byte[] in the new format as well
+          byte[] v = new byte[len];
+          dis.readFully(v);
+          return v;
+        }
+      default:
+        {
+          throw new RuntimeException("Invalid type : " + tagByte);
+        }
+    }
+  }
+
+  public void writePrimitiveArrHeader(byte tag, int len) throws IOException {
+    writeTag(PRIMITIVE_ARR);
+    writeTag(tag);
+    writeVInt(len, daos);
+  }
+
+  public void writeFloatArr(float[] vals) throws IOException {
+    writePrimitiveArrHeader(FLOAT, vals.length);
+    for (float f : vals) {
+      daos.writeFloat(f);
+    }
+  }
+
+  public void writeIntArr(int[] vals) throws IOException {
+    writePrimitiveArrHeader(INT, vals.length);
+    for (int i : vals) {
+      daos.writeInt(i);
+    }
+  }
+
+  public void writeDoubleArr(double[] vals) throws IOException {
+    writePrimitiveArrHeader(DOUBLE, vals.length);
+    for (double d : vals) {
+      daos.writeDouble(d);
+    }
+  }
+
+  public void writeLongArr(long[] vals) throws IOException {
+    writePrimitiveArrHeader(LONG, vals.length);
+    for (long l : vals) {
+      daos.writeLong(l);
+    }
+  }
+
+  public void writeBoolArr(boolean[] vals) throws IOException {
+    writePrimitiveArrHeader(BOOL_TRUE, vals.length);
+    for (boolean b : vals) {
+      writeBoolean(b);
+    }
+  }
+
+  public void writeShortArr(short[] vals) throws IOException {
+    writePrimitiveArrHeader(SHORT, vals.length);
+    for (short l : vals) {
+      daos.writeShort(l);
+    }
   }
 
   public class BinEntryWriter implements MapWriter.EntryWriter {
@@ -531,6 +684,7 @@ public class JavaBinCodec implements PushWriter {
     dis.readFully(arr);
     return arr;
   }
+
   // use this to ignore the writable interface because , child docs will ignore the fl flag
   // is it a good design?
   private boolean ignoreWritable = false;
@@ -697,9 +851,14 @@ public class JavaBinCodec implements PushWriter {
     return size < 0 ? new LinkedHashMap<>() : CollectionUtil.newLinkedHashMap(size);
   }
 
-  public Map<Object, Object> readMap(DataInputInputStream dis) throws IOException {
+  public Map<?, Object> readMap(DataInputInputStream dis) throws IOException {
     int sz = readVInt(dis);
-    return readMap(dis, sz);
+
+    if (readMapAsNamedList) {
+      return readMapAsSimpleOrderedMapForStringKeys(dis, sz);
+    } else {
+      return readMap(dis, sz);
+    }
   }
 
   protected Map<Object, Object> readMap(DataInputInputStream dis, int sz) throws IOException {
@@ -710,6 +869,17 @@ public class JavaBinCodec implements PushWriter {
       m.put(key, val);
     }
     return m;
+  }
+
+  protected Map<?, Object> readMapAsSimpleOrderedMapForStringKeys(DataInputInputStream dis, int sz)
+      throws IOException {
+    SimpleOrderedMap<Object> entries = new SimpleOrderedMap<>(sz);
+    for (int i = 0; i < sz; i++) {
+      Object key = readVal(dis);
+      Object val = readVal(dis);
+      entries.add((String) key, val); // using NL.add() since key won't repeat
+    }
+    return entries;
   }
 
   public final ItemWriter itemWriter =
@@ -880,8 +1050,7 @@ public class JavaBinCodec implements PushWriter {
         if (this == obj) {
           return true;
         }
-        if (obj instanceof Map.Entry<?, ?>) {
-          Entry<?, ?> entry = (Entry<?, ?>) obj;
+        if (obj instanceof Map.Entry<?, ?> entry) {
           return (this.getKey().equals(entry.getKey()) && this.getValue().equals(entry.getValue()));
         }
         return false;
@@ -1089,8 +1258,7 @@ public class JavaBinCodec implements PushWriter {
     } else if (val instanceof byte[]) {
       writeByteArray((byte[]) val, 0, ((byte[]) val).length);
       return true;
-    } else if (val instanceof ByteBuffer) {
-      ByteBuffer buf = (ByteBuffer) val;
+    } else if (val instanceof ByteBuffer buf) {
       writeByteArray(buf.array(), buf.arrayOffset() + buf.position(), buf.limit() - buf.position());
       return true;
     } else if (val == END_OBJ) {
@@ -1243,7 +1411,7 @@ public class JavaBinCodec implements PushWriter {
      * Examine and attempt to serialize the given object, using a {@link JavaBinCodec} to write it
      * to a stream.
      *
-     * @param o the object that the caller wants serialized.
+     * @param o the object that the caller wants to be serialized.
      * @param codec used to actually serialize {@code o}.
      * @return the object {@code o} itself if it could not be serialized, or {@code null} if the
      *     whole object was successfully serialized.
@@ -1286,5 +1454,12 @@ public class JavaBinCodec implements PushWriter {
     if (daos != null) {
       daos.flushBuffer();
     }
+  }
+
+  /**
+   * If set, Maps will be deserialized as {@link SimpleOrderedMap} instead of {@link LinkedHashMap}
+   */
+  public void readMapAsNamedList(boolean readMapAsNamedList) {
+    this.readMapAsNamedList = readMapAsNamedList;
   }
 }

@@ -26,7 +26,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.KnnFloatVectorField;
-import org.apache.lucene.document.KnnVectorField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.tests.util.TestUtil;
@@ -38,7 +37,6 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
-import org.hamcrest.MatcherAssert;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -353,11 +351,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
 
     // from /solr/core/src/test-files/solr/collection1/conf/schema.xml
-    KnnVectorField expectedIndexableField =
-        new KnnVectorField(
+    KnnFloatVectorField expectedIndexableField =
+        new KnnFloatVectorField(
             "vector", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.COSINE);
 
-    MatcherAssert.assertThat(
+    assertThat(
         ((KnnFloatVectorField) out.getField("vector")).vectorValue(),
         is(expectedIndexableField.vectorValue()));
 
@@ -365,12 +363,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         StreamSupport.stream(out.spliterator(), false)
             .filter(f -> (f.fieldType().stored() && f.name().equals("vector")))
             .collect(Collectors.toList());
-    MatcherAssert.assertThat(storedFields.size(), is(4));
+    assertThat(storedFields.size(), is(4));
 
-    MatcherAssert.assertThat(storedFields.get(0).numericValue(), is(1.1f));
-    MatcherAssert.assertThat(storedFields.get(1).numericValue(), is(2.1f));
-    MatcherAssert.assertThat(storedFields.get(2).numericValue(), is(3.1f));
-    MatcherAssert.assertThat(storedFields.get(3).numericValue(), is(4.1f));
+    assertThat(storedFields.get(0).numericValue(), is(1.1f));
+    assertThat(storedFields.get(1).numericValue(), is(2.1f));
+    assertThat(storedFields.get(2).numericValue(), is(3.1f));
+    assertThat(storedFields.get(3).numericValue(), is(4.1f));
   }
 
   @Test
@@ -384,11 +382,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
 
     // from /solr/core/src/test-files/solr/collection1/conf/schema.xml
-    KnnVectorField expectedDestination =
-        new KnnVectorField(
+    KnnFloatVectorField expectedDestination =
+        new KnnFloatVectorField(
             "vector2", new float[] {1.1f, 2.1f, 3.1f, 4.1f}, VectorSimilarityFunction.DOT_PRODUCT);
 
-    MatcherAssert.assertThat(
+    assertThat(
         ((KnnFloatVectorField) out.getField("vector2")).vectorValue(),
         is(expectedDestination.vectorValue()));
 
@@ -396,12 +394,12 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
         StreamSupport.stream(out.spliterator(), false)
             .filter(f -> (f.fieldType().stored() && f.name().equals("vector2")))
             .collect(Collectors.toList());
-    MatcherAssert.assertThat(storedFields.size(), is(4));
+    assertThat(storedFields.size(), is(4));
 
-    MatcherAssert.assertThat(storedFields.get(0).numericValue(), is(1.1f));
-    MatcherAssert.assertThat(storedFields.get(1).numericValue(), is(2.1f));
-    MatcherAssert.assertThat(storedFields.get(2).numericValue(), is(3.1f));
-    MatcherAssert.assertThat(storedFields.get(3).numericValue(), is(4.1f));
+    assertThat(storedFields.get(0).numericValue(), is(1.1f));
+    assertThat(storedFields.get(1).numericValue(), is(2.1f));
+    assertThat(storedFields.get(2).numericValue(), is(3.1f));
+    assertThat(storedFields.get(3).numericValue(), is(4.1f));
   }
 
   @Test
@@ -419,7 +417,7 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "ERROR: [doc=0] Error adding field 'vector3'='[1.1, 2.1, 3.1, 4.1]' msg=The copy field destination must be a DenseVectorField: vector_f_p"));
@@ -440,11 +438,11 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
             () -> {
               DocumentBuilder.toDocument(doc, core.getLatestSchema());
             });
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getMessage(),
         is(
             "ERROR: [doc=0] Error adding field 'vector4'='[1.1, 2.1, 3.1, 4.1]' msg=Error while creating field 'vector5{type=knn_vector5,properties=indexed,stored}' from value '[1.1, 2.1, 3.1, 4.1]'"));
-    MatcherAssert.assertThat(
+    assertThat(
         thrown.getCause().getCause().getMessage(),
         is(
             "incorrect vector dimension. The vector value has size 4 while it is expected a vector with size 5"));

@@ -20,7 +20,6 @@ package org.apache.solr.cli;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,8 +28,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -38,7 +40,6 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -47,8 +48,26 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HealthcheckTool extends SolrCloudTool {
+/** Supports healthcheck command in the bin/solr script. */
+public class HealthcheckTool extends ToolBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  private static final Option COLLECTION_NAME_OPTION =
+      Option.builder("c")
+          .longOpt("name")
+          .hasArg()
+          .argName("COLLECTION")
+          .required()
+          .desc("Name of the collection to check.")
+          .build();
+
+  @Override
+  public Options getOptions() {
+    return super.getOptions()
+        .addOption(COLLECTION_NAME_OPTION)
+        .addOption(CommonCLIOptions.CREDENTIALS_OPTION)
+        .addOptionGroup(getConnectionOptions());
+  }
 
   enum ShardState {
     healthy,
@@ -58,12 +77,22 @@ public class HealthcheckTool extends SolrCloudTool {
   }
 
   /** Requests health information about a specific collection in SolrCloud. */
-  public HealthcheckTool() {
-    this(CLIO.getOutStream());
+  public HealthcheckTool(ToolRuntime runtime) {
+    super(runtime);
   }
 
-  public HealthcheckTool(PrintStream stdout) {
-    super(stdout);
+  @Override
+  public void runImpl(CommandLine cli) throws Exception {
+    String zkHost = CLIUtils.getZkHost(cli);
+    if (zkHost == null) {
+      CLIO.err("Healthcheck tool only works in Solr Cloud mode.");
+      runtime.exit(1);
+    }
+    try (CloudHttp2SolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost)) {
+      echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
+      cloudSolrClient.connect();
+      runCloudTool(cloudSolrClient, cli);
+    }
   }
 
   @Override
@@ -71,12 +100,8 @@ public class HealthcheckTool extends SolrCloudTool {
     return "healthcheck";
   }
 
-  @Override
   protected void runCloudTool(CloudSolrClient cloudSolrClient, CommandLine cli) throws Exception {
-    SolrCLI.raiseLogLevelUnlessVerbose(cli);
-    String collection = cli.getOptionValue("collection");
-    if (collection == null)
-      throw new IllegalArgumentException("Must provide a collection to run a healthcheck against!");
+    String collection = cli.getOptionValue(COLLECTION_NAME_OPTION);
 
     log.debug("Running healthcheck for {}", collection);
 
@@ -85,15 +110,16 @@ public class HealthcheckTool extends SolrCloudTool {
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection == null || docCollection.getSlices() == null)
+    if (docCollection == null || docCollection.getSlices() == null) {
       throw new IllegalArgumentException("Collection " + collection + " not found!");
+    }
 
     Collection<Slice> slices = docCollection.getSlices();
 
     SolrQuery q = new SolrQuery("*:*");
     q.setRows(0);
     QueryResponse qr = cloudSolrClient.query(collection, q);
-    SolrCLI.checkCodeForAuthError(qr.getStatus());
+    CLIUtils.checkCodeForAuthError(qr.getStatus());
     String collErr = null;
     long docCount = -1;
     try {
@@ -123,12 +149,11 @@ public class HealthcheckTool extends SolrCloudTool {
         String replicaStatus;
         long numDocs = -1L;
 
-        ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(r);
-        String coreUrl = replicaCoreProps.getCoreUrl();
+        String coreUrl = r.getCoreUrl();
         boolean isLeader = coreUrl.equals(leaderUrl);
 
         // if replica's node is not live, its status is DOWN
-        String nodeName = replicaCoreProps.getNodeName();
+        String nodeName = r.getNodeName();
         if (nodeName == null || !liveNodes.contains(nodeName)) {
           replicaStatus = Replica.State.DOWN.toString();
         } else {
@@ -136,24 +161,31 @@ public class HealthcheckTool extends SolrCloudTool {
           q = new SolrQuery("*:*");
           q.setRows(0);
           q.set(DISTRIB, "false");
-          try (var solrClient = SolrCLI.getSolrClient(coreUrl)) {
-            qr = solrClient.query(q);
+          try (var solrClientForCollection =
+              CLIUtils.getSolrClient(
+                  coreUrl, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+            qr = solrClientForCollection.query(q);
             numDocs = qr.getResults().getNumFound();
-
-            NamedList<Object> systemInfo =
-                solrClient.request(
-                    new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-            uptime = SolrCLI.uptime((Long) systemInfo.findRecursive("jvm", "jmx", "upTimeMS"));
-            String usedMemory = (String) systemInfo.findRecursive("jvm", "memory", "used");
-            String totalMemory = (String) systemInfo.findRecursive("jvm", "memory", "total");
-            memory = usedMemory + " of " + totalMemory;
+            try (var solrClient =
+                CLIUtils.getSolrClient(
+                    r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
+              NamedList<Object> systemInfo =
+                  solrClient.request(
+                      new GenericSolrRequest(
+                          SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+              uptime =
+                  SolrCLI.uptime((Long) systemInfo._get(List.of("jvm", "jmx", "upTimeMS"), null));
+              String usedMemory = systemInfo._getStr(List.of("jvm", "memory", "used"), null);
+              String totalMemory = systemInfo._getStr(List.of("jvm", "memory", "total"), null);
+              memory = usedMemory + " of " + totalMemory;
+            }
 
             // if we get here, we can trust the state
-            replicaStatus = replicaCoreProps.getState();
+            replicaStatus = String.valueOf(r.getState());
           } catch (Exception exc) {
             log.error("ERROR: {} when trying to reach: {}", exc, coreUrl);
 
-            if (SolrCLI.checkCommunicationError(exc)) {
+            if (CLIUtils.checkCommunicationError(exc)) {
               replicaStatus = Replica.State.DOWN.toString();
             } else {
               replicaStatus = "error: " + exc;
@@ -167,8 +199,9 @@ public class HealthcheckTool extends SolrCloudTool {
       }
 
       ShardHealth shardHealth = new ShardHealth(shardName, replicaList);
-      if (ShardState.healthy != shardHealth.getShardState())
+      if (ShardState.healthy != shardHealth.getShardState()) {
         collectionIsHealthy = false; // at least one shard is un-healthy
+      }
 
       shardList.add(shardHealth.asMap());
     }
@@ -187,7 +220,7 @@ public class HealthcheckTool extends SolrCloudTool {
     new JSONWriter(arr, 2).write(report);
     echo(arr.toString());
   }
-} // end HealthcheckTool
+}
 
 class ReplicaHealth implements Comparable<ReplicaHealth> {
   String shard;
@@ -246,8 +279,7 @@ class ReplicaHealth implements Comparable<ReplicaHealth> {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (obj == null) return false;
-    if (!(obj instanceof ReplicaHealth)) return true;
-    ReplicaHealth that = (ReplicaHealth) obj;
+    if (!(obj instanceof ReplicaHealth that)) return true;
     return this.shard.equals(that.shard) && this.isLeader == that.isLeader;
   }
 

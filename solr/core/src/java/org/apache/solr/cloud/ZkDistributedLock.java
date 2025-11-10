@@ -39,8 +39,10 @@ import org.apache.zookeeper.Watcher;
 abstract class ZkDistributedLock implements DistributedLock {
   /** End of the lock node name prefix before the sequential part */
   static final char LOCK_PREFIX_SUFFIX = '_';
+
   /** Prefix of EPHEMERAL read lock node names */
   static final String READ_LOCK_PREFIX = "R" + LOCK_PREFIX_SUFFIX;
+
   /** Prefix of EPHEMERAL write lock node names */
   static final String WRITE_LOCK_PREFIX = "W" + LOCK_PREFIX_SUFFIX;
 

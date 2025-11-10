@@ -25,7 +25,9 @@ import static org.mockito.Mockito.when;
 import java.util.Map;
 import java.util.Optional;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.util.NamedList;
@@ -37,13 +39,14 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
-/** Unit tests for {@link ReplaceNodeAPI} */
+/** Unit tests for {@link ReplaceNode} */
 public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   private CoreContainer mockCoreContainer;
+  private ZkController mockZkController;
   private SolrQueryRequest mockQueryRequest;
   private SolrQueryResponse queryResponse;
-  private ReplaceNodeAPI replaceNodeApi;
+  private ReplaceNode replaceNodeApi;
   private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
   private ArgumentCaptor<ZkNodeProps> messageCapturer;
 
@@ -58,14 +61,15 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
     super.setUp();
 
     mockCoreContainer = mock(CoreContainer.class);
+    mockZkController = mock(ZkController.class);
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getDistributedCollectionCommandRunner())
-        .thenReturn(Optional.of(mockCommandRunner));
+    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
+    when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
     when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);
     queryResponse = new SolrQueryResponse();
-    replaceNodeApi = new ReplaceNodeAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+    replaceNodeApi = new ReplaceNode(mockCoreContainer, mockQueryRequest, queryResponse);
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
 
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
@@ -73,8 +77,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
-    ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-        new ReplaceNodeAPI.ReplaceNodeRequestBody("demoTargetNode", false, "async");
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", false, "async");
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 
@@ -102,8 +105,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
-    ReplaceNodeAPI.ReplaceNodeRequestBody requestBody =
-        new ReplaceNodeAPI.ReplaceNodeRequestBody("demoTargetNode", null, null);
+    final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null, null);
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
 

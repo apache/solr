@@ -37,6 +37,11 @@ public interface CollectionParams {
 
   String SOURCE_NODE = "sourceNode";
   String TARGET_NODE = "targetNode";
+  String SOURCE_NODES = "sourceNodes";
+  String TARGET_NODES = "targetNodes";
+
+  String NODES = "nodes";
+  String MAX_BALANCE_SKEW = "maxBalanceSkew";
 
   enum LockLevel {
     NONE(10, null),
@@ -96,7 +101,7 @@ public interface CollectionParams {
     ADDROLE(true, LockLevel.NONE),
     REMOVEROLE(true, LockLevel.NONE),
     CLUSTERPROP(true, LockLevel.NONE),
-    COLLECTIONPROP(true, LockLevel.COLLECTION),
+    COLLECTIONPROP(true, LockLevel.NONE), // atomic; no lock
     REQUESTSTATUS(false, LockLevel.NONE),
     DELETESTATUS(false, LockLevel.NONE),
     ADDREPLICA(true, LockLevel.SHARD),
@@ -106,8 +111,8 @@ public interface CollectionParams {
     DISTRIBUTEDAPIPROCESSING(false, LockLevel.NONE),
     LIST(false, LockLevel.NONE),
     CLUSTERSTATUS(false, LockLevel.NONE),
-    ADDREPLICAPROP(true, LockLevel.REPLICA),
-    DELETEREPLICAPROP(true, LockLevel.REPLICA),
+    ADDREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
+    DELETEREPLICAPROP(true, LockLevel.NONE), // atomic; no lock
     BALANCESHARDUNIQUE(true, LockLevel.COLLECTION),
     REBALANCELEADERS(true, LockLevel.COLLECTION),
     MODIFYCOLLECTION(true, LockLevel.COLLECTION),
@@ -126,6 +131,10 @@ public interface CollectionParams {
     MOCK_SHARD_TASK(false, LockLevel.SHARD),
     // TODO when we have a node level lock use it here
     REPLACENODE(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    MIGRATE_REPLICAS(true, LockLevel.NONE),
+    // TODO when we have a node level lock use it here
+    BALANCE_REPLICAS(true, LockLevel.NONE),
     DELETENODE(true, LockLevel.NONE),
     MOCK_REPLICA_TASK(false, LockLevel.REPLICA),
     NONE(false, LockLevel.NONE),

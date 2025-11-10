@@ -118,7 +118,7 @@ The distribution visualizes the probability of the different total returns from 
 
 image::math-expressions/randomwalk5.png[]
 
-The `probability` and `cumulativeProbability` functions can then used to learn more about the `empiricalDistribution`.
+The `probability` and `cumulativeProbability` functions can then be used to learn more about the `empiricalDistribution`.
 For example the `probability` function can be used to calculate the probability of a non-negative return from 100 days of stock returns.
 
 The example below uses the `probability` function to return the probability of a return between the range of 0 and 40 from the `empiricalDistribution` of the simulation.
@@ -166,7 +166,7 @@ image::math-expressions/corrsim2.png[]
 
 === Covariance Matrix
 
-A covariance matrix is actually whats needed by the `multiVariateNormalDistribution` as it contains both the variance of the two stock return vectors and the covariance between the two vectors.
+A covariance matrix is actually what's needed by the `multiVariateNormalDistribution` as it contains both the variance of the two stock return vectors and the covariance between the two vectors.
 The `cov` function will compute the covariance matrix for the columns of a matrix.
 
 The example below demonstrates how to compute the covariance matrix by adding the `all` and `cvx` vectors as rows to a matrix.

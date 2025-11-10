@@ -26,25 +26,25 @@ import org.apache.solr.common.cloud.NodesSysProps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.StrUtils;
 
 /**
  * This comparator makes sure that the given replicas are sorted according to the given list of
  * preferences. E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive
- * less requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
+ * fewer requests from healthy nodes. This will help prevent a distributed deadlock or timeouts in
  * all the healthy nodes due to one bad node.
  *
  * <p>Optional final preferenceRule is *not* used for pairwise sorting, but instead defines how
  * "equivalent" replicas will be ordered (the base ordering). Defaults to "random"; may specify
  * "stable".
  */
-public class NodePreferenceRulesComparator implements Comparator<Object> {
+public class NodePreferenceRulesComparator {
 
   private final NodesSysProps sysProps;
   private final String nodeName;
   private final List<PreferenceRule> sortRules;
   private final List<PreferenceRule> preferenceRules;
-  private final String localHostAddress;
+  private final String baseUrl;
+  private final String hostName;
   private final ReplicaListTransformer baseReplicaListTransformer;
 
   public NodePreferenceRulesComparator(
@@ -52,21 +52,31 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       final SolrParams requestParams,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
-    this(preferenceRules, requestParams, null, null, null, defaultRltFactory, stableRltFactory);
+    this(
+        preferenceRules,
+        requestParams,
+        null,
+        null,
+        null,
+        null,
+        defaultRltFactory,
+        stableRltFactory);
   }
 
   public NodePreferenceRulesComparator(
       final List<PreferenceRule> preferenceRules,
       final SolrParams requestParams,
       final String nodeName,
-      final String localHostAddress,
+      final String baseUrl,
+      final String hostName,
       final NodesSysProps sysProps,
       final ReplicaListTransformerFactory defaultRltFactory,
       final ReplicaListTransformerFactory stableRltFactory) {
     this.sysProps = sysProps;
     this.preferenceRules = preferenceRules;
     this.nodeName = nodeName;
-    this.localHostAddress = localHostAddress;
+    this.baseUrl = baseUrl;
+    this.hostName = hostName;
     final int maxIdx = preferenceRules.size() - 1;
     final PreferenceRule lastRule = preferenceRules.get(maxIdx);
     if (!ShardParams.SHARDS_PREFERENCE_REPLICA_BASE.equals(lastRule.name)) {
@@ -104,47 +114,115 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
   private static final ReplicaListTransformerFactory NOOP_RLTF =
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) ->
           NOOP_RLT;
+
   /**
    * For compatibility with tests, which expect this constructor to have no effect on the *base*
    * order.
    */
   NodePreferenceRulesComparator(
-      final List<PreferenceRule> sortRules, final SolrParams requestParams) {
-    this(sortRules, requestParams, NOOP_RLTF, null);
+      final List<PreferenceRule> preferenceRules, final SolrParams requestParams) {
+    this(preferenceRules, requestParams, NOOP_RLTF, null);
+  }
+
+  /**
+   * For compatibility with tests, which expect this constructor to have no effect on the *base*
+   * order.
+   */
+  NodePreferenceRulesComparator(
+      final List<PreferenceRule> preferenceRules,
+      final SolrParams requestParams,
+      final String nodeName,
+      final String baseUrl,
+      final String hostName) {
+    this(preferenceRules, requestParams, nodeName, baseUrl, hostName, null, NOOP_RLTF, null);
   }
 
   public ReplicaListTransformer getBaseReplicaListTransformer() {
     return baseReplicaListTransformer;
   }
 
-  @Override
-  public int compare(Object left, Object right) {
+  @SuppressWarnings({"unchecked"})
+  public <T> Comparator<T> getComparator(T example) {
+    if (example instanceof Replica) {
+      return (Comparator<T>) getReplicaComparator();
+    } else if (example instanceof String) {
+      return (Comparator<T>) getUrlComparator();
+    } else {
+      return null;
+    }
+  }
+
+  public Comparator<Replica> getReplicaComparator() {
+    Comparator<Replica> comparator = null;
     if (this.sortRules != null) {
       for (PreferenceRule preferenceRule : this.sortRules) {
-        final boolean lhs;
-        final boolean rhs;
+        Comparator<Replica> nextComparator = getPreferenceReplicaComparator(preferenceRule);
+        if (nextComparator != null) {
+          if (comparator != null) {
+            comparator = comparator.thenComparing(nextComparator);
+          } else {
+            comparator = nextComparator;
+          }
+        }
+      }
+    }
+    return comparator;
+  }
+
+  public Comparator<String> getUrlComparator() {
+    Comparator<String> comparator = null;
+    if (this.sortRules != null) {
+      for (PreferenceRule preferenceRule : this.sortRules) {
+        Comparator<String> nextComparator = getPreferenceUrlComparator(preferenceRule);
+        if (nextComparator != null) {
+          if (comparator != null) {
+            comparator = comparator.thenComparing(nextComparator);
+          } else {
+            comparator = nextComparator;
+          }
+        }
+      }
+    }
+    return comparator;
+  }
+
+  private Comparator<Replica> getPreferenceReplicaComparator(PreferenceRule preferenceRule) {
+    Comparator<Replica> comparator =
         switch (preferenceRule.name) {
           case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
-            lhs = hasReplicaType(left, preferenceRule.value);
-            rhs = hasReplicaType(right, preferenceRule.value);
-            break;
+            yield Comparator.comparing(
+                r -> r.getType().toString().equalsIgnoreCase(preferenceRule.value));
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
-            lhs = hasCoreUrlPrefix(left, preferenceRule.value);
-            rhs = hasCoreUrlPrefix(right, preferenceRule.value);
-            break;
+            yield switch (preferenceRule.value) {
+              case ShardParams.REPLICA_LOCAL -> {
+                if (baseUrl == null) {
+                  // For SolrJ clients, which do not have a baseUrl, this preference won't be used
+                  yield null;
+                }
+                yield Comparator.comparing(r -> r.getBaseUrl().equals(baseUrl));
+              }
+              case ShardParams.REPLICA_HOST -> {
+                if (hostName == null) {
+                  // For SolrJ clients, which do not have a hostName, this preference won't be used
+                  yield null;
+                }
+                final String hostNameWithColon = hostName + ":";
+                yield Comparator.comparing(r -> r.getNodeName().startsWith(hostNameWithColon));
+              }
+              default -> Comparator.comparing(r -> r.getCoreUrl().startsWith(preferenceRule.value));
+            };
           case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
-            lhs = hasLeaderStatus(left, preferenceRule.value);
-            rhs = hasLeaderStatus(right, preferenceRule.value);
-            break;
+            final boolean preferredIsLeader = Boolean.parseBoolean(preferenceRule.value);
+            yield Comparator.comparing(r -> r.isLeader() == preferredIsLeader);
           case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
             if (sysProps == null) {
-              throw new IllegalArgumentException(
-                  "Unable to get the NodesSysPropsCacher on sorting replicas by preference:"
-                      + preferenceRule.value);
+              // For SolrJ clients, which do not have Solr sysProps, this preference won't be used
+              yield null;
             }
-            lhs = hasSameMetric(left, preferenceRule.value);
-            rhs = hasSameMetric(right, preferenceRule.value);
-            break;
+            Collection<String> tags = Collections.singletonList(preferenceRule.value);
+            Map<String, Object> currentNodeMetric = sysProps.getSysProps(nodeName, tags);
+            yield Comparator.comparing(
+                r -> currentNodeMetric.equals(sysProps.getSysProps(r.getNodeName(), tags)));
           case ShardParams.SHARDS_PREFERENCE_REPLICA_BASE:
             throw new IllegalArgumentException(
                 "only one base replica order may be specified in "
@@ -153,61 +231,50 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
           default:
             throw new IllegalArgumentException(
                 "Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
-        }
-        if (lhs != rhs) {
-          return lhs ? -1 : +1;
-        }
-      }
-    }
-    return 0;
+        };
+    // Boolean comparators are 'false' first by default, so we need to reverse
+    return comparator != null ? comparator.reversed() : null;
   }
 
-  private boolean hasSameMetric(Object o, String metricTag) {
-    if (!(o instanceof Replica)) {
-      return false;
-    }
-
-    Collection<String> tags = Collections.singletonList(metricTag);
-    String otherNodeName = ((Replica) o).getNodeName();
-    Map<String, Object> currentNodeMetric = sysProps.getSysProps(nodeName, tags);
-    Map<String, Object> otherNodeMetric = sysProps.getSysProps(otherNodeName, tags);
-    return currentNodeMetric.equals(otherNodeMetric);
-  }
-
-  private boolean hasCoreUrlPrefix(Object o, String prefix) {
-    final String s;
-    if (o instanceof String) {
-      s = (String) o;
-    } else if (o instanceof Replica) {
-      s = ((Replica) o).getCoreUrl();
-    } else {
-      return false;
-    }
-    if (prefix.equals(ShardParams.REPLICA_LOCAL)) {
-      return StrUtils.isNotNullOrEmpty(localHostAddress) && s.startsWith(localHostAddress);
-    } else {
-      return s.startsWith(prefix);
-    }
-  }
-
-  private static boolean hasReplicaType(Object o, String preferred) {
-    if (!(o instanceof Replica)) {
-      return false;
-    }
-    final String s = ((Replica) o).getType().toString();
-    return s.equalsIgnoreCase(preferred);
-  }
-
-  private static boolean hasLeaderStatus(Object o, String status) {
-    if (!(o instanceof Replica)) {
-      return false;
-    }
-    final boolean leaderStatus = ((Replica) o).isLeader();
-    return leaderStatus == Boolean.parseBoolean(status);
-  }
-
-  public List<PreferenceRule> getSortRules() {
-    return sortRules;
+  private Comparator<String> getPreferenceUrlComparator(PreferenceRule preferenceRule) {
+    Comparator<String> comparator =
+        switch (preferenceRule.name) {
+            // These preferences are not supported for URLs
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE:
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_LEADER:
+          case ShardParams.SHARDS_PREFERENCE_NODE_WITH_SAME_SYSPROP:
+            yield null;
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION:
+            yield switch (preferenceRule.value) {
+              case ShardParams.REPLICA_LOCAL -> {
+                if (baseUrl == null) {
+                  // For SolrJ clients, which do not have a baseUrl, this preference won't be used
+                  yield null;
+                }
+                yield Comparator.comparing(url -> url.startsWith(baseUrl));
+              }
+              case ShardParams.REPLICA_HOST -> {
+                if (hostName == null) {
+                  // For SolrJ clients, which do not have a hostName, this preference won't be used
+                  yield null;
+                }
+                String scheme = baseUrl.startsWith("https") ? "https" : "http";
+                final String baseUrlHostPrefix = scheme + "://" + hostName + ":";
+                yield Comparator.comparing(url -> url.startsWith(baseUrlHostPrefix));
+              }
+              default -> Comparator.comparing(url -> url.startsWith(preferenceRule.value));
+            };
+          case ShardParams.SHARDS_PREFERENCE_REPLICA_BASE:
+            throw new IllegalArgumentException(
+                "only one base replica order may be specified in "
+                    + ShardParams.SHARDS_PREFERENCE
+                    + ", and it must be specified last");
+          default:
+            throw new IllegalArgumentException(
+                "Invalid " + ShardParams.SHARDS_PREFERENCE + " type: " + preferenceRule.name);
+        };
+    // Boolean comparators are 'false' first by default, so we need to reverse
+    return comparator != null ? comparator.reversed() : null;
   }
 
   public List<PreferenceRule> getPreferenceRules() {

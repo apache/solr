@@ -35,7 +35,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -539,7 +538,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + ":[2008-01-01T00:00:00Z TO 2009-09-01T00:00:00Z]"); // Should be removed from response
 
     setDistributedParams(minParams);
-    QueryResponse minResp = queryServer(minParams);
+    QueryResponse minResp = queryRandomShard(minParams);
 
     // Check that exactly the right numbers of counts came through
     assertEquals(
@@ -585,7 +584,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "facet.query",
         tdate_b + ":[2009-01-01T00:00:00Z TO 2010-01-01T00:00:00Z]"); // Should be removed
     setDistributedParams(minParams);
-    minResp = queryServer(minParams);
+    minResp = queryRandomShard(minParams);
 
     assertEquals(
         "Should only be 1 query facets returned after minCounts taken into account ",
@@ -1140,8 +1139,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
               "stat should be a Number: " + s + " -> " + svals.get(s).getClass(),
               svals.get(s) instanceof Number);
           // some loose assertions since we're iterating over various stats
-          if (svals.get(s) instanceof Double) {
-            Double val = (Double) svals.get(s);
+          if (svals.get(s) instanceof Double val) {
             assertFalse("stat shouldn't be NaN: " + s, val.isNaN());
             assertFalse("stat shouldn't be Inf: " + s, val.isInfinite());
             assertNotEquals("stat shouldn't be 0: " + s, 0.0D, val, 0.0);
@@ -1554,7 +1552,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     q.set("q", "*:*");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
-    rsp = queryServer(q);
+    rsp = queryRandomShard(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
     int cnt = shards.length() - shards.replace(",", "").length() + 1;
@@ -1710,7 +1708,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (BaseHttpSolrClient.RemoteSolrException e) {
+    } catch (SolrClient.RemoteSolrException e) {
       if (e.getMessage().startsWith("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {

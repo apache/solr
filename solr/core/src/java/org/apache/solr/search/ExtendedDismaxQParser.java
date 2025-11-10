@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionScoreQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
@@ -98,6 +97,9 @@ public class ExtendedDismaxQParser extends QParser {
 
     /** If set to true, stopwords are removed from the query. */
     public static String STOPWORDS = "stopwords";
+
+    /** If set to true, the stopword filter applies even if all terms are stopwords */
+    public static String ALWAYS_STOPWORDS = "alwaysStopwords";
   }
 
   private ExtendedDismaxConfiguration config;
@@ -187,13 +189,22 @@ public class ExtendedDismaxQParser extends QParser {
       query.add(f, BooleanClause.Occur.SHOULD);
     }
 
-    //
-    // create a boosted query (scores multiplied by boosts)
-    //
     Query topQuery = QueryUtils.build(query, this);
+
+    // If topQuery is a boolean query, unwrap the boolean query to check if it is just
+    // a MatchAllDocsQuery. Using MatchAllDocsQuery by itself enables later optimizations
+    BooleanQuery topQueryBoolean = (BooleanQuery) topQuery;
+    if (topQueryBoolean.clauses().size() == 1) {
+      Query onlyQuery = topQueryBoolean.clauses().get(0).query();
+      if (onlyQuery instanceof MatchAllDocsQuery) {
+        topQuery = onlyQuery;
+      }
+    }
+
+    // create a boosted query (scores multiplied by boosts)
     List<ValueSource> boosts = getMultiplicativeBoosts();
     if (boosts.size() > 1) {
-      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[boosts.size()]));
+      ValueSource prod = new ProductFloatFunction(boosts.toArray(new ValueSource[0]));
       topQuery = FunctionScoreQuery.boostByValue(topQuery, prod.asDoubleValuesSource());
     } else if (boosts.size() == 1) {
       topQuery = FunctionScoreQuery.boostByValue(topQuery, boosts.get(0).asDoubleValuesSource());
@@ -368,7 +379,7 @@ public class ExtendedDismaxQParser extends QParser {
    * @return the resulting query (flattened if needed) with "min should match" rules applied as
    *     specified in the config.
    * @see #parseOriginalQuery
-   * @see SolrPluginUtils#flattenBooleanQuery
+   * @see SolrPluginUtils#flattenBooleanQuery(BooleanQuery.Builder, BooleanQuery)
    */
   protected Query parseEscapedQuery(
       ExtendedSolrQueryParser up, String escapedUserQuery, ExtendedDismaxConfiguration config)
@@ -408,7 +419,7 @@ public class ExtendedDismaxQParser extends QParser {
       query = up.parse(mainUserQuery);
 
       if (shouldRemoveStopFilter(config, query)) {
-        // if the query was all stop words, remove none of them
+        // if the query was all stopwords, remove none of them (unless alwaysStopwords is set)
         up.setRemoveStopFilter(true);
         query = up.parse(mainUserQuery);
       }
@@ -417,6 +428,8 @@ public class ExtendedDismaxQParser extends QParser {
       up.exceptions = false;
     }
 
+    // query may have become empty if it only contained tokenising characters or due to
+    // stopword removal if alwaysStopwords is set
     if (query == null) {
       return null;
     }
@@ -439,11 +452,11 @@ public class ExtendedDismaxQParser extends QParser {
   /**
    * Determines if query should be re-parsed removing the stop filter.
    *
-   * @return true if there are stopwords configured and the parsed query was empty false in any
-   *     other case.
+   * @return true if there are stopwords configured, the alwaysStopwords option hasn't been set and
+   *     the parsed query was empty - return false in any other case.
    */
   protected boolean shouldRemoveStopFilter(ExtendedDismaxConfiguration config, Query query) {
-    return config.stopwords && isEmpty(query);
+    return config.stopwords && !config.alwaysStopwords && isEmpty(query);
   }
 
   private String escapeUserQuery(List<Clause> clauses) {
@@ -532,13 +545,11 @@ public class ExtendedDismaxQParser extends QParser {
     List<ValueSource> boosts = new ArrayList<>();
     if (config.hasMultiplicativeBoosts()) {
       for (String boostStr : config.multBoosts) {
-        if (boostStr == null || boostStr.length() == 0) continue;
-        Query boost = subQuery(boostStr, FunctionQParserPlugin.NAME).getQuery();
-        ValueSource vs;
-        if (boost instanceof FunctionQuery) {
-          vs = ((FunctionQuery) boost).getValueSource();
-        } else {
-          vs = new QueryValueSource(boost, 1.0f);
+        if (boostStr == null || boostStr.isEmpty()) continue;
+        ValueSource vs = subQuery(boostStr, FunctionQParserPlugin.NAME).parseAsValueSource();
+        // the default score should be 1, not 0
+        if (vs instanceof QueryValueSource qvs && qvs.getDefaultValue() == 0.0f) {
+          vs = new QueryValueSource(qvs.getQuery(), 1.0f);
         }
         boosts.add(vs);
       }
@@ -1236,14 +1247,12 @@ public class ExtendedDismaxQParser extends QParser {
               subs.clear();
               // Make a dismax query for each clause position in the boolean per-field queries.
               for (int n = 0; n < lst.size(); ++n) {
-                if (lst.get(n) instanceof BoostQuery) {
-                  BoostQuery boostQuery = (BoostQuery) lst.get(n);
+                if (lst.get(n) instanceof BoostQuery boostQuery) {
                   BooleanQuery booleanQuery = (BooleanQuery) boostQuery.getQuery();
                   subs.add(
-                      new BoostQuery(
-                          booleanQuery.clauses().get(c).getQuery(), boostQuery.getBoost()));
+                      new BoostQuery(booleanQuery.clauses().get(c).query(), boostQuery.getBoost()));
                 } else {
-                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).getQuery());
+                  subs.add(((BooleanQuery) lst.get(n)).clauses().get(c).query());
                 }
               }
               q.add(
@@ -1303,17 +1312,16 @@ public class ExtendedDismaxQParser extends QParser {
             break;
           }
           for (int c = 0; c < firstBooleanClauses.size(); ++c) {
-            if (nthBooleanClauses.get(c).getQuery().getClass()
-                    != firstBooleanClauses.get(c).getQuery().getClass()
-                || nthBooleanClauses.get(c).getOccur() != firstBooleanClauses.get(c).getOccur()) {
+            if (nthBooleanClauses.get(c).query().getClass()
+                    != firstBooleanClauses.get(c).query().getClass()
+                || nthBooleanClauses.get(c).occur() != firstBooleanClauses.get(c).occur()) {
               allSame = false;
               break;
             }
-            if (firstBooleanClauses.get(c).getQuery() instanceof BooleanQuery
+            if (firstBooleanClauses.get(c).query() instanceof BooleanQuery
                 && !allSameQueryStructure(
                     Arrays.asList(
-                        firstBooleanClauses.get(c).getQuery(),
-                        nthBooleanClauses.get(c).getQuery()))) {
+                        firstBooleanClauses.get(c).query(), nthBooleanClauses.get(c).query()))) {
               allSame = false;
               break;
             }
@@ -1337,8 +1345,8 @@ public class ExtendedDismaxQParser extends QParser {
       if (q instanceof BooleanQuery) {
         boolean allOptionalDisMaxQueries = true;
         for (BooleanClause c : ((BooleanQuery) q).clauses()) {
-          if (c.getOccur() != BooleanClause.Occur.SHOULD
-              || !(c.getQuery() instanceof DisjunctionMaxQuery)) {
+          if (c.occur() != BooleanClause.Occur.SHOULD
+              || !(c.query() instanceof DisjunctionMaxQuery)) {
             allOptionalDisMaxQueries = false;
             break;
           }
@@ -1348,7 +1356,7 @@ public class ExtendedDismaxQParser extends QParser {
           // DisjunctionMaxQuery-s. Unwrap the query and add a clause for each contained DisMax
           // query.
           for (BooleanClause c : ((BooleanQuery) q).clauses()) {
-            clauses.add(newBooleanClause(c.getQuery(), occur));
+            clauses.add(newBooleanClause(c.query(), occur));
           }
           return;
         }
@@ -1440,8 +1448,7 @@ public class ExtendedDismaxQParser extends QParser {
                 BooleanQuery bq = (BooleanQuery) query;
                 query = SolrPluginUtils.setMinShouldMatch(bq, minShouldMatch, false);
               }
-            } else if (query instanceof PhraseQuery) {
-              PhraseQuery pq = (PhraseQuery) query;
+            } else if (query instanceof PhraseQuery pq) {
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;
               PhraseQuery.Builder builder = new PhraseQuery.Builder();
               Term[] terms = pq.getTerms();
@@ -1451,8 +1458,7 @@ public class ExtendedDismaxQParser extends QParser {
               }
               builder.setSlop(slop);
               query = builder.build();
-            } else if (query instanceof MultiPhraseQuery) {
-              MultiPhraseQuery mpq = (MultiPhraseQuery) query;
+            } else if (query instanceof MultiPhraseQuery mpq) {
               if (minClauseSize > 1 && mpq.getTermArrays().length < minClauseSize) return null;
               if (slop != mpq.getSlop()) {
                 query = new MultiPhraseQuery.Builder(mpq).setSlop(slop).build();
@@ -1485,16 +1491,14 @@ public class ExtendedDismaxQParser extends QParser {
     private Analyzer noStopwordFilterAnalyzer(String fieldName) {
       FieldType ft = parser.getReq().getSchema().getFieldType(fieldName);
       Analyzer qa = ft.getQueryAnalyzer();
-      if (!(qa instanceof TokenizerChain)) {
+      if (!(qa instanceof TokenizerChain tcq)) {
         return qa;
       }
 
-      TokenizerChain tcq = (TokenizerChain) qa;
       Analyzer ia = ft.getIndexAnalyzer();
-      if (ia == qa || !(ia instanceof TokenizerChain)) {
+      if (ia == qa || !(ia instanceof TokenizerChain tci)) {
         return qa;
       }
-      TokenizerChain tci = (TokenizerChain) ia;
 
       // make sure that there isn't a stop filter in the indexer
       for (TokenFilterFactory tf : tci.getTokenFilterFactories()) {
@@ -1567,13 +1571,12 @@ public class ExtendedDismaxQParser extends QParser {
       if (!userFieldsMap.containsKey(MagicFieldName.QUERY.field)) {
         userFieldsMap.put("-" + MagicFieldName.QUERY.field, null);
       }
-      dynamicUserFields = dynUserFields.toArray(new DynamicField[dynUserFields.size()]);
+      dynamicUserFields = dynUserFields.toArray(new DynamicField[0]);
       Arrays.sort(dynamicUserFields);
       // Avoid creating the array twice by converting to an array first and using Arrays.sort(),
       // rather than Collections.sort() then converting to an array, since Collections.sort()
       // copies to an array first, then sets each collection member from the array.
-      negativeDynamicUserFields =
-          negDynUserFields.toArray(new DynamicField[negDynUserFields.size()]);
+      negativeDynamicUserFields = negDynUserFields.toArray(new DynamicField[0]);
       Arrays.sort(negativeDynamicUserFields);
     }
 
@@ -1701,6 +1704,8 @@ public class ExtendedDismaxQParser extends QParser {
 
     protected boolean stopwords;
 
+    protected boolean alwaysStopwords;
+
     protected boolean mmAutoRelax;
 
     protected String altQ;
@@ -1751,6 +1756,8 @@ public class ExtendedDismaxQParser extends QParser {
 
       stopwords = solrParams.getBool(DMP.STOPWORDS, true);
 
+      alwaysStopwords = solrParams.getBool(DMP.ALWAYS_STOPWORDS, false);
+
       mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
 
       altQ = solrParams.get(DisMaxParams.ALTQ);
@@ -1768,6 +1775,7 @@ public class ExtendedDismaxQParser extends QParser {
           solrParams.getBool(
               QueryParsing.SPLIT_ON_WHITESPACE, SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
     }
+
     /**
      * @return true if there are valid multiplicative boost queries
      */
@@ -1781,6 +1789,7 @@ public class ExtendedDismaxQParser extends QParser {
     public boolean hasBoostFunctions() {
       return null != boostFuncs && 0 != boostFuncs.length;
     }
+
     /**
      * @return true if there are valid boost params
      */

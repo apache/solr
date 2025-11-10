@@ -17,11 +17,11 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.File;
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -45,9 +45,7 @@ public class ConcurrentUpdateSolrClientMultiCollectionTest extends SolrCloudTest
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
-        .configure();
+    configureCluster(1).addConfig("conf", ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
   }
 
   @Before

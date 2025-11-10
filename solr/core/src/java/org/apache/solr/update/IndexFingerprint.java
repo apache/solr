@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -218,5 +219,30 @@ public class IndexFingerprint implements MapSerializable {
   @Override
   public String toString() {
     return toMap(new LinkedHashMap<>()).toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof IndexFingerprint other)) return false;
+    return maxVersionSpecified == other.maxVersionSpecified
+        && this.maxVersionEncountered == other.maxVersionEncountered
+        && this.maxInHash == other.maxInHash
+        && this.versionsHash == other.versionsHash
+        && this.numVersions == other.numVersions
+        && this.numDocs == other.numDocs
+        && this.maxDoc == other.maxDoc;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        maxVersionSpecified,
+        maxVersionEncountered,
+        maxInHash,
+        versionsHash,
+        numVersions,
+        numDocs,
+        maxDoc);
   }
 }

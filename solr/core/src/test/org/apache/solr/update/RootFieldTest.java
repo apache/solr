@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import java.nio.file.Path;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -29,9 +28,11 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.hamcrest.MatcherAssert;
+import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
+import org.junit.rules.TestRule;
 
 public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
@@ -43,9 +44,13 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     return useRootSchema;
   }
 
+  // not necessary right now but will be once block logic is asserted
+  @ClassRule
+  public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(Path.of(SolrTestCaseJ4.TEST_HOME()));
+    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
     useRootSchema = random().nextBoolean();
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
@@ -79,15 +84,15 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     query.set(CommonParams.FL, "id,name,_root_");
 
     SolrDocumentList results = client.query(query).getResults();
-    MatcherAssert.assertThat(results.getNumFound(), is(1L));
+    assertThat(results.getNumFound(), is(1L));
     SolrDocument foundDoc = results.get(0);
 
     // Check retrieved field values
-    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
-    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("child free doc"));
 
     String expectedRootValue = expectRoot() ? docId : null;
-    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
 
     // Update the doc
     docToUpdate.setField("name", "updated doc");
@@ -99,9 +104,9 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     foundDoc = results.get(0);
 
     // Check updated field values
-    MatcherAssert.assertThat(foundDoc.getFieldValue("id"), is(docId));
-    MatcherAssert.assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
-    MatcherAssert.assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
+    assertThat(foundDoc.getFieldValue("id"), is(docId));
+    assertThat(foundDoc.getFieldValue("name"), is("updated doc"));
+    assertThat(MESSAGE, foundDoc.getFieldValue("_root_"), is(expectedRootValue));
   }
 
   @Test

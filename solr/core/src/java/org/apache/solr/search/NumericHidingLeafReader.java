@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
@@ -63,11 +64,12 @@ public class NumericHidingLeafReader extends FilterLeafReader {
             new FieldInfo(
                 fi.name,
                 fi.number,
-                fi.hasVectors(),
+                fi.hasTermVectors(),
                 fi.omitsNorms(),
                 fi.hasPayloads(),
                 fi.getIndexOptions(),
                 DocValuesType.NONE,
+                DocValuesSkipIndexType.NONE,
                 -1,
                 Collections.emptyMap(),
                 fi.getPointDimensionCount(),
@@ -76,12 +78,13 @@ public class NumericHidingLeafReader extends FilterLeafReader {
                 fi.getVectorDimension(),
                 fi.getVectorEncoding(),
                 fi.getVectorSimilarityFunction(),
-                fi.isSoftDeletesField()));
+                fi.isSoftDeletesField(),
+                fi.isParentField()));
       } else {
         filteredInfos.add(fi);
       }
     }
-    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[filteredInfos.size()]));
+    fieldInfos = new FieldInfos(filteredInfos.toArray(new FieldInfo[0]));
   }
 
   @Override

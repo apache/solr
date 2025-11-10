@@ -111,6 +111,7 @@ public class SolrSnapshotMetaDataManager {
 
   /** Used to map snapshot name to snapshot meta-data. */
   protected final Map<String, SnapshotMetaData> nameToDetailsMapping = new LinkedHashMap<>();
+
   /** Used to figure out the *current* index data directory path */
   private final SolrCore solrCore;
 

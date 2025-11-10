@@ -22,7 +22,7 @@ This directory contains Solr examples. Each example is contained in a
 separate directory. To run a specific example, do:
 
 ```
-  bin/solr -e <EXAMPLE> where <EXAMPLE> is one of:
+  bin/solr start -e <EXAMPLE> where <EXAMPLE> is one of:
 
     cloud        : SolrCloud example
     schemaless   : Schema-less example (schema is inferred from data during indexing)
@@ -33,13 +33,13 @@ separate directory. To run a specific example, do:
 For instance, if you want to run the SolrCloud example, do:
 
 ```
-  bin/solr -e cloud
+  bin/solr start -e cloud
 ```
 
 To see all the options available when starting Solr:
 
 ```
-  bin/solr start -help
+  bin/solr start --help
 ```
 
 After starting a Solr example, direct your Web browser to:
@@ -48,10 +48,10 @@ After starting a Solr example, direct your Web browser to:
   http://localhost:8983/solr/
 ```
 
-To add documents to the index, use bin/post, for example:
+To add documents to the index, use bin/solr post, for example:
 
 ```
-     bin/post -c techproducts example/exampledocs/*.xml
+     bin/solr post -c techproducts example/exampledocs/*.xml
 ```
 
 (where "techproducts" is the Solr core name)
@@ -72,18 +72,6 @@ For a list of other tutorials and introductory articles.
 
 Notes About These Examples
 --------------------------
-
-### References to Jar Files Outside This Directory
-
-Various example SolrHome dirs contained in this directory may use "<lib>"
-statements in the solrconfig.xml file to reference plugin jars outside of
-this directory for loading modules via relative paths.  
-
-If you make a copy of this example server and wish to use the
-ExtractingRequestHandler (SolrCell), the clustering component,
-or any other modules, you will need to
-copy the required jars or update the paths to those jars in your
-solrconfig.xml.
 
 ### Logging
 

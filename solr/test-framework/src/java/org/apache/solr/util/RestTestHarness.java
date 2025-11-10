@@ -32,7 +32,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Facilitates testing Solr's REST API via a provided embedded Jetty */
@@ -183,6 +183,7 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
       throw new RuntimeException("?!? static xpath has bug?", e);
     }
   }
+
   /** Reloads the first core listed in the response to the core admin handler STATUS command */
   @Override
   public void reload() throws Exception {

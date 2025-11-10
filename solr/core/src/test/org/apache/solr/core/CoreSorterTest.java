@@ -186,7 +186,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     for (int i = 0; i < 10; i++) {
       Collections.shuffle(myDescs, random());
 
-      List<CoreDescriptor> resultDescs = CoreSorter.sortCores(mockCC, myDescs);
+      List<CoreDescriptor> resultDescs = new CoreSorter(mockCC).sort(myDescs);
       // map descriptors back to counts, removing consecutive duplicates
       List<CountsForEachShard> resultCounts = new ArrayList<>();
       CountsForEachShard lastCounts = null;

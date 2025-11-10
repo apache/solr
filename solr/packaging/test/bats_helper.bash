@@ -58,18 +58,22 @@ save_home_on_failure() {
     fi
 }
 
+shutdown_all() {
+  solr stop --all >/dev/null 2>&1
+}
+
 delete_all_collections() {
-  local collection_list="$(solr zk ls /collections -z localhost:9983)"
+  local collection_list="$(solr zk ls /collections -z localhost:${ZK_PORT})"
   for collection in $collection_list; do
     if [[ -n $collection ]]; then
-      solr delete -c $collection >/dev/null 2>&1
+      solr delete -c $collection --delete-config >/dev/null 2>&1
     fi
   done
 }
 
 config_exists() {
   local config_name=$1
-  local config_list=$(solr zk ls /configs -z localhost:9983)
+  local config_list=$(solr zk ls /configs -z localhost:${ZK_PORT})
 
   for config in $config_list; do
     if [[ $(echo $config | tr -d " ") == $config_name ]]; then
@@ -82,7 +86,7 @@ config_exists() {
 
 collection_exists() {
   local coll_name=$1
-  local coll_list=$(solr zk ls /collections -z localhost:9983)
+  local coll_list=$(solr zk ls /collections -z localhost:${ZK_PORT})
 
   for coll in $coll_list; do
     if [[ $(echo $coll | tr -d " ") == $coll_name ]]; then
@@ -91,4 +95,43 @@ collection_exists() {
   done
 
   return 1
+}
+
+# Wait for a collection to be queryable
+wait_for_collection() {
+  local collection="$1"
+  local timeout=${2:-180}
+  local start_ts
+  start_ts=$(date +%s)
+  while true; do
+    if curl -s -S -f "http://localhost:${SOLR_PORT}/solr/${collection}/select?q=*:*" | grep -q '"responseHeader"'; then
+      return 0
+    fi
+    local now
+    now=$(date +%s)
+    if [ $(( now - start_ts )) -ge ${timeout} ]; then
+      echo "Timed out waiting for collection '${collection}' to become queryable" >&2
+      return 1
+    fi
+    sleep 3
+  done
+}
+
+# Apply the ExtractingRequestHandler via Config API and print error body on failure
+apply_extract_handler() {
+  local collection="$1"
+  local json="{\"add-requesthandler\":{\"name\":\"/update/extract\",\"class\":\"org.apache.solr.handler.extraction.ExtractingRequestHandler\",\"tikaserver.url\":\"http://localhost:${TIKA_PORT}\",\"defaults\":{\"lowernames\":\"true\",\"captureAttr\":\"true\"}}}"
+  local url="http://localhost:${SOLR_PORT}/solr/${collection}/config"
+  # Capture body and status code
+  local resp code body
+  sleep 5
+  resp=$(curl -s -S -w "\n%{http_code}" -X POST -H 'Content-type:application/json' -d "$json" "$url")
+  code="${resp##*$'\n'}"
+  body="${resp%$'\n'*}"
+  if [ "$code" = "200" ]; then
+    return 0
+  else
+    echo "Config API error applying ExtractingRequestHandler to ${collection} (HTTP ${code}): ${body}" >&3
+    return 1
+  fi
 }

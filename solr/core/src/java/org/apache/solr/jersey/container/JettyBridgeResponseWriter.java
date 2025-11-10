@@ -17,13 +17,13 @@
 
 package org.apache.solr.jersey.container;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import javax.servlet.http.HttpServletResponse;
 import org.glassfish.jersey.server.ContainerException;
 import org.glassfish.jersey.server.ContainerResponse;
 import org.glassfish.jersey.server.spi.ContainerResponseWriter;
@@ -54,7 +54,7 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
   @Override
   public OutputStream writeResponseStatusAndHeaders(
       final long contentLength, final ContainerResponse context) throws ContainerException {
-    final javax.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
+    final jakarta.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
     if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {

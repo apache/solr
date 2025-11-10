@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.TreeSet;
+import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.sandbox.search.DocValuesTermsQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Query;
@@ -35,8 +35,8 @@ import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.DaciukMihovAutomatonBuilder;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocSet;
 
@@ -147,7 +147,8 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
       if (doc == docTermOrds.docID()) {
         BytesRef edgeValue = new BytesRef();
         long ord;
-        while ((ord = docTermOrds.nextOrd()) != SortedSetDocValues.NO_MORE_ORDS) {
+        for (int o = 0; o < docTermOrds.docValueCount(); o++) {
+          ord = docTermOrds.nextOrd();
           edgeValue = docTermOrds.lookupOrd(ord);
           // add the edge id to the collector terms.
           collectorTerms.add(edgeValue);
@@ -171,7 +172,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
           AutomatonQuery autnQuery = new AutomatonQuery(new Term(matchField.getName()), autn);
           q = autnQuery;
         } else {
-          List<BytesRef> termList = new ArrayList<>(collectorTerms.size());
+          List<BytesRef> termList = new ArrayList<BytesRef>(collectorTerms.size());
           for (int i = 0; i < collectorTerms.size(); i++) {
             BytesRef ref = new BytesRef();
             collectorTerms.get(i, ref);
@@ -179,7 +180,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
           }
           q =
               (matchField.hasDocValues() && !matchField.indexed())
-                  ? new DocValuesTermsQuery(matchField.getName(), termList)
+                  ? SortedDocValuesField.newSlowSetQuery(matchField.getName(), termList)
                   : new TermInSetQuery(matchField.getName(), termList);
         }
 
@@ -196,7 +197,7 @@ abstract class GraphEdgeCollector extends SimpleCollector implements Collector {
         termBytesHash.get(i, ref);
         terms.add(ref);
       }
-      final Automaton a = DaciukMihovAutomatonBuilder.build(terms);
+      final Automaton a = Automata.makeStringUnion(terms);
       return a;
     }
   }

@@ -23,57 +23,39 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
 import com.google.common.annotations.VisibleForTesting;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletContextEvent;
+import jakarta.servlet.ServletContextListener;
+import jakarta.servlet.UnavailableException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletContextEvent;
-import javax.servlet.ServletContextListener;
-import javax.servlet.UnavailableException;
-import org.apache.http.client.HttpClient;
+import org.apache.lucene.store.MMapDirectory;
+import org.apache.lucene.util.VectorUtil;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Group;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.AltBufferPoolMetricSet;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
-import org.apache.solr.util.SolrVersion;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -88,75 +70,55 @@ public class CoreContainerProvider implements ServletContextListener {
   private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
   private Properties extraProperties;
-  private HttpClient httpClient;
-  private SolrMetricManager metricManager;
   private RateLimitManager rateLimitManager;
-  private final CountDownLatch init = new CountDownLatch(1);
-  private String registryName;
-  // AFAIK the only reason we need this is to support JettySolrRunner for tests. In tests we might
-  // have multiple CoreContainers in the same JVM, but I *think* that doesn't happen in a real
-  // server.
-  private static final Map<ContextInitializationKey, ServiceHolder> services =
-      Collections.synchronizedMap(new WeakHashMap<>());
 
-  // todo: dependency injection instead, but for now this method and the associated map will have
-  // to suffice.
-  // Note that this relies on ServletContext.equals() not implementing anything significantly
-  // different than Object.equals for its .equals method (I've found no implementation that even
-  // implements it).
-  public static ServiceHolder serviceForContext(ServletContext ctx) throws InterruptedException {
-    ContextInitializationKey key = new ContextInitializationKey(ctx);
-    return services.computeIfAbsent(key, ServiceHolder::new);
+  /**
+   * Acquires an instance from the context. Never null.
+   *
+   * @throws IllegalStateException if not present.
+   */
+  public static CoreContainerProvider serviceForContext(ServletContext ctx) {
+    var provider = (CoreContainerProvider) ctx.getAttribute(CoreContainerProvider.class.getName());
+    if (provider == null) {
+      throw new IllegalStateException("CoreContainer failed to initialize");
+    }
+    return provider;
   }
 
   @Override
-  public void contextInitialized(ServletContextEvent sce) {
-    init(sce.getServletContext());
+  public void contextInitialized(ServletContextEvent event) {
+    final var ctx = event.getServletContext();
+    init(ctx);
+    ctx.setAttribute(CoreContainerProvider.class.getName(), this);
   }
 
   @Override
   public void contextDestroyed(ServletContextEvent sce) {
     close();
+    // could remove ourselves from ctx but why bother
   }
 
+  /**
+   * @see SolrDispatchFilter#getCores()
+   */
   CoreContainer getCoreContainer() throws UnavailableException {
-    waitForCoreContainer(() -> cores, init);
+    checkReady();
     return cores;
   }
 
-  HttpClient getHttpClient() throws UnavailableException {
-    waitForCoreContainer(() -> cores, init);
-    return httpClient;
-  }
-
-  private static void waitForCoreContainer(Supplier<CoreContainer> provider, CountDownLatch latch)
-      throws UnavailableException {
-    CoreContainer cores = provider.get();
-    if (cores == null || cores.isShutDown()) {
-      long startWait = System.nanoTime();
-      try {
-        while (!latch.await(10, TimeUnit.SECONDS)) {
-          long now = System.nanoTime();
-          if (log.isInfoEnabled()) {
-            log.info(
-                "Still waiting for CoreContainerStartup ({} seconds elapsed)",
-                (now - startWait) / 1_000_000_000);
-          }
-        }
-      } catch (InterruptedException e) { // well, no wait then
-        Thread.currentThread().interrupt();
-      }
-      cores = provider.get();
-      if (cores == null || cores.isShutDown()) {
-        final String msg =
-            "Error processing the request. CoreContainer is either not initialized or shutting down.";
-        log.error(msg);
-        throw new UnavailableException(msg);
-      }
+  private void checkReady() throws UnavailableException {
+    // TODO throw AlreadyClosedException instead?
+    if (cores == null) {
+      // cores could be null if it didn't start properly or if it's completely shut down.
+      // It appears impossible that it'd be null if it didn't even try to start yet.
+      final String msg = "Error processing the request. CoreContainer has shut down.";
+      log.error(msg);
+      throw new UnavailableException(msg);
     }
+    assert !cores.isShutDown(); // shutdown sequence initiates *here*, thus will be nulled first
   }
 
-  public void close() {
+  private void close() {
     CoreContainer cc = cores;
 
     // Mark Miller suggested that we should be publishing that we are down before anything else
@@ -175,29 +137,14 @@ public class CoreContainerProvider implements ServletContextListener {
     //    }
 
     cores = null;
-    try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (cc != null) {
-        httpClient = null;
-        cc.shutdown();
-      }
+    if (cc != null) {
+      cc.shutdown();
     }
   }
 
-  public void init(ServletContext servletContext) {
+  private void init(ServletContext servletContext) {
     if (log.isTraceEnabled()) {
-      log.trace("CoreService.init(): {}", this.getClass().getClassLoader());
+      log.trace("init(): {}", this.getClass().getClassLoader());
     }
     CoreContainer coresInit = null;
     try {
@@ -227,9 +174,20 @@ public class CoreContainerProvider implements ServletContextListener {
         StartupLoggingUtils.changeLogLevel(logLevel);
       }
 
+      // Do initial logs for experimental Lucene classes.
+      final var lookup = MethodHandles.lookup();
+      Stream.of(MMapDirectory.class, VectorUtil.class)
+          .forEach(
+              cls -> {
+                try {
+                  lookup.ensureInitialized(cls);
+                } catch (ReflectiveOperationException re) {
+                  throw new SolrException(
+                      ErrorCode.SERVER_ERROR, "Could not load Lucene class: " + cls.getName());
+                }
+              });
+
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
-      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
 
       SolrZkClient zkClient = null;
       ZkController zkController = coresInit.getZkController();
@@ -256,12 +214,8 @@ public class CoreContainerProvider implements ServletContextListener {
         throw (Error) t;
       }
     } finally {
-      log.trace("SolrDispatchFilter.init() done");
+      log.trace("init() done");
       this.cores = coresInit; // crucially final assignment
-      services
-          .computeIfAbsent(new ContextInitializationKey(servletContext), ServiceHolder::new)
-          .setService(this);
-      init.countDown();
     }
   }
 
@@ -312,7 +266,7 @@ public class CoreContainerProvider implements ServletContextListener {
               "Solr typically starts with \"-XX:+CrashOnOutOfMemoryError\" that will crash on any OutOfMemoryError exception. "
                   + "Unable to get the specific file due to an exception."
                   + "The cause of the OOME will be logged in a crash file in the logs directory: %s",
-              System.getProperty("solr.log.dir"));
+              System.getProperty("solr.logs.dir"));
       log.info(logMessage, e);
     }
   }
@@ -328,11 +282,12 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private String getSolrPort() {
-    return System.getProperty("jetty.port");
+    return EnvUtils.getProperty("solr.port.listen");
   }
 
   /**
-   * We are in cloud mode if Java option zkRun exists OR zkHost exists and is non-empty
+   * We are in cloud mode if Java option solr.zookeeper.server.enabled exists OR zkHost exists and
+   * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
    * @see #extraProperties
@@ -341,7 +296,7 @@ public class CoreContainerProvider implements ServletContextListener {
   private boolean isCloudMode() {
     assert null != extraProperties; // we should never be called w/o this being initialized
     return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
-        || (null != System.getProperty("zkRun"));
+        || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
   /**
@@ -394,7 +349,7 @@ public class CoreContainerProvider implements ServletContextListener {
       home = "solr/";
       source = "defaulted to '" + home + "' ... could not find system property or JNDI";
     }
-    final Path solrHome = Paths.get(home).toAbsolutePath().normalize();
+    final Path solrHome = Path.of(home).toAbsolutePath().normalize();
     log.info("Solr Home: {} (source: {})", solrHome, source);
 
     return solrHome;
@@ -412,67 +367,6 @@ public class CoreContainerProvider implements ServletContextListener {
     return coreContainer;
   }
 
-  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
-    metricManager = coresInit.getMetricManager();
-    registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final Set<String> hiddenSysProps = coresInit.getConfig().getMetricsConfig().getHiddenSysProps();
-    try {
-      metricManager.registerAll(
-          registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
-      metricManager.registerAll(
-          registryName, new ClassLoadingGaugeSet(), ResolutionStrategy.IGNORE, "classes");
-      metricManager.registerAll(
-          registryName, new OperatingSystemMetricSet(), ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(
-          registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
-      metricManager.registerAll(
-          registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-
-      if (config.getCacheConfig() != null
-          && config.getCacheConfig().threadsIntervalSeconds != null) {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "Threads metrics will be cached for {} seconds",
-              config.getCacheConfig().threadsIntervalSeconds);
-        }
-        metricManager.registerAll(
-            registryName,
-            new CachedThreadStatesGaugeSet(
-                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      } else {
-        metricManager.registerAll(
-            registryName,
-            new ThreadStatesGaugeSet(),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      }
-
-      MetricsMap sysprops =
-          new MetricsMap(
-              map ->
-                  System.getProperties()
-                      .forEach(
-                          (k, v) -> {
-                            //noinspection SuspiciousMethodCalls
-                            if (!hiddenSysProps.contains(k)) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null,
-          registryName,
-          sysprops,
-          metricTag,
-          ResolutionStrategy.IGNORE,
-          "properties",
-          "system");
-    } catch (Exception e) {
-      log.warn("Error registering JVM metrics", e);
-    }
-  }
-
   public RateLimitManager getRateLimitManager() {
     return rateLimitManager;
   }
@@ -480,83 +374,5 @@ public class CoreContainerProvider implements ServletContextListener {
   @VisibleForTesting
   void setRateLimitManager(RateLimitManager rateLimitManager) {
     this.rateLimitManager = rateLimitManager;
-  }
-
-  private static class ContextInitializationKey {
-    private final ServletContext ctx;
-    private final CountDownLatch initializing = new CountDownLatch(1);
-
-    private ContextInitializationKey(ServletContext ctx) {
-      if (ctx == null) {
-        throw new IllegalArgumentException("Context must not be null");
-      }
-      // if one of these is reachable both must be to avoid collection from weak hashmap, so
-      // set an attribute holding this object to ensure we never get collected until the
-      // ServletContext is eligible for collection too.
-      ctx.setAttribute(this.getClass().getName(), this);
-      this.ctx = ctx;
-    }
-
-    public synchronized ServletContext getCtx() {
-      return ctx;
-    }
-
-    synchronized void makeReady() {
-      this.initializing.countDown();
-    }
-
-    // NOT synchronized :)
-    public void waitForReadyService() throws InterruptedException {
-      initializing.await();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof ContextInitializationKey)) return false;
-      ContextInitializationKey that = (ContextInitializationKey) o;
-      return ctx.equals(that.ctx);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(ctx);
-    }
-  }
-
-  static class ServiceHolder {
-    private volatile CoreContainerProvider service;
-    private volatile ContextInitializationKey key;
-
-    private ServiceHolder(ContextInitializationKey key) {
-      if (key == null) {
-        throw new IllegalArgumentException(
-            "Key for accessing this service holder must be supplied");
-      }
-      this.key = key;
-    }
-
-    public void setService(CoreContainerProvider service) {
-      this.service = service;
-      key.makeReady();
-      key = null; // be sure not to hold a reference to the context via the key
-    }
-
-    public CoreContainerProvider getService() {
-      try {
-        if (key != null) {
-          try {
-            key.waitForReadyService();
-          } catch (NullPointerException e) {
-            // ignore, means we raced with set service and lost, but that's fine since null implies
-            // we are ready.
-          }
-        }
-      } catch (InterruptedException e) {
-        throw new SolrException(
-            ErrorCode.SERVER_ERROR, "Interrupted while obtaining reference to CoreService");
-      }
-      return service;
-    }
   }
 }

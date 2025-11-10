@@ -43,9 +43,9 @@ public class TestSSLRandomization extends SolrCloudTestCase {
   }
 
   public void testBaseUrl() {
-    String url = buildUrl(6666, "/foo");
+    String url = buildUrl(6666);
     assertEquals(
-        sslConfig.isSSLMode() ? "https://127.0.0.1:6666/foo" : "http://127.0.0.1:6666/foo", url);
+        sslConfig.isSSLMode() ? "https://127.0.0.1:6666/solr" : "http://127.0.0.1:6666/solr", url);
   }
 
   /** Used by {@link #testSSLRandomizer} */

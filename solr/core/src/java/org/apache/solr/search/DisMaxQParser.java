@@ -151,8 +151,7 @@ public class DisMaxQParser extends QParser {
       if (1 == boostQueries.size() && 1 == boostParams.length) {
         /* legacy logic */
         Query f = boostQueries.get(0);
-        while (f instanceof BoostQuery) {
-          BoostQuery bq = (BoostQuery) f;
+        while (f instanceof BoostQuery bq) {
           if (bq.getBoost() == 1f) {
             f = bq.getQuery();
           } else {
@@ -277,7 +276,7 @@ public class DisMaxQParser extends QParser {
 
   @Override
   public String[] getDefaultHighlightFields() {
-    return queryFields.keySet().toArray(new String[queryFields.keySet().size()]);
+    return queryFields.keySet().toArray(new String[0]);
   }
 
   @Override

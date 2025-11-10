@@ -205,8 +205,10 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
         String nodeName = jettySolrRunner.getNodeName();
         String collectionName = core.getCollectionName();
         DocCollection collectionOrNull = clusterState.getCollectionOrNull(collectionName);
-        List<Replica> leaderReplicas = collectionOrNull.getLeaderReplicas(nodeName);
-        if (leaderReplicas != null) {
+        if (collectionOrNull != null) {
+          List<Replica> replicas = collectionOrNull.getReplicasOnNode(nodeName);
+          assertNotNull(replicas);
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
           for (Replica leaderReplica : leaderReplicas) {
             leaders.add(leaderReplica.getCoreName());
           }
@@ -284,7 +286,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
     waitForState(
         "waiting for collections to be created",
         collection,
-        (liveNodes, collectionState) -> {
+        collectionState -> {
           if (collectionState == null) {
             // per predicate javadoc, this is what we get if the collection doesn't exist at all.
             return false;

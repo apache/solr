@@ -16,7 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
+import org.apache.curator.test.KillSession;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
@@ -48,8 +48,6 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.TestableZooKeeper;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -148,11 +146,24 @@ public class ChaosMonkey {
 
   // TODO: expire all clients at once?
   public void expireSession(final JettySolrRunner jetty) {
+    expireSession(jetty, zkServer);
+  }
+
+  public static void expireSession(final JettySolrRunner jetty, final ZkTestServer zkServer) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("expire session for " + jetty.getLocalPort() + " !");
+      monkeyLog("expire session for node " + jetty.getBaseUrl() + " !");
+      SolrZkClient zkClient = cores.getZkController().getZkClient();
+      long sessionId = zkClient.getZkSessionId();
+      zkServer.expire(sessionId);
       causeConnectionLoss(jetty);
-      zkServer.expire(cores.getZkController().getZkClient().getZooKeeper().getSessionId());
+      // Loop until either the Zookeeper Client is no longer connected, or the zkSessionID changes
+      // (which means the connection was lost in the client)
+      while (zkClient.getCuratorFramework().getZookeeperClient().isConnected()) {
+        if (zkClient.getZkSessionId() != sessionId) {
+          break;
+        }
+      }
     }
   }
 
@@ -180,23 +191,13 @@ public class ChaosMonkey {
   public static void causeConnectionLoss(JettySolrRunner jetty) {
     CoreContainer cores = jetty.getCoreContainer();
     if (cores != null) {
-      monkeyLog("Will cause connection loss on " + jetty.getLocalPort());
+      monkeyLog("Will cause connection loss on node " + jetty.getBaseUrl());
       SolrZkClient zkClient = cores.getZkController().getZkClient();
-      causeConnectionLoss(zkClient.getZooKeeper());
-    }
-  }
-
-  public static void causeConnectionLoss(ZooKeeper zooKeeper) {
-    assert zooKeeper instanceof TestableZooKeeper
-        : "Can only cause connection loss for TestableZookeeper";
-    if (zooKeeper instanceof TestableZooKeeper) {
       try {
-        ((TestableZooKeeper) zooKeeper).testableConnloss();
-      } catch (IOException ignored) {
-        // best effort
+        KillSession.kill(zkClient.getCuratorFramework().getZookeeperClient().getZooKeeper());
+      } catch (Exception e) {
+        log.warn("Exception causing connection loss", e);
       }
-    } else {
-      // TODO what now?
     }
   }
 
@@ -644,7 +645,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.stop();
@@ -668,7 +669,7 @@ public class ChaosMonkey {
             new SolrNamedThreadFactory("ChaosMonkey"),
             false);
     for (JettySolrRunner jetty : jettys) {
-      executor.submit(
+      executor.execute(
           () -> {
             try {
               jetty.start();
