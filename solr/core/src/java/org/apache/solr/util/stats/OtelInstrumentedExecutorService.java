@@ -17,9 +17,9 @@
 package org.apache.solr.util.stats;
 
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
+import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.TYPE_ATTR;
 
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -47,8 +47,6 @@ import org.apache.solr.metrics.otel.instruments.AttributedLongUpDownCounter;
  * com.codahale.metrics.InstrumentedExecutorService.
  */
 public class OtelInstrumentedExecutorService implements ExecutorService {
-  public static final AttributeKey<String> EXECUTOR_NAME_ATTR =
-      AttributeKey.stringKey("executor_name");
 
   private final ExecutorService delegate;
   private final String executorName;
@@ -62,8 +60,9 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   public OtelInstrumentedExecutorService(
       ExecutorService delegate,
       SolrMetricsContext ctx,
-      SolrInfoBean.Category category,
-      String executorName) {
+      String metricPrefix,
+      String executorName,
+      SolrInfoBean.Category category) {
     this.delegate = delegate;
     this.executorName = executorName;
     this.observableMetrics = new ArrayList<>();
@@ -71,12 +70,12 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
     Attributes attrs =
         Attributes.builder()
             .put(CATEGORY_ATTR, category.toString())
-            .put(EXECUTOR_NAME_ATTR, executorName)
+            .put(NAME_ATTR, executorName)
             .build();
 
     // Each metric type needs a separate name to avoid obscuring other types
     var executorTaskCounter =
-        ctx.longCounter("solr_executor_tasks", "Number of ExecutorService tasks");
+        ctx.longCounter(metricPrefix + "_tasks", "Number of ExecutorService tasks");
     this.submitted =
         new AttributedLongCounter(
             executorTaskCounter, attrs.toBuilder().put(TYPE_ATTR, "submitted").build());
@@ -86,11 +85,11 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
     this.running =
         new AttributedLongUpDownCounter(
             ctx.longUpDownCounter(
-                "solr_executor_tasks_running", "Number of running ExecutorService tasks"),
+                metricPrefix + "_tasks_running", "Number of running ExecutorService tasks"),
             attrs);
     var executorTaskTimer =
         ctx.longHistogram(
-            "solr_executor_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS);
+            metricPrefix + "_task_times", "Timing of ExecutorService tasks", OtelUnit.MILLISECONDS);
     this.idle =
         new AttributedLongTimer(
             executorTaskTimer, attrs.toBuilder().put(TYPE_ATTR, "idle").build());
@@ -102,7 +101,7 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
       ThreadPoolExecutor threadPool = (ThreadPoolExecutor) delegate;
       observableMetrics.add(
           ctx.observableLongGauge(
-              "solr_executor_thread_pool_size",
+              metricPrefix + "_thread_pool_size",
               "Thread pool size",
               measurement -> {
                 measurement.record(
@@ -117,7 +116,7 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
       final BlockingQueue<Runnable> taskQueue = threadPool.getQueue();
       observableMetrics.add(
           ctx.observableLongGauge(
-              "solr_executor_thread_pool_tasks",
+              metricPrefix + "_thread_pool_tasks",
               "Thread pool task counts",
               measurement -> {
                 measurement.record(
@@ -136,7 +135,7 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
       ForkJoinPool forkJoinPool = (ForkJoinPool) delegate;
       observableMetrics.add(
           ctx.observableLongGauge(
-              "solr_executor_fork_join_pool_tasks",
+              metricPrefix + "_fork_join_pool_tasks",
               "Fork join pool task counts",
               measurement -> {
                 measurement.record(
@@ -148,7 +147,7 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
               }));
       observableMetrics.add(
           ctx.observableLongGauge(
-              "solr_executor_fork_join_pool_threads",
+              metricPrefix + "_fork_join_pool_threads",
               "Fork join pool thread counts",
               measurement -> {
                 measurement.record(
@@ -217,13 +216,13 @@ public class OtelInstrumentedExecutorService implements ExecutorService {
   @Override
   public void shutdown() {
     delegate.shutdown();
-    observableMetrics.stream().forEach(IOUtils::closeQuietly);
+    IOUtils.closeQuietly(observableMetrics);
   }
 
   @Override
   public List<Runnable> shutdownNow() {
     List<Runnable> tasks = delegate.shutdownNow();
-    observableMetrics.stream().forEach(IOUtils::closeQuietly);
+    IOUtils.closeQuietly(observableMetrics);
     return tasks;
   }
 
