@@ -19,6 +19,7 @@ package org.apache.solr.servlet;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 import org.apache.solr.api.ApiBag;
@@ -98,9 +99,21 @@ public class ResponseUtils {
     if (code == 500 || code < 100) {
       // hide all stack traces, as configured
       if (!hideStackTrace(hideTrace)) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        info.add("trace", sw.toString());
+        NamedList<Object> lastTrace = new NamedList<>();
+        info.add("trace", lastTrace);
+        lastTrace.add("stackTrace", Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList()));
+
+        Throwable causedBy = ex.getCause();
+        while (causedBy != null) {
+          NamedList<Object> errorCausedBy = new NamedList<>();
+          lastTrace.add("causedBy", errorCausedBy);
+          errorCausedBy.add("errorClass", causedBy.getClass().getName());
+          errorCausedBy.add("msg", causedBy.getMessage());
+          lastTrace = new NamedList<>();
+          errorCausedBy.add("trace", lastTrace);
+          lastTrace.add("stackTrace", Arrays.stream(causedBy.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList()));
+          causedBy = causedBy.getCause();
+        }
       }
       log.error("500 Exception", ex);
 
