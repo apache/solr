@@ -35,9 +35,12 @@ import io.opentelemetry.api.metrics.ObservableLongMeasurement;
 import io.opentelemetry.api.metrics.ObservableMeasurement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.util.stats.OtelInstrumentedExecutorService;
 
 /**
  * This class represents a metrics context that ties together components with the same life-cycle
@@ -251,6 +254,16 @@ public class SolrMetricsContext {
         metricManager.batchCallback(registryName, callback, measurement, additionalMeasurements);
     closeables.add(batchCallback);
     return batchCallback;
+  }
+
+  /** Returns an instrumented wrapper over the given executor service. */
+  public ExecutorService instrumentedExecutorService(
+      ExecutorService delegate,
+      String metricNamePrefix,
+      String executorName,
+      SolrInfoBean.Category category) {
+    return new OtelInstrumentedExecutorService(
+        delegate, this, metricNamePrefix, executorName, category);
   }
 
   public void unregister() {

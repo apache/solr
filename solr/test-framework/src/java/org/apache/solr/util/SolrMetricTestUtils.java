@@ -85,6 +85,11 @@ public final class SolrMetricTestUtils {
 
   public static final String SUFFIX = "_testing";
 
+  /**
+   * Looks up the first {@link MetricSnapshot} named {@code metricName}, and returns the first
+   * {@link DataPointSnapshot} having exactly these {@code labels}. Null if not found. The result is
+   * typically casted to something useful.
+   */
   public static DataPointSnapshot getDataPointSnapshot(
       PrometheusMetricReader reader, String metricName, Labels labels) {
     MetricSnapshots metricSnapshots = reader.collect();
@@ -228,7 +233,7 @@ public final class SolrMetricTestUtils {
       SolrCore core, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         core,
-        "solr_searcher_cache_ops",
+        "solr_core_indexsearcher_cache_ops",
         SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
             .label("category", "CACHE")
             .label("ops", operation)
@@ -244,7 +249,7 @@ public final class SolrMetricTestUtils {
             .label("name", cacheName)
             .label("result", result);
     return SolrMetricTestUtils.getCounterDatapoint(
-        core, "solr_searcher_cache_lookups", builder.build());
+        core, "solr_core_indexsearcher_cache_lookups", builder.build());
   }
 
   public static CounterSnapshot.CounterDataPointSnapshot getCacheSearcherOpsHits(

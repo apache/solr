@@ -60,8 +60,7 @@ dependencies {
   serverLib libs.eclipse.jetty.http2.server
   serverLib libs.eclipse.jetty.http2.common
   serverLib libs.eclipse.jetty.http2.hpack
-
-  serverLib libs.eclipse.jetty.toolchain.servletapi
+  serverLib libs.jakarta.servlet.api
 
   libExt libs.lmax.disruptor
   libExt libs.slf4j.jcloverslf4j
