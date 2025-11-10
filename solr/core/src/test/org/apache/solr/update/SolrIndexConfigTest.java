@@ -25,6 +25,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SimpleMergedSegmentWarmer;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.misc.index.BPReorderingMergePolicy;
+import org.apache.lucene.sandbox.index.MergeOnFlushMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,6 +37,7 @@ import org.apache.solr.core.TestMergePolicyConfig;
 import org.apache.solr.index.SortingMergePolicy;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
+import org.apache.solr.util.RandomForceMergePolicy;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,6 +60,8 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
       "solrconfig-sortingmergepolicyfactory.xml";
   private static final String solrConfigFileNameBPReorderingMergePolicyFactory =
       "solrconfig-bpreorderingmergepolicyfactory.xml";
+  private static final String solrConfigFileNameMergeOnFlushMergePolicyFactory =
+      "solrconfig-mergeonflushmergepolicyfactory.xml";
   private static final String schemaFileName = "schema.xml";
 
   private static boolean compoundMergePolicySort = false;
@@ -170,6 +174,47 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     final Sort actual = sortingMergePolicy.getSort();
     assertEquals("SortingMergePolicy.getSort", expected, actual);
+  }
+
+  public void testMergeOnFlushMPSolrIndexConfigCreation() throws Exception {
+    final SortField sortField1 = new SortField("timestamp_i_dvo", SortField.Type.INT, true);
+    final SortField sortField2 = new SortField("id", SortField.Type.STRING, false);
+    sortField2.setMissingValue(SortField.STRING_LAST);
+
+    SolrConfig solrConfig =
+        new SolrConfig(instanceDir, solrConfigFileNameMergeOnFlushMergePolicyFactory);
+    SolrIndexConfig solrIndexConfig = new SolrIndexConfig(solrConfig, null);
+    assertNotNull(solrIndexConfig);
+    IndexSchema indexSchema = IndexSchemaFactory.buildIndexSchema(schemaFileName, solrConfig);
+
+    h.getCore().setLatestSchema(indexSchema);
+    IndexWriterConfig iwc = solrIndexConfig.toIndexWriterConfig(h.getCore());
+
+    final MergePolicy mergePolicy = iwc.getMergePolicy();
+    assertNotNull("null mergePolicy", mergePolicy);
+    assertTrue(
+        "mergePolicy (" + mergePolicy + ") is not a SortingMergePolicy",
+        mergePolicy instanceof SortingMergePolicy);
+    final SortingMergePolicy sortingMergePolicy = (SortingMergePolicy) mergePolicy;
+
+    MergePolicy firstInnerPolicy = sortingMergePolicy.unwrap();
+    assertNotNull("null firstInnerMergePolicy", firstInnerPolicy);
+    assertTrue(
+        "mergePolicy (" + firstInnerPolicy + ") is not a MergeOnFlushMergePolicy",
+        firstInnerPolicy instanceof MergeOnFlushMergePolicy);
+    final MergeOnFlushMergePolicy mergeOnFlushMergePolicy =
+        (MergeOnFlushMergePolicy) firstInnerPolicy;
+    assertEquals(
+        "Wrong maxSegmentThresholdMB for MergeOnFlushMergePolicy",
+        10,
+        mergeOnFlushMergePolicy.getSmallSegmentThresholdMB(),
+        .01);
+
+    MergePolicy secondInnerPolicy = mergeOnFlushMergePolicy.unwrap();
+    assertNotNull("null secondInnerMergePolicy", secondInnerPolicy);
+    assertTrue(
+        "mergePolicy (" + secondInnerPolicy + ") is not a RandomForceMergePolicyFactory",
+        secondInnerPolicy instanceof RandomForceMergePolicy);
   }
 
   public void testBPReorderingMPSolrIndexConfigCreation() throws Exception {
