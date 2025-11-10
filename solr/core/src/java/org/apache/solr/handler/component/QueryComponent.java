@@ -838,8 +838,8 @@ public class QueryComponent extends SearchComponent {
       shardRows = rb.shards_rows;
     } else {
       shardRows = rb.getSortSpec().getCount();
+      // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
       if (shardRows > 0) {
-        // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
         shardRows += rb.getSortSpec().getOffset();
       }
     }
