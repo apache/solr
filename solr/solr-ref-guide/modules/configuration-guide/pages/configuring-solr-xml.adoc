@@ -65,7 +65,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 
-  <metrics enabled="${metricsEnabled:true}"/>
+  <metrics enable="${metricsEnabled:true}"/>
 
 </solr>
 ----

@@ -144,7 +144,7 @@ public class MiniSolrCloudCluster {
           + "  </solrcloud>\n"
           +
           // NOTE: this turns off the metrics collection unless overridden by a sysprop
-          "  <metrics enabled=\"${metricsEnabled:false}\">\n"
+          "  <metrics enable=\"${metricsEnabled:false}\">\n"
           + "    <reporter name=\"default\" class=\"org.apache.solr.metrics.reporters.SolrJmxReporter\">\n"
           + "      <str name=\"rootName\">solr_${hostPort:8983}</str>\n"
           + "    </reporter>\n"

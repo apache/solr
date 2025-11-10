@@ -698,7 +698,8 @@ public class SolrXmlConfig {
 
   private static MetricsConfig getMetricsConfig(ConfigNode metrics) {
     MetricsConfig.MetricsConfigBuilder builder = new MetricsConfig.MetricsConfigBuilder();
-    boolean enabled = metrics.boolAttr("enabled", true);
+    final var pluginInfo = new PluginInfo(metrics, "metrics", false, false);
+    boolean enabled = pluginInfo.isEnabled();
     builder.setEnabled(enabled);
     if (!enabled) {
       log.info("Metrics collection is disabled.");

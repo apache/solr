@@ -137,12 +137,12 @@ The metrics available in your system can be customized by modifying the `<metric
 TIP: See also the section xref:configuration-guide:configuring-solr-xml.adoc[] for more information about the `solr.xml` file, where to find it, and how to edit it.
 
 === Disabling the Metrics Collection
-The `<metrics>` element in `solr.xml` supports one attribute `metricsEnabled`, which takes a boolean value,
-for example `<metricsEnabled="true">`.
+The `<metrics>` element in `solr.xml` supports one attribute `enable`, which takes a boolean value,
+for example `<metrics enable="true">`.
 
 The default value of this attribute is `true`, meaning that metrics are being collected, processed and available from the metrics APIs and/or OTLP.
 
-The `false` value of this attribute (`<metricsEnabled="false">`) turns off metrics collection and processing.
+The `false` value of this attribute (`<metrics enable="false">`) turns off metrics collection and processing.
 Internally, all metrics are replaced by OpenTelemetry no-op
 implementations, which effectively removes nearly all overheads related to metrics collection.
 The metrics APIs stop reporting any metrics and will only return empty responses.

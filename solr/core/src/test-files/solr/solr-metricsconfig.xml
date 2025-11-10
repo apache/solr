@@ -18,5 +18,5 @@
 
 <solr>
  <str name="hiddenSysProps">foo,bar,baz</str>
- <metrics enabled="${metricsEnabled:true}"/>
+ <metrics enable="${metricsEnabled:true}"/>
 </solr>
