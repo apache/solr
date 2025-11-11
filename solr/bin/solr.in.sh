@@ -129,7 +129,7 @@
 #SOLR_LOGS_DIR=logs
 
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=true
+#SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT_LISTEN=8983

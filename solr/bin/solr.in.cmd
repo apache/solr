@@ -114,7 +114,7 @@ REM Location where Solr should write logs to. Absolute or relative to solr start
 REM set SOLR_LOGS_DIR=logs
 
 REM Enables jetty request log for all requests
-REM set SOLR_REQUESTLOG_ENABLED=true
+REM set SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT_LISTEN=8983
