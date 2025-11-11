@@ -122,7 +122,7 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 (advanced) Specifies the underlying knn algorithm to use
 +
 
-Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
+Accepted values: `hnsw`, `cuvs_hnsw` (requires GPU acceleration setup).
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
@@ -714,40 +714,33 @@ To try this out, first copy the module jar files (found in the regular Solr tarb
 cp modules/cuvs/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
-Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
+Define the `fieldType` in the schema, with knnAlgorithm set to `cuvs_hnsw`:
 
 [source,xml]
 ----
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" />
-----
-
-Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
-
-[source,xml]
-----
-<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-    <str name="cuvsWriterThreads">8</str>
-    <str name="intGraphDegree">128</str>
-    <str name="graphDegree">64</str>
-    <str name="hnswLayers">1</str>
-    <str name="maxConn">16</str>
-    <str name="beamWidth">100</str>
-</codecFactory>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cuvs_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswMaxConn="16" cuvsHnswBeamWidth="100"/>
 ----
 
 Where:
 
 * `cuvsWriterThreads` - number of threads to use
 
-* `intGraphDegree` - Intermediate graph degree for building the CAGRA index
+* `cuvsIntGraphDegree` - Intermediate graph degree for building the CAGRA index
 
-* `graphDegree` - Graph degree for building the CAGRA index
+* `cuvsGraphDegree` - Graph degree for building the CAGRA index
 
-* `hnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
+* `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `maxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswMaxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `beamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswBeamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+
+Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
+
+[source,xml]
+----
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
+----
 
 === Example
 
@@ -880,14 +873,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         </autoSoftCommit>
     </updateHandler>
 
-    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-        <str name="cuvsWriterThreads">32</str>
-        <str name="intGraphDegree">128</str>
-        <str name="graphDegree">64</str>
-        <str name="hnswLayers">1</str>
-        <str name="maxConn">16</str>
-        <str name="beamWidth">100</str>
-    </codecFactory>
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 
     <requestHandler name="/select" class="solr.SearchHandler">
         <lst name="defaults">
@@ -909,8 +895,14 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
     <fieldType name="knn_vector" class="solr.DenseVectorField"
                vectorDimension="8"
-               knnAlgorithm="cagra_hnsw"
-               similarityFunction="cosine" />
+               knnAlgorithm="cuvs_hnsw"
+               similarityFunction="cosine"
+               cuvsWriterThreads="32"
+               cuvsIntGraphDegree="128"
+               cuvsGraphDegree="64"
+               cuvsHnswLayers="1"
+               cuvsHnswMaxConn="16"
+               cuvsHnswBeamWidth="100"/>
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

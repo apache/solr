@@ -28,14 +28,7 @@
     <dataDir>${solr.data.dir:}</dataDir>
     <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
 
-    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-      <str name="cuvsWriterThreads">32</str>
-      <str name="intGraphDegree">128</str>
-      <str name="graphDegree">64</str>
-      <str name="hnswLayers">1</str>
-      <str name="maxConn">16</str>
-      <str name="beamWidth">100</str>
-    </codecFactory>
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 
     <requestHandler name="/select" class="solr.SearchHandler"></requestHandler>
 </config>
