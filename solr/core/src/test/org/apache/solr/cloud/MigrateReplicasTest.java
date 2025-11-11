@@ -37,7 +37,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -211,7 +211,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
           var dp =
               SolrMetricTestUtils.getGaugeDatapoint(
                   core,
-                  "solr_replication_is_replicating",
+                  "solr_core_replication_is_replicating",
                   SolrMetricTestUtils.newCloudLabelsBuilder(core)
                       .label("category", SolrInfoBean.Category.REPLICATION.toString())
                       .label("handler", "/replication")
@@ -220,7 +220,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
           double isReplicating = dp.getValue();
           assertTrue(
-              "solr_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              "solr_core_replication_is_replicating should be 0 or 1, got: " + isReplicating,
               isReplicating == 0.0 || isReplicating == 1.0);
         }
       }

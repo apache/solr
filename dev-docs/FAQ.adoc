@@ -23,7 +23,7 @@ created a branch that can be deleted.
 
 You can review instructions for running Solr in Docker in the xref:running-in-docker.adoc[Running in Docker developer doc].
 
-=== Whats the fastest build lifecycle for frontend work on Solr Admin?
+=== What's the fastest build lifecycle for frontend work on Solr Admin?
 
 Run `gradle dev`, and then `cd ./packaging/build/dev/`.  Fire up your cluster
 via `bin/solr start -e cloud --no-prompt` and then as you make changes to assets in `/solr/webapp/web`,

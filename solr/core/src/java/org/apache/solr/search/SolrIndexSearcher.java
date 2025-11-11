@@ -120,6 +120,7 @@ import org.apache.solr.update.IndexFingerprint;
 import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.util.IOFunction;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -611,7 +612,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         caffeineCache.initializeMetrics(
             solrMetricsContext,
             core.getCoreAttributes().toBuilder().put(NAME_ATTR, cache.name()).build(),
-            "solr_searcher_cache");
+            "solr_core_indexsearcher_cache");
       }
     }
     initializeMetrics(solrMetricsContext, core.getCoreAttributes());
@@ -2626,12 +2627,14 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     warmupTimer =
         new AttributedLongTimer(
             solrMetricsContext.longHistogram(
-                "solr_searcher_warmup_time", "Searcher warmup time (ms)", OtelUnit.MILLISECONDS),
+                "solr_core_indexsearcher_warmup_time",
+                "Searcher warmup time (ms)",
+                OtelUnit.MILLISECONDS),
             baseAttributes);
 
     toClose.add(
         solrMetricsContext.observableLongCounter(
-            "solr_searcher_live_docs_cache",
+            "solr_core_indexsearcher_live_docs_cache",
             "LiveDocs cache metrics",
             obs -> {
               obs.record(
@@ -2647,7 +2650,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // reader stats (numeric)
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_index_num_docs",
+            "solr_core_indexsearcher_index_num_docs",
             "Number of live docs in the index",
             obs -> {
               try {
@@ -2659,7 +2662,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_index_docs",
+            "solr_core_indexsearcher_index_docs",
             "Total number of docs in the index (including deletions)",
             obs -> {
               try {
@@ -2670,7 +2673,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // indexVersion (numeric)
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr_searcher_index_version",
+            "solr_core_indexsearcher_index_version",
             "Lucene index version",
             obs -> {
               try {
@@ -2680,20 +2683,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
             }));
     // size of the currently opened commit
     toClose.add(
-        solrMetricsContext.observableLongGauge(
-            "solr_searcher_index_commit_size_bytes",
-            "Size of the current index commit (bytes)",
+        solrMetricsContext.observableDoubleGauge(
+            "solr_core_indexsearcher_index_commit_size",
+            "Size of the current index commit (megabytes)",
             obs -> {
               try {
                 long total = 0L;
                 for (String file : reader.getIndexCommit().getFileNames()) {
                   total += DirectoryFactory.sizeOf(reader.directory(), file);
                 }
-                obs.record(total, baseAttributes);
+                obs.record(MetricUtils.bytesToMegabytes(total), baseAttributes);
               } catch (Exception e) {
                 // skip recording if unavailable (no nullNumber in OTel)
               }
-            }));
+            },
+            OtelUnit.MEGABYTES));
   }
 
   public long getWarmupTime() {

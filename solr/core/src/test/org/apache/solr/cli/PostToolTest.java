@@ -113,7 +113,7 @@ public class PostToolTest extends SolrCloudTestCase {
     final String collection = "testRunWithCollectionParam";
 
     // Provide the port for the PostTool to look up.
-    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    EnvUtils.setProperty("solr.port.listen", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);
@@ -150,7 +150,7 @@ public class PostToolTest extends SolrCloudTestCase {
     final String collection = "testRunCsvWithCustomSeparatorParam";
 
     // Provide the port for the PostTool to look up.
-    EnvUtils.setProperty("jetty.port", cluster.getJettySolrRunner(0).getLocalPort() + "");
+    EnvUtils.setProperty("solr.port.listen", cluster.getJettySolrRunner(0).getLocalPort() + "");
 
     withBasicAuth(CollectionAdminRequest.createCollection(collection, "conf1", 1, 1, 0, 0))
         .processAndWait(cluster.getSolrClient(), 10);

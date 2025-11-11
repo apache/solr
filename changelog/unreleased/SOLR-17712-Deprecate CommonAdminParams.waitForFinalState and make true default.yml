@@ -1,0 +1,9 @@
+title: SolrCloud admin commands should more reliably be fully completed when Solr returns a response.
+  The `waitForFinalState` param now defaults to true and is deprecated. (Abhishek Umarjikar)
+type: changed
+authors:
+- name: Abhishek Umarjikar
+- name: David Smiley
+links:
+- name: SOLR-17712
+  url: https://issues.apache.org/jira/browse/SOLR-17712

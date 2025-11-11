@@ -37,6 +37,15 @@ This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 Minimum Java version for Solr 10.x is Java 21.
 
+== Solr Jetty parameters
+
+The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
+
+The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
+
+The previous `jetty.port` is deprecated and now use `solr.port.listen`.
+
+
 === Solr CLI and Scripts
 
 The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
@@ -73,7 +82,8 @@ Users who previously relied on collection-specific URLs to avoid including the c
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
-* The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient, not an Apache one.
+* The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
+The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient.
 
 === SolrCloud Overseer
 
@@ -178,19 +188,32 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 +
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
+* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the `/admin/metrics` endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
+
+* SolrInfoMBeanHandler and PluginInfoHandler have been removed
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
-=== Upgrade to Jetty 12.x
+=== Upgrade to Jetty 12.x and Jakarta namespace
 
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
+This migration marks the point at which Solr no longer includes _any_ JAR with "javax" in it -- the Jakarta migration is complete.
 
-=== Open Telemetry
+=== OpenTelemetry
 
-* The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the /admin/metrics endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
+Solr 10 has migrated from Dropwizard metrics to OpenTelemetry (OTEL) for observability. This migration provides native Prometheus support, OTLP support, exemplar support for tracing correlation, and native attributes and labels on all metrics.
 
-* Core renaming and swapping will reset the state of all the corresponding cores metrics
+* All metrics have been migrated to snake-case metric names instead of dot-delimited format and now natively include attributes/labels.
+
+* The `/admin/metrics` API now defaults to Prometheus exposition format and no longer supports XML/JSON/javabin. You can specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics exposition format with exemplars support (distributed tracing must be enabled to view exemplars).
+
+* The metrics API supports filtering by metric name and attributes. See xref:deployment-guide:metrics-reporting.adoc#api-filtering[Metrics API Filter] for more info.
+
+* OTLP metrics exporter via gRPC or HTTP is now supported with the OpenTelemetry module. Users can enable the module to push metrics to their preferred OTLP-supported backend.
+
+* Core renaming and swapping will reset the state of all corresponding core metrics.
 
 === Docker
 

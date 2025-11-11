@@ -61,6 +61,9 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.SolrPortAwareCookieSpecFactory;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -107,6 +110,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     public static final int PACKET_MS = 500;
 
     @Override
+    @SuppressForbidden(reason = "don't forbid in tests")
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       String countStr = req.getParameter("count");
       IntStream.range(0, countStr == null ? 10 : Integer.parseInt(countStr))

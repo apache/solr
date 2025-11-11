@@ -193,7 +193,7 @@ $ cd $SOLR_HOME
 
 # uncomment and edit the two variables
 # vim bin/solr.in.sh
-SOLR_JETTY_HOST="0.0.0.0"
+SOLR_HOST_BIND="0.0.0.0"
 SOLR_ZOOKEEPER_EMBEDDED_HOST="0.0.0.0"
 ----
 +

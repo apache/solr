@@ -1,0 +1,9 @@
+title: Parallelize index fingerprint computation across segments via a dedicated thread
+  pool
+type: changed
+authors:
+- name: Matthew Biscocho
+- name: Luke Kot-Zaniewski
+links:
+- name: SOLR-17756
+  url: https://issues.apache.org/jira/browse/SOLR-17756
