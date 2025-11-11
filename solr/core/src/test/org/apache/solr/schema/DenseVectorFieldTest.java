@@ -929,8 +929,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-  testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
-      throws Exception {
+      testFilteredSearchThreshold_earlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
           new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
@@ -956,8 +956,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-  testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
-      throws Exception {
+      testFilteredSearchThreshold_seededAndEarlyTerminationFloatThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
       KnnQParser.EarlyTerminationParams earlyTermination =
@@ -1069,8 +1069,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-  testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
-      throws Exception {
+      testFilteredSearchThreshold_earlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
     try {
       KnnQParser.EarlyTerminationParams earlyTermination =
           new KnnQParser.EarlyTerminationParams(true, 0.995, 7);
@@ -1102,8 +1102,8 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
 
   @Test
   public void
-  testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
-      throws Exception {
+      testFilteredSearchThreshold_seededAndEarlyTerminationByteThresholdInInput_shouldSetCustomThreshold()
+          throws Exception {
     try {
       Query seedQuery = new BooleanQuery.Builder().build();
       KnnQParser.EarlyTerminationParams earlyTermination =
