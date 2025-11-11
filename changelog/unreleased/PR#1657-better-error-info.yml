@@ -1,0 +1,11 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Make the errorInfo much more structured for error responses
+type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+    url: https://home.apache.org/phonebook.html?uid=houston
+links:
+- name: PR#1382
+  url: https://github.com/apache/solr/pull/1382
+

@@ -16,12 +16,8 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.stream.Collectors;
-
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
@@ -101,7 +97,11 @@ public class ResponseUtils {
       if (!hideStackTrace(hideTrace)) {
         NamedList<Object> lastTrace = new NamedList<>();
         info.add("trace", lastTrace);
-        lastTrace.add("stackTrace", Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList()));
+        lastTrace.add(
+            "stackTrace",
+            Arrays.stream(ex.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.toList()));
 
         Throwable causedBy = ex.getCause();
         while (causedBy != null) {
@@ -111,7 +111,11 @@ public class ResponseUtils {
           errorCausedBy.add("msg", causedBy.getMessage());
           lastTrace = new NamedList<>();
           errorCausedBy.add("trace", lastTrace);
-          lastTrace.add("stackTrace", Arrays.stream(causedBy.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList()));
+          lastTrace.add(
+              "stackTrace",
+              Arrays.stream(causedBy.getStackTrace())
+                  .map(StackTraceElement::toString)
+                  .collect(Collectors.toList()));
           causedBy = causedBy.getCause();
         }
       }
@@ -178,7 +182,10 @@ public class ResponseUtils {
     if (code == 500 || code < 100) {
       if (!hideStackTrace(hideTrace)) {
         errorInfo.trace = new ErrorInfo.ErrorStackTrace();
-        errorInfo.trace.stackTrace = Arrays.stream(ex.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+        errorInfo.trace.stackTrace =
+            Arrays.stream(ex.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.toList());
 
         ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
         Throwable causedBy = ex.getCause();
@@ -188,7 +195,10 @@ public class ResponseUtils {
           errorCausedBy.errorClass = causedBy.getClass().getName();
           errorCausedBy.msg = causedBy.getMessage();
           errorCausedBy.trace = new ErrorInfo.ErrorStackTrace();
-          errorCausedBy.trace.stackTrace = Arrays.stream(causedBy.getStackTrace()).map(StackTraceElement::toString).collect(Collectors.toList());
+          errorCausedBy.trace.stackTrace =
+              Arrays.stream(causedBy.getStackTrace())
+                  .map(StackTraceElement::toString)
+                  .collect(Collectors.toList());
           lastTrace = errorCausedBy.trace;
           causedBy = causedBy.getCause();
         }
