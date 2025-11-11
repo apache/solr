@@ -103,7 +103,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   set SOLR_URL_SCHEME=https
   IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
     set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=ssl-reload"
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keyStoreReload.enabled=true"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keystore.reload.enabled=true"
   )
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
@@ -133,10 +133,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.need.client.auth.enabled=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
   IF DEFINED SOLR_SSL_WANT_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.want.client.auth.enabled=%SOLR_SSL_WANT_CLIENT_AUTH%"
   )
 
   IF DEFINED SOLR_SSL_CLIENT_KEY_STORE (
@@ -174,7 +174,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     )
   )
   IF DEFINED SOLR_SSL_CHECK_PEER_NAME (
-   set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.ssl.checkPeerName=%SOLR_SSL_CHECK_PEER_NAME% -Dsolr.jetty.ssl.sniHostCheck=%SOLR_SSL_CHECK_PEER_NAME%"
+   set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.ssl.check.peer.name.enabled=%SOLR_SSL_CHECK_PEER_NAME% -Dsolr.jetty.ssl.sni.host.check.enabled=%SOLR_SSL_CHECK_PEER_NAME%"
   )
 ) ELSE (
   set SOLR_SSL_OPTS=

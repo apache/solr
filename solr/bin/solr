@@ -213,7 +213,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
     SOLR_JETTY_CONFIG+=("--module=ssl-reload")
-    SOLR_SSL_OPTS+=" -Dsolr.keyStoreReload.enabled=true"
+    SOLR_SSL_OPTS+=" -Dsolr.keystore.reload.enabled=true"
   fi
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
@@ -245,10 +245,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.need.client.auth.enabled=$SOLR_SSL_NEED_CLIENT_AUTH"
   fi
   if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.want.client.auth.enabled=$SOLR_SSL_WANT_CLIENT_AUTH"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
@@ -274,7 +274,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sniHostCheck=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.check.peer.name.enabled=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
