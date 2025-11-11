@@ -31,7 +31,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <statsCache class="${solr.statsCache:}"/>
+  <statsCache class="org.apache.solr.search.stats.ExactStatsCache"/>
 
   <updateHandler class="${solr.updateHandler:solr.DirectUpdateHandler2}">
 
@@ -95,14 +95,23 @@
   <requestHandler name="/select" class="solr.SearchHandler">
   </requestHandler>
 
-    <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
+  <requestHandler name="/tfd" class="solr.SearchHandler">
+    <arr name="last-components">
+      <str>fd</str>
+    </arr>
+  </requestHandler>
+
+  <searchComponent class="org.apache.solr.handler.component.ForcedDistributedComponent" name="fd">
+  </searchComponent>
+
+  <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
     </requestHandler>
 
     <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
         <int name="maxCombinerQueries">2</int>
         <lst name="combiners">
             <lst name="test">
-                <str name="class">org.apache.solr.search.combine.TestCombiner</str>
+                <str name="class">org.apache.solr.handler.component.combine.TestCombiner</str>
                 <int name="var1">30</int>
                 <str name="var2">test</str>
             </lst>
@@ -156,7 +165,7 @@
   </highlighting>
   </searchComponent>
 
-    <initParams path="/select,/search">
+    <initParams path="/select,/search,/tfd">
         <lst name="defaults">
             <str name="df">text</str>
         </lst>

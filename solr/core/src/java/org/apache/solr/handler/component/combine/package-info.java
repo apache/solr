@@ -16,7 +16,7 @@
  */
 
 /**
- * This contains the classes to combine the scores from search index results as well as from across
- * shards. Multiple implementation of algorithms can be added to support them.
+ * This contains the classes to combine the scores from search index results. Multiple
+ * implementation of algorithms can be added to support them.
  */
-package org.apache.solr.search.combine;
+package org.apache.solr.handler.component.combine;

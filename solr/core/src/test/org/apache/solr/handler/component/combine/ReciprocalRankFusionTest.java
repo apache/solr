@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.combine;
+package org.apache.solr.handler.component.combine;
 
 import static org.apache.solr.common.params.CombinerParams.RECIPROCAL_RANK_FUSION;
 

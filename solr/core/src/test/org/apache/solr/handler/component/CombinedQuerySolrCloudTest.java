@@ -243,4 +243,22 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         "title <em>test</em> for <em>doc</em> 5",
         rsp.getHighlighting().get("5").get("title").getFirst());
   }
+
+  /**
+   * Tests the forced distribution functionality.
+   *
+   * <p>This test prepares index documents, executes a query with specific parameters, and verifies
+   * that the debug map contains expected process and prepare entries.
+   *
+   * @throws Exception if any error occurs during test execution
+   */
+  @Test
+  public void testForcedDistrib() throws Exception {
+    prepareIndexDocs();
+    QueryResponse rsp =
+        query(
+            "q", "id:2", "rows", "0", "debug", "query", "rid", "fd-test", CommonParams.QT, "/tfd");
+    assertTrue(rsp.getDebugMap().containsKey("process()"));
+    assertTrue(rsp.getDebugMap().containsKey("prepare()"));
+  }
 }
