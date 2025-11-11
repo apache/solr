@@ -257,22 +257,34 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   @Test
   public void testMatchAllDocsFlScore() throws Exception {
-    // explicitly requesting rows=0 means that scores should not unconditionally disable caching and
-    // sorting optimizations
+    // explicitly requesting scores no longer unconditionally disables all cache consultation and
+    // sort optimization; but `{!cache=false}` on the main query does disable cache/sort
+    // optimization.
+    boolean noCache = random().nextBoolean();
+    String prefix = noCache ? "{!cache=false}" : "";
+
+    // should no longer matter whether we request score.
+    String fl = random().nextBoolean() ? "id" : "id,score";
     String response =
         JQ(
             req(
                 "q",
-                MATCH_ALL_DOCS_QUERY,
+                prefix.concat(MATCH_ALL_DOCS_QUERY),
                 "indent",
                 "true",
                 "rows",
                 "0",
                 "fl",
-                "id,score",
+                fl,
                 "sort",
                 (random().nextBoolean() ? "id asc" : "score desc")));
-    assertMetricCounts(response, true, 0, 0, 1, ALL_DOCS);
+    /*
+    NOTE: when `noCache=true`, pretend we're not MatchAllDocs, from the perspective of
+    `assertMetricsCounts(...)`.
+    We're specifically choosing `*:*` here because we want a query that would _definitely_ hit
+    our various optimizations, _except_ for if/when we explicitly disable caching.
+     */
+    assertMetricCounts(response, !noCache, 0, noCache ? 1 : 0, noCache ? 0 : 1, ALL_DOCS);
   }
 
   @Test

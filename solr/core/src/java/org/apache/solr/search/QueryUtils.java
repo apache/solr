@@ -53,34 +53,44 @@ public class QueryUtils {
     return true;
   }
 
+  /** Use instead: {@link #getConstantScore(Query)} */
+  @Deprecated
+  public static boolean isConstantScoreQuery(Query q) {
+    return getConstantScore(q) != null;
+  }
+
   /**
    * Recursively unwraps the specified query to determine whether it is capable of producing a score
-   * that varies across different documents. Returns true if this query is not capable of producing
-   * a varying score (i.e., it is a constant score query).
+   * that varies across different documents. Returns the constant score if this query is not capable
+   * of producing a varying score (i.e., it is a constant score query), else returns null.
    */
-  public static boolean isConstantScoreQuery(Query q) {
+  public static Float getConstantScore(Query q) {
+    float ret = 1.0f;
     while (true) {
       if (q instanceof BoostQuery) {
+        ret *= ((BoostQuery) q).getBoost();
         q = ((BoostQuery) q).getQuery();
       } else if (q instanceof WrappedQuery) {
         q = ((WrappedQuery) q).getWrappedQuery();
       } else if (q instanceof ConstantScoreQuery) {
-        return true;
+        return ret;
       } else if (q instanceof MatchAllDocsQuery) {
-        return true;
+        return ret;
       } else if (q instanceof MatchNoDocsQuery) {
-        return true;
+        return 0.0f;
       } else if (q instanceof DocSetQuery) {
-        return true;
+        return ret;
       } else if (q instanceof BooleanQuery) {
         // NOTE: this check can be very simple because:
         //  1. there's no need to check `q == clause.getQuery()` because BooleanQuery is final, with
         //     a builder that prevents direct loops.
         //  2. we don't bother recursing to second-guess a nominally "scoring" clause that actually
         //     wraps a constant-score query.
-        return ((BooleanQuery) q).clauses().stream().noneMatch(BooleanClause::isScoring);
+        return ((BooleanQuery) q).clauses().stream().noneMatch(BooleanClause::isScoring)
+            ? ret
+            : null;
       } else {
-        return false;
+        return null;
       }
     }
   }
