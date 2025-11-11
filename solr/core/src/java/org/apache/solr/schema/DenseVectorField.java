@@ -152,11 +152,13 @@ public class DenseVectorField extends FloatPointField {
   public void init(IndexSchema schema, Map<String, String> args) {
 
     if (args.containsKey("hnswMaxConnections")) {
-      log.warn("Deprecated parameter 'hnswMaxConnections' detected in fieldType '{}'. Use 'hnswM' instead.",
+      log.warn(
+          "Deprecated parameter 'hnswMaxConnections' detected in fieldType '{}'. Use 'hnswM' instead.",
           getFieldTypeName(schema));
     }
     if (args.containsKey("hnswBeamWidth")) {
-      log.warn("Deprecated parameter 'hnswBeamWidth' detected in fieldType '{}'. Use 'hnswEfConstruction' instead.",
+      log.warn(
+          "Deprecated parameter 'hnswBeamWidth' detected in fieldType '{}'. Use 'hnswEfConstruction' instead.",
           getFieldTypeName(schema));
     }
 
@@ -185,19 +187,25 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_VECTOR_ENCODING);
     args.remove(VECTOR_ENCODING);
 
-    this.hnswM = ofNullable(args.get(HNSW_M))
-        .map(Integer::parseInt)
-        .orElseGet(() -> ofNullable(args.get(HNSW_MAX_CONNECTIONS))
+    this.hnswM =
+        ofNullable(args.get(HNSW_M))
             .map(Integer::parseInt)
-            .orElse(DEFAULT_MAX_CONN));
+            .orElseGet(
+                () ->
+                    ofNullable(args.get(HNSW_MAX_CONNECTIONS))
+                        .map(Integer::parseInt)
+                        .orElse(DEFAULT_MAX_CONN));
     args.remove(HNSW_M);
     args.remove(HNSW_MAX_CONNECTIONS);
 
-    this.hnswEfConstruction = ofNullable(args.get(HNSW_EF_CONSTRUCTION))
-        .map(Integer::parseInt)
-        .orElseGet(() -> ofNullable(args.get(HNSW_BEAM_WIDTH))
+    this.hnswEfConstruction =
+        ofNullable(args.get(HNSW_EF_CONSTRUCTION))
             .map(Integer::parseInt)
-            .orElse(DEFAULT_BEAM_WIDTH));
+            .orElseGet(
+                () ->
+                    ofNullable(args.get(HNSW_BEAM_WIDTH))
+                        .map(Integer::parseInt)
+                        .orElse(DEFAULT_BEAM_WIDTH));
     args.remove(HNSW_EF_CONSTRUCTION);
     args.remove(HNSW_BEAM_WIDTH);
 
@@ -534,13 +542,13 @@ public class DenseVectorField extends FloatPointField {
 
     int caseNumber = (seedEnabled ? 1 : 0) + (earlyTerminationEnabled ? 2 : 0);
     return switch (caseNumber) {
-      // 0: no seed, no early termination -> knnQuery
+        // 0: no seed, no early termination -> knnQuery
       default -> knnQuery;
-      // 1: only seed -> Seeded(knnQuery)
+        // 1: only seed -> Seeded(knnQuery)
       case 1 -> getSeededQuery(knnQuery, seedQuery);
-      // 2: only early termination -> Patience(knnQuery)
+        // 2: only early termination -> Patience(knnQuery)
       case 2 -> getEarlyTerminationQuery(knnQuery, earlyTermination);
-      // 3: seed + early termination -> Patience(Seeded(knnQuery))
+        // 3: seed + early termination -> Patience(Seeded(knnQuery))
       case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
     };
   }
@@ -594,19 +602,19 @@ public class DenseVectorField extends FloatPointField {
     return switch (knnQuery) {
       case KnnFloatVectorQuery knnFloatQuery -> useExplicitParams
           ? PatienceKnnVectorQuery.fromFloatQuery(
-          knnFloatQuery,
-          earlyTermination.getSaturationThreshold(),
-          earlyTermination.getPatience())
+              knnFloatQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
           : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
       case KnnByteVectorQuery knnByteQuery -> useExplicitParams
           ? PatienceKnnVectorQuery.fromByteQuery(
-          knnByteQuery,
-          earlyTermination.getSaturationThreshold(),
-          earlyTermination.getPatience())
+              knnByteQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
           : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
       case SeededKnnVectorQuery seedQuery -> useExplicitParams
           ? PatienceKnnVectorQuery.fromSeededQuery(
-          seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
+              seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
           : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
       default -> throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
