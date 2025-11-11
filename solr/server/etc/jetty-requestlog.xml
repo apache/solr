@@ -30,7 +30,7 @@
         <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
           <Arg><Property name="solr.logs.dir" default="logs"/>/yyyy_mm_dd.request.log</Arg>
           <Set name="filenameDateFormat">yyyy_MM_dd</Set>
-          <Set name="retainDays"><Property name="solr.logs.requestlog.retain.days" default="5"/></Set>
+          <Set name="retainDays"><Property name="solr.logs.requestlog.retain.days" default="3"/></Set>
           <Set name="append">true</Set>
           <Set name="timeZone">UTC</Set>
         </New>
@@ -44,6 +44,6 @@
   <Call class="java.lang.System" name="setProperty"><Arg>solr.logs.requestlog.enabled</Arg><Arg>true</Arg></Call>
   <Call class="java.lang.System" name="setProperty">
     <Arg>solr.logs.requestlog.retain.days</Arg>
-    <Arg><Property name="solr.logs.requestlog.retain.days" default="5"/></Arg>
+    <Arg><Property name="solr.logs.requestlog.retain.days" default="3"/></Arg>
   </Call>
 </Configure>
