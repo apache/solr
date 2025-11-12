@@ -557,7 +557,7 @@ IF "%firstChar%"=="-" (
   goto invalid_cmd_line
 )
 
-set SOLR_HOST=%~2
+set SOLR_HOST_ADVERTISE=%~2
 set "PASS_TO_RUN_EXAMPLE=--host %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT

@@ -1134,8 +1134,8 @@ if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
     "-Dcom.sun.management.jmxremote.rmi.port=$RMI_PORT")
 
   # if the host is set, then set that as the rmi server hostname
-  if [ "$SOLR_HOST" != "" ]; then
-    REMOTE_JMX_OPTS+=("-Djava.rmi.server.hostname=$SOLR_HOST")
+  if [ "$SOLR_HOST_ADVERTISE" != "" ]; then
+    REMOTE_JMX_OPTS+=("-Djava.rmi.server.hostname=$SOLR_HOST_ADVERTISE")
   fi
 else
   REMOTE_JMX_OPTS=()
