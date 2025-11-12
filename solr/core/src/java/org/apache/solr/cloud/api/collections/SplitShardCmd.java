@@ -860,8 +860,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
-    String indexSizeMetric = "solr_core_index_size_bytes";
-    String freeDiskSpaceMetric = "solr_disk_space_bytes";
+    String indexSizeMetric = "solr_core_index_size_megabytes";
+    String freeDiskSpaceMetric = "solr_disk_space_megabytes";
     String coreLabel =
         collection
             + "_"
