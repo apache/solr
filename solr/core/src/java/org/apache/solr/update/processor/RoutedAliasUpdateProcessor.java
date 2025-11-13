@@ -269,11 +269,15 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
   private SolrCmdDistributor.Node lookupShardLeaderOfCollection(String collection) {
     final Collection<Slice> activeSlices =
         zkController.getClusterState().getCollection(collection).getActiveSlices();
-    if (activeSlices.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Cannot route to collection " + collection);
-    }
-    final Slice slice = activeSlices.stream().findAny().orElseThrow();
+    final Slice slice =
+        activeSlices.stream()
+            .findAny()
+            .orElseThrow(
+                () ->
+                    new SolrException(
+                        SolrException.ErrorCode.SERVICE_UNAVAILABLE,
+                        "Cannot route to collection " + collection));
+
     return getLeaderNode(collection, slice);
   }
 

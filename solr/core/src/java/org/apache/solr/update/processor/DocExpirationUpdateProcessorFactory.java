@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Optional;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -461,13 +462,13 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
     String col = desc.getCollectionName();
 
     DocCollection docCollection = zk.getClusterState().getCollection(col);
-    if (docCollection.getActiveSlices().isEmpty()) {
+    Optional<Slice> firstSlice =
+        docCollection.getActiveSlices().stream().min(COMPARE_SLICES_BY_NAME);
+    if (firstSlice.isEmpty()) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
-    Slice firstSlice =
-        docCollection.getActiveSlices().stream().min(COMPARE_SLICES_BY_NAME).orElseThrow();
-    Replica firstSliceLeader = firstSlice.getLeader();
+    Replica firstSliceLeader = firstSlice.get().getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader", col);
       return false;
