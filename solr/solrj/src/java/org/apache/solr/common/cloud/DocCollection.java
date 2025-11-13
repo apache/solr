@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -317,7 +316,7 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   /** Get the list of replicas hosted on the given node, or an empty list if none. */
   public List<Replica> getReplicasOnNode(String nodeName) {
-    return nodeNameReplicas.getOrDefault(nodeName, Collections.emptyList());
+    return nodeNameReplicas.getOrDefault(nodeName, List.of());
   }
 
   public int getZNodeVersion() {
