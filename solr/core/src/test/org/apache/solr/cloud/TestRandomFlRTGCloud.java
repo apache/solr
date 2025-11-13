@@ -56,7 +56,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Pair;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.RawValueTransformerFactory;
@@ -504,7 +503,6 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     if (client instanceof CloudSolrClient) {
       wt = "javabin";
     }
-
     final Object rsp;
     final SolrDocumentList docs;
     if ("javabin".equals(wt)) {
@@ -633,8 +631,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * This method return a random SolrClient, and can include CloudSolrClient to choose from cloud
-   * in our cluster.
+   * This method return a random SolrClient, and can include CloudSolrClient to choose from cloud in
+   * our cluster.
    */
   public static SolrClient getRandomClient(Random rand) {
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
@@ -646,7 +644,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     } else {
       JettySolrRunner jetty = jettySolrRunners.get(idx);
       String jettyBaseUrl = jetty.getBaseUrl().toString();
-      return CLIENTS.computeIfAbsent(new Pair<>(jettyBaseUrl, wt), k -> getSolrClient(k.first()));
+      return CLIENTS.computeIfAbsent(jettyBaseUrl, k -> getSolrClient(k));
     }
   }
 
