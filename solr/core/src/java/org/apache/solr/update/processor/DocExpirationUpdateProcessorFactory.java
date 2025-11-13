@@ -22,11 +22,9 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -464,13 +462,13 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
     String col = desc.getCollectionName();
 
     DocCollection docCollection = zk.getClusterState().getCollection(col);
-    if (docCollection.getActiveSlicesArr().length == 0) {
+    Optional<Slice> firstSlice =
+        docCollection.getActiveSlices().stream().min(COMPARE_SLICES_BY_NAME);
+    if (firstSlice.isEmpty()) {
       log.error("Collection {} has no active Slices?", col);
       return false;
     }
-    List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
-    slices.sort(COMPARE_SLICES_BY_NAME);
-    Replica firstSliceLeader = slices.get(0).getLeader();
+    Replica firstSliceLeader = firstSlice.get().getLeader();
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader", col);
       return false;
