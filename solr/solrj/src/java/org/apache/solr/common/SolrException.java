@@ -21,6 +21,7 @@ import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
 
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 import org.slf4j.MDC;
 
@@ -122,7 +123,7 @@ public class SolrException extends RuntimeException {
     if (key == null || value == null)
       throw new IllegalArgumentException("Exception metadata cannot be null!");
 
-    if (metadata == null) metadata = new NamedList<>();
+    if (metadata == null) metadata = new SimpleOrderedMap<>();
     metadata.add(key, value);
   }
 

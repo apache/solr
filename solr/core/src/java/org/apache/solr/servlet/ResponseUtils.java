@@ -22,6 +22,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
@@ -72,7 +73,7 @@ public class ResponseUtils {
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
       if (errorMetadata == null) {
-        errorMetadata = new NamedList<>();
+        errorMetadata = new SimpleOrderedMap<>();
       }
       errorMetadata.add(ErrorInfo.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(
@@ -83,40 +84,30 @@ public class ResponseUtils {
       }
     }
 
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      String msg = th.getMessage();
-      if (msg != null) {
-        info.add("msg", msg);
-        break;
-      }
-    }
-
     // For any regular code, don't include the stack trace
+    boolean stackTracePrinted = false;
     if (code == 500 || code < 100) {
       // hide all stack traces, as configured
       if (!hideStackTrace(hideTrace)) {
-        NamedList<Object> lastTrace = new NamedList<>();
-        info.add("trace", lastTrace);
-        lastTrace.add(
-            "stackTrace",
-            Arrays.stream(ex.getStackTrace())
-                .map(StackTraceElement::toString)
-                .collect(Collectors.toList()));
-
-        Throwable causedBy = ex.getCause();
+        stackTracePrinted = true;
+        NamedList<Object> lastTrace = null;
+        Throwable causedBy = ex;
+        NamedList<Object> errorInfo = info;
         while (causedBy != null) {
-          NamedList<Object> errorCausedBy = new NamedList<>();
-          lastTrace.add("causedBy", errorCausedBy);
-          errorCausedBy.add("errorClass", causedBy.getClass().getName());
-          errorCausedBy.add("msg", causedBy.getMessage());
-          lastTrace = new NamedList<>();
-          errorCausedBy.add("trace", lastTrace);
+          if (lastTrace != null) {
+            lastTrace.add("causedBy", errorInfo);
+          }
+          errorInfo.add("errorClass", causedBy.getClass().getName());
+          errorInfo.add("msg", causedBy.getMessage());
+          lastTrace = new SimpleOrderedMap<>();
+          errorInfo.add("trace", lastTrace);
           lastTrace.add(
               "stackTrace",
               Arrays.stream(causedBy.getStackTrace())
                   .map(StackTraceElement::toString)
                   .collect(Collectors.toList()));
           causedBy = causedBy.getCause();
+          errorInfo = new SimpleOrderedMap<>();
         }
       }
       log.error("500 Exception", ex);
@@ -125,6 +116,16 @@ public class ResponseUtils {
       if (code < 100) {
         log.warn("invalid return code: {}", code);
         code = 500;
+      }
+    }
+    if (!stackTracePrinted) {
+      // Find the first non-null message if we aren't printing the stacktrace
+      for (Throwable th = ex; th != null; th = th.getCause()) {
+        String msg = th.getMessage();
+        if (msg != null) {
+          info.add("msg", msg);
+          break;
+        }
       }
     }
 
@@ -181,6 +182,8 @@ public class ResponseUtils {
     // For any regular code, don't include the stack trace
     if (code == 500 || code < 100) {
       if (!hideStackTrace(hideTrace)) {
+        errorInfo.errorClass = ex.getClass().getName();
+        errorInfo.msg = ex.getMessage();
         errorInfo.trace = new ErrorInfo.ErrorStackTrace();
         errorInfo.trace.stackTrace =
             Arrays.stream(ex.getStackTrace())
@@ -189,6 +192,7 @@ public class ResponseUtils {
 
         ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
         Throwable causedBy = ex.getCause();
+
         while (causedBy != null) {
           ErrorInfo.ErrorCausedBy errorCausedBy = new ErrorInfo.ErrorCausedBy();
           lastTrace.causedBy = errorCausedBy;
