@@ -912,31 +912,26 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
-    SolrClient client = createNewSolrClient();
+    try (SolrClient client = createNewSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
 
-    client.deleteByQuery("*:*");
-    client.commit();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id1");
 
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "id1");
+      UpdateRequest req = new UpdateRequest();
+      req.setParam("overwrite", "false");
+      req.add(doc);
+      client.request(req);
+      client.request(req);
+      client.commit();
 
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("overwrite", "false");
-    req.add(doc);
-    client.request(req);
-    client.request(req);
-    client.commit();
+      SolrQuery query = new SolrQuery();
+      query.setQuery("*:*");
+      QueryResponse rsp = client.query(query);
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = client.query(query);
-
-    SolrDocumentList out = rsp.getResults();
-    assertEquals(2, out.getNumFound());
-    if (!(client instanceof EmbeddedSolrServer)) {
-      /* Do not close in case of using EmbeddedSolrServer,
-       * as that would close the CoreContainer */
-      client.close();
+      SolrDocumentList out = rsp.getResults();
+      assertEquals(2, out.getNumFound());
     }
   }
 

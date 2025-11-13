@@ -466,12 +466,6 @@ public class SearchHandler extends RequestHandlerBase
       RTimerTree timer,
       List<SearchComponent> components)
       throws IOException {
-    if (true) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "this is a test",
-          new RuntimeException("another test", new RuntimeException("final cause")));
-    }
     // creates a ShardHandler object only if it's needed
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
