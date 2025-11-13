@@ -80,8 +80,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   /** A collection specific client for operations at the cloud level */
   private static CloudSolrClient COLLECTION_CLIENT;
 
-  /** We have a map of clients using specific writerTypes, keyed by pair of baseurl and wt */
-  private static final Map<Pair<String, String>, SolrClient> CLIENTS = new ConcurrentHashMap<>();
+  /** We have a map of clients, keyed by base URL */
+  private static final Map<String, SolrClient> CLIENTS = new ConcurrentHashMap<>();
 
   /** Always included in fl, so we can check what doc we're looking at */
   private static final FlValidator ID_VALIDATOR = new SimpleFieldValueValidator("id");
@@ -428,20 +428,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   private static final ResponseParser RAW_JSON_RESPONSE_PARSER =
       new InputStreamResponseParser("json");
 
-  /** Helper to convert from wt string parameter to actual SolrClient. */
-  private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
+  private static SolrClient getSolrClient(final String jettyBaseUrl) {
     HttpSolrClient.Builder builder =
         new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
-    switch (wt) {
-      case "xml":
-        builder.withResponseParser(RAW_XML_RESPONSE_PARSER);
-        break;
-      case "json":
-        builder.withResponseParser(RAW_JSON_RESPONSE_PARSER);
-        break;
-      default:
-        break;
-    }
     return builder.build();
   }
 
@@ -508,7 +497,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     }
 
     String wt = params.get(CommonParams.WT, "javabin");
-    final SolrClient client = getRandomClient(random(), wt);
+    final SolrClient client = getRandomClient(random());
 
     // If we have chosen a CloudSolrClient, then override wt parameter back to javabin format,
     // regardless of what was randomly picked.
@@ -525,7 +514,21 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
       rsp = qRsp;
       docs = getDocsFromRTGResponse(askForList, qRsp);
     } else {
-      final NamedList<Object> nlRsp = client.request(new QueryRequest(params));
+
+      var qr = new QueryRequest(params);
+      // match the correct parser depending on the wt chosen
+      switch (wt) {
+        case "json":
+          qr.setResponseParser(RAW_JSON_RESPONSE_PARSER);
+          break;
+        case "xml":
+          qr.setResponseParser(RAW_XML_RESPONSE_PARSER);
+          break;
+        default:
+          throw new IllegalStateException();
+      }
+
+      final NamedList<Object> nlRsp = client.request(qr);
       assertNotNull(params.toString(), nlRsp);
       rsp = nlRsp;
       final String textResult = InputStreamResponseParser.consumeResponseToString(nlRsp);
@@ -630,20 +633,10 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   /**
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster. This method doesn't care which wt is defined.
+   * This method return a random SolrClient, and can include CloudSolrClient to choose from cloud
+   * in our cluster.
    */
   public static SolrClient getRandomClient(Random rand) {
-    List<String> writerTypes = List.of("javabin", "json", "xml");
-    int writerTypeIdx = TestUtil.nextInt(rand, 0, writerTypes.size() - 1);
-    return getRandomClient(rand, writerTypes.get(writerTypeIdx));
-  }
-
-  /**
-   * returns a random SolrClient -- either a CloudSolrClient, or an HttpSolrClient pointed at a node
-   * in our cluster. We have different CLIENTS created for each node based on their wt setting.
-   */
-  public static SolrClient getRandomClient(Random rand, String wt) {
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     int numClients = jettySolrRunners.size();
     int idx = TestUtil.nextInt(rand, 0, numClients);
@@ -653,8 +646,7 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
     } else {
       JettySolrRunner jetty = jettySolrRunners.get(idx);
       String jettyBaseUrl = jetty.getBaseUrl().toString();
-      return CLIENTS.computeIfAbsent(
-          new Pair<>(jettyBaseUrl, wt), k -> getSolrClient(k.first(), k.second()));
+      return CLIENTS.computeIfAbsent(new Pair<>(jettyBaseUrl, wt), k -> getSolrClient(k.first()));
     }
   }
 
