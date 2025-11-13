@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove deprecated methods in collection state classes
+type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Pierre Salagnac
+links:
+  - name: SOLR-17931
+  - url: https://issues.apache.org/jira/browse/SOLR-17931

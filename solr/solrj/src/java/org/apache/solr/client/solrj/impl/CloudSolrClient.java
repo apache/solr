@@ -494,7 +494,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private Map<String, List<String>> buildUrlMap(
       DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
-    Slice[] slices = col.getActiveSlicesArr();
+    Collection<Slice> slices = col.getActiveSlices();
     Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
     for (Slice slice : slices) {
       String name = slice.getName();
@@ -1218,7 +1218,7 @@ public abstract class CloudSolrClient extends SolrClient {
       NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
       Map<String, String> leaders = new HashMap<>();
-      for (Slice slice : coll.getActiveSlicesArr()) {
+      for (Slice slice : coll.getActiveSlices()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
           String leaderUrl = leader.getBaseUrl() + "/" + leader.getCoreName();
