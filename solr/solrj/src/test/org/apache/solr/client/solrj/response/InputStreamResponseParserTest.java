@@ -95,9 +95,11 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
     InputStreamResponseParser parser = new InputStreamResponseParser("xml");
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
-      assertThrows(UnsupportedOperationException.class, () -> {
-        parser.processResponse(is, "UTF-8");
-      });
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            parser.processResponse(is, "UTF-8");
+          });
     }
   }
 }

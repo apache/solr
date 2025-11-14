@@ -37,11 +37,11 @@ public class TestDelegationTokenResponse extends SolrTestCase {
       DelegationTokenRequest<?, ?> request, DelegationTokenResponse response, String responseBody)
       throws Exception {
     ResponseParser parser = request.getResponseParser();
-    
-    // InputStreamResponseParser doesn't support processResponse(), 
+
+    // InputStreamResponseParser doesn't support processResponse(),
     // so we need to handle it differently
     if (parser instanceof InputStreamResponseParser) {
-      // For InputStreamResponseParser (used by Cancel request), 
+      // For InputStreamResponseParser (used by Cancel request),
       // create a NamedList directly since it expects empty response
       response.setResponse(new NamedList<>());
     } else {
