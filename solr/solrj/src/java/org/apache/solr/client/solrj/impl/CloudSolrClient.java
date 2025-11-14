@@ -40,10 +40,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -121,9 +121,8 @@ public abstract class CloudSolrClient extends SolrClient {
 
   private final ConcurrentHashMap<String, CompletableFuture<DocCollection>> collectionRefreshes =
       new ConcurrentHashMap<>();
-  private final Object stateRefreshExecutorLock = new Object();
-  private volatile int stateRefreshParallelism = DEFAULT_STATE_REFRESH_PARALLELISM;
-  private volatile ExecutorService stateRefreshExecutor;
+  private final Semaphore stateRefreshSemaphore;
+  private final int stateRefreshParallelism;
   private volatile boolean closed;
 
   protected static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
@@ -207,6 +206,12 @@ public abstract class CloudSolrClient extends SolrClient {
       retriedAtNano = System.nanoTime();
     }
 
+    /**
+     * Marks this entry as {@code maybeStale} if the provided backoff window has elapsed since the
+     * last retry.
+     *
+     * @return {@code true} if the entry was flagged as maybe stale
+     */
     boolean markMaybeStaleIfOutsideBackoff(long retryBackoffNano) {
       if (maybeStale) {
         return true;
@@ -238,7 +243,8 @@ public abstract class CloudSolrClient extends SolrClient {
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
     this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
-    initializeStateRefreshExecutor(stateRefreshThreads);
+    this.stateRefreshParallelism = Math.max(1, stateRefreshThreads);
+    this.stateRefreshSemaphore = new Semaphore(this.stateRefreshParallelism);
   }
 
   protected abstract LBSolrClient getLbClient();
@@ -269,12 +275,6 @@ public abstract class CloudSolrClient extends SolrClient {
     if (this.threadPool != null && !ExecutorUtil.isShutdown(this.threadPool)) {
       ExecutorUtil.shutdownAndAwaitTermination(this.threadPool);
       this.threadPool = null;
-    }
-    synchronized (stateRefreshExecutorLock) {
-      if (stateRefreshExecutor != null && !ExecutorUtil.isShutdown(stateRefreshExecutor)) {
-        ExecutorUtil.shutdownAndAwaitTermination(stateRefreshExecutor);
-      }
-      stateRefreshExecutor = null;
     }
   }
 
@@ -989,8 +989,9 @@ public abstract class CloudSolrClient extends SolrClient {
           }
         }
 
-        // First retry without sending state versions to avoid needless waits when stale state is
-        // still usable.
+        // First retry without sending state versions so the server does not immediately reject the
+        // request while we intentionally rely on stale routing (e.g., to allow forwarding to a new
+        // leader) as the background refresh completes.
         if (!skipStateVersion && !waitedForRefresh) {
           resp =
               requestWithRetryOnStaleState(
@@ -1023,7 +1024,7 @@ public abstract class CloudSolrClient extends SolrClient {
                   inputCollections,
                   /*skipStateVersion*/ false,
                   Map.of(),
-                  waitedForRefresh);
+                  /*waitedForRefresh*/ waitedForRefresh);
         }
       } else {
         if (exc instanceof SolrException
@@ -1252,6 +1253,11 @@ public abstract class CloudSolrClient extends SolrClient {
     return directUpdatesToLeadersOnly;
   }
 
+  /** Visible for tests so they can assert the configured refresh parallelism. */
+  protected int getStateRefreshParallelism() {
+    return stateRefreshParallelism;
+  }
+
   protected DocCollection getDocCollection(String collection, Integer expectedVersion)
       throws SolrException {
     if (expectedVersion == null) {
@@ -1290,7 +1296,7 @@ public abstract class CloudSolrClient extends SolrClient {
     return collectionRefreshes.computeIfAbsent(
         collection,
         key -> {
-          ExecutorService executor = stateRefreshExecutor;
+          ExecutorService executor = threadPool;
           CompletableFuture<DocCollection> future;
           if (executor == null || ExecutorUtil.isShutdown(executor)) {
             future = new CompletableFuture<>();
@@ -1300,9 +1306,19 @@ public abstract class CloudSolrClient extends SolrClient {
               future.completeExceptionally(t);
             }
           } else {
-            future = CompletableFuture.supplyAsync(() -> loadDocCollection(key), executor);
+            future =
+                CompletableFuture.supplyAsync(
+                    () -> {
+                      stateRefreshSemaphore.acquireUninterruptibly();
+                      try {
+                        return loadDocCollection(key);
+                      } finally {
+                        stateRefreshSemaphore.release();
+                      }
+                    },
+                    executor);
           }
-          future.whenComplete(
+          future.whenCompleteAsync(
               (result, error) -> {
                 collectionRefreshes.remove(key, future);
               });
@@ -1354,28 +1370,6 @@ public abstract class CloudSolrClient extends SolrClient {
 
     collectionStateCache.put(collection, new ExpiringCachedDocCollection(fetchedCol));
     return fetchedCol;
-  }
-
-  private ExecutorService createStateRefreshExecutor(int parallelism) {
-    int threads = Math.max(1, parallelism);
-    SolrNamedThreadFactory delegate = new SolrNamedThreadFactory("CloudSolrClient-state-refresher");
-    ThreadFactory threadFactory =
-        runnable -> {
-          Thread thread = delegate.newThread(runnable);
-          thread.setDaemon(true);
-          return thread;
-        };
-    return ExecutorUtil.newMDCAwareFixedThreadPool(threads, threadFactory);
-  }
-
-  private void initializeStateRefreshExecutor(int parallelism) {
-    if (parallelism <= 0) {
-      parallelism = DEFAULT_STATE_REFRESH_PARALLELISM;
-    }
-    stateRefreshParallelism = Math.max(1, parallelism);
-    synchronized (stateRefreshExecutorLock) {
-      stateRefreshExecutor = createStateRefreshExecutor(stateRefreshParallelism);
-    }
   }
 
   ClusterState.CollectionRef getCollectionRef(String collection) {

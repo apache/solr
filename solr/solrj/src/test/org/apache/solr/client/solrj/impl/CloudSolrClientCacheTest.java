@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.time.Instant;
@@ -49,8 +48,6 @@ import java.util.function.Supplier;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
 import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
@@ -62,6 +59,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.junit.BeforeClass;
 
 public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
@@ -219,7 +217,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
       client.enqueue((req, cols) -> null);
 
       DummyRequest request = new DummyRequest(collName);
-      ExecutorService executor = Executors.newSingleThreadExecutor();
+      ExecutorService executor =
+          ExecutorUtil.newMDCAwareSingleThreadExecutor(
+              new SolrNamedThreadFactory("CloudSolrClientCacheTest-single"));
       try {
         Future<NamedList<Object>> result = executor.submit(() -> client.request(request, collName));
 
@@ -285,7 +285,9 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
           });
 
       DummyRequest request = new DummyRequest(collName);
-      ExecutorService executor = Executors.newFixedThreadPool(2);
+      ExecutorService executor =
+          ExecutorUtil.newMDCAwareFixedThreadPool(
+              2, new SolrNamedThreadFactory("CloudSolrClientCacheTest-parallel"));
       try {
         Future<NamedList<Object>> first = executor.submit(() -> client.request(request, collName));
         Future<NamedList<Object>> second = executor.submit(() -> client.request(request, collName));
@@ -428,16 +430,6 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
     @Override
     public ClusterStateProvider getClusterStateProvider() {
       return provider;
-    }
-
-    int getStateRefreshParallelism() {
-      try {
-        Field field = CloudSolrClient.class.getDeclaredField("stateRefreshParallelism");
-        field.setAccessible(true);
-        return field.getInt(this);
-      } catch (ReflectiveOperationException e) {
-        throw new RuntimeException(e);
-      }
     }
 
     @FunctionalInterface
