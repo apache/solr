@@ -346,12 +346,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
   }
 
   /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
-  @Deprecated // see getReplicasOnNode
-  public List<Replica> getReplicas(String nodeName) {
-    return getReplicasOnNode(nodeName);
-  }
-
-  /** Get the list of replicas hosted on the given node or <code>null</code> if none. */
   public List<Replica> getReplicasOnNode(String nodeName) {
     return nodeNameReplicas.get(nodeName);
   }
@@ -566,12 +560,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
 
   public PerReplicaStates getPerReplicaStates() {
     return perReplicaStatesRef != null ? perReplicaStatesRef.get() : null;
-  }
-
-  @Deprecated
-  public int getExpectedReplicaCount(Replica.Type type, int def) {
-    // def is kept for backwards compatibility.
-    return numReplicas.get(type);
   }
 
   /** JSON properties related to a collection's state. */
