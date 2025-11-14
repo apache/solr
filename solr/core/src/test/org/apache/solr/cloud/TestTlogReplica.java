@@ -211,15 +211,15 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+          getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection).size());
       assertEquals(
           "Expecting no nrt replicas",
           0,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+          getReplicas(EnumSet.of(Replica.Type.NRT), docCollection).size());
       assertEquals(
           "Expecting no pull replicas",
           0,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+          getReplicas(EnumSet.of(Replica.Type.PULL), docCollection).size());
       for (Slice s : docCollection.getSlices()) {
         assertSame(s.getLeader().getType(), Replica.Type.TLOG);
         List<String> shardElectionNodes =
@@ -475,7 +475,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
 
     waitForNumDocsInAllReplicas(
-        1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        1, getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection), REPLICATION_TIMEOUT_SECS);
 
     // Delete leader replica from shard1
     JettySolrRunner leaderJetty = null;
@@ -503,7 +503,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     // Queries should still work
     waitForNumDocsInAllReplicas(
-        2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        2, getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection), REPLICATION_TIMEOUT_SECS);
     // Start back the node
     if (removeReplica) {
       addReplicaWithRetries();
@@ -514,7 +514,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     // added replica should replicate from the leader
     waitForNumDocsInAllReplicas(
-        2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        2, getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection), REPLICATION_TIMEOUT_SECS);
   }
 
   private void addReplicaWithRetries() throws SolrServerException, IOException {
@@ -1069,19 +1069,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of nrt replicas: " + docCollection,
         numNrtReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(EnumSet.of(Replica.Type.NRT), docCollection).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPullReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(EnumSet.of(Replica.Type.PULL), docCollection).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of tlog replicas: " + docCollection,
         numTlogReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

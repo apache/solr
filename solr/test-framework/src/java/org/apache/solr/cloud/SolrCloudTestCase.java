@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,6 +171,14 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       activeShards++;
     }
     return activeShards == expectedShards;
+  }
+
+  public static List<Replica> getReplicas(EnumSet<Replica.Type> s, DocCollection collectionState) {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : collectionState) {
+      replicas.addAll(slice.getReplicas(s));
+    }
+    return replicas;
   }
 
   @Before

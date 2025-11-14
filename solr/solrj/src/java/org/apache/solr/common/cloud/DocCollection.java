@@ -410,15 +410,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return replicas;
   }
 
-  @Deprecated // just tests, so move out or make package-protected
-  public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
-    List<Replica> replicas = new ArrayList<>();
-    for (Slice slice : this) {
-      replicas.addAll(slice.getReplicas(s));
-    }
-    return replicas;
-  }
-
   @Override
   public boolean equals(Object that) {
     if (!(that instanceof DocCollection other)) return false;
