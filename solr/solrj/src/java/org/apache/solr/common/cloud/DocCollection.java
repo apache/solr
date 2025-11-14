@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -395,32 +394,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     Slice slice = getSlice(sliceName);
     if (slice == null) return null;
     return slice.getLeader();
-  }
-
-  /**
-   * Check that all replicas in a collection are live
-   *
-   * @see CollectionStatePredicate
-   */
-  @Deprecated // only for 2 tests
-  public static boolean isFullyActive(
-      Set<String> liveNodes,
-      DocCollection collectionState,
-      int expectedShards,
-      int expectedReplicas) {
-    Objects.requireNonNull(liveNodes);
-    if (collectionState == null) return false;
-    int activeShards = 0;
-    for (Slice slice : collectionState) {
-      int activeReplicas = 0;
-      for (Replica replica : slice) {
-        if (replica.isActive(liveNodes) == false) return false;
-        activeReplicas++;
-      }
-      if (activeReplicas != expectedReplicas) return false;
-      activeShards++;
-    }
-    return activeShards == expectedShards;
   }
 
   @Override

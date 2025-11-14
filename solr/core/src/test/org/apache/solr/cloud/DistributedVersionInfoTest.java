@@ -45,7 +45,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -82,7 +81,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
         COLLECTION,
         DEFAULT_TIMEOUT,
         TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 3));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 3));
 
     final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
 
