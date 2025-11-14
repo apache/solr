@@ -25,11 +25,6 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    // Note: The maven repository below is temorary and will be removed eventually.
-    maven {
-      name "SearchScale"
-      url "https://maven.searchscale.com/snapshots"
-    }
     /* Reenable this if we need it again in future
     maven {
       name "LucenePrerelease${lucenePrereleaseBuild}"

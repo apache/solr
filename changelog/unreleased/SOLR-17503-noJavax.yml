@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Completed javax to Jakarta EE transition
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-17503
+    url: https://issues.apache.org/jira/browse/SOLR-17503
+  - name: SOLR-17069
+    url: https://issues.apache.org/jira/browse/SOLR-17069

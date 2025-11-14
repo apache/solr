@@ -1,0 +1,9 @@
+title: LBHttp2SolrClient can fail to complete async requests in certain error scenarios.
+  This can cause the HttpShardHandler to indefinitely wait on a completed response
+  that will never come.
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17637
+  url: https://issues.apache.org/jira/browse/SOLR-17637

@@ -28,8 +28,8 @@ import java.util.Set;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
@@ -84,8 +84,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "permanent"));
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "unloaded"));
 
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "total_space"));
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "usable_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "total_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "usable_space"));
   }
 
   private static GaugeDataPointSnapshot getGaugeOpt(

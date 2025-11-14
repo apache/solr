@@ -58,6 +58,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
+|solr.host.advertise| host | | This is the host that is advertised by the Solr node in the ZK live nodes
+
+|solr.host.bind|solr.jetty.host| |This is the host that Solr's Jetty binds to, and only accepts requests to.
+
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
@@ -69,6 +73,10 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.metrics.fieldcache.entries.jmx.enabled|!disableSolrFieldCacheMBeanEntryListJmx|true|Controls whether Solr FieldCache MBean JMX entry list is disabled for metrics reporting.
 
 |solr.packages.enabled|enable.packages|false|Controls whether the package management system is enabled.
+
+|solr.port.advertise| | Default to `solr.port.listen` if not defined.  | This is the port that is advertised by the Solr node in the ZK live nodes.
+
+|solr.port.listen| jetty.port| 8983 or solr.jetty.https.port if defined and SSL | This is the port that Solr's Jetty binds to, and accepts requests to.
 
 |solr.requests.allow.urls|solr.disable.allowUrls||Specifies URLs that are allowed for streaming. See also solr.requests.streaming.remote.enabled.
 
@@ -83,6 +91,13 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.responses.stacktrace.enabled|!solr.hideStackTrace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
+
+|solr.security.allow.paths|solr.allowPaths||A comma seperated list of paths for reading from.
+
+|solr.security.allow.urls|solr.allowUrls||A comma seperated list of urls for reading from.
+
+|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled. 
+
 
 |solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 

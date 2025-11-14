@@ -231,8 +231,8 @@ grant {
   permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
 

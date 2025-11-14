@@ -46,7 +46,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
    */
   @BeforeClass
   public static void setUpClass() throws Exception {
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
     validBackupLocation = createTempDir().toAbsolutePath().toString();
 
     String solrXml = MiniSolrCloudCluster.DEFAULT_CLOUD_SOLR_XML;
@@ -78,7 +78,7 @@ public class BackupRestoreApiErrorConditionsTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownClass() {
-    System.clearProperty("solr.allowPaths");
+    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test

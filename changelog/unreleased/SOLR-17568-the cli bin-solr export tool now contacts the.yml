@@ -1,0 +1,8 @@
+title: The CLI bin/solr export tool now contacts the appropriate nodes directly for
+  data instead of proxying through one.
+type: changed
+authors:
+- name: David Smiley
+links:
+- name: SOLR-17568
+  url: https://issues.apache.org/jira/browse/SOLR-17568

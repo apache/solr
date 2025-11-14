@@ -496,7 +496,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     final String nodeName = zkController.getNodeName();
     String fromReplica = null;
 
-    for (Slice slice : fromCollection.getActiveSlicesArr()) {
+    for (Slice slice : fromCollection.getActiveSlices()) {
       assert fromReplica == null;
       for (Replica replica : slice.getReplicas()) {
         if (replica.getNodeName().equals(nodeName)) {

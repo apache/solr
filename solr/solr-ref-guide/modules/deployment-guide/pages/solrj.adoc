@@ -95,18 +95,12 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpSolrClient.html[`HttpSolrClient`] - geared towards query-centric workloads, though also a good general-purpose client.
-Communicates directly with a single Solr node.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - async, non-blocking and general-purpose client that leverage HTTP/2 using the Jetty Http library.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - General-purpose client using the JDK's built-in Http Client. Supports both Http/2 and Http/1.1. Supports async. Targeted for those users wishing to minimize application dependencies.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttpSolrClient.html[`LBHttpSolrClient`] - balances request load across a list of Solr nodes.
-Adjusts the list of "in-service" nodes based on node health.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - just like `LBHttpSolrClient` but using `Http2SolrClient` instead, with the Jetty Http library.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - geared towards communicating with SolrCloud deployments.
-Uses already-recorded ZooKeeper state to discover and route requests to healthy Solr nodes.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateSolrClient.html[`ConcurrentUpdateSolrClient`] - geared towards indexing-centric workloads.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - just like `ConcurrentUpdateSolrClient` but using `Http2SolrClient` instead, with the Jetty Http library.
 
 === Common Configuration Options
 
@@ -122,7 +116,7 @@ A few notable exceptions to this are described below:
 
 - *Http2SolrClient* - Users of `Http2SolrClient` may choose to skip providing a root URL to their client, in favor of specifying the URL as an argument for the `Http2SolrClient.requestWithBaseUrl` method.
 Calling any other `request` methods on a URL-less `Http2SolrClient` will result in an `IllegalArgumentException`.
-- *LBHttpSolrClient* and *LBHttp2SolrClient* - Solr's "load balancing" clients are frequently used to round-robin requests across a set of replicas or cores.
+- *LBHttp2SolrClient* - Solr's "load balancing" client is frequently used to round-robin requests across a set of replicas or cores.
 URLs are still expected to point to the Solr root (i.e. "/solr"), but to support this use-case the URLs are often supplemented by an additional parameter to specify the targeted core.
 Alternatively, some "load balancing" methods make use of an `Endpoint` abstraction to provide this URL and core information in a more structured way.
 - *CloudSolrClient* - Like many clients, CloudSolrClient accepts a series of URLs pointing to the Solr root path (i.e. "/solr").

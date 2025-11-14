@@ -889,7 +889,7 @@ public class HttpSolrCall {
 
     if (isPreferLeader) {
       SolrCore core = null;
-      if (replicas != null && !replicas.isEmpty()) {
+      if (!replicas.isEmpty()) {
         List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
         core = randomlyGetSolrCore(liveNodes, leaderReplicas);
         if (core != null) return core;
