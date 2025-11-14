@@ -70,7 +70,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
 
-|solr.logs.requestlog.retain.enabled|SOLR_REQUESTLOG_ENABLED|true|Specifies if request logs should be created.
+|solr.logs.requestlog.enabled|SOLR_REQUESTLOG_ENABLED|true|Specifies if Jetty's request logs should be created and retained.
 
 |solr.logs.requestlog.retain.days|solr.log.requestlog.retaindays|3|How many days of request logs to retain before rolling over.
 
