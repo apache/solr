@@ -30,7 +30,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -107,7 +107,7 @@ public abstract class AbstractSyncSliceTestBase extends AbstractFullDistribZkTes
 
     // we only set the connect timeout, not so timeout
     try (SolrClient baseClient =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
       baseClient.request(request);

@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -111,7 +111,7 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
     int i = 0;
     for (Replica replica : replicas) {
       try (var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
               .build()) {

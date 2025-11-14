@@ -40,7 +40,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
@@ -430,8 +430,8 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
 
   /** Helper to convert from wt string parameter to actual SolrClient. */
   private static SolrClient getSolrClient(final String jettyBaseUrl, final String wt) {
-    HttpSolrClient.Builder builder =
-        new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
+    var builder =
+        new HttpApacheSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME);
     switch (wt) {
       case "xml":
         builder.withResponseParser(RAW_XML_RESPONSE_PARSER);

@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -99,7 +99,7 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     }
     SolrResponseBase resp;
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrInstance.getBaseUrl())
+        new HttpApacheSolrClient.Builder(solrInstance.getBaseUrl())
             .withDefaultCollection(solrInstance.getDefaultCollection())
             .withHttpClient(httpClient)
             .build()) {

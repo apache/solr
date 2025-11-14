@@ -28,8 +28,8 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.StringEntity;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.Utils;
 import org.junit.After;
@@ -88,7 +88,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
   @Test
   public void testClusterPropertyOpsAllGood() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+    try (var client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
       // List Properties, confirm the test property does not exist
       // This ignores eventually existing other properties
       Object o =
@@ -147,7 +147,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
   @Test
   public void testClusterPropertyNestedBulkSet() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+    try (var client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
       // Create a single cluster property using the Bulk/Nested set ClusterProp API
       HttpPut httpPut = new HttpPut(baseUrlV2ClusterProps);
       httpPut.setHeader("Content-Type", "application/json");
@@ -185,7 +185,7 @@ public class ClusterPropsAPITest extends SolrCloudTestCase {
 
   @Test
   public void testClusterPropertyFetchNonExistentProperty() throws Exception {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(baseUrl.toString()).build()) {
+    try (var client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
       // Fetch Cluster Property that doesn't exist
       String path = baseUrlV2ClusterProps + "/ext.clusterPropThatDoesNotExist";
       HttpGet fetchClusterPropertyGet = new HttpGet(path);

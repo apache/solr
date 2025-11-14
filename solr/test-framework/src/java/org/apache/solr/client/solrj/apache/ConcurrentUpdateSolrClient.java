@@ -38,6 +38,7 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -76,7 +77,7 @@ import org.slf4j.MDC;
 public class ConcurrentUpdateSolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private HttpSolrClient client;
+  private HttpApacheSolrClient client;
   final BlockingQueue<Update> queue;
   final ExecutorService scheduler;
   final Queue<Runner> runners;
@@ -105,8 +106,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     final var httpSolrClientBuilder =
         (URLUtil.isBaseUrl(builder.baseSolrUrl))
-            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
-            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+            ? new HttpApacheSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpApacheSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
         httpSolrClientBuilder
@@ -344,7 +345,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setConfig(requestConfigBuilder.build());
 
           method.setEntity(template);
-          method.addHeader("User-Agent", HttpSolrClient.USER_AGENT);
+          method.addHeader("User-Agent", HttpApacheSolrClient.USER_AGENT);
           method.addHeader("Content-Type", contentType);
 
           response =

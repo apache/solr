@@ -92,7 +92,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
             .withThreadCount(1)
             .build();
       case 1:
-        return new HttpSolrClient.Builder(url.toString())
+        return new HttpApacheSolrClient.Builder(url.toString())
             .withDefaultCollection(COLLECTION)
             .withHttpClient(httpClient)
             .build();
@@ -166,7 +166,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
       route =
           new HttpRoute(new HttpHost(url.getHost(), url.getPort(), isSSLMode() ? "https" : "http"));
 
-      mConn = cm.requestConnection(route, HttpSolrClient.cacheKey);
+      mConn = cm.requestConnection(route, HttpApacheSolrClient.cacheKey);
 
       HttpClientConnection conn2 = getConn(mConn);
 
@@ -233,6 +233,6 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
 
   public ConnectionRequest getClientConnectionRequest(
       HttpClient httpClient, HttpRoute route, PoolingHttpClientConnectionManager cm) {
-    return cm.requestConnection(route, HttpSolrClient.cacheKey);
+    return cm.requestConnection(route, HttpApacheSolrClient.cacheKey);
   }
 }

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.cloud.DocCollection;
@@ -139,7 +139,7 @@ public abstract class AbstractRecoveryZkTestBase extends SolrCloudTestCase {
     int i = 0;
     for (Replica replica : replicas) {
       try (var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cluster.getSolrClient()).getHttpClient())
               .build()) {

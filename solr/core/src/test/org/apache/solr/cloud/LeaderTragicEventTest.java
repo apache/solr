@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -113,7 +113,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
     try (SolrClient followerClient =
-        new HttpSolrClient.Builder(oldLeader.getBaseUrl())
+        new HttpApacheSolrClient.Builder(oldLeader.getBaseUrl())
             .withDefaultCollection(oldLeader.getCoreName())
             .build()) {
       QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);
@@ -131,7 +131,8 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       log.info("Will crash leader : {}", oldLeader);
 
       final Replica leaderReplica = dc.getLeader("shard1");
-      try (SolrClient solrClient = new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
+      try (SolrClient solrClient =
+          new HttpApacheSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
         new UpdateRequest().add("id", "99").commit(solrClient, leaderReplica.getCoreName());
         fail("Should have injected tragedy");
       } catch (RemoteSolrException e) {

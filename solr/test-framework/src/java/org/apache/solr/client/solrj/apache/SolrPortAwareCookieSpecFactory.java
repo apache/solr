@@ -31,6 +31,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.protocol.HttpContext;
 
 @SuppressWarnings("deprecation")
+@Deprecated
 public class SolrPortAwareCookieSpecFactory implements CookieSpecFactory, CookieSpecProvider {
   public static final String POLICY_NAME = "solr-portaware";
   private final CookieSpec cookieSpec;

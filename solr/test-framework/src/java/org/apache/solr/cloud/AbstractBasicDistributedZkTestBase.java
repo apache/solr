@@ -41,11 +41,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -1280,7 +1281,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
   private Long getNumCommits(HttpSolrClient sourceClient) throws SolrServerException, IOException {
     String collection = sourceClient.getDefaultCollection();
     try (SolrClient client =
-        new HttpSolrClient.Builder(sourceClient.getBaseURL())
+        new HttpApacheSolrClient.Builder(sourceClient.getBaseURL())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1389,7 +1390,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
-        new HttpSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1701,7 +1702,7 @@ public abstract class AbstractBasicDistributedZkTestBase extends AbstractFullDis
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
 
     SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withDefaultCollection(collection)
             .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)

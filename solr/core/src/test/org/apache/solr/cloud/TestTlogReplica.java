@@ -48,7 +48,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -417,7 +417,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     List<String> ids = new ArrayList<>(slice.getReplicas().size());
     for (Replica rAdd : slice.getReplicas()) {
       try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
+          new HttpApacheSolrClient.Builder(rAdd.getBaseUrl())
               .withDefaultCollection(rAdd.getCoreName())
               .withHttpClient(httpClient)
               .build()) {
@@ -429,7 +429,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals("bar", docCloudClient.getFieldValue("foo_s"));
       for (Replica rGet : slice.getReplicas()) {
         try (SolrClient client =
-            new HttpSolrClient.Builder(rGet.getBaseUrl())
+            new HttpApacheSolrClient.Builder(rGet.getBaseUrl())
                 .withDefaultCollection(rGet.getCoreName())
                 .withHttpClient(httpClient)
                 .build()) {
@@ -443,7 +443,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     SolrDocumentList previousAllIdsResult = null;
     for (Replica rAdd : slice.getReplicas()) {
       try (SolrClient client =
-          new HttpSolrClient.Builder(rAdd.getBaseUrl())
+          new HttpApacheSolrClient.Builder(rAdd.getBaseUrl())
               .withDefaultCollection(rAdd.getCoreName())
               .withHttpClient(httpClient)
               .build()) {

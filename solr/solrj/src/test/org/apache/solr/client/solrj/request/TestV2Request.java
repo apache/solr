@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
@@ -85,7 +85,8 @@ public class TestV2Request extends SolrCloudTestCase {
   @Test
   public void testHttpSolrClient() throws Exception {
     SolrClient solrClient =
-        new HttpSolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString()).build();
+        new HttpApacheSolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+            .build();
     doTest(solrClient);
     solrClient.close();
   }
@@ -162,7 +163,8 @@ public class TestV2Request extends SolrCloudTestCase {
             .withMethod(SolrRequest.METHOD.GET)
             .build();
 
-    try (SolrClient client1 = new HttpSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
+    try (SolrClient client1 =
+        new HttpApacheSolrClient.Builder().withBaseSolrUrl(testServer).build()) {
       V2Response rsp = v2r.process(client1);
       assertEquals("0", rsp._getStr("responseHeader/status"));
     }

@@ -81,9 +81,10 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
@@ -2622,7 +2623,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
-    return new HttpSolrClient.Builder(url).build().getHttpClient();
+    return new HttpApacheSolrClient.Builder(url).build().getHttpClient();
   }
 
   /**
@@ -2632,7 +2633,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
   public static HttpSolrClient getHttpSolrClient(String url) {
-    return new HttpSolrClient.Builder(url).build();
+    return new HttpApacheSolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
@@ -2649,7 +2650,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *     core-aware requests
    */
   public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
+    return new HttpApacheSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

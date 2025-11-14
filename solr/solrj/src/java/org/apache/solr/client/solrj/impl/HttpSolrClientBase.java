@@ -35,6 +35,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -48,14 +49,11 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
-public abstract class HttpSolrClientBase extends SolrClient {
+public abstract class HttpSolrClientBase extends HttpSolrClient {
 
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final List<String> errPath = Arrays.asList("metadata", "error-class");
-
-  /** The URL of the Solr server. */
-  protected final String serverBaseUrl;
 
   protected final long requestTimeoutMillis;
 
@@ -71,18 +69,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected final String basicAuthAuthorizationStr;
 
   protected HttpSolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase<?, ?> builder) {
-    if (serverBaseUrl != null) {
-      if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
-        serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
-      }
-
-      if (serverBaseUrl.startsWith("//")) {
-        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
-      }
-      this.serverBaseUrl = serverBaseUrl;
-    } else {
-      this.serverBaseUrl = null;
-    }
+    super(extractBaseUrl(serverBaseUrl));
     this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
@@ -99,11 +86,25 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
+  private static String extractBaseUrl(String serverBaseUrl) {
+    if (serverBaseUrl == null) {
+      return null;
+    }
+    if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
+      serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
+    }
+
+    if (serverBaseUrl.startsWith("//")) {
+      serverBaseUrl = serverBaseUrl.substring(1);
+    }
+    return serverBaseUrl;
+  }
+
   public abstract HttpSolrClientBuilderBase<?, ?> builder();
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
+    return ClientUtils.buildRequestUrl(solrRequest, getBaseURL(), collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
@@ -368,10 +369,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request.getApiVersion() == SolrRequest.ApiVersion.V2;
-  }
-
-  public String getBaseURL() {
-    return serverBaseUrl;
   }
 
   public ResponseParser getParser() {

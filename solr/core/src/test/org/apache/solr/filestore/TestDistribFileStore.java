@@ -34,11 +34,12 @@ import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
@@ -182,7 +183,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       String path =
           j.getBaseURLV2() + "/cluster/filestore/files" + "/package/mypkg/v1.0/runtimelibs.jar";
       HttpDelete del = new HttpDelete(path);
-      try (HttpSolrClient cl = (HttpSolrClient) j.newClient()) {
+      try (var cl = (HttpApacheSolrClient) j.newClient()) {
         HttpClientUtil.executeHttpMethod(cl.getHttpClient(), path, Utils.JSONCONSUMER, del);
       }
       expected = Collections.singletonMap(":files:/package/mypkg/v1.0/runtimelibs.jar", null);
@@ -204,7 +205,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
       if (verifyContent) {
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
+        try (var solrClient = (HttpApacheSolrClient) jettySolrRunner.newClient()) {
           ByteBuffer buf =
               HttpClientUtil.executeGET(
                   solrClient.getHttpClient(),
@@ -229,7 +230,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
     @Override
     public NavigableObject call() throws Exception {
-      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+      try (var solrClient = (HttpApacheSolrClient) jetty.newClient()) {
         return (NavigableObject)
             HttpClientUtil.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
       }

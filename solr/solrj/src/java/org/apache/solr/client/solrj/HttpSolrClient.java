@@ -14,7 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj;
 
-/** Apache HttpClient based {@link org.apache.solr.client.solrj.SolrClient} implementations */
-@Deprecated
-package org.apache.solr.client.solrj.apache;
+/** A {@link SolrClient} based on HTTP. */
+public abstract class HttpSolrClient extends SolrClient {
+  protected final String baseUrl;
+
+  protected HttpSolrClient(String baseUrl) {
+    this.baseUrl = baseUrl;
+  }
+
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
+  public String getBaseURL() {
+    return baseUrl;
+  }
+}

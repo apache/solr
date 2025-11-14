@@ -72,6 +72,7 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -101,7 +102,7 @@ import org.slf4j.MDC;
  * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
-public class HttpSolrClient extends SolrClient {
+public class HttpApacheSolrClient extends HttpSolrClient {
 
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
@@ -111,10 +112,7 @@ public class HttpSolrClient extends SolrClient {
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
 
-  static final Class<HttpSolrClient> cacheKey = HttpSolrClient.class;
-
-  /** The URL of the Solr server. */
-  protected volatile String baseUrl;
+  static final Class<HttpApacheSolrClient> cacheKey = HttpApacheSolrClient.class;
 
   /**
    * Default value: null / empty.
@@ -153,11 +151,8 @@ public class HttpSolrClient extends SolrClient {
   private final int soTimeout;
 
   /** Use the builder to create this client */
-  protected HttpSolrClient(Builder builder) {
-    this.baseUrl = builder.baseSolrUrl;
-    if (baseUrl.endsWith("/")) {
-      baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
-    }
+  protected HttpApacheSolrClient(Builder builder) {
+    super(extractBaseUrl(builder));
 
     if (baseUrl.indexOf('?') >= 0) {
       throw new RuntimeException(
@@ -190,6 +185,14 @@ public class HttpSolrClient extends SolrClient {
     this.useMultiPartPost = builder.useMultiPartPost;
     this.urlParamNames = builder.urlParamNames;
     this.defaultCollection = builder.defaultCollection;
+  }
+
+  private static String extractBaseUrl(Builder builder) {
+    String baseUrl = builder.baseSolrUrl;
+    if (baseUrl.endsWith("/")) {
+      baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
+    }
+    return baseUrl;
   }
 
   public Set<String> getUrlParamNames() {
@@ -780,11 +783,6 @@ public class HttpSolrClient extends SolrClient {
     return invariantParams;
   }
 
-  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
-  public String getBaseURL() {
-    return baseUrl;
-  }
-
   public ResponseParser getParser() {
     return parser;
   }
@@ -807,7 +805,7 @@ public class HttpSolrClient extends SolrClient {
   }
 
   /**
-   * Constructs {@link HttpSolrClient} instances from provided configuration.
+   * Constructs {@link HttpApacheSolrClient} instances from provided configuration.
    *
    * @deprecated Please use {@link Http2SolrClient}
    */
@@ -827,7 +825,7 @@ public class HttpSolrClient extends SolrClient {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new HttpSolrClient.Builder()
+     *   SolrClient client = new HttpApacheSolrClient.Builder()
      *       .withBaseSolrUrl("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
@@ -845,7 +843,7 @@ public class HttpSolrClient extends SolrClient {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new HttpSolrClient.Builder("http://my-solr-server:8983/solr")
+     *   SolrClient client = new HttpApacheSolrClient.Builder("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
@@ -864,14 +862,14 @@ public class HttpSolrClient extends SolrClient {
       this.responseParser = new JavaBinResponseParser();
     }
 
-    /** Chooses whether created {@link HttpSolrClient}s use compression by default. */
+    /** Chooses whether created clients use compression by default. */
     public Builder allowCompression(boolean compression) {
       this.compression = compression;
       return this;
     }
 
     /**
-     * Adds to the set of params that the created {@link HttpSolrClient} will add on all requests
+     * Adds to the set of params that the created client will add on all requests
      *
      * @param params a set of parameters to add to the invariant-params list. These params must be
      *     unique and may not duplicate a param already in the invariant list.
@@ -889,14 +887,14 @@ public class HttpSolrClient extends SolrClient {
       return this;
     }
 
-    /** Create a {@link HttpSolrClient} based on provided configuration. */
-    public HttpSolrClient build() {
+    /** Create a {@link HttpApacheSolrClient} based on provided configuration. */
+    public HttpApacheSolrClient build() {
       if (baseSolrUrl == null) {
         throw new IllegalArgumentException(
             "Cannot create HttpSolrClient without a valid baseSolrUrl!");
       }
 
-      return new HttpSolrClient(this);
+      return new HttpApacheSolrClient(this);
     }
 
     @Override
