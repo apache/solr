@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 import org.apache.solr.client.solrj.ResponseParser;
@@ -66,12 +64,7 @@ public class InputStreamResponseParser extends ResponseParser {
 
   @Override
   public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
-    StringWriter writer = new StringWriter();
-    new InputStreamReader(body, encoding == null ? "UTF-8" : encoding).transferTo(writer);
-    String output = writer.toString();
-    NamedList<Object> list = new NamedList<>();
-    list.add("response", output);
-    return list;
+    throw new UnsupportedOperationException();
   }
 
   @Override
