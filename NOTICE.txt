@@ -186,10 +186,6 @@ See http://code.google.com/p/google-code-prettify/
 JUnit (junit-4.10) is licensed under the Common Public License v. 1.0
 See http://junit.sourceforge.net/cpl-v10.html
 
-This product includes code (JaspellTernarySearchTrie) from Java Spelling Checkin
-g Package (jaspell): http://jaspell.sourceforge.net/
-License: The BSD License (http://www.opensource.org/licenses/bsd-license.php)
-
 The snowball stemmers in
   analysis/common/src/java/net/sf/snowball
 were developed by Martin Porter and Richard Boulton.

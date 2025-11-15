@@ -45,7 +45,6 @@ import org.apache.solr.spelling.SpellingOptions;
 import org.apache.solr.spelling.SpellingResult;
 import org.apache.solr.spelling.Token;
 import org.apache.solr.spelling.suggest.fst.FSTLookupFactory;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookupFactory;
 import org.apache.solr.spelling.suggest.tst.TSTLookupFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,9 +91,7 @@ public class Suggester extends SolrSpellChecker {
 
     // support the old classnames without -Factory for config file backwards compatibility.
     if (lookupImpl == null
-        || "org.apache.solr.spelling.suggest.jaspell.JaspellLookup".equals(lookupImpl)) {
-      lookupImpl = JaspellLookupFactory.class.getName();
-    } else if ("org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
+        || "org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
       lookupImpl = TSTLookupFactory.class.getName();
     } else if ("org.apache.solr.spelling.suggest.fst.FSTLookup".equals(lookupImpl)) {
       lookupImpl = FSTLookupFactory.class.getName();
