@@ -278,7 +278,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
-    System.setProperty("solr.http.cookies.enabled", Boolean.toString(usually()));
+    System.setProperty("solr.solrj.http.cookies.enabled", Boolean.toString(usually()));
     System.setProperty("solr.metrics.jvm.enabled", "false");
     System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 

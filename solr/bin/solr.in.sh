@@ -289,4 +289,4 @@
 
 # Solr internally doesn't use cookies. If you don't need any of those, and you don't 
 # need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.http.cookies.enabled=false"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.solrj.http.cookies.enabled=false"

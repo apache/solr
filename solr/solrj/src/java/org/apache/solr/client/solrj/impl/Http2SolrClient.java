@@ -1048,7 +1048,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (cookieStore == null) {
         return cookieStore;
       }
-      if (!EnvUtils.getPropertyAsBool("solr.http.cookies.enabled", false)) {
+      if (!EnvUtils.getPropertyAsBool("solr.solrj.http.cookies.enabled", false)) {
         return new HttpCookieStore.Empty();
       }
       /*

@@ -62,8 +62,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.host.bind|solr.jetty.host| |This is the host that Solr's Jetty binds to, and only accepts requests to.
 
-|solr.http.cookies.enabled|solr.http.disableCookies| false |If Http2SolrClient should support cookies.
-
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
@@ -104,6 +102,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
+
+|solr.solrj.http.cookies.enabled|solr.http.disableCookies| false |If Http2SolrClient should support cookies.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 

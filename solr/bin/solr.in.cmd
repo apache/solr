@@ -253,4 +253,4 @@ REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
 
 REM Solr internally doesn't use cookies. If you don't need any of those, and you don't 
 REM need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.http.cookies.enabled=false
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.solrj.http.cookies.enabled=false
