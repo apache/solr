@@ -239,8 +239,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
             : sslConfig.createClientContextFactory();
 
     Long keyStoreReloadIntervalSecs = builder.keyStoreReloadIntervalSecs;
-    if (keyStoreReloadIntervalSecs == null && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-      keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+    if (keyStoreReloadIntervalSecs == null
+        && EnvUtils.getPropertyAsBool("solr.keystore.reload.enabled", false)) {
+      keyStoreReloadIntervalSecs =
+          EnvUtils.getPropertyAsLong("solr.jetty.ssl.context.reload.scan.interval.secs", 30l);
     }
     if (sslContextFactory != null
         && sslContextFactory.getKeyStoreResource() != null

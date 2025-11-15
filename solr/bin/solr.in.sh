@@ -72,7 +72,7 @@
 
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
-#SOLR_HOST="192.168.1.1"
+#SOLR_HOST_ADVERTISE="192.168.1.1"
 
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 #SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
@@ -129,7 +129,7 @@
 #SOLR_LOGS_DIR=logs
 
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=true
+#SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT_LISTEN=8983

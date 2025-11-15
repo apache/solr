@@ -168,11 +168,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
   public final String core;
   public final Type type;
   public final String shard, collection;
+  private final State state;
   private String baseUrl, coreUrl; // Derived values
   private AtomicReference<PerReplicaStates> perReplicaStatesRef;
-
-  // mutable
-  private State state;
 
   void setPerReplicaStatesRef(AtomicReference<PerReplicaStates> perReplicaStatesRef) {
     this.perReplicaStatesRef = perReplicaStatesRef;
@@ -238,9 +236,7 @@ public class Replica extends ZkNodeProps implements MapWriter {
     this.propMap.putAll(details);
     type =
         Replica.Type.valueOf(String.valueOf(propMap.getOrDefault(ReplicaStateProps.TYPE, "NRT")));
-    if (state == null)
-      state =
-          State.getState(String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, "active")));
+    state = State.getState(String.valueOf(propMap.getOrDefault(ReplicaStateProps.STATE, "active")));
     validate();
   }
 
@@ -331,12 +327,6 @@ public class Replica extends ZkNodeProps implements MapWriter {
     return state;
   }
 
-  @Deprecated
-  public void setState(State state) {
-    this.state = state;
-    propMap.put(ReplicaStateProps.STATE, this.state.toString());
-  }
-
   public boolean isActive(Set<String> liveNodes) {
     return this.node != null && liveNodes.contains(this.node) && getState() == State.ACTIVE;
   }
@@ -388,9 +378,9 @@ public class Replica extends ZkNodeProps implements MapWriter {
   }
 
   public Replica copyWith(State state) {
-    Replica r = new Replica(name, propMap, collection, shard);
-    r.setState(state);
-    return r;
+    Map<String, Object> newProps = new LinkedHashMap<>(propMap);
+    newProps.put(ReplicaStateProps.STATE, state.toString());
+    return new Replica(name, newProps, collection, shard);
   }
 
   public PerReplicaStates.State getReplicaState() {

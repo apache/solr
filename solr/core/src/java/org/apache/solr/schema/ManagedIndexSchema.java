@@ -327,9 +327,8 @@ public final class ManagedIndexSchema extends IndexSchema {
     ClusterState clusterState = zkStateReader.getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
-    if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
-      final Slice[] activeSlices = docCollection.getActiveSlicesArr();
-      for (Slice next : activeSlices) {
+    if (docCollection != null) {
+      for (Slice next : docCollection.getActiveSlices()) {
         Map<String, Replica> replicasMap = next.getReplicasMap();
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
