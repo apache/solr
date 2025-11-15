@@ -1,7 +1,0 @@
-title: Remove deprecated JaspellLookupFactory suggester implementation
-type: removed
-authors:
-- name: Apache Solr Community
-links:
-- name: JIRA-ISSUE
-  url: https://issues.apache.org/jira/browse/SOLR-17999
