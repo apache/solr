@@ -99,7 +99,7 @@ public class SSLTestConfig {
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
-   * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME
+   * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME_ENABLED
    */
   @SuppressWarnings("removal")
   public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {

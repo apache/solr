@@ -178,7 +178,7 @@ grant {
 
   permission java.io.FilePermission "${javax.net.ssl.trustStore}", "read,readlink";
 
-  permission java.io.FilePermission "${solr.jetty.keystoreParentPath}", "read,readlink";
+  permission java.io.FilePermission "${solr.jetty.keystore.parent.path}", "read,readlink";
   permission java.io.FilePermission "${javax.net.ssl.keyStoreParentPath}", "read,readlink";
 
   permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";

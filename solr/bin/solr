@@ -241,7 +241,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:true}" == "true" ] ; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verify.client.hostname=HTTPS"
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then

@@ -82,7 +82,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule syspropRestore =
-      new TestRuleRestoreSystemProperties(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME);
+      new TestRuleRestoreSystemProperties(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME_ENABLED);
 
   @Before
   public void before() {
@@ -178,7 +178,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       SSLContext.setDefault(
           sslConfig.isSSLMode() ? sslConfig.buildClientSSLContext() : DEFAULT_SSL_CONTEXT);
       System.setProperty(
-          SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME,
+          SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME_ENABLED,
           Boolean.toString(sslConfig.getCheckPeerName()));
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
@@ -208,7 +208,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
       // now initialize a client that still uses the existing SSLContext/Provider, so it will accept
       // our existing certificate, but *does* care about validating the peer name
-      System.setProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME, "true");
+      System.setProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME_ENABLED, "true");
       HttpClientUtil.resetHttpClientBuilder();
       Http2SolrClient.resetSslContextFactory();
 

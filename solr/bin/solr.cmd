@@ -109,7 +109,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
     IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
       IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
-        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystoreParentPath=%SOLR_SSL_KEY_STORE%/.."
+        set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore.parent.path=%SOLR_SSL_KEY_STORE%/.."
       )
     )
   )
@@ -129,7 +129,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
   )
   IF "%SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION%"=="true" (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verify.client.hostname=HTTPS"
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
