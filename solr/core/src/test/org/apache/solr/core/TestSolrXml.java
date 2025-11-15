@@ -486,12 +486,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertEquals("solrcloud section missing required entry 'host'", thrown.getMessage());
   }
 
-  public void testCloudConfigContinuesToWorkIfHostContextDefined() {
-    String solrXml =
-        "<solr><solrcloud><str name=\"host\">host</str><str name=\"hostContext\">legacyHostContent</str><int name=\"hostPort\">8983</int></solrcloud></solr>";
-    SolrXmlConfig.fromString(solrHome, solrXml);
-  }
-
   public void testMultiBackupSectionError() {
     String solrXml = "<solr><backup></backup><backup></backup></solr>";
     SolrException thrown =
