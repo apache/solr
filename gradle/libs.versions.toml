@@ -83,7 +83,6 @@ dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.27"
-eclipse-jettytoolchain = "5.0.2"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.3.0.202506031305-r"
 essenty = "2.5.0"
@@ -122,6 +121,7 @@ hsqldb = "2.7.4"
 ibm-icu = "77.1"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
+# Keep these Jakarta versions aligned with EE 10
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 jakarta-servlet = "6.0.0"
@@ -332,7 +332,6 @@ eclipse-jetty-alpnjavaserver = { module = "org.eclipse.jetty:jetty-alpn-java-ser
 eclipse-jetty-alpnserver = { module = "org.eclipse.jetty:jetty-alpn-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-client = { module = "org.eclipse.jetty:jetty-client", version.ref = "eclipse-jetty" }
 eclipse-jetty-deploy = { module = "org.eclipse.jetty:jetty-deploy", version.ref = "eclipse-jetty" }
-eclipse-jetty-ee = { module = "org.eclipse.jetty:jetty-ee", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlet = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlet", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-servlets = { module = "org.eclipse.jetty.ee10:jetty-ee10-servlets", version.ref = "eclipse-jetty" }
 eclipse-jetty-ee10-webapp = { module = "org.eclipse.jetty.ee10:jetty-ee10-webapp", version.ref = "eclipse-jetty" }
@@ -344,14 +343,11 @@ eclipse-jetty-http2-httpclienttransport = { module = "org.eclipse.jetty.http2:je
 eclipse-jetty-http2-server = { module = "org.eclipse.jetty.http2:jetty-http2-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-io = { module = "org.eclipse.jetty:jetty-io", version.ref = "eclipse-jetty" }
 eclipse-jetty-jmx = { module = "org.eclipse.jetty:jetty-jmx", version.ref = "eclipse-jetty" }
-eclipse-jetty-jndi = { module = "org.eclipse.jetty:jetty-jndi", version.ref = "eclipse-jetty" }
-eclipse-jetty-plus = { module = "org.eclipse.jetty:jetty-plus", version.ref = "eclipse-jetty" }
 eclipse-jetty-rewrite = { module = "org.eclipse.jetty:jetty-rewrite", version.ref = "eclipse-jetty" }
 eclipse-jetty-security = { module = "org.eclipse.jetty:jetty-security", version.ref = "eclipse-jetty" }
 eclipse-jetty-server = { module = "org.eclipse.jetty:jetty-server", version.ref = "eclipse-jetty" }
 eclipse-jetty-session = { module = "org.eclipse.jetty:jetty-session", version.ref = "eclipse-jetty" }
 eclipse-jetty-start = { module = "org.eclipse.jetty:jetty-start", version.ref = "eclipse-jetty" }
-eclipse-jetty-toolchain-servletapi = { module = "org.eclipse.jetty.toolchain:jetty-jakarta-servlet-api", version.ref = "eclipse-jettytoolchain" }
 eclipse-jetty-util = { module = "org.eclipse.jetty:jetty-util", version.ref = "eclipse-jetty" }
 eclipse-jetty-xml = { module = "org.eclipse.jetty:jetty-xml", version.ref = "eclipse-jetty" }
 eclipse-jgit-jgit = { module = "org.eclipse.jgit:org.eclipse.jgit", version.ref = "eclipse-jgit" }

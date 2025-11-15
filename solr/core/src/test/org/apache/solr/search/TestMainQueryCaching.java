@@ -102,7 +102,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getCounterDatapoint(
                 core,
-                "solr_searcher_live_docs_cache",
+                "solr_core_indexsearcher_live_docs_cache",
                 SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                     .label("category", "SEARCHER")
                     .label("type", type)

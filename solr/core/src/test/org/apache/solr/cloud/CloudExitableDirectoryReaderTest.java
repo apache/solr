@@ -101,7 +101,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
       var reader =
           jetty.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
 
-      var errorsSnapshots = reader.collect((name) -> name.equals("solr_node_requests_errors"));
+      var errorsSnapshots = reader.collect("solr_node_requests_errors"::equals);
       long errorCount = 0L;
 
       if (errorsSnapshots.size() > 0) {
@@ -118,7 +118,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
       Long old = fiveHundredsByNode.put(jetty.getNodeName(), errorCount);
       assertNull("expecting uniq nodenames", old);
 
-      var requestsSnapshots = reader.collect((name) -> name.equals("solr_node_requests"));
+      var requestsSnapshots = reader.collect("solr_node_requests"::equals);
 
       if (requestsSnapshots.size() > 0) {
         var requestsSnapshot =

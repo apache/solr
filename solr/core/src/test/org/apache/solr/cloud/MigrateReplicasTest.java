@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
@@ -145,9 +144,9 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
-    assertNull(
+    assertTrue(
         "There should not be any replicas left on decommissioned node",
-        collection.getReplicasOnNode(nodeToBeDecommissioned));
+        collection.getReplicasOnNode(nodeToBeDecommissioned).isEmpty());
 
     // let's do it back - this time wait for recoveries
     response =
@@ -184,17 +183,14 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     }
     // make sure all newly created replicas on node are active
     List<Replica> newReplicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-    assertNotNull("There should be replicas on the migrated-to node", newReplicas);
     assertFalse("There should be replicas on the migrated-to node", newReplicas.isEmpty());
     for (Replica r : newReplicas) {
       assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
     // make sure all replicas on emptyNode are not active
     List<Replica> replicas = collection.getReplicasOnNode(emptyNode);
-    if (replicas != null) {
-      for (Replica r : replicas) {
-        assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
-      }
+    for (Replica r : replicas) {
+      assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
 
     // check replication metrics on this jetty - see SOLR-14924
@@ -211,7 +207,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
           var dp =
               SolrMetricTestUtils.getGaugeDatapoint(
                   core,
-                  "solr_replication_is_replicating",
+                  "solr_core_replication_is_replicating",
                   SolrMetricTestUtils.newCloudLabelsBuilder(core)
                       .label("category", SolrInfoBean.Category.REPLICATION.toString())
                       .label("handler", "/replication")
@@ -220,7 +216,7 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
           double isReplicating = dp.getValue();
           assertTrue(
-              "solr_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              "solr_core_replication_is_replicating should be 0 or 1, got: " + isReplicating,
               isReplicating == 0.0 || isReplicating == 1.0);
         }
       }
@@ -261,10 +257,6 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
 
     DocCollection initialCollection = cloudClient.getClusterState().getCollection(coll);
     log.info("### Before decommission: {}", initialCollection);
-    List<Integer> initialReplicaCounts =
-        l.stream()
-            .map(node -> initialCollection.getReplicasOnNode(node).size())
-            .collect(Collectors.toList());
     Map<?, ?> response =
         callMigrateReplicas(
             cloudClient,
@@ -281,13 +273,9 @@ public class MigrateReplicasTest extends SolrCloudTestCase {
     // check what are replica states on the decommissioned nodes
     for (String nodeToBeDecommissioned : nodesToBeDecommissioned) {
       List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-      if (replicas == null) {
-        replicas = Collections.emptyList();
-      }
-      assertEquals(
+      assertTrue(
           "There should be no more replicas on the sourceNode after a migrateReplicas request.",
-          Collections.emptyList(),
-          replicas);
+          replicas.isEmpty());
     }
 
     for (String node : eventualTargetNodes) {
