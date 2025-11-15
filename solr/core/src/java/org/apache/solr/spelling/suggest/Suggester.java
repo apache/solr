@@ -90,8 +90,7 @@ public class Suggester extends SolrSpellChecker {
     lookupImpl = (String) config.get(LOOKUP_IMPL);
 
     // support the old classnames without -Factory for config file backwards compatibility.
-    if (lookupImpl == null
-        || "org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
+    if (lookupImpl == null || "org.apache.solr.spelling.suggest.tst.TSTLookup".equals(lookupImpl)) {
       lookupImpl = TSTLookupFactory.class.getName();
     } else if ("org.apache.solr.spelling.suggest.fst.FSTLookup".equals(lookupImpl)) {
       lookupImpl = FSTLookupFactory.class.getName();
