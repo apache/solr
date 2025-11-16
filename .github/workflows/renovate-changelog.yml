@@ -41,8 +41,7 @@ jobs:
         run: |
           python3 .github/scripts/generate-renovate-changelog.py \
             --pr-number "${{ github.event.pull_request.number }}" \
-            --pr-title "${{ github.event.pull_request.title }}" \
-            --pr-body "${{ github.event.pull_request.body }}"
+            --pr-title "${{ github.event.pull_request.title }}"
 
       - name: Commit and push changelog
         run: |

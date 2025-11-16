@@ -2,12 +2,12 @@
 """
 Generate changelog YAML entry for Renovate dependency update PRs.
 
-This script parses the PR title and body to extract dependency information,
+This script parses the PR title to extract dependency information,
 then generates a changelog YAML file in changelog/unreleased/ with the proper
 naming convention and content structure.
 
 Usage:
-    python3 generate-renovate-changelog.py --pr-number 1234 --pr-title "Update org.apache.httpcomponents to v1.2.3" [--pr-body "..."]
+    python3 generate-renovate-changelog.py --pr-number 1234 --pr-title "Update org.apache.httpcomponents to v1.2.3"
 """
 
 import argparse
@@ -211,11 +211,6 @@ Examples:
         '--pr-title',
         required=True,
         help='GitHub PR title (from the Renovate bot)'
-    )
-    parser.add_argument(
-        '--pr-body',
-        default=None,
-        help='GitHub PR body (optional, for additional parsing if needed)'
     )
     parser.add_argument(
         '--changelog-dir',
