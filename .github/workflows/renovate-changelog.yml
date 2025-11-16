@@ -45,8 +45,8 @@ jobs:
 
       - name: Commit and push changelog
         run: |
-          # Check if there are any changes to commit
-          if git diff --quiet; then
+          # Check if there are any new (untracked) or modified files in changelog/unreleased/
+          if [ -z "$(git status --porcelain changelog/unreleased/)" ]; then
             echo "No changelog changes to commit"
             exit 0
           fi
