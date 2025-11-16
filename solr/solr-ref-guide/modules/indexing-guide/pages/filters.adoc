@@ -1808,20 +1808,6 @@ With class name (legacy)::
 
 See <<Stop Filter>> for example input/output.
 
-== Managed Synonym Filter
-
-This is specialized version of the <<Synonym Filter>> that uses a mapping on synonyms that is xref:configuration-guide:managed-resources.adoc[managed from a REST API].
-
-.Managed Synonym Filter has been Deprecated
-[WARNING]
-====
-Managed Synonym Filter has been deprecated in favor of Managed Synonym Graph Filter, which is required for multi-term synonym support.
-====
-
-*Factory class:* `solr.ManagedSynonymFilterFactory`
-
-For arguments and examples, see the <<Synonym Graph Filter>> below.
-
 == Managed Synonym Graph Filter
 
 This is specialized version of the <<Synonym Graph Filter>> that uses a mapping on synonyms that is xref:configuration-guide:managed-resources.adoc[managed from a REST API].
