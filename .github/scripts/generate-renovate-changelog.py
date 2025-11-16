@@ -32,17 +32,17 @@ def sanitize_slug(text: str, max_length: int = 50) -> str:
     # Convert to lowercase
     text = text.lower()
 
-    # Remove "update " prefix if present (case-insensitive)
-    text = re.sub(r'^update\s+', '', text, flags=re.IGNORECASE)
-
     # Replace colons, slashes, dots with dashes
     text = re.sub(r'[:/.]+', '-', text)
 
     # Replace other special characters with dashes
-    text = re.sub(r'[^a-z0-9\s-]', '', text)
+    text = re.sub(r'[^a-z0-9\s-]', '-', text)
 
-    # Replace multiple spaces or dashes with single dash
-    text = re.sub(r'[\s-]+', '-', text)
+    # Replace spaces with dashes
+    text = re.sub(r'\s+', '-', text)
+
+    # Replace multiple dashes with single dash
+    text = re.sub(r'-+', '-', text)
 
     # Remove leading/trailing dashes
     text = text.strip('-')
@@ -72,6 +72,9 @@ def parse_pr_title(title: str) -> Tuple[str, Optional[str]]:
 
     Returns:
         Tuple of (title_for_changelog, dependency_slug_for_filename)
+
+    Note: The slug excludes the version number so the filename remains stable
+          across version updates.
     """
 
     # Pattern 1: "Update dependency {group}:{artifact} to {version}"
@@ -80,7 +83,8 @@ def parse_pr_title(title: str) -> Tuple[str, Optional[str]]:
         dep_name = match.group(1)
         version = match.group(2).strip()
         changelog_title = f"Update {dep_name} to {version}"
-        slug = sanitize_slug(changelog_title)
+        # Slug contains only the dependency name, not the version
+        slug = sanitize_slug(f"Update {dep_name}")
         return changelog_title, slug
 
     # Pattern 2: "Update {owner}/{action} action to {version}"
@@ -89,7 +93,8 @@ def parse_pr_title(title: str) -> Tuple[str, Optional[str]]:
         action = match.group(1)
         version = match.group(2).strip()
         changelog_title = f"Update {action} action to {version}"
-        slug = sanitize_slug(changelog_title)
+        # Slug contains only the action name, not the version
+        slug = sanitize_slug(f"Update {action} action")
         return changelog_title, slug
 
     # Pattern 3: "Update {package} to {version}" (short form)
@@ -98,7 +103,8 @@ def parse_pr_title(title: str) -> Tuple[str, Optional[str]]:
         package = match.group(1)
         version = match.group(2).strip()
         changelog_title = f"Update {package} to {version}"
-        slug = sanitize_slug(changelog_title)
+        # Slug contains only the package name, not the version
+        slug = sanitize_slug(f"Update {package}")
         return changelog_title, slug
 
     # Fallback: use title as-is if no pattern matches
