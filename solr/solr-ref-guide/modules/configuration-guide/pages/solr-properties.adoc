@@ -108,6 +108,8 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
 
+|solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
+
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 
 |solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.

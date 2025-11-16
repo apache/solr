@@ -250,12 +250,12 @@
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
 # change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
-# SOLR_UI_ENABLED=true
+#SOLR_UI_ENABLED=true
 
 # This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
 # below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
 # new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
-# SOLR_UI_EXPERIMENTAL_ENABLED=false
+#SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
@@ -278,10 +278,10 @@
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 # then enable the following setting to address CVE-2021-44228
-# SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
+#SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
-# SOLR_MODULES=extraction,ltr
+#SOLR_MODULES=extraction,ltr
 
 # Configure the default replica placement plugin to use if one is not configured in cluster properties
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
@@ -289,4 +289,4 @@
 
 # Solr internally doesn't use cookies. If you don't need any of those, and you don't 
 # need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
-# SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.solrj.http.cookies.enabled=false"
