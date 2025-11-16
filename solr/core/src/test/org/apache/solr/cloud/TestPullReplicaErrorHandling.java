@@ -305,19 +305,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of writer replicas: " + docCollection,
         numWriter,
-        getReplicas(EnumSet.of(Replica.Type.NRT), docCollection).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPassive,
-        getReplicas(EnumSet.of(Replica.Type.PULL), docCollection).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of active replicas: " + docCollection,
         numActive,
-        getReplicas(EnumSet.of(Replica.Type.TLOG), docCollection).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

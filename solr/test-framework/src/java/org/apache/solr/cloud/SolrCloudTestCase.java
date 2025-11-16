@@ -173,7 +173,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return activeShards == expectedShards;
   }
 
-  public static List<Replica> getReplicas(EnumSet<Replica.Type> s, DocCollection collectionState) {
+  public static List<Replica> getReplicas(DocCollection collectionState, EnumSet<Replica.Type> s) {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : collectionState) {
       replicas.addAll(slice.getReplicas(s));
