@@ -37,14 +37,15 @@ This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 Minimum Java version for Solr 10.x is Java 21.
 
-== Solr Jetty parameters
+== Solr 10.0
+
+=== Solr Jetty parameters
 
 The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
 
 The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
-
 
 === Solr CLI and Scripts
 
@@ -191,6 +192,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the `/admin/metrics` endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
 
 * SolrInfoMBeanHandler and PluginInfoHandler have been removed
+
+* The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
 === Security
 
