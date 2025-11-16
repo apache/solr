@@ -8,6 +8,8 @@ on:
 jobs:
   validate-changelog:
     name: Check changelog entry
+    # Skip validation for Renovate PRs (solrbot) - they get changelog entries automatically
+    if: github.event.pull_request.user.login != 'solrbot'
     runs-on: ubuntu-latest
 
     steps:

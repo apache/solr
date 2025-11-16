@@ -674,7 +674,11 @@ groups:
   - !Todo
     id: dependency_updates_changes
     title: Add dependency updates to changelog
-    description: Bulk add all 'solrbot' dependency updates since last release
+    description: |
+      Bulk add all 'solrbot' dependency updates since last release.
+      NOTE: Work in progress to let each Solrbot PR add its own changes to changelog.
+      This step will be removed once that is done.
+      Until then, there may be a mix of PRs with and without changes to changelog.
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
