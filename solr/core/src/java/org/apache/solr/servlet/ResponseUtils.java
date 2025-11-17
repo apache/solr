@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.stream.Collectors;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.api.model.ErrorInfo;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -106,6 +107,11 @@ public class ResponseUtils {
               Arrays.stream(causedBy.getStackTrace())
                   .map(StackTraceElement::toString)
                   .collect(Collectors.toList()));
+          if (causedBy instanceof SolrClient.RemoteSolrException remoteCausedBy) {
+            if (remoteCausedBy.getRemoteErrorResponse() != null) {
+              errorInfo.add("remoteError", remoteCausedBy.getRemoteErrorResponse());
+            }
+          }
           causedBy = causedBy.getCause();
           errorInfo = new SimpleOrderedMap<>();
         }

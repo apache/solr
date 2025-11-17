@@ -25,8 +25,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -89,6 +92,32 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
     } finally {
       HttpClientUtil.close(client);
     }
+  }
+
+  @Test
+  @SuppressWarnings({"unchecked"})
+  public void testRemoteSolrException() {
+    var client = solrRule.getSolrClient("collection1");
+    QueryRequest queryRequest =
+        new QueryRequest(new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
+    queryRequest.setPath("/withError");
+    SolrClient.RemoteSolrException exception =
+        expectThrows(
+            SolrClient.RemoteSolrException.class,
+            () -> queryRequest.process(client, "collection1"));
+    assertTrue(exception.getRemoteErrorResponse() instanceof NamedList);
+    var remoteError = (NamedList<Object>) exception.getRemoteErrorResponse();
+    assertEquals(500, remoteError._get("code"));
+    assertEquals("java.lang.RuntimeException", remoteError._get("errorClass"));
+    assertEquals("Stacktrace should be populated.", remoteError._get("msg"));
+    assertTrue(
+        ((String) remoteError._get("trace/stackTrace[0]"))
+            .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
+    assertEquals("java.io.IOException", remoteError._get("trace/causedBy/errorClass"));
+    assertEquals("This is the cause", remoteError._get("trace/causedBy/msg"));
+    assertTrue(
+        ((String) remoteError._get("trace/causedBy/trace/stackTrace[0]"))
+            .contains("org.apache.solr.response.TestErrorResponseStackTrace$ErrorComponent"));
   }
 
   public static class ErrorComponent extends SearchComponent {

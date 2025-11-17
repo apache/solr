@@ -230,7 +230,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
             reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
             if (reason == null) {
               reason =
-                  (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
+                  Utils.toJSONString(
+                      Utils.getObjectByPath(error, false, Collections.singletonList("trace")));
             }
             Object metadataObj =
                 Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
@@ -250,16 +251,18 @@ public abstract class HttpSolrClientBase extends SolrClient {
         } catch (Exception ex) {
           /* Ignored */
         }
-        if (reason == null) {
+        SolrClient.RemoteSolrException rss;
+        if (error == null) {
           StringBuilder msg = new StringBuilder();
           msg.append(responseReason).append("\n").append("request: ").append(responseMethod);
           if (error != null) {
             msg.append("\n\nError returned:\n").append(error);
           }
           reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
+          rss = new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
+        } else {
+          rss = new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, error);
         }
-        SolrClient.RemoteSolrException rss =
-            new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
         if (metadata != null) rss.setMetadata(metadata);
         throw rss;
       }

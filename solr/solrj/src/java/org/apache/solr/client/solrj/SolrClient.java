@@ -1216,6 +1216,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * been returned by the remote server or a proxy along the way.
    */
   public static class RemoteSolrException extends SolrException {
+
+    private final Object remoteErrorResponse;
+
     /**
      * @param remoteHost the host the error was received from
      * @param code Arbitrary HTTP status code
@@ -1224,6 +1227,26 @@ public abstract class SolrClient implements Serializable, Closeable {
      */
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
+      remoteErrorResponse = null;
+    }
+
+    /**
+     * @param remoteHost the host the error was received from
+     * @param code Arbitrary HTTP status code
+     * @param remoteErrorResponse Error response sent back from remoteHost
+     */
+    public RemoteSolrException(String remoteHost, int code, Object remoteErrorResponse) {
+      super(ErrorCode.getErrorCode(code), "Error from server at " + remoteHost);
+      this.remoteErrorResponse = remoteErrorResponse;
+    }
+
+    /**
+     * Get the error response from the remoteHost if applicable.
+     *
+     * @return a NamedList remote error response if given, or null
+     */
+    public Object getRemoteErrorResponse() {
+      return remoteErrorResponse;
     }
   }
 }
