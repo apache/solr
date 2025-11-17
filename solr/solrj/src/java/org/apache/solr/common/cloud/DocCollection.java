@@ -23,13 +23,11 @@ import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Supplier;
@@ -397,32 +395,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return slice.getLeader();
   }
 
-  /**
-   * Check that all replicas in a collection are live
-   *
-   * @see CollectionStatePredicate
-   */
-  @Deprecated // only for 2 tests
-  public static boolean isFullyActive(
-      Set<String> liveNodes,
-      DocCollection collectionState,
-      int expectedShards,
-      int expectedReplicas) {
-    Objects.requireNonNull(liveNodes);
-    if (collectionState == null) return false;
-    int activeShards = 0;
-    for (Slice slice : collectionState) {
-      int activeReplicas = 0;
-      for (Replica replica : slice) {
-        if (replica.isActive(liveNodes) == false) return false;
-        activeReplicas++;
-      }
-      if (activeReplicas != expectedReplicas) return false;
-      activeShards++;
-    }
-    return activeShards == expectedShards;
-  }
-
   @Override
   public Iterator<Slice> iterator() {
     return slices.values().iterator();
@@ -433,15 +405,6 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     List<Replica> replicas = new ArrayList<>();
     for (Slice slice : this) {
       replicas.addAll(slice.getReplicas());
-    }
-    return replicas;
-  }
-
-  @Deprecated // just tests, so move out or make package-protected
-  public List<Replica> getReplicas(EnumSet<Replica.Type> s) {
-    List<Replica> replicas = new ArrayList<>();
-    for (Slice slice : this) {
-      replicas.addAll(slice.getReplicas(s));
     }
     return replicas;
   }

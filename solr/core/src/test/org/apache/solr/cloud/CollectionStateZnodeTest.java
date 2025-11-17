@@ -48,7 +48,7 @@ public class CollectionStateZnodeTest extends SolrCloudTestCase {
     waitForState(
         "Collection not created",
         collectionName,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
     assertTrue(
         "Collection path does not exist",
         zkClient().exists(DocCollection.getCollectionPath(collectionName), true));
