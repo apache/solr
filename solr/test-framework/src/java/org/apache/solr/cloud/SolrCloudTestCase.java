@@ -30,9 +30,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -144,6 +146,39 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         cluster = null;
       }
     }
+  }
+
+  /**
+   * Check that all replicas in a collection are live
+   *
+   * @see CollectionStatePredicate
+   */
+  public static boolean replicasForCollectionAreFullyActive(
+      Set<String> liveNodes,
+      DocCollection collectionState,
+      int expectedShards,
+      int expectedReplicas) {
+    Objects.requireNonNull(liveNodes);
+    if (collectionState == null) return false;
+    int activeShards = 0;
+    for (Slice slice : collectionState) {
+      int activeReplicas = 0;
+      for (Replica replica : slice) {
+        if (replica.isActive(liveNodes) == false) return false;
+        activeReplicas++;
+      }
+      if (activeReplicas != expectedReplicas) return false;
+      activeShards++;
+    }
+    return activeShards == expectedShards;
+  }
+
+  public static List<Replica> getReplicas(DocCollection collectionState, EnumSet<Replica.Type> s) {
+    List<Replica> replicas = new ArrayList<>();
+    for (Slice slice : collectionState) {
+      replicas.addAll(slice.getReplicas(s));
+    }
+    return replicas;
   }
 
   @Before
