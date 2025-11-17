@@ -424,9 +424,7 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
   private void addDummyDoc(SolrCore core) throws Exception {
     EmbeddedSolrServer server = new EmbeddedSolrServer(core);
 
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "1");
-
+    SolrInputDocument doc = sdoc("id", "1");
     UpdateResponse response = server.add(doc);
     assertEquals(0, response.getStatus());
   }
