@@ -2,7 +2,7 @@ name: Auto-generate Changelog for Renovate PRs
 
 # Automatically generate changelog entries when Renovate opens or updates a PR
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - synchronize
