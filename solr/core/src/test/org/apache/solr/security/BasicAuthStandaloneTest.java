@@ -37,7 +37,7 @@ import org.apache.http.message.AbstractHttpMessage;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettyConfig;
@@ -179,7 +179,7 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     httpPost.addHeader("Content-Type", "application/json; charset=UTF-8");
     HttpResponse r = cl.execute(httpPost);
     int statusCode = r.getStatusLine().getStatusCode();
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
     assertEquals("proper_cred sent, but access denied", expectStatusCode, statusCode);
   }
 

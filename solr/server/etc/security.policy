@@ -132,7 +132,6 @@ grant {
   permission javax.management.MBeanServerPermission "releaseMBeanServer";
   permission javax.management.MBeanTrustPermission "register";
 
-  
   // needed by crossdc
   permission javax.security.auth.AuthPermission "getLoginConfiguration";
   permission javax.security.auth.AuthPermission "setLoginConfiguration";
@@ -196,14 +195,14 @@ grant {
   permission java.io.FilePermission "${solr.data.home}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.data.home}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.default.confdir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.default.confdir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.configset.default.confdir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.logs.dir}${/}-", "read,write,delete,readlink";
 
-  permission java.io.FilePermission "${solr.allowPaths}", "read,write,delete,readlink";
-  permission java.io.FilePermission "${solr.allowPaths}${/}-", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.security.allow.paths}${/}-", "read,write,delete,readlink";
 
   permission java.io.FilePermission "${solr.sharedLib}", "read,readlink";
   permission java.io.FilePermission "${solr.sharedLib}${/}-", "read,readlink";
@@ -217,4 +216,12 @@ grant {
 
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
+
+  // CUDA for GPU module (cuVS)
+  permission java.lang.RuntimePermission "loadLibrary.cudart";
+};
+
+// Permissions for OTEL Runtime Java 17 telemetry and metrics
+grant {
+  permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
 };

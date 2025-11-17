@@ -46,6 +46,7 @@ include "solr:server"
 include "solr:modules:analysis-extras"
 include "solr:modules:clustering"
 include "solr:modules:cross-dc"
+include "solr:modules:cuvs"
 include "solr:modules:opentelemetry"
 include "solr:modules:extraction"
 include "solr:modules:gcs-repository"
@@ -65,7 +66,6 @@ include "solr:documentation"
 include "solr:packaging"
 include "solr:distribution"
 include "solr:docker"
-include "solr:prometheus-exporter"
 
 def disableUiModuleValue = providers.gradleProperty('disableUiModule').orNull
 gradle.ext.withUiModule = disableUiModuleValue == null || disableUiModuleValue != 'true'

@@ -36,9 +36,4 @@ public class HashRangeQParserPlugin extends QParserPlugin {
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new HashRangeQParser(qstr, localParams, params, req);
   }
-
-  @Override
-  public String getName() {
-    return NAME;
-  }
 }

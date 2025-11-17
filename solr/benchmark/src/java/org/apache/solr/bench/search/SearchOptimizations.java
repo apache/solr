@@ -87,10 +87,8 @@ public class SearchOptimizations {
               .field("text2_ts", strings().alpha().multi(10).ofLengthBetween(5, 10));
       miniClusterState.index(COLLECTION, docGen, numDocs);
       miniClusterState.forceMerge(COLLECTION, 1);
-      String base = miniClusterState.nodes.get(0);
 
       q = new QueryRequest(getSolrQuery());
-      q.setBasePath(base);
     }
 
     private SolrQuery getSolrQuery() {
@@ -125,7 +123,6 @@ public class SearchOptimizations {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      reload.setBasePath(miniClusterState.nodes.get(0));
       miniClusterState.client.request(reload);
 
       total = new AtomicLong();
@@ -146,7 +143,8 @@ public class SearchOptimizations {
       BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh)
       throws IOException {
     try {
-      return miniClusterState.client.request(benchState.q, COLLECTION);
+      return miniClusterState.client.requestWithBaseUrl(
+          miniClusterState.nodes.get(0), COLLECTION, benchState.q);
     } catch (SolrServerException e) {
       bh.consume(e);
       benchState.err.getAndIncrement();

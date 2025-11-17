@@ -25,6 +25,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.Expiry;
 import com.github.benmanes.caffeine.cache.Ticker;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -42,7 +43,6 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -74,13 +74,11 @@ import org.apache.solr.handler.admin.api.SplitCoreAPI;
 import org.apache.solr.handler.admin.api.SwapCores;
 import org.apache.solr.handler.admin.api.UnloadCore;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.stats.MetricUtils;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -129,23 +127,21 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    super.initializeMetrics(parentContext, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
     coreAdminAsyncTracker.standardExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
+            "solr_node_executor",
+            "asyncCoreAdminExecutor",
+            getCategory());
 
     coreAdminAsyncTracker.expensiveExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName(
-                "parallelCoreExpensiveAdminExecutor", getCategory().name(), scope, "threadPool"));
+            "solr_node_executor",
+            "asyncCoreExpensiveAdminExecutor",
+            getCategory());
   }
 
   @Override
@@ -211,13 +207,8 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
       final String action = req.getParams().get(ACTION, STATUS.toString()).toLowerCase(Locale.ROOT);
       CoreAdminOp op = opMap.get(action);
       if (op == null) {
-        log.warn(
-            "action '{}' not found, calling custom action handler. "
-                + "If original intention was to target some custom behaviour "
-                + "use custom actions defined in 'solr.xml' instead",
-            action);
-        handleCustomAction(req, rsp);
-        return;
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unsupported operation: " + action);
       }
 
       final CallInfo callInfo = new CallInfo(this, req, rsp, op);
@@ -244,22 +235,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     }
   }
 
-  /**
-   * Handle Custom Action.
-   *
-   * <p>This method could be overridden by derived classes to handle custom actions. <br>
-   * By default - this method throws a solr exception. Derived classes are free to write their
-   * derivation if necessary.
-   *
-   * @deprecated Use actions defined via {@code solr.xml} instead.
-   */
-  @Deprecated
-  protected void handleCustomAction(SolrQueryRequest req, SolrQueryResponse rsp) {
-    throw new SolrException(
-        SolrException.ErrorCode.BAD_REQUEST,
-        "Unsupported operation: " + req.getParams().get(ACTION));
-  }
-
   public static Map<String, String> paramToProp =
       Map.ofEntries(
           Map.entry(CoreAdminParams.CONFIG, CoreDescriptor.CORE_CONFIG),
@@ -268,12 +243,9 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
           Map.entry(CoreAdminParams.ULOG_DIR, CoreDescriptor.CORE_ULOGDIR),
           Map.entry(CoreAdminParams.CONFIGSET, CoreDescriptor.CORE_CONFIGSET),
           Map.entry(CoreAdminParams.LOAD_ON_STARTUP, CoreDescriptor.CORE_LOADONSTARTUP),
-          Map.entry(CoreAdminParams.TRANSIENT, CoreDescriptor.CORE_TRANSIENT),
           Map.entry(CoreAdminParams.SHARD, CoreDescriptor.CORE_SHARD),
           Map.entry(CoreAdminParams.COLLECTION, CoreDescriptor.CORE_COLLECTION),
-          Map.entry(CoreAdminParams.ROLES, CoreDescriptor.CORE_ROLES),
           Map.entry(CoreAdminParams.CORE_NODE_NAME, CoreDescriptor.CORE_NODE_NAME),
-          Map.entry(ZkStateReader.NUM_SHARDS_PROP, CloudDescriptor.NUM_SHARDS),
           Map.entry(CoreAdminParams.REPLICA_TYPE, CloudDescriptor.REPLICA_TYPE));
 
   private static Map<String, CoreAdminOp> initializeOpMap() {

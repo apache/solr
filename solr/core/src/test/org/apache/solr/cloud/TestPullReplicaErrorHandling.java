@@ -73,7 +73,7 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    System.setProperty("solr.zkclienttimeout", "20000");
+    System.setProperty("solr.zookeeper.client.timeout", "20000");
 
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     // Add proxies
@@ -305,19 +305,19 @@ public class TestPullReplicaErrorHandling extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of writer replicas: " + docCollection,
         numWriter,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPassive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of active replicas: " + docCollection,
         numActive,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

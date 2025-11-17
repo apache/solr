@@ -275,9 +275,6 @@ public class SolrDocumentFetcher {
     }
   }
 
-  /**
-   * @see SolrIndexSearcher#doc(int)
-   */
   public Document doc(int docId) throws IOException {
     return doc(docId, (Set<String>) null);
   }
@@ -287,8 +284,6 @@ public class SolrDocumentFetcher {
    *
    * <p><b>NOTE</b>: the document will have all fields accessible, but if a field filter is
    * provided, only the provided fields will be loaded (the remainder will be available lazily).
-   *
-   * @see SolrIndexSearcher#doc(int, Set)
    */
   public Document doc(int i, Set<String> fields) throws IOException {
     Document d;
@@ -374,7 +369,7 @@ public class SolrDocumentFetcher {
       Predicate<String> readAsBytes = ResultContext.READASBYTES.get();
       if (readAsBytes != null && readAsBytes.test(fieldInfo.name)) {
         final FieldType ft = new FieldType(TextField.TYPE_STORED);
-        ft.setStoreTermVectors(fieldInfo.hasVectors());
+        ft.setStoreTermVectors(fieldInfo.hasTermVectors());
         ft.setOmitNorms(fieldInfo.omitsNorms());
         ft.setIndexOptions(fieldInfo.getIndexOptions());
         Objects.requireNonNull(value, "String value should not be null");
@@ -683,9 +678,8 @@ public class SolrDocumentFetcher {
         final SortedSetDocValues values = e.getSortedSetDocValues(localId, leafReader, readerOrd);
         if (values != null) {
           final List<Object> outValues = new ArrayList<>();
-          for (long ord = values.nextOrd();
-              ord != SortedSetDocValues.NO_MORE_ORDS;
-              ord = values.nextOrd()) {
+          for (int o = 0; o < values.docValueCount(); o++) {
+            long ord = values.nextOrd();
             BytesRef value = values.lookupOrd(ord);
             outValues.add(e.schemaField.getType().toObject(e.schemaField, value));
           }

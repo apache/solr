@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -64,7 +65,7 @@ public class FacetStream extends TupleStream implements Expressible, ParallelMet
   // allow client apps to disable the auto-plist via system property if they want to turn it off
   // globally
   static final boolean defaultTieredEnabled =
-      Boolean.parseBoolean(System.getProperty("solr.facet.stream.tiered", "true"));
+      EnvUtils.getPropertyAsBool("solr.streamingexpressions.facet.tiered.enabled", true);
 
   static final String TIERED_PARAM = "tiered";
 

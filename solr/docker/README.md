@@ -47,7 +47,7 @@ When building the image, Solr accepts arguments for customization. Currently onl
 - `BASE_IMAGE`: Change the base java image for Solr. This can be used to change java versions, jvms, etc.
 
 ```bash
-docker build --build-arg BASE_IMAGE=custom/jdk:17-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
+docker build --build-arg BASE_IMAGE=custom/jdk:21-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
 ```
 
 Official Image Management

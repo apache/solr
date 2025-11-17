@@ -37,7 +37,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Pattern;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -88,15 +87,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
-  public HttpClient getHttpClient() {
-    try {
-      return containerProvider.getHttpClient();
-    } catch (UnavailableException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
-    }
-  }
-
   /**
    * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
    * via webapp. FORWARD: Forward rewritten URI (without path prefix and core/collection name) to
@@ -110,9 +100,9 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
     RETURN,
     RETRY,
     ADMIN,
-    REMOTEQUERY,
+    REMOTEPROXY,
     PROCESS,
-    ADMIN_OR_REMOTEQUERY
+    ADMIN_OR_REMOTEPROXY
   }
 
   public SolrDispatchFilter() {}
@@ -123,7 +113,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
 
-  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+  public static final String SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE =
+      "solr.configset.default.confdir";
 
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 
@@ -131,6 +122,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   @Override
   public void init(FilterConfig config) throws ServletException {
+    super.init(config);
     try {
       containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
@@ -197,9 +189,11 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
             }
           });
     } finally {
-      ServletUtils.consumeInputFully(request, response);
       SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
+      if (!request.isAsyncStarted()) { // jetty's proxy uses this
+        ServletUtils.consumeInputFully(request, response);
+        SolrRequestParsers.cleanupMultipartFiles(request);
+      }
     }
   }
 
@@ -246,8 +240,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           break;
         case ADMIN:
         case PROCESS:
-        case REMOTEQUERY:
-        case ADMIN_OR_REMOTEQUERY:
+        case REMOTEPROXY:
+        case ADMIN_OR_REMOTEPROXY:
         case RETURN:
           break;
       }

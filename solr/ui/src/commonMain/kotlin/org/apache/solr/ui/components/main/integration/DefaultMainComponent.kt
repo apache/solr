@@ -25,22 +25,31 @@ import com.arkivanov.decompose.value.Value
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import io.ktor.client.HttpClient
 import kotlinx.serialization.Serializable
+import org.apache.solr.ui.components.cluster.ClusterComponent
+import org.apache.solr.ui.components.cluster.integration.DefaultClusterComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.integration.DefaultConfigsetsComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.environment.integration.DefaultEnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.logging.integration.DefaultLoggingComponent
 import org.apache.solr.ui.components.main.MainComponent
 import org.apache.solr.ui.components.main.MainComponent.Child
-import org.apache.solr.ui.views.navigation.MainMenu
+import org.apache.solr.ui.components.main.MainComponent.Output
 import org.apache.solr.ui.utils.AppComponentContext
+import org.apache.solr.ui.views.navigation.MainMenu
 
 class DefaultMainComponent internal constructor(
     componentContext: AppComponentContext,
     storeFactory: StoreFactory,
     destination: String? = null,
+    private val clusterComponent: (AppComponentContext) -> ClusterComponent,
+    private val configsetsComponent: (AppComponentContext) -> ConfigsetsComponent,
     private val environmentComponent: (AppComponentContext) -> EnvironmentComponent,
     private val loggingComponent: (AppComponentContext) -> LoggingComponent,
-) : MainComponent, AppComponentContext by componentContext {
+    private val output: (Output) -> Unit,
+) : MainComponent,
+    AppComponentContext by componentContext {
 
     private val navigation = StackNavigation<Configuration>()
     private val stack = childStack(
@@ -48,7 +57,7 @@ class DefaultMainComponent internal constructor(
         serializer = Configuration.serializer(),
         initialStack = { calculateInitialStack(destination) },
         handleBackButton = true,
-        childFactory = ::createChild
+        childFactory = ::createChild,
     )
     override val childStack: Value<ChildStack<*, Child>> = stack
 
@@ -57,10 +66,24 @@ class DefaultMainComponent internal constructor(
         storeFactory: StoreFactory,
         httpClient: HttpClient,
         destination: String? = null,
+        output: (Output) -> Unit,
     ) : this(
         componentContext = componentContext,
         storeFactory = storeFactory,
         destination = destination,
+        output = output,
+        clusterComponent = { childContext ->
+            DefaultClusterComponent(
+                componentContext = childContext,
+            )
+        },
+        configsetsComponent = { childContext ->
+            DefaultConfigsetsComponent(
+                componentContext = childContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+            )
+        },
         environmentComponent = { childContext ->
             DefaultEnvironmentComponent(
                 componentContext = childContext,
@@ -76,22 +99,25 @@ class DefaultMainComponent internal constructor(
         },
     )
 
-    override fun onNavigate(menuItem: MainMenu) =
-        navigation.bringToFront(menuItem.toConfiguration())
+    override fun onNavigate(menuItem: MainMenu) = navigation.bringToFront(menuItem.toConfiguration())
 
     override fun onNavigateBack() {
         TODO("Not yet implemented")
     }
 
+    override fun onLogout() = output(Output.UserLoggedOut)
+
     /**
      * Calculates the initial stack based on the destination provided.
      */
     private fun calculateInitialStack(destination: String?): List<Configuration> = listOf(
-        when(destination) {
+        when (destination) {
+            "cluster" -> Configuration.Cluster
+            "configsets" -> Configuration.Configsets
             "environment" -> Configuration.Environment
             "logging" -> Configuration.Logging
             else -> Configuration.Environment
-        }
+        },
     )
 
     private fun createChild(
@@ -106,17 +132,13 @@ class DefaultMainComponent internal constructor(
         // Configuration.Metrics ->
         //     NavigationComponent.Child.Metrics(metricsComponent(componentContext))
 
-        // TODO Uncomment once Cluster available
-        // Configuration.Cluster ->
-        //     NavigationComponent.Child.Cluster(clusterComponent(componentContext))
+        Configuration.Cluster -> Child.Cluster(clusterComponent(componentContext))
 
         // TODO Uncomment once Security available
         // Configuration.Security ->
         //     NavigationComponent.Child.Security(securityComponent(componentContext))
 
-        // TODO Uncomment once Configsets available
-        // Configuration.Configsets ->
-        //     NavigationComponent.Child.Configsets(configsetsComponent(componentContext))
+        Configuration.Configsets -> Child.Configsets(configsetsComponent(componentContext))
 
         // TODO Uncomment once Collections available
         // Configuration.Collections ->
@@ -188,7 +210,7 @@ class DefaultMainComponent internal constructor(
         data object ThreadDump : Configuration
     }
 
-    private fun MainMenu.toConfiguration(): Configuration = when(this) {
+    private fun MainMenu.toConfiguration(): Configuration = when (this) {
         MainMenu.Dashboard -> Configuration.Dashboard
         MainMenu.Metrics -> Configuration.Metrics
         MainMenu.Cluster -> Configuration.Cluster

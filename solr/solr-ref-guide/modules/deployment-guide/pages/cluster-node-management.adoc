@@ -274,7 +274,7 @@ curl -X DELETE http://localhost:8983/api/cluster/properties/urlScheme
 |===
 +
 The name of the property.  Appears in the path of v2 requests.
-Supported properties names are `location`, `maxCoresPerNode`, `urlScheme`, and `defaultShardPreferences`.
+Supported properties names are `location`, `maxCoresPerNode`, `overseerEnabled`, `urlScheme`, and `defaultShardPreferences`.
 +
 Other properties can be set (for example, if you need them for custom plugins) but they must begin with the prefix `ext.`.
 Unknown properties that don't begin with `ext.` will be rejected.
@@ -1126,7 +1126,6 @@ http://localhost:8983/solr/admin/collections?action=OVERSEERSTATUS
     "QTime":33},
   "leader":"127.0.1.1:8983_solr",
   "overseer_queue_size":0,
-  "overseer_work_queue_size":0,
   "overseer_collection_queue_size":2,
   "overseer_operations":[
     "createcollection",{

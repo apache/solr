@@ -125,6 +125,7 @@ public class DebugServlet extends HttpServlet {
     recordRequest(req, resp);
   }
 
+  @SuppressForbidden(reason = "tests needn't comply")
   private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
     url = req.getRequestURL().toString();
     setHeaders(req);

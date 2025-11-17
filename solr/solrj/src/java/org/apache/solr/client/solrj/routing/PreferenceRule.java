@@ -45,4 +45,9 @@ public class PreferenceRule {
         });
     return preferenceRules;
   }
+
+  @Override
+  public String toString() {
+    return name + ":" + value;
+  }
 }

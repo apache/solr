@@ -348,7 +348,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
-  public static Slice[] getSlices(
+  public static List<Slice> getSlices(
       String collectionName, CloudSolrClient cloudSolrClient, boolean checkAlias)
       throws IOException {
 
@@ -364,13 +364,13 @@ public class CloudSolrStream extends TupleStream implements Expressible {
 
     // Lookup all actives slices for these collections
     ClusterState clusterState = cloudSolrClient.getClusterState();
-    Slice[] slices =
+    List<Slice> slices =
         allCollections
             .map(c -> clusterState.getCollectionOrNull(c, true))
             .filter(Objects::nonNull)
-            .flatMap(docCol -> Arrays.stream(docCol.getActiveSlicesArr()))
-            .toArray(Slice[]::new);
-    if (slices.length == 0) {
+            .flatMap(docCol -> docCol.getActiveSlices().stream())
+            .toList();
+    if (slices.isEmpty()) {
       throw new IOException("Slices not found for " + collectionName);
     }
     return slices;

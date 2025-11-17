@@ -78,7 +78,7 @@ public final class SolrPaths {
           SolrException.ErrorCode.BAD_REQUEST,
           "Path "
               + path
-              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
+              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.security.allow.paths' to add other allowed paths.");
     }
   }
 
