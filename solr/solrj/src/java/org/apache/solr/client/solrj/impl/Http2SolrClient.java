@@ -42,6 +42,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClientCustomizer;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -55,6 +56,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -164,7 +166,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
-      applyHttpClientBuilderFactory();
+      applyClientCustomizer();
     } catch (RuntimeException e) {
       try {
         this.close();
@@ -185,16 +187,15 @@ public class Http2SolrClient extends HttpSolrClientBase {
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
-  private void applyHttpClientBuilderFactory() {
-    String factoryClassName =
-        System.getProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+  private void applyClientCustomizer() {
+    String factoryClassName = EnvUtils.getProperty(SolrClientCustomizer.CLIENT_CUSTOMIZER_SYSPROP);
     if (factoryClassName != null) {
-      log.debug("Using Http Builder Factory: {}", factoryClassName);
-      HttpClientBuilderFactory factory;
+      log.debug("Using {}", factoryClassName);
+      SolrClientCustomizer factory;
       try {
         factory =
             Class.forName(factoryClassName)
-                .asSubclass(HttpClientBuilderFactory.class)
+                .asSubclass(SolrClientCustomizer.class)
                 .getDeclaredConstructor()
                 .newInstance();
       } catch (InstantiationException

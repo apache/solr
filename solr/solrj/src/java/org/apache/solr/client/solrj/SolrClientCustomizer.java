@@ -14,16 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
-
-import java.io.Closeable;
+package org.apache.solr.client.solrj;
 
 /**
- * A config hook for post-configuration of a {@linkplain Http2SolrClient} by its builder.
+ * A config hook for post-configuration of a {@linkplain SolrClient} by its builder. It is not
+ * supported by all builders.
  *
- * @see SolrHttpConstants#SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY
+ * @see #CLIENT_CUSTOMIZER_SYSPROP
  * @lucene.experimental
  */
-public interface HttpClientBuilderFactory extends Closeable {
-  default void setup(Http2SolrClient client) {}
+public interface SolrClientCustomizer {
+  /**
+   * A Java system property to select the {@linkplain SolrClientCustomizer} used for configuring
+   * HTTP based SolrClients.
+   */
+  String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.customizer";
+
+  void setup(SolrClient client);
 }

@@ -26,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrClientCustomizer;
 import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -38,7 +40,7 @@ import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
  * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
  * scheme.
  */
-public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
+public class PreemptiveBasicAuthClientCustomizer implements SolrClientCustomizer {
   /**
    * A system property used to specify a properties file containing default parameters used for
    * creating an HTTP client. This is specifically useful for configuring the HTTP basic auth
@@ -66,15 +68,15 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   }
 
   @Override
-  public void close() throws IOException {}
-
-  @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(SolrClient client) {
+    if (client instanceof Http2SolrClient == false) {
+      return;
+    }
     final String basicAuthUser =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
-    this.setup(client, basicAuthUser, basicAuthPass);
+    this.setup((Http2SolrClient) client, basicAuthUser, basicAuthPass);
   }
 
   public void setup(Http2SolrClient client, String basicAuthUser, String basicAuthPass) {
@@ -98,10 +100,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
 
     public CredentialsResolver() {
       String credentials =
-          System.getProperty(
-              PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
+          System.getProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       String configFile =
-          System.getProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG);
+          System.getProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG);
 
       if (credentials != null && configFile != null) {
         throw new IllegalArgumentException(

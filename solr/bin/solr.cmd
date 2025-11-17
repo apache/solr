@@ -227,7 +227,7 @@ IF DEFINED SOLR_AUTH_TYPE (
 
 IF DEFINED SOLR_AUTH_TYPE (
   IF /I "%SOLR_AUTH_TYPE%" == "basic" (
-    set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+    set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientCustomizer"
   ) ELSE (
     echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
     goto err
@@ -239,7 +239,7 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_CONFIGURER (
   echo          Please start using SOLR_AUTH_TYPE instead
 )
 IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
-  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
+  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.solrj.http.customizer=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
@@ -1172,7 +1172,7 @@ for %%a in (%*) do (
    ) else (
       set "option!option!=%%a"
       if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
       if not "!option!" equ "--solr-home" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )
