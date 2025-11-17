@@ -864,7 +864,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     args.put("fl", "*,score");
     args.put("sort", "id desc");
     req = new LocalSolrQueryRequest(h.getCore(), "id:44", "/select", 0, 0, args);
-    assertQ(req, "//result[count(@maxScore)=0]");
+    assertQ(req, "//result[@maxScore>0]");
 
     //  test schema field attribute inheritance and overriding
 

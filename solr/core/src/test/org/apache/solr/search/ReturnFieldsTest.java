@@ -399,8 +399,8 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
   @Test
   public void testRowsZeroNoScore() {
     ReturnFields rf = new SolrReturnFields(req("fl", "id,score", "rows", "0"));
-    assertFalse(rf.wantsScore());
-    assertFalse(rf.wantsField("score"));
+    assertTrue(rf.wantsScore());
+    assertTrue(rf.wantsField("score"));
     assertTrue(rf.wantsField("id"));
     assertFalse(rf.wantsField("xxx"));
     assertFalse(rf.wantsAllFields());

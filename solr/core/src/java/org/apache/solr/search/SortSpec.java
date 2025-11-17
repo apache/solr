@@ -62,13 +62,16 @@ public class SortSpec {
     this.fields = Collections.unmodifiableList(fields);
   }
 
-  public boolean includesScore() {
-    if (num == 0) return false;
+  public static boolean includesScore(Sort sort) {
     if (sort == null) return true;
     for (SortField sf : sort.getSort()) {
       if (sf.getType() == SortField.Type.SCORE) return true;
     }
     return false;
+  }
+
+  public boolean includesScore() {
+    return includesScore(sort);
   }
 
   /**

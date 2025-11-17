@@ -1690,9 +1690,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
       if ((flags & NO_SET_QCACHE) == 0) {
         // handle 0 special case as well as avoid idiv in the common case.
-        if (cmd.getLen() == 0) {
-          supersetMaxDoc = 0;
-        } else if (maxDocRequested < queryResultWindowSize) {
+        if (maxDocRequested < queryResultWindowSize) {
           supersetMaxDoc = queryResultWindowSize;
         } else {
           supersetMaxDoc =
