@@ -15,19 +15,49 @@
  * limitations under the License.
  */
 
-import org.apache.tools.ant.util.TeeOutputStream
-
 // This project puts together a "distribution", assembling dependencies from
 // various other projects.
 
 plugins {
   id 'base'
   id 'distribution'
+  id 'com.github.node-gradle.node' version '7.1.0'
+}
+
+import org.apache.tools.ant.util.TeeOutputStream
+import com.github.gradle.node.npm.task.NpmTask
+import org.cyclonedx.gradle.CyclonedxDirectTask
+
+tasks.register('cyclonedxFull', CyclonedxDirectTask) {
+    group = 'Bill of Materials'
+    description = 'Generates CycloneDX BOM for the full Solr distribution'
+
+    includeConfigs = ['bomFull']
+
+    jsonOutput = cyclonedxDir.get().file("bom-full.json").asFile
+}
+
+tasks.register('cyclonedxSlim', CyclonedxDirectTask) {
+    group = 'Bill of Materials'
+    description = 'Generates CycloneDX BOM for the full Solr distribution'
+
+    includeConfigs = ['bomSlim']
+
+    jsonOutput = cyclonedxDir.get().file("bom-slim.json").asFile
+}
+
+tasks.register('cyclonedx') {
+    group = 'Bill of Materials'
+    description = 'Generates CycloneDX BOMs for Solr distributions'
+
+    dependsOn 'cyclonedxFull'
+    dependsOn 'cyclonedxSlim'
 }
 
 description = 'Solr distribution packaging'
 
 ext {
+  cyclonedxDir = layout.buildDirectory.dir("cyclonedx")
   distDir = file("$buildDir/solr-${version}")
   slimDistDir = file("$buildDir/solr-${version}-slim")
   devDir = file("$buildDir/dev")
@@ -45,17 +75,34 @@ configurations {
   solrSlimTgz
   solrFullTgzSignature
   solrSlimTgzSignature
+  // For the CycloneDX BOM generation
+    bomSlim {
+        canBeResolved = true
+        canBeConsumed = false
+    }
+    bomFull {
+        canBeResolved = true
+        canBeConsumed = false
+        extendsFrom bomSlim
+    }
 }
 
 dependencies {
   project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
     modules project(path: module, configuration: "packaging")
+    bomFull project(path: module, configuration: 'runtimeLibs')
   }
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
+  bomFull project(path: ':solr:cross-dc-manager', configuration: 'runtimeLibs')
 
   example project(path: ":solr:example", configuration: "packaging")
   server project(path: ":solr:server", configuration: "packaging")
+  bomSlim project(path: ':solr:server', configuration: 'startJar')
+  bomSlim project(path: ':solr:server', configuration: 'runtimeLibs')
+  bomSlim project(path: ':solr:server', configuration: 'libExt')
+  bomSlim project(path: ':solr:server', configuration: 'solrCore')
+  bomSlim project(path: ':solr:server', configuration: 'webapp')
 
   // Copy files from documentation output
   docs project(path: ':solr:documentation', configuration: 'minimalSite')
@@ -118,6 +165,12 @@ distributions {
         }
       })
 
+      // Include CycloneDX BOM
+      from(cyclonedxDir) {
+        include 'bom-slim.json'
+        rename 'bom-slim.json', 'bom.json'
+      }
+
       // Manually correct posix permissions (matters when packaging on Windows).
       filesMatching([
           "**/*.sh",
@@ -126,7 +179,6 @@ distributions {
       ]) { copy ->
         copy.setMode(0755)
       }
-
     }
   }
   full {
@@ -138,6 +190,13 @@ distributions {
       from(configurations.modules, {
         into "modules"
       })
+
+      // Include CycloneDX BOM
+      from(cyclonedxDir) {
+        include 'bom-full.json'
+        rename 'bom-full.json', 'bom.json'
+        duplicatesStrategy = DuplicatesStrategy.INCLUDE
+      }
 
       from(configurations.crossDcManager, {
         into "cross-dc-manager"
@@ -152,16 +211,18 @@ distributions {
 }
 
 installFullDist {
+  dependsOn 'cyclonedx'
   into distDir
 }
 
 installSlimDist {
+  dependsOn 'cyclonedx'
   into slimDistDir
 }
 
 assembleDist {
-  dependsOn tasks.assembleFullDist
-  dependsOn tasks.assembleSlimDist
+  dependsOn('assembleFullDist')
+  dependsOn('assembleSlimDist')
 }
 
 installDist {
@@ -194,10 +255,12 @@ task dev {
 }
 
 fullDistTar {
+  dependsOn 'cyclonedx'
   compression = Compression.GZIP
 }
 
 slimDistTar {
+  dependsOn 'cyclonedx'
   compression = Compression.GZIP
 }
 
