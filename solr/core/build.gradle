@@ -93,6 +93,7 @@ dependencies {
   implementation "org.apache.lucene:lucene-queryparser"
   implementation "org.apache.lucene:lucene-spatial-extras"
   implementation "org.apache.lucene:lucene-suggest"
+  implementation "org.apache.lucene:lucene-sandbox"
 
 
   // Collections & lang utilities
