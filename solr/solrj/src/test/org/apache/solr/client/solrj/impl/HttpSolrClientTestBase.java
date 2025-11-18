@@ -42,6 +42,10 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.RedirectServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowServlet;
+import org.apache.solr.client.solrj.impl.ServletFixtures.SlowStreamServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -74,15 +78,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder()
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class),
-                REDIRECT_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), SLOW_SERVLET_REGEX)
+            .withServlet(new ServletHolder(RedirectServlet.class), REDIRECT_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowServlet.class), SLOW_SERVLET_REGEX)
             .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.SlowStreamServlet.class),
-                SLOW_STREAM_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
