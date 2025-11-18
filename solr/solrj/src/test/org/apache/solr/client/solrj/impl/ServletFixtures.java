@@ -61,6 +61,7 @@ public class ServletFixtures {
 
     public static final int PACKET_MS = 500;
 
+    @SuppressForbidden(reason = "forbiddenApis: getParameter is fine in tests")
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
       String countStr = req.getParameter("count");
@@ -171,6 +172,7 @@ public class ServletFixtures {
       recordRequest(req, resp);
     }
 
+    @SuppressForbidden(reason = "forbiddenApis: getWriter is fine in tests")
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       url = req.getRequestURL().toString();
       setHeaders(req);
