@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.apache;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -38,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 
 /**
@@ -116,8 +116,8 @@ public class CloudLegacySolrClient extends CloudSolrClient {
   }
 
   @Override
-  public void close() throws IOException {
-    stateProvider.close();
+  public void close() {
+    IOUtils.closeQuietly(stateProvider);
 
     if (shutdownLBHttpSolrServer) {
       lbClient.close();
