@@ -1,0 +1,8 @@
+title: Removed the Hadoop Auth module, and thus Kerberos authentication and other
+  exotic options.
+type: removed
+authors:
+- name: Eric Pugh
+links:
+- name: SOLR-17540
+  url: https://issues.apache.org/jira/browse/SOLR-17540

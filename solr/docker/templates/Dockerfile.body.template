@@ -39,13 +39,13 @@ ENV SOLR_USER="solr" \
     SOLR_UID="8983" \
     SOLR_GROUP="solr" \
     SOLR_GID="8983" \
-    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/prometheus-exporter/bin:/opt/solr/cross-dc-manager/bin:$PATH" \
+    PATH="/opt/solr/bin:/opt/solr/docker/scripts:/opt/solr/cross-dc-manager/bin:$PATH" \
     SOLR_INCLUDE=/etc/default/solr.in.sh \
     SOLR_HOME=/var/solr/data \
     SOLR_PID_DIR=/var/solr \
     SOLR_LOGS_DIR=/var/solr/logs \
     LOG4J_PROPS=/var/solr/log4j2.xml \
-    SOLR_JETTY_HOST="0.0.0.0" \
+    SOLR_HOST_BIND="0.0.0.0" \
     SOLR_ZOOKEEPER_EMBEDDED_HOST="0.0.0.0"
 
 RUN set -ex; \
@@ -65,13 +65,11 @@ RUN set -ex; \
   mv /opt/solr/bin/solr.in.cmd /opt/solr/bin/solr.in.cmd.orig; \
   chmod 0664 /etc/default/solr.in.sh; \
   mkdir -p -m0770 /var/solr; \
-  chown -R "$SOLR_USER:0" /var/solr; \
-  test ! -e /opt/solr/modules || ln -s /opt/solr/modules /opt/solr/contrib; \
-  test ! -e /opt/solr/prometheus-exporter || ln -s /opt/solr/prometheus-exporter /opt/solr/modules/prometheus-exporter;
+  chown -R "$SOLR_USER:0" /var/solr;
 
 RUN set -ex; \
     apt-get update; \
-    apt-get -y --no-install-recommends install acl lsof procps wget netcat-openbsd gosu tini jattach; \
+    apt-get -y --no-install-recommends install curl acl lsof procps wget netcat-openbsd gosu tini jattach; \
     rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr

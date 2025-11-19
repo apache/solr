@@ -37,7 +37,6 @@ ext {
 configurations {
   modules
   example
-  prometheusExporter
   crossDcManager
   server
   docs
@@ -52,8 +51,6 @@ dependencies {
   project(":solr:modules").childProjects.values().stream().map(project -> project.path).each { module ->
     modules project(path: module, configuration: "packaging")
   }
-
-  prometheusExporter project(path: ":solr:prometheus-exporter", configuration: "packaging")
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
 
@@ -83,13 +80,13 @@ distributions {
       from(rootDir, {
         include "LICENSE.txt"
         include "NOTICE.txt"
+        include "CHANGELOG.md"
       })
 
       from(project(":solr").projectDir, {
         include "bin/**"
         include "licenses/**"
         exclude "licenses/README.committers.txt"
-        include "CHANGES.txt"
       })
 
       from(projectDir, {
@@ -140,15 +137,6 @@ distributions {
 
       from(configurations.modules, {
         into "modules"
-      })
-
-      from(configurations.prometheusExporter, {
-        into "prometheus-exporter"
-        filesMatching([
-                "bin/*",
-        ]) { copy ->
-          copy.setMode(0755)
-        }
       })
 
       from(configurations.crossDcManager, {
@@ -227,6 +215,39 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
+tasks.register('runDev', JavaExec) {
+  group = 'application'
+  description = 'Starts Solr for local experimentation.  Does NOT use the bin/solr script.'
+  dependsOn 'devSlim'
+
+  workingDir = file("$slimDevDir/server")
+
+  // Intentionally not synchronizing the logic here with bin/solr; don't want the burden
+
+  doFirst {
+    println "To attach a debugger, at the CLI pass: --debug-jvm"
+    println "To pass JVM args, at the CLI pass: -PjvmArgs='--add-modules jdk.incubator.vector'"
+    println "To pass system properties, at the CLI pass: -Dsolr.port.listen=8983"
+  }
+
+  maxHeapSize = project.findProperty('maxHeapSize') ?: '1G'
+
+  jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
+  jvmArgs((project.findProperty('jvmArgs') ?: '').split())
+
+  systemProperty 'solr.port.listen', '8983'
+  systemProperty 'solr.install.dir', file("$workingDir/..")
+  systemProperty 'solr.logs.dir', file("$workingDir/logs")
+  systemProperty 'solr.zookeeper.server.enabled', 'true' // SolrCloud; embedded ZK
+
+  // Propagate CLI system properties (override defaults above)
+  systemProperties += gradle.startParameter.systemPropertiesArgs
+
+  classpath = files("$workingDir/start.jar")
+
+  args((project.findProperty('args') ?: '--module=http').split())
+}
+
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
@@ -275,11 +296,11 @@ task integrationTests(type: BatsTask) {
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT_LISTEN: solrPort
   environment SOLR_PORT: solrPort
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2
   environment ZK_PORT: solrPort + 1000
-  environment SOLR_EXPORTER_PORT: solrPort + 100
   environment SOLR_LOGS_DIR: "$solrHome/logs"
   environment TEST_OUTPUT_DIR: integrationTestOutput
   environment TEST_FAILURE_DIR: solrTestFailuresDir

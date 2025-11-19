@@ -122,18 +122,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+  // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
+  public static void setSolrEnableUrlUrlAllowList() throws Exception {
+    systemSetPropertyEnableUrlAllowList(false);
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
-  }
-
-  private static String getHostContextSuitableForServletContext() {
-    return "/solr";
+  public static void clearSolrEnableUrlUrlAllowList() throws Exception {
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   protected BaseDistributedSearchTestCase() {

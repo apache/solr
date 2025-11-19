@@ -382,6 +382,10 @@ As this check is periodically performed, the actual time for which a request can
 If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
 Regular search and the JSON Facet component abandon requests in accordance with this parameter.
 
+When `timeAllowed` is specified in a distributed and/or multi-phase search, sub-requests will approximately track the same
+wall clock starting point as the original request. Shard requests may be skipped if the limit would run out shortly after they are
+sent - this in-flight allowance can be set with the `timeAllowed.inflight` parameter in milliseconds (default is 2ms).
+
 == cpuAllowed Parameter
 
 [%autowidth,frame=none]

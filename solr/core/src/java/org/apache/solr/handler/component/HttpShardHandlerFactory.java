@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.apache.solr.util.stats.InstrumentedHttpListenerFactory.KNOWN_METRIC_NAME_STRATEGIES;
 
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
@@ -54,15 +55,12 @@ import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -261,12 +259,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             sb);
     this.accessPolicy = getParameter(args, INIT_FAIRNESS_POLICY, accessPolicy, sb);
 
-    if (args != null && args.get("shardsWhitelist") != null) {
-      log.warn(
-          "Property 'shardsWhitelist' is deprecated, please use '{}' instead.",
-          AllowListUrlChecker.URL_ALLOW_LIST);
-    }
-
     // magic sysprop to make tests reproducible: set by SolrTestCaseJ4.
     String v = System.getProperty("tests.shardhandler.randomSeed");
     if (v != null) {
@@ -439,15 +431,11 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
-        MetricUtils.instrumentedExecutorService(
-            commExecutor,
-            null,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+        solrMetricsContext.instrumentedExecutorService(
+            commExecutor, "solr_core_executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
   }
 }

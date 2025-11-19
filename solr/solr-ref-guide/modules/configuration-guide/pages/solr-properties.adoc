@@ -16,9 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+// In Solr 11 we should remove the Previous Property Name that are from the 9x versions of Solr.
+
 This page provides an alphabetical reference of Solr system properties that can be used to configure various aspects of Solr. Where applicable, previous property names are also listed.
 
-NOTE: Properties marked with "!" indicate inverted meaning between old and new properties. For example, if the old property was `disable.config.edit=false`, the equivalent setting with the new property would be `solr.api.config.edit.enabled=true`.
+NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 and Solr 10 properties. For example, if the old property was `disable.config.edit=false`, the equivalent setting with the new property would be `solr.api.config.edit.enabled=true`.
 
 == System Properties
 
@@ -58,17 +60,29 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
 
+|solr.host.advertise| host | | This is the host that is advertised by the Solr node in the ZK live nodes
+
+|solr.host.bind|solr.jetty.host| |This is the host that Solr's Jetty binds to, and only accepts requests to.
+
 |solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
 
 |solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
 
 |solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
 
+|SOLR_LOGS_REQUESTLOG_ENABLED |SOLR_REQUESTLOG_ENABLED|true|Specifies if Jetty's request logs should be created and retained.
+
+|solr.logs.requestlog.retain.days|solr.log.requestlog.retaindays|3|How many days of request logs to retain before rolling over.
+
 |solr.metrics.fieldcache.entries.enabled|!disableSolrFieldCacheMBeanEntryList|true|Controls whether Solr FieldCache MBean entry list is disabled for metrics reporting.
 
 |solr.metrics.fieldcache.entries.jmx.enabled|!disableSolrFieldCacheMBeanEntryListJmx|true|Controls whether Solr FieldCache MBean JMX entry list is disabled for metrics reporting.
 
 |solr.packages.enabled|enable.packages|false|Controls whether the package management system is enabled.
+
+|solr.port.advertise| | Default to `solr.port.listen` if not defined.  | This is the port that is advertised by the Solr node in the ZK live nodes.
+
+|solr.port.listen| jetty.port| 8983 or solr.jetty.https.port if defined and SSL | This is the port that Solr's Jetty binds to, and accepts requests to.
 
 |solr.requests.allow.urls|solr.disable.allowUrls||Specifies URLs that are allowed for streaming. See also solr.requests.streaming.remote.enabled.
 
@@ -84,14 +98,21 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 
 |solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
 
+|solr.security.allow.paths|solr.allowPaths||A comma seperated list of paths for reading from.
+
+|solr.security.allow.urls|solr.allowUrls||A comma seperated list of urls for reading from.
+
+|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled. 
+
 |solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
 
+|solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
+
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 
 |solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.
-
 
 |solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
 
@@ -114,6 +135,21 @@ NOTE: Properties marked with "!" indicate inverted meaning between old and new p
 |solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
 
 |===
+
+=== Jetty related properties
+
+There are many other Jetty specific properties that can be overridden.
+
+See the source files in `solr/server/etc/` for more information:
+
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty.xml[jetty.xml] - Main Jetty server configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-http.xml[jetty-http.xml] - HTTP connector configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-https.xml[jetty-https.xml] - HTTPS connector configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-ssl.xml[jetty-ssl.xml] - SSL configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-ssl-context-reload.xml[jetty-ssl-context-reload.xml] - SSL context reload configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-gzip.xml[jetty-gzip.xml] - GZIP compression configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-requestlog.xml[jetty-requestlog.xml] - Request logging configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-graceful.xml[jetty-graceful.xml] - Graceful shutdown configuration
 
 == Property Naming Conventions
 

@@ -21,8 +21,8 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.ConnectException;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -120,73 +119,11 @@ public abstract class CloudSolrClient extends SolrClient {
 
   protected volatile Object[] locks = objectList(3);
 
-  /** Constructs {@link CloudSolrClient} instances from provided configuration. */
-  public static class Builder extends CloudHttp2SolrClient.Builder {
-
-    /**
-     * Provide a series of Solr URLs to be used when configuring {@link CloudSolrClient} instances.
-     * The solr client will use these urls to understand the cluster topology, which solr nodes are
-     * active etc.
-     *
-     * <p>Provided Solr URLs are expected to point to the root Solr path
-     * ("http://hostname:8983/solr"); they should not include any collections, cores, or other path
-     * components.
-     *
-     * <p>Usage example:
-     *
-     * <pre>
-     *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
-     *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
-     *   final SolrClient client = new CloudSolrClient.Builder(solrBaseUrls).build();
-     * </pre>
-     */
-    public Builder(List<String> solrUrls) {
-      super(solrUrls);
-    }
-
-    /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient}
-     * instances. This requires a dependency on {@code solr-solrj-zookeeper} which transitively
-     * depends on more JARs. The ZooKeeper based connection is the most reliable and performant
-     * means for CloudSolrClient to work. On the other hand, it means exposing ZooKeeper more
-     * broadly than to Solr nodes, which is a security risk.
-     *
-     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
-     *
-     * <pre>
-     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.empty()).build();
-     * </pre>
-     *
-     * Usage example when Solr data is stored in a ZooKeeper chroot:
-     *
-     * <pre>
-     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudSolrClient.Builder(zkServers, Optional.of("/solr")).build();
-     *  </pre>
-     *
-     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
-     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
-     *     java.util.Optional.empty()} if no ZK chroot is used.
-     */
-    @Deprecated(since = "10.0")
-    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
-      super(zkHosts, zkChroot);
-    }
-
-    /** for an expert use-case */
-    public Builder(ClusterStateProvider stateProvider) {
-      super(stateProvider);
-    }
-  }
-
-  static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
+  protected static class StateCache extends ConcurrentHashMap<String, ExpiringCachedDocCollection> {
     final AtomicLong puts = new AtomicLong();
     final AtomicLong hits = new AtomicLong();
     final Lock evictLock = new ReentrantLock(true);
-    protected volatile long timeToLiveMs = 60 * 1000L;
+    public volatile long timeToLiveMs = 60 * 1000L;
 
     @Override
     public ExpiringCachedDocCollection get(Object key) {
@@ -284,7 +221,10 @@ public abstract class CloudSolrClient extends SolrClient {
     return getClusterStateProvider().getClusterState();
   }
 
-  protected abstract boolean wasCommError(Throwable t);
+  /** Is this a communication error? We will retry if so. */
+  protected boolean wasCommError(Throwable t) {
+    return t instanceof SocketException || t instanceof UnknownHostException;
+  }
 
   @Override
   public void close() throws IOException {
@@ -554,7 +494,7 @@ public abstract class CloudSolrClient extends SolrClient {
   private Map<String, List<String>> buildUrlMap(
       DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
-    Slice[] slices = col.getActiveSlicesArr();
+    Collection<Slice> slices = col.getActiveSlices();
     Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
     for (Slice slice : slices) {
       String name = slice.getName();
@@ -876,10 +816,7 @@ public abstract class CloudSolrClient extends SolrClient {
               ? ((SolrException) rootCause).code()
               : SolrException.ErrorCode.UNKNOWN.code;
 
-      boolean wasCommError =
-          (rootCause instanceof ConnectException
-              || rootCause instanceof SocketException
-              || wasCommError(rootCause));
+      final boolean wasCommError = wasCommError(rootCause);
 
       if (wasCommError
           || (exc instanceof RouteException
@@ -1281,7 +1218,7 @@ public abstract class CloudSolrClient extends SolrClient {
       NamedList<NamedList<?>> routes = ((RouteResponse<?>) resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
       Map<String, String> leaders = new HashMap<>();
-      for (Slice slice : coll.getActiveSlicesArr()) {
+      for (Slice slice : coll.getActiveSlices()) {
         Replica leader = slice.getLeader();
         if (leader != null) {
           String leaderUrl = leader.getBaseUrl() + "/" + leader.getCoreName();

@@ -78,6 +78,15 @@ SolrJ users not using SolrClients that use Jetty HttpClient can safely exclude t
 
 Java has removed support for the Security Manager starting with Java 24; therefore, Solr will disable this feature when run with Java 24 or later. Solr previously used the Security Manager to provide an additional layer of protection against unintended file system access, network access, and process execution. Users upgrading to Java 24 or later should review their security practices and consider alternative measures, such as running Solr in containers or implementing additional operating system-level controls.
 
+=== Deprecations
+
+The `XLSXResponseWriter` is now deprecated.
+
+The Tika Language Identifier is deprecated. Use one of the other detectors instead.
+
+The Extraction module can now extract documents using an external Tika Server.
+The local in-process Tika 1.x extractor backend is deprecated and will go away in 10.0.
+
 == Solr 9.9
 
 === SolrJ
@@ -650,7 +659,7 @@ For examples using this feature, see the section xref:query-guide:learning-to-ra
 *Prometheus Exporter*
 
 * The `./bin` scripts included with the Prometheus Exporter now allow use of custom java options with environment variables.
-See the section xref:deployment-guide:monitoring-with-prometheus-and-grafana.adoc#environment-variable-options[Environment Variable Options] for more details.
+See the section https://solr.apache.org/guide/solr/9_9/deployment-guide/monitoring-with-prometheus-and-grafana.html#environment-variable-options[Environment Variable Options] for more details.
 * The default Grafana dashboards now include panels for query performance monitoring.
 The default Prometheus Exporter configuration includes metrics like queries-per-second (QPS) and 95th percentiles (P95) to populate the new panels.
 * The default Prometheus Exporter configuration also includes the two new metrics mentioned in the Metrics above.
