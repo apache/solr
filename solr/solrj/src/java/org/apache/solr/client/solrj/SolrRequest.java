@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -289,6 +290,15 @@ public abstract class SolrRequest<T> implements Serializable {
       res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
     }
     return typedResponse;
+  }
+
+  /**
+   * @lucene.experimental
+   */
+  public final T processWithBaseUrl(HttpSolrClientBase client, String url, String collection)
+      throws SolrServerException, IOException {
+    var nl = client.requestWithBaseUrl(url, collection, this);
+    return createResponse(nl);
   }
 
   /**

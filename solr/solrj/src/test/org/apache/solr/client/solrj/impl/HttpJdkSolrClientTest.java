@@ -167,7 +167,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     HttpJdkSolrClient.Builder b =
         builder(someOtherUrl).withResponseParser(new JavaBinResponseParser());
     try (HttpJdkSolrClient client = b.build()) {
-      client.requestWithBaseUrl(intendedUrl, new QueryRequest(q, SolrRequest.METHOD.GET), null);
+      client.requestWithBaseUrl(intendedUrl, null, new QueryRequest(q, SolrRequest.METHOD.GET));
       assertEquals(
           client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
     }

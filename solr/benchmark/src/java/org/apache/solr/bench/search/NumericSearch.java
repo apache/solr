@@ -102,7 +102,7 @@ public class NumericSearch {
       q.setParam("facet.limit", String.valueOf(maxCardinality));
       QueryRequest req = new QueryRequest(q);
       QueryResponse response =
-          miniClusterState.client.requestWithBaseUrl(basePath, COLLECTION, req);
+          req.processWithBaseUrl(miniClusterState.client, basePath, COLLECTION);
       Set<String> numbers =
           response.getFacetField("numbers_i_dv").getValues().stream()
               .map(FacetField.Count::getName)

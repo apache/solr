@@ -382,8 +382,7 @@ public final class ManagedIndexSchema extends IndexSchema {
               zkController
                   .getCoreContainer()
                   .getDefaultHttpSolrClient()
-                  .requestWithBaseUrl(baseUrl, coreName, this)
-                  .getResponse();
+                  .requestWithBaseUrl(baseUrl, coreName, this);
           if (zkversionResp != null) remoteVersion = (Integer) zkversionResp.get("zkversion");
 
           if (remoteVersion < expectedZkVersion) {

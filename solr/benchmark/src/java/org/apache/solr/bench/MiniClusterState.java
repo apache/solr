@@ -380,8 +380,7 @@ public class MiniClusterState {
 
       QueryRequest queryRequest = new QueryRequest(new SolrQuery("q", "*:*", "rows", "1"));
       final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
-      NamedList<Object> result =
-          client.requestWithBaseUrl(url, collection, queryRequest).getResponse();
+      NamedList<Object> result = client.requestWithBaseUrl(url, collection, queryRequest);
 
       log("sanity check of single row query result: " + result);
       log("");
