@@ -611,7 +611,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   @Override
   public NamedList<Object> requestWithBaseUrl(
-      String baseUrl, String collection, SolrRequest<?> solrRequest)
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     return requestWithBaseUrl(baseUrl, c -> c.request(solrRequest, collection));
   }

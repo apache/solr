@@ -206,7 +206,7 @@ public class ColStatus {
                         SolrRequest.SolrRequestType.ADMIN,
                         params)
                     .setRequiresCollection(true);
-            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, null, req);
+            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, req, null);
             final var segmentResponse =
                 SolrJacksonMapper.getObjectMapper().convertValue(rsp, GetSegmentDataResponse.class);
             segmentResponse.responseHeader = null;

@@ -297,8 +297,17 @@ public abstract class SolrRequest<T> implements Serializable {
    */
   public final T processWithBaseUrl(HttpSolrClientBase client, String url, String collection)
       throws SolrServerException, IOException {
-    var nl = client.requestWithBaseUrl(url, collection, this);
-    return createResponse(nl);
+    // duplicative with process(), except for requestWithBaseUrl
+    long startNanos = System.nanoTime();
+    var namedList = client.requestWithBaseUrl(url, this, collection);
+    long endNanos = System.nanoTime();
+    T typedResponse = createResponse(namedList);
+    // SolrResponse is pre-V2 API
+    if (typedResponse instanceof SolrResponse res) {
+      res.setResponse(namedList); // TODO insist createResponse does this ?
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    }
+    return typedResponse;
   }
 
   /**

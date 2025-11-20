@@ -507,7 +507,7 @@ public abstract class LBSolrClient extends SolrClient {
     // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
     // the appropriate URL is provided.
     if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {
-      return hasReqWithUrl.requestWithBaseUrl(baseUrl, collection, solrRequest);
+      return hasReqWithUrl.requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'

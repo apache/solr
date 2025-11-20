@@ -167,7 +167,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
 
   @Override
   public NamedList<Object> requestWithBaseUrl(
-      String baseUrl, String collection, SolrRequest<?> solrRequest)
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
     HttpResponse<InputStream> response = null;
@@ -204,7 +204,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   @Override
   public NamedList<Object> request(SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    return requestWithBaseUrl(null, collection, solrRequest);
+    return requestWithBaseUrl(null, solrRequest, collection);
   }
 
   protected PreparedRequest prepareRequest(

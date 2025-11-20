@@ -345,14 +345,14 @@ public abstract class HttpSolrClientBase extends SolrClient {
    * used by this client
    *
    * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param solrRequest the SolrRequest to send
    * @param collection an optional collection or core name used to override the client's "default
    *     collection". May be 'null' for any requests that don't require a collection or wish to rely
    *     on the client's default
-   * @param solrRequest the SolrRequest to send
    * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
    */
   public abstract NamedList<Object> requestWithBaseUrl(
-      String baseUrl, String collection, SolrRequest<?> solrRequest)
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException;
 
   /**

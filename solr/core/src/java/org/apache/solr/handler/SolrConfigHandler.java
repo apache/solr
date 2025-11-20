@@ -1006,7 +1006,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           Thread.sleep(100);
 
           NamedList<Object> resp =
-              solrClient.requestWithBaseUrl(replica.getBaseUrl(), replica.getCoreName(), this);
+              solrClient.requestWithBaseUrl(replica.getBaseUrl(), this, replica.getCoreName());
           if (resp != null) {
             @SuppressWarnings({"rawtypes"})
             Map m = (Map) resp.get(ZNODEVER);
