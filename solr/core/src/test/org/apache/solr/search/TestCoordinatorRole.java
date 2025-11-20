@@ -200,10 +200,10 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLL, 1, 2);
       DocCollection docColl =
           cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL);
-      Replica nrtReplica = docColl.getReplicas(EnumSet.of(Replica.Type.NRT)).get(0);
+      Replica nrtReplica = getReplicas(docColl, EnumSet.of(Replica.Type.NRT)).get(0);
       assertNotNull(nrtReplica);
       String nrtCore = nrtReplica.getCoreName();
-      Replica pullReplica = docColl.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
+      Replica pullReplica = getReplicas(docColl, EnumSet.of(Replica.Type.PULL)).get(0);
       assertNotNull(pullReplica);
       String pullCore = pullReplica.getCoreName();
 

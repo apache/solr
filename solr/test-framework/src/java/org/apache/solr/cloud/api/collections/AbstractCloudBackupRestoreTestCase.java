@@ -44,6 +44,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -449,15 +450,15 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     assertEquals(
         restoreCollection.toString(),
         restoreReplcationFactor,
-        restoreCollection.getNumNrtReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.NRT));
     assertEquals(
         restoreCollection.toString(),
         restorePullReplicas,
-        restoreCollection.getNumPullReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.PULL));
     assertEquals(
         restoreCollection.toString(),
         restoreTlogReplicas,
-        restoreCollection.getNumTlogReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.TLOG));
 
     // SOLR-12605: Add more docs after restore is complete to see if they are getting added fine
     // explicitly querying the leaders. If we use CloudSolrClient there is no guarantee that we'll

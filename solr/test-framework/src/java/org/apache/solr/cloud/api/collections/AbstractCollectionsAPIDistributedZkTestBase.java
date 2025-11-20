@@ -343,7 +343,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     waitForState(
         "Collection creation after a bad delete failed",
         "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
   }
 
   @Test
@@ -479,7 +479,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           collectionName,
           (n, c) -> {
             CollectionAdminRequest.Create req = createRequests[j];
-            return DocCollection.isFullyActive(
+            return SolrCloudTestCase.replicasForCollectionAreFullyActive(
                 n, c, req.getNumShards(), req.getReplicationFactor());
           });
 

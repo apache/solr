@@ -65,7 +65,8 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
         "Expected a cluster of 2 shards and 2 replicas",
         collectionName,
         (n, c) -> {
-          return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
+          return SolrCloudTestCase.replicasForCollectionAreFullyActive(
+              n, c, numShards, replicationFactor);
         });
 
     DocCollection collectionState = getCollectionState(collectionName);

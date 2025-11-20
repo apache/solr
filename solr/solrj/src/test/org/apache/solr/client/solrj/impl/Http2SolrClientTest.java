@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
@@ -676,7 +677,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
       // too little time to succeed
       int packets = LuceneTestCase.RANDOM_MULTIPLIER == 1 ? 10 : 80; // 60 crosses a default timeout
-      long timeToSendMs = (long) packets * BasicHttpSolrClientTest.SlowStreamServlet.PACKET_MS;
+      long timeToSendMs = (long) packets * ServletFixtures.SlowStreamServlet.PACKET_MS;
       QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));
