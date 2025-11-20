@@ -38,6 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -796,7 +797,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with just one custom hash range should not succeed");
-    } catch (SolrClient.RemoteSolrException e) {
+    } catch (RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -807,7 +808,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with missing hashes in between given ranges should not succeed");
-    } catch (SolrClient.RemoteSolrException e) {
+    } catch (RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -820,7 +821,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     try {
       splitShard(AbstractDistribZkTestBase.DEFAULT_COLLECTION, SHARD1, subRanges, null, false);
       fail("Shard splitting with overlapping ranges should not succeed");
-    } catch (SolrClient.RemoteSolrException e) {
+    } catch (RemoteSolrException e) {
       log.info("Expected exception:", e);
     }
     subRanges.clear();
@@ -912,7 +913,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
           log.info("Layout after split: \n");
           printLayout();
           break;
-        } catch (SolrClient.RemoteSolrException e) {
+        } catch (RemoteSolrException e) {
           if (e.code() != 500) {
             throw e;
           }
@@ -1131,7 +1132,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
       try {
         splitShard(collectionName, shardId, null, splitKey, false);
         break;
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         if (e.code() != 500) {
           throw e;
         }

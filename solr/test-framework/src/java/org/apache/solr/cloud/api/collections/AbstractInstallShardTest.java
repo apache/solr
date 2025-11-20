@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -149,16 +150,16 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
-    final SolrClient.RemoteSolrException rse =
+    final RemoteSolrException rse =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               CollectionAdminRequest.installDataToShard(
                       collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
                   .process(cluster.getSolrClient());
             });
     assertEquals(400, rse.code());
-    assertTrue(rse.getMessage().contains("Collection must be in readOnly mode"));
+    assertTrue(rse.toString().contains("Collection must be in readOnly mode"));
 
     // Shard-install has failed so collection should still be empty.
     assertCollectionHasNumDocs(collectionName, 0);
@@ -188,13 +189,13 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     { // Test synchronous request error reporting
       final var expectedException =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.installDataToShard(
                         collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
                     .process(cluster.getSolrClient());
               });
-      assertTrue(expectedException.getMessage().contains("Could not install data to collection"));
+      assertTrue(expectedException.toString().contains("Could not install data to collection"));
       assertCollectionHasNumDocs(collectionName, 0);
     }
 

@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -448,28 +449,10 @@ public class ApiBag {
     }
     List<Map<String, Object>> errs = CommandOperation.captureErrors(commandsCopy);
     if (!errs.isEmpty()) {
-      throw new ExceptionWithErrObject(
+      throw new SolrErrorWrappingException(
           SolrException.ErrorCode.BAD_REQUEST, "Error in command payload", errs);
     }
     return commandsCopy;
-  }
-
-  public static class ExceptionWithErrObject extends SolrException {
-    private final List<Map<String, Object>> errs;
-
-    public ExceptionWithErrObject(ErrorCode code, String msg, List<Map<String, Object>> errs) {
-      super(code, msg);
-      this.errs = errs;
-    }
-
-    public List<Map<String, Object>> getErrs() {
-      return errs;
-    }
-
-    @Override
-    public String getMessage() {
-      return super.getMessage() + ", errors: " + getErrs() + ", ";
-    }
   }
 
   public static class LazyLoadedApi extends Api {

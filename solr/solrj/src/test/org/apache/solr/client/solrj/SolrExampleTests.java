@@ -751,14 +751,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          SolrClient.RemoteSolrException.class,
+          RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
           concurrentClient
               .lastError
               .getMessage()
-              .contains("Remote error message: Document contains multiple values for uniqueKey"));
+              .contains(
+                  "org.apache.solr.common.SolrException: Document contains multiple values for uniqueKey"));
     } else {
       if (log.isInfoEnabled()) {
         log.info("Ignoring update test for client: {}", client.getClass().getName());
@@ -2436,7 +2437,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("Conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
           SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
@@ -2446,7 +2447,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       }
     } catch (SolrException se) {
       assertTrue(

@@ -25,7 +25,7 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -101,12 +101,10 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
     QueryRequest queryRequest =
         new QueryRequest(new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
     queryRequest.setPath("/withError");
-    SolrClient.RemoteSolrException exception =
-        expectThrows(
-            SolrClient.RemoteSolrException.class,
-            () -> queryRequest.process(client, "collection1"));
-    assertTrue(exception.getRemoteErrorResponse() instanceof NamedList);
-    var remoteError = (NamedList<Object>) exception.getRemoteErrorResponse();
+    RemoteSolrException exception =
+        expectThrows(RemoteSolrException.class, () -> queryRequest.process(client, "collection1"));
+    assertTrue(exception.getRemoteErrorObject() instanceof NamedList);
+    var remoteError = (NamedList<Object>) exception.getRemoteErrorObject();
     assertEquals(500, remoteError._get("code"));
     assertEquals("java.lang.RuntimeException", remoteError._get("errorClass"));
     assertEquals("Stacktrace should be populated.", remoteError._get("msg"));

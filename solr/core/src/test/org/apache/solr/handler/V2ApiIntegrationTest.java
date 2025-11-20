@@ -26,8 +26,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
@@ -79,9 +79,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .withPayload(payload)
             .build();
     v2Request.setResponseParser(responseParser);
-    SolrClient.RemoteSolrException ex =
+    RemoteSolrException ex =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               v2Request.process(cluster.getSolrClient());
             });

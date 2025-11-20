@@ -18,7 +18,6 @@ package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
@@ -27,6 +26,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -270,9 +270,10 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
-      assertThat(e.getCause(), instanceOf(SolrException.class));
-      assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
+      fail("Wrong failure type, expecting: RemoteSolrException, thrown: " + e.getClass().getName());
+    } catch (RemoteSolrException e) {
+      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+      assertThat(e.getMessage(), containsString(expectedExceptionMessage));
     } finally {
       unIgnoreException(expectedExceptionMessage);
     }

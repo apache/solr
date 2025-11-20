@@ -21,7 +21,7 @@ import static org.hamcrest.Matchers.containsStringIgnoringCase;
 
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -58,7 +58,7 @@ public class SchemaApiFailureTest extends SolrCloudTestCase {
 
     final var thrown =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               fieldAddition.process(client, COLLECTION);
             });

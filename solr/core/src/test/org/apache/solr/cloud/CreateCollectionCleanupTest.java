@@ -24,7 +24,7 @@ import static org.hamcrest.CoreMatchers.not;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -85,7 +85,7 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
     expectThrows(
-        SolrClient.RemoteSolrException.class,
+        RemoteSolrException.class,
         () -> {
           create.process(cloudClient);
         });

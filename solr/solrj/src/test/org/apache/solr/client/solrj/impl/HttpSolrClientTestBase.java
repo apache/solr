@@ -36,8 +36,8 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -230,22 +230,22 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     Collection<String> ids = Collections.singletonList("a");
     try {
       client.getById("a");
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById(ids, null);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", "a");
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", ids, null);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
   }
 
@@ -292,7 +292,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
     try {
       client.request(req);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     assertEquals("post", DebugServlet.lastMethod);
@@ -389,7 +389,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -405,7 +405,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "requestOnly", "notRequest");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -421,7 +421,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
     }
@@ -438,7 +438,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       // NOTE: single stream requests send all the params
       // as part of the query string.  So add "neither" to the request,
@@ -650,8 +650,8 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         ee = ee1;
       }
       assertTrue(future.isCompletedExceptionally());
-      assertTrue(ee.getCause() instanceof SolrClient.RemoteSolrException);
-      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
+      assertTrue(ee.getCause() instanceof RemoteSolrException);
+      assertTrue(ee.getMessage(), ee.toString().contains("mime type"));
     }
   }
 }

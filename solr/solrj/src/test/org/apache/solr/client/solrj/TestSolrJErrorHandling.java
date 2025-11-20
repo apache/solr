@@ -215,7 +215,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   void doSingle(SolrClient client, int threadNum) {
     try {
       client.add(manyDocs(threadNum * 1000000, 1000));
-    } catch (SolrClient.RemoteSolrException e) {
+    } catch (RemoteSolrException e) {
       String msg = e.getMessage();
       assertTrue(msg, msg.contains("field_does_not_exist"));
     } catch (Throwable e) {

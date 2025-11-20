@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -376,9 +377,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         try {
           assertNotNull(future.get());
         } catch (ExecutionException e) {
-          assertThat(e.getCause().getCause(), instanceOf(SolrClient.RemoteSolrException.class));
-          SolrClient.RemoteSolrException rse =
-              (SolrClient.RemoteSolrException) e.getCause().getCause();
+          assertThat(e.getCause().getCause(), instanceOf(RemoteSolrException.class));
+          RemoteSolrException rse = (RemoteSolrException) e.getCause().getCause();
           assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, rse.code());
           assertThat(
               rse.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));

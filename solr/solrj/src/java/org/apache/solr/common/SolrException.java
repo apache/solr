@@ -19,6 +19,7 @@ package org.apache.solr.common;
 import static org.apache.solr.client.api.model.ErrorInfo.ERROR_CLASS;
 import static org.apache.solr.client.api.model.ErrorInfo.ROOT_ERROR_CLASS;
 
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -94,6 +95,7 @@ public class SolrException extends RuntimeException {
 
   int code = 0;
   protected NamedList<String> metadata;
+  protected List<Map<String, Object>> details;
 
   /**
    * The HTTP Status code associated with this Exception. For SolrExceptions thrown by Solr "Server
@@ -125,6 +127,18 @@ public class SolrException extends RuntimeException {
 
     if (metadata == null) metadata = new SimpleOrderedMap<>();
     metadata.add(key, value);
+  }
+
+  public void setDetails(List<Map<String, Object>> details) {
+    this.details = details;
+  }
+
+  public List<Map<String, Object>> getDetails() {
+    return details;
+  }
+
+  public String getResponseMessage() {
+    return getMessage();
   }
 
   public String getThrowable() {
