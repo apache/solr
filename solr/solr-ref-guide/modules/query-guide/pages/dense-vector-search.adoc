@@ -122,7 +122,7 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 (advanced) Specifies the underlying knn algorithm to use
 +
 
-Accepted values: `hnsw`, `cuvs_hnsw` (requires GPU acceleration setup).
+Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
 
@@ -714,11 +714,11 @@ To try this out, first copy the module jar files (found in the regular Solr tarb
 cp modules/cuvs/lib/*.jar server/solr-webapp/webapp/WEB-INF/lib/
 ----
 
-Define the `fieldType` in the schema, with knnAlgorithm set to `cuvs_hnsw`:
+Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
 
 [source,xml]
 ----
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cuvs_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswMaxConn="16" cuvsHnswBeamWidth="100"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswM="16" cuvsHNSWEfConstruction="100"/>
 ----
 
 Where:
@@ -731,9 +731,9 @@ Where:
 
 * `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `cuvsHnswMaxConn` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswM` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `cuvsHnswBeamWidth` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHNSWEfConstruction` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
 
 Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
 
@@ -895,14 +895,14 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
     <fieldType name="knn_vector" class="solr.DenseVectorField"
                vectorDimension="8"
-               knnAlgorithm="cuvs_hnsw"
+               knnAlgorithm="cagra_hnsw"
                similarityFunction="cosine"
                cuvsWriterThreads="32"
                cuvsIntGraphDegree="128"
                cuvsGraphDegree="64"
                cuvsHnswLayers="1"
-               cuvsHnswMaxConn="16"
-               cuvsHnswBeamWidth="100"/>
+               cuvsHnswM="16"
+               cuvsHNSWEfConstruction="100"/>
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

@@ -63,40 +63,41 @@ public class CuVSCodec extends FilterCodec {
           FieldType fieldType = (schemaField == null ? null : schemaField.getType());
           if (fieldType instanceof DenseVectorField vectorType) {
             String knnAlgorithm = vectorType.getKnnAlgorithm();
-            if (DenseVectorField.CUVS_HNSW_ALGORITHM.equals(knnAlgorithm)) {
+            if (DenseVectorField.CAGRA_HNSW_ALGORITHM.equals(knnAlgorithm)) {
 
               int cuvsWriterThreads = vectorType.getCuvsWriterThreads();
               int cuvsIntGraphDegree = vectorType.getCuvsIntGraphDegree();
               int cuvsGraphDegree = vectorType.getCuvsGraphDegree();
               int cuvsHnswLayers = vectorType.getCuvsHnswLayers();
-              int cuvsHnswMaxConn = vectorType.getCuvsHnswMaxConn();
-              int cuvsHnswBeamWidth = vectorType.getCuvsHnswBeamWidth();
+              int cuvsHnswM = vectorType.getCuvsHnswMaxConn();
+              int cuvsHNSWEfConstruction = vectorType.getCuvsHnswEfConstruction();
 
               assert cuvsWriterThreads > 0 : "cuvsWriterThreads cannot be less then or equal to 0";
               assert cuvsIntGraphDegree > 0
                   : "cuvsIntGraphDegree cannot be less then or equal to 0";
               assert cuvsGraphDegree > 0 : "cuvsGraphDegree cannot be less then or equal to 0";
               assert cuvsHnswLayers > 0 : "cuvsHnswLayers cannot be less then or equal to 0";
-              assert cuvsHnswMaxConn > 0 : "cuvsHnswMaxConn cannot be less then or equal to 0";
-              assert cuvsHnswBeamWidth > 0 : "cuvsHnswBeamWidth cannot be less then or equal to 0";
+              assert cuvsHnswM > 0 : "cuvsHnswM cannot be less then or equal to 0";
+              assert cuvsHNSWEfConstruction > 0
+                  : "cuvsHNSWEfConstruction cannot be less then or equal to 0";
 
               if (log.isInfoEnabled()) {
                 log.info(
-                    "Initializing Lucene99AcceleratedHNSWVectorsFormat with parameter values: cuvsWriterThreads {}, cuvsIntGraphDegree {}, cuvsGraphDegree {}, cuvsHnswLayers {}, cuvsHnswMaxConn {}, cuvsHnswBeamWidth {}",
+                    "Initializing Lucene99AcceleratedHNSWVectorsFormat with parameter values: cuvsWriterThreads {}, cuvsIntGraphDegree {}, cuvsGraphDegree {}, cuvsHnswLayers {}, cuvsHnswM {}, cuvsHNSWEfConstruction {}",
                     cuvsWriterThreads,
                     cuvsIntGraphDegree,
                     cuvsGraphDegree,
                     cuvsHnswLayers,
-                    cuvsHnswMaxConn,
-                    cuvsHnswBeamWidth);
+                    cuvsHnswM,
+                    cuvsHNSWEfConstruction);
               }
               return new Lucene99AcceleratedHNSWVectorsFormat(
                   cuvsWriterThreads,
                   cuvsIntGraphDegree,
                   cuvsGraphDegree,
                   cuvsHnswLayers,
-                  cuvsHnswMaxConn,
-                  cuvsHnswBeamWidth);
+                  cuvsHnswM,
+                  cuvsHNSWEfConstruction);
             } else if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
               return fallbackCodec.getKnnVectorsFormatForField(field);
             } else {
