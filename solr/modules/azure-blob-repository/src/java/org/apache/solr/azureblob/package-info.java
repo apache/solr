@@ -18,8 +18,8 @@
 /**
  * Azure Blob Storage backup repository implementation for Apache Solr.
  *
- * <p>This package provides a {@link org.apache.solr.blob.BlobBackupRepository} implementation that
- * enables Solr to store and retrieve backup data from Azure Blob Storage.
+ * <p>This package provides a {@link org.apache.solr.azureblob.AzureBlobBackupRepository}
+ * implementation that enables Solr to store and retrieve backup data from Azure Blob Storage.
  *
  * <p>The repository supports various Azure authentication methods including:
  *
@@ -33,12 +33,15 @@
  * <p>Key components:
  *
  * <ul>
- *   <li>{@link org.apache.solr.blob.BlobBackupRepository} - Main repository implementation
- *   <li>{@link org.apache.solr.blob.BlobStorageClient} - Azure Blob Storage client wrapper
- *   <li>{@link org.apache.solr.blob.BlobBackupRepositoryConfig} - Configuration management
+ *   <li>{@link org.apache.solr.azureblob.AzureBlobBackupRepository} - Main repository
+ *       implementation
+ *   <li>{@link org.apache.solr.azureblob.AzureBlobStorageClient} - Azure Blob Storage client
+ *       wrapper
+ *   <li>{@link org.apache.solr.azureblob.AzureBlobBackupRepositoryConfig} - Configuration
+ *       management
  * </ul>
  *
  * @see <a href="https://docs.microsoft.com/en-us/azure/storage/blobs/">Azure Blob Storage
  *     Documentation</a>
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;

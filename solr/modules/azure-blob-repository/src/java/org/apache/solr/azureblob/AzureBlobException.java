@@ -14,11 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
-/** Exception thrown when a blob is not found in Azure Blob Storage. */
-public class BlobNotFoundException extends BlobException {
-  public BlobNotFoundException(String message, Throwable cause) {
+/**
+ * Generic exception for Blob Storage related failures. Could originate from the {@link
+ * AzureBlobBackupRepository} or from its underlying {@link AzureBlobStorageClient}.
+ */
+public class AzureBlobException extends Exception {
+  public AzureBlobException(String message) {
+    super(message);
+  }
+
+  public AzureBlobException(String message, Throwable cause) {
     super(message, cause);
   }
 }

@@ -14,23 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
 /** Class representing the {@code backup} Blob Storage config bundle specified in solr.xml. */
-public class BlobBackupRepositoryConfig {
+public class AzureBlobBackupRepositoryConfig {
 
-  public static final String CONTAINER_NAME = "blob.container.name";
-  public static final String CONNECTION_STRING = "blob.connection.string";
-  public static final String ENDPOINT = "blob.endpoint";
-  public static final String ACCOUNT_NAME = "blob.account.name";
-  public static final String ACCOUNT_KEY = "blob.account.key";
-  public static final String SAS_TOKEN = "blob.sas.token";
-  public static final String TENANT_ID = "blob.tenant.id";
-  public static final String CLIENT_ID = "blob.client.id";
-  public static final String CLIENT_SECRET = "blob.client.secret";
+  public static final String CONTAINER_NAME = "azure.blob.container.name";
+  public static final String CONNECTION_STRING = "azure.blob.connection.string";
+  public static final String ENDPOINT = "azure.blob.endpoint";
+  public static final String ACCOUNT_NAME = "azure.blob.account.name";
+  public static final String ACCOUNT_KEY = "azure.blob.account.key";
+  public static final String SAS_TOKEN = "azure.blob.sas.token";
+  public static final String TENANT_ID = "azure.blob.tenant.id";
+  public static final String CLIENT_ID = "azure.blob.client.id";
+  public static final String CLIENT_SECRET = "azure.blob.client.secret";
 
   private final String containerName;
   private final String connectionString;
@@ -42,7 +42,7 @@ public class BlobBackupRepositoryConfig {
   private final String clientId;
   private final String clientSecret;
 
-  public BlobBackupRepositoryConfig(NamedList<?> config) {
+  public AzureBlobBackupRepositoryConfig(NamedList<?> config) {
     containerName = getStringConfig(config, CONTAINER_NAME);
     connectionString = getStringConfig(config, CONNECTION_STRING);
     endpoint = getStringConfig(config, ENDPOINT);
@@ -54,9 +54,9 @@ public class BlobBackupRepositoryConfig {
     clientSecret = getStringConfig(config, CLIENT_SECRET);
   }
 
-  /** Construct a {@link BlobStorageClient} from the provided config. */
-  public BlobStorageClient buildClient() {
-    return new BlobStorageClient(
+  /** Construct a {@link AzureBlobStorageClient} from the provided config. */
+  public AzureBlobStorageClient buildClient() {
+    return new AzureBlobStorageClient(
         containerName,
         connectionString,
         endpoint,

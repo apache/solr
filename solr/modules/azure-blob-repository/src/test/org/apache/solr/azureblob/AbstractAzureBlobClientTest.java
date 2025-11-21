@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import com.azure.core.http.HttpClient;
 import com.azure.core.http.netty.NettyAsyncHttpClientBuilder;
@@ -34,13 +34,13 @@ import org.junit.rules.TemporaryFolder;
 import reactor.netty.resources.ConnectionProvider;
 
 /** Abstract class for tests with Azure Blob Storage emulator. */
-public class AbstractBlobClientTest extends SolrTestCaseJ4 {
+public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
 
   protected String containerName;
 
   @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
 
-  BlobStorageClient client;
+  AzureBlobStorageClient client;
   private static String connectionString;
   private EventLoopGroup eventLoopGroup;
   private ConnectionProvider connectionProvider;
@@ -80,7 +80,7 @@ public class AbstractBlobClientTest extends SolrTestCaseJ4 {
             .buildClient();
 
     containerName = "test-" + java.util.UUID.randomUUID();
-    client = new BlobStorageClient(blobServiceClient, containerName);
+    client = new AzureBlobStorageClient(blobServiceClient, containerName);
   }
 
   /**
@@ -134,7 +134,7 @@ public class AbstractBlobClientTest extends SolrTestCaseJ4 {
   }
 
   /** Simulate a connection loss on the proxy similar to S3 tests. */
-  void initiateBlobConnectionLoss() throws BlobException {
+  void initiateBlobConnectionLoss() throws AzureBlobException {
     if (proxy != null) {
       proxy.halfClose();
     }
@@ -155,15 +155,15 @@ public class AbstractBlobClientTest extends SolrTestCaseJ4 {
    * @param path Destination path in blob storage.
    * @param content Arbitrary content for the test.
    */
-  void pushContent(String path, String content) throws BlobException {
+  void pushContent(String path, String content) throws AzureBlobException {
     pushContent(path, content.getBytes(StandardCharsets.UTF_8));
   }
 
-  void pushContent(String path, byte[] content) throws BlobException {
+  void pushContent(String path, byte[] content) throws AzureBlobException {
     try (OutputStream output = client.pushStream(path)) {
       output.write(content);
     } catch (IOException e) {
-      throw new BlobException("Failed to write content", e);
+      throw new AzureBlobException("Failed to write content", e);
     }
   }
 

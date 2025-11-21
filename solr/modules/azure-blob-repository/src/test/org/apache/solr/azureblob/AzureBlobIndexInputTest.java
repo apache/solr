@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-public class BlobIndexInputTest extends AbstractBlobClientTest {
+public class AzureBlobIndexInputTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testBasicIndexInput() throws Exception {
@@ -31,7 +31,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Read using BlobIndexInput
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       byte[] buffer = new byte[1024];
       input.readBytes(buffer, 0, content.length());
       String readContent = new String(buffer, 0, content.length(), StandardCharsets.UTF_8);
@@ -48,7 +48,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test seeking
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       // Seek to middle of content
       long seekPosition = content.length() / 2;
       input.seek(seekPosition);
@@ -71,7 +71,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test length
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       assertEquals("Length should match", content.length(), input.length());
     }
   }
@@ -85,7 +85,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test reading byte by byte
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       StringBuilder readContent = new StringBuilder();
       for (int i = 0; i < content.length(); i++) {
         byte b = input.readByte();
@@ -104,7 +104,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test reading bytes
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       byte[] buffer = new byte[10];
       StringBuilder readContent = new StringBuilder();
 
@@ -130,7 +130,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test seeking to end
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       input.seek(content.length());
 
       // Should be at end, no more bytes to read
@@ -152,7 +152,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test seeking beyond end
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       try {
         input.seek(content.length() + 1);
         fail("Should throw IOException when seeking beyond end");
@@ -171,7 +171,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test file pointer
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       assertEquals("Initial position should be 0", 0, input.getFilePointer());
 
       // Read some bytes
@@ -200,7 +200,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test reading large file
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       assertEquals("Length should match", content.length(), input.length());
 
       // Read in chunks
@@ -229,7 +229,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test reading empty file
-    try (BlobIndexInput input = new BlobIndexInput(path, client, client.length(path))) {
+    try (AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path))) {
       assertEquals("Length should be 0", 0, input.length());
       assertEquals("Position should be 0", 0, input.getFilePointer());
 
@@ -252,7 +252,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test closing
-    BlobIndexInput input = new BlobIndexInput(path, client, client.length(path));
+    AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path));
     input.close();
 
     // Test that operations on closed input throw exception
@@ -280,7 +280,7 @@ public class BlobIndexInputTest extends AbstractBlobClientTest {
     pushContent(path, content);
 
     // Test multiple close calls
-    BlobIndexInput input = new BlobIndexInput(path, client, client.length(path));
+    AzureBlobIndexInput input = new AzureBlobIndexInput(path, client, client.length(path));
     input.close();
     input.close(); // Should not throw exception
   }

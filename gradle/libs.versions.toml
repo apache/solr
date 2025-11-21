@@ -50,10 +50,10 @@ aqute-bnd = "6.4.1"
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
-azure-storage = "12.25.0"
-azure-identity = "1.12.0"
 azure-core = "1.52.0"
 azure-core-http-netty = "1.15.4"
+azure-identity = "1.12.0"
+azure-storage = "12.25.0"
 # @keep bats-assert (node) version used in packaging
 bats-assert = "2.0.0"
 # @keep bats-core (node) version used in packaging
@@ -308,10 +308,10 @@ apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", versio
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
 aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
-azure-storage-blob = { module = "com.azure:azure-storage-blob", version.ref = "azure-storage" }
-azure-identity = { module = "com.azure:azure-identity", version.ref = "azure-identity" }
 azure-core = { module = "com.azure:azure-core", version.ref = "azure-core" }
 azure-core-http-netty = { module = "com.azure:azure-core-http-netty", version.ref = "azure-core-http-netty" }
+azure-identity = { module = "com.azure:azure-identity", version.ref = "azure-identity" }
+azure-storage-blob = { module = "com.azure:azure-storage-blob", version.ref = "azure-storage" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }

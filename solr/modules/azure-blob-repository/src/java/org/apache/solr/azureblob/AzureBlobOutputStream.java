@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.models.BlobStorageException;
@@ -36,7 +36,7 @@ import org.slf4j.LoggerFactory;
  * OutputStream implementation for Azure Blob Storage using block blobs. Supports chunked uploads
  * for large files.
  */
-public class BlobOutputStream extends OutputStream {
+public class AzureBlobOutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // 4 MB per block (Azure limit is 100 MB, but 4 MB is more efficient for most use cases)
@@ -49,7 +49,7 @@ public class BlobOutputStream extends OutputStream {
   private BlockUpload blockUpload;
   private boolean committed;
 
-  public BlobOutputStream(BlobClient blobClient, String blobPath) {
+  public AzureBlobOutputStream(BlobClient blobClient, String blobPath) {
     this.blobClient = blobClient;
     this.blobPath = blobPath;
     this.closed = false;
@@ -132,7 +132,8 @@ public class BlobOutputStream extends OutputStream {
           log.debug("Block upload aborted for blobPath '{}'.", blobPath);
         }
       }
-      throw new IOException("Failed to upload block", BlobStorageClient.handleBlobException(e));
+      throw new IOException(
+          "Failed to upload block", AzureBlobStorageClient.handleBlobException(e));
     }
 
     // reset the buffer for eventual next write operation
@@ -183,7 +184,7 @@ public class BlobOutputStream extends OutputStream {
           blobClient.upload(new ByteArrayInputStream(new byte[0]), 0, true);
         } catch (BlobStorageException e) {
           throw new IOException(
-              "Failed to create empty blob", BlobStorageClient.handleBlobException(e));
+              "Failed to create empty blob", AzureBlobStorageClient.handleBlobException(e));
         }
       }
     } else {
@@ -202,7 +203,7 @@ public class BlobOutputStream extends OutputStream {
       return new BlockUpload();
     } catch (BlobStorageException e) {
       throw new IOException(
-          "Failed to create block upload", BlobStorageClient.handleBlobException(e));
+          "Failed to create block upload", AzureBlobStorageClient.handleBlobException(e));
     }
   }
 

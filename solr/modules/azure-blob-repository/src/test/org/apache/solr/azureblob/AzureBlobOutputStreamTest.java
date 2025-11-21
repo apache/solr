@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,7 +22,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-public class BlobOutputStreamTest extends AbstractBlobClientTest {
+public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testBasicOutputStream() throws Exception {

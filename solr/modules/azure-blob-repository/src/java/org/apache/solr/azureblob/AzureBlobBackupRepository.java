@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -44,19 +44,19 @@ import org.slf4j.LoggerFactory;
  * A concrete implementation of {@link BackupRepository} interface supporting backup/restore of Solr
  * indexes to Azure Blob Storage.
  */
-public class BlobBackupRepository extends AbstractBackupRepository {
+public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String BLOB_SCHEME = "blob";
   private static final int CHUNK_SIZE = 16 * 1024 * 1024;
 
-  private BlobStorageClient client;
+  private AzureBlobStorageClient client;
 
   @Override
   public void init(NamedList<?> args) {
     super.init(args);
-    BlobBackupRepositoryConfig backupConfig = new BlobBackupRepositoryConfig(this.config);
+    AzureBlobBackupRepositoryConfig backupConfig = new AzureBlobBackupRepositoryConfig(this.config);
 
     // If a client was already created, close it to avoid any resource leak
     if (client != null) {
@@ -67,7 +67,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
   }
 
   // Method to inject a mock client for testing
-  public void setClient(BlobStorageClient client) {
+  public void setClient(AzureBlobStorageClient client) {
     this.client = client;
   }
 
@@ -147,7 +147,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       client.createDirectory(blobPath);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to create directory " + blobPath, e);
     }
   }
@@ -164,7 +164,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       client.deleteDirectory(blobPath);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to delete directory " + blobPath, e);
     }
   }
@@ -181,7 +181,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
         int lastSlash = basePath.lastIndexOf('/');
         basePath = lastSlash >= 0 ? basePath.substring(0, lastSlash) : "";
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to check path type for " + basePath, e);
     }
 
@@ -197,7 +197,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       client.delete(fullPaths);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to delete files " + fullPaths, e);
     }
   }
@@ -214,7 +214,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       return client.pathExists(blobPath);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to check existence of " + blobPath, e);
     }
   }
@@ -235,7 +235,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
       } else {
         return BackupRepository.PathType.FILE;
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to get path type for " + blobPath, e);
     }
   }
@@ -252,7 +252,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       return client.listDir(blobPath);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to list directory " + blobPath, e);
     }
   }
@@ -270,8 +270,8 @@ public class BlobBackupRepository extends AbstractBackupRepository {
     }
 
     try {
-      return new BlobIndexInput(blobPath, client, client.length(blobPath));
-    } catch (BlobException e) {
+      return new AzureBlobIndexInput(blobPath, client, client.length(blobPath));
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to open input stream for " + blobPath, e);
     }
   }
@@ -288,7 +288,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
 
     try {
       return client.pushStream(blobPath);
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to create output stream for " + blobPath, e);
     }
   }
@@ -316,7 +316,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
       if (!parentDir.isEmpty()) {
         client.createDirectory(parentDir);
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       // ignore failures here; write will surface real issues
     }
 
@@ -331,7 +331,7 @@ public class BlobBackupRepository extends AbstractBackupRepository {
         output.write(buffer, 0, toRead);
         remaining -= toRead;
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to copy file from " + sourceFileName + " to " + blobPath, e);
     }
   }
@@ -380,14 +380,14 @@ public class BlobBackupRepository extends AbstractBackupRepository {
       while ((len = inputStream.read(buffer)) != -1) {
         indexOutput.writeBytes(buffer, 0, len);
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to copy file from " + blobPath + " to " + destFileName, e);
     }
 
     long timeElapsed = Duration.between(start, Instant.now()).toMillis();
 
     if (log.isInfoEnabled()) {
-      log.info("Download from S3 '{}' finished in {}ms", blobPath, timeElapsed);
+      log.info("Download from Azure Blob Storage '{}' finished in {}ms", blobPath, timeElapsed);
     }
   }
 

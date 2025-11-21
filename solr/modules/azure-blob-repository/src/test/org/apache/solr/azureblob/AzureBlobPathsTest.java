@@ -14,11 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import org.junit.Test;
 
-public class BlobPathsTest extends AbstractBlobClientTest {
+public class AzureBlobPathsTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testPathExists() throws Exception {
@@ -85,7 +85,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
     try {
       client.length(dirPath);
       fail("Should throw exception when getting length of directory");
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       // Expected
     }
   }
@@ -155,7 +155,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
   }
 
   private void listAllRecursive(String dirPath, java.util.Set<String> allFiles)
-      throws BlobException {
+      throws AzureBlobException {
     String[] files = client.listDir(dirPath);
     for (String file : files) {
       String fullPath = dirPath + file;
@@ -276,7 +276,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
         String sanitizedPath = client.sanitizedPath(testPath);
         assertNotNull("Sanitized path should not be null", sanitizedPath);
         assertFalse("Sanitized path should not start with slash", sanitizedPath.startsWith("/"));
-      } catch (BlobException e) {
+      } catch (AzureBlobException e) {
         // Some paths might be invalid, which is expected
       }
     }
@@ -294,7 +294,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
         String sanitizedPath = client.sanitizedFilePath(filePath);
         assertNotNull("Sanitized file path should not be null", sanitizedPath);
         assertFalse("Sanitized file path should not end with slash", sanitizedPath.endsWith("/"));
-      } catch (BlobException e) {
+      } catch (AzureBlobException e) {
         fail("Valid file path should not throw exception: " + filePath);
       }
     }
@@ -306,7 +306,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
       try {
         client.sanitizedFilePath(filePath);
         fail("Invalid file path should throw exception: " + filePath);
-      } catch (BlobException e) {
+      } catch (AzureBlobException e) {
         // Expected
       }
     }
@@ -324,7 +324,7 @@ public class BlobPathsTest extends AbstractBlobClientTest {
         String sanitizedPath = client.sanitizedDirPath(dirPath);
         assertNotNull("Sanitized directory path should not be null", sanitizedPath);
         assertTrue("Sanitized directory path should end with slash", sanitizedPath.endsWith("/"));
-      } catch (BlobException e) {
+      } catch (AzureBlobException e) {
         fail("Valid directory path should not throw exception: " + dirPath);
       }
     }

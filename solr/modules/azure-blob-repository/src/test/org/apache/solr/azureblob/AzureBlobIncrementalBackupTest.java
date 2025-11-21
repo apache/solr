@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-public class BlobIncrementalBackupTest extends AbstractBlobClientTest {
+public class AzureBlobIncrementalBackupTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testIncrementalBackup() throws Exception {
@@ -224,7 +224,7 @@ public class BlobIncrementalBackupTest extends AbstractBlobClientTest {
     }
   }
 
-  private void createBackup(String backupPath, String content) throws BlobException {
+  private void createBackup(String backupPath, String content) throws AzureBlobException {
     client.createDirectory(backupPath);
     pushContent(backupPath + "backup-file.txt", content);
   }

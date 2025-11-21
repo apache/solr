@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -23,13 +23,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.apache.lucene.store.IndexInput;
 
-class BlobIndexInput extends IndexInput {
+class AzureBlobIndexInput extends IndexInput {
 
   private static final int DEFAULT_PAGE_SIZE = 512 * 1024; // 512 KB
   private static final int MAX_CACHED_PAGES = 128; // ~64 MB at 512 KB pages
 
   private final String path;
-  private final BlobStorageClient client;
+  private final AzureBlobStorageClient client;
   private final long length;
   private final int pageSize;
   private final LruPageCache cache;
@@ -37,12 +37,12 @@ class BlobIndexInput extends IndexInput {
   private long position = 0L;
   private boolean closed = false;
 
-  BlobIndexInput(String path, BlobStorageClient client, long length) {
+  AzureBlobIndexInput(String path, AzureBlobStorageClient client, long length) {
     this(path, client, length, DEFAULT_PAGE_SIZE, MAX_CACHED_PAGES);
   }
 
-  BlobIndexInput(
-      String path, BlobStorageClient client, long length, int pageSize, int maxCachedPages) {
+  AzureBlobIndexInput(
+      String path, AzureBlobStorageClient client, long length, int pageSize, int maxCachedPages) {
     super(path);
     this.path = path;
     this.client = client;
@@ -84,8 +84,8 @@ class BlobIndexInput extends IndexInput {
       throw new IOException("Slice out of bounds: offset=" + offset + ", length=" + length);
     }
 
-    BlobIndexInput slice =
-        new BlobIndexInput(
+    AzureBlobIndexInput slice =
+        new AzureBlobIndexInput(
             getFullSliceDescription(sliceDescription), client, length, pageSize, MAX_CACHED_PAGES);
 
     slice.position = 0L;
@@ -160,7 +160,7 @@ class BlobIndexInput extends IndexInput {
         throw new EOFException(
             "End of stream reached: expected " + bytesToRead + " bytes, got " + readTotal);
       }
-    } catch (BlobException e) {
+    } catch (AzureBlobException e) {
       throw new IOException("Failed to fetch range page", e);
     }
 

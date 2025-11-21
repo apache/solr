@@ -14,18 +14,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
-/**
- * Generic exception for Blob Storage related failures. Could originate from the {@link
- * BlobBackupRepository} or from its underlying {@link BlobStorageClient}.
- */
-public class BlobException extends Exception {
-  public BlobException(String message) {
-    super(message);
-  }
-
-  public BlobException(String message, Throwable cause) {
+/** Exception thrown when a blob is not found in Azure Blob Storage. */
+public class AzureBlobNotFoundException extends AzureBlobException {
+  public AzureBlobNotFoundException(String message, Throwable cause) {
     super(message, cause);
   }
 }

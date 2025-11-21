@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import com.azure.core.credential.TokenCredential;
 import com.azure.identity.DefaultAzureCredentialBuilder;
@@ -45,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * Creates a {@link BlobServiceClient} for communicating with Azure Blob Storage. Utilizes the
  * default Azure credential provider chain.
  */
-public class BlobStorageClient {
+public class AzureBlobStorageClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -53,7 +53,7 @@ public class BlobStorageClient {
 
   private final BlobContainerClient containerClient;
 
-  BlobStorageClient(
+  AzureBlobStorageClient(
       String containerName,
       String connectionString,
       String endpoint,
@@ -77,7 +77,7 @@ public class BlobStorageClient {
   }
 
   @VisibleForTesting
-  BlobStorageClient(BlobServiceClient blobServiceClient, String containerName) {
+  AzureBlobStorageClient(BlobServiceClient blobServiceClient, String containerName) {
     this.containerClient = blobServiceClient.getBlobContainerClient(containerName);
     try {
       containerClient.create();
@@ -123,7 +123,7 @@ public class BlobStorageClient {
   }
 
   /** Create a directory in Blob Storage, if it does not already exist. */
-  void createDirectory(String path) throws BlobException {
+  void createDirectory(String path) throws AzureBlobException {
     String sanitizedDirPath = sanitizedDirPath(path);
 
     // Only create the directory if it does not already exist
@@ -148,7 +148,7 @@ public class BlobStorageClient {
   }
 
   /** Delete files from Blob Storage. Missing files are ignored (idempotent delete). */
-  void delete(Collection<String> paths) throws BlobException {
+  void delete(Collection<String> paths) throws AzureBlobException {
     Set<String> entries = new HashSet<>();
     for (String path : paths) {
       entries.add(sanitizedFilePath(path));
@@ -157,7 +157,7 @@ public class BlobStorageClient {
   }
 
   /** Delete directory, all the files and subdirectories from Blob Storage. */
-  void deleteDirectory(String path) throws BlobException {
+  void deleteDirectory(String path) throws AzureBlobException {
     path = sanitizedDirPath(path);
 
     // Get all the files and subdirectories
@@ -170,7 +170,7 @@ public class BlobStorageClient {
   }
 
   /** List all the files and subdirectories directly under given path. */
-  String[] listDir(String path) throws BlobException {
+  String[] listDir(String path) throws AzureBlobException {
     path = sanitizedDirPath(path);
 
     try {
@@ -194,7 +194,7 @@ public class BlobStorageClient {
   }
 
   /** Check if path exists. */
-  boolean pathExists(String path) throws BlobException {
+  boolean pathExists(String path) throws AzureBlobException {
     final String blobPath = sanitizedPath(path);
 
     // for root return true
@@ -211,7 +211,7 @@ public class BlobStorageClient {
   }
 
   /** Check if path is directory. */
-  boolean isDirectory(String path) throws BlobException {
+  boolean isDirectory(String path) throws AzureBlobException {
     final String dirPrefix = sanitizedDirPath(path);
 
     try {
@@ -242,7 +242,7 @@ public class BlobStorageClient {
   }
 
   /** Get length of file in bytes. */
-  long length(String path) throws BlobException {
+  long length(String path) throws AzureBlobException {
     String blobPath = sanitizedFilePath(path);
     try {
       BlobClient blobClient = containerClient.getBlobClient(blobPath);
@@ -253,7 +253,7 @@ public class BlobStorageClient {
   }
 
   /** Open a new {@link InputStream} to file for read. */
-  InputStream pullStream(String path) throws BlobException {
+  InputStream pullStream(String path) throws AzureBlobException {
     final String blobPath = sanitizedFilePath(path);
 
     try {
@@ -272,7 +272,7 @@ public class BlobStorageClient {
               long remaining =
                   contentLength > 0 ? Math.max(0, contentLength - bytesRead) : Long.MAX_VALUE;
               return pullRangeStream(path, bytesRead, remaining);
-            } catch (BlobException e) {
+            } catch (AzureBlobException e) {
               // ResumableInputStream supplier cannot throw checked exceptions
               throw new RuntimeException(e);
             }
@@ -283,7 +283,7 @@ public class BlobStorageClient {
   }
 
   /** Open a ranged {@link InputStream} to file for read from offset for length bytes. */
-  InputStream pullRangeStream(String path, long offset, long length) throws BlobException {
+  InputStream pullRangeStream(String path, long offset, long length) throws AzureBlobException {
     final String blobPath = sanitizedFilePath(path);
     try {
       BlobClient blobClient = containerClient.getBlobClient(blobPath);
@@ -385,7 +385,7 @@ public class BlobStorageClient {
   }
 
   /** Open a new {@link OutputStream} to file for write. */
-  OutputStream pushStream(String path) throws BlobException {
+  OutputStream pushStream(String path) throws AzureBlobException {
     path = sanitizedFilePath(path);
 
     if (!parentDirectoryExist(path)) {
@@ -398,7 +398,7 @@ public class BlobStorageClient {
 
     try {
       BlobClient blobClient = containerClient.getBlobClient(path);
-      return new BlobOutputStream(blobClient, path);
+      return new AzureBlobOutputStream(blobClient, path);
     } catch (BlobStorageException e) {
       throw handleBlobException(e);
     }
@@ -421,7 +421,7 @@ public class BlobStorageClient {
     }
   }
 
-  private Collection<String> deleteBlobs(Collection<String> paths) throws BlobException {
+  private Collection<String> deleteBlobs(Collection<String> paths) throws AzureBlobException {
     try {
       return deleteBlobs(paths, 1000); // Azure supports batch delete
     } catch (BlobStorageException e) {
@@ -430,7 +430,8 @@ public class BlobStorageClient {
   }
 
   @VisibleForTesting
-  Collection<String> deleteBlobs(Collection<String> entries, int batchSize) throws BlobException {
+  Collection<String> deleteBlobs(Collection<String> entries, int batchSize)
+      throws AzureBlobException {
     Set<String> deletedPaths = new HashSet<>();
 
     for (String path : entries) {
@@ -445,14 +446,14 @@ public class BlobStorageClient {
           // ignore missing
           continue;
         }
-        throw new BlobException("Could not delete blob with path: " + path, e);
+        throw new AzureBlobException("Could not delete blob with path: " + path, e);
       }
     }
 
     return deletedPaths;
   }
 
-  private Set<String> listAll(String path) throws BlobException {
+  private Set<String> listAll(String path) throws AzureBlobException {
     String prefix = sanitizedDirPath(path);
 
     try {
@@ -468,7 +469,7 @@ public class BlobStorageClient {
     }
   }
 
-  private boolean parentDirectoryExist(String path) throws BlobException {
+  private boolean parentDirectoryExist(String path) throws AzureBlobException {
     String parentDirectory = getParentDirectory(path);
 
     if (parentDirectory.isEmpty() || parentDirectory.equals(BLOB_FILE_PATH_DELIMITER)) {
@@ -493,7 +494,7 @@ public class BlobStorageClient {
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
-  String sanitizedPath(String path) throws BlobException {
+  String sanitizedPath(String path) throws AzureBlobException {
     String sanitizedPath = path.trim();
     // Remove all leading slashes so that blob names never start with '/'
     while (sanitizedPath.startsWith(BLOB_FILE_PATH_DELIMITER)) {
@@ -503,22 +504,22 @@ public class BlobStorageClient {
   }
 
   /** Ensures file path adheres to some rules */
-  String sanitizedFilePath(String path) throws BlobException {
+  String sanitizedFilePath(String path) throws AzureBlobException {
     String sanitizedPath = sanitizedPath(path);
 
     if (sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
-      throw new BlobException("Invalid Path. Path for file can't end with '/'");
+      throw new AzureBlobException("Invalid Path. Path for file can't end with '/'");
     }
 
     if (sanitizedPath.isEmpty()) {
-      throw new BlobException("Invalid Path. Path cannot be empty");
+      throw new AzureBlobException("Invalid Path. Path cannot be empty");
     }
 
     return sanitizedPath;
   }
 
   /** Ensures directory path adheres to some rules */
-  String sanitizedDirPath(String path) throws BlobException {
+  String sanitizedDirPath(String path) throws AzureBlobException {
     String sanitizedPath = sanitizedPath(path);
 
     if (!sanitizedPath.endsWith(BLOB_FILE_PATH_DELIMITER)) {
@@ -529,7 +530,7 @@ public class BlobStorageClient {
   }
 
   /** Handle Azure Blob Storage exceptions */
-  static BlobException handleBlobException(BlobStorageException e) {
+  static AzureBlobException handleBlobException(BlobStorageException e) {
     String errMessage =
         String.format(
             Locale.ROOT,
@@ -541,9 +542,9 @@ public class BlobStorageClient {
     log.error(errMessage);
 
     if (e.getStatusCode() == 404) {
-      return new BlobNotFoundException(errMessage, e);
+      return new AzureBlobNotFoundException(errMessage, e);
     } else {
-      return new BlobException(errMessage, e);
+      return new AzureBlobException(errMessage, e);
     }
   }
 }

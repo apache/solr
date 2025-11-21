@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import com.carrotsearch.randomizedtesting.generators.RandomBytes;
 import java.io.IOException;
@@ -23,7 +23,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-public class BlobReadWriteTest extends AbstractBlobClientTest {
+public class AzureBlobReadWriteTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testBasicReadWrite() throws Exception {
@@ -269,7 +269,7 @@ public class BlobReadWriteTest extends AbstractBlobClientTest {
         if (currentBucket != lastResetBucket && (byteCount % bytesPerException <= maxBuffer)) {
           try {
             initiateBlobConnectionLoss();
-          } catch (BlobException e) {
+          } catch (AzureBlobException e) {
             throw new IOException("Failed to simulate connection loss", e);
           }
           lastResetBucket = currentBucket;

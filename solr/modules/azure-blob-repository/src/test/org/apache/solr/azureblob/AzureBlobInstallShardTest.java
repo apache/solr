@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
 import java.nio.charset.StandardCharsets;
 import org.junit.Test;
 
-public class BlobInstallShardTest extends AbstractBlobClientTest {
+public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testInstallShard() throws Exception {

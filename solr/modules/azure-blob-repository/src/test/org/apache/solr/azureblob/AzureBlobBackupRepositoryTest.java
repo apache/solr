@@ -14,9 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.blob;
+package org.apache.solr.azureblob;
 
-import static org.apache.solr.blob.BlobBackupRepository.BLOB_SCHEME;
+import static org.apache.solr.azureblob.AzureBlobBackupRepository.BLOB_SCHEME;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,14 +33,14 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Before;
 import org.junit.Test;
 
-public class BlobBackupRepositoryTest extends AbstractBlobClientTest {
+public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
-  private BlobBackupRepository repository;
+  private AzureBlobBackupRepository repository;
 
   protected static final String CONTAINER_NAME = "test-container";
 
   protected Class<? extends BackupRepository> getRepositoryClass() {
-    return BlobBackupRepository.class;
+    return AzureBlobBackupRepository.class;
   }
 
   protected BackupRepository getRepository() {
@@ -62,13 +62,13 @@ public class BlobBackupRepositoryTest extends AbstractBlobClientTest {
     // Use a repository that avoids creating its own Azure client (which leaks Netty threads)
     // and instead inject the pre-configured client from AbstractBlobClientTest.
     repository =
-        new BlobBackupRepository() {
+        new AzureBlobBackupRepository() {
           @Override
           public void init(NamedList<?> args) {
             // Only capture config; avoid building a new client inside init
             this.config = args;
             // Inject the already-initialized client that uses isolated Netty resources
-            setClient(BlobBackupRepositoryTest.this.client);
+            setClient(AzureBlobBackupRepositoryTest.this.client);
           }
         };
     repository.init(config);

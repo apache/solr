@@ -32,7 +32,7 @@ This Azure Blob Storage repository is a backup repository implementation designe
 **Prerequisites:**
 - Azure Storage Account with a blob container
 - Container must already exist (e.g., `solr-backup`)
-- Solr blob-repository module enabled
+- Solr azure-blob-repository module enabled
 - Network access to Azure Blob Storage (HTTPS port 443)
 
 ## Prerequisites
@@ -47,9 +47,9 @@ Before configuring authentication, ensure you have:
      --name solr-backup \
      --account-name YOUR_ACCOUNT_NAME
    ```
-3. **Solr Module** - Enable blob-repository module:
+3. **Solr Module** - Enable azure-blob-repository module:
    ```bash
-   export SOLR_MODULES=blob-repository
+   export SOLR_MODULES=azure-blob-repository
    ./bin/solr start
    ```
 4. **Network Access** - Solr can reach Azure Blob Storage (HTTPS port 443)
@@ -68,12 +68,16 @@ The Azure Blob Storage backup repository supports four authentication methods. C
 The simplest authentication method using a full connection string.
 
 #### Configuration in solr.xml:
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.connection.string">DefaultEndpointsProtocol=https;AccountName=YOUR_ACCOUNT_NAME;AccountKey=YOUR_ACCOUNT_KEY;EndpointSuffix=core.windows.net</str>
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.connection.string">
+            DefaultEndpointsProtocol=https;AccountName=YOUR_ACCOUNT_NAME;AccountKey=YOUR_ACCOUNT_KEY;EndpointSuffix=core.windows.net
+        </str>
+    </repository>
 </backup>
 ```
 
@@ -84,14 +88,16 @@ The simplest authentication method using a full connection string.
 Separates the account credentials from the endpoint configuration.
 
 #### Configuration in solr.xml:
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <str name="blob.account.name">YOUR_ACCOUNT_NAME</str>
-    <str name="blob.account.key">YOUR_ACCOUNT_KEY</str>
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <str name="azure.blob.account.name">YOUR_ACCOUNT_NAME</str>
+        <str name="azure.blob.account.key">YOUR_ACCOUNT_KEY</str>
+    </repository>
 </backup>
 ```
 
@@ -133,13 +139,15 @@ az storage account generate-sas \
 ```
 
 #### Configuration in solr.xml:
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <str name="blob.sas.token">sv=2024-11-04&amp;ss=b&amp;srt=sco&amp;sp=rwdlac&amp;se=2026-12-31T23:59:59Z&amp;st=2025-01-01T00:00:00Z&amp;spr=https&amp;sig=YOUR_SIGNATURE</str>
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <str name="azure.blob.sas.token">sv=2024-11-04&amp;ss=b&amp;srt=sco&amp;sp=rwdlac&amp;se=2026-12-31T23:59:59Z&amp;st=2025-01-01T00:00:00Z&amp;spr=https&amp;sig=YOUR_SIGNATURE</str>
+    </repository>
 </backup>
 ```
 
@@ -184,13 +192,15 @@ az role assignment create \
 ```
 
 **Configuration in solr.xml:**
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <!-- No credentials needed - uses Azure CLI token -->
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <!-- No credentials needed - uses Azure CLI token -->
+    </repository>
 </backup>
 ```
 
@@ -216,15 +226,17 @@ az ad sp create-for-rbac \
 ```
 
 **Configuration in solr.xml:**
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <str name="blob.tenant.id">YOUR_TENANT_ID</str>
-    <str name="blob.client.id">YOUR_CLIENT_ID</str>
-    <str name="blob.client.secret">YOUR_CLIENT_SECRET</str>
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <str name="azure.blob.tenant.id">YOUR_TENANT_ID</str>
+        <str name="azure.blob.client.id">YOUR_CLIENT_ID</str>
+        <str name="azure.blob.client.secret">YOUR_CLIENT_SECRET</str>
+    </repository>
 </backup>
 ```
 
@@ -238,13 +250,15 @@ export AZURE_CLIENT_SECRET="your-client-secret"
 ```
 
 Then solr.xml only needs:
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <!-- Credentials from environment variables -->
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <!-- Credentials from environment variables -->
+    </repository>
 </backup>
 ```
 
@@ -275,13 +289,15 @@ az role assignment create \
 ```
 
 **Configuration in solr.xml:**
+
 ```xml
+
 <backup>
-  <repository name="blob" class="org.apache.solr.blob.BlobBackupRepository" default="false">
-    <str name="blob.container.name">YOUR_CONTAINER_NAME</str>
-    <str name="blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
-    <!-- No credentials needed - Azure handles authentication automatically -->
-  </repository>
+    <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
+        <str name="azure.blob.container.name">YOUR_CONTAINER_NAME</str>
+        <str name="azure.blob.endpoint">https://YOUR_ACCOUNT_NAME.blob.core.windows.net</str>
+        <!-- No credentials needed - Azure handles authentication automatically -->
+    </repository>
 </backup>
 ```
 
@@ -384,7 +400,7 @@ Once you've configured authentication in `solr.xml`, you can use standard Solr b
 
 ```bash
 # Create a backup of a collection
-curl "http://localhost:8983/solr/admin/collections?action=BACKUP&name=my-backup&collection=my-collection&repository=blob&location=/"
+curl "http://localhost:8983/solr/admin/collections?action=BACKUP&name=my-backup&collection=my-collection&repository=azure_blob&location=/"
 
 # Example response:
 # {
@@ -408,7 +424,7 @@ curl "http://localhost:8983/solr/admin/collections?action=BACKUP&name=my-backup&
 
 ```bash
 # Restore a backup to a new or existing collection
-curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=my-backup&collection=my-collection-restored&repository=blob&location=/"
+curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=my-backup&collection=my-collection-restored&repository=azure_blob&location=/"
 
 # Example response:
 # {
@@ -427,7 +443,7 @@ curl "http://localhost:8983/solr/admin/collections?action=RESTORE&name=my-backup
 
 ```bash
 # List all backups at a location
-curl "http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=my-backup&repository=blob&location=/"
+curl "http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=my-backup&repository=azure_blob&location=/"
 
 # Example response:
 # {
@@ -443,7 +459,7 @@ curl "http://localhost:8983/solr/admin/collections?action=LISTBACKUP&name=my-bac
 
 ```bash
 # Delete a specific backup
-curl "http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=my-backup&backupId=1&repository=blob&location=/"
+curl "http://localhost:8983/solr/admin/collections?action=DELETEBACKUP&name=my-backup&backupId=1&repository=azure_blob&location=/"
 ```
 
 **Note:** The `location` parameter should be `/` (root of container) or a subdirectory path like `/backups/`. The path must not have a trailing slash except for root.
