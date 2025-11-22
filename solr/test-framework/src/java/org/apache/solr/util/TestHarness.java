@@ -42,7 +42,6 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -64,7 +63,6 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 public class TestHarness extends BaseTestHarness {
   public String coreName;
   protected volatile CoreContainer container;
-  public UpdateRequestHandler updater;
 
   /**
    * Creates a SolrConfig object for the specified coreName assuming it follows the basic
@@ -184,8 +182,6 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
     container = new CoreContainer(config, coresLocator);
     container.load();
-    updater = new UpdateRequestHandler();
-    updater.init(null);
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
@@ -310,11 +306,7 @@ public class TestHarness extends BaseTestHarness {
         xmlWriter.write(sw, req, rsp);
         return sw.toString();
       }
-      // prefer the handler mapped to /update, but use our generic backup handler
-      // if that lookup fails
-      // if (handler == null) {
-      //   handler = updater;
-      // }
+
       // return connection.request(handler, null, xml);
     } catch (SolrException e) {
       throw e;
