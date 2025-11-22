@@ -72,7 +72,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
 
   @BeforeClass
   public static void createMiniSolrCloudCluster() throws Exception {
-    // replication factor will impact wether we expect a list of urls from the '[shard]'
+    // replication factor will impact whether we expect a list of urls from the '[shard]'
     // augmenter...
     repFactor = usually() ? 1 : 2;
     // ... and we definitely want to ensure forwarded requests to other shards work ...
