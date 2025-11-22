@@ -283,12 +283,10 @@ public class TestHarness extends BaseTestHarness {
     try (var mdcSnap = MDCSnapshot.create();
         SolrCore core = getCoreInc()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
-      // DirectSolrConnection connection = new DirectSolrConnection(core);
-      // SolrRequestHandler handler = core.getRequestHandler("/update");
+
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
       DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
 
-      // SolrCore core = getCore();
       ModifiableSolrParams params = new ModifiableSolrParams();
       NamedList<Object> response = server.request(xmlRequest);
       server.close();
@@ -307,7 +305,6 @@ public class TestHarness extends BaseTestHarness {
         return sw.toString();
       }
 
-      // return connection.request(handler, null, xml);
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
