@@ -22,23 +22,26 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.DirectSolrConnection;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
@@ -47,6 +50,8 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
+
+  private static EmbeddedSolrServer server;
 
   /** List of valid + invalid documents */
   private static List<SolrInputDocument> docs = null;
@@ -57,12 +62,20 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema12.xml");
+    server = new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName());
   }
 
   @AfterClass
-  public static void tearDownClass() {
+  public static void afterClass() {
     docs = null;
-    badIds = null;
+    if (server != null) {
+      try {
+        server.close();
+      } catch (Exception e) {
+        // ignore
+      }
+      server = null;
+    }
   }
 
   @Override
@@ -379,12 +392,36 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   public String update(String chain, String xml) {
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/update");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("update.chain", chain);
     try {
-      return connection.request(handler, params, xml);
+      // Use DirectXmlRequest to send raw XML through EmbeddedSolrServer
+      DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
+      
+      // Set the update chain parameter
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("update.chain", chain);
+      params.add("wt", "xml");
+      xmlRequest.setParams(params);
+      
+      // Process the request and get the response
+      NamedList<Object> response = server.request(xmlRequest);
+      
+      // Convert response to XML string for validation
+      // We need to recreate the XML response format
+      SolrCore core = h.getCore();
+      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
+        SolrQueryResponse rsp = new SolrQueryResponse();
+        
+        // Transfer the response data
+        if (response != null) {
+          rsp.setAllValues(response);
+        }
+        
+        // Write as XML
+        StringWriter sw = new StringWriter();
+        XMLResponseWriter xmlWriter = new XMLResponseWriter();
+        xmlWriter.write(sw, req, rsp);
+        return sw.toString();
+      }
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
