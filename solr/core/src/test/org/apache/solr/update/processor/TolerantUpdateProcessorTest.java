@@ -22,7 +22,6 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -395,27 +394,27 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
     try {
       // Use DirectXmlRequest to send raw XML through EmbeddedSolrServer
       DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
-      
+
       // Set the update chain parameter
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add("update.chain", chain);
       params.add("wt", "xml");
       xmlRequest.setParams(params);
-      
+
       // Process the request and get the response
       NamedList<Object> response = server.request(xmlRequest);
-      
+
       // Convert response to XML string for validation
       // We need to recreate the XML response format
       SolrCore core = h.getCore();
       try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
         SolrQueryResponse rsp = new SolrQueryResponse();
-        
+
         // Transfer the response data
         if (response != null) {
           rsp.setAllValues(response);
         }
-        
+
         // Write as XML
         StringWriter sw = new StringWriter();
         XMLResponseWriter xmlWriter = new XMLResponseWriter();
