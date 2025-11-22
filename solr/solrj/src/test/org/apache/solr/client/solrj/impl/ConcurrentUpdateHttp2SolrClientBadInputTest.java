@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,8 +41,8 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client)
+        var client =
+            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)
@@ -75,7 +74,7 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
     }
 
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
+        var client =
             new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)

@@ -68,8 +68,8 @@ public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrClou
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;
     try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, http2Client)
+        var client =
+            new ConcurrentUpdateJettySolrClient.Builder(solrUrl, http2Client)
                 .withQueueSize(numTotalDocs)
                 .build()) {
       splitDocumentsAcrossCollections(client, numTotalDocs);

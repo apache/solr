@@ -28,6 +28,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
@@ -122,7 +123,7 @@ public class StreamingSolrClients {
   }
 }
 
-class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2SolrClient {
+class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final SolrCmdDistributor.Req req;
   private final List<SolrError> errors;
@@ -154,7 +155,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateHttp2Solr
     req.trackRequestResult(resp, respBody, true);
   }
 
-  static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
+  static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
     protected SolrCmdDistributor.Req req;
     protected List<SolrError> errors;
 

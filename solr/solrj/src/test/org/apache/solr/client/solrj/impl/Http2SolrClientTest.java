@@ -670,7 +670,8 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
       try (Http2SolrClient onlyBaseUrlChangedClient =
           new Http2SolrClient.Builder(url).withHttpClient(oldClient).build()) {
-        assertEquals(oldClient.getIdleTimeout(), onlyBaseUrlChangedClient.getIdleTimeout());
+        assertEquals(
+            oldClient.getIdleTimeoutMillis(), onlyBaseUrlChangedClient.getIdleTimeoutMillis());
         assertEquals(oldClient.getHttpClient(), onlyBaseUrlChangedClient.getHttpClient());
       }
 
@@ -687,8 +688,9 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
               .withHttpClient(oldClient)
               .withIdleTimeout(newIdleTimeoutMs, TimeUnit.MILLISECONDS)
               .build()) {
-        assertNotEquals(oldClient.getIdleTimeout(), idleTimeoutChangedClient.getIdleTimeout());
-        assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeout());
+        assertNotEquals(
+            oldClient.getIdleTimeoutMillis(), idleTimeoutChangedClient.getIdleTimeoutMillis());
+        assertEquals(newIdleTimeoutMs, idleTimeoutChangedClient.getIdleTimeoutMillis());
         NamedList<Object> response = idleTimeoutChangedClient.request(req);
         try (InputStream is = (InputStream) response.get("stream")) {
           String expect =
