@@ -218,7 +218,7 @@ public class TestCloudPseudoReturnFields extends SolrCloudTestCase {
     // that way we can first sanity check a single value in a multivalued field is returned
     // correctly as a "List" of one element, *AND* then we could be testing that a (single valued)
     // pseudo-field correctly overrides that actual (real) value in a multivalued field (ie: not
-    // returning a an List)
+    // returning a List)
     //
     // (NOTE: not doing this yet due to how it will impact most other tests, many of which are
     // currently @AwaitsFix status)

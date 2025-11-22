@@ -714,7 +714,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
 
     public void verify(List<URI> newFilesCopiedOver) throws IOException {
-      // Verify zk files are reuploaded to a appropriate each time a backup is called
+      // Verify zk files are reuploaded to an appropriate each time a backup is called
       // TODO make a little change to zk files and make sure that backed up files match with zk data
       BackupId prevBackupId = new BackupId(Math.max(0, numBackup - 1));
 

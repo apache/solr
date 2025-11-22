@@ -746,7 +746,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   protected String stageToString(int stage) {
-    // This should probably be a enum, but that change should be its own ticket.
+    // This should probably be an enum, but that change should be its own ticket.
     switch (stage) {
       case STAGE_START:
         return "START";
