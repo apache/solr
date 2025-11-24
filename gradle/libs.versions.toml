@@ -51,7 +51,7 @@ asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
 asciidoctor-tabs = "1.0.0-beta.6"
 azure-core = "1.52.0"
-azure-core-http-netty = "1.15.4"
+azure-core-http-okhttp = "1.13.2"
 azure-identity = "1.12.0"
 azure-storage = "12.25.0"
 # @keep bats-assert (node) version used in packaging
@@ -309,7 +309,7 @@ apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", versio
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
 aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
 azure-core = { module = "com.azure:azure-core", version.ref = "azure-core" }
-azure-core-http-netty = { module = "com.azure:azure-core-http-netty", version.ref = "azure-core-http-netty" }
+azure-core-http-okhttp = { module = "com.azure:azure-core-http-okhttp", version.ref = "azure-core-http-okhttp" }
 azure-identity = { module = "com.azure:azure-identity", version.ref = "azure-identity" }
 azure-storage-blob = { module = "com.azure:azure-storage-blob", version.ref = "azure-storage" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }

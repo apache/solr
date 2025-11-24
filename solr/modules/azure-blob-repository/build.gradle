@@ -20,8 +20,6 @@ apply plugin: 'java-library'
 description = 'Azure Blob Storage Repository'
 
 dependencies {
-  implementation enforcedPlatform("io.netty:netty-bom:4.1.110.Final")
-  testImplementation enforcedPlatform("io.netty:netty-bom:4.1.110.Final")
   implementation platform(project(':platform'))
   api(project(':solr:core'))
   implementation project(':solr:solrj')
@@ -29,10 +27,19 @@ dependencies {
   implementation libs.apache.lucene.core
 
   // Azure Storage SDK dependencies
-  implementation libs.azure.storage.blob
-  implementation libs.azure.identity
-  implementation libs.azure.core
-  implementation 'com.azure:azure-storage-common:12.25.0'
+  implementation(libs.azure.storage.blob) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.identity) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation(libs.azure.core) {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
+  implementation libs.azure.core.http.okhttp
+  implementation('com.azure:azure-storage-common:12.25.0') {
+    exclude group: 'com.azure', module: 'azure-core-http-netty'
+  }
 
   implementation libs.google.guava
   implementation libs.slf4j.api
@@ -44,8 +51,9 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
   
+  // OkHttp for test client management
+  testImplementation libs.azure.core.http.okhttp
+  
   // Explicit transitive test dependencies for dependency analyzer
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.3'
-  testImplementation 'io.netty:netty-common:4.1.110.Final'
-  testImplementation 'io.netty:netty-transport:4.1.110.Final'
 }

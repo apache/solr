@@ -51,6 +51,14 @@ public class AzureBlobStorageClient {
 
   static final String BLOB_FILE_PATH_DELIMITER = "/";
 
+  /**
+   * Shared HttpClient instance for all Azure Blob Storage operations. OkHttp recommends reusing a
+   * single OkHttpClient instance as it maintains connection pools and thread pools that are
+   * expensive to create. This also prevents thread leaks in tests by using shared global threads.
+   */
+  private static final com.azure.core.http.HttpClient SHARED_HTTP_CLIENT =
+      new com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder().build();
+
   private final BlobContainerClient containerClient;
 
   AzureBlobStorageClient(
@@ -99,7 +107,8 @@ public class AzureBlobStorageClient {
       String clientSecret) {
 
     BlobServiceClientBuilder builder = new BlobServiceClientBuilder();
-    // Use default HTTP client (Netty) as provided by azure-core-http-netty
+    // Use shared OkHttp client for better resource management
+    builder.httpClient(SHARED_HTTP_CLIENT);
 
     if (StrUtils.isNotNullOrEmpty(connectionString)) {
       builder.connectionString(connectionString);
