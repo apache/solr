@@ -16,6 +16,7 @@
  */
 package org.apache.solr.azureblob;
 
+import com.google.common.annotations.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -50,6 +51,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
   static final String BLOB_SCHEME = "blob";
   private static final int CHUNK_SIZE = 16 * 1024 * 1024;
+  private static final int COPY_BUFFER_SIZE = 8192;
 
   private AzureBlobStorageClient client;
 
@@ -58,7 +60,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     super.init(args);
     AzureBlobBackupRepositoryConfig backupConfig = new AzureBlobBackupRepositoryConfig(this.config);
 
-    // If a client was already created, close it to avoid any resource leak
     if (client != null) {
       client.close();
     }
@@ -66,7 +67,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     this.client = backupConfig.buildClient();
   }
 
-  // Method to inject a mock client for testing
+  @VisibleForTesting
   public void setClient(AzureBlobStorageClient client) {
     this.client = client;
   }
@@ -175,7 +176,7 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     Objects.requireNonNull(files, "cannot delete with a null files collection");
 
     String basePath = getBlobPath(path);
-    // If a file path was passed instead of a directory, use its parent directory as base
+
     try {
       if (!client.isDirectory(basePath)) {
         int lastSlash = basePath.lastIndexOf('/');
@@ -309,7 +310,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
       log.debug("Copy index file from '{}' to '{}'", sourceFileName, blobPath);
     }
 
-    // Ensure destination parent directory exists
     String parentDir =
         blobPath.contains("/") ? blobPath.substring(0, blobPath.lastIndexOf('/') + 1) : "";
     try {
@@ -317,13 +317,12 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
         client.createDirectory(parentDir);
       }
     } catch (AzureBlobException e) {
-      // ignore failures here; write will surface real issues
+      // ignore; write will surface real issues
     }
 
     try (IndexInput input = sourceDir.openInput(sourceFileName, IOContext.DEFAULT);
         OutputStream output = client.pushStream(blobPath)) {
-      // Copy bytes from IndexInput to OutputStream
-      byte[] buffer = new byte[8192];
+      byte[] buffer = new byte[COPY_BUFFER_SIZE];
       long remaining = input.length();
       while (remaining > 0) {
         int toRead = (int) Math.min(buffer.length, remaining);
@@ -336,14 +335,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
     }
   }
 
-  /**
-   * Copy an index file from specified <code>sourceRepo</code> to the destination directory (i.e.
-   * restore).
-   *
-   * @param sourceDir The source URI hosting the file to be copied.
-   * @param dest The destination where the file should be copied.
-   * @throws IOException in case of errors.
-   */
   @Override
   public void copyIndexFileTo(
       URI sourceDir, String sourceFileName, Directory dest, String destFileName)
@@ -357,7 +348,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
     String basePath = getBlobPath(sourceDir);
     String blobPath;
-    // If sourceDir already points to the file, avoid duplicating the name
     if (basePath.endsWith("/" + sourceFileName)
         || basePath.equals(sourceFileName)
         || basePath.equals("/" + sourceFileName)) {
@@ -374,7 +364,6 @@ public class AzureBlobBackupRepository extends AbstractBackupRepository {
 
     try (InputStream inputStream = client.pullStream(blobPath);
         IndexOutput indexOutput = dest.createOutput(destFileName, IOContext.DEFAULT)) {
-      // Copy bytes from InputStream to IndexOutput
       byte[] buffer = new byte[CHUNK_SIZE];
       int len;
       while ((len = inputStream.read(buffer)) != -1) {

@@ -25,18 +25,15 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   public void testInstallShard() throws Exception {
     String shardPath = "install-shard-test/";
 
-    // Create shard structure
     client.createDirectory(shardPath);
     client.createDirectory(shardPath + "index/");
     client.createDirectory(shardPath + "conf/");
 
-    // Add shard files
     pushContent(shardPath + "index/segments_1", "Shard index segments");
     pushContent(shardPath + "index/_0.cfs", "Shard index file");
     pushContent(shardPath + "conf/solrconfig.xml", "Shard configuration");
     pushContent(shardPath + "conf/schema.xml", "Shard schema");
 
-    // Verify shard structure
     assertTrue("Shard directory should exist", client.pathExists(shardPath));
     assertTrue("Index directory should exist", client.pathExists(shardPath + "index/"));
     assertTrue("Conf directory should exist", client.pathExists(shardPath + "conf/"));
@@ -49,19 +46,15 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithMultipleIndexFiles() throws Exception {
     String shardPath = "multi-index-shard-test/";
+    String[] indexFiles = {"segments_1", "_0.cfs", "_0.cfe", "_0.si", "_1.cfs", "_1.cfe", "_1.si"};
 
-    // Create shard structure
     client.createDirectory(shardPath);
     client.createDirectory(shardPath + "index/");
-
-    // Add multiple index files
-    String[] indexFiles = {"segments_1", "_0.cfs", "_0.cfe", "_0.si", "_1.cfs", "_1.cfe", "_1.si"};
 
     for (String indexFile : indexFiles) {
       pushContent(shardPath + "index/" + indexFile, "Index file content: " + indexFile);
     }
 
-    // Verify all index files exist
     for (String indexFile : indexFiles) {
       assertTrue(
           "Index file should exist: " + indexFile,
@@ -72,21 +65,17 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithDataFiles() throws Exception {
     String shardPath = "data-shard-test/";
-
-    // Create shard structure
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "data/");
-
-    // Add data files
     String[] dataFiles = {
       "tlog.0000000000000000001", "tlog.0000000000000000002", "tlog.0000000000000000003"
     };
+
+    client.createDirectory(shardPath);
+    client.createDirectory(shardPath + "data/");
 
     for (String dataFile : dataFiles) {
       pushContent(shardPath + "data/" + dataFile, "Transaction log: " + dataFile);
     }
 
-    // Verify all data files exist
     for (String dataFile : dataFiles) {
       assertTrue(
           "Data file should exist: " + dataFile, client.pathExists(shardPath + "data/" + dataFile));
@@ -96,12 +85,6 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithConfiguration() throws Exception {
     String shardPath = "config-shard-test/";
-
-    // Create shard structure
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "conf/");
-
-    // Add configuration files
     String solrConfig =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
             + "<config>\n"
@@ -115,14 +98,15 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
             + "  <field name=\"id\" type=\"string\" indexed=\"true\" stored=\"true\" required=\"true\" multiValued=\"false\" />\n"
             + "</schema>";
 
+    client.createDirectory(shardPath);
+    client.createDirectory(shardPath + "conf/");
+
     pushContent(shardPath + "conf/solrconfig.xml", solrConfig);
     pushContent(shardPath + "conf/schema.xml", schema);
 
-    // Verify configuration files
     assertTrue("Solr config should exist", client.pathExists(shardPath + "conf/solrconfig.xml"));
     assertTrue("Schema should exist", client.pathExists(shardPath + "conf/schema.xml"));
 
-    // Verify content
     try (var input = client.pullStream(shardPath + "conf/solrconfig.xml")) {
       byte[] buffer = new byte[1024];
       int bytesRead = input.read(buffer);
@@ -136,20 +120,16 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithLargeIndex() throws Exception {
     String shardPath = "large-index-shard-test/";
-
-    // Create shard structure
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-
-    // Create large index file
     StringBuilder largeContent = new StringBuilder();
     for (int i = 0; i < 50000; i++) {
       largeContent.append("Index data line ").append(i).append("\n");
     }
 
+    client.createDirectory(shardPath);
+    client.createDirectory(shardPath + "index/");
+
     pushContent(shardPath + "index/large-index.cfs", largeContent.toString());
 
-    // Verify large index file
     assertTrue(
         "Large index file should exist", client.pathExists(shardPath + "index/large-index.cfs"));
     assertEquals(
@@ -161,20 +141,16 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithBinaryIndex() throws Exception {
     String shardPath = "binary-index-shard-test/";
-
-    // Create shard structure
-    client.createDirectory(shardPath);
-    client.createDirectory(shardPath + "index/");
-
-    // Create binary index file
     byte[] binaryData = new byte[2048];
     for (int i = 0; i < binaryData.length; i++) {
       binaryData[i] = (byte) (i % 256);
     }
 
+    client.createDirectory(shardPath);
+    client.createDirectory(shardPath + "index/");
+
     pushContent(shardPath + "index/binary-index.cfs", binaryData);
 
-    // Verify binary index file
     assertTrue(
         "Binary index file should exist", client.pathExists(shardPath + "index/binary-index.cfs"));
     assertEquals(
@@ -187,27 +163,22 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   public void testInstallShardWithNestedStructure() throws Exception {
     String shardPath = "nested-shard-test/";
 
-    // Create nested shard structure
     client.createDirectory(shardPath);
     client.createDirectory(shardPath + "index/");
     client.createDirectory(shardPath + "conf/");
     client.createDirectory(shardPath + "data/");
     client.createDirectory(shardPath + "logs/");
 
-    // Add files at different levels
     pushContent(shardPath + "index/segments_1", "Segments file");
     pushContent(shardPath + "conf/solrconfig.xml", "Config file");
     pushContent(shardPath + "data/tlog.1", "Transaction log");
     pushContent(shardPath + "logs/solr.log", "Log file");
 
-    // Verify nested structure
     assertTrue("Root shard should exist", client.pathExists(shardPath));
     assertTrue("Index directory should exist", client.pathExists(shardPath + "index/"));
     assertTrue("Conf directory should exist", client.pathExists(shardPath + "conf/"));
     assertTrue("Data directory should exist", client.pathExists(shardPath + "data/"));
     assertTrue("Logs directory should exist", client.pathExists(shardPath + "logs/"));
-
-    // Verify files exist
     assertTrue("Segments file should exist", client.pathExists(shardPath + "index/segments_1"));
     assertTrue("Config file should exist", client.pathExists(shardPath + "conf/solrconfig.xml"));
     assertTrue("Transaction log should exist", client.pathExists(shardPath + "data/tlog.1"));
@@ -217,11 +188,6 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   @Test
   public void testInstallShardWithMetadata() throws Exception {
     String shardPath = "metadata-shard-test/";
-
-    // Create shard structure
-    client.createDirectory(shardPath);
-
-    // Add metadata files
     String metadata =
         "{\n"
             + "  \"shardId\": \"shard1\",\n"
@@ -230,14 +196,14 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
             + "  \"timestamp\": \"2023-01-01T00:00:00Z\"\n"
             + "}";
 
+    client.createDirectory(shardPath);
+
     pushContent(shardPath + "shard-metadata.json", metadata);
     pushContent(shardPath + "index/segments_1", "Index segments");
 
-    // Verify metadata
     assertTrue("Metadata file should exist", client.pathExists(shardPath + "shard-metadata.json"));
     assertTrue("Index file should exist", client.pathExists(shardPath + "index/segments_1"));
 
-    // Verify metadata content
     try (var input = client.pullStream(shardPath + "shard-metadata.json")) {
       byte[] buffer = new byte[1024];
       int bytesRead = input.read(buffer);
@@ -251,22 +217,17 @@ public class AzureBlobInstallShardTest extends AbstractAzureBlobClientTest {
   public void testInstallShardCleanup() throws Exception {
     String shardPath = "cleanup-shard-test/";
 
-    // Create shard structure
     client.createDirectory(shardPath);
     client.createDirectory(shardPath + "index/");
     client.createDirectory(shardPath + "conf/");
 
-    // Add shard files
     pushContent(shardPath + "index/segments_1", "Index segments");
     pushContent(shardPath + "conf/solrconfig.xml", "Config file");
 
-    // Verify shard exists
     assertTrue("Shard should exist", client.pathExists(shardPath));
 
-    // Cleanup shard
     client.deleteDirectory(shardPath);
 
-    // Verify shard is cleaned up
     assertFalse("Shard should not exist after cleanup", client.pathExists(shardPath));
     assertFalse(
         "Index directory should not exist after cleanup", client.pathExists(shardPath + "index/"));

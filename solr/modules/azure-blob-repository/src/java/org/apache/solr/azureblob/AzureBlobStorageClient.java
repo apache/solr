@@ -50,12 +50,11 @@ public class AzureBlobStorageClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String BLOB_FILE_PATH_DELIMITER = "/";
+  private static final int HTTP_NOT_FOUND = 404;
+  private static final int HTTP_CONFLICT = 409;
+  private static final int SKIP_BUFFER_SIZE = 8192;
+  private static final int DELETE_BATCH_SIZE = 1000;
 
-  /**
-   * Shared HttpClient instance for all Azure Blob Storage operations. OkHttp recommends reusing a
-   * single OkHttpClient instance as it maintains connection pools and thread pools that are
-   * expensive to create. This also prevents thread leaks in tests by using shared global threads.
-   */
   private static final com.azure.core.http.HttpClient SHARED_HTTP_CLIENT =
       new com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder().build();
 
@@ -90,7 +89,7 @@ public class AzureBlobStorageClient {
     try {
       containerClient.create();
     } catch (BlobStorageException e) {
-      if (e.getStatusCode() != 409) {
+      if (e.getStatusCode() != HTTP_CONFLICT) {
         throw e;
       }
     }
@@ -107,7 +106,6 @@ public class AzureBlobStorageClient {
       String clientSecret) {
 
     BlobServiceClientBuilder builder = new BlobServiceClientBuilder();
-    // Use shared OkHttp client for better resource management
     builder.httpClient(SHARED_HTTP_CLIENT);
 
     if (StrUtils.isNotNullOrEmpty(connectionString)) {
@@ -120,7 +118,6 @@ public class AzureBlobStorageClient {
       } else if (StrUtils.isNotNullOrEmpty(sasToken)) {
         builder.sasToken(sasToken);
       } else {
-        // Use default Azure credential provider chain
         TokenCredential credential = new DefaultAzureCredentialBuilder().tenantId(tenantId).build();
         builder.credential(credential);
       }
@@ -131,20 +128,16 @@ public class AzureBlobStorageClient {
     return builder.buildClient();
   }
 
-  /** Create a directory in Blob Storage, if it does not already exist. */
   void createDirectory(String path) throws AzureBlobException {
     String sanitizedDirPath = sanitizedDirPath(path);
 
-    // Only create the directory if it does not already exist
     if (!pathExists(sanitizedDirPath)) {
       String parent = getParentDirectory(sanitizedDirPath);
-      // Stop at root
       if (!parent.isEmpty() && !parent.equals(BLOB_FILE_PATH_DELIMITER)) {
         createDirectory(parent);
       }
 
       try {
-        // Create empty blob and mark it as a directory via metadata
         BlobClient blobClient = containerClient.getBlobClient(sanitizedDirPath);
         blobClient.upload(new ByteArrayInputStream(new byte[0]), 0, true);
         java.util.Map<String, String> metadata = new java.util.HashMap<>();
@@ -156,7 +149,6 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Delete files from Blob Storage. Missing files are ignored (idempotent delete). */
   void delete(Collection<String> paths) throws AzureBlobException {
     Set<String> entries = new HashSet<>();
     for (String path : paths) {
@@ -165,11 +157,9 @@ public class AzureBlobStorageClient {
     deleteBlobs(entries);
   }
 
-  /** Delete directory, all the files and subdirectories from Blob Storage. */
   void deleteDirectory(String path) throws AzureBlobException {
     path = sanitizedDirPath(path);
 
-    // Get all the files and subdirectories
     Set<String> entries = listAll(path);
     if (pathExists(path)) {
       entries.add(path);
@@ -178,14 +168,13 @@ public class AzureBlobStorageClient {
     deleteBlobs(entries);
   }
 
-  /** List all the files and subdirectories directly under given path. */
   String[] listDir(String path) throws AzureBlobException {
     path = sanitizedDirPath(path);
 
     try {
       ListBlobsOptions options = new ListBlobsOptions().setPrefix(path).setMaxResultsPerPage(1000);
 
-      final String finalPath = path; // Make path effectively final for lambda
+      final String finalPath = path;
       return containerClient.listBlobs(options, null).stream()
           .map(BlobItem::getName)
           .filter(s -> s.startsWith(finalPath))
@@ -202,11 +191,9 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Check if path exists. */
   boolean pathExists(String path) throws AzureBlobException {
     final String blobPath = sanitizedPath(path);
 
-    // for root return true
     if (blobPath.isEmpty() || BLOB_FILE_PATH_DELIMITER.equals(blobPath)) {
       return true;
     }
@@ -219,27 +206,22 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Check if path is directory. */
   boolean isDirectory(String path) throws AzureBlobException {
     final String dirPrefix = sanitizedDirPath(path);
 
     try {
-      // First, if there are any child blobs under this prefix, it's a directory
       ListBlobsOptions options =
           new ListBlobsOptions().setPrefix(dirPrefix).setMaxResultsPerPage(1);
       if (containerClient.listBlobs(options, null).iterator().hasNext()) {
         return true;
       }
 
-      // Otherwise, check if an empty blob exactly named with the trailing slash exists
       BlobClient markerClient = containerClient.getBlobClient(dirPrefix);
       if (markerClient.exists()) {
         long size = markerClient.getProperties().getBlobSize();
         if (size == 0) {
-          // zero-byte marker with name ending in '/' is a directory
           return true;
         }
-        // If it's a non-zero blob at a name with '/', treat conservatively as file
         java.util.Map<String, String> md = markerClient.getProperties().getMetadata();
         return md != null && md.containsKey("hdi_isfolder");
       }
@@ -250,7 +232,6 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Get length of file in bytes. */
   long length(String path) throws AzureBlobException {
     String blobPath = sanitizedFilePath(path);
     try {
@@ -261,13 +242,16 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Open a new {@link InputStream} to file for read. */
   InputStream pullStream(String path) throws AzureBlobException {
     final String blobPath = sanitizedFilePath(path);
 
     try {
       BlobClient blobClient = containerClient.getBlobClient(blobPath);
       final long contentLength = blobClient.getProperties().getBlobSize();
+
+      if (contentLength == 0) {
+        return new ByteArrayInputStream(new byte[0]);
+      }
 
       InputStream initial = new IdempotentCloseInputStream(blobClient.openInputStream());
 
@@ -282,7 +266,6 @@ public class AzureBlobStorageClient {
                   contentLength > 0 ? Math.max(0, contentLength - bytesRead) : Long.MAX_VALUE;
               return pullRangeStream(path, bytesRead, remaining);
             } catch (AzureBlobException e) {
-              // ResumableInputStream supplier cannot throw checked exceptions
               throw new RuntimeException(e);
             }
           });
@@ -291,7 +274,6 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Open a ranged {@link InputStream} to file for read from offset for length bytes. */
   InputStream pullRangeStream(String path, long offset, long length) throws AzureBlobException {
     final String blobPath = sanitizedFilePath(path);
     try {
@@ -304,7 +286,6 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Wrapper that makes close() idempotent (second close is a no-op). */
   private static final class IdempotentCloseInputStream extends FilterInputStream {
     private boolean closed;
 
@@ -370,7 +351,7 @@ public class AzureBlobStorageClient {
         return 0L;
       }
       long remaining = n;
-      byte[] discard = new byte[8192];
+      byte[] discard = new byte[SKIP_BUFFER_SIZE];
       try {
         while (remaining > 0) {
           int toRead = (int) Math.min(discard.length, remaining);
@@ -382,7 +363,6 @@ public class AzureBlobStorageClient {
         }
         return n - remaining;
       } catch (RuntimeException re) {
-        // Normalize runtime issues from Azure's stream into IOExceptions so upper layers can resume
         throw new java.io.IOException(re);
       }
     }
@@ -393,12 +373,10 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Open a new {@link OutputStream} to file for write. */
   OutputStream pushStream(String path) throws AzureBlobException {
     path = sanitizedFilePath(path);
 
     if (!parentDirectoryExist(path)) {
-      // Auto-create missing parent directory to mirror Azure's virtual directory semantics
       String parentDirectory = getParentDirectory(path);
       if (!parentDirectory.isEmpty() && !parentDirectory.equals(BLOB_FILE_PATH_DELIMITER)) {
         createDirectory(parentDirectory);
@@ -413,18 +391,14 @@ public class AzureBlobStorageClient {
     }
   }
 
-  /** Close the client. */
-  void close() {
-    // Azure SDK clients don't need explicit closing
-  }
+  void close() {}
 
   @VisibleForTesting
   void deleteContainerForTests() {
     try {
       containerClient.delete();
     } catch (BlobStorageException e) {
-      // Ignore not found
-      if (e.getStatusCode() != 404) {
+      if (e.getStatusCode() != HTTP_NOT_FOUND) {
         throw e;
       }
     }
@@ -432,7 +406,7 @@ public class AzureBlobStorageClient {
 
   private Collection<String> deleteBlobs(Collection<String> paths) throws AzureBlobException {
     try {
-      return deleteBlobs(paths, 1000); // Azure supports batch delete
+      return deleteBlobs(paths, DELETE_BATCH_SIZE);
     } catch (BlobStorageException e) {
       throw handleBlobException(e);
     }
@@ -451,10 +425,10 @@ public class AzureBlobStorageClient {
           deletedPaths.add(path);
         }
       } catch (BlobStorageException e) {
-        if (e.getStatusCode() == 404) {
-          // ignore missing
+        if (e.getStatusCode() == HTTP_NOT_FOUND) {
           continue;
         }
+
         throw new AzureBlobException("Could not delete blob with path: " + path, e);
       }
     }
@@ -502,17 +476,15 @@ public class AzureBlobStorageClient {
         : "";
   }
 
-  /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
   String sanitizedPath(String path) throws AzureBlobException {
     String sanitizedPath = path.trim();
-    // Remove all leading slashes so that blob names never start with '/'
     while (sanitizedPath.startsWith(BLOB_FILE_PATH_DELIMITER)) {
       sanitizedPath = sanitizedPath.substring(1).trim();
     }
+
     return sanitizedPath;
   }
 
-  /** Ensures file path adheres to some rules */
   String sanitizedFilePath(String path) throws AzureBlobException {
     String sanitizedPath = sanitizedPath(path);
 
@@ -527,7 +499,6 @@ public class AzureBlobStorageClient {
     return sanitizedPath;
   }
 
-  /** Ensures directory path adheres to some rules */
   String sanitizedDirPath(String path) throws AzureBlobException {
     String sanitizedPath = sanitizedPath(path);
 
@@ -538,7 +509,6 @@ public class AzureBlobStorageClient {
     return sanitizedPath;
   }
 
-  /** Handle Azure Blob Storage exceptions */
   static AzureBlobException handleBlobException(BlobStorageException e) {
     String errMessage =
         String.format(
@@ -550,7 +520,7 @@ public class AzureBlobStorageClient {
 
     log.error(errMessage);
 
-    if (e.getStatusCode() == 404) {
+    if (e.getStatusCode() == HTTP_NOT_FOUND) {
       return new AzureBlobNotFoundException(errMessage, e);
     } else {
       return new AzureBlobException(errMessage, e);

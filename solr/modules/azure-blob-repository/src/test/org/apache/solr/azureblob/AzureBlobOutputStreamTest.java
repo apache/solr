@@ -33,7 +33,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       output.write(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Verify content was written
     assertTrue("File should exist", client.pathExists(path));
 
     try (InputStream input = client.pullStream(path)) {
@@ -55,7 +54,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       }
     }
 
-    // Verify content was written
     assertTrue("File should exist", client.pathExists(path));
 
     try (InputStream input = client.pullStream(path)) {
@@ -76,7 +74,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       output.write(contentBytes);
     }
 
-    // Verify content was written
     assertTrue("File should exist", client.pathExists(path));
 
     try (InputStream input = client.pullStream(path)) {
@@ -99,7 +96,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       output.write(fullBytes, offset, partialContent.length());
     }
 
-    // Verify content was written
     assertTrue("File should exist", client.pathExists(path));
 
     try (InputStream input = client.pullStream(path)) {
@@ -118,8 +114,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     try (OutputStream output = client.pushStream(path)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
       output.flush();
-
-      // Verify content is available after flush
       assertTrue("File should exist after flush", client.pathExists(path));
     }
   }
@@ -133,23 +127,11 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     output.write(content.getBytes(StandardCharsets.UTF_8));
     output.close();
 
-    // Verify content was written
     assertTrue("File should exist after close", client.pathExists(path));
 
-    // Test that operations on closed stream throw exception
-    try {
-      output.write(1);
-      fail("Should throw IOException when writing to closed stream");
-    } catch (IOException e) {
-      // Expected
-    }
-
-    try {
-      output.flush();
-      fail("Should throw IOException when flushing closed stream");
-    } catch (IOException e) {
-      // Expected
-    }
+    OutputStream closedOutput = output;
+    expectThrows(IOException.class, () -> closedOutput.write(1));
+    expectThrows(IOException.class, () -> closedOutput.flush());
   }
 
   @Test
@@ -160,9 +142,8 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     OutputStream output = client.pushStream(path);
     output.write(content.getBytes(StandardCharsets.UTF_8));
     output.close();
-    output.close(); // Should not throw exception
+    output.close();
 
-    // Verify content was written
     assertTrue("File should exist", client.pathExists(path));
   }
 
@@ -171,7 +152,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     String path = "output-stream-large-test.txt";
     StringBuilder contentBuilder = new StringBuilder();
 
-    // Create large content (2MB)
     for (int i = 0; i < 20000; i++) {
       contentBuilder.append("This is line ").append(i).append(" of the large file.\n");
     }
@@ -181,11 +161,9 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       output.write(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Verify content was written
     assertTrue("Large file should exist", client.pathExists(path));
     assertEquals("File length should match", content.length(), client.length(path));
 
-    // Verify content integrity
     try (InputStream input = client.pullStream(path)) {
       byte[] buffer = new byte[8192];
       StringBuilder readContentBuilder = new StringBuilder();
@@ -204,7 +182,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     byte[] contentBytes = content.getBytes(StandardCharsets.UTF_8);
 
     try (OutputStream output = client.pushStream(path)) {
-      // Write in small chunks
       int chunkSize = 5;
       for (int i = 0; i < contentBytes.length; i += chunkSize) {
         int remaining = Math.min(chunkSize, contentBytes.length - i);
@@ -212,7 +189,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       }
     }
 
-    // Verify content was written correctly
     assertTrue("File should exist", client.pathExists(path));
 
     try (InputStream input = client.pullStream(path)) {
@@ -228,7 +204,6 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
     String path = "output-stream-binary-test.bin";
     byte[] binaryData = new byte[1024];
 
-    // Fill with some binary data
     for (int i = 0; i < binaryData.length; i++) {
       binaryData[i] = (byte) (i % 256);
     }
@@ -237,11 +212,9 @@ public class AzureBlobOutputStreamTest extends AbstractAzureBlobClientTest {
       output.write(binaryData);
     }
 
-    // Verify binary data was written
     assertTrue("Binary file should exist", client.pathExists(path));
     assertEquals("Binary file length should match", binaryData.length, client.length(path));
 
-    // Verify binary data integrity
     try (InputStream input = client.pullStream(path)) {
       byte[] readData = new byte[binaryData.length];
       int bytesRead = input.read(readData);

@@ -51,26 +51,24 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     return URI.create(BLOB_SCHEME + ":/");
   }
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
     NamedList<Object> config = new NamedList<>();
-    config.add("blob.container.name", CONTAINER_NAME);
-    config.add("blob.connection.string", getConnectionString());
+    config.add("azure.blob.container.name", CONTAINER_NAME);
+    config.add("azure.blob.connection.string", getConnectionString());
 
-    // Use a repository that avoids creating its own Azure client (which leaks Netty threads)
-    // and instead inject the pre-configured client from AbstractBlobClientTest.
     repository =
         new AzureBlobBackupRepository() {
           @Override
           public void init(NamedList<?> args) {
-            // Only capture config; avoid building a new client inside init
             this.config = args;
-            // Inject the already-initialized client that uses isolated Netty resources
             setClient(AzureBlobBackupRepositoryTest.this.client);
           }
         };
+
     repository.init(config);
   }
 
@@ -104,12 +102,10 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     URI fileUri = getBaseUri().resolve("read-write-test.txt");
     String originalContent = "Test content for read/write operations";
 
-    // Write content
     try (OutputStream output = repository.createOutput(fileUri)) {
       output.write(originalContent.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Read content
     try (IndexInput input =
         repository.openInput(getBaseUri(), "read-write-test.txt", IOContext.DEFAULT)) {
       byte[] buffer = new byte[1024];
@@ -124,14 +120,12 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     URI fileUri = getBaseUri().resolve("delete-test.txt");
     String content = "File to be deleted";
 
-    // Create file
     try (OutputStream output = repository.createOutput(fileUri)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
     }
 
     assertTrue("File should exist before deletion", repository.exists(fileUri));
 
-    // Delete file
     repository.delete(fileUri, java.util.Arrays.asList("delete-test.txt"));
 
     assertFalse("File should not exist after deletion", repository.exists(fileUri));
@@ -142,7 +136,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     URI dirUri = getBaseUri().resolve("delete-dir/");
     URI fileUri = dirUri.resolve("nested-file.txt");
 
-    // Create directory and file
     repository.createDirectory(dirUri);
     try (OutputStream output = repository.createOutput(fileUri)) {
       output.write("Nested file content".getBytes(StandardCharsets.UTF_8));
@@ -151,7 +144,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     assertTrue("Directory should exist", repository.exists(dirUri));
     assertTrue("File should exist", repository.exists(fileUri));
 
-    // Delete directory
     repository.deleteDirectory(dirUri);
 
     assertFalse("Directory should not exist after deletion", repository.exists(dirUri));
@@ -163,7 +155,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     URI dirUri = getBaseUri().resolve("list-test/");
     repository.createDirectory(dirUri);
 
-    // Create some files
     String[] fileNames = {"file1.txt", "file2.txt", "subdir/"};
     for (String fileName : fileNames) {
       URI fileUri = dirUri.resolve(fileName);
@@ -193,7 +184,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testCopyFileFromDirectory() throws IOException {
-    // Create a temporary directory with a file
     Path tempDir = Files.createTempDirectory("blob-test");
     Path tempFile = tempDir.resolve("source-file.txt");
     String content = "Source file content";
@@ -224,7 +214,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testCopyFileToDirectory() throws IOException {
-    // Create a file in blob storage
     URI sourceUri = getBaseUri().resolve("source-file.txt");
     String content = "Source file content";
 
@@ -232,7 +221,6 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
       output.write(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Create a temporary directory
     Path tempDir = Files.createTempDirectory("blob-test");
 
     try {
@@ -257,12 +245,10 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     URI fileUri = getBaseUri().resolve("index-test.txt");
     String content = "Test content for index input/output";
 
-    // Write using IndexOutput
     try (OutputStream output = repository.createOutput(fileUri)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
     }
 
-    // Read using IndexInput
     try (IndexInput input =
         repository.openInput(getBaseUri(), "index-test.txt", IOContext.DEFAULT)) {
       byte[] buffer = new byte[(int) input.length()];
@@ -274,17 +260,14 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
 
   @Test
   public void testChecksumVerification() throws IOException {
-    // Create a file with checksum
     URI fileUri = getBaseUri().resolve("checksum-test.txt");
     String content = "Test content for checksum verification";
 
     try (OutputStream output = repository.createOutput(fileUri)) {
       output.write(content.getBytes(StandardCharsets.UTF_8));
-      // Write a simple footer for testing
       output.write("FOOTER".getBytes(StandardCharsets.UTF_8));
     }
 
-    // Verify content (skip checksum verification for this simple test)
     try (IndexInput input =
         repository.openInput(getBaseUri(), "checksum-test.txt", IOContext.DEFAULT)) {
       byte[] buffer = new byte[1024];
@@ -294,17 +277,10 @@ public class AzureBlobBackupRepositoryTest extends AbstractAzureBlobClientTest {
     }
   }
 
-  /**
-   * Provide a base {@link BackupRepository} configuration for use by any tests that call {@link
-   * BackupRepository#init(NamedList)} explicitly.
-   *
-   * <p>Useful for setting configuration properties required for specific BackupRepository
-   * implementations.
-   */
   protected NamedList<Object> getBaseBackupRepositoryConfiguration() {
     NamedList<Object> config = new NamedList<>();
-    config.add("blob.container.name", CONTAINER_NAME);
-    config.add("blob.connection.string", getConnectionString());
+    config.add("azure.blob.container.name", CONTAINER_NAME);
+    config.add("azure.blob.connection.string", getConnectionString());
     return config;
   }
 

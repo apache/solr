@@ -383,7 +383,7 @@ If the status is anything other than "success", an error message will explain wh
 
 Solr provides a repository abstraction to allow users to backup and restore their data to a variety of different storage systems.
 For example, a Solr cluster running on a local filesystem (e.g., EXT3) can store backup data on the same disk, on a remote network-mounted drive, or in some popular "cloud storage" providers, depending on the 'repository' implementation chosen.
-Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `GCSBackupRepository`, `S3BackupRepository`, and `BlobBackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
+Solr offers multiple different repository implementations out of the box (`LocalFileSystemRepository`, `GCSBackupRepository`, `S3BackupRepository`, and `AzureBlobBackupRepository`), and allows users to create plugins for their own storage systems as needed. It is also possible to create a `DelegatingBackupRepository` that delegates to another `BackupRepository` and adds or modifies some behavior on top of it.
 
 Users can define any number of repositories in their `solr.xml` file.
 The backup and restore APIs described above allow users to select which of these definitions they want to use at runtime via the `repository` parameter.
@@ -795,21 +795,15 @@ https://docs.aws.amazon.com/sdkref/latest/guide/settings-global.html[These optio
 ** RetryMode (`LEGACY`, `STANDARD`, `ADAPTIVE`)
 ** Max Attempts
 
-=== BlobBackupRepository
+=== AzureBlobBackupRepository
 
 Stores and retrieves backup files in a Microsoft Azure Blob Storage container.
 
 This is provided via the `azure-blob-repository` xref:configuration-guide:solr-modules.adoc[Solr Module] that needs to be enabled before use.
 
-AzureBlobBackupRepository supports four authentication methods, each suitable for different deployment scenarios:
+This plugin supports multiple authentication methods: connection strings, account keys, SAS tokens, and Azure Identity (Managed Identity, Service Principal, Azure CLI).
+For Azure Identity, ensure the identity has the "Storage Blob Data Contributor" role on the storage account.
 
-==== Authentication Methods
-
-*Connection String* (recommended for development/testing)::
-+
-The simplest authentication method using a complete Azure Storage connection string.
-Ideal for local development with Azurite emulator or quick testing.
-+
 [source,xml]
 ----
 <backup>
@@ -820,90 +814,7 @@ Ideal for local development with Azurite emulator or quick testing.
 </backup>
 ----
 
-*Account Name + Access Key* (recommended for simple production)::
-+
-Separates the account name from the access key, providing cleaner configuration and easier credential rotation.
-+
-[source,xml]
-----
-<backup>
-  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.account.name">myaccount</str>
-    <str name="azure.blob.account.key">mykey</str>
-  </repository>
-</backup>
-----
-
-*Shared Access Signature (SAS) Token* (recommended for production with time-limited access)::
-+
-Provides time-limited, permission-scoped access without exposing account keys.
-SAS tokens must include service, container, and object permissions (`srt=sco`) with read, write, delete, list, add, and create permissions (`sp=rwdlac`).
-+
-The container must be pre-created before using a SAS token.
-+
-[source,xml]
-----
-<backup>
-  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.account.name">myaccount</str>
-    <str name="azure.blob.sas.token">sv=2024-11-04&amp;ss=b&amp;srt=sco&amp;sp=rwdlacytfx&amp;se=2025-12-31T23:59:59Z&amp;st=2025-01-01T00:00:00Z&amp;spr=https&amp;sig=...</str>
-  </repository>
-</backup>
-----
-+
-NOTE: SAS tokens in XML must have `&` characters escaped as `&amp;`.
-
-*Azure Identity* (recommended for production on Azure infrastructure)::
-+
-Uses Azure Active Directory (Azure Entra ID) authentication, supporting Managed Identities, Service Principals, and Azure CLI credentials.
-This is the most secure option for production deployments running on Azure infrastructure.
-+
-For *Managed Identity* (for VMs, AKS, App Service):
-+
-[source,xml]
-----
-<backup>
-  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.endpoint">https://myaccount.blob.core.windows.net</str>
-  </repository>
-</backup>
-----
-+
-For *Service Principal*:
-+
-[source,xml]
-----
-<backup>
-  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.endpoint">https://myaccount.blob.core.windows.net</str>
-    <str name="azure.blob.tenant.id">your-tenant-id</str>
-    <str name="azure.blob.client.id">your-client-id</str>
-    <str name="azure.blob.client.secret">your-client-secret</str>
-  </repository>
-</backup>
-----
-+
-For *Azure CLI* (development only):
-+
-[source,xml]
-----
-<backup>
-  <repository name="azure_blob" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.endpoint">https://myaccount.blob.core.windows.net</str>
-  </repository>
-</backup>
-----
-+
-NOTE: When using Azure Identity, the identity must have the "Storage Blob Data Contributor" role assigned to the storage account.
-
-==== Configuration Options
-
-AzureBlobBackupRepository accepts the following configuration options:
+AzureBlobBackupRepository accepts the following options for configuration:
 
 `azure.blob.container.name`::
 +
@@ -912,8 +823,7 @@ AzureBlobBackupRepository accepts the following configuration options:
 |Required |Default: none
 |===
 +
-The name of the Azure Blob Storage container to use for backups.
-The container must exist before performing backup operations.
+The name of the Azure Blob Storage container. The container must exist before performing backup operations.
 
 `azure.blob.connection.string`::
 +
@@ -922,9 +832,7 @@ The container must exist before performing backup operations.
 |Optional |Default: none
 |===
 +
-Complete Azure Storage connection string including account name, key, and endpoints.
-Required for Connection String authentication.
-Mutually exclusive with other authentication methods.
+Complete Azure Storage connection string. Mutually exclusive with other authentication methods.
 
 `azure.blob.account.name`::
 +
@@ -933,8 +841,7 @@ Mutually exclusive with other authentication methods.
 |Optional |Default: none
 |===
 +
-Azure Storage account name.
-Required for Account Name + Key and SAS Token authentication methods.
+Azure Storage account name. Used with account key or SAS token authentication.
 
 `azure.blob.account.key`::
 +
@@ -943,9 +850,7 @@ Required for Account Name + Key and SAS Token authentication methods.
 |Optional |Default: none
 |===
 +
-Azure Storage account access key.
-Required for Account Name + Key authentication.
-Mutually exclusive with SAS token and Azure Identity.
+Azure Storage account access key. Mutually exclusive with SAS token and Azure Identity.
 
 `azure.blob.sas.token`::
 +
@@ -954,10 +859,8 @@ Mutually exclusive with SAS token and Azure Identity.
 |Optional |Default: none
 |===
 +
-Shared Access Signature token for time-limited, permission-scoped access.
-Must include `srt=sco` (service, container, object) and `sp=rwdlac` permissions.
-The `&` characters must be XML-escaped as `&amp;` in `solr.xml`.
-Mutually exclusive with account key and Azure Identity.
+SAS token for time-limited access. Must include `srt=sco` and `sp=rwdlac` permissions.
+The `&` characters must be XML-escaped as `&amp;`.
 
 `azure.blob.endpoint`::
 +
@@ -966,9 +869,8 @@ Mutually exclusive with account key and Azure Identity.
 |Optional |Default: none
 |===
 +
-Azure Blob Storage endpoint URL in the format `https://<account>.blob.core.windows.net`.
+Azure Blob Storage endpoint URL (e.g., `https://myaccount.blob.core.windows.net`).
 Required for Azure Identity authentication.
-Can be used with other methods to override default endpoint.
 
 `azure.blob.tenant.id`::
 +
@@ -977,8 +879,7 @@ Can be used with other methods to override default endpoint.
 |Optional |Default: none
 |===
 +
-Azure Active Directory tenant ID.
-Required for Service Principal authentication.
+Azure AD tenant ID for Service Principal authentication.
 
 `azure.blob.client.id`::
 +
@@ -987,8 +888,7 @@ Required for Service Principal authentication.
 |Optional |Default: none
 |===
 +
-Azure Active Directory application (client) ID.
-Required for Service Principal authentication.
+Azure AD application (client) ID for Service Principal authentication.
 
 `azure.blob.client.secret`::
 +
@@ -997,8 +897,7 @@ Required for Service Principal authentication.
 |Optional |Default: none
 |===
 +
-Azure Active Directory application (client) secret.
-Required for Service Principal authentication.
+Azure AD application secret for Service Principal authentication.
 
 `location`::
 +
@@ -1007,40 +906,4 @@ Required for Service Principal authentication.
 |Optional |Default: none
 |===
 +
-A default path prefix within the container for backup storage.
-Used as a fallback when users don't provide a `location` parameter in their Backup or Restore API commands.
-Can be `/` to use the root of the container.
-
-==== Local Development with Azurite
-
-For local development and testing, BlobBackupRepository works with the Azurite emulator, which provides a local Azure Storage-compatible environment.
-
-Install and start Azurite:
-[source,bash]
-----
-npm install -g azurite
-azurite --blobPort 10000
-----
-
-Configure `solr.xml` with Azurite connection string:
-[source,xml]
-----
-<backup>
-  <repository name="azure_local" class="org.apache.solr.azureblob.AzureBlobBackupRepository" default="false">
-    <str name="azure.blob.container.name">solr-backup</str>
-    <str name="azure.blob.connection.string">DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;</str>
-  </repository>
-</backup>
-----
-
-==== Production Deployment Best Practices
-
-* *Use Azure Identity (Managed Identity)* for production deployments on Azure VMs, AKS, or App Service
-* *Use SAS tokens* for production deployments outside Azure or when time-limited access is required
-* *Avoid Connection String and Account Keys* in production as they provide unlimited access
-* *Enable soft delete* on your Azure Storage account for data protection
-* *Use lifecycle management* to automatically archive or delete old backups
-* *Monitor backup operations* through Azure Storage metrics and logs
-* *Test restore operations* regularly to ensure backup integrity
-
-For more detailed information on Azure authentication setup, SAS token generation, and troubleshooting, refer to the module documentation in `solr/modules/azure-blob-repository/README.md`.
+Default path prefix within the container for backup storage.

@@ -25,8 +25,9 @@ import org.apache.lucene.store.IndexInput;
 
 class AzureBlobIndexInput extends IndexInput {
 
-  private static final int DEFAULT_PAGE_SIZE = 512 * 1024; // 512 KB
-  private static final int MAX_CACHED_PAGES = 128; // ~64 MB at 512 KB pages
+  private static final int MIN_PAGE_SIZE = 4 * 1024;
+  private static final int DEFAULT_PAGE_SIZE = 512 * 1024;
+  private static final int MAX_CACHED_PAGES = 128;
 
   private final String path;
   private final AzureBlobStorageClient client;
@@ -47,7 +48,7 @@ class AzureBlobIndexInput extends IndexInput {
     this.path = path;
     this.client = client;
     this.length = length;
-    this.pageSize = Math.max(4 * 1024, pageSize);
+    this.pageSize = Math.max(MIN_PAGE_SIZE, pageSize);
     this.cache = new LruPageCache(maxCachedPages);
   }
 

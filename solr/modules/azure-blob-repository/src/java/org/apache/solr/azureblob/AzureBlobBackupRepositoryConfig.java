@@ -19,7 +19,6 @@ package org.apache.solr.azureblob;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 
-/** Class representing the {@code backup} Blob Storage config bundle specified in solr.xml. */
 public class AzureBlobBackupRepositoryConfig {
 
   public static final String CONTAINER_NAME = "azure.blob.container.name";
@@ -54,7 +53,6 @@ public class AzureBlobBackupRepositoryConfig {
     clientSecret = getStringConfig(config, CLIENT_SECRET);
   }
 
-  /** Construct a {@link AzureBlobStorageClient} from the provided config. */
   public AzureBlobStorageClient buildClient() {
     return new AzureBlobStorageClient(
         containerName,

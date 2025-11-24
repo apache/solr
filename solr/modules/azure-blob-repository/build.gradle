@@ -19,6 +19,12 @@ apply plugin: 'java-library'
 
 description = 'Azure Blob Storage Repository'
 
+ext {
+  // Disable security manager for azure-blob-repository module tests
+  // Required because Testcontainers needs access to Docker socket and system properties
+  useSecurityManager = false
+}
+
 dependencies {
   implementation platform(project(':platform'))
   api(project(':solr:core'))
@@ -54,6 +60,10 @@ dependencies {
   // OkHttp for test client management
   testImplementation libs.azure.core.http.okhttp
   
+  // Testcontainers for Azurite integration testing
+  testImplementation libs.testcontainers
+
   // Explicit transitive test dependencies for dependency analyzer
   testImplementation 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.3'
+  testImplementation libs.apache.lucene.testframework
 }

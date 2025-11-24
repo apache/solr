@@ -17,62 +17,82 @@
 package org.apache.solr.azureblob;
 
 import com.azure.core.http.HttpClient;
-import com.azure.core.http.netty.NettyAsyncHttpClientBuilder;
+import com.azure.core.http.okhttp.OkHttpAsyncHttpClientBuilder;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import com.carrotsearch.randomizedtesting.ThreadFilter;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
+import okhttp3.OkHttpClient;
+import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
+import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-import reactor.netty.resources.ConnectionProvider;
+import org.junit.BeforeClass;
+import org.testcontainers.containers.GenericContainer;
+import org.testcontainers.utility.DockerImageName;
 
 /** Abstract class for tests with Azure Blob Storage emulator. */
+@ThreadLeakFilters(
+    defaultFilters = true,
+    filters = {
+      SolrIgnoredThreadsFilter.class,
+      QuickPatchThreadsFilter.class,
+      AbstractAzureBlobClientTest.OkHttpThreadLeakFilterTest.class,
+    })
 public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
 
-  protected String containerName;
+  private static final String AZURITE_IMAGE = "mcr.microsoft.com/azure-storage/azurite:3.33.0";
+  private static final int BLOB_SERVICE_PORT = 10000;
 
-  @Rule public TemporaryFolder tempFolder = new TemporaryFolder();
-
-  AzureBlobStorageClient client;
+  private static GenericContainer<?> azuriteContainer;
+  private static OkHttpClient sharedOkHttpClient;
   private static String connectionString;
-  private EventLoopGroup eventLoopGroup;
-  private ConnectionProvider connectionProvider;
+
+  protected String containerName;
   protected org.apache.solr.client.solrj.cloud.SocketProxy proxy;
+
+  protected AzureBlobStorageClient client;
+
+  @SuppressWarnings("resource")
+  @BeforeClass
+  public static void setUpClass() {
+    try {
+      azuriteContainer =
+          new GenericContainer<>(DockerImageName.parse(AZURITE_IMAGE))
+              .withExposedPorts(BLOB_SERVICE_PORT);
+      azuriteContainer.start();
+      sharedOkHttpClient = new OkHttpClient.Builder().build();
+    } catch (Throwable t) {
+      Assume.assumeNoException("Docker/Testcontainers not available; skipping Azure tests", t);
+    }
+  }
 
   @Before
   public void setUpClient() throws Exception {
     setAzureTestCredentials();
 
-    // Disable Netty Flight Recorder to avoid Security Manager issues
-    // Keep default Netty client; OkHttp dependency not present
-
-    // Use Azurite connection string for local testing
+    String blobServiceUrl = getBlobServiceUrl();
     connectionString =
-        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;";
+        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint="
+            + blobServiceUrl
+            + "/devstoreaccount1;";
 
-    // Build a Netty HTTP client with isolated resources we can shut down after tests
-    connectionProvider = ConnectionProvider.create("solr-azure-test");
-    eventLoopGroup = new NioEventLoopGroup(1);
-
-    // Put a proxy in front of Azurite to simulate connection loss like S3 tests
     proxy = new org.apache.solr.client.solrj.cloud.SocketProxy();
-    proxy.open(new java.net.URI(getBlobServiceUrl()));
+    proxy.open(new java.net.URI(blobServiceUrl));
 
-    HttpClient httpClient =
-        new NettyAsyncHttpClientBuilder()
-            .connectionProvider(connectionProvider)
-            .eventLoopGroup(eventLoopGroup)
-            .build();
+    HttpClient httpClient = new OkHttpAsyncHttpClientBuilder(sharedOkHttpClient).build();
 
-    // Route Blob endpoint through the proxy by adjusting the connection string
-    String proxiedConn = connectionString.replace(":10000", ":" + proxy.getListenPort());
+    String proxiedConn =
+        connectionString.replace(
+            ":" + azuriteContainer.getMappedPort(BLOB_SERVICE_PORT), ":" + proxy.getListenPort());
+
     BlobServiceClient blobServiceClient =
         new BlobServiceClientBuilder()
             .connectionString(proxiedConn)
@@ -83,20 +103,10 @@ public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
     client = new AzureBlobStorageClient(blobServiceClient, containerName);
   }
 
-  /**
-   * Set up Azure test credentials to avoid using real Azure credentials during testing. Similar to
-   * how S3 tests use ProfileFileSystemSetting to avoid polluting the test environment.
-   */
   public static void setAzureTestCredentials() {
-    // Set test Azure credentials to avoid using real credentials
     System.setProperty("AZURE_CLIENT_ID", "test-client-id");
     System.setProperty("AZURE_TENANT_ID", "test-tenant-id");
     System.setProperty("AZURE_CLIENT_SECRET", "test-client-secret");
-
-    // Set Azurite-specific environment variables
-    System.setProperty(
-        "AZURE_STORAGE_CONNECTION_STRING",
-        "DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://localhost:10000/devstoreaccount1;");
   }
 
   @After
@@ -112,49 +122,50 @@ public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
       proxy.close();
       proxy = null;
     }
-    try {
-      reactor.core.scheduler.Schedulers.shutdownNow();
-      reactor.core.scheduler.Schedulers.resetFactory();
-    } catch (Throwable ignored) {
-    }
-
-    // Dispose custom Netty resources to prevent leaked threads
-    try {
-      if (connectionProvider != null) {
-        connectionProvider.disposeLater().block();
-      }
-    } catch (Throwable ignored) {
-    }
-    try {
-      if (eventLoopGroup != null) {
-        eventLoopGroup.shutdownGracefully(0, 2, TimeUnit.SECONDS).awaitUninterruptibly(3000);
-      }
-    } catch (Throwable ignored) {
-    }
   }
 
-  /** Simulate a connection loss on the proxy similar to S3 tests. */
-  void initiateBlobConnectionLoss() throws AzureBlobException {
+  /** Simulate a connection loss on the proxy. */
+  void initiateBlobConnectionLoss() {
     if (proxy != null) {
       proxy.halfClose();
     }
   }
 
-  @org.junit.AfterClass
+  @AfterClass
   public static void afterAll() {
+    if (azuriteContainer != null) {
+      try {
+        azuriteContainer.stop();
+        azuriteContainer.close();
+      } catch (Throwable ignored) {
+      }
+      azuriteContainer = null;
+    }
+
+    if (sharedOkHttpClient != null) {
+      sharedOkHttpClient.dispatcher().executorService().shutdown();
+      sharedOkHttpClient.dispatcher().cancelAll();
+      sharedOkHttpClient.connectionPool().evictAll();
+      try {
+        if (sharedOkHttpClient.cache() != null) {
+          sharedOkHttpClient.cache().close();
+        }
+      } catch (Throwable ignored) {
+      }
+      try {
+        sharedOkHttpClient.dispatcher().executorService().awaitTermination(2, TimeUnit.SECONDS);
+      } catch (Throwable ignored) {
+      }
+      sharedOkHttpClient = null;
+    }
+
     try {
       reactor.core.scheduler.Schedulers.shutdownNow();
-      reactor.core.scheduler.Schedulers.resetFactory();
+      Thread.sleep(100);
     } catch (Throwable ignored) {
     }
   }
 
-  /**
-   * Helper method to push a string to Azure Blob Storage.
-   *
-   * @param path Destination path in blob storage.
-   * @param content Arbitrary content for the test.
-   */
   void pushContent(String path, String content) throws AzureBlobException {
     pushContent(path, content.getBytes(StandardCharsets.UTF_8));
   }
@@ -167,13 +178,26 @@ public class AbstractAzureBlobClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  /** Get the connection string for tests that need direct access to the blob service. */
   static String getConnectionString() {
     return connectionString;
   }
 
-  /** Get the blob service URL for tests that need direct access. */
   String getBlobServiceUrl() {
-    return "http://localhost:10000";
+    return "http://"
+        + azuriteContainer.getHost()
+        + ":"
+        + azuriteContainer.getMappedPort(BLOB_SERVICE_PORT);
+  }
+
+  public static class OkHttpThreadLeakFilterTest implements ThreadFilter {
+
+    @Override
+    public boolean reject(Thread t) {
+      String name = t.getName();
+      if (name == null) {
+        return false;
+      }
+      return name.contains("OkHttp") || name.contains("Okio Watchdog");
+    }
   }
 }
