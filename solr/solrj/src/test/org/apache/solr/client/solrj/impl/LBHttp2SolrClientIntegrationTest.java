@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
+import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +33,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -206,6 +208,29 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testTimeoutExceptionMarksServerAsZombie() throws Exception {
+    try (ZombieTestContext ctx = new ZombieTestContext()) {
+      LBSolrClient.Req lbReq = ctx.createQueryRequest();
+
+      try {
+        ctx.lbClient.request(lbReq);
+      } catch (Exception e) {
+      }
+
+      ctx.assertZombieState();
+    }
+  }
+
+  public void testTimeoutExceptionMarksServerAsZombieAsyncRequest() throws Exception {
+    try (ZombieTestContext ctx = new ZombieTestContext()) {
+      LBSolrClient.Req lbReq = ctx.createQueryRequest();
+
+      ctx.lbClient.requestAsync(lbReq).exceptionally(e -> null).get();
+
+      ctx.assertZombieState();
+    }
+  }
+
   private LBSolrClient.Endpoint[] bootstrapBaseSolrEndpoints(int max) {
     LBSolrClient.Endpoint[] solrUrls = new LBSolrClient.Endpoint[max];
     for (int i = 0; i < max; i++) {
@@ -331,6 +356,62 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
         delegate.close();
       } catch (IOException ioe) {
         throw new UncheckedIOException(ioe);
+      }
+    }
+  }
+
+  private class ZombieTestContext implements AutoCloseable {
+    final ServerSocket blackhole;
+    final LBSolrClient.Endpoint nonRoutableEndpoint;
+    final Http2SolrClient delegateClient;
+    final LBHttp2SolrClient<?> lbClient;
+
+    ZombieTestContext() throws Exception {
+      //create a socket that allows a client to connect but causes them to hang until idleTimeout is triggered
+      blackhole = new ServerSocket(0);
+      int blackholePort = blackhole.getLocalPort();
+      nonRoutableEndpoint =
+          new LBSolrClient.Endpoint("http://localhost:" + blackholePort + "/solr");
+
+      delegateClient =
+          new Http2SolrClient.Builder()
+              .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
+              .withIdleTimeout(100, TimeUnit.MILLISECONDS)
+              .build();
+
+      lbClient =
+          new LBHttp2SolrClient.Builder<>(delegateClient)
+              .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
+              .build();
+    }
+
+    LBSolrClient.Req createQueryRequest() {
+      SolrQuery solrQuery = new SolrQuery("*:*");
+      QueryRequest queryRequest = new QueryRequest(solrQuery);
+
+      List<LBSolrClient.Endpoint> endpoints =
+          List.of(
+              new LBSolrClient.Endpoint(
+                  nonRoutableEndpoint.getBaseUrl(), solr[0].getDefaultCollection())
+              );
+      return new LBSolrClient.Req(queryRequest, endpoints);
+    }
+
+    void assertZombieState() {
+      assertTrue(
+          "Non-routable endpoint should be marked as zombie due to timeout",
+          lbClient.zombieServers.containsKey(
+              nonRoutableEndpoint.getBaseUrl() + "/" + solr[0].getDefaultCollection()));
+    }
+
+    @Override
+    public void close() {
+      lbClient.close();
+      delegateClient.close();
+      try {
+        blackhole.close();
+      } catch (IOException ioe) {
+
       }
     }
   }
