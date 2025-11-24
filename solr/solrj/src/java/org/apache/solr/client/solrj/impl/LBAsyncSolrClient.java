@@ -21,6 +21,7 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -210,7 +211,8 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable && rootCause instanceof IOException) {
+      if (!isNonRetryable
+          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else if (isNonRetryable && rootCause instanceof ConnectException) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
