@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 public class AzureBlobOutputStream extends OutputStream {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // 4 MB per block (Azure limit is 100 MB, but 4 MB is more efficient for most use cases)
   static final int BLOCK_SIZE = 4 * 1024 * 1024;
 
   private final BlobClient blobClient;
@@ -70,7 +69,6 @@ public class AzureBlobOutputStream extends OutputStream {
 
     buffer.put((byte) b);
 
-    // If the buffer is now full, push it to Azure Blob Storage
     if (!buffer.hasRemaining()) {
       uploadBlock();
     }
@@ -111,7 +109,6 @@ public class AzureBlobOutputStream extends OutputStream {
     int size = buffer.position() - buffer.arrayOffset();
 
     if (size == 0) {
-      // nothing to upload
       return;
     }
 
@@ -119,6 +116,7 @@ public class AzureBlobOutputStream extends OutputStream {
       if (log.isDebugEnabled()) {
         log.debug("New block upload for blobPath '{}'", blobPath);
       }
+
       blockUpload = newBlockUpload();
     }
 
@@ -132,11 +130,11 @@ public class AzureBlobOutputStream extends OutputStream {
           log.debug("Block upload aborted for blobPath '{}'.", blobPath);
         }
       }
+
       throw new IOException(
           "Failed to upload block", AzureBlobStorageClient.handleBlobException(e));
     }
 
-    // reset the buffer for eventual next write operation
     buffer.clear();
   }
 
@@ -146,12 +144,10 @@ public class AzureBlobOutputStream extends OutputStream {
       throw new IOException("Stream closed");
     }
 
-    // Ensure any buffered data is staged to Azure
     if (buffer.position() - buffer.arrayOffset() > 0) {
       uploadBlock();
     }
 
-    // Make data visible by committing current block list (idempotent, can be called again on close)
     if (blockUpload != null) {
       blockUpload.complete();
       blockUpload = null;
@@ -172,14 +168,12 @@ public class AzureBlobOutputStream extends OutputStream {
     }
 
     if (!committed) {
-      // Stage any remaining data and commit once
       uploadBlock();
       if (blockUpload != null) {
         blockUpload.complete();
         blockUpload = null;
         committed = true;
       } else {
-        // No data was written; ensure a zero-length blob exists at this path
         try {
           blobClient.upload(new ByteArrayInputStream(new byte[0]), 0, true);
         } catch (BlobStorageException e) {
@@ -188,13 +182,12 @@ public class AzureBlobOutputStream extends OutputStream {
         }
       }
     } else {
-      // Already committed via flush. If additional writes occurred after flush,
-      // there will be a new blockUpload. Commit it to overwrite previous content.
       if (blockUpload != null) {
         blockUpload.complete();
         blockUpload = null;
       }
     }
+
     closed = true;
   }
 
@@ -216,13 +209,12 @@ public class AzureBlobOutputStream extends OutputStream {
       if (log.isDebugEnabled()) {
         log.debug("Initiated block upload for blobPath '{}'", blobPath);
       }
-      // Ensure we start with a clean slate; if a blob already exists at this path,
-      // remove it so that the commit does not fail with BlobAlreadyExists (409).
+
       try {
         BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
         blockBlobClient.deleteIfExists();
       } catch (BlobStorageException e) {
-        // Ignore deletion problems here; subsequent stage/commit will surface real issues
+        // ignore; subsequent stage/commit will surface real issues
       }
     }
 
@@ -249,7 +241,6 @@ public class AzureBlobOutputStream extends OutputStream {
       }
     }
 
-    /** To be invoked when closing the stream to mark upload is done. */
     void complete() {
       if (aborted) {
         throw new IllegalStateException("Can't complete a BlockUpload that was aborted");
@@ -272,9 +263,6 @@ public class AzureBlobOutputStream extends OutputStream {
         log.warn("Aborting block upload for blobPath '{}'", blobPath);
       }
 
-      // Azure doesn't have an explicit abort operation for block uploads
-      // The blocks will remain as uncommitted blocks and will be cleaned up
-      // by Azure's garbage collection after 7 days
       aborted = true;
     }
   }
