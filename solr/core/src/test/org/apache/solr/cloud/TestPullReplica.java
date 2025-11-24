@@ -421,6 +421,28 @@ public class TestPullReplica extends SolrCloudTestCase {
     doTestNoLeader(false);
   }
 
+  @Test
+  public void testNoBufferingInPullIfConstructing() throws Exception {
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
+
+    setSliceState(collectionName, "shard1", Slice.State.CONSTRUCTION);
+
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
+  }
+
+  private void setSliceState(String collectionName, String shardId, Slice.State state)
+      throws Exception {
+    ShardTestUtil.setSliceState(cluster, collectionName, shardId, state);
+    waitForState(
+        "Expected shard " + shardId + " to be in state " + state,
+        collectionName,
+        c -> c.getSlice(shardId).getState() == state);
+  }
+
   @Ignore("Ignore until I figure out a way to reliably record state transitions")
   public void testPullReplicaStates() throws Exception {
     // Validate that pull replicas go through the correct states when starting, stopping,

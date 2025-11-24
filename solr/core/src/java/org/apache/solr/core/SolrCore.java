@@ -1246,10 +1246,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // ZK pre-register would have already happened so we read slice properties now
       final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+      final CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
       final DocCollection collection =
-          clusterState.getCollection(coreDescriptor.getCloudDescriptor().getCollectionName());
-      final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
-      if (slice.getState() == Slice.State.CONSTRUCTION) {
+          clusterState.getCollection(cloudDescriptor.getCollectionName());
+      final Slice slice = collection.getSlice(cloudDescriptor.getShardId());
+      if (slice.getState() == Slice.State.CONSTRUCTION
+          && getUpdateHandler().getUpdateLog() != null) {
         // set update log to buffer before publishing the core
         getUpdateHandler().getUpdateLog().bufferUpdates();
       }
