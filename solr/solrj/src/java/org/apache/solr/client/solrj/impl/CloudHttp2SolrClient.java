@@ -70,7 +70,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    *     client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
-    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    super(
+        builder.shardLeadersOnly,
+        builder.parallelUpdates,
+        builder.directUpdatesToLeadersOnly,
+        builder.stateRefreshThreads);
     this.clientIsInternal = builder.httpClient == null;
     this.myClient = createOrGetHttpClientFromBuilder(builder);
     this.stateProvider = createClusterStateProvider(builder);
@@ -85,11 +89,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     this.collectionStateCache.timeToLiveMs =
         TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
-
-    //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
-    // locks.
-    this.locks = objectList(builder.parallelCacheRefreshesLocks);
-
     this.lbClient = new LBHttp2SolrClient.Builder<>(myClient).build();
   }
 
@@ -200,7 +199,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     private String defaultCollection;
     private long timeToLiveSeconds = 60;
-    private int parallelCacheRefreshesLocks = 3;
+    private int stateRefreshThreads = CloudSolrClient.DEFAULT_STATE_REFRESH_PARALLELISM;
     private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
     private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
     private boolean canUseZkACLs = true;
@@ -348,13 +347,12 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     }
 
     /**
-     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
-     * number of locks.
+     * Configures how many collection state refresh operations may run in parallel.
      *
-     * <p>Defaults to 3.
+     * <p>Defaults to 5.
      */
-    public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
-      this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
+    public Builder withParallelCacheRefreshes(int parallelCacheRefreshes) {
+      this.stateRefreshThreads = parallelCacheRefreshes;
       return this;
     }
 
