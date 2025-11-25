@@ -1,0 +1,8 @@
+title: Fix race condition where Zookeeper session could be re-established by multiple
+  threads concurrently in case of frequent session expirations.
+type: fixed
+authors:
+- name: Pierre Salagnac
+links:
+- name: SOLR-17405
+  url: https://issues.apache.org/jira/browse/SOLR-17405

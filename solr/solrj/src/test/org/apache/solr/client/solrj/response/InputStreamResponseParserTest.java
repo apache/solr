@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -95,11 +95,11 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
     InputStreamResponseParser parser = new InputStreamResponseParser("xml");
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
-      NamedList<Object> response = parser.processResponse(is, "UTF-8");
-
-      assertNotNull(response.get("response"));
-      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
-      assertEquals(expectedResponse, response.get("response"));
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            parser.processResponse(is, "UTF-8");
+          });
     }
   }
 }

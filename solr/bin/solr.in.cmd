@@ -66,7 +66,7 @@ REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
-REM set SOLR_HOST=192.168.1.1
+REM set SOLR_HOST_ADVERTISE=192.168.1.1
 
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 REM set SOLR_CLOUD_WAIT_FOR_ZK_SECONDS=30
@@ -85,7 +85,7 @@ REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
 REM (false is recommended in production environments)
 REM set ENABLE_REMOTE_JMX_OPTS=false
 
-REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
@@ -114,10 +114,10 @@ REM Location where Solr should write logs to. Absolute or relative to solr start
 REM set SOLR_LOGS_DIR=logs
 
 REM Enables jetty request log for all requests
-REM set SOLR_REQUESTLOG_ENABLED=true
+REM set SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
-REM set SOLR_PORT=8983
+REM set SOLR_PORT_LISTEN=8983
 
 REM Sets the network interface the Solr binds to. To prevent administrators from
 REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -125,7 +125,7 @@ REM Administrators should think carefully about their deployment environment and
 REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
-REM set SOLR_JETTY_HOST=127.0.0.1
+REM set SOLR_HOST_BIND=127.0.0.1
 REM Sets the network interface the Embedded ZK binds to.
 REM set SOLR_ZOOKEEPER_EMBEDDED_HOST=127.0.0.1
 
@@ -201,9 +201,9 @@ REM set SOLR_GZIP_ENABLED=true
 
 REM When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 REM list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
-REM in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+REM in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.security.allow.urls".
 REM Alternatively host checking can be disabled by setting the system property "solr.security.allow.urls.enabled=false"
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.security.allow.urls=http://localhost:8983,http://localhost:8984
 
 REM For a visual indication in the Admin UI of what type of environment this cluster is, configure
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
@@ -234,7 +234,7 @@ REM set SOLR_UI_EXPERIMENTAL_ENABLED=false
 REM Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 REM Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 REM This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.allowPaths=D:\,E:\other\path
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.security.allow.paths=D:\,E:\other\path
 
 REM Before version 9.0, Solr required a copy of solr.xml file in $SOLR_HOME. Now Solr will use a default file if not found.
 REM To restore the old behavior, set the variable below to true
@@ -250,3 +250,7 @@ REM set SOLR_MODULES=extraction,ltr
 REM Configure the default replica placement plugin to use if one is not configured in cluster properties
 REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
+
+REM Solr internally doesn't use cookies. If you don't need any of those, and you don't 
+REM need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.solrj.http.cookies.enabled=false

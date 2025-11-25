@@ -1550,6 +1550,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();
     q.set("q", "*:*");
+    q.set("rows", "0");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
     rsp = queryRandomShard(q);
@@ -1560,6 +1561,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertNotNull("missing shard info", sinfo);
     assertEquals(
         "should have an entry for each shard [" + sinfo + "] " + shards, cnt, sinfo.size());
+    // We are setting rows=0, so scores should not be collected
+    for (int i = 0; i < cnt; i++) {
+      String shard = sinfo.getName(i);
+      assertNull(
+          "should not have any score information (maxScore) in the shard info: " + shard,
+          ((Map<String, Object>) sinfo.get(shard)).get("maxScore"));
+    }
 
     // test shards.tolerant=true
 

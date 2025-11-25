@@ -72,7 +72,7 @@
 
 # By default the start script uses "localhost"; override the hostname here
 # for production SolrCloud environments to control the hostname exposed to cluster state
-#SOLR_HOST="192.168.1.1"
+#SOLR_HOST_ADVERTISE="192.168.1.1"
 
 # By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 #SOLR_CLOUD_WAIT_FOR_ZK_SECONDS="30"
@@ -91,7 +91,7 @@
 # (false is recommended in production environments)
 #ENABLE_REMOTE_JMX_OPTS="false"
 
-# The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+# The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
 
 # Anything you add to the SOLR_OPTS variable will be included in the java
@@ -129,10 +129,10 @@
 #SOLR_LOGS_DIR=logs
 
 # Enables jetty request log for all requests
-#SOLR_REQUESTLOG_ENABLED=true
+#SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 # Sets the port Solr binds to, default is 8983
-#SOLR_PORT=8983
+#SOLR_PORT_LISTEN=8983
 
 # Restrict access to solr by IP address.
 # Specify a comma-separated list of addresses or networks, for example:
@@ -150,7 +150,7 @@
 # set this value as narrowly as required before going to production. In
 # environments where security is not a concern, 0.0.0.0 can be used to allow
 # Solr to accept connections on all network interfaces.
-#SOLR_JETTY_HOST="127.0.0.1"
+#SOLR_HOST_BIND="127.0.0.1"
 # Sets the network interface the Embedded ZK binds to.
 #SOLR_ZOOKEEPER_EMBEDDED_HOST="127.0.0.1"
 
@@ -227,9 +227,9 @@
 
 # When running Solr in non-cloud mode and if planning to do distributed search (using the "shards" parameter), the
 # list of hosts needs to be defined in an allow-list or Solr will forbid the request. The allow-list can be configured
-# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.allowUrls".
+# in solr.xml, or if you are using the OOTB solr.xml, can be specified using the system property "solr.security.allow.urls".
 # Alternatively host checking can be disabled by setting the system property "solr.security.allow.urls.enabled=false"
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowUrls=http://localhost:8983,http://localhost:8984"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.urls=http://localhost:8983,http://localhost:8984"
 
 # For a visual indication in the Admin UI of what type of environment this cluster is, configure
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
@@ -250,17 +250,17 @@
 # This variable provides you with the option to disable the Admin UI. If you uncomment the variable below and
 # change the value to false. The option is configured as a system property as defined in SOLR_START_OPTS in the start
 # scripts.
-# SOLR_UI_ENABLED=true
+#SOLR_UI_ENABLED=true
 
 # This variable provides you with the option to disable the new experimental Admin UI. If you uncomment the variable
 # below and change the value to false, Jetty will not load the new-ui module which update the CSP directive for the
 # new UI endpoints. This property is ignored if SOLR_UI_ENABLED is false.
-# SOLR_UI_EXPERIMENTAL_ENABLED=false
+#SOLR_UI_EXPERIMENTAL_ENABLED=false
 
 # Solr is by default allowed to read and write data from/to SOLR_HOME and a few other well defined locations
 # Sometimes it may be necessary to place a core or a backup on a different location or a different disk
 # This parameter lets you specify file system path(s) to explicitly allow. The special value of '*' will allow any path
-#SOLR_OPTS="$SOLR_OPTS -Dsolr.allowPaths=/mnt/bigdisk,/other/path"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.security.allow.paths=/mnt/bigdisk,/other/path"
 
 # Solr can attempt to take a heap dump on out of memory errors. To enable this, uncomment the line setting
 # SOLR_HEAP_DUMP below. Heap dumps will be saved to SOLR_LOG_DIR/dumps by default. Alternatively, you can specify any
@@ -278,10 +278,10 @@
 
 # Some previous versions of Solr use an outdated log4j dependency. If you are unable to use at least log4j version 2.15.0
 # then enable the following setting to address CVE-2021-44228
-# SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
+#SOLR_OPTS="$SOLR_OPTS -Dlog4j2.formatMsgNoLookups=true"
 
 # The bundled plugins in the "modules" folder can easily be enabled as a comma-separated list in SOLR_MODULES variable
-# SOLR_MODULES=extraction,ltr
+#SOLR_MODULES=extraction,ltr
 
 # Configure the default replica placement plugin to use if one is not configured in cluster properties
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
@@ -289,4 +289,4 @@
 
 # Solr internally doesn't use cookies. If you don't need any of those, and you don't 
 # need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
-# SOLR_OPTS="$SOLR_OPTS -Dsolr.http.disableCookies=true"
+#SOLR_OPTS="$SOLR_OPTS -Dsolr.solrj.http.cookies.enabled=false"

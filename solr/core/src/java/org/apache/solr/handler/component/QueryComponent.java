@@ -832,20 +832,24 @@ public class QueryComponent extends SearchComponent {
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
+    int shardRows;
     if (rb.shards_rows > -1) {
       // if the client set shards.rows set this explicity
-      sreq.params.set(CommonParams.ROWS, rb.shards_rows);
+      shardRows = rb.shards_rows;
     } else {
-      // what if rows<0 as it is allowed for grouped request??
-      sreq.params.set(
-          CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+      shardRows = rb.getSortSpec().getCount();
+      // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
+      if (shardRows > 0) {
+        shardRows += rb.getSortSpec().getOffset();
+      }
     }
+    sreq.params.set(CommonParams.ROWS, shardRows);
 
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES, "true");
 
     boolean shardQueryIncludeScore =
         (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-            || rb.getSortSpec().includesScore();
+            || (shardRows != 0 && rb.getSortSpec().includesScore());
     StringBuilder additionalFL = new StringBuilder();
     boolean additionalAdded = false;
     if (rb.onePassDistributedQuery) {

@@ -81,12 +81,12 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -175,9 +175,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY =
       "solr.tests.mergePolicyFactory";
 
-  public static final String TEST_URL_ALLOW_LIST =
-      "solr.tests." + AllowListUrlChecker.URL_ALLOW_LIST;
-
+  public static final String TEST_URL_ALLOW_LIST = "solr.tests.security.allow.urls";
   protected static String coreName = DEFAULT_TEST_CORENAME;
 
   public static int DEFAULT_CONNECTION_TIMEOUT = 60000; // default socket connection timeout in ms
@@ -280,7 +278,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty("solr.clustering.enabled", "false");
     System.setProperty("solr.cloud.wait-for-updates-with-stale-state-pause", "500");
     System.setProperty("solr.filterCache.async", String.valueOf(random().nextBoolean()));
-    System.setProperty("solr.http.disableCookies", Boolean.toString(rarely()));
+    System.setProperty("solr.solrj.http.cookies.enabled", Boolean.toString(usually()));
     System.setProperty("solr.metrics.jvm.enabled", "false");
     System.setProperty("solr.metrics.otlpExporterInterval", "1000");
 
@@ -2573,10 +2571,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudLegacySolrClient.Builder} that will
-   * randomize some internal settings.
-   */
+  /** A variant of {@code CloudSolrClient.Builder} that will randomize some internal settings. */
   @Deprecated
   public static class RandomizingCloudSolrClientBuilder extends CloudLegacySolrClient.Builder {
 

@@ -77,12 +77,12 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @AfterClass
   public static void afterClass() {
-    System.clearProperty("solr.allowPaths");
+    System.clearProperty("solr.security.allow.paths");
   }
 
   @Before

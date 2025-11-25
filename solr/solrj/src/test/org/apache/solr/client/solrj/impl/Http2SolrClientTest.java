@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
@@ -440,25 +441,25 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.ssl.checkPeerName", "true");
+    System.setProperty("solr.ssl.check.peer.name.enabled", "true");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory2 = Http2SolrClient.getDefaultSslContextFactory();
     assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory2.getKeyStoreType());
     assertEquals("bar", sslContextFactory2.getTrustStoreType());
-    System.clearProperty("solr.ssl.checkPeerName");
+    System.clearProperty("solr.ssl.check.peer.name.enabled");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
 
-    System.setProperty("solr.ssl.checkPeerName", "false");
+    System.setProperty("solr.ssl.check.peer.name.enabled", "false");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
     System.setProperty("javax.net.ssl.trustStoreType", "bar");
     SslContextFactory.Client sslContextFactory3 = Http2SolrClient.getDefaultSslContextFactory();
     assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory3.getKeyStoreType());
     assertEquals("bar", sslContextFactory3.getTrustStoreType());
-    System.clearProperty("solr.ssl.checkPeerName");
+    System.clearProperty("solr.ssl.check.peer.name.enabled");
     System.clearProperty("javax.net.ssl.keyStoreType");
     System.clearProperty("javax.net.ssl.trustStoreType");
   }
@@ -675,7 +676,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
       // too little time to succeed
       int packets = LuceneTestCase.RANDOM_MULTIPLIER == 1 ? 10 : 80; // 60 crosses a default timeout
-      long timeToSendMs = (long) packets * BasicHttpSolrClientTest.SlowStreamServlet.PACKET_MS;
+      long timeToSendMs = (long) packets * ServletFixtures.SlowStreamServlet.PACKET_MS;
       QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));

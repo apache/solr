@@ -1,0 +1,12 @@
+title: '`SolrClient` implementations that rely on "base URL" strings now only accept
+  "root" URL paths (i.e. URLs that end in "/solr"). Users may still specify a default
+  collection through use of the `withDefaultCollection` method available on most SolrClient
+  builders.'
+type: removed
+authors:
+- name: Jason Gerlowski
+- name: David Smiley
+- name: Eric Pugh
+links:
+- name: SOLR-17066
+  url: https://issues.apache.org/jira/browse/SOLR-17066

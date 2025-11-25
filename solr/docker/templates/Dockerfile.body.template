@@ -45,7 +45,7 @@ ENV SOLR_USER="solr" \
     SOLR_PID_DIR=/var/solr \
     SOLR_LOGS_DIR=/var/solr/logs \
     LOG4J_PROPS=/var/solr/log4j2.xml \
-    SOLR_JETTY_HOST="0.0.0.0" \
+    SOLR_HOST_BIND="0.0.0.0" \
     SOLR_ZOOKEEPER_EMBEDDED_HOST="0.0.0.0"
 
 RUN set -ex; \
@@ -69,7 +69,7 @@ RUN set -ex; \
 
 RUN set -ex; \
     apt-get update; \
-    apt-get -y --no-install-recommends install acl lsof procps wget netcat-openbsd gosu tini jattach; \
+    apt-get -y --no-install-recommends install curl acl lsof procps wget netcat-openbsd gosu tini jattach; \
     rm -rf /var/lib/apt/lists/*;
 
 VOLUME /var/solr
