@@ -31,8 +31,8 @@ public class CustomModel extends DimensionAwareEmbeddingModel {
     this.endpointUrl = endpointUrl;
     this.fieldName = fieldName;
 
-    timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
-    httpClient = HttpClient.newBuilder().connectTimeout(timeout).build();
+    this.timeout = timeout == null ? Duration.ofSeconds(30) : timeout;
+    httpClient = HttpClient.newBuilder().connectTimeout(timeout).version(HttpClient.Version.HTTP_1_1).build();
     mapper = new ObjectMapper();
 
     this.waitForModel = waitForModel == null || waitForModel;
