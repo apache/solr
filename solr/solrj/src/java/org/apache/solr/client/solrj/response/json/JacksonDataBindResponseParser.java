@@ -15,13 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.response.json;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 

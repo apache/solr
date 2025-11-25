@@ -18,7 +18,7 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.request.SolrQueryRequest;
 
 /** An XML {@link QueryResponseWriter}. */

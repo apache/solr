@@ -37,7 +37,7 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.solr.client.solrj.apache.HttpClientUtil.SocketFactoryRegistryProvider;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
+import org.apache.solr.client.solrj.impl.SSLConfig;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;

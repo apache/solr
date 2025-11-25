@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 
 public abstract class HttpSolrClientBuilderBase<
     B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {

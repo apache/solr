@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.function.Consumer;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.TotalHits;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.JavaBinCodec;

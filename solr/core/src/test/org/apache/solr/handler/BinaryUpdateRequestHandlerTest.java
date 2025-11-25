@@ -18,7 +18,7 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayOutputStream;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;

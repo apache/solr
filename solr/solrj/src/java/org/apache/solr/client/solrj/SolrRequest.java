@@ -26,8 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
@@ -162,7 +163,7 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
-   * @return The {@link org.apache.solr.client.solrj.ResponseParser}
+   * @return The {@link ResponseParser}
    */
   public ResponseParser getResponseParser() {
     return responseParser;
@@ -172,7 +173,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * Optionally specify how the Response should be parsed. Not all server implementations require a
    * ResponseParser to be specified.
    *
-   * @param responseParser The {@link org.apache.solr.client.solrj.ResponseParser}
+   * @param responseParser The {@link ResponseParser}
    */
   public void setResponseParser(ResponseParser responseParser) {
     this.responseParser = responseParser;

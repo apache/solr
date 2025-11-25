@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.cloud;
+package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Collections;

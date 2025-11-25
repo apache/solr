@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 
 import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
 
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;

@@ -30,8 +30,11 @@ import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.FastStreamingDocsCallback;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -1225,5 +1228,11 @@ public abstract class SolrClient implements Serializable, Closeable {
     public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
       super(code, "Error from server at " + remoteHost + ": " + msg, th);
     }
+  }
+
+  /** A lambda intended for invoking SolrClient operations */
+  @FunctionalInterface
+  public interface SolrClientFunction<C extends SolrClient, R> {
+    R apply(C c) throws IOException, SolrServerException;
   }
 }

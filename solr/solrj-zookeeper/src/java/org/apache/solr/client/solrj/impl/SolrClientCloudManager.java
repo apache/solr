@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.lang.invoke.MethodHandles;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;

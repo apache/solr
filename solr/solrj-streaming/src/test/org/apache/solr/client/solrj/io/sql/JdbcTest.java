@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Properties;
 import java.util.TreeSet;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
