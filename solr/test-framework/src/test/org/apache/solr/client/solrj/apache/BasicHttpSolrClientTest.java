@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,13 +52,14 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.apache.SolrPortAwareCookieSpecFactory;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.client.solrj.impl.ServletFixtures.RedirectServlet;
 import org.apache.solr.client.solrj.impl.ServletFixtures.SlowServlet;
 import org.apache.solr.client.solrj.impl.ServletFixtures.SlowStreamServlet;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;

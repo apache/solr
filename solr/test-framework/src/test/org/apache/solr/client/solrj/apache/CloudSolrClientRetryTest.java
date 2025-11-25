@@ -15,10 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
-import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
-
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -52,7 +51,8 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
         "solr_core_requests_total{category=\"UPDATE\",collection=\"testRetry\",core=\"testRetry_shard1_replica_n1\",handler=\"/update\",otel_scope_name=\"org.apache.solr\",replica_type=\"NRT\",shard=\"shard1\"}";
     solrClient.add(collectionName, new SolrInputDocument("id", "1"));
 
-    assertEquals(1.0, getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
+    assertEquals(
+        1.0, SolrJMetricTestUtils.getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
 
     TestInjection.failUpdateRequests = "true:100";
     try {
@@ -66,6 +66,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
       TestInjection.reset();
     }
 
-    assertEquals(2.0, getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
+    assertEquals(
+        2.0, SolrJMetricTestUtils.getPrometheusMetricValue(solrClient, prometheusMetric), 0.0);
   }
 }

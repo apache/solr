@@ -17,14 +17,30 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.SocketTimeoutException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
@@ -33,22 +49,134 @@ import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /** Mock endpoint where the CUSS being tested in this class sends requests. */
+  static class TestServlet extends HttpServlet
+      implements JavaBinUpdateRequestCodec.StreamingUpdateHandler {
+    private static final long serialVersionUID = 1L;
+
+    public static void clear() {
+      lastMethod = null;
+      headers = null;
+      parameters = null;
+      errorCode = null;
+      numReqsRcvd.set(0);
+      numDocsRcvd.set(0);
+    }
+
+    public static Integer errorCode = null;
+    public static String lastMethod = null;
+    public static HashMap<String, String> headers = null;
+    public static Map<String, String[]> parameters = null;
+    public static AtomicInteger numReqsRcvd = new AtomicInteger(0);
+    public static AtomicInteger numDocsRcvd = new AtomicInteger(0);
+
+    public static void setErrorCode(Integer code) {
+      errorCode = code;
+    }
+
+    private void setHeaders(HttpServletRequest req) {
+      Enumeration<String> headerNames = req.getHeaderNames();
+      headers = new HashMap<>();
+      while (headerNames.hasMoreElements()) {
+        final String name = headerNames.nextElement();
+        headers.put(name, req.getHeader(name));
+      }
+    }
+
+    private void setParameters(HttpServletRequest req) {
+      // parameters = req.getParameterMap();
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+        throws ServletException, IOException {
+
+      numReqsRcvd.incrementAndGet();
+      lastMethod = "post";
+      recordRequest(req, resp);
+
+      InputStream reqIn = req.getInputStream();
+      JavaBinUpdateRequestCodec javabin = new JavaBinUpdateRequestCodec();
+      for (; ; ) {
+        try {
+          javabin.unmarshal(reqIn, this);
+        } catch (EOFException e) {
+          break; // this is expected
+        }
+      }
+    }
+
+    private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
+      setHeaders(req);
+      setParameters(req);
+      if (null != errorCode) {
+        try {
+          resp.sendError(errorCode);
+        } catch (IOException e) {
+          throw new RuntimeException("sendError IO fail in TestServlet", e);
+        }
+      }
+    }
+
+    @Override
+    public void update(
+        SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override) {
+      numDocsRcvd.incrementAndGet();
+    }
+  } // end TestServlet
+
+  static class SendDocsRunnable implements Runnable {
+
+    private String id;
+    private int numDocs;
+    private SolrClient cuss;
+    private String collection;
+
+    SendDocsRunnable(String id, int numDocs, SolrClient cuss) {
+      this(id, numDocs, cuss, null);
+    }
+
+    SendDocsRunnable(String id, int numDocs, SolrClient cuss, String collection) {
+      this.id = id;
+      this.numDocs = numDocs;
+      this.cuss = cuss;
+      this.collection = collection;
+    }
+
+    @Override
+    public void run() {
+      for (int d = 0; d < numDocs; d++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        String docId = id + "_" + d;
+        doc.setField("id", docId);
+        UpdateRequest req = new UpdateRequest();
+        req.add(doc);
+        try {
+          if (this.collection == null) cuss.request(req);
+          else cuss.request(req, this.collection);
+        } catch (Throwable t) {
+          log.error("error making request", t);
+        }
+      }
+    }
+  }
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
-        JettyConfig.builder()
-            .withServlet(
-                new ServletHolder(ConcurrentUpdateSolrClientTest.TestServlet.class), "/cuss/*")
-            .build();
+        JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   @Test
   public void testConcurrentUpdate() throws Exception {
-    ConcurrentUpdateSolrClientTest.TestServlet.clear();
+    TestServlet.clear();
 
     String serverUrl = getBaseUrl() + "/cuss/foo";
 
@@ -79,9 +207,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       int numDocs = 100;
       int numRunnables = 5;
       for (int r = 0; r < numRunnables; r++)
-        threadPool.execute(
-            new ConcurrentUpdateSolrClientTest.SendDocsRunnable(
-                String.valueOf(r), numDocs, concurrentClient));
+        threadPool.execute(new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient));
 
       // ensure all docs are sent
       threadPool.awaitTermination(5, TimeUnit.SECONDS);
@@ -91,10 +217,10 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       concurrentClient.blockUntilFinished();
       concurrentClient.shutdownNow();
 
-      assertEquals("post", ConcurrentUpdateSolrClientTest.TestServlet.lastMethod);
+      assertEquals("post", TestServlet.lastMethod);
 
       // expect all requests to be successful
-      int expectedSuccesses = ConcurrentUpdateSolrClientTest.TestServlet.numReqsRcvd.get();
+      int expectedSuccesses = TestServlet.numReqsRcvd.get();
       assertTrue(expectedSuccesses > 0); // at least one request must have been sent
 
       assertEquals(
@@ -108,11 +234,8 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
       int expectedDocs = numDocs * numRunnables;
       assertEquals(
-          "Expected CUSS to send "
-              + expectedDocs
-              + " but got "
-              + ConcurrentUpdateSolrClientTest.TestServlet.numDocsRcvd.get(),
-          ConcurrentUpdateSolrClientTest.TestServlet.numDocsRcvd.get(),
+          "Expected CUSS to send " + expectedDocs + " but got " + TestServlet.numDocsRcvd.get(),
+          TestServlet.numDocsRcvd.get(),
           expectedDocs);
     }
   }
@@ -185,8 +308,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
 
       for (int r = 0; r < numRunnables; r++)
         threadPool.execute(
-            new ConcurrentUpdateSolrClientTest.SendDocsRunnable(
-                String.valueOf(r), numDocs, concurrentClient, "collection1"));
+            new SendDocsRunnable(String.valueOf(r), numDocs, concurrentClient, "collection1"));
 
       // ensure all docs are sent
       threadPool.awaitTermination(5, TimeUnit.SECONDS);
@@ -261,6 +383,37 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
       public OutcomeCountingConcurrentUpdateSolrClient build() {
         return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }
+    }
+  }
+
+  /**
+   * Test that connection timeout information is passed to the HttpSolrClient that handles non add
+   * operations.
+   */
+  @Test(timeout = 10000)
+  public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
+    InetAddress localHost = InetAddress.getLocalHost();
+    try (ServerSocket server = new ServerSocket(0, 1, localHost);
+        var http2Client =
+            new Http2SolrClient.Builder().withIdleTimeout(1, TimeUnit.MILLISECONDS).build();
+        var client =
+            new ConcurrentUpdateHttp2SolrClient.Builder(
+                    "http://"
+                        + localHost.getHostAddress()
+                        + ":"
+                        + server.getLocalPort()
+                        + "/noOneThere",
+                    http2Client)
+                .build()) {
+      // Expecting an exception
+      client.commit();
+      fail();
+    } catch (SolrServerException e) {
+      if (!(e.getCause() instanceof SocketTimeoutException // not sure if Jetty throws this
+          || e.getCause() instanceof TimeoutException)) { // Jetty throws this
+        throw e;
+      }
+      // else test passes
     }
   }
 }
