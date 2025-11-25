@@ -21,8 +21,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.junit.BeforeClass;
 
 /**

@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;

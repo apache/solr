@@ -19,7 +19,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;

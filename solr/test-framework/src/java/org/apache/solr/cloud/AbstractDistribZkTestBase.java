@@ -30,7 +30,7 @@ import org.apache.solr.cli.ConfigSetUploadTool;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;

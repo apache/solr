@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;

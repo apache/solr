@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;

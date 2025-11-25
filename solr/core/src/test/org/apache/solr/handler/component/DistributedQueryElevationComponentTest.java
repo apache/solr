@@ -21,7 +21,7 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;

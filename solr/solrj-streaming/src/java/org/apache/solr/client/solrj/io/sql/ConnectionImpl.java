@@ -37,7 +37,7 @@ import java.util.Properties;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

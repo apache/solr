@@ -24,7 +24,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrResourceLoader;
 import org.junit.Test;

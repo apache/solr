@@ -18,7 +18,7 @@
 package org.apache.solr.cloud;
 
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;

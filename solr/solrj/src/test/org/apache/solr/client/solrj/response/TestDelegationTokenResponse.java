@@ -22,8 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.DelegationTokenRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;

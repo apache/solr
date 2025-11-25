@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.junit.Test;
 

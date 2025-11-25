@@ -14,12 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
 
+package org.apache.solr.client.solrj.request.json;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.io.OutputStream;
+import org.apache.solr.client.solrj.request.RequestWriter;
 
-/** A lambda intended for invoking SolrClient operations */
-@FunctionalInterface
-public interface SolrClientFunction<C extends SolrClient, R> {
-  R apply(C c) throws IOException, SolrServerException;
+/**
+ * @lucene.internal
+ */
+public class JacksonContentWriter implements RequestWriter.ContentWriter {
+
+  public static final ObjectMapper DEFAULT_MAPPER = new ObjectMapper();
+
+  private final Object toWrite;
+
+  public JacksonContentWriter(Object toWrite) {
+    this.toWrite = toWrite;
+  }
+
+  @Override
+  public void write(OutputStream os) throws IOException {
+    DEFAULT_MAPPER.writeValue(os, toWrite);
+  }
+
+  @Override
+  public String getContentType() {
+    return "application/json; charset=UTF-8";
+  }
 }

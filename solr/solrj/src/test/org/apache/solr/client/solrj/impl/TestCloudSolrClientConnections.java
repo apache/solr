@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.AlreadyClosedException;

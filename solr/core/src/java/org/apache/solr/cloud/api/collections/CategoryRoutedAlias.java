@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;

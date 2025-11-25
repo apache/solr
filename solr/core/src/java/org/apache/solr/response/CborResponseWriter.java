@@ -22,7 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 

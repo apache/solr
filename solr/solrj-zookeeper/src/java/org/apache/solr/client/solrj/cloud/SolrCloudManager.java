@@ -18,7 +18,7 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;

@@ -20,7 +20,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.util.Date;
 import java.util.Map;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 
 /**
  * @since solr 1.3

@@ -19,7 +19,7 @@ package org.apache.solr.crossdc.manager;
 import static org.mockito.Mockito.spy;
 
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;

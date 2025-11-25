@@ -21,7 +21,7 @@ import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.cloud.ClusterState;

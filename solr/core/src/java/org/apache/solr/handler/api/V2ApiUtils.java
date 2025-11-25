@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 

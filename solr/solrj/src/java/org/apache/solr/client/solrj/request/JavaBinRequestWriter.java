@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.request;
 
 import static org.apache.solr.common.params.CommonParams.JAVABIN_MIME;
 
@@ -22,9 +22,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.ContentStream;
 
 /**

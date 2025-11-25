@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CorePropertiesLocator;
