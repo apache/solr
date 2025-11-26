@@ -169,11 +169,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
             return method.toString();
           }
         };
-    try {
-      api.call(req, rsp);
-    } catch (ApiBag.ExceptionWithErrObject e) {
-      throw new RuntimeException(e.getMessage() + Utils.toJSONString(e.getErrs()), e);
-    }
+    api.call(req, rsp);
     return new Pair<>(req, rsp);
   }
 

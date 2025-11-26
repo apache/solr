@@ -252,6 +252,12 @@ public class JSONResponseWriter implements TextQueryResponseWriter {
     }
 
     @Override
+    public void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException {
+      ifNeededWriteTypeAndValueKey("array");
+      super.writeArray(name, val, size, raw);
+    }
+
+    @Override
     public void writeNull(String name) throws IOException {
       ifNeededWriteTypeAndValueKey("null");
       super.writeNull(name);

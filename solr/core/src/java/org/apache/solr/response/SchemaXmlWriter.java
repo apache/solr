@@ -402,6 +402,11 @@ public class SchemaXmlWriter extends TextResponseWriter {
     }
   }
 
+  @Override
+  public void writeArray(String name, Iterator<?> iter, int size, boolean raw) throws IOException {
+    writeArray(name, iter, raw);
+  }
+
   //
   // Primitive types
   //

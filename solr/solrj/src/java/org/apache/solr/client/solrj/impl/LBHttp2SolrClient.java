@@ -25,6 +25,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -254,7 +255,7 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       RetryListener listener) {
     try {
       throw (Exception) oe;
-    } catch (RemoteExecutionException e) {
+    } catch (RemoteSolrException e) {
       listener.onFailure(e, false);
     } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500

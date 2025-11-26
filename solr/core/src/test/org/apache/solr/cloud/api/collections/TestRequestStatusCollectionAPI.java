@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
@@ -171,9 +172,9 @@ public class TestRequestStatusCollectionAPI extends BasicDistributedZkTest {
     duplicateRequestIdParams.set("collection.configName", "conf1");
     duplicateRequestIdParams.set(CommonAdminParams.ASYNC, "1002");
 
-    final SolrClient.RemoteSolrException thrown =
+    final RemoteSolrException thrown =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               sendRequest(duplicateRequestIdParams);
             });

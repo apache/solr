@@ -301,6 +301,11 @@ public class XMLWriter extends TextResponseWriter {
   }
 
   @Override
+  public void writeArray(String name, Iterator<?> iter, int size, boolean raw) throws IOException {
+    writeArray(name, iter, raw);
+  }
+
+  @Override
   public void writeIterator(String name, IteratorWriter val, boolean raw) throws IOException {
     // As the size is not known. So, always both startTag and endTag is written
     // irrespective of number of entries in IteratorWriter

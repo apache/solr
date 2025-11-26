@@ -20,7 +20,7 @@ package org.apache.solr.api;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.solr.client.solrj.impl.RemoteExecutionException;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -125,7 +125,7 @@ public class NodeConfigClusterPluginsSourceTest extends SolrCloudTestCase {
     try {
       req.process(cluster.getSolrClient());
       fail("Expected a 404 response code because the Edit Apis are not registered");
-    } catch (RemoteExecutionException e) {
+    } catch (RemoteSolrException e) {
       assertEquals(
           "Expected a HTTP 404 response code because the /cluster/plugin API should not be registered",
           404,

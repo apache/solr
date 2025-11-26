@@ -34,8 +34,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -92,7 +92,7 @@ public class SchemaHandler extends RequestHandlerBase
         List<CommandOperation> ops = req.getCommands(false);
         List<Map<String, Object>> errs = CommandOperation.captureErrors(ops);
         if (!errs.isEmpty()) {
-          throw new ApiBag.ExceptionWithErrObject(
+          throw new SolrErrorWrappingException(
               SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
         }
 
@@ -102,7 +102,7 @@ public class SchemaHandler extends RequestHandlerBase
                 .collect(Collectors.toList());
         errs = new SchemaManager(req).performOperations(operationList);
         if (!errs.isEmpty()) {
-          throw new ApiBag.ExceptionWithErrObject(
+          throw new SolrErrorWrappingException(
               SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
         }
       } catch (IOException e) {

@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -102,9 +103,9 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      SolrClient.RemoteSolrException e =
+      RemoteSolrException e =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 runHealthcheckWithClient(solrClient);
               });
@@ -157,9 +158,9 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      SolrClient.RemoteSolrException e =
+      RemoteSolrException e =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 new V2Request.Builder("/node/health").build().process(solrClient);
               });

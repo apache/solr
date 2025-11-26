@@ -291,7 +291,12 @@ public interface JsonTextWriter extends TextWriter {
 
   @Override
   default void writeArray(String name, Iterator<?> val, boolean raw) throws IOException {
-    writeArrayOpener(-1); // no trivial way to determine array size
+    writeArray(name, val, -1, raw);
+  }
+
+  @Override
+  default void writeArray(String name, Iterator<?> val, int size, boolean raw) throws IOException {
+    writeArrayOpener(size); // no trivial way to determine array size
     writeJsonIter(val, raw);
     writeArrayCloser();
   }

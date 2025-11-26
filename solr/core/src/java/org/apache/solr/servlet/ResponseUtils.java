@@ -16,12 +16,12 @@
  */
 package org.apache.solr.servlet;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import org.apache.solr.api.ApiBag;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 import org.apache.solr.client.api.model.ErrorInfo;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.slf4j.Logger;
 
 /** Response helper methods. */
@@ -72,39 +72,66 @@ public class ResponseUtils {
       code = solrExc.code();
       NamedList<String> errorMetadata = solrExc.getMetadata();
       if (errorMetadata == null) {
-        errorMetadata = new NamedList<>();
+        errorMetadata = new SimpleOrderedMap<>();
       }
       errorMetadata.add(ErrorInfo.ERROR_CLASS, ex.getClass().getName());
       errorMetadata.add(
           ErrorInfo.ROOT_ERROR_CLASS, SolrException.getRootCause(ex).getClass().getName());
       info.add("metadata", errorMetadata);
-      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
-        info.add("details", exception.getErrs());
-      }
-    }
-
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      String msg = th.getMessage();
-      if (msg != null) {
-        info.add("msg", msg);
-        break;
-      }
     }
 
     // For any regular code, don't include the stack trace
-    if (code == 500 || code < 100) {
-      // hide all stack traces, as configured
-      if (!hideStackTrace(hideTrace)) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        info.add("trace", sw.toString());
+    boolean printStackTrace = (code == 500 || code < 100) && !hideStackTrace(hideTrace);
+    boolean stackTracePrinted = false;
+    NamedList<Object> lastTrace = null;
+    Throwable causedBy = ex;
+    NamedList<Object> errorInfo = info;
+    while (causedBy != null) {
+      if (lastTrace != null) {
+        lastTrace.add("causedBy", errorInfo);
       }
+      errorInfo.add("errorClass", causedBy.getClass().getName());
+      if (causedBy instanceof SolrException solrException) {
+        errorInfo.add("msg", solrException.getResponseMessage());
+        if (solrException.getDetails() != null) {
+          errorInfo.add("details", solrException.getDetails());
+        }
+      } else {
+        errorInfo.add("msg", causedBy.getMessage());
+      }
+      if (printStackTrace) {
+        stackTracePrinted = true;
+        lastTrace = new SimpleOrderedMap<>();
+        errorInfo.add("trace", lastTrace);
+        lastTrace.add(
+            "stackTrace",
+            Arrays.stream(causedBy.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.toList()));
+        causedBy = causedBy.getCause();
+        errorInfo = new SimpleOrderedMap<>();
+      } else {
+        causedBy = null;
+      }
+    }
+
+    if (code == 500 || code < 100) {
       log.error("500 Exception", ex);
 
       // non standard codes have undefined results with various servers
       if (code < 100) {
         log.warn("invalid return code: {}", code);
         code = 500;
+      }
+    }
+    if (!stackTracePrinted && ex != null && ex.getMessage() == null) {
+      // Find the first non-null message if we aren't printing the stacktrace
+      for (Throwable th = ex; th != null; th = th.getCause()) {
+        String msg = th.getMessage();
+        if (msg != null) {
+          info.add("msg", msg);
+          break;
+        }
       }
     }
 
@@ -145,33 +172,58 @@ public class ResponseUtils {
       errorInfo.metadata = new ErrorInfo.ErrorMetadata();
       errorInfo.metadata.errorClass = ex.getClass().getName();
       errorInfo.metadata.rootErrorClass = SolrException.getRootCause(ex).getClass().getName();
-      if (ex instanceof ApiBag.ExceptionWithErrObject exception) {
-        errorInfo.details = exception.getErrs();
-      }
+      errorInfo.details = solrExc.getDetails();
+      errorInfo.msg = solrExc.getResponseMessage();
     }
 
-    for (Throwable th = ex; th != null; th = th.getCause()) {
-      String msg = th.getMessage();
-      if (msg != null) {
-        errorInfo.msg = msg;
-        break;
-      }
+    for (Throwable th = ex; errorInfo.msg == null && th != null; th = th.getCause()) {
+      errorInfo.msg = th.getMessage();
     }
 
     // For any regular code, don't include the stack trace
-    if (code == 500 || code < 100) {
-      if (!hideStackTrace(hideTrace)) {
-        StringWriter sw = new StringWriter();
-        ex.printStackTrace(new PrintWriter(sw));
-        errorInfo.trace = sw.toString();
-      }
-      log.error("500 Exception", ex);
+    boolean printStackTrace = (code == 500 || code < 100) && !hideStackTrace(hideTrace);
+    errorInfo.errorClass = ex.getClass().getName();
+    if (errorInfo.msg == null) {
+      errorInfo.msg = ex.getMessage();
+    }
 
-      // non standard codes have undefined results with various servers
-      if (code < 100) {
-        log.warn("invalid return code: {}", code);
-        code = 500;
+    if (printStackTrace) {
+      errorInfo.trace = new ErrorInfo.ErrorStackTrace();
+      errorInfo.trace.stackTrace =
+          Arrays.stream(ex.getStackTrace())
+              .map(StackTraceElement::toString)
+              .collect(Collectors.toList());
+
+      ErrorInfo.ErrorStackTrace lastTrace = errorInfo.trace;
+      Throwable causedBy = ex.getCause();
+
+      while (causedBy != null) {
+        ErrorInfo.ErrorCausedBy errorCausedBy = new ErrorInfo.ErrorCausedBy();
+        lastTrace.causedBy = errorCausedBy;
+        errorCausedBy.errorClass = causedBy.getClass().getName();
+        if (ex instanceof SolrException solrExc) {
+          errorCausedBy.msg = solrExc.getResponseMessage();
+          errorInfo.details = solrExc.getDetails();
+        } else {
+          errorCausedBy.msg = causedBy.getMessage();
+        }
+        errorCausedBy.trace = new ErrorInfo.ErrorStackTrace();
+        errorCausedBy.trace.stackTrace =
+            Arrays.stream(causedBy.getStackTrace())
+                .map(StackTraceElement::toString)
+                .collect(Collectors.toList());
+        lastTrace = errorCausedBy.trace;
+        causedBy = causedBy.getCause();
       }
+    }
+
+    // non standard codes have undefined results with various servers
+    if (code < 100) {
+      log.warn("invalid return code: {}", code);
+      code = 500;
+    }
+    if (code == 500) {
+      log.error("500 Exception", ex);
     }
 
     errorInfo.code = code;

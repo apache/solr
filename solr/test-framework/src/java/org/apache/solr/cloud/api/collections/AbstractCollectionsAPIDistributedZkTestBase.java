@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -283,7 +284,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .isSuccess());
 
     expectThrows(
-        SolrClient.RemoteSolrException.class,
+        RemoteSolrException.class,
         () -> {
           CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
               .setCreateNodeSet(nn1 + "," + nn2)

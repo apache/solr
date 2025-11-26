@@ -40,6 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -526,7 +527,7 @@ public abstract class LBSolrClient extends SolrClient {
       if (isZombie) {
         reviveZombieServer(baseUrl);
       }
-    } catch (RemoteExecutionException e) {
+    } catch (RemoteSolrException e) {
       throw e;
     } catch (SolrException e) {
       // we retry on 404 or 403 or 503 or 500

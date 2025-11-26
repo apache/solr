@@ -141,6 +141,7 @@ public class JSONTupleStream implements TupleStreamParser {
   }
 
   private void handleError() throws IOException {
+    int objectLevel = 0;
     for (; ; ) {
       int event = parser.nextEvent();
       if (event == JSONParser.STRING) {
@@ -154,8 +155,12 @@ public class JSONTupleStream implements TupleStreamParser {
             }
           }
         }
+      } else if (event == JSONParser.OBJECT_START) {
+        objectLevel++;
       } else if (event == JSONParser.OBJECT_END) {
-        throw new IOException("");
+        if (--objectLevel == 0) {
+          throw new IOException("");
+        }
       }
     }
   }
