@@ -23,6 +23,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.LogLevel;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
