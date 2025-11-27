@@ -220,10 +220,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
 
     try (InputStream in =
         (InputStream)
-            ctx.http2SolrClient()
-                .requestWithBaseUrl(baseUrl, req::process)
-                .getResponse()
-                .get(STREAM_KEY)) {
+            ctx.http2SolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
 
       NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
@@ -322,8 +319,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new JavaBinResponseParser());
 
       try {
-        return ((Http2SolrClient) cloudSolrClient.getHttpClient())
-            .requestWithBaseUrl(url, request::process);
+        return request.processWithBaseUrl(cloudSolrClient.getHttpClient(), url, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }
