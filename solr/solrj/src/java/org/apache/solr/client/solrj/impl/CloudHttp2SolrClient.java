@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /**
  * SolrJ client class to communicate with SolrCloud using an Http/2-capable Solr Client. Instances
  * of this class communicate with Zookeeper to discover Solr endpoints for SolrCloud collections,
- * and then use the {@link LBHttp2SolrClient} to issue requests.
+ * and then use the {@link LBSolrClient} to issue requests.
  *
  * @since solr 8.0
  */
@@ -44,7 +44,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
-  private final LBHttp2SolrClient<HttpSolrClientBase> lbClient;
+  private final LBSolrClient lbClient;
   private final HttpSolrClientBase myClient;
   private final boolean clientIsInternal;
 
@@ -90,7 +90,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
 
-    this.lbClient = new LBHttp2SolrClient.Builder<>(myClient).build();
+    this.lbClient = builder.createOrGetLbClient(myClient);
   }
 
   private HttpSolrClientBase createOrGetHttpClientFromBuilder(Builder builder) {
@@ -160,7 +160,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   }
 
   @Override
-  public LBHttp2SolrClient<?> getLbClient() {
+  public LBSolrClient getLbClient() {
     return lbClient;
   }
 
@@ -451,6 +451,10 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       }
 
       return new CloudHttp2SolrClient(this);
+    }
+
+    protected LBSolrClient createOrGetLbClient(HttpSolrClientBase myClient) {
+      return myClient.createLBSolrClient();
     }
   }
 }
