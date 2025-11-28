@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateJettySolrClient;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
@@ -47,7 +47,7 @@ public class StreamingSolrClients {
 
   private Http2SolrClient httpClient;
 
-  private Map<String, ConcurrentUpdateHttp2SolrClient> solrClients = new HashMap<>();
+  private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
 
   private ExecutorService updateExecutor;
@@ -67,7 +67,7 @@ public class StreamingSolrClients {
 
   public synchronized SolrClient getSolrClient(final SolrCmdDistributor.Req req) {
     String url = getFullUrl(req.node.getUrl());
-    ConcurrentUpdateHttp2SolrClient client = solrClients.get(url);
+    ConcurrentUpdateBaseSolrClient client = solrClients.get(url);
     if (client == null) {
       // NOTE: increasing to more than 1 threadCount for the client could cause updates to be
       // reordered on a greater scale since the current behavior is to only increase the number of
@@ -93,13 +93,13 @@ public class StreamingSolrClients {
   }
 
   public synchronized void blockUntilFinished() throws IOException {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
+    for (ConcurrentUpdateBaseSolrClient client : solrClients.values()) {
       client.blockUntilFinished();
     }
   }
 
   public synchronized void shutdown() {
-    for (ConcurrentUpdateHttp2SolrClient client : solrClients.values()) {
+    for (ConcurrentUpdateBaseSolrClient client : solrClients.values()) {
       client.close();
     }
   }

@@ -52,7 +52,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
+public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
@@ -397,7 +397,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
         var http2Client =
             new Http2SolrClient.Builder().withIdleTimeout(1, TimeUnit.MILLISECONDS).build();
         var client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(
+            new ConcurrentUpdateJettySolrClient.Builder(
                     "http://"
                         + localHost.getHostAddress()
                         + ":"

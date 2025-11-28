@@ -36,21 +36,21 @@ import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpMethod;
 
 /** A ConcurrentUpdate SolrClient using {@link Http2SolrClient}. */
-public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateHttp2SolrClient {
+public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrClient {
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
   private final Http2SolrClient client;
 
-  public static class Builder extends ConcurrentUpdateHttp2SolrClient.Builder {
+  public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
-     * @see ConcurrentUpdateHttp2SolrClient.Builder#Builder(String, HttpSolrClientBase)
+     * @see ConcurrentUpdateBaseSolrClient.Builder#Builder(String, HttpSolrClientBase)
      */
     public Builder(String baseUrl, Http2SolrClient client) {
       this(baseUrl, client, false);
     }
 
     /**
-     * @see ConcurrentUpdateHttp2SolrClient.Builder#Builder(String, HttpSolrClientBase, boolean)
+     * @see ConcurrentUpdateBaseSolrClient.Builder#Builder(String, HttpSolrClientBase, boolean)
      */
     public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttpClient) {
       super(baseSolrUrl, client, closeHttpClient);
@@ -70,10 +70,10 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateHttp2SolrCl
 
   @Override
   protected InputStreamResponseListener doSendUpdateStream(
-      ConcurrentUpdateHttp2SolrClient.Update update) throws IOException, InterruptedException {
+      ConcurrentUpdateBaseSolrClient.Update update) throws IOException, InterruptedException {
     InputStreamResponseListener responseListener;
     try (OutStream out = initOutStream(basePath, update.request(), update.collection())) {
-      ConcurrentUpdateHttp2SolrClient.Update upd = update;
+      ConcurrentUpdateBaseSolrClient.Update upd = update;
       while (upd != null) {
         UpdateRequest req = upd.request();
         if (!out.belongToThisStream(req, upd.collection())) {

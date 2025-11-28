@@ -99,7 +99,7 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - geared towards indexing-centric workloads.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
 
 === Common Configuration Options
@@ -147,7 +147,7 @@ include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeou
 
 When these values are not explicitly provided, SolrJ falls back to using the defaults for the OS/environment is running on.
 
-`ConcurrentUpdateSolrClient` and its counterpart `ConcurrentUpdateHttp2SolrClient` also implement a stall prevention
+`ConcurrentUpdateSolrClient` and its counterpart `ConcurrentUpdateBaseSolrClient` also implement a stall prevention
 timeout that allows requests to non-responsive nodes to fail quicker than waiting for a socket timeout.
 The default value of this timeout is set to 15000 ms and can be adjusted by a system property `solr.cloud.client.stallTime`.
 This value should be smaller than `solr.jetty.http.idleTimeout` (Which is 120000 ms by default) and greater than the

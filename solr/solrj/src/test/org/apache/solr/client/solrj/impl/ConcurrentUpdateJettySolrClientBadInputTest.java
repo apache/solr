@@ -24,7 +24,7 @@ import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBase {
+public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrJettyTestBase {
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
