@@ -316,7 +316,7 @@ public class SolrCmdDistributor implements Closeable {
       try {
         clients
             .getHttpClient()
-            .requestWithBaseUrl(req.node.getBaseUrl(), req.node.getCoreName(), req.uReq);
+            .requestWithBaseUrl(req.node.getBaseUrl(), req.uReq, req.node.getCoreName());
       } catch (Exception e) {
         log.error("Exception making request", e);
         SolrError error = new SolrError();

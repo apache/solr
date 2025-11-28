@@ -72,6 +72,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
@@ -158,28 +159,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-
-    if (httpJettyBasedCloudSolrClient != null) {
-      try {
-        httpJettyBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    if (httpJdkBasedCloudSolrClient != null) {
-      try {
-        httpJdkBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    if (zkBasedCloudSolrClient != null) {
-      try {
-        zkBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    IOUtils.closeQuietly(httpJettyBasedCloudSolrClient);
+    IOUtils.closeQuietly(httpJdkBasedCloudSolrClient);
+    IOUtils.closeQuietly(zkBasedCloudSolrClient);
 
     shutdownCluster();
     httpJettyBasedCloudSolrClient = null;

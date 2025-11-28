@@ -72,6 +72,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
@@ -122,13 +123,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-    if (httpBasedCloudSolrClient != null) {
-      try {
-        httpBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    IOUtils.closeQuietly(httpBasedCloudSolrClient);
     httpBasedCloudSolrClient = null;
 
     shutdownCluster();
