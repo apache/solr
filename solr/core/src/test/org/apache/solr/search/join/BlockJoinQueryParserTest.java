@@ -645,7 +645,7 @@ public class BlockJoinQueryParserTest extends SolrTestCaseJ4 {
         req(
             "q", "{!parent tag=top filters=$childFq which=$pq}",
             "pq", "parent_s:[* TO *]",
-            "childFq", "-child_s:l"
+            "childFq", "-child_s:l -child_s:k"
         ),
         "//*[@numFound='6']"
     );
