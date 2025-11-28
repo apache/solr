@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipException;
@@ -35,7 +36,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.lucene.tests.util.TestRuleRestoreSystemProperties;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.apache.HttpClientUtil.SocketFactoryRegistryProvider;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,13 +96,15 @@ public class HttpClientUtilTest extends SolrTestCase {
         hostnameVerifier.getClass());
   }
 
-  @SuppressForbidden(reason = "Uses commons-lang3 FieldUtils.readField to get hostnameVerifier")
   private Object getHostnameVerifier(SSLConnectionSocketFactory sslSocketFactory) {
     try {
-      return org.apache.commons.lang3.reflect.FieldUtils.readField(
-          sslSocketFactory, "hostnameVerifier", true);
+      Field hostnameVerifier = sslSocketFactory.getClass().getDeclaredField("hostnameVerifier");
+      hostnameVerifier.setAccessible(true);
+      return hostnameVerifier.get(sslSocketFactory);
     } catch (IllegalAccessException e) {
       throw new AssertionError("Unexpected access error reading hostnameVerifier field", e);
+    } catch (NoSuchFieldException e) {
+      throw new LinkageError("Unexpected access error reading hostnameVerifier field", e);
     }
   }
 
