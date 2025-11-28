@@ -108,12 +108,21 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
+
+    final double efSearchScaleFactor = localParams.getDouble("efSearchScaleFactor", 1.0);
+    if (efSearchScaleFactor < 1.0) {
+      throw new IllegalArgumentException(
+          "efSearchScaleFactor (" + efSearchScaleFactor + ") must be >= 1.0");
+    }
+    final int efSearch = (int) Math.round(efSearchScaleFactor * topK);
+
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(),
         vectorToSearch,
         topK,
+        efSearch,
         getFilterQuery(),
         getSeedQuery(),
         getEarlyTerminationParams(),
