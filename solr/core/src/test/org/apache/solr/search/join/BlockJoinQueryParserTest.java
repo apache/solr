@@ -42,7 +42,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class BJQParserTest extends SolrTestCaseJ4 {
+public class BlockJoinQueryParserTest extends SolrTestCaseJ4 {
 
   private static final String[] klm = new String[] {"k", "l", "m"};
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
