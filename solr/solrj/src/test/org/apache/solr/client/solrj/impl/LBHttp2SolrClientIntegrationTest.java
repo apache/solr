@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,6 +34,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
@@ -114,7 +115,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
           aSolr.tearDown();
         } catch (Exception e) {
           // Log but don't fail the test due to teardown issues
-          log.warn("Exception during tearDown of {}: {}", aSolr.name, e.getMessage());
+          log.warn("Exception during tearDown of {}", aSolr.name, e);
         }
       }
     }
@@ -167,14 +168,14 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       try {
         solr[1].jetty.stop();
       } catch (Exception e) {
-        log.warn("Exception stopping jetty during test: {}", e.getMessage());
+        log.warn("Exception stopping jetty during test", e);
       } finally {
         solr[1].jetty = null;
       }
-      
+
       // Give some time for the LB client to detect the server is down
       Thread.sleep(100);
-      
+
       names.clear();
       for (int i = 0; i < solr.length; i++) {
         resp = h.lbClient.query(solrQuery);
@@ -201,17 +202,17 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
     try (var h = client(baseSolrEndpoints)) {
       SolrQuery solrQuery = new SolrQuery("*:*");
       QueryResponse resp = null;
-      
+
       try {
         solr[0].jetty.stop();
       } catch (Exception e) {
-        log.warn("Exception stopping jetty[0] during test: {}", e.getMessage());
+        log.warn("Exception stopping jetty[0] during test", e);
       } finally {
         solr[0].jetty = null;
       }
-      
+
       Thread.sleep(100); // Give LB client time to detect server down
-      
+
       resp = h.lbClient.query(solrQuery);
       String name = resp.getResults().get(0).getFieldValue("name").toString();
       assertEquals("solr/collection11", name);
@@ -222,11 +223,11 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       try {
         solr[1].jetty.stop();
       } catch (Exception e) {
-        log.warn("Exception stopping jetty[1] during test: {}", e.getMessage());
+        log.warn("Exception stopping jetty[1] during test", e);
       } finally {
         solr[1].jetty = null;
       }
-      
+
       startJettyAndWaitForAliveCheckQuery(solr[0]);
 
       resp = h.lbClient.query(solrQuery);
@@ -254,19 +255,29 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
   }
 
   private static void stopJettyWithTimeout(JettySolrRunner jetty, long timeoutMs) throws Exception {
-    final var future = java.util.concurrent.CompletableFuture.runAsync(() -> {
-      try {
-        jetty.stop();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
-    });
-    
+    final var executor =
+        ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("jetty-shutdown"));
+
     try {
-      future.get(timeoutMs, TimeUnit.MILLISECONDS);
-    } catch (java.util.concurrent.TimeoutException e) {
-      future.cancel(true);
-      throw new Exception("Jetty shutdown timed out after " + timeoutMs + "ms", e);
+      final var future =
+          java.util.concurrent.CompletableFuture.runAsync(
+              () -> {
+                try {
+                  jetty.stop();
+                } catch (Exception e) {
+                  throw new RuntimeException(e);
+                }
+              },
+              executor);
+
+      try {
+        future.get(timeoutMs, TimeUnit.MILLISECONDS);
+      } catch (java.util.concurrent.TimeoutException e) {
+        future.cancel(true);
+        throw new Exception("Jetty shutdown timed out after " + timeoutMs + "ms", e);
+      }
+    } finally {
+      executor.shutdown();
     }
   }
 
@@ -343,7 +354,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
           // Use a timeout wrapper for shutdown
           stopJettyWithTimeout(jetty, 5000);
         } catch (Exception e) {
-          log.warn("Exception stopping jetty for {}: {}", name, e.getMessage());
+          log.warn("Exception stopping jetty for {}", name, e);
         } finally {
           jetty = null;
         }
@@ -384,12 +395,12 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
       try {
         lbClient.close();
       } catch (Exception e) {
-        log.warn("Exception closing LB client: {}", e.getMessage());
+        log.warn("Exception closing LB client", e);
       }
       try {
         delegate.close();
       } catch (IOException ioe) {
-        log.warn("Exception closing delegate client: {}", ioe.getMessage());
+        log.warn("Exception closing delegate client", ioe);
         // Don't throw exception during cleanup to avoid masking test failures
       }
     }
