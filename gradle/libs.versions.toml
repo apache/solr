@@ -162,7 +162,7 @@ langchain4j = "0.35.0"
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "3.4.4"
-logchange = "1.19.10"
+logchange = "1.19.13"
 ltgt-errorprone = "3.1.0"
 mockito = "5.19.0"
 morethan-jmhreport = "0.9.6"
@@ -179,9 +179,9 @@ nodejs = "22.18.0"
 onnx = "1.23.0"
 openapi = "7.14.0"
 openjdk-jmh = "1.37"
-opentelemetry = "1.53.0"
-opentelemetry-prometheus = "1.50.0-alpha"
-opentelemetry-runtime-telemetry = "2.11.0-alpha"
+opentelemetry = "1.56.0"
+opentelemetry-prometheus = "1.56.0-alpha"
+opentelemetry-runtime-telemetry = "2.22.0-alpha"
 osgi-annotation = "8.1.0"
 oshai-logging = "7.0.13"
 # @keep for version alignment
@@ -483,7 +483,6 @@ opentelemetry-bom = { module = "io.opentelemetry:opentelemetry-bom", version.ref
 opentelemetry-context = { module = "io.opentelemetry:opentelemetry-context", version.ref = "opentelemetry" }
 opentelemetry-exporter-otlp = { module = "io.opentelemetry:opentelemetry-exporter-otlp", version.ref = "opentelemetry" }
 opentelemetry-exporter-prometheus = { module = "io.opentelemetry:opentelemetry-exporter-prometheus", version.ref = "opentelemetry-prometheus" }
-opentelemetry-exporter-sender-okhttp = { module = "io.opentelemetry:opentelemetry-exporter-sender-okhttp", version.ref = "opentelemetry" }
 opentelemetry-runtime-telemetry = { module = "io.opentelemetry.instrumentation:opentelemetry-runtime-telemetry-java17", version.ref = "opentelemetry-runtime-telemetry" }
 opentelemetry-sdk = { module = "io.opentelemetry:opentelemetry-sdk", version.ref = "opentelemetry" }
 opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentelemetry-sdk-extension-autoconfigure", version.ref = "opentelemetry" }

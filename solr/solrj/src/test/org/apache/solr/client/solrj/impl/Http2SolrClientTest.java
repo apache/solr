@@ -43,6 +43,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.ServletFixtures;
+import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -137,7 +139,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
       try {
         // if client base url is null, request url will be used in exception message
-        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
+        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, new SolrPing(), DEFAULT_CORE);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
@@ -230,7 +232,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
-        client.requestWithBaseUrl(urlToUse, null, new QueryRequest(queryParams));
+        client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams), null);
       } catch (SolrClient.RemoteSolrException rse) {
       }
 
@@ -675,7 +677,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
 
       // too little time to succeed
       int packets = LuceneTestCase.RANDOM_MULTIPLIER == 1 ? 10 : 80; // 60 crosses a default timeout
-      long timeToSendMs = (long) packets * BasicHttpSolrClientTest.SlowStreamServlet.PACKET_MS;
+      long timeToSendMs = (long) packets * ServletFixtures.SlowStreamServlet.PACKET_MS;
       QueryRequest req = new QueryRequest(SolrParams.of("count", "" + packets));
       req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
       assertIsTimeout(expectThrows(SolrServerException.class, () -> oldClient.request(req)));

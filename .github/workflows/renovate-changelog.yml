@@ -2,7 +2,7 @@ name: Auto-generate Changelog for Renovate PRs
 
 # Automatically generate changelog entries when Renovate opens or updates a PR
 on:
-  pull_request:
+  pull_request_target:
     types:
       - opened
       - synchronize
@@ -26,7 +26,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.SOLRBOT_GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -52,8 +52,8 @@ jobs:
           fi
 
           # Configure git with a separate author identity for the workflow
-          git config user.name "renovate-bot"
-          git config user.email "renovate-bot@noreply.github.com"
+          git config user.name "SolrBot"
+          git config user.email "<solrbot@cominvent.com>"
 
           # Add and commit the changelog entry
           git add changelog/unreleased/
