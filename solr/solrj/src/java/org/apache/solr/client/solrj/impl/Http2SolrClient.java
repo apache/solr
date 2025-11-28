@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -527,6 +528,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
+  }
+
+  @Override
+  protected LBSolrClient createLBSolrClient() {
+    return new LBJettySolrClient.Builder(this).build();
   }
 
   @Override

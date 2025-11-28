@@ -214,7 +214,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
       assertTrue(createdClient.getHttpClient() instanceof Http2SolrClient);
-      assertTrue(createdClient.getLbClient().solrClient instanceof Http2SolrClient);
+      assertTrue(createdClient.getLbClient().getClient(null) instanceof Http2SolrClient);
     }
   }
 
