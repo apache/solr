@@ -143,8 +143,6 @@ limitations under the License.
               <th>Node</th>
               <th>CPU</th>
               <th>Heap</th>
-              <th>Disk usage</th>
-              <th>Requests</th>
               <th>Collections</th>
               <th>Replicas</th>
           </tr>
@@ -164,7 +162,6 @@ limitations under the License.
                   Uptime: {{h.uptime}}<br/>
                   <span title="Used: {{h.memUsed}} - includes OS file-cache, and it is normal for it to approach 100%">Memory: {{h.memTotal}}</span><br/> 
                   File descriptors: {{h.openFileDescriptorCount}}/{{h.maxFileDescriptorCount}}<br/>
-                  Disk: <span class="{{h.diskUsedPctStyle}}" title="Nodes may use other disks too">{{h.diskTotal}} used: {{h.diskUsedPct}}%</span><br/>
                   Load: {{h.loadAvg}}
                 </div>
                 <div class="node-spec" ng-click="toggleHostDetails(h.host)">
@@ -200,21 +197,6 @@ limitations under the License.
                   Used: {{n.heapUsed}}
                 </div>
               </td>
-              <td class="scroll-height-250" ng-class="{'dead-node': n.dead}">
-                <div>
-                  <div class="node-disk" title="Available disk: {{n.diskTotal}} free: {{n.diskFree}} used by this node: {{n.size}}" ng-show="!n.dead">
-                    {{n.size}}
-                  </div>
-                  <div class="node-spec" ng-show="showDetails[key] && !n.dead">
-                    Total #docs: {{n.numDocs}}<br/>
-                    Avg size/doc: {{n.sizePerDoc}}
-                  </div>
-                  <div id="chart{{n.id}}" ng-show="showDetails[key] && !n.dead"></div>
-                </div>
-              </td>
-              <td ng-class="{'dead-node': n.dead}"><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}" ng-show="!n.dead">
-                RPM: {{n.req15minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
-              </td>
               <td ng-class="{'dead-node': n.dead}">
                 <div ng-show="!n.collections">(none)</div>
                 <div ng-repeat="c in n.collections | limitTo:showDetails[key]?999:2 track by $index">
@@ -227,12 +209,9 @@ limitations under the License.
               <td class="scroll-height-250" ng-class="{'dead-node': n.dead}">
                   <div ng-show="!n.cores">(none)</div>
                   <div ng-repeat="core in n.cores | limitTo:showDetails[key]?999:2 track by $index">
-                    <div ng-show="!n.dead"><a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core + '/core-overview'}}">{{ core.label }}</a> ({{core.numDocsHuman}} docs)</div>
+                    <div ng-show="!n.dead"><a class="{{core.leader ? 'leader' : 'replica'}}" href="{{core.base_url + '/#/' + core.core + '/core-overview'}}">{{ core.label }}</a></div>
                     <div ng-show="n.dead">{{ core.label }}</div>
                     <ul class="core-details" ng-show="showDetails[key] && !n.dead" >
-                      <li>deleted: {{core.deletedDocsHuman}}</li>
-                      <li>warmupTime: {{core.warmupTime}}</li>
-                      <li ng-show="core.numDocs > 0">avg size/doc: {{core.avgSizePerDoc}}</li>
                     </ul>
                   </div>
                   <div class="more" ng-show="n.cores.length > 2 && !showDetails[key] && !n.dead">
