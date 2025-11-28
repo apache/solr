@@ -163,7 +163,7 @@ public class BlockJoinQueryParserTest extends SolrTestCaseJ4 {
         "//doc/arr[@name=\"parent_s\"]/str='c'",
         "//doc/arr[@name=\"parent_s\"]/str='d'",
         "//doc/arr[@name=\"parent_s\"]/str='e'",
-        "//doc/arr[@name=\"parent_s\"]/str='f'"
+        "//doc/arr[@name=\"parent_s\"]/str='f'",
       };
 
   @Test
@@ -637,6 +637,18 @@ public class BlockJoinQueryParserTest extends SolrTestCaseJ4 {
       final int count = req.getSearcher().count(query);
       assertEquals("expecting new doc is visible to old query", 2, count);
     }
+  }
+
+  @Test
+  public void testPureNegativeQueryInChildFilters() {
+    assertQ(
+        req(
+            "q", "{!parent tag=top filters=$childFq which=$pq}",
+            "pq", "parent_s:[* TO *]",
+            "childFq", "-child_s:l"
+        ),
+        "//*[@numFound='6']"
+    );
   }
 
   @After
