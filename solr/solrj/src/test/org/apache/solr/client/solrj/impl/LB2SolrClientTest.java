@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -41,18 +40,14 @@ import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * Test for LBHttp2SolrClient
+ * Integration test for {@link LBSolrClient}
  *
  * @since solr 1.4
  */
 @LogLevel("org.apache.solr.client.solrj.impl=DEBUG")
-public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
-
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class LB2SolrClientTest extends SolrTestCaseJ4 {
 
   SolrInstance[] solr = new SolrInstance[3];
 
@@ -124,7 +119,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
               .build();
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBSolrClient.Builder<>(delegateClient, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
@@ -137,7 +132,7 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
               .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
               .build();
       var lbClient =
-          new LBHttp2SolrClient.Builder<>(delegateClient, baseSolrEndpoints)
+          new LBSolrClient.Builder<>(delegateClient, baseSolrEndpoints)
               .withDefaultCollection(solr[0].getDefaultCollection())
               .setAliveCheckInterval(500, TimeUnit.MILLISECONDS)
               .build();
@@ -316,10 +311,10 @@ public class LBHttp2SolrClientIntegrationTest extends SolrTestCaseJ4 {
 
   private static class LBClientHolder implements AutoCloseable {
 
-    final LBHttp2SolrClient<?> lbClient;
-    final HttpSolrClientBase delegate;
+    final LBSolrClient lbClient;
+    final SolrClient delegate; // http
 
-    LBClientHolder(LBHttp2SolrClient<?> lbClient, HttpSolrClientBase delegate) {
+    LBClientHolder(LBSolrClient lbClient, SolrClient delegate) {
       this.lbClient = lbClient;
       this.delegate = delegate;
     }

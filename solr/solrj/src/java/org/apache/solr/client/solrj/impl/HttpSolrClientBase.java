@@ -101,6 +101,11 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public abstract HttpSolrClientBuilderBase<?, ?> builder();
 
+  /**
+   * @lucene.internal
+   */
+  protected abstract LBSolrClient createLBSolrClient();
+
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
     return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);

@@ -20,107 +20,30 @@ import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.MDC;
 
-/**
- * This "LoadBalanced Http Solr Client" is a load balancing wrapper around a Http Solr Client. This
- * is useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
- *
- * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
- * sent to the correct leader; no inter-node routing is done.
- *
- * <p>In SolrCloud (leader/replica) scenarios, it is usually better to use {@link CloudSolrClient},
- * but this class may be used for updates because the server will forward them to the appropriate
- * leader.
- *
- * <p>It offers automatic failover when a server goes down, and it detects when the server comes
- * back up.
- *
- * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
- * expected to point to the Solr "root" path (i.e. "/solr").
- *
- * <blockquote>
- *
- * <pre>
- * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
- *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
- *     .build();
- * </pre>
- *
- * </blockquote>
- *
- * Users who wish to balance traffic across a specific set of replicas or cores may specify each
- * endpoint as a root-URL and core-name pair. For example:
- *
- * <blockquote>
- *
- * <pre>
- * SolrClient client = new LBHttp2SolrClient.Builder(http2SolrClient,
- *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
- *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
- *     .build();
- * </pre>
- *
- * </blockquote>
- *
- * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
- * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
- * and the request is resent to the next live endpoint. This process is continued till it tries all
- * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
- *
- * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@link
- * LBHttp2SolrClient.Builder#setAliveCheckInterval(int, TimeUnit)}. The default is set to one
- * minute.
- *
- * <p><b>When to use this?</b><br>
- * This can be used as a software load balancer when you do not wish to set up an external load
- * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
- * httpd with mod_proxy_balancer as a load balancer. See <a
- * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
- *
- * @since solr 8.0
- */
-public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClient {
+/** A {@link LBSolrClient} adding {@link #requestAsync(Req)}. */
+public abstract class LBAsyncSolrClient extends LBSolrClient {
+  // formerly known as LBHttp2SolrClient, using Http2SolrClient (jetty)
 
-  protected final C solrClient;
+  protected final HttpSolrClientBase solrClient;
 
-  @SuppressWarnings("unchecked")
-  private LBHttp2SolrClient(Builder<?> builder) {
-    super(Arrays.asList(builder.solrEndpoints));
-    this.solrClient = (C) builder.solrClient;
-    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
-    this.defaultCollection = builder.defaultCollection;
+  protected LBAsyncSolrClient(Builder<?> builder) {
+    super(builder);
+    this.solrClient = builder.getSolrClient();
   }
 
   @Override
-  protected SolrClient getClient(Endpoint endpoint) {
+  protected HttpSolrClientBase getClient(Endpoint endpoint) {
     return solrClient;
-  }
-
-  @Override
-  public ResponseParser getParser() {
-    return solrClient.getParser();
-  }
-
-  @Override
-  public RequestWriter getRequestWriter() {
-    return solrClient.getRequestWriter();
-  }
-
-  public Set<String> getUrlParamNames() {
-    return solrClient.getUrlParamNames();
   }
 
   /**
@@ -214,10 +137,9 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       RetryListener listener) {
     String baseUrl = endpoint.toString();
     rsp.server = baseUrl;
-    final var client = (Http2SolrClient) getClient(endpoint);
     try {
       CompletableFuture<NamedList<Object>> future =
-          client.requestWithBaseUrl(baseUrl, (c) -> c.requestAsync(req.getRequest()));
+          requestAsyncWithUrl(getClient(endpoint), baseUrl, req.getRequest());
       future.whenComplete(
           (result, throwable) -> {
             if (!future.isCompletedExceptionally()) {
@@ -228,10 +150,14 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
           });
       return future;
     } catch (SolrServerException | IOException e) {
-      // Unreachable, since 'requestWithBaseUrl' above is running the request asynchronously
+      // Unreachable, since 'requestAsyncWithUrl' above is running the request asynchronously
       throw new RuntimeException(e);
     }
   }
+
+  protected abstract CompletableFuture<NamedList<Object>> requestAsyncWithUrl(
+      SolrClient client, String baseUrl, SolrRequest<?> request)
+      throws SolrServerException, IOException;
 
   private void onSuccessfulRequest(
       NamedList<Object> result,
@@ -291,45 +217,6 @@ public class LBHttp2SolrClient<C extends HttpSolrClientBase> extends LBSolrClien
       }
     } catch (Throwable e) {
       listener.onFailure(new SolrServerException(e), false);
-    }
-  }
-
-  public static class Builder<C extends HttpSolrClientBase> {
-
-    private final C solrClient;
-    private final LBSolrClient.Endpoint[] solrEndpoints;
-    private long aliveCheckIntervalMillis =
-        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
-    protected String defaultCollection;
-
-    public Builder(C solrClient, Endpoint... endpoints) {
-      this.solrClient = solrClient;
-      this.solrEndpoints = endpoints;
-    }
-
-    /**
-     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
-     * this to set that interval
-     *
-     * @param aliveCheckInterval how often to ping for aliveness
-     */
-    public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
-      if (aliveCheckInterval <= 0) {
-        throw new IllegalArgumentException(
-            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
-      }
-      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
-      return this;
-    }
-
-    /** Sets a default for core or collection based requests. */
-    public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
-      this.defaultCollection = defaultCoreOrCollection;
-      return this;
-    }
-
-    public LBHttp2SolrClient<C> build() {
-      return new LBHttp2SolrClient<C>(this);
     }
   }
 }
