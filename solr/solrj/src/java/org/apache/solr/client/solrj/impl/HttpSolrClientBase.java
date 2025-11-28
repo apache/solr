@@ -349,6 +349,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
    * @param collection an optional collection or core name used to override the client's "default
    *     collection". May be 'null' for any requests that don't require a collection or wish to rely
    *     on the client's default
+   * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
    */
   public abstract NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)

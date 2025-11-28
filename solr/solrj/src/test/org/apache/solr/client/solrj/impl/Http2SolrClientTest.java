@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ServletFixtures.DebugServlet;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
@@ -44,6 +43,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.ServletFixtures;
+import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -138,7 +139,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client = new Http2SolrClient.Builder(null).build()) {
       try {
         // if client base url is null, request url will be used in exception message
-        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CORE, new SolrPing());
+        client.requestWithBaseUrl(getBaseUrl() + DEBUG_SERVLET_PATH, new SolrPing(), DEFAULT_CORE);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
@@ -231,7 +232,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
     try (Http2SolrClient client =
         new Http2SolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
-        client.requestWithBaseUrl(urlToUse, null, new QueryRequest(queryParams));
+        client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams), null);
       } catch (SolrClient.RemoteSolrException rse) {
       }
 
