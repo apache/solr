@@ -24,8 +24,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.SolrJMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
+@Ignore("Apache HttpClient stuff will get deleted SOLR-16367")
 public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   private static final int NODE_COUNT = 1;
 

@@ -56,7 +56,7 @@ public class ConcurrentUpdateHttp2SolrClientTest extends SolrJettyTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
-  static class TestServlet extends HttpServlet
+  public static class TestServlet extends HttpServlet
       implements JavaBinUpdateRequestCodec.StreamingUpdateHandler {
     private static final long serialVersionUID = 1L;
 
