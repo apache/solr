@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.junit.Test;
 
 public class CloudSolrClientBuilderTest extends SolrTestCase {
@@ -113,7 +115,7 @@ public class CloudSolrClientBuilderTest extends SolrTestCase {
   @Test
   public void testDefaultCollectionPassedFromBuilderToClient() throws IOException {
     try (CloudSolrClient createdClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudLegacySolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .withDefaultCollection("aCollection")
             .build()) {
