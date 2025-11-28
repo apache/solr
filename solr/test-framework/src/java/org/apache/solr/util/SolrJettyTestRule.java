@@ -55,9 +55,10 @@ public class SolrJettyTestRule extends SolrClientTestRule {
         throw e;
       } catch (Exception e) {
         throw new RuntimeException(e);
+      } finally {
+        jetty = null;
+        enableProxy = false;
       }
-      jetty = null;
-      enableProxy = false;
     }
   }
 

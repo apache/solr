@@ -42,7 +42,6 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
@@ -78,7 +77,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
             COLLECTION,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
   }
 
   private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {

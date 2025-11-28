@@ -104,7 +104,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
     @Override
     public CallBack call() throws Exception {
-      response = httpSolrClient.requestWithBaseUrl(shardBaseUrl, shardCoreName, req);
+      response = req.processWithBaseUrl(httpSolrClient, shardBaseUrl, shardCoreName);
       return this;
     }
   }

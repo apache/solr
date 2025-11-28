@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
+import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue;
 
 import java.util.Collections;
 import java.util.Optional;

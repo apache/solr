@@ -248,7 +248,7 @@ public class CollectionHandlingUtils {
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-    return solrClient.requestWithBaseUrl(baseUrl, coreName, ureq);
+    return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 
   public static String waitForCoreNodeName(

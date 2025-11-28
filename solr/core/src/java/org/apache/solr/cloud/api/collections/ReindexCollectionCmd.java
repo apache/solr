@@ -864,9 +864,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         new GenericSolrRequest(
                 SolrRequest.METHOD.POST, "/stream", SolrRequest.SolrRequestType.ADMIN, solrParams)
             .setRequiresCollection(true);
-    final var solrResponse =
-        solrClient.requestWithBaseUrl(daemonReplica.getBaseUrl(), daemonReplica.getCoreName(), req);
-    return solrResponse.getResponse();
+    return solrClient.requestWithBaseUrl(
+        daemonReplica.getBaseUrl(), req, daemonReplica.getCoreName());
   }
 
   private void cleanup(

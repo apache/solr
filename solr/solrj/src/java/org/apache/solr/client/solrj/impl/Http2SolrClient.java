@@ -44,7 +44,6 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.SSLConfig;
 import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
@@ -56,6 +55,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -239,8 +239,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
             : sslConfig.createClientContextFactory();
 
     Long keyStoreReloadIntervalSecs = builder.keyStoreReloadIntervalSecs;
-    if (keyStoreReloadIntervalSecs == null && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-      keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+    if (keyStoreReloadIntervalSecs == null
+        && EnvUtils.getPropertyAsBool("solr.keystore.reload.enabled", false)) {
+      keyStoreReloadIntervalSecs =
+          EnvUtils.getPropertyAsLong("solr.jetty.ssl.context.reload.scan.interval.secs", 30l);
     }
     if (sslContextFactory != null
         && sslContextFactory.getKeyStoreResource() != null
@@ -611,20 +613,11 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
-  /**
-   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
-   * used by this client
-   *
-   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
-   * @param collection an optional collection or core name used to override the client's "default
-   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
-   *     on the client's default
-   * @param req the SolrRequest to send
-   */
-  public final <R extends SolrResponse> R requestWithBaseUrl(
-      String baseUrl, String collection, SolrRequest<R> req)
+  @Override
+  public NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    return requestWithBaseUrl(baseUrl, (c) -> req.process(c, collection));
+    return requestWithBaseUrl(baseUrl, c -> c.request(solrRequest, collection));
   }
 
   /**
@@ -1053,7 +1046,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       if (cookieStore == null) {
         return cookieStore;
       }
-      if (Boolean.getBoolean("solr.http.disableCookies")) {
+      if (!EnvUtils.getPropertyAsBool("solr.solrj.http.cookies.enabled", false)) {
         return new HttpCookieStore.Empty();
       }
       /*

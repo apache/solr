@@ -165,7 +165,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  protected NamedList<Object> requestWithBaseUrl(
+  @Override
+  public NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
