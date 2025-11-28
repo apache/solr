@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.SolrJMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.junit.BeforeClass;
 import org.junit.Test;
