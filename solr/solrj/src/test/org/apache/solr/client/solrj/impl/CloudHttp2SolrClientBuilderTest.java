@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -279,5 +280,17 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
       assertEquals(stateProvider, cloudSolrClient.getClusterStateProvider());
     }
     verify(stateProvider, times(1)).close();
+  }
+
+  @Test
+  @SuppressWarnings({"try"})
+  public void test0Timeouts() throws IOException {
+    try (CloudSolrClient createdClient =
+        new CloudHttp2SolrClient.Builder(Collections.singletonList(ANY_ZK_HOST), Optional.empty())
+            .withZkConnectTimeout(0, TimeUnit.MILLISECONDS)
+            .withZkClientTimeout(0, TimeUnit.MILLISECONDS)
+            .build()) {
+      assertNotNull(createdClient);
+    }
   }
 }

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
@@ -38,7 +39,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrJMetricTestUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -49,8 +49,10 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -61,6 +63,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -79,6 +83,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
+import org.apache.solr.util.SolrJMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -1195,6 +1200,74 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertTrue("No responses", shardAddresses.size() > 0);
     if (log.isInfoEnabled()) {
       log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray()));
+    }
+  }
+
+  @Test
+  public void testPing() throws Exception {
+    final String testCollection = "ping_test";
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 2);
+    final SolrClient clientUnderTest = getRandomClient();
+
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+
+    assertEquals("This should be OK", 0, response.getStatus());
+  }
+
+  public void testPerReplicaStateCollection() throws Exception {
+    String collection = getSaferTestName();
+
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    String testCollection = "perReplicaState_test";
+    String collectionPath = DocCollection.getCollectionPath(testCollection);
+
+    int liveNodes = cluster.getJettySolrRunners().size();
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
+        .setPerReplicaState(Boolean.TRUE)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+    final SolrClient clientUnderTest = getRandomClient();
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+    assertEquals("This should be OK", 0, response.getStatus());
+
+    DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
+    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+    assertEquals(4, prs.states.size());
+
+    JettySolrRunner jsr = null;
+    try {
+      jsr = cluster.startJettySolrRunner();
+
+      // Now let's do an add replica
+      CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
+          .process(cluster.getSolrClient());
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(5, prs.states.size());
+
+      // create a collection with PRS and v2 API
+      testCollection = "perReplicaState_testv2";
+      collectionPath = DocCollection.getCollectionPath(testCollection);
+
+      new V2Request.Builder("/collections")
+          .withMethod(POST)
+          .withPayload(
+              "{\"name\": \"perReplicaState_testv2\", \"config\" : \"conf\", \"numShards\" : 2, \"nrtReplicas\" : 2, \"perReplicaState\" : true}")
+          .build()
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(testCollection, 2, 4);
+      c = cluster.getZkStateReader().getCollection(testCollection);
+      c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(4, prs.states.size());
+    } finally {
+      if (jsr != null) {
+        cluster.stopJettySolrRunner(jsr);
+      }
     }
   }
 }
