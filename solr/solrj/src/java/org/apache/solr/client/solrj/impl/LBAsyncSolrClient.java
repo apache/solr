@@ -32,6 +32,7 @@ import org.slf4j.MDC;
 
 /** A {@link LBSolrClient} adding {@link #requestAsync(Req)}. */
 public abstract class LBAsyncSolrClient extends LBSolrClient {
+  // formerly known as LBHttp2SolrClient, using Http2SolrClient (jetty)
 
   protected final HttpSolrClientBase solrClient;
 
