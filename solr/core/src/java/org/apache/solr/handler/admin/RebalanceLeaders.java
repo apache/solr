@@ -325,7 +325,7 @@ class RebalanceLeaders {
   }
 
   // Provide some feedback to the user about what actually happened, or in this case where no action
-  // was necesary since this preferred replica was already the leader
+  // was necessary since this preferred replica was already the leader
   private void addAlreadyLeaderToResults(Slice slice, Replica replica) {
     SimpleOrderedMap<SimpleOrderedMap<String>> alreadyLeaders = results.get(ALREADY_LEADERS);
     if (alreadyLeaders == null) {

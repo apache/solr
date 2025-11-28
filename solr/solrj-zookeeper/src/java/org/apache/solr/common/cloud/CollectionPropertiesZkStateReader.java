@@ -242,7 +242,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
               collectionPropsObservers.remove(coll);
 
               // This is the one time we know it's safe to throw this out. We just failed to set the
-              // watch due to an NoNodeException, so it isn't held by ZK and can't re-set itself due
+              // watch due to a NoNodeException, so it isn't held by ZK and can't re-set itself due
               // to an update.
               collectionPropsWatchers.remove(coll);
             }

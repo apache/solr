@@ -98,7 +98,7 @@ public abstract class OffsetCorrector {
     // Find the ancestor tag enclosing offsetPair.  And bump out left offset along the way.
     int iTag = startTag;
     for (; !tagEnclosesOffset(iTag, rightOffset); iTag = getParentTag(iTag)) {
-      // Ensure there is nothing except whitespace thru OpenEndOff
+      // Ensure there is nothing except whitespace through OpenEndOff
       int tagOpenEndOff = getOpenEndOff(iTag);
       if (hasNonWhitespace(tagOpenEndOff, leftOffset)) return null;
       leftOffset = getOpenStartOff(iTag);
@@ -106,7 +106,7 @@ public abstract class OffsetCorrector {
     final int ancestorTag = iTag;
     // Bump out rightOffset until we get to ancestorTag.
     for (iTag = endTag; iTag != ancestorTag; iTag = getParentTag(iTag)) {
-      // Ensure there is nothing except whitespace thru CloseStartOff
+      // Ensure there is nothing except whitespace through CloseStartOff
       int tagCloseStartOff = getCloseStartOff(iTag);
       if (hasNonWhitespace(rightOffset, tagCloseStartOff)) return null;
       rightOffset = getCloseEndOff(iTag);

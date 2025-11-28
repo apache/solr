@@ -49,7 +49,7 @@ import org.apache.solr.util.DateMathParser;
 
 class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   // TODO: the code paths for initial faceting, vs refinement, are very different...
-  // TODO: ...it might make sense to have seperate classes w/a common base?
+  // TODO: ...it might make sense to have separate classes w/a common base?
   // TODO: let FacetRange.createFacetProcessor decide which one to instantiate?
 
   final SchemaField sf;

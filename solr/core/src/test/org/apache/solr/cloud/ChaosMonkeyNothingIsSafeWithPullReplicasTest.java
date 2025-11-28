@@ -280,7 +280,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
       commit();
 
-      // TODO: assert we didnt kill everyone
+      // TODO: assert we didn't kill everyone
 
       zkStateReader.updateLiveNodes();
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);

@@ -406,7 +406,7 @@ public class Overseer implements SolrCloseable {
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
-    // to a invalid state or 'bad' message (in this case, we should remove that message from queue)
+    // to an invalid state or 'bad' message (in this case, we should remove that message from queue)
     private boolean isBadMessage(Exception e) {
       if (e instanceof KeeperException ke) {
         return ke.code() == KeeperException.Code.NONODE

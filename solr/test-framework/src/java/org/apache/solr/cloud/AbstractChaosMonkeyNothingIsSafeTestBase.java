@@ -246,7 +246,7 @@ public abstract class AbstractChaosMonkeyNothingIsSafeTestBase
 
       commit();
 
-      // TODO: assert we didnt kill everyone
+      // TODO: assert we didn't kill everyone
 
       zkStateReader.updateLiveNodes();
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
