@@ -19,10 +19,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -31,42 +29,15 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
-/** Test the LBHttp2SolrClient. */
-public class LBHttp2SolrClientTest extends SolrTestCase {
-
-  /**
-   * Test method for {@link LBHttp2SolrClient.Builder} that validates that the query param keys
-   * passed in by the base <code>Http2SolrClient
-   * </code> instance are used by the LBHttp2SolrClient.
-   */
-  @Test
-  public void testLBHttp2SolrClientWithTheseParamNamesInTheUrl() {
-    String url = "http://127.0.0.1:8080";
-    Set<String> urlParamNames = new HashSet<>(2);
-    urlParamNames.add("param1");
-
-    try (Http2SolrClient http2SolrClient =
-            new Http2SolrClient.Builder(url).withTheseParamNamesInTheUrl(urlParamNames).build();
-        LBHttp2SolrClient<Http2SolrClient> testClient =
-            new LBHttp2SolrClient.Builder<>(http2SolrClient, new LBSolrClient.Endpoint(url))
-                .build()) {
-
-      assertArrayEquals(
-          "Wrong urlParamNames found in lb client.",
-          urlParamNames.toArray(),
-          testClient.getUrlParamNames().toArray());
-      assertArrayEquals(
-          "Wrong urlParamNames found in base client.",
-          urlParamNames.toArray(),
-          http2SolrClient.getUrlParamNames().toArray());
-    }
-  }
+/** Test the LBAsyncSolrClient. */
+public class LBAsyncSolrClientTest extends SolrTestCase {
 
   @Test
   public void testSynchronous() throws Exception {
@@ -76,10 +47,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
-    ;
+
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
-        LBHttp2SolrClient<MockHttpSolrClient> testClient =
-            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+        var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
 
       String lastEndpoint = null;
       for (int i = 0; i < 10; i++) {
@@ -105,10 +75,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
-    ;
+
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
-        LBHttp2SolrClient<MockHttpSolrClient> testClient =
-            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+        var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
 
       client.basePathToFail = ep1.getBaseUrl();
       String basePathToSucceed = ep2.getBaseUrl();
@@ -164,10 +133,9 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
 
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
-    ;
+
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
-        LBHttp2SolrClient<MockHttpSolrClient> testClient =
-            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+        var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
 
       for (int j = 0; j < 2; j++) {
         // first time Endpoint One will return error code 500.
@@ -230,8 +198,7 @@ public class LBHttp2SolrClientTest extends SolrTestCase {
     Http2SolrClient.Builder b =
         new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
-        LBHttp2SolrClient<MockHttpSolrClient> testClient =
-            new LBHttp2SolrClient.Builder<>(client, ep1, ep2).build()) {
+        var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
 
       int limit = 10; // For simplicity use an even limit
       List<CompletableFuture<LBSolrClient.Rsp>> responses = new ArrayList<>();

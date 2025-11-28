@@ -554,6 +554,11 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new HttpJdkSolrClient.Builder().withHttpClient(this);
   }
 
+  @Override
+  protected LBSolrClient createLBSolrClient() {
+    return new LBSolrClient.Builder<>(this).build();
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
