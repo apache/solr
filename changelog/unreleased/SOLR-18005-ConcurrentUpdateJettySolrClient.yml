@@ -4,5 +4,5 @@ type: other # added, changed, fixed, deprecated, removed, dependency_update, sec
 authors:
   - name: David Smiley
 links:
-  - name: SOLR-17161
-    url: https://issues.apache.org/jira/browse/SOLR-17161
+  - name: SOLR-18005
+    url: https://issues.apache.org/jira/browse/SOLR-18005
