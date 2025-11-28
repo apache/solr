@@ -22,17 +22,22 @@ solrAdminServices.factory('System',
     return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
   }])
 .factory('Metrics',
-    ['$resource', function($resource) {
-      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "core":"@core", "_":Date.now()}, {
-        "prometheus": {
-          method: 'GET',
-          params: {wt: 'prometheus', core: '@core'},
-          transformResponse: function(data) {
-            return {data: data};
+  ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
+    return $resource('admin/metrics', {"wt":"prometheus", "nodes": "@nodes", "_":Date.now()}, {
+      get: {
+        method: 'GET',
+        transformResponse: function(data) {
+          // Parse the merged Prometheus text response
+          try {
+            return {metrics: PrometheusParser.parse(data)};
+          } catch (e) {
+            console.error('Failed to parse Prometheus metrics:', e);
+            return {metrics: {}, error: e.message};
           }
         }
-      });
-    }])
+      }
+    });
+  }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
