@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import static org.apache.solr.client.solrj.SolrJMetricTestUtils.getPrometheusMetricValue;
+import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 

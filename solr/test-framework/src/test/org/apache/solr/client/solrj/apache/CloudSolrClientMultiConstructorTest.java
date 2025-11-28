@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.apache;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Optional;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.junit.Test;
 
 public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
@@ -37,7 +39,7 @@ public class CloudSolrClientMultiConstructorTest extends SolrTestCase {
   Collection<String> hosts;
 
   @Test
-  public void testZkConnectionStringSetterWithValidChroot() throws IOException {
+  public void testZkConnecstionStringSetterWithValidChroot() throws IOException {
     boolean setOrList = random().nextBoolean();
     int numOfZKServers = TestUtil.nextInt(random(), 1, 5);
     boolean withChroot = random().nextBoolean();
