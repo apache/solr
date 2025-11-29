@@ -81,7 +81,7 @@ import org.slf4j.MDC;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBSolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
  *     .build();
  * </pre>
@@ -94,7 +94,7 @@ import org.slf4j.MDC;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBSolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
  *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
  *     .build();

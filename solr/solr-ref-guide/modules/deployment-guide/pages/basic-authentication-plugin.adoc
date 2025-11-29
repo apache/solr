@@ -336,23 +336,23 @@ While this is method is simple, it can often be inconvenient to ensure the crede
 It also doesn't work with the many `SolrClient` methods which don't consume `SolrRequest` objects.
 
 === Per-Client Credentials
-Http2SolrClient supports setting the credentials at the client level when building it.
+HttpJettySolrClient & HttpJdkSolrClient support setting the credentials at the client level when building it.
 This will ensure all requests issued with this particular client get the Basic Authentication headers set.
 
 [source,java]
 ----
-Http2SolrClient client = new Http2SolrClient.Builder(solrUrl)
+var client = new HttpJettySolrClient.Builder(solrUrl)
         .withBasicAuthCredentials(userName, password).build();
 QueryResponse rsp = req.process(client);
 ----
 
-CloudHttp2SolrClient supports receiving an `Http2SolrClient.Builder` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
+CloudSolrClient's Builder supports receiving an `Http2SolrClient.Builder` instance for creating its internal client, so to set the credentials at the client level you could use a code like:
 
 [source,java]
 ----
-Http2SolrClient.Builder http2ClientBuilder = Http2SolrClient.Builder().withBasicAuthCredentials(userName, password);
-CloudHttp2SolrClient client = new CloudSolrClient.Builder(zkHostList, chroot)
-            .withInternalClientBuilder(http2ClientBuilder).build();
+var httpClientBuilder = HttpJettySolrClient.Builder().withBasicAuthCredentials(userName, password);
+var client = new CloudSolrClient.Builder(zkHostList, chroot)
+            .withInternalClientBuilder(httpClientBuilder).build();
 QueryResponse rsp = req.process(client);
 ----
 
