@@ -16,17 +16,17 @@
  */
 package org.apache.solr.response;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.LongAdder;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory;
 import com.fasterxml.jackson.dataformat.cbor.CBORGenerator;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
@@ -63,7 +63,9 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     writeCborBase = newRawResponseWriter("cbor");
 
     allWriters =
-        new RawResponseWriter[] {writerXmlBase, writerJsonBase, writerBinBase,writeCborBase, writerNoBase};
+        new RawResponseWriter[] {
+          writerXmlBase, writerJsonBase, writerBinBase, writeCborBase, writerNoBase
+        };
   }
 
   @AfterClass
@@ -135,7 +137,8 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     assertEquals("application/xml; charset=UTF-8", writerXmlBase.getContentType(req(), rsp));
     assertEquals("application/json; charset=UTF-8", writerJsonBase.getContentType(req(), rsp));
     assertEquals("application/octet-stream", writerBinBase.getContentType(req(), rsp));
-    assertEquals(CborResponseWriter.APPLICATION_CBOR_VALUE, writeCborBase.getContentType(req(), rsp));
+    assertEquals(
+        CborResponseWriter.APPLICATION_CBOR_VALUE, writeCborBase.getContentType(req(), rsp));
 
     // check response against each writer
 
@@ -178,11 +181,12 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     byte[] cborBytes = serializeToCbor(json.getBytes());
     assertEquals(25, cborBytes.length);
-    LongAdder docsSz = new LongAdder();
-    new CborLoader(null, (document) -> docsSz.increment()).stream(new ByteArrayInputStream(cborBytes));
-    assertEquals(1, docsSz.intValue());
-
+    LongAdder numberOfObjectsInResponse = new LongAdder();
+    new CborLoader(null, (document) -> numberOfObjectsInResponse.increment())
+        .stream(new ByteArrayInputStream(cborBytes));
+    assertEquals(1, numberOfObjectsInResponse.intValue());
   }
+
   private byte[] serializeToCbor(byte[] is) throws IOException {
     ByteArrayOutputStream baos;
     ObjectMapper jsonMapper = new ObjectMapper(new JsonFactory());
@@ -200,6 +204,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     jsonGenerator.close();
     return baos.toByteArray();
   }
+
   /**
    * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name (which much
    * either be an implicitly defined response writer, or one explicitly configured in
