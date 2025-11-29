@@ -122,7 +122,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
     httpJettyBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(solrUrls)
+        new CloudSolrClient.Builder(solrUrls)
             .withHttpClientBuilder(new HttpJettySolrClient.Builder())
             .build();
     assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
@@ -135,7 +135,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             instanceof HttpJettySolrClient);
 
     httpJdkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(solrUrls)
+        new CloudSolrClient.Builder(solrUrls)
             .withHttpClientBuilder(
                 new HttpJdkSolrClient.Builder()
                     .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT))
@@ -150,7 +150,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             instanceof HttpJdkSolrClient);
 
     zkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
     assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
@@ -346,7 +346,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    return new CloudHttp2SolrClient.Builder(solrUrls).build();
+    return new CloudSolrClient.Builder(solrUrls).build();
   }
 
   @Test

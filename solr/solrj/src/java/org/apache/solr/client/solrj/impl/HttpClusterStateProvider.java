@@ -20,13 +20,16 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.util.List;
 
+/** A CSP that uses Solr HTTP APIs. */
 public class HttpClusterStateProvider<C extends HttpSolrClientBase>
     extends BaseHttpClusterStateProvider {
+  // formerly known as Http2ClusterStateProvider
+
   final C httpClient;
 
   /**
    * Provide the solr urls and a solr http client for this cluster state provider to use. It is the
-   * caller's responsibiity to close the client.
+   * caller's responsibility to close the client.
    *
    * @param solrUrls root path solr urls
    * @param httpClient an instance of HttpSolrClientBase

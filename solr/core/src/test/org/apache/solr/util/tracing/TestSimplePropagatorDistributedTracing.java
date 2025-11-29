@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -88,7 +87,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
         assertSameTraceId(reqLog, traceId);
       }
 
-      try (SolrClient testClient = newCloudHttp2SolrClient()) {
+      try (SolrClient testClient = newCloudSolrClient()) {
         // verify all query events have the same auto-generated trace id
         var r1 = testClient.query(COLLECTION, new SolrQuery("*:*"));
         assertEquals(0, r1.getStatus());
@@ -132,7 +131,7 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
         assertSameTraceId(reqLog, traceId);
       }
 
-      try (SolrClient testClient = newCloudHttp2SolrClient()) {
+      try (SolrClient testClient = newCloudSolrClient()) {
         // verify all indexing events have trace id present
         testClient.add(COLLECTION, sdoc("id", "2"));
         testClient.add(COLLECTION, sdoc("id", "4"));
@@ -177,9 +176,9 @@ public class TestSimplePropagatorDistributedTracing extends SolrCloudTestCase {
         .build();
   }
 
-  private CloudHttp2SolrClient newCloudHttp2SolrClient() {
+  private CloudSolrClient newCloudSolrClient() {
     var builder =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
             List.of(cluster.getZkServer().getZkAddress()), Optional.empty());
     var client = builder.build();
     client.connect();

@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.jetty;
 
 import java.util.List;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 
 /**
@@ -31,7 +32,7 @@ public class CloudJettySolrClient extends CloudHttp2SolrClient {
     super(builder);
   }
 
-  public static class Builder extends CloudHttp2SolrClient.Builder {
+  public static class Builder extends CloudSolrClient.Builder {
 
     public Builder(List<String> solrUrls) {
       super(solrUrls);

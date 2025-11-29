@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Add CloudJettySolrClient. Rename Http2SolrClient to HttpJettySolrClient
+title: Add CloudJettySolrClient. Moved CloudHttp2SolrClient.Builder to CloudSolrClient. Rename Http2SolrClient to HttpJettySolrClient
 type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: David Smiley

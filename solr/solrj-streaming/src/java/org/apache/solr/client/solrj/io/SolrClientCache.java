@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -91,18 +90,18 @@ public class SolrClientCache implements Closeable {
         Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
 
     final var client =
-        newCloudHttp2SolrClient(zkHost, httpJettySolrClient, canUseACLs, basicAuthCredentials);
+        newCloudSolrClient(zkHost, httpJettySolrClient, canUseACLs, basicAuthCredentials);
     solrClients.put(zkHost, client);
     return client;
   }
 
-  private static CloudHttp2SolrClient newCloudHttp2SolrClient(
+  private static CloudSolrClient newCloudSolrClient(
       String zkHost,
       HttpJettySolrClient httpJettySolrClient,
       boolean canUseACLs,
       String basicAuthCredentials) {
     final List<String> hosts = List.of(zkHost);
-    var builder = new CloudHttp2SolrClient.Builder(hosts, Optional.empty());
+    var builder = new CloudSolrClient.Builder(hosts, Optional.empty());
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
     builder =

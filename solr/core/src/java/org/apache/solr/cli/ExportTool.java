@@ -60,7 +60,6 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
@@ -255,7 +254,7 @@ public class ExportTool extends ToolBase {
       var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
+          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
               .withHttpClientBuilder(builder)
               .build();
       NamedList<Object> response =

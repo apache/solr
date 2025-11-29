@@ -33,7 +33,6 @@ import java.util.function.Consumer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -59,12 +58,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
-    if (!(solrClient.getHttpClient() instanceof HttpJettySolrClient)) {
+  public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+    if (!(solrClient instanceof CloudHttp2SolrClient)) {
       throw new IllegalArgumentException(
-          "The passed-in Cloud Solr Client must delegate to " + HttpJettySolrClient.class);
+          "The passed-in CloudSolrClient must be a " + CloudHttp2SolrClient.class);
     }
-    this.solrClient = solrClient;
+    this.solrClient = (CloudHttp2SolrClient) solrClient;
     try {
       readReplicaDetails();
     } catch (IOException e) {
@@ -220,8 +219,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
     try (InputStream in =
-        (InputStream)
-            ctx.http2SolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
+        (InputStream) ctx.httpSolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
 
       NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
@@ -258,18 +256,14 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
-      if (!(cloudSolrClient.getHttpClient() instanceof HttpJettySolrClient)) {
-        throw new IllegalArgumentException(
-            "The passed-in Cloud Solr Client must delegate to " + HttpJettySolrClient.class);
-      }
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
-    protected HttpJettySolrClient http2SolrClient() {
-      return (HttpJettySolrClient) cloudSolrClient.getHttpClient();
+    protected HttpSolrClientBase httpSolrClient() {
+      return cloudSolrClient.getHttpClient();
     }
 
     /**

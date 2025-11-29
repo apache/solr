@@ -40,7 +40,6 @@ import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -200,7 +199,7 @@ public final class CLIUtils {
                 + solrUrl
                 + ".");
       } else {
-        try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
+        try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
@@ -283,13 +282,13 @@ public final class CLIUtils {
         .build();
   }
 
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
-    return getCloudHttp2SolrClient(zkHost, null);
+  public static CloudSolrClient getCloudSolrClient(String zkHost) {
+    return getCloudSolrClient(zkHost, null);
   }
 
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
+  public static CloudSolrClient getCloudSolrClient(
       String zkHost, HttpJettySolrClient.Builder builder) {
-    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+    return new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClientBuilder(builder)
         .build();
   }

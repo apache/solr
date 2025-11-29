@@ -84,7 +84,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
@@ -2526,10 +2526,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * A variant of {@link org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} that will
+   * A variant of {@link org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} that will
    * randomize some internal settings.
    */
-  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudHttp2SolrClient.Builder {
+  public static class RandomizingCloudHttp2SolrClientBuilder extends CloudSolrClient.Builder {
 
     public RandomizingCloudHttp2SolrClientBuilder(List<String> zkHosts, Optional<String> zkChroot) {
       super(zkHosts, zkChroot);
@@ -2627,7 +2627,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link HttpJettySolrClient.Builder} class directly
+   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
+   * directly
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
@@ -2642,7 +2643,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link HttpJettySolrClient.Builder} class directly
+   * should use the {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient.Builder} class
+   * directly
    *
    * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
    * @param defaultCoreName the name of a core that the created client should default to when making

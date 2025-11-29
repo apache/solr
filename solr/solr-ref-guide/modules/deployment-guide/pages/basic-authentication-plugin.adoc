@@ -351,7 +351,7 @@ CloudHttp2SolrClient supports receiving an `Http2SolrClient.Builder` instance fo
 [source,java]
 ----
 Http2SolrClient.Builder http2ClientBuilder = Http2SolrClient.Builder().withBasicAuthCredentials(userName, password);
-CloudHttp2SolrClient client = new CloudHttp2SolrClient.Builder(zkHostList, chroot)
+CloudHttp2SolrClient client = new CloudSolrClient.Builder(zkHostList, chroot)
             .withInternalClientBuilder(http2ClientBuilder).build();
 QueryResponse rsp = req.process(client);
 ----
