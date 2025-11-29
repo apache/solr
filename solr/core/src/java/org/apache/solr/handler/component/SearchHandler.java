@@ -466,23 +466,13 @@ public class SearchHandler extends RequestHandlerBase
       RTimerTree timer,
       List<SearchComponent> components)
       throws IOException {
+    updateForcedDistributed(req, rb, components);
     // creates a ShardHandler object only if it's needed
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
     if (!prepareComponents(req, rb, timer, components)) return;
 
-    { // Once all of our components have been prepared, check if this request involves a SortSpec.
-      // If it does, and if our request includes a cursorMark param, then parse & init the
-      // CursorMark state (This must happen after the prepare() of all components, because any
-      // component may have modified the SortSpec)
-      final SortSpec spec = rb.getSortSpec();
-      final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
-      if (null != spec && null != cursorStr) {
-        final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
-        cursorMark.parseSerializedTotem(cursorStr);
-        rb.setCursorMark(cursorMark);
-      }
-    }
+    postPrepareComponents(rb);
 
     if (!rb.isDistrib) {
       // a normal non-distributed request
@@ -716,6 +706,25 @@ public class SearchHandler extends RequestHandlerBase
     }
   }
 
+  /**
+   * Operations to be performed post prepare for all components.
+   *
+   * @param rb the ResponseBuilder containing the request and context, such as sort specifications.
+   */
+  protected void postPrepareComponents(ResponseBuilder rb) {
+    // Once all of our components have been prepared, check if this request involves a SortSpec.
+    // If it does, and if our request includes a cursorMark param, then parse & init the
+    // CursorMark state (This must happen after the prepare() of all components, because any
+    // component may have modified the SortSpec)
+    final SortSpec spec = rb.getSortSpec();
+    final String cursorStr = rb.req.getParams().get(CursorMarkParams.CURSOR_MARK_PARAM);
+    if (null != spec && null != cursorStr) {
+      final CursorMark cursorMark = new CursorMark(rb.req.getSchema(), spec);
+      cursorMark.parseSerializedTotem(cursorStr);
+      rb.setCursorMark(cursorMark);
+    }
+  }
+
   private static boolean prepareComponents(
       SolrQueryRequest req, ResponseBuilder rb, RTimerTree timer, List<SearchComponent> components)
       throws IOException {
@@ -743,6 +752,19 @@ public class SearchHandler extends RequestHandlerBase
       subt.stop();
     }
     return true;
+  }
+
+  private static void updateForcedDistributed(
+      SolrQueryRequest req, ResponseBuilder rb, List<SearchComponent> components) {
+    if (!req.getParams().getBool(ShardParams.IS_SHARD, false)) {
+      for (SearchComponent component : components) {
+        if (component.isForceDistributed()) {
+          rb.isDistrib = true;
+          rb.setForcedDistrib(true);
+          return;
+        }
+      }
+    }
   }
 
   protected String stageToString(int stage) {
