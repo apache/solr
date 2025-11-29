@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -127,9 +128,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
     assertTrue(
         httpJettyBasedCloudSolrClient.getClusterStateProvider()
-            instanceof Http2ClusterStateProvider<?>);
+            instanceof HttpClusterStateProvider<?>);
     assertTrue(
-        ((Http2ClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
+        ((HttpClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
                 .getHttpClient()
             instanceof Http2SolrClient);
 
@@ -142,9 +143,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertTrue(httpJdkBasedCloudSolrClient.getHttpClient() instanceof HttpJdkSolrClient);
     assertTrue(
         httpJdkBasedCloudSolrClient.getClusterStateProvider()
-            instanceof Http2ClusterStateProvider<?>);
+            instanceof HttpClusterStateProvider<?>);
     assertTrue(
-        ((Http2ClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider())
+        ((HttpClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider())
                 .getHttpClient()
             instanceof HttpJdkSolrClient);
 

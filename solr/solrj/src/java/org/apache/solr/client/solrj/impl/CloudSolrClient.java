@@ -82,6 +82,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * A {@link SolrClient} that routes requests to ideal nodes, including splitting update batches to
+ * the correct shards. It uses {@link LBSolrClient} as well, thus offering fail-over abilities if a
+ * core or node becomes unavailable. It's able to know where to route requests due to its knowledge
+ * of the SolrCloud "cluster state".
+ */
 public abstract class CloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

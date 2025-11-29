@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.io.FilterInputStream;
 import java.io.IOException;
@@ -43,9 +43,12 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory.RequestResponseListener;
-import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
+import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -124,21 +127,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
     if (builder.httpClient != null) {
       // Validate that no conflicting options are provided when using an existing HttpClient
-      if (builder.followRedirects != null
-          || builder.connectionTimeoutMillis != null
-          || builder.maxConnectionsPerHost != null
-          || builder.useHttp1_1 != null
-          || builder.proxyHost != null
-          || builder.sslConfig != null
-          || builder.cookieStore != null
-          || builder.keyStoreReloadIntervalSecs != null) {
+      if (builder.hasHttpClientBuildingOptions()) {
         throw new IllegalArgumentException(
             "You cannot provide the HttpClient and also specify options that are used to build a new client");
       }
 
       this.httpClient = builder.httpClient;
       if (this.executor == null) {
-        this.executor = builder.executor;
+        this.executor = builder.getExecutor();
       }
 
       initAuthStoreFromExistingClient(httpClient);
@@ -214,7 +210,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private HttpClient createHttpClient(Builder builder) {
-    executor = builder.executor;
+    executor = builder.getExecutor();
     if (executor == null) {
       BlockingArrayQueue<Runnable> queue = new BlockingArrayQueue<>(256, 256);
       this.executor =
@@ -273,8 +269,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
       transport = new HttpClientTransportOverHTTP(clientConnector);
       httpClient = new HttpClient(transport);
-      if (builder.maxConnectionsPerHost != null) {
-        httpClient.setMaxConnectionsPerDestination(builder.maxConnectionsPerHost);
+      if (builder.getMaxConnectionsPerHost() != null) {
+        httpClient.setMaxConnectionsPerDestination(builder.getMaxConnectionsPerHost());
       }
     } else {
       if (log.isDebugEnabled()) {
@@ -290,7 +286,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     httpClient.setExecutor(this.executor);
     httpClient.setStrictEventOrdering(false);
     httpClient.setConnectBlocking(true);
-    httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.followRedirects));
+    httpClient.setFollowRedirects(Boolean.TRUE.equals(builder.getFollowRedirects()));
     httpClient.setMaxRequestsQueuedPerDestination(
         asyncTracker.getMaxRequestsQueuedPerDestination());
     httpClient.setUserAgentField(new HttpField(HttpHeader.USER_AGENT, USER_AGENT));
@@ -319,24 +315,24 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   private void setupProxy(Builder builder, HttpClient httpClient) {
-    if (builder.proxyHost == null) {
+    if (builder.getProxyHost() == null) {
       return;
     }
-    Address address = new Address(builder.proxyHost, builder.proxyPort);
+    Address address = new Address(builder.getProxyHost(), builder.getProxyPort());
 
     final ProxyConfiguration.Proxy proxy;
-    if (builder.proxyIsSocks4) {
-      proxy = new Socks4Proxy(address, builder.proxyIsSecure);
+    if (builder.isProxyIsSocks4()) {
+      proxy = new Socks4Proxy(address, builder.isProxyIsSecure());
     } else {
       final Protocol protocol;
       if (builder.shouldUseHttp1_1()) {
         protocol = HttpClientTransportOverHTTP.HTTP11;
       } else {
         // see HttpClientTransportOverHTTP2#newOrigin
-        String protocolName = builder.proxyIsSecure ? "h2" : "h2c";
+        String protocolName = builder.isProxyIsSecure() ? "h2" : "h2c";
         protocol = new Protocol(List.of(protocolName), false);
       }
-      proxy = new HttpProxy(address, builder.proxyIsSecure, protocol);
+      proxy = new HttpProxy(address, builder.isProxyIsSecure(), protocol);
     }
     httpClient.getProxyConfiguration().addProxy(proxy);
   }
@@ -538,6 +534,29 @@ public class Http2SolrClient extends HttpSolrClientBase {
   @Override
   public HttpSolrClientBuilderBase<?, ?> builder() {
     return new Http2SolrClient.Builder().withHttpClient(this);
+  }
+
+  // merely exposing for superclass's method visibility to this package
+  @Override
+  protected ModifiableSolrParams initializeSolrParams(
+      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
+    return super.initializeSolrParams(solrRequest, parserToUse);
+  }
+
+  // merely exposing for superclass's method visibility to this package
+  @Override
+  protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
+    return super.responseParser(solrRequest);
+  }
+
+  // merely exposing for superclass's method visibility to this package
+  String basicAuthAuthorizationStr() {
+    return basicAuthAuthorizationStr;
+  }
+
+  // merely exposing for superclass's method visibility to this package
+  protected static String basicAuthCredentialsToAuthorizationString(String user, String pass) {
+    return HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
   }
 
   private NamedList<Object> processErrorsAndResponse(
@@ -982,6 +1001,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
     public Builder withCookieStore(HttpCookieStore cookieStore) {
       this.cookieStore = cookieStore;
       return this;
+    }
+
+    private boolean hasHttpClientBuildingOptions() {
+      return followRedirects != null
+          || connectionTimeoutMillis != null
+          || maxConnectionsPerHost != null
+          || useHttp1_1 != null
+          || proxyHost != null
+          || sslConfig != null
+          || cookieStore != null
+          || keyStoreReloadIntervalSecs != null;
     }
   }
 

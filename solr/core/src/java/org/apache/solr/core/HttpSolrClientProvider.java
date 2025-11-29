@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;

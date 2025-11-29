@@ -54,10 +54,10 @@ Users are urged to review all use of the `bin/solr` command, such as in scripts 
 
 Some key changes that you may run into are:
 
- * Commands that interact with Solr now all use `--solr-url` (or `-s`) plus a `--name` (or `-c`) to specify the Solr to interact with.
- * You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
- * Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
- * Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
+* Commands that interact with Solr now all use `--solr-url` (or `-s`) plus a `--name` (or `-c`) to specify the Solr to interact with.
+* You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
+* Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
+* Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
 
 To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
 
@@ -72,6 +72,10 @@ That no longer happens in Solr 10.  It is only used to load a configuration as a
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
+
+* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`.
+The following were renamed with some refactorings: `Http2SolrClient` to `HttpJettySolrClient`, `ConcurrentUpdateHttp2SolrClient` to `ConcurrentUpdateJettySolrClient`, `LBHttp2SolrClient` to `LBJettySolrClient`.
+`CloudJettySolrClient` is new.
 
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.

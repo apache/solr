@@ -21,6 +21,7 @@ import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue
 
 import java.util.Collections;
 import java.util.Optional;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;

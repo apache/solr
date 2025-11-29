@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -231,10 +232,10 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
 
   /**
    * Tests the consistency between the HTTP client used by {@link CloudHttp2SolrClient} and the one
-   * used by its associated {@link Http2ClusterStateProvider}. This method ensures that whether a
+   * used by its associated {@link HttpClusterStateProvider}. This method ensures that whether a
    * {@link CloudHttp2SolrClient} is created with a specific HTTP client, an internal client
    * builder, or with no specific HTTP client at all, the same HTTP client instance is used both by
-   * the {@link CloudHttp2SolrClient} and by its {@link Http2ClusterStateProvider}.
+   * the {@link CloudHttp2SolrClient} and by its {@link HttpClusterStateProvider}.
    */
   @Test
   public void testHttpClientPreservedInHttp2ClusterStateProvider() throws IOException {
@@ -269,7 +270,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     try (CloudHttp2SolrClient client = clientBuilder.build()) {
       assertEquals(
           client.getHttpClient(),
-          ((Http2ClusterStateProvider) client.getClusterStateProvider()).getHttpClient());
+          ((HttpClusterStateProvider) client.getClusterStateProvider()).getHttpClient());
     }
   }
 

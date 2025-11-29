@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 import static org.hamcrest.core.StringContains.containsStringIgnoringCase;
@@ -35,6 +35,14 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
+import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
+import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.impl.XMLRequestWriter;
+import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.SolrException;
@@ -633,7 +641,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
           new Http2SolrClient.Builder("baseSolrUrl").withHttpClient(seed).build()) {
         String expected1 =
             Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu", "testp");
-        assertEquals(expected1, clone1.basicAuthAuthorizationStr);
+        assertEquals(expected1, clone1.basicAuthAuthorizationStr());
       }
 
       // test overwrite seed value
@@ -644,7 +652,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
               .build()) {
         String expected2 =
             Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu2", "testp2");
-        assertEquals(expected2, clone2.basicAuthAuthorizationStr);
+        assertEquals(expected2, clone2.basicAuthAuthorizationStr());
       }
 
       // test overwrite seed value, order of builder method calls reversed
@@ -655,7 +663,7 @@ public class Http2SolrClientTest extends HttpSolrClientTestBase {
               .build()) {
         String expected3 =
             Http2SolrClient.basicAuthCredentialsToAuthorizationString("testu3", "testp3");
-        assertEquals(expected3, clone3.basicAuthAuthorizationStr);
+        assertEquals(expected3, clone3.basicAuthAuthorizationStr());
       }
     }
   }

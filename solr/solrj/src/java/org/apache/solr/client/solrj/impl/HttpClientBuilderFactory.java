@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import java.io.Closeable;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 
 /**
  * A config hook for post-configuration of a {@linkplain Http2SolrClient} by its builder.

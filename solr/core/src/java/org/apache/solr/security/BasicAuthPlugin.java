@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.security.auth.Subject;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;

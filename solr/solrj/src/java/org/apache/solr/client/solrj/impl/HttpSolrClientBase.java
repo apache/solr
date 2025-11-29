@@ -48,6 +48,11 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 
+/**
+ * Utility/base functionality for direct HTTP client implementations.
+ *
+ * @lucene.internal
+ */
 public abstract class HttpSolrClientBase extends SolrClient {
 
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
@@ -116,7 +121,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
-  protected RequestWriter getRequestWriter() {
+  public RequestWriter getRequestWriter() {
     return requestWriter;
   }
 
