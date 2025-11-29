@@ -37,18 +37,18 @@ import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpMethod;
 
-/** A ConcurrentUpdate SolrClient using {@link Http2SolrClient}. */
+/** A ConcurrentUpdate SolrClient using {@link HttpJettySolrClient}. */
 public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrClient {
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
-  private final Http2SolrClient client;
+  private final HttpJettySolrClient client;
 
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
      *     HttpSolrClientBase)
      */
-    public Builder(String baseUrl, Http2SolrClient client) {
+    public Builder(String baseUrl, HttpJettySolrClient client) {
       this(baseUrl, client, false);
     }
 
@@ -56,7 +56,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
      *     HttpSolrClientBase, boolean)
      */
-    public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttpClient) {
+    public Builder(String baseSolrUrl, HttpJettySolrClient client, boolean closeHttpClient) {
       super(baseSolrUrl, client, closeHttpClient);
       this.idleTimeoutMillis = client.getIdleTimeoutMillis();
     }
@@ -69,7 +69,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
 
   protected ConcurrentUpdateJettySolrClient(Builder builder) {
     super(builder);
-    this.client = (Http2SolrClient) builder.getClient();
+    this.client = (HttpJettySolrClient) builder.getClient();
   }
 
   @Override
@@ -163,7 +163,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
             .body(content);
     client.decorateRequest(postRequest, updateRequest, false);
     InputStreamResponseListener responseListener =
-        new Http2SolrClient.InputStreamReleaseTrackingResponseListener();
+        new HttpJettySolrClient.InputStreamReleaseTrackingResponseListener();
     postRequest.send(responseListener);
 
     boolean isXml = ClientUtils.TEXT_XML.equals(client.getRequestWriter().getUpdateContentType());

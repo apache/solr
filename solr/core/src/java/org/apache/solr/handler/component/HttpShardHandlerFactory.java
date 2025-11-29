@@ -34,7 +34,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.LBAsyncSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
@@ -81,7 +81,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // This executor is initialized in the init method
   protected ExecutorService commExecutor;
 
-  protected volatile Http2SolrClient defaultClient;
+  protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
   protected LBAsyncSolrClient loadbalancer;
 
@@ -301,7 +301,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             args, SolrHttpConstants.PROP_SO_TIMEOUT, SolrHttpConstants.DEFAULT_SO_TIMEOUT, sb);
 
     this.defaultClient =
-        new Http2SolrClient.Builder()
+        new HttpJettySolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)

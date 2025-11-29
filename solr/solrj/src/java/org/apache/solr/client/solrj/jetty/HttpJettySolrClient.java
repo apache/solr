@@ -99,7 +99,8 @@ import org.slf4j.MDC;
  * HttpSolrClientBuilderBase#useHttp1_1(boolean)}. In retrospect, the name should have been {@code
  * HttpJettySolrClient}.
  */
-public class Http2SolrClient extends HttpSolrClientBase {
+public class HttpJettySolrClient extends HttpSolrClientBase {
+  // formerly known at Http2SolrClient
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
@@ -122,7 +123,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   private KeyStoreScanner scanner;
 
-  protected Http2SolrClient(String serverBaseUrl, Builder builder) {
+  protected HttpJettySolrClient(String serverBaseUrl, Builder builder) {
     super(serverBaseUrl, builder);
 
     if (builder.httpClient != null) {
@@ -193,7 +194,8 @@ public class Http2SolrClient extends HttpSolrClientBase {
           | ClassNotFoundException
           | InvocationTargetException
           | NoSuchMethodException e) {
-        throw new RuntimeException("Unable to instantiate " + Http2SolrClient.class.getName(), e);
+        throw new RuntimeException(
+            "Unable to instantiate " + HttpJettySolrClient.class.getName(), e);
       }
       factory.setup(this);
     }
@@ -222,7 +224,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     SSLConfig sslConfig =
-        builder.sslConfig != null ? builder.sslConfig : Http2SolrClient.defaultSSLConfig;
+        builder.sslConfig != null ? builder.sslConfig : HttpJettySolrClient.defaultSSLConfig;
     SslContextFactory.Client sslContextFactory =
         (sslConfig == null)
             ? getDefaultSslContextFactory()
@@ -264,7 +266,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
     HttpClientTransport transport;
     if (builder.shouldUseHttp1_1()) {
       if (log.isDebugEnabled()) {
-        log.debug("Create Http2SolrClient with HTTP/1.1 transport");
+        log.debug("Create HttpJettySolrClient with HTTP/1.1 transport");
       }
 
       transport = new HttpClientTransportOverHTTP(clientConnector);
@@ -274,7 +276,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
       }
     } else {
       if (log.isDebugEnabled()) {
-        log.debug("Create Http2SolrClient with HTTP/2 transport");
+        log.debug("Create HttpJettySolrClient with HTTP/2 transport");
       }
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
@@ -511,17 +513,18 @@ public class Http2SolrClient extends HttpSolrClientBase {
    * Temporarily modifies the client to use a different base URL and runs the provided lambda
    *
    * @param baseUrl the base URL to use on any requests made within the 'clientFunction' lambda
-   * @param clientFunction a Function that consumes a Http2SolrClient and returns an arbitrary value
+   * @param clientFunction a Function that consumes a HttpJettySolrClient and returns an arbitrary
+   *     value
    * @return the value returned after invoking 'clientFunction'
    * @param <R> the type returned by the provided function (and by this method)
    */
   public <R> R requestWithBaseUrl(
-      String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+      String baseUrl, SolrClientFunction<HttpJettySolrClient, R> clientFunction)
       throws SolrServerException, IOException {
 
     // Despite the name, try-with-resources used here to avoid IDE and ObjectReleaseTracker
     // complaints
-    try (final var derivedClient = new NoCloseHttp2SolrClient(baseUrl, this)) {
+    try (final var derivedClient = new NoCloseHttpJettySolrClient(baseUrl, this)) {
       return clientFunction.apply(derivedClient);
     }
   }
@@ -533,7 +536,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
 
   @Override
   public HttpSolrClientBuilderBase<?, ?> builder() {
-    return new Http2SolrClient.Builder().withHttpClient(this);
+    return new HttpJettySolrClient.Builder().withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package
@@ -803,17 +806,17 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   /**
-   * An Http2SolrClient that doesn't close or cleanup any resources
+   * An HttpJettySolrClient that doesn't close or cleanup any resources
    *
    * <p>Only safe to use as a derived copy of an existing instance which retains responsibility for
    * closing all involved resources.
    *
    * @see #requestWithBaseUrl(String, SolrClientFunction)
    */
-  private static class NoCloseHttp2SolrClient extends Http2SolrClient {
+  private static class NoCloseHttpJettySolrClient extends HttpJettySolrClient {
 
-    public NoCloseHttp2SolrClient(String baseUrl, Http2SolrClient parentClient) {
-      super(baseUrl, new Http2SolrClient.Builder(baseUrl).withHttpClient(parentClient));
+    public NoCloseHttpJettySolrClient(String baseUrl, HttpJettySolrClient parentClient) {
+      super(baseUrl, new HttpJettySolrClient.Builder(baseUrl).withHttpClient(parentClient));
 
       this.asyncTracker = parentClient.asyncTracker;
     }
@@ -867,7 +870,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   public static class Builder
-      extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
+      extends HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient> {
 
     private HttpClient httpClient;
 
@@ -889,7 +892,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * <p>The provided URL must point to the root Solr path ("/solr"), for example:
      *
      * <pre>
-     *   SolrClient client = new Http2SolrClient.Builder("http://my-solr-server:8983/solr")
+     *   SolrClient client = new HttpJettySolrClient.Builder("http://my-solr-server:8983/solr")
      *       .withDefaultCollection("core1")
      *       .build();
      *   QueryResponse resp = client.query(new SolrQuery("*:*"));
@@ -909,7 +912,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param listenerFactory a HttpListenerFactory
      * @return This Builder
      */
-    public Http2SolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
+    public HttpJettySolrClient.Builder addListenerFactory(HttpListenerFactory listenerFactory) {
       if (this.listenerFactories == null) {
         this.listenerFactories = new ArrayList<>(1);
       }
@@ -923,14 +926,14 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param listenerFactories a list of HttpListenerFactory instances
      * @return This Builder
      */
-    public Http2SolrClient.Builder withListenerFactories(
+    public HttpJettySolrClient.Builder withListenerFactories(
         List<HttpListenerFactory> listenerFactories) {
       this.listenerFactories = listenerFactories;
       return this;
     }
 
-    public HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> withSSLConfig(
-        SSLConfig sslConfig) {
+    public HttpSolrClientBuilderBase<HttpJettySolrClient.Builder, HttpJettySolrClient>
+        withSSLConfig(SSLConfig sslConfig) {
       this.sslConfig = sslConfig;
       return this;
     }
@@ -944,7 +947,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
      * @param unit The unit for the interval
      * @return This builder
      */
-    public Http2SolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
+    public HttpJettySolrClient.Builder withKeyStoreReloadInterval(long interval, TimeUnit unit) {
       this.keyStoreReloadIntervalSecs = unit.toSeconds(interval);
       if (this.keyStoreReloadIntervalSecs == 0 && interval > 0) {
         this.keyStoreReloadIntervalSecs = 1L;
@@ -971,23 +974,23 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
 
     @Override
-    public Http2SolrClient build() {
-      return new Http2SolrClient(baseSolrUrl, this);
+    public HttpJettySolrClient build() {
+      return new HttpJettySolrClient(baseSolrUrl, this);
     }
 
     @Override
-    public Builder withHttpClient(Http2SolrClient http2SolrClient) {
-      super.withHttpClient(http2SolrClient);
-      this.httpClient = http2SolrClient.httpClient;
+    public Builder withHttpClient(HttpJettySolrClient httpJettySolrClient) {
+      super.withHttpClient(httpJettySolrClient);
+      this.httpClient = httpJettySolrClient.httpClient;
 
       if (this.idleTimeoutMillis == null) {
-        this.idleTimeoutMillis = http2SolrClient.idleTimeoutMillis;
+        this.idleTimeoutMillis = httpJettySolrClient.idleTimeoutMillis;
       }
       if (this.listenerFactories == null) {
-        this.listenerFactories = http2SolrClient.listenerFactory;
+        this.listenerFactories = httpJettySolrClient.listenerFactory;
       }
       if (this.executor == null) {
-        this.executor = http2SolrClient.executor;
+        this.executor = httpJettySolrClient.executor;
       }
       return this;
     }
@@ -1016,12 +1019,12 @@ public class Http2SolrClient extends HttpSolrClientBase {
   }
 
   public static void setDefaultSSLConfig(SSLConfig sslConfig) {
-    Http2SolrClient.defaultSSLConfig = sslConfig;
+    HttpJettySolrClient.defaultSSLConfig = sslConfig;
   }
 
   // public for testing, only used by tests
   public static void resetSslContextFactory() {
-    Http2SolrClient.defaultSSLConfig = null;
+    HttpJettySolrClient.defaultSSLConfig = null;
   }
 
   /* package-private for testing */

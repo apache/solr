@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -68,7 +68,7 @@ public class StreamingSearch {
     private String zkHost;
     private ModifiableSolrParams params;
     private StreamContext streamContext;
-    private Http2SolrClient http2SolrClient;
+    private HttpJettySolrClient httpJettySolrClient;
 
     @Setup(Level.Trial)
     public void setup(MiniClusterBenchState miniClusterState) throws Exception {
@@ -98,7 +98,7 @@ public class StreamingSearch {
         throws SolrServerException, IOException {
       SolrClientCache solrClientCache;
       // TODO tune params?
-      var client = new Http2SolrClient.Builder().useHttp1_1(useHttp1).build();
+      var client = new HttpJettySolrClient.Builder().useHttp1_1(useHttp1).build();
       solrClientCache = new SolrClientCache(client);
 
       streamContext = new StreamContext();
@@ -108,8 +108,8 @@ public class StreamingSearch {
     @TearDown(Level.Iteration)
     public void teardownIt() {
       streamContext.getSolrClientCache().close();
-      if (http2SolrClient != null) {
-        http2SolrClient.close();
+      if (httpJettySolrClient != null) {
+        httpJettySolrClient.close();
       }
     }
   }

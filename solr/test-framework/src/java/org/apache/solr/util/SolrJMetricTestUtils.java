@@ -24,7 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -56,7 +56,7 @@ public final class SolrJMetricTestUtils {
       String baseUrl, String collectionName, String category, String handler)
       throws SolrServerException, IOException {
 
-    try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl).build()) {
+    try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
       var req =
           new GenericSolrRequest(
               SolrRequest.METHOD.GET,
@@ -89,7 +89,7 @@ public final class SolrJMetricTestUtils {
   public static Double getNumNodeRequestErrors(String baseUrl, String category, String handler)
       throws SolrServerException, IOException {
 
-    try (Http2SolrClient client = new Http2SolrClient.Builder(baseUrl).build()) {
+    try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
       var req =
           new GenericSolrRequest(
               SolrRequest.METHOD.GET,

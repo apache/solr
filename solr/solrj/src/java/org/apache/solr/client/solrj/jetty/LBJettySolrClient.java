@@ -32,9 +32,9 @@ public class LBJettySolrClient extends LBAsyncSolrClient {
     super(builder);
   }
 
-  public static class Builder extends LBSolrClient.Builder<Http2SolrClient> {
+  public static class Builder extends LBSolrClient.Builder<HttpJettySolrClient> {
 
-    public Builder(Http2SolrClient solrClient, Endpoint... endpoints) {
+    public Builder(HttpJettySolrClient solrClient, Endpoint... endpoints) {
       super(solrClient, endpoints);
     }
 
@@ -48,6 +48,6 @@ public class LBJettySolrClient extends LBAsyncSolrClient {
   protected CompletableFuture<NamedList<Object>> requestAsyncWithUrl(
       SolrClient client, String baseUrl, SolrRequest<?> request)
       throws SolrServerException, IOException {
-    return ((Http2SolrClient) client).requestWithBaseUrl(baseUrl, c -> c.requestAsync(request));
+    return ((HttpJettySolrClient) client).requestWithBaseUrl(baseUrl, c -> c.requestAsync(request));
   }
 }

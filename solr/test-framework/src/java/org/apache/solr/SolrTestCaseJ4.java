@@ -86,7 +86,7 @@ import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -290,7 +290,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // based on randomized SSL config, set SocketFactoryRegistryProvider appropriately
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
       System.setProperty(URL_SCHEME, HTTPS);
@@ -331,7 +331,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
-      Http2SolrClient.resetSslContextFactory();
+      HttpJettySolrClient.resetSslContextFactory();
 
       clearNumericTypesProperties();
 
@@ -2627,8 +2627,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.Http2SolrClient.Builder} class
-   * directly
+   * should use the {@link HttpJettySolrClient.Builder} class directly
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
@@ -2643,8 +2642,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * This method creates a basic HttpSolrClient. Tests that want to control the creation process
-   * should use the {@link org.apache.solr.client.solrj.jetty.Http2SolrClient.Builder} class
-   * directly
+   * should use the {@link HttpJettySolrClient.Builder} class directly
    *
    * @param url the base URL of a Solr node. Should <em>not</em> include a collection or core name.
    * @param defaultCoreName the name of a core that the created client should default to when making

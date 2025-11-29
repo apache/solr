@@ -44,7 +44,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -123,16 +123,16 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     httpJettyBasedCloudSolrClient =
         new CloudHttp2SolrClient.Builder(solrUrls)
-            .withHttpClientBuilder(new Http2SolrClient.Builder())
+            .withHttpClientBuilder(new HttpJettySolrClient.Builder())
             .build();
-    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
     assertTrue(
         httpJettyBasedCloudSolrClient.getClusterStateProvider()
             instanceof HttpClusterStateProvider<?>);
     assertTrue(
         ((HttpClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
                 .getHttpClient()
-            instanceof Http2SolrClient);
+            instanceof HttpJettySolrClient);
 
     httpJdkBasedCloudSolrClient =
         new CloudHttp2SolrClient.Builder(solrUrls)
@@ -153,7 +153,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
-    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
     assertTrue(
         zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
   }

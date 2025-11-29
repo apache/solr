@@ -32,15 +32,15 @@ import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
 @SolrTestCaseJ4.SuppressSSL
-public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
+public class HttpJettySolrClientCompatibilityTest extends SolrJettyTestBase {
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
-    try (Http2SolrClient client = new Http2SolrClient.Builder().build()) {
+    try (var client = new HttpJettySolrClient.Builder().build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
     }
     System.clearProperty("solr.http1");
-    try (Http2SolrClient client = new Http2SolrClient.Builder().build()) {
+    try (var client = new HttpJettySolrClient.Builder().build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
     }
   }
@@ -54,8 +54,8 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
+    try (var client =
+        new HttpJettySolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
@@ -75,8 +75,8 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
+    try (var client =
+        new HttpJettySolrClient.Builder(getBaseUrl() + "/debug/foo").useHttp1_1(true).build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
@@ -100,8 +100,7 @@ public class Http2SolrClientCompatibilityTest extends SolrJettyTestBase {
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
 
     System.clearProperty("solr.http1");
-    try (Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
+    try (var client = new HttpJettySolrClient.Builder(getBaseUrl() + "/debug/foo").build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);

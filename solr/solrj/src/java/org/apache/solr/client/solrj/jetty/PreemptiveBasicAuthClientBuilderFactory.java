@@ -70,7 +70,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   public void close() throws IOException {}
 
   @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(HttpJettySolrClient client) {
     final String basicAuthUser =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
@@ -78,7 +78,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     this.setup(client, basicAuthUser, basicAuthPass);
   }
 
-  public void setup(Http2SolrClient client, String basicAuthUser, String basicAuthPass) {
+  public void setup(HttpJettySolrClient client, String basicAuthUser, String basicAuthPass) {
     if (basicAuthUser == null || basicAuthPass == null) {
       throw new IllegalArgumentException(
           "username & password must be specified with " + getClass().getName());

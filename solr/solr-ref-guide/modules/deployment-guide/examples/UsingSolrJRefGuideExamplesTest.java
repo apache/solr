@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.SolrQuery.ORDER;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -242,7 +242,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private SolrClient getTechProductSolrClient() {
     // tag::solrj-solrclient-timeouts[]
     final String solrUrl = "http://localhost:8983/solr";
-    return new Http2SolrClient.Builder(solrUrl)
+    return new HttpJettySolrClient.Builder(solrUrl)
         .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
         .withIdleTimeout(60000, TimeUnit.MILLISECONDS)
         .build();

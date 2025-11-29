@@ -48,7 +48,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
   private final HttpSolrClientBase myClient;
   private final boolean clientIsInternal;
 
-  // If the Jetty-based Http2SolrClient builder is on the classpath, this will be its no-arg
+  // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
   // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
   private static final Constructor<? extends HttpSolrClientBuilderBase<?, ?>>
       HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
@@ -59,14 +59,15 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       @SuppressWarnings("unchecked")
       Class<? extends HttpSolrClientBuilderBase<?, ?>> builderClass =
           (Class<? extends HttpSolrClientBuilderBase<?, ?>>)
-              Class.forName("org.apache.solr.client.solrj.jetty.Http2SolrClient$Builder");
+              Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
       ctor = builderClass.getDeclaredConstructor();
       ctor.newInstance();
     } catch (Throwable t) {
       // Class not present or incompatible; leave ctor as null to indicate unavailability
       if (log.isTraceEnabled()) {
         log.trace(
-            "Http2SolrClient$Builder not available on classpath; will use HttpJdkSolrClient", t);
+            "HttpJettySolrClient$Builder not available on classpath; will use HttpJdkSolrClient",
+            t);
       }
     }
     HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;
@@ -461,7 +462,7 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
       HttpSolrClientBuilderBase<?, ?> builder;
       if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
         try {
-          log.debug("Using Http2SolrClient as the delegate http client");
+          log.debug("Using HttpJettySolrClient as the delegate http client");
           builder = HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR.newInstance();
         } catch (RuntimeException e) {
           throw e;

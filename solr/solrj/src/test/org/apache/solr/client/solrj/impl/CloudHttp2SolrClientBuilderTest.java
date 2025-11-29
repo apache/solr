@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -129,23 +129,23 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
         () ->
             new CloudHttp2SolrClient.Builder(
                     Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-                .withHttpClient(mock(Http2SolrClient.class))
-                .withHttpClientBuilder(mock(Http2SolrClient.Builder.class))
+                .withHttpClient(mock(HttpJettySolrClient.class))
+                .withHttpClientBuilder(mock(HttpJettySolrClient.Builder.class))
                 .build());
     expectThrows(
         IllegalStateException.class,
         () ->
             new CloudHttp2SolrClient.Builder(
                     Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
-                .withHttpClientBuilder(mock(Http2SolrClient.Builder.class))
-                .withHttpClient(mock(Http2SolrClient.class))
+                .withHttpClientBuilder(mock(HttpJettySolrClient.Builder.class))
+                .withHttpClient(mock(HttpJettySolrClient.class))
                 .build());
   }
 
   @Test
   public void testProvideInternalJettyClientBuilder() throws IOException {
-    Http2SolrClient http2Client = mock(Http2SolrClient.class);
-    Http2SolrClient.Builder http2ClientBuilder = mock(Http2SolrClient.Builder.class);
+    HttpJettySolrClient http2Client = mock(HttpJettySolrClient.class);
+    HttpJettySolrClient.Builder http2ClientBuilder = mock(HttpJettySolrClient.Builder.class);
     when(http2ClientBuilder.build()).thenReturn(http2Client);
     CloudHttp2SolrClient.Builder clientBuilder =
         new CloudHttp2SolrClient.Builder(
@@ -182,7 +182,7 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
 
   @Test
   public void testProvideExternalJettyClient() throws IOException {
-    Http2SolrClient http2Client = mock(Http2SolrClient.class);
+    HttpJettySolrClient http2Client = mock(HttpJettySolrClient.class);
     CloudHttp2SolrClient.Builder clientBuilder =
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
@@ -214,8 +214,8 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
         new CloudHttp2SolrClient.Builder(
                 Collections.singletonList(ANY_ZK_HOST), Optional.of(ANY_CHROOT))
             .build()) {
-      assertTrue(createdClient.getHttpClient() instanceof Http2SolrClient);
-      assertTrue(createdClient.getLbClient().getClient(null) instanceof Http2SolrClient);
+      assertTrue(createdClient.getHttpClient() instanceof HttpJettySolrClient);
+      assertTrue(createdClient.getLbClient().getClient(null) instanceof HttpJettySolrClient);
     }
   }
 
@@ -245,19 +245,19 @@ public class CloudHttp2SolrClientBuilderTest extends SolrCloudTestCase {
     testHttpClientConsistency(solrUrls, null, null);
 
     // httpClient - No internalClientBuilder
-    try (Http2SolrClient httpClient = new Http2SolrClient.Builder().build()) {
+    try (var httpClient = new HttpJettySolrClient.Builder().build()) {
       testHttpClientConsistency(solrUrls, httpClient, null);
     }
 
     // No httpClient - internalClientBuilder
-    Http2SolrClient.Builder internalClientBuilder = new Http2SolrClient.Builder();
+    var internalClientBuilder = new HttpJettySolrClient.Builder();
     testHttpClientConsistency(solrUrls, null, internalClientBuilder);
   }
 
   private void testHttpClientConsistency(
       List<String> solrUrls,
-      Http2SolrClient httpClient,
-      Http2SolrClient.Builder internalClientBuilder)
+      HttpJettySolrClient httpClient,
+      HttpJettySolrClient.Builder internalClientBuilder)
       throws IOException {
     CloudHttp2SolrClient.Builder clientBuilder = new CloudHttp2SolrClient.Builder(solrUrls);
 

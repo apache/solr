@@ -47,19 +47,19 @@ public class CloudJettySolrClient extends CloudHttp2SolrClient {
     }
 
     @Override
-    protected Http2SolrClient createOrGetHttpClient() {
+    protected HttpJettySolrClient createOrGetHttpClient() {
       if (httpClient != null) {
-        return (Http2SolrClient) httpClient;
+        return (HttpJettySolrClient) httpClient;
       } else if (internalClientBuilder != null) {
-        return (Http2SolrClient) internalClientBuilder.build();
+        return (HttpJettySolrClient) internalClientBuilder.build();
       } else {
-        return new Http2SolrClient.Builder().build();
+        return new HttpJettySolrClient.Builder().build();
       }
     }
   }
 
   @Override
-  public Http2SolrClient getHttpClient() {
-    return (Http2SolrClient) super.getHttpClient();
+  public HttpJettySolrClient getHttpClient() {
+    return (HttpJettySolrClient) super.getHttpClient();
   }
 }

@@ -22,7 +22,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.junit.BeforeClass;
 
 /**
@@ -38,8 +38,8 @@ public class SolrExampleXMLHttp2Test extends SolrExampleTests {
   @Override
   public SolrClient createNewSolrClient() {
 
-    Http2SolrClient client =
-        new Http2SolrClient.Builder(getBaseUrl())
+    var client =
+        new HttpJettySolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .withRequestWriter(new XMLRequestWriter())

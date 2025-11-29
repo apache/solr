@@ -34,7 +34,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
@@ -216,7 +216,7 @@ public class TestExportTool extends SolrCloudTestCase {
       long totalDocsFromCores = 0;
       for (Slice slice : coll.getSlices()) {
         Replica replica = slice.getLeader();
-        try (SolrClient client = new Http2SolrClient.Builder(replica.getBaseUrl()).build()) {
+        try (SolrClient client = new HttpJettySolrClient.Builder(replica.getBaseUrl()).build()) {
           long count = ExportTool.getDocCount(replica.getCoreName(), client, "*:*");
           docCounts.put(replica.getCoreName(), count);
           totalDocsFromCores += count;

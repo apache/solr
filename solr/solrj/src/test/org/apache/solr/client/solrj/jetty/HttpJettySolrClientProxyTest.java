@@ -36,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
+public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
@@ -73,10 +73,10 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   public void testProxyWithHttp2SolrClient() throws Exception {
     assertNotNull(proxy);
     var builder =
-        new Http2SolrClient.Builder(url)
+        new HttpJettySolrClient.Builder(url)
             .withProxyConfiguration(host, proxy.getListenPort(), false, false);
 
-    try (Http2SolrClient client = builder.build()) {
+    try (HttpJettySolrClient client = builder.build()) {
       testProxy(client);
     }
   }

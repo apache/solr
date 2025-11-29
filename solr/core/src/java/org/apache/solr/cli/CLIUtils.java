@@ -43,7 +43,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -109,8 +109,8 @@ public final class CLIUtils {
     if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(solrUrl)
+    var builder =
+        new HttpJettySolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
@@ -288,7 +288,7 @@ public final class CLIUtils {
   }
 
   public static CloudHttp2SolrClient getCloudHttp2SolrClient(
-      String zkHost, Http2SolrClient.Builder builder) {
+      String zkHost, HttpJettySolrClient.Builder builder) {
     return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClientBuilder(builder)
         .build();

@@ -25,7 +25,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
 import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -38,8 +38,8 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
   public SolrClient createNewSolrClient() {
     String url = getBaseUrl();
     // smaller queue size hits locks more often
-    Http2SolrClient solrClient =
-        new Http2SolrClient.Builder()
+    var solrClient =
+        new HttpJettySolrClient.Builder()
             .withRequestWriter(new JavaBinRequestWriter())
             .withResponseParser(new JavaBinResponseParser())
             .build();

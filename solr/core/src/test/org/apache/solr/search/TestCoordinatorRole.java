@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -466,7 +466,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             CommonParams.JAVABIN);
     p.accept(q);
     SolrDocumentList docs = null;
-    try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
+    try (SolrClient solrClient = new HttpJettySolrClient.Builder(qaNode).build()) {
       for (int i = 0; i < 100; i++) {
         try {
           QueryResponse queryResponse = solrClient.query(COLL, q);

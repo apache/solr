@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -133,7 +133,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                       .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT),
                   userAgent);
         } else {
-          var http2SolrClient = new Http2SolrClient.Builder().build();
+          var http2SolrClient = new HttpJettySolrClient.Builder().build();
           http2SolrClient
               .getHttpClient()
               .setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
@@ -145,7 +145,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 ? new HttpJdkSolrClient.Builder()
                     .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
                     .build()
-                : new Http2SolrClient.Builder().build();
+                : new HttpJettySolrClient.Builder().build();
       }
       var clientClassName = client.getClass().getName();
       log.info("Using Http client implementation: {}", clientClassName);
