@@ -257,7 +257,6 @@ public class AdminHandlersProxy {
     rsp.add("prometheusText", mergedText.toString());
   }
 
-
   /**
    * Escape special characters in Prometheus label values according to Prometheus specification.
    * Escapes backslash, double quote, and newline characters.
