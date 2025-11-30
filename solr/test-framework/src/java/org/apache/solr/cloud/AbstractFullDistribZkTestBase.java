@@ -293,7 +293,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @AfterClass
   public static void afterClass() throws Exception {
     System.clearProperty("solrcloud.update.delay");
-    System.clearProperty("genericCoreNodeNames");
   }
 
   public AbstractFullDistribZkTestBase() {
