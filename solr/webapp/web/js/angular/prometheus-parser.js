@@ -140,7 +140,9 @@
       // Regex to match: metric_name{labels} value [timestamp]
       // or: metric_name value [timestamp]
       // The timestamp is optional and is a Unix timestamp in milliseconds
-      var match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*?)(?:\{(.*?)\})?\s+([^\s]+)(?:\s+\d+)?$/);
+      // The value pattern [^\s]+ matches scientific notation (e.g., 1.23e-4) and special values (NaN, +Inf, -Inf).
+      // The label set is matched as everything between { and }, allowing for escaped braces inside quoted label values.
+      var match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:\{((?:"(?:[^"\\]|\\.)*"|[^}])*)\})?\s+([^\s]+)(?:\s+\d+)?$/);
 
       if (!match) return null;
 
