@@ -17,10 +17,12 @@
 package org.apache.solr.blockcache;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
@@ -39,7 +41,9 @@ public class BufferStoreTest extends SolrTestCase {
   @Before
   public void setup() {
     metrics = new Metrics();
-    metricManager = new SolrMetricManager(null);
+    metricManager =
+        new SolrMetricManager(
+            (MetricExporter) null, new MetricsConfig.MetricsConfigBuilder().build());
     registry = TestUtil.randomSimpleString(random(), 2, 10);
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry);
     metrics.initializeMetrics(solrMetricsContext, Attributes.empty());

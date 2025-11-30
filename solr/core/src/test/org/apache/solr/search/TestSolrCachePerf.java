@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -102,7 +104,9 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       boolean useCompute)
       throws Exception {
     for (Class<? extends SolrCache> clazz : IMPLS) {
-      SolrMetricManager metricManager = new SolrMetricManager(null);
+      SolrMetricManager metricManager =
+          new SolrMetricManager(
+              (MetricExporter) null, new MetricsConfig.MetricsConfigBuilder().build());
       @SuppressWarnings({"unchecked"})
       SolrCache<String, String> cache = clazz.getDeclaredConstructor().newInstance();
       Map<String, String> params = new HashMap<>();

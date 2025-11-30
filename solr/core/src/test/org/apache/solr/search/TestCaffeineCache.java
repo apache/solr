@@ -22,6 +22,7 @@ import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
@@ -37,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.SolrMetricTestUtils;
@@ -45,7 +47,9 @@ import org.junit.Test;
 /** Test for {@link CaffeineCache}. */
 public class TestCaffeineCache extends SolrTestCase {
 
-  SolrMetricManager metricManager = new SolrMetricManager(null);
+  SolrMetricManager metricManager =
+      new SolrMetricManager(
+          (MetricExporter) null, new MetricsConfig.MetricsConfigBuilder().build());
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 

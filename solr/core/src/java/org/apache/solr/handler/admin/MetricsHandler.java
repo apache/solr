@@ -122,6 +122,11 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
               + format);
     }
 
+    if (!isEnabled()) {
+      rsp.add("metrics", MetricSnapshots.builder().build());
+      return;
+    }
+
     if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
       return; // Request was proxied to other node
     }
@@ -134,11 +139,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
   }
 
   private void handleRequest(SolrParams params, BiConsumer<String, Object> consumer) {
-    if (!enabled) {
-      consumer.accept("error", "metrics collection is disabled");
-      return;
-    }
-
     Set<String> metricNames = readParamsAsSet(params, METRIC_NAME_PARAM);
     SortedMap<String, Set<String>> labelFilters = labelFilters(params);
 

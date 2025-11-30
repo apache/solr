@@ -18,40 +18,5 @@
 
 <solr>
  <str name="hiddenSysProps">foo,bar,baz</str>
- <metrics enabled="${metricsEnabled:true}">
-  <suppliers>
-    <counter class="${counter.class:}">
-      <str name="foo">bar</str>
-      <int name="wxt">100</int>
-      <bool name="flag">true</bool>
-    </counter>
-    <meter class="${meter.class:}">
-      <str name="foo">bar</str>
-      <str name="clock">${clock:user}</str>
-    </meter>
-    <timer class="${timer.class:}">
-      <str name="foo">bar</str>
-      <str name="clock">${clock:user}</str>
-      <str name="reservoir">${timer.reservoir:}</str>
-      <int name="size">${histogram.size:-1}</int>
-      <double name="alpha">${histogram.alpha:-1}</double>
-      <long name="window">${histogram.window:-1}</long>
-      <str name="strParam">strParam</str>
-      <int name="intParam">-100</int>
-      <bool name="boolParam">true</bool>
-    </timer>
-    <histogram class="${histogram.class:}">
-      <str name="foo">bar</str>
-      <str name="clock">${clock:user}</str>
-      <str name="reservoir">${histogram.reservoir:}</str>
-      <int name="size">${histogram.size:-1}</int>
-      <double name="alpha">${histogram.alpha:-1}</double>
-      <long name="window">${histogram.window:-1}</long>
-    </histogram>
-  </suppliers>
-  <!-- this reporter doesn't specify 'group' or 'registry', it will be instantiated for any group. -->
-  <reporter name="universal" class="org.apache.solr.metrics.reporters.MockMetricReporter">
-    <str name="configurable">configured</str>
-  </reporter>
- </metrics>
+ <metrics enable="${metricsEnabled:true}"/>
 </solr>

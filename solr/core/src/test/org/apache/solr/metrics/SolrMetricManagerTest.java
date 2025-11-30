@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.DoubleAdder;
 import java.util.concurrent.atomic.LongAdder;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.core.MetricsConfig;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +55,9 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    this.metricManager = new SolrMetricManager(InMemoryMetricExporter.create());
+    this.metricManager =
+        new SolrMetricManager(
+            InMemoryMetricExporter.create(), new MetricsConfig.MetricsConfigBuilder().build());
     // Initialize a metric reader for tests
     metricManager.meterProvider(METER_PROVIDER_NAME);
     this.reader = metricManager.getPrometheusMetricReader(METER_PROVIDER_NAME);

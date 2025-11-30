@@ -20,6 +20,7 @@ import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -28,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -56,6 +58,11 @@ public class TestThinCache extends SolrTestCaseJ4 {
           + "      />\n"
           + "  </caches>\n"
           + "</solr>";
+
+  SolrMetricManager metricManager =
+      new SolrMetricManager(
+          (MetricExporter) null, new MetricsConfig.MetricsConfigBuilder().build());
+  String registry = TestUtil.randomSimpleString(random(), 2, 10);
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
@@ -87,10 +94,6 @@ public class TestThinCache extends SolrTestCaseJ4 {
     h = new TestHarness(solrRule.getCoreContainer());
     lrf = h.getRequestFactory("/select", 0, 20);
   }
-
-  SolrMetricManager metricManager = new SolrMetricManager(null);
-  String registry = TestUtil.randomSimpleString(random(), 2, 10);
-  String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
   public void testSimple() {
