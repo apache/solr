@@ -231,10 +231,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                           true),
                       formatter.format(segmentRxStartTime),
                       formatter.format(segmentRxStopTime));
-
-                  // We found and processed the correct segment for this iteration.
-                  // No need to look at other leaves in the immediate outer for loop
-                  break;
                 }
               }
             } catch (Exception e) {
