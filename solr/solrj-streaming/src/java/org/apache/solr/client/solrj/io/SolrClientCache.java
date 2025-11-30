@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.AlreadyClosedException;
@@ -45,19 +47,19 @@ public class SolrClientCache implements Closeable {
   private static final int minSocketTimeout =
       Math.max(Integer.getInteger(SolrHttpConstants.PROP_SO_TIMEOUT, MIN_TIMEOUT), MIN_TIMEOUT);
 
-  private String basicAuthCredentials = null; // Only support with the httpJettySolrClient
+  protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpJettySolrClient httpJettySolrClient;
+  private final HttpSolrClientBase httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
   public SolrClientCache() {
-    this.httpJettySolrClient = null;
+    this.httpSolrClient = null;
   }
 
-  public SolrClientCache(HttpJettySolrClient httpJettySolrClient) {
-    this.httpJettySolrClient = httpJettySolrClient;
+  public SolrClientCache(HttpSolrClientBase httpSolrClient) {
+    this.httpSolrClient = httpSolrClient;
   }
 
   public void setBasicAuthCredentials(String basicAuthCredentials) {
@@ -89,24 +91,18 @@ public class SolrClientCache implements Closeable {
     boolean canUseACLs =
         Optional.ofNullable(defaultZkHost.get()).map(zkHostNoChroot::equals).orElse(false);
 
-    final var client =
-        newCloudSolrClient(zkHost, httpJettySolrClient, canUseACLs, basicAuthCredentials);
+    final var client = newCloudSolrClient(zkHost, httpSolrClient, canUseACLs);
     solrClients.put(zkHost, client);
     return client;
   }
 
-  private static CloudSolrClient newCloudSolrClient(
-      String zkHost,
-      HttpJettySolrClient httpJettySolrClient,
-      boolean canUseACLs,
-      String basicAuthCredentials) {
+  protected CloudSolrClient newCloudSolrClient(
+      String zkHost, HttpSolrClientBase httpSolrClient, boolean canUseACLs) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudSolrClient.Builder(hosts, Optional.empty());
     builder.canUseZkACLs(canUseACLs);
     // using internal builder to ensure the internal client gets closed
-    builder =
-        builder.withHttpClientBuilder(
-            newHttp2SolrClientBuilder(null, httpJettySolrClient, basicAuthCredentials));
+    builder = builder.withHttpClientBuilder(newHttpSolrClientBuilder(null, httpSolrClient));
     var client = builder.build();
     try {
       client.connect();
@@ -131,21 +127,20 @@ public class SolrClientCache implements Closeable {
     if (solrClients.containsKey(baseUrl)) {
       return solrClients.get(baseUrl);
     }
-    final var client =
-        newHttp2SolrClientBuilder(baseUrl, httpJettySolrClient, basicAuthCredentials).build();
+    final var client = newHttpSolrClientBuilder(baseUrl, httpSolrClient).build();
     solrClients.put(baseUrl, client);
     return client;
   }
 
-  private static HttpJettySolrClient.Builder newHttp2SolrClientBuilder(
-      String url, HttpJettySolrClient httpJettySolrClient, String basicAuthCredentials) {
+  protected HttpSolrClientBuilderBase<?, ?> newHttpSolrClientBuilder(
+      String url, HttpSolrClientBase httpSolrClient) {
     final var builder =
         (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
             ? new HttpJettySolrClient.Builder(url)
             : new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(url))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
-    if (httpJettySolrClient != null) {
-      builder.withHttpClient(httpJettySolrClient);
+    if (httpSolrClient != null) {
+      builder.withHttpClient((HttpJettySolrClient) httpSolrClient); // TODO support JDK
       // cannot set connection timeout
     } else {
       builder.withConnectionTimeout(minConnTimeout, TimeUnit.MILLISECONDS);
