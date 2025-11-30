@@ -194,7 +194,7 @@ NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see xref:zook
 Start each Solr node with the Solr control script as shown in the examples below.
 Customize the values for the parameters shown as necessary and add any used in your system.
 
-If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.checkPeerName=false` system property.
+If you created the SSL key without all DNS names or IP addresses on which Solr nodes run, you can tell Solr to skip hostname verification for inter-node communications by setting the `-Dsolr.ssl.check.peer.name.enabled=false` system property.
 
 [tabs#cloud]
 ======
@@ -249,14 +249,14 @@ C:\> bin\solr.cmd -p 8984
 Solr can automatically reload KeyStore/TrustStore when certificates are updated without restarting. This is enabled by default
 when using SSL, but can be disabled by setting the environment variable `SOLR_SSL_RELOAD_ENABLED` to `false`. By
 default, Solr will check for updates in the KeyStore every 30 seconds, but this interval can be updated by passing the
-system property `solr.jetty.sslContext.reload.scanInterval` with the new interval in seconds on startup.
+system property `solr.jetty.ssl.context.reload.scan.interval.secs` with the new interval in seconds on startup.
 Note that the truststore file is not actively monitored, so if you need to apply changes to the truststore, you need
 to update it and after that touch the keystore to trigger a reload.
 
 === SolrJ client
-Http2SolrClient builder has a method `withKeyStoreReloadInterval(long interval, TimeUnit unit)` to initialize a scanner
-that will watch and update the keystore and truststore for changes. If you are using CloudHttp2SolrClient, you can use
-the `withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder)` to configure the internal http client
+The HTTP SolrClient builder has a method `withKeyStoreReloadInterval(long interval, TimeUnit unit)` to initialize a scanner
+that will watch and update the keystore and truststore for changes. If you are using CloudSolrClient, you can use
+the `withHttpClientBuilder(internalClientBuilder)` to configure the internal http client
 with a keystore reload interval. The minimum reload interval is 1 second. If not set (or set to 0 or a negative value),
 the keystore/truststore won't be updated in the client.
 

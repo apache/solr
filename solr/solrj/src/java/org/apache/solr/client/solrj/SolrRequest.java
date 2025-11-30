@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -283,6 +284,32 @@ public abstract class SolrRequest<T> implements Serializable {
     var namedList = client.request(this, collection);
     long endNanos = System.nanoTime();
     final T typedResponse = createResponse(namedList);
+    // SolrResponse is pre-V2 API
+    if (typedResponse instanceof SolrResponse res) {
+      res.setResponse(namedList); // TODO insist createResponse does this ?
+      res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    }
+    return typedResponse;
+  }
+
+  /**
+   * Send this request to a {@link SolrClient} and return the response
+   *
+   * @param client the SolrClient to communicate with
+   * @param baseUrl the base URL, e.g. {@code Http://localhost:8983/solr}
+   * @param collection the collection to execute the request against
+   * @return the response
+   * @throws SolrServerException if there is an error on the Solr server
+   * @throws IOException if there is a communication error
+   * @lucene.experimental
+   */
+  public final T processWithBaseUrl(HttpSolrClientBase client, String baseUrl, String collection)
+      throws SolrServerException, IOException {
+    // duplicative with process(), except for requestWithBaseUrl
+    long startNanos = System.nanoTime();
+    var namedList = client.requestWithBaseUrl(baseUrl, this, collection);
+    long endNanos = System.nanoTime();
+    T typedResponse = createResponse(namedList);
     // SolrResponse is pre-V2 API
     if (typedResponse instanceof SolrResponse res) {
       res.setResponse(namedList); // TODO insist createResponse does this ?

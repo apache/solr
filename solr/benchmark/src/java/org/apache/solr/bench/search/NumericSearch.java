@@ -102,7 +102,7 @@ public class NumericSearch {
       q.setParam("facet.limit", String.valueOf(maxCardinality));
       QueryRequest req = new QueryRequest(q);
       QueryResponse response =
-          miniClusterState.client.requestWithBaseUrl(basePath, COLLECTION, req);
+          req.processWithBaseUrl(miniClusterState.client, basePath, COLLECTION);
       Set<String> numbers =
           response.getFacetField("numbers_i_dv").getValues().stream()
               .map(FacetField.Count::getName)
@@ -144,7 +144,7 @@ public class NumericSearch {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), null, reload);
+      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), reload, null);
     }
 
     public QueryRequest intSetQuery(boolean dvs) {

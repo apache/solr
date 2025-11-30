@@ -37,14 +37,15 @@ This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 Minimum Java version for Solr 10.x is Java 21.
 
-== Solr Jetty parameters
+== Solr 10.0
+
+=== Solr Jetty parameters
 
 The previous `SOLR_JETTY_HOST` environment variable and `-Dsolr.jetty.host` System Property are deprecated and will be removed in a future release. Please update your configuration to use `SOLR_HOST_BIND` and `-Dsolr.host.bind` instead.
 
 The previous `SOLR_HOST` and 'host' are deprecated and now use `SOLR_HOST_ADVERTISE` and `solr.host.advertise`.
 
 The previous `jetty.port` is deprecated and now use `solr.port.listen`.
-
 
 === Solr CLI and Scripts
 
@@ -71,6 +72,12 @@ That no longer happens in Solr 10.  It is only used to load a configuration as a
 === SolrJ
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
+
+* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`.
+The following classes were renamed with some refactorings: `Http2SolrClient` to `HttpJettySolrClient`, `ConcurrentUpdateHttp2SolrClient` to `ConcurrentUpdateJettySolrClient`, `LBHttp2SolrClient` to `LBJettySolrClient`.
+`CloudHttp2SolrClient.Builder` has moved to `CloudSolrClient`; users should generally have no need to refer to `CloudHttp2SolrClient` or any class/member with "http2" in it.
+The builder will check if Jetty `HttpClient` is available and use that, otherwise fallback on a JDK based `HttpClient`.
+`CloudJettySolrClient` is new, proving an explicit option.
 
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
@@ -185,12 +192,18 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 * TikaLanguageIdentifierUpdateProcessor, which was deprecated in 9.10, has been removed. Users should use LangDetectLanguageIdentifierUpdateProcessor or OpenNLPLangDetectUpdateProcessor instead for language detection. (SOLR-17960)
 
 * LocalTikaExtractionBackend, which was deprecated in 9.10, has been removed. The 'tikaserver' extraction backend is now the only supported backend for the ExtractingRequestHandler, and the default. Users must configure a Tika Server URL via the `tikaserver.url` parameter. (SOLR-17961)
-+
+
 +NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
 
 * The Prometheus exporter, JMX, SLF4J and Graphite metric reporters have been removed. Users should migrate to using OTLP or the `/admin/metrics` endpoint with external tools to get metrics to their preferred backend such as the link:https://opentelemetry.io/docs/collector/[OTEL Collector].
 
+* The deprecated `JaspellLookupFactory` suggester implementation has been removed. The default suggester lookup implementation is now `FSTLookupFactory`, which provides better memory efficiency.
+
 * SolrInfoMBeanHandler and PluginInfoHandler have been removed
+
+* The deprecated `ManagedSynonymFilterFactory` has been removed. Use `ManagedSynonymGraphFilterFactory` instead with `FlattenGraphFilterFactory` at index time.
+
+* The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
 === Security
 

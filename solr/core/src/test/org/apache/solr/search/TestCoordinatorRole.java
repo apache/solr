@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -200,10 +200,10 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       cluster.waitForActiveCollection(COLL, 1, 2);
       DocCollection docColl =
           cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(COLL);
-      Replica nrtReplica = docColl.getReplicas(EnumSet.of(Replica.Type.NRT)).get(0);
+      Replica nrtReplica = getReplicas(docColl, EnumSet.of(Replica.Type.NRT)).get(0);
       assertNotNull(nrtReplica);
       String nrtCore = nrtReplica.getCoreName();
-      Replica pullReplica = docColl.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
+      Replica pullReplica = getReplicas(docColl, EnumSet.of(Replica.Type.PULL)).get(0);
       assertNotNull(pullReplica);
       String pullCore = pullReplica.getCoreName();
 
@@ -466,7 +466,7 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
             CommonParams.JAVABIN);
     p.accept(q);
     SolrDocumentList docs = null;
-    try (SolrClient solrClient = new Http2SolrClient.Builder(qaNode).build()) {
+    try (SolrClient solrClient = new HttpJettySolrClient.Builder(qaNode).build()) {
       for (int i = 0; i < 100; i++) {
         try {
           QueryResponse queryResponse = solrClient.query(COLL, q);

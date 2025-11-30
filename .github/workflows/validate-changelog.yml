@@ -8,6 +8,8 @@ on:
 jobs:
   validate-changelog:
     name: Check changelog entry
+    # Skip validation for Renovate PRs (solrbot) - they get changelog entries automatically
+    if: github.event.pull_request.user.login != 'solrbot'
     runs-on: ubuntu-latest
 
     steps:
@@ -24,27 +26,6 @@ jobs:
           echo "skip=true" >> $GITHUB_OUTPUT
         else
           echo "skip=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Check for CHANGES.txt edits
-      if: steps.check-label.outputs.skip == 'false'
-      run: |
-        # Get the list of changed files
-        CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
-
-        if echo "$CHANGED_FILES" | grep -q "^solr/CHANGES\.txt$"; then
-          echo "::error::Use of solr/CHANGES.txt is deprecated. Please create a changelog yaml file instead."
-          echo ""
-          echo "Instead of editing CHANGES.txt, please:"
-          echo "1. Run: ./gradlew writeChangelog"
-          echo "2. Edit the generated YAML file in changelog/unreleased/"
-          echo "3. Commit both the code change and the YAML file"
-          echo ""
-          echo "For more information, see: dev-docs/changelog.adoc"
-          echo ""
-          echo "If this PR should not have a changelog entry (e.g., documentation-only changes),"
-          echo "add the 'no-changelog' label to this PR."
-          exit 1
         fi
 
     - name: Check for changelog entry

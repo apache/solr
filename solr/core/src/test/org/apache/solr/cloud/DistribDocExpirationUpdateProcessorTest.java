@@ -100,7 +100,7 @@ public class DistribDocExpirationUpdateProcessorTest extends SolrCloudTestCase {
     waitForState(
         "Waiting for collection creation",
         COLLECTION,
-        (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
   }
 
   @Test

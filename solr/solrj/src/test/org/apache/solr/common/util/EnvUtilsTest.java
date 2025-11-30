@@ -30,7 +30,7 @@ public class EnvUtilsTest extends SolrTestCase {
       Map.of(
           "SOLR_HOME", "/home/solr",
           "SOLR_PORT_LISTEN", "8983",
-          "SOLR_HOST", "localhost",
+          "SOLR_HOST_ADVERTISE", "localhost",
           "SOLR_LOG_LEVEL", "INFO",
           "SOLR_BOOLEAN", "true",
           "SOLR_LONG", "1234567890",
@@ -79,7 +79,7 @@ public class EnvUtilsTest extends SolrTestCase {
   public void testEnvsWithCustomKeyNameMappings() {
     // These have different names than the environment variables
     assertEquals(ENV.get("SOLR_HOME"), EnvUtils.getProperty("solr.solr.home"));
-    assertEquals(ENV.get("SOLR_HOST"), EnvUtils.getProperty("host"));
+    assertEquals(ENV.get("SOLR_HOST_ADVERTISE"), EnvUtils.getProperty("host"));
     assertEquals(ENV.get("SOLR_LOGS_DIR"), EnvUtils.getProperty("solr.logs.dir"));
   }
 

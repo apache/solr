@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -93,7 +92,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             COLLECTION,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
     long httpOk = 0;
