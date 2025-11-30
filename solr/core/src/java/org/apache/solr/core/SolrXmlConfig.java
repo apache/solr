@@ -526,9 +526,6 @@ public class SolrXmlConfig {
         case "zkHost":
           builder.setZkHost(value);
           break;
-        case "genericCoreNodeNames":
-          builder.setUseGenericCoreNames(Boolean.parseBoolean(value));
-          break;
         case "zkACLProvider":
           builder.setZkACLProviderClass(value);
           break;
