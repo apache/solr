@@ -571,7 +571,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
       NEXT_TYPE_MAPPING:
       for (TypeMapping typeMapping : typeMappings) {
         for (SolrInputField field : fields) {
-          // We do a assert and a null check because even after SOLR-12710 is addressed
+          // We do an assert and a null check because even after SOLR-12710 is addressed
           // older SolrJ versions can send null values causing an NPE
           assert field.getValues() != null;
           if (field.getValues() != null) {
