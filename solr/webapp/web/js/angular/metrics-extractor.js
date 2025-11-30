@@ -42,7 +42,7 @@
 
         for (var key in labelFilters) {
           if (labelFilters.hasOwnProperty(key)) {
-            if (sample.labels[key] !== labelFilters[key]) {
+            if (!sample.labels || sample.labels[key] !== labelFilters[key]) {
               matches = false;
               break;
             }
