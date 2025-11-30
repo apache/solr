@@ -39,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.MDC;
 
-@LogLevel("org.apache.solr.client.solrj.impl.HttpJettySolrClient=DEBUG")
+@LogLevel("org.apache.solr.client.solrj.jetty.HttpJettySolrClient=DEBUG")
 public class TestHttpRequestId extends SolrJettyTestBase {
 
   @BeforeClass

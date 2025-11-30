@@ -844,10 +844,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    var http2SolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
+    var httpSolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
     for (Replica replica : getActiveReplicas(zkController, collection)) {
       PerReplicaCallable e =
-          new PerReplicaCallable(http2SolrClient, replica, prop, expectedVersion, maxWaitSecs);
+          new PerReplicaCallable(httpSolrClient, replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...

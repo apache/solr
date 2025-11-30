@@ -635,7 +635,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   /** Constructs {@link ConcurrentUpdateBaseSolrClient} instances from provided configuration. */
   public abstract static class Builder {
     protected long idleTimeoutMillis;
-    private HttpSolrClientBase client;
+    protected HttpSolrClientBase client;
     protected String baseSolrUrl;
     protected String defaultCollection;
     protected int queueSize = 10;

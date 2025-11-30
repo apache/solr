@@ -127,7 +127,10 @@ public abstract class CloudSolrClient extends SolrClient {
 
   protected volatile Object[] locks = objectList(3);
 
-  /** Constructs {@link CloudSolrClient} instances from provided configuration. */
+  /**
+   * Constructs {@link CloudSolrClient} instances from provided configuration. It will use a Jetty
+   * based {@code HttpClient} if available, or will otherwise use the JDK.
+   */
   public static class Builder {
     private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
