@@ -53,6 +53,7 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
@@ -231,8 +232,10 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
             : sslConfig.createClientContextFactory();
 
     Long keyStoreReloadIntervalSecs = builder.keyStoreReloadIntervalSecs;
-    if (keyStoreReloadIntervalSecs == null && Boolean.getBoolean("solr.keyStoreReload.enabled")) {
-      keyStoreReloadIntervalSecs = Long.getLong("solr.jetty.sslContext.reload.scanInterval", 30);
+    if (keyStoreReloadIntervalSecs == null
+        && EnvUtils.getPropertyAsBool("solr.keystore.reload.enabled", false)) {
+      keyStoreReloadIntervalSecs =
+          EnvUtils.getPropertyAsLong("solr.jetty.ssl.context.reload.scan.interval.secs", 30l);
     }
     if (sslContextFactory != null
         && sslContextFactory.getKeyStoreResource() != null
@@ -502,7 +505,6 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  @Deprecated
   public NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
@@ -959,7 +961,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       if (cookieStore == null) {
         return cookieStore;
       }
-      if (Boolean.getBoolean("solr.http.disableCookies")) {
+      if (!EnvUtils.getPropertyAsBool("solr.solrj.http.cookies.enabled", false)) {
         return new HttpCookieStore.Empty();
       }
       /*
