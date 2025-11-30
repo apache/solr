@@ -2239,16 +2239,6 @@ public class CoreContainer {
     return this.hostName;
   }
 
-  /**
-   * Gets the alternate path for multicore handling: This is used in case there is a registered
-   * unnamed core (aka name is "") to declare an alternate way of accessing named cores. This can
-   * also be used in a pseudo single-core environment so admins can prepare a new version before
-   * swapping.
-   */
-  public String getManagementPath() {
-    return cfg.getManagementPath();
-  }
-
   public LogWatcher<?> getLogging() {
     return logging;
   }
