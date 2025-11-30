@@ -150,25 +150,25 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     $scope.from = Math.max(0, $scope.from - parseInt($scope.pageSize));
     $scope.reload();
   };
-  
+
   // Checks if this node is the first (alphabetically) for a given host. Used to decide rowspan in table
   $scope.isFirstNodeForHost = function(node) {
-    var hostName = node.split(":")[0]; 
+    var hostName = node.split(":")[0];
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
       return node.split(":")[0] === hostName;
     });
     return nodesInHost[0] === node;
   };
-  
+
   // Returns the first live node for this host, to make sure we pick host-level metrics from a live node
   $scope.firstLiveNodeForHost = function(key) {
-    var hostName = key.split(":")[0]; 
+    var hostName = key.split(":")[0];
     var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
       return key.split(":")[0] === hostName;
     }).filter(function (key) {
       return $scope.live_nodes.includes(key);
     });
-    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key; 
+    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key;
   };
 
   // Initializes the cluster state, list of nodes, collections etc
@@ -227,7 +227,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
         ensureNodeInHosts(node, hosts);
       }
 
-      // Make sure nodes are sorted alphabetically to align with rowspan in table 
+      // Make sure nodes are sorted alphabetically to align with rowspan in table
       for (var host in hosts) {
         hosts[host].nodes.sort();
       }
@@ -249,7 +249,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
 
   /*
     Reload will fetch data for the current page of the table and thus refresh numbers.
-    It is also called whenever a filter or paging action is executed 
+    It is also called whenever a filter or paging action is executed
    */
   $scope.reload = function() {
     var nodes = $scope.nodes;
@@ -307,7 +307,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
       case "health":
 
     }
-    
+
     if (filteredNodes) {
       // If filtering is active, calculate what hosts contain the nodes that match the filters
       isFiltered = true;
@@ -322,7 +322,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     }
     filteredNodes.sort();
     filteredHosts.sort();
-    
+
     // Find what hosts & nodes (from the filtered set) that should be displayed on current page
     for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
       var hostName = filteredHosts[id];
@@ -336,7 +336,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
       }
     }
     nodesParam = nodesToShow.filter(function (node) {
-      return live_nodes.includes(node); 
+      return live_nodes.includes(node);
     }).join(',');
     var deadNodes = nodesToShow.filter(function (node) {
       return !live_nodes.includes(node);
@@ -391,14 +391,9 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     });
 
     /*
-     Fetch metrics for visible nodes using Prometheus format.
-     Query only the nodes visible on current page for better scalability.
-     Backend will merge Prometheus responses with node labels.
+     Fetch metrics for all selected nodes. Only pull the metrics that we'll show to save bandwidth
+     Pick the data we want to display and add it to the node-centric data structure
       */
-
-    // Fetch metrics from visible nodes only
-    // Backend will merge responses and add node labels
-    // Filter to only the metrics we need to reduce payload size
     Metrics.get(
       {
         nodes: nodesParam,
@@ -409,25 +404,25 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
         var parsedMetrics = response.metrics;
 
         for (var i = 0; i < nodesToShow.length; i++) {
-          var nodeName = nodesToShow[i];
-          if (!nodes[nodeName]) continue;
+          var node = nodesToShow[i];
+          if (!nodes[node]) continue;
 
-          nodes[nodeName]['metrics'] = parsedMetrics;
+          nodes[node]['metrics'] = parsedMetrics;
 
           // Extract disk metrics with node filter
-          var diskMetrics = MetricsExtractor.extractDiskMetrics(parsedMetrics, { node: nodeName });
+          var diskMetrics = MetricsExtractor.extractDiskMetrics(parsedMetrics, { node: node });
           if (diskMetrics) {
             var diskTotal = diskMetrics.totalSpace || 0;
             var diskFree = diskMetrics.usableSpace || 0;
             var diskPercentage = diskTotal > 0 ? Math.floor((diskTotal - diskFree) / diskTotal * 100) : 0;
-            nodes[nodeName]['diskUsedPct'] = diskPercentage;
-            nodes[nodeName]['diskUsedPctStyle'] = styleForPct(diskPercentage);
-            nodes[nodeName]['diskTotal'] = bytesToSize(diskTotal);
-            nodes[nodeName]['diskFree'] = bytesToSize(diskFree);
+            nodes[node]['diskUsedPct'] = diskPercentage;
+            nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
+            nodes[node]['diskTotal'] = bytesToSize(diskTotal);
+            nodes[node]['diskFree'] = bytesToSize(diskFree);
           }
 
           // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
-          var cores = nodes[nodeName]['cores'];
+          var cores = nodes[node]['cores'];
           if (!cores || typeof cores !== 'object') {
             cores = {};
           }
@@ -448,7 +443,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
             // Build full core name for label matching
             // Prometheus metrics use format: "collection_shard_replica"
             var fullCoreName = core['collection'] + '_' + core['shard'] + '_' + core['replica'];
-            var coreLabels = { core: fullCoreName, node: nodeName };
+            var coreLabels = { core: fullCoreName, node: node };
 
             // Extract metrics using helpers (with node filter)
             var size = MetricsExtractor.extractCoreIndexSize(parsedMetrics, coreLabels);
@@ -494,19 +489,19 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
             return b.size - a.size
           });
 
-          nodes[nodeName]['graphData'] = graphData;
-          nodes[nodeName]['numDocs'] = numDocsHuman(docsTotal);
-          nodes[nodeName]['sizeInBytes'] = indexSizeTotal;
-          nodes[nodeName]['size'] = bytesToSize(indexSizeTotal);
-          nodes[nodeName]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
+          nodes[node]['graphData'] = graphData;
+          nodes[node]['numDocs'] = numDocsHuman(docsTotal);
+          nodes[node]['sizeInBytes'] = indexSizeTotal;
+          nodes[node]['size'] = bytesToSize(indexSizeTotal);
+          nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
 
           // Build the d3 powered bar chart
-          $('#chart' + nodes[nodeName]['id']).empty();
-          var chart = d3.select('#chart' + nodes[nodeName]['id']).append('div').attr('class', 'chart');
+          $('#chart' + nodes[node]['id']).empty();
+          var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
 
           // Add one div per bar which will group together both labels and bars
           var g = chart.selectAll('div')
-              .data(nodes[nodeName]['graphData']).enter()
+              .data(nodes[node]['graphData']).enter()
               .append('div');
 
           // Add the bars
@@ -550,7 +545,7 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.tree = {};
     $scope.showData = false;
     $scope.showDetails = false;
-    
+
     $scope.toggleDetails = function() {
       $scope.showDetails = !$scope.showDetails === true;
     };
@@ -560,8 +555,8 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
         $scope.zkState = data.zkStatus;
         $scope.mainKeys = ["ok", "clientPort", "secureClientPort", "zk_server_state", "zk_version",
           "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
-        $scope.detailKeys = ["dataDir", "dataLogDir", 
-          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
+        $scope.detailKeys = ["dataDir", "dataLogDir",
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count",
           "zk_packets_sent", "zk_packets_received",
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
         $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort", "role"];
@@ -622,7 +617,7 @@ var treeSubController = function($scope, Zookeeper) {
 
 /**
  * Translates seconds into human readable format of seconds, minutes, hours, days, and years
- * 
+ *
  * @param  {number} seconds The number of seconds to be processed
  * @return {string}         The phrase describing the amount of time
  */
