@@ -238,8 +238,8 @@ public class TestSolrXml extends SolrTestCaseJ4 {
   public void testMultiCloudSectionError() {
     String solrXml =
         "<solr>"
-            + "<solrcloud><bool name=\"genericCoreNodeNames\">true</bool></solrcloud>"
-            + "<solrcloud><bool name=\"genericCoreNodeNames\">false</bool></solrcloud>"
+            + "<solrcloud><long name=\"maxUpdateConnections\">1</long></solrcloud>"
+            + "<solrcloud><long name=\"maxUpdateConnections\">2</long></solrcloud>"
             + "</solr>";
 
     SolrException thrown =
@@ -327,7 +327,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
 
   public void testFailAtConfigParseTimeWhenBoolTypeIsExpectedAndValueIsInvalidString() {
     String solrXml =
-        "<solr><solrcloud><bool name=\"genericCoreNodeNames\">FOO</bool></solrcloud></solr>";
+        "<solr><solrcloud><bool name=\"someBooleanProperty\">FOO</bool></solrcloud></solr>";
 
     SolrException thrown =
         assertThrows(SolrException.class, () -> SolrXmlConfig.fromString(solrHome, solrXml));
