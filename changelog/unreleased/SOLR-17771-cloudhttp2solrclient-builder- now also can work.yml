@@ -1,4 +1,4 @@
-title: '`CloudHttp2SolrClient.Builder` now also can work with `HttpJdkSolrClient`.'
+title: '`CloudSolrClient.Builder` /  now also can work with `HttpJdkSolrClient`.'
 type: changed
 authors:
 - name: James Dyer

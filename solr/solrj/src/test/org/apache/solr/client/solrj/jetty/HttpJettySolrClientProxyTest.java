@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Arrays;
@@ -25,6 +25,8 @@ import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
@@ -34,7 +36,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
+public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
@@ -71,10 +73,10 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   public void testProxyWithHttp2SolrClient() throws Exception {
     assertNotNull(proxy);
     var builder =
-        new Http2SolrClient.Builder(url)
+        new HttpJettySolrClient.Builder(url)
             .withProxyConfiguration(host, proxy.getListenPort(), false, false);
 
-    try (Http2SolrClient client = builder.build()) {
+    try (HttpJettySolrClient client = builder.build()) {
       testProxy(client);
     }
   }

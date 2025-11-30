@@ -28,8 +28,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateJettySolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.ConcurrentUpdateJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.update.SolrCmdDistributor.SolrError;
@@ -45,7 +45,7 @@ public class StreamingSolrClients {
   private final int pollQueueTimeMillis =
       Integer.getInteger("solr.cloud.client.pollQueueTime", 10000);
 
-  private Http2SolrClient httpClient;
+  private HttpJettySolrClient httpClient;
 
   private Map<String, ConcurrentUpdateBaseSolrClient> solrClients = new HashMap<>();
   private List<SolrError> errors = Collections.synchronizedList(new ArrayList<>());
@@ -114,7 +114,7 @@ public class StreamingSolrClients {
     return fullUrl;
   }
 
-  public Http2SolrClient getHttpClient() {
+  public HttpJettySolrClient getHttpClient() {
     return httpClient;
   }
 
@@ -168,7 +168,7 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
      */
     public Builder(
         String baseSolrUrl,
-        Http2SolrClient client,
+        HttpJettySolrClient client,
         SolrCmdDistributor.Req req,
         List<SolrError> errors) {
       super(baseSolrUrl, client);
