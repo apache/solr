@@ -219,6 +219,8 @@ public class AdminHandlersProxy {
               String labeledText = injectNodeLabelIntoText(prometheusText, entry.getKey());
               mergedText.append(labeledText);
             }
+          } catch (IOException ioe) {
+            log.warn("IOException when reading stream from node {}", entry.getKey(), ioe);
           }
         } else {
           log.warn("No stream in response from node {}", entry.getKey());
