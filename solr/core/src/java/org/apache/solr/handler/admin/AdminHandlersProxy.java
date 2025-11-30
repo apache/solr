@@ -246,12 +246,20 @@ public class AdminHandlersProxy {
 
   /**
    * Inject node="nodeName" label into Prometheus text format. Each metric line gets the node label
-   * added.
+   * added. Uses regex matching to robustly handle metric lines with or without labels, values in
+   * scientific notation, and optional timestamps.
    */
   private static String injectNodeLabelIntoText(String prometheusText, String nodeName) {
     StringBuilder result = new StringBuilder();
     String[] lines = prometheusText.split("\n");
     String escapedNodeName = escapePrometheusLabelValue(nodeName);
+
+    // Regex to match Prometheus metric lines:
+    // Group 1: metric name
+    // Group 2: labels (optional, with braces)
+    // Group 3: value and optional timestamp
+    java.util.regex.Pattern pattern =
+        java.util.regex.Pattern.compile("^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:(\\{[^}]*\\}))?\\s+(.+)$");
 
     for (String line : lines) {
       // Skip comments and empty lines
@@ -260,49 +268,32 @@ public class AdminHandlersProxy {
         continue;
       }
 
-      // Metric line format: metric_name{labels} value timestamp
-      // or: metric_name value timestamp
-      int braceIndex = line.indexOf('{');
-      int spaceIndex = line.indexOf(' ');
+      java.util.regex.Matcher matcher = pattern.matcher(line);
+      if (matcher.matches()) {
+        String metricName = matcher.group(1);
+        String labels = matcher.group(2); // May be null if no labels
+        String valueAndTimestamp = matcher.group(3);
 
-      if (braceIndex == -1) {
-        // No labels, add node label before value
-        // Format: metric_name value timestamp
-        if (spaceIndex > 0) {
-          String metricName = line.substring(0, spaceIndex);
-          String valueAndTime = line.substring(spaceIndex);
-          result
-              .append(metricName)
-              .append("{node=\"")
-              .append(escapedNodeName)
-              .append("\"}")
-              .append(valueAndTime)
-              .append("\n");
+        result.append(metricName);
+
+        if (labels != null && !labels.isEmpty()) {
+          // Has existing labels - inject node label inside braces
+          // labels is "{existing_labels}", need to inject before the closing brace
+          String labelsContent = labels.substring(1, labels.length() - 1); // Remove { }
+          result.append("{");
+          if (!labelsContent.isEmpty()) {
+            result.append(labelsContent).append(",");
+          }
+          result.append("node=\"").append(escapedNodeName).append("\"}");
         } else {
-          result.append(line).append("\n");
+          // No labels - add node label as only label
+          result.append("{node=\"").append(escapedNodeName).append("\"}");
         }
+
+        result.append(" ").append(valueAndTimestamp).append("\n");
       } else {
-        // Has labels, inject node label
-        // Format: metric_name{existing_labels} value timestamp
-        int closeBraceIndex = line.indexOf('}', braceIndex);
-        if (closeBraceIndex > braceIndex) {
-          String before = line.substring(0, closeBraceIndex);
-          String after = line.substring(closeBraceIndex);
-
-          // Add comma if there are existing labels
-          String separator = (closeBraceIndex > braceIndex + 1) ? "," : "";
-
-          result
-              .append(before)
-              .append(separator)
-              .append("node=\"")
-              .append(escapedNodeName)
-              .append("\"")
-              .append(after)
-              .append("\n");
-        } else {
-          result.append(line).append("\n");
-        }
+        // Line doesn't match expected format - keep as-is
+        result.append(line).append("\n");
       }
     }
 
