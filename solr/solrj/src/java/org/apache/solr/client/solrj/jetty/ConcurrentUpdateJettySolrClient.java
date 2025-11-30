@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -25,6 +25,8 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,24 +37,26 @@ import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.http.HttpMethod;
 
-/** A ConcurrentUpdate SolrClient using {@link Http2SolrClient}. */
+/** A ConcurrentUpdate SolrClient using {@link HttpJettySolrClient}. */
 public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrClient {
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
-  private final Http2SolrClient client;
+  private final HttpJettySolrClient client;
 
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
-     * @see ConcurrentUpdateBaseSolrClient.Builder#Builder(String, HttpSolrClientBase)
+     * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
+     *     HttpSolrClientBase)
      */
-    public Builder(String baseUrl, Http2SolrClient client) {
+    public Builder(String baseUrl, HttpJettySolrClient client) {
       this(baseUrl, client, false);
     }
 
     /**
-     * @see ConcurrentUpdateBaseSolrClient.Builder#Builder(String, HttpSolrClientBase, boolean)
+     * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
+     *     HttpSolrClientBase, boolean)
      */
-    public Builder(String baseSolrUrl, Http2SolrClient client, boolean closeHttpClient) {
+    public Builder(String baseSolrUrl, HttpJettySolrClient client, boolean closeHttpClient) {
       super(baseSolrUrl, client, closeHttpClient);
       this.idleTimeoutMillis = client.getIdleTimeoutMillis();
     }
@@ -65,7 +69,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
 
   protected ConcurrentUpdateJettySolrClient(Builder builder) {
     super(builder);
-    this.client = (Http2SolrClient) builder.client;
+    this.client = (HttpJettySolrClient) builder.getClient();
   }
 
   @Override
@@ -141,7 +145,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
 
   private OutStream initOutStream(String baseUrl, UpdateRequest updateRequest, String collection)
       throws IOException {
-    String contentType = client.requestWriter.getUpdateContentType();
+    String contentType = client.getRequestWriter().getUpdateContentType();
     final SolrParams origParams = updateRequest.getParams();
     ModifiableSolrParams requestParams =
         client.initializeSolrParams(updateRequest, client.responseParser(updateRequest));
@@ -159,10 +163,10 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
             .body(content);
     client.decorateRequest(postRequest, updateRequest, false);
     InputStreamResponseListener responseListener =
-        new Http2SolrClient.InputStreamReleaseTrackingResponseListener();
+        new HttpJettySolrClient.InputStreamReleaseTrackingResponseListener();
     postRequest.send(responseListener);
 
-    boolean isXml = ClientUtils.TEXT_XML.equals(client.requestWriter.getUpdateContentType());
+    boolean isXml = ClientUtils.TEXT_XML.equals(client.getRequestWriter().getUpdateContentType());
     OutStream outStream = new OutStream(collection, origParams, content, responseListener, isXml);
     if (isXml) {
       outStream.write("<stream>".getBytes(FALLBACK_CHARSET));
@@ -172,7 +176,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
 
   private void send(OutStream outStream, SolrRequest<?> req, String collection) throws IOException {
     assert outStream.belongToThisStream(req, collection);
-    client.requestWriter.write(req, outStream.content.getOutputStream());
+    client.getRequestWriter().write(req, outStream.content.getOutputStream());
     if (outStream.isXml) {
       // check for commit or optimize
       SolrParams params = req.getParams();

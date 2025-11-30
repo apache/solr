@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.util;
+package org.apache.solr.client.solrj.jetty;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
