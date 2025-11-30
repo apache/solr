@@ -425,6 +425,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
           var cores = nodes[node]['cores'];
           if (!cores || typeof cores !== 'object') {
             cores = {};
+            nodes[node]['cores'] = cores;
           }
           var indexSizeTotal = 0;
           var indexSizeMax = 0;
@@ -479,11 +480,8 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
             graphData.push(graphObj);
           }
 
-          if (cores) {
-            cores.sort(function (a, b) {
-              return b.sizeInBytes - a.sizeInBytes
-            });
-          }
+          // Note: cores is an object (key-value pairs), not an array, so we cannot sort it directly.
+          // The sorting is handled separately for graphData which is an array.
 
           graphData.sort(function (a, b) {
             return b.size - a.size

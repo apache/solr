@@ -49,11 +49,13 @@
         // Skip empty lines
         if (!line) continue;
 
-        // Parse HELP comments
+        // Parse HELP comments - use regex for robust parsing
         if (line.indexOf('# HELP ') === 0) {
-          var helpParts = line.substring(7).split(' ');
-          currentMetricName = helpParts[0];
-          currentMetricHelp = helpParts.slice(1).join(' ');
+          var helpMatch = line.match(/^# HELP ([a-zA-Z_:][a-zA-Z0-9_:]*)\s+(.*)$/);
+          if (helpMatch) {
+            currentMetricName = helpMatch[1];
+            currentMetricHelp = helpMatch[2];
+          }
         }
         // Parse TYPE comments
         else if (line.indexOf('# TYPE ') === 0) {
@@ -78,27 +80,50 @@
         else {
           var sample = parseMetricLine(line);
           if (sample && sample.metricName) {
-            // Handle histogram suffixes (_sum, _count, _bucket)
-            var baseMetricName = sample.metricName.replace(/_sum$|_count$|_bucket$/, '');
+            var baseMetricName = sample.metricName;
+            var metricSuffix = null;
 
-            if (!metrics[baseMetricName]) {
-              metrics[baseMetricName] = {
-                type: 'unknown',
-                help: '',
+            // Only strip suffixes for histogram and summary types
+            // Check if metric name has known suffixes
+            if (sample.metricName.indexOf('_sum') === sample.metricName.length - 4) {
+              baseMetricName = sample.metricName.substring(0, sample.metricName.length - 4);
+              metricSuffix = '_sum';
+            } else if (sample.metricName.indexOf('_count') === sample.metricName.length - 6) {
+              baseMetricName = sample.metricName.substring(0, sample.metricName.length - 6);
+              metricSuffix = '_count';
+            } else if (sample.metricName.indexOf('_bucket') === sample.metricName.length - 7) {
+              baseMetricName = sample.metricName.substring(0, sample.metricName.length - 7);
+              metricSuffix = '_bucket';
+            } else if (sample.metricName.indexOf('_total') === sample.metricName.length - 6) {
+              // Handle _total suffix for summary metrics
+              baseMetricName = sample.metricName.substring(0, sample.metricName.length - 6);
+              metricSuffix = '_total';
+            }
+
+            // Check if base metric exists with histogram/summary type
+            var shouldGroup = false;
+            if (metricSuffix && metrics[baseMetricName]) {
+              var baseType = metrics[baseMetricName].type;
+              shouldGroup = (baseType === 'histogram' || baseType === 'summary');
+            }
+
+            // Use base name if we should group, otherwise use full name
+            var targetMetricName = (shouldGroup || metricSuffix) ? baseMetricName : sample.metricName;
+
+            if (!metrics[targetMetricName]) {
+              metrics[targetMetricName] = {
+                type: currentMetricType || 'unknown',
+                help: currentMetricHelp || '',
                 samples: []
               };
             }
 
-            // Add suffix info to sample
-            if (sample.metricName.indexOf('_sum') === sample.metricName.length - 4) {
-              sample.metricSuffix = '_sum';
-            } else if (sample.metricName.indexOf('_count') === sample.metricName.length - 6) {
-              sample.metricSuffix = '_count';
-            } else if (sample.metricName.indexOf('_bucket') === sample.metricName.length - 7) {
-              sample.metricSuffix = '_bucket';
+            // Add suffix info to sample if present
+            if (metricSuffix) {
+              sample.metricSuffix = metricSuffix;
             }
 
-            metrics[baseMetricName].samples.push(sample);
+            metrics[targetMetricName].samples.push(sample);
           }
         }
       }
@@ -108,13 +133,14 @@
 
     /**
      * Parse a single metric line
-     * @param {string} line - Metric line (e.g., 'metric_name{label1="val1"} 123.45')
+     * @param {string} line - Metric line (e.g., 'metric_name{label1="val1"} 123.45' or with timestamp)
      * @returns {Object|null} Parsed sample or null
      */
     function parseMetricLine(line) {
-      // Regex to match: metric_name{labels} value
-      // or: metric_name value
-      var match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*?)(?:\{(.*?)\})?\s+([^\s]+)$/);
+      // Regex to match: metric_name{labels} value [timestamp]
+      // or: metric_name value [timestamp]
+      // The timestamp is optional and is a Unix timestamp in milliseconds
+      var match = line.match(/^([a-zA-Z_:][a-zA-Z0-9_:]*?)(?:\{(.*?)\})?\s+([^\s]+)(?:\s+\d+)?$/);
 
       if (!match) return null;
 
@@ -125,12 +151,12 @@
       // Parse labels
       var labels = {};
       if (labelsStr) {
-        // Match label="value" patterns
-        var labelRegex = /([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\.)*)"/g;
+        // Match label="value" patterns - only allow valid Prometheus escape sequences (\\, \", \n)
+        var labelRegex = /([a-zA-Z_][a-zA-Z0-9_]*)="((?:[^"\\]|\\[\\"n])*)"/g;
         var labelMatch;
         while ((labelMatch = labelRegex.exec(labelsStr)) !== null) {
-          // Unescape label values
-          var labelValue = labelMatch[2].replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+          // Unescape label values - must unescape \\ first to avoid double-unescaping
+          var labelValue = labelMatch[2].replace(/\\\\/g, '\\').replace(/\\"/g, '"').replace(/\\n/g, '\n');
           labels[labelMatch[1]] = labelValue;
         }
       }

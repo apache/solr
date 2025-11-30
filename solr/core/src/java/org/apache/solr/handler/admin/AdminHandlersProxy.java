@@ -205,6 +205,8 @@ public class AdminHandlersProxy {
 
     // Collect all Prometheus text responses
     StringBuilder mergedText = new StringBuilder();
+    int successCount = 0;
+    int failureCount = 0;
     for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
       try {
         NamedList<Object> resp =
@@ -219,16 +221,36 @@ public class AdminHandlersProxy {
               // Inject node label into each metric line
               String labeledText = injectNodeLabelIntoText(prometheusText, entry.getKey());
               mergedText.append(labeledText);
+              successCount++;
             }
           }
         } else {
           log.warn("No stream in response from node {}", entry.getKey());
+          failureCount++;
         }
       } catch (ExecutionException ee) {
         log.warn("Exception when fetching Prometheus result from node {}", entry.getKey(), ee);
+        failureCount++;
       } catch (TimeoutException te) {
         log.warn("Timeout when fetching Prometheus result from node {}", entry.getKey(), te);
+        failureCount++;
       }
+    }
+
+    // Add metadata comment to indicate success/failure counts
+    if (failureCount > 0 || successCount > 0) {
+      StringBuilder header = new StringBuilder();
+      header
+          .append("# Solr multi-node metrics aggregation: ")
+          .append(successCount)
+          .append(" of ")
+          .append(responses.size())
+          .append(" nodes succeeded");
+      if (failureCount > 0) {
+        header.append(" (").append(failureCount).append(" failed)");
+      }
+      header.append("\n");
+      mergedText.insert(0, header);
     }
 
     // Store the merged text in response - will be written as-is
@@ -237,12 +259,21 @@ public class AdminHandlersProxy {
 
 
   /**
+   * Escape special characters in Prometheus label values according to Prometheus specification.
+   * Escapes backslash, double quote, and newline characters.
+   */
+  private static String escapePrometheusLabelValue(String value) {
+    return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+  }
+
+  /**
    * Inject node="nodeName" label into Prometheus text format. Each metric line gets the node label
    * added.
    */
   private static String injectNodeLabelIntoText(String prometheusText, String nodeName) {
     StringBuilder result = new StringBuilder();
     String[] lines = prometheusText.split("\n");
+    String escapedNodeName = escapePrometheusLabelValue(nodeName);
 
     for (String line : lines) {
       // Skip comments and empty lines
@@ -265,7 +296,7 @@ public class AdminHandlersProxy {
           result
               .append(metricName)
               .append("{node=\"")
-              .append(nodeName)
+              .append(escapedNodeName)
               .append("\"}")
               .append(valueAndTime)
               .append("\n");
@@ -287,7 +318,7 @@ public class AdminHandlersProxy {
               .append(before)
               .append(separator)
               .append("node=\"")
-              .append(nodeName)
+              .append(escapedNodeName)
               .append("\"")
               .append(after)
               .append("\n");
