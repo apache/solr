@@ -29,9 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -42,9 +40,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -58,7 +54,6 @@ import org.slf4j.LoggerFactory;
 public class AdminHandlersProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_NODES = "nodes";
-  private static final int PROMETHEUS_PROXY_THREAD_POOL_SIZE = 8;
   private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
   // Proxy this request to a different remote node if 'node' parameter is provided
@@ -194,102 +189,52 @@ public class AdminHandlersProxy {
       SolrQueryResponse rsp)
       throws IOException, SolrServerException, InterruptedException {
 
-    // Bounded parallel executor - max concurrent fetches using Solr's ExecutorUtil
-    ExecutorService executor =
-        new ExecutorUtil.MDCAwareThreadPoolExecutor(
-            PROMETHEUS_PROXY_THREAD_POOL_SIZE, // corePoolSize
-            PROMETHEUS_PROXY_THREAD_POOL_SIZE, // maximumPoolSize
-            60L,
-            TimeUnit.SECONDS,
-            new LinkedBlockingQueue<>(),
-            new SolrNamedThreadFactory("metricsProxyExecutor"));
+    ZkController zkController = container.getZkController();
+    Map<String, Future<NamedList<Object>>> responses = new LinkedHashMap<>();
 
-    try {
-      // Submit all fetches at once - executor will handle bounded parallelism
-      Map<String, Future<String>> futures = new LinkedHashMap<>();
-      for (String node : nodes) {
-        futures.put(node, fetchNodePrometheusTextAsync(executor, node, pathStr, params, container));
-      }
-
-      // Collect all Prometheus text responses
-      StringBuilder mergedText = new StringBuilder();
-      for (Map.Entry<String, Future<String>> entry : futures.entrySet()) {
-        try {
-          String prometheusText =
-              entry.getValue().get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-          if (prometheusText != null && !prometheusText.isEmpty()) {
-            // Inject node label into each metric line
-            String labeledText = injectNodeLabelIntoText(prometheusText, entry.getKey());
-            mergedText.append(labeledText);
-          }
-        } catch (ExecutionException ee) {
-          log.warn("Exception when fetching Prometheus result from node {}", entry.getKey(), ee);
-        } catch (TimeoutException te) {
-          log.warn("Timeout when fetching Prometheus result from node {}", entry.getKey(), te);
-        }
-      }
-
-      // Store the merged text in response - will be written as-is
-      rsp.add("prometheusText", mergedText.toString());
-
-    } finally {
-      ExecutorUtil.shutdownAndAwaitTermination(executor);
+    // Ensure wt=prometheus for all requests
+    ModifiableSolrParams prometheusParams = new ModifiableSolrParams(params);
+    if (!prometheusParams.get("wt", "").equals("prometheus")) {
+      prometheusParams.set("wt", "prometheus");
     }
-  }
 
-  /** Fetch Prometheus text from a remote node asynchronously. */
-  private static Future<String> fetchNodePrometheusTextAsync(
-      ExecutorService executor,
-      String nodeName,
-      String pathStr,
-      SolrParams params,
-      CoreContainer container) {
+    // Submit all requests (already async via callRemoteNode)
+    for (String node : nodes) {
+      responses.put(node, callRemoteNode(node, pathStr, prometheusParams, zkController));
+    }
 
-    return executor.submit(
-        () -> {
-          try {
-            ZkController zkController = container.getZkController();
-            if (zkController == null) {
-              log.warn("ZkController not available for node {}", nodeName);
-              return null;
+    // Collect all Prometheus text responses
+    StringBuilder mergedText = new StringBuilder();
+    for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
+      try {
+        NamedList<Object> resp =
+            entry.getValue().get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+
+        // Extract text from InputStream response
+        Object streamObj = resp.get("stream");
+        if (streamObj instanceof InputStream) {
+          try (InputStream stream = (InputStream) streamObj) {
+            String prometheusText = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+            if (!prometheusText.isEmpty()) {
+              // Inject node label into each metric line
+              String labeledText = injectNodeLabelIntoText(prometheusText, entry.getKey());
+              mergedText.append(labeledText);
             }
-
-            // Ensure wt=prometheus is set for inter-node requests
-            ModifiableSolrParams prometheusParams = new ModifiableSolrParams(params);
-            if (!prometheusParams.get("wt", "").equals("prometheus")) {
-              prometheusParams.set("wt", "prometheus");
-            }
-
-            // Use existing callRemoteNode() to fetch metrics
-            CompletableFuture<NamedList<Object>> future =
-                callRemoteNode(nodeName, pathStr, prometheusParams, zkController);
-
-            NamedList<Object> response =
-                future.get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-            // Response has "stream" key with InputStream when using InputStreamResponseParser
-            Object streamObj = response.get("stream");
-            if (streamObj == null) {
-              log.warn("No stream in response from node {}", nodeName);
-              return null;
-            }
-            if (!(streamObj instanceof InputStream)) {
-              log.warn(
-                  "Invalid stream type in response from node {}: {}",
-                  nodeName,
-                  streamObj.getClass());
-              return null;
-            }
-            try (InputStream stream = (InputStream) streamObj) {
-              return new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            }
-
-          } catch (Exception e) {
-            log.warn("Error fetching metrics from node {}", nodeName, e);
-            return null;
           }
-        });
+        } else {
+          log.warn("No stream in response from node {}", entry.getKey());
+        }
+      } catch (ExecutionException ee) {
+        log.warn("Exception when fetching Prometheus result from node {}", entry.getKey(), ee);
+      } catch (TimeoutException te) {
+        log.warn("Timeout when fetching Prometheus result from node {}", entry.getKey(), te);
+      }
+    }
+
+    // Store the merged text in response - will be written as-is
+    rsp.add("prometheusText", mergedText.toString());
   }
+
 
   /**
    * Inject node="nodeName" label into Prometheus text format. Each metric line gets the node label

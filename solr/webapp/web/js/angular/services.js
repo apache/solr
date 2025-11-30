@@ -31,7 +31,6 @@ solrAdminServices.factory('System',
           try {
             return {metrics: PrometheusParser.parse(data)};
           } catch (e) {
-            console.error('Failed to parse Prometheus metrics:', e);
             return {metrics: {}, error: e.message};
           }
         }
