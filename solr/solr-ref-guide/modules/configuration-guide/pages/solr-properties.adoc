@@ -110,7 +110,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
 
-|solr.solrj.http.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
+|solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 

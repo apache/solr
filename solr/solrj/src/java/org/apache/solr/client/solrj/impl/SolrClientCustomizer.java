@@ -14,21 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.impl;
+
+import org.apache.solr.client.solrj.SolrClient;
 
 /**
  * A config hook for post-configuration of a {@linkplain SolrClient} by its builder. It is not
  * supported by all builders.
  *
- * @see #CLIENT_CUSTOMIZER_SYSPROP
+ * @param <T> type of SolrClient this customizer targets
+ * @see org.apache.solr.client.solrj.jetty.HttpJettySolrClient#CLIENT_CUSTOMIZER_SYSPROP
  * @lucene.experimental
  */
-public interface SolrClientCustomizer {
-  /**
-   * A Java system property to select the {@linkplain SolrClientCustomizer} used for configuring
-   * HTTP based SolrClients.
-   */
-  String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.customizer";
+public interface SolrClientCustomizer<T extends SolrClient> {
 
-  void setup(SolrClient client);
+  void setup(T client);
 }

@@ -38,10 +38,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrClientCustomizer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -90,7 +90,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   @Override
   public void tearDown() throws Exception {
     System.clearProperty("solr.security.auth.basicauth.credentials");
-    System.clearProperty(SolrClientCustomizer.CLIENT_CUSTOMIZER_SYSPROP);
+    System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
     DebugServlet.clear();
     super.tearDown();
   }

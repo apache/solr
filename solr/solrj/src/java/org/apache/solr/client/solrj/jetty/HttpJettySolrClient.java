@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrClientCustomizer;
+import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -102,7 +102,15 @@ import org.slf4j.MDC;
  */
 public class HttpJettySolrClient extends HttpSolrClientBase {
   // formerly known at Http2SolrClient
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * A Java system property to select the {@linkplain SolrClientCustomizer} used for configuring
+   * this client.
+   */
+  public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
+
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -178,13 +186,14 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
+  @SuppressWarnings("unchecked")
   private void applyClientCustomizer() {
-    String factoryClassName = EnvUtils.getProperty(SolrClientCustomizer.CLIENT_CUSTOMIZER_SYSPROP);
+    String factoryClassName = EnvUtils.getProperty(CLIENT_CUSTOMIZER_SYSPROP);
     if (factoryClassName != null) {
       log.debug("Using {}", factoryClassName);
-      SolrClientCustomizer factory;
+      SolrClientCustomizer<HttpJettySolrClient> instance;
       try {
-        factory =
+        instance =
             Class.forName(factoryClassName)
                 .asSubclass(SolrClientCustomizer.class)
                 .getDeclaredConstructor()
@@ -197,7 +206,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
         throw new RuntimeException(
             "Unable to instantiate " + HttpJettySolrClient.class.getName(), e);
       }
-      factory.setup(this);
+      instance.setup(this);
     }
   }
 

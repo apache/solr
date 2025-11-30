@@ -26,8 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrClientCustomizer;
+import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -37,10 +36,13 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 
 /**
- * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
- * scheme.
+ * A {@link HttpJettySolrClient} {@link SolrClientCustomizer} supporting a preemptive Http Basic
+ * authentication scheme.
+ *
+ * @see HttpJettySolrClient#CLIENT_CUSTOMIZER_SYSPROP
  */
-public class PreemptiveBasicAuthClientCustomizer implements SolrClientCustomizer {
+public class PreemptiveBasicAuthClientCustomizer
+    implements SolrClientCustomizer<HttpJettySolrClient> {
   /**
    * A system property used to specify a properties file containing default parameters used for
    * creating an HTTP client. This is specifically useful for configuring the HTTP basic auth
@@ -68,15 +70,12 @@ public class PreemptiveBasicAuthClientCustomizer implements SolrClientCustomizer
   }
 
   @Override
-  public void setup(SolrClient client) {
-    if (client instanceof HttpJettySolrClient == false) {
-      return;
-    }
+  public void setup(HttpJettySolrClient client) {
     final String basicAuthUser =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
-    this.setup((HttpJettySolrClient) client, basicAuthUser, basicAuthPass);
+    this.setup(client, basicAuthUser, basicAuthPass);
   }
 
   public void setup(HttpJettySolrClient client, String basicAuthUser, String basicAuthPass) {
