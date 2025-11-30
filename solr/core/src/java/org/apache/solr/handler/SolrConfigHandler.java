@@ -55,8 +55,8 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
@@ -844,10 +844,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    var http2SolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
+    var httpSolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
     for (Replica replica : getActiveReplicas(zkController, collection)) {
       PerReplicaCallable e =
-          new PerReplicaCallable(http2SolrClient, replica, prop, expectedVersion, maxWaitSecs);
+          new PerReplicaCallable(httpSolrClient, replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -963,7 +963,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   private static class PerReplicaCallable extends CollectionRequiringSolrRequest<SolrResponse>
       implements Callable<Boolean> {
-    private final Http2SolrClient solrClient;
+    private final HttpJettySolrClient solrClient;
     Replica replica;
     String prop;
     int expectedZkVersion;
@@ -971,7 +971,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(
-        Http2SolrClient solrClient,
+        HttpJettySolrClient solrClient,
         Replica replica,
         String prop,
         int expectedZkVersion,

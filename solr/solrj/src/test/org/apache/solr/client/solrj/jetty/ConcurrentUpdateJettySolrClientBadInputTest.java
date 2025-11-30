@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,7 +40,7 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrJettyTestBa
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var client =
             new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
@@ -73,7 +73,7 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrJettyTestBa
           });
     }
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var client =
             new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)

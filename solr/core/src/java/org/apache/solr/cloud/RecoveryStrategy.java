@@ -32,7 +32,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -177,9 +177,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
-  private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
+  private HttpJettySolrClient.Builder recoverySolrClientBuilder(
+      String baseUrl, String leaderCoreName) {
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return new Http2SolrClient.Builder(baseUrl)
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient());
   }
