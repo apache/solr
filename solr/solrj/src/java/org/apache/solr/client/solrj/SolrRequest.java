@@ -293,13 +293,21 @@ public abstract class SolrRequest<T> implements Serializable {
   }
 
   /**
+   * Send this request to a {@link SolrClient} and return the response
+   *
+   * @param client the SolrClient to communicate with
+   * @param baseUrl the base URL, e.g. {@code Http://localhost:8983/solr}
+   * @param collection the collection to execute the request against
+   * @return the response
+   * @throws SolrServerException if there is an error on the Solr server
+   * @throws IOException if there is a communication error
    * @lucene.experimental
    */
-  public final T processWithBaseUrl(HttpSolrClientBase client, String url, String collection)
+  public final T processWithBaseUrl(HttpSolrClientBase client, String baseUrl, String collection)
       throws SolrServerException, IOException {
     // duplicative with process(), except for requestWithBaseUrl
     long startNanos = System.nanoTime();
-    var namedList = client.requestWithBaseUrl(url, this, collection);
+    var namedList = client.requestWithBaseUrl(baseUrl, this, collection);
     long endNanos = System.nanoTime();
     T typedResponse = createResponse(namedList);
     // SolrResponse is pre-V2 API
