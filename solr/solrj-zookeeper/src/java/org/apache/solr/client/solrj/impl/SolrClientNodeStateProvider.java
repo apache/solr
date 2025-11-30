@@ -58,12 +58,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
-    if (!(solrClient.getHttpClient() instanceof Http2SolrClient)) {
+  public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+    if (!(solrClient instanceof CloudHttp2SolrClient)) {
       throw new IllegalArgumentException(
-          "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+          "The passed-in CloudSolrClient must be a " + CloudHttp2SolrClient.class);
     }
-    this.solrClient = solrClient;
+    this.solrClient = (CloudHttp2SolrClient) solrClient;
     try {
       readReplicaDetails();
     } catch (IOException e) {
@@ -219,8 +219,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
     try (InputStream in =
-        (InputStream)
-            ctx.http2SolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
+        (InputStream) ctx.httpSolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
 
       NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
@@ -257,18 +256,14 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
-      if (!(cloudSolrClient.getHttpClient() instanceof Http2SolrClient)) {
-        throw new IllegalArgumentException(
-            "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
-      }
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
-    protected Http2SolrClient http2SolrClient() {
-      return (Http2SolrClient) cloudSolrClient.getHttpClient();
+    protected HttpSolrClientBase httpSolrClient() {
+      return cloudSolrClient.getHttpClient();
     }
 
     /**

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -65,7 +65,7 @@ public class ConcurrentUpdateJettySolrClientMultiCollectionTest extends SolrClou
   public void testEnsureDocumentsSentToCorrectCollection() throws Exception {
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var client =
             new ConcurrentUpdateJettySolrClient.Builder(solrUrl, http2Client)
                 .withQueueSize(numTotalDocs)

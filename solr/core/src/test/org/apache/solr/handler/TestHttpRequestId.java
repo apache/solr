@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.logging.log4j.core.LogEvent;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -39,7 +39,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.MDC;
 
-@LogLevel("org.apache.solr.client.solrj.impl.Http2SolrClient=DEBUG")
+@LogLevel("org.apache.solr.client.solrj.jetty.HttpJettySolrClient=DEBUG")
 public class TestHttpRequestId extends SolrJettyTestBase {
 
   @BeforeClass
@@ -82,7 +82,7 @@ public class TestHttpRequestId extends SolrJettyTestBase {
     final String value = "TestHttpRequestId" + System.nanoTime();
 
     try (LogListener reqLog =
-        LogListener.debug(Http2SolrClient.class).substring("response processing")) {
+        LogListener.debug(HttpJettySolrClient.class).substring("response processing")) {
       // client setup needs to be same as HttpShardHandlerFactory
       ThreadPoolExecutor commExecutor =
           new ExecutorUtil.MDCAwareThreadPoolExecutor(
@@ -94,8 +94,8 @@ public class TestHttpRequestId extends SolrJettyTestBase {
               new SolrNamedThreadFactory("httpShardExecutor"),
               false);
       CompletableFuture<NamedList<Object>> cf;
-      try (Http2SolrClient client =
-          new Http2SolrClient.Builder(getBaseUrl())
+      try (var client =
+          new HttpJettySolrClient.Builder(getBaseUrl())
               .withDefaultCollection(collection)
               .withExecutor(commExecutor)
               .build()) {

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import org.eclipse.jetty.client.Request;
 import org.eclipse.jetty.client.Response;
@@ -28,7 +28,7 @@ public interface HttpListenerFactory {
     /**
      * Callback method invoked when the request begins being processed in order to be sent. This is
      * the last opportunity to modify the request. This method will NOT be ensured to be called on
-     * the same thread as the thread calling {@code Http2SolrClient} methods.
+     * the same thread as the thread calling {@code HttpJettySolrClient} methods.
      *
      * @param request the request that begins being processed
      */
@@ -37,7 +37,7 @@ public interface HttpListenerFactory {
 
     /**
      * Callback method invoked when the request is queued, waiting to be sent. This method will be
-     * ensured to be called on the same thread as the thread calling {@code Http2SolrClient}
+     * ensured to be called on the same thread as the thread calling {@code HttpJettySolrClient}
      * methods.
      *
      * @param request the request being queued

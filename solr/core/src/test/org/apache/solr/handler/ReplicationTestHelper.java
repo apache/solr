@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -85,8 +85,8 @@ public final class ReplicationTestHelper {
    * @param baseUrl the root URL for a Solr node
    * @param collectionOrCore an optional default collection/core for the created client
    */
-  public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
-    return new Http2SolrClient.Builder(baseUrl)
+  public static HttpJettySolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withIdleTimeout(90000, TimeUnit.MILLISECONDS)

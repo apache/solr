@@ -76,12 +76,12 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.RemoteExecutionException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
@@ -98,7 +98,7 @@ import org.slf4j.MDC;
 /**
  * A SolrClient implementation that talks directly to a Solr server via Apache HTTP client
  *
- * @deprecated Please use {@link Http2SolrClient} or {@link HttpJdkSolrClient}
+ * @deprecated Please use {@link HttpJettySolrClient} or {@link HttpJdkSolrClient}
  */
 @Deprecated(since = "9.0")
 public class HttpSolrClient extends SolrClient {
@@ -809,7 +809,7 @@ public class HttpSolrClient extends SolrClient {
   /**
    * Constructs {@link HttpSolrClient} instances from provided configuration.
    *
-   * @deprecated Please use {@link Http2SolrClient}
+   * @deprecated Please use {@link HttpJettySolrClient}
    */
   @Deprecated(since = "9.0")
   public static class Builder extends SolrClientBuilder<Builder> {

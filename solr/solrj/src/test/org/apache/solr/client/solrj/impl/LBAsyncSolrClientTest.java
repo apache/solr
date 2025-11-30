@@ -29,6 +29,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
@@ -45,8 +46,9 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b =
-        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    var b =
+        new HttpJettySolrClient.Builder("http://base.url")
+            .withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
         var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
@@ -73,8 +75,9 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b =
-        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    var b =
+        new HttpJettySolrClient.Builder("http://base.url")
+            .withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
         var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
@@ -131,8 +134,9 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b =
-        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    var b =
+        new HttpJettySolrClient.Builder("http://base.url")
+            .withConnectionTimeout(10, TimeUnit.SECONDS);
 
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
         var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
@@ -195,8 +199,9 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
     LBSolrClient.Endpoint ep2 = new LBSolrClient.Endpoint("http://endpoint.two");
     List<LBSolrClient.Endpoint> endpointList = List.of(ep1, ep2);
 
-    Http2SolrClient.Builder b =
-        new Http2SolrClient.Builder("http://base.url").withConnectionTimeout(10, TimeUnit.SECONDS);
+    var b =
+        new HttpJettySolrClient.Builder("http://base.url")
+            .withConnectionTimeout(10, TimeUnit.SECONDS);
     try (MockHttpSolrClient client = new MockHttpSolrClient("http://base.url", b);
         var testClient = new LBJettySolrClient.Builder(client, ep1, ep2).build()) {
 
@@ -253,7 +258,7 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
     }
   }
 
-  public static class MockHttpSolrClient extends Http2SolrClient {
+  public static class MockHttpSolrClient extends HttpJettySolrClient {
 
     public List<SolrRequest<?>> lastSolrRequests = new ArrayList<>();
 
@@ -287,7 +292,7 @@ public class LBAsyncSolrClientTest extends SolrTestCase {
 
     @Override
     public <R> R requestWithBaseUrl(
-        String baseUrl, SolrClientFunction<Http2SolrClient, R> clientFunction)
+        String baseUrl, SolrClientFunction<HttpJettySolrClient, R> clientFunction)
         throws SolrServerException, IOException {
       // This use of 'tmpBaseUrl' is NOT thread safe, but that's fine for our purposes here.
       try {

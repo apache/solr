@@ -46,7 +46,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -941,7 +941,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
 
   @Override
   protected boolean interceptInternodeRequest(Request request) {
-    Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+    Object userToken = request.getAttributes().get(HttpJettySolrClient.REQ_PRINCIPAL_KEY);
     if (userToken instanceof JWTPrincipal jwtPrincipal) {
       request.headers(
           h -> h.put(HttpHeader.AUTHORIZATION.asString(), "Bearer " + jwtPrincipal.getToken()));

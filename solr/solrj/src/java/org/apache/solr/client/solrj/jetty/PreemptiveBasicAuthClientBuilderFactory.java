@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,7 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.client.solrj.util.SolrBasicAuthentication;
+import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
@@ -69,7 +70,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   public void close() throws IOException {}
 
   @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(HttpJettySolrClient client) {
     final String basicAuthUser =
         CREDENTIAL_RESOLVER.defaultParams.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
     final String basicAuthPass =
@@ -77,7 +78,7 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
     this.setup(client, basicAuthUser, basicAuthPass);
   }
 
-  public void setup(Http2SolrClient client, String basicAuthUser, String basicAuthPass) {
+  public void setup(HttpJettySolrClient client, String basicAuthUser, String basicAuthPass) {
     if (basicAuthUser == null || basicAuthPass == null) {
       throw new IllegalArgumentException(
           "username & password must be specified with " + getClass().getName());

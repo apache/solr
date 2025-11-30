@@ -189,7 +189,7 @@
 
 # Settings for authentication
 # Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
-#SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+#SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientBuilderFactory"
 #SOLR_AUTH_TYPE="basic"
 #SOLR_AUTHENTICATION_OPTS="-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks"
 
@@ -287,6 +287,6 @@
 # See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 #SOLR_PLACEMENTPLUGIN_DEFAULT=simple
 
-# Solr internally doesn't use cookies. If you don't need any of those, and you don't 
+# Solr internally doesn't use cookies. If you don't need any of those, and you don't
 # need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.solrj.http.cookies.enabled=false"

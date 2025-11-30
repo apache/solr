@@ -16,7 +16,7 @@
  */
 package org.apache.solr.security;
 
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 
 /**
  * Plugin interface for configuring internal HttpClients. This relies on the internal HttpClient
@@ -26,5 +26,5 @@ import org.apache.solr.client.solrj.impl.Http2SolrClient;
  */
 public interface HttpClientBuilderPlugin {
 
-  public default void setup(Http2SolrClient client) {}
+  public default void setup(HttpJettySolrClient client) {}
 }

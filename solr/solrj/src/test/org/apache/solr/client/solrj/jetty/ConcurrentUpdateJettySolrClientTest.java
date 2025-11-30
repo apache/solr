@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -188,7 +188,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
     final AtomicInteger errorCounter = new AtomicInteger(0);
     final StringBuilder errors = new StringBuilder();
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new OutcomeCountingConcurrentUpdateSolrClient.Builder(
                     serverUrl, http2Client, successCounter, errorCounter, errors)
@@ -246,7 +246,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
     int cussThreadCount = 2;
     int cussQueueSize = 10;
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             (new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client))
                 .withQueueSize(cussQueueSize)
@@ -266,7 +266,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
               .getNumFound());
     }
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
@@ -288,7 +288,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
     int numRunnables = 5;
     int expected = numDocs * numRunnables;
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withQueueSize(cussQueueSize)
@@ -325,7 +325,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
       concurrentClient.shutdownNow();
     }
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
@@ -369,7 +369,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
 
       public Builder(
           String baseSolrUrl,
-          Http2SolrClient http2Client,
+          HttpJettySolrClient http2Client,
           AtomicInteger successCounter,
           AtomicInteger failureCounter,
           StringBuilder errors) {
@@ -395,7 +395,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
     InetAddress localHost = InetAddress.getLocalHost();
     try (ServerSocket server = new ServerSocket(0, 1, localHost);
         var http2Client =
-            new Http2SolrClient.Builder().withIdleTimeout(1, TimeUnit.MILLISECONDS).build();
+            new HttpJettySolrClient.Builder().withIdleTimeout(1, TimeUnit.MILLISECONDS).build();
         var client =
             new ConcurrentUpdateJettySolrClient.Builder(
                     "http://"

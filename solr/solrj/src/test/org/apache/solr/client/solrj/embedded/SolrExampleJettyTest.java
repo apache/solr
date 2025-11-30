@@ -60,7 +60,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   @Test
   public void testBadSetup() {
     String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1/?core=xxx";
-    // This test does NOT fail for Http2SolrClient
+    // This test does NOT fail for HttpJettySolrClient
     expectThrows(Exception.class, () -> new HttpSolrClient.Builder(url).build());
   }
 

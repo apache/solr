@@ -120,7 +120,7 @@ public abstract class HttpSolrClientBuilderBase<
       }
     }
     this.basicAuthAuthorizationStr =
-        Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
+        HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
     return (B) this;
   }
 
@@ -249,5 +249,33 @@ public abstract class HttpSolrClientBuilderBase<
       withBasicAuthCredentials(username, password);
     }
     return (B) this;
+  }
+
+  public Integer getMaxConnectionsPerHost() {
+    return maxConnectionsPerHost;
+  }
+
+  public Boolean getFollowRedirects() {
+    return followRedirects;
+  }
+
+  public String getProxyHost() {
+    return proxyHost;
+  }
+
+  public int getProxyPort() {
+    return proxyPort;
+  }
+
+  public boolean isProxyIsSocks4() {
+    return proxyIsSocks4;
+  }
+
+  public boolean isProxyIsSecure() {
+    return proxyIsSecure;
+  }
+
+  public ExecutorService getExecutor() {
+    return executor;
   }
 }

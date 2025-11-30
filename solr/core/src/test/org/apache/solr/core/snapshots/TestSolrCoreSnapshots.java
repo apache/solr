@@ -34,7 +34,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.CreateSnapshot;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.DeleteSnapshot;
@@ -110,7 +110,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 
@@ -204,7 +204,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 

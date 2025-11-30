@@ -254,9 +254,9 @@ Note that the truststore file is not actively monitored, so if you need to apply
 to update it and after that touch the keystore to trigger a reload.
 
 === SolrJ client
-Http2SolrClient builder has a method `withKeyStoreReloadInterval(long interval, TimeUnit unit)` to initialize a scanner
-that will watch and update the keystore and truststore for changes. If you are using CloudHttp2SolrClient, you can use
-the `withInternalClientBuilder(Http2SolrClient.Builder internalClientBuilder)` to configure the internal http client
+The HTTP SolrClient builder has a method `withKeyStoreReloadInterval(long interval, TimeUnit unit)` to initialize a scanner
+that will watch and update the keystore and truststore for changes. If you are using CloudSolrClient, you can use
+the `withHttpClientBuilder(internalClientBuilder)` to configure the internal http client
 with a keystore reload interval. The minimum reload interval is 1 second. If not set (or set to 0 or a negative value),
 the keystore/truststore won't be updated in the client.
 
