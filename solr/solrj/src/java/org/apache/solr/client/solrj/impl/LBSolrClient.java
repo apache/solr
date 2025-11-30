@@ -81,7 +81,7 @@ import org.slf4j.MDC;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBSolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
  *     .build();
  * </pre>
@@ -94,7 +94,7 @@ import org.slf4j.MDC;
  * <blockquote>
  *
  * <pre>
- * SolrClient client = new LBSolrClient.Builder(http2SolrClient,
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
  *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
  *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
  *     .build();
@@ -614,7 +614,8 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
+    // Some implementations of LBSolrClient.getClient(...) return a HttpJettySolrClient that may not
+    // be
     // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
     // the appropriate URL is provided.
     if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {

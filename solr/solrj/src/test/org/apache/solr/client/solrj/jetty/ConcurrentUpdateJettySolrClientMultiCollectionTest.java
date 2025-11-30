@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.io.IOException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -32,11 +31,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * {@link ConcurrentUpdateSolrClient} reuses the same HTTP connection to send multiple requests.
- * These tests ensure that this connection-reuse never results in documents being sent to the wrong
- * collection. See SOLR-12803
+ * CUSC reuses the same HTTP connection to send multiple requests. These tests ensure that this
+ * connection-reuse never results in documents being sent to the wrong collection. See SOLR-12803
  */
-public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrCloudTestCase {
+public class ConcurrentUpdateJettySolrClientMultiCollectionTest extends SolrCloudTestCase {
 
   private static final String COLLECTION_ONE_NAME = "collection1";
   private static final String COLLECTION_TWO_NAME = "collection2";
@@ -67,9 +65,9 @@ public class ConcurrentUpdateHttp2SolrClientMultiCollectionTest extends SolrClou
   public void testEnsureDocumentsSentToCorrectCollection() throws Exception {
     int numTotalDocs = 1000;
     int numExpectedPerCollection = numTotalDocs / 2;
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(solrUrl, http2Client)
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
+        var client =
+            new ConcurrentUpdateJettySolrClient.Builder(solrUrl, http2Client)
                 .withQueueSize(numTotalDocs)
                 .build()) {
       splitDocumentsAcrossCollections(client, numTotalDocs);

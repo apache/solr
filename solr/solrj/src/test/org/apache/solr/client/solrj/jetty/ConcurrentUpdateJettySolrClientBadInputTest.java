@@ -15,17 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.jetty;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBase {
+public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrJettyTestBase {
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
@@ -41,9 +40,9 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client)
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
+        var client =
+            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)
@@ -74,9 +73,9 @@ public class ConcurrentUpdateHttp2SolrClientBadInputTest extends SolrJettyTestBa
           });
     }
 
-    try (Http2SolrClient http2Client = new Http2SolrClient.Builder().build();
-        SolrClient client =
-            new ConcurrentUpdateHttp2SolrClient.Builder(getBaseUrl(), http2Client)
+    try (var http2Client = new HttpJettySolrClient.Builder().build();
+        var client =
+            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)

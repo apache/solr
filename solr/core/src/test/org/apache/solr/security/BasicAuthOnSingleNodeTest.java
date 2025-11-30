@@ -18,7 +18,7 @@
 package org.apache.solr.security;
 
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -52,7 +52,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Test
   public void basicTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       // SOLR-13510, this will be failed if the listener (handling inject credential in header) is
@@ -69,7 +69,7 @@ public class BasicAuthOnSingleNodeTest extends SolrCloudAuthTestCase {
   @Test
   public void testDeleteSecurityJsonZnode() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
       try {
         new QueryRequest(params("q", "*:*")).process(client, COLLECTION);
