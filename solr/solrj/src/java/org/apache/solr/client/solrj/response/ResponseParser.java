@@ -14,34 +14,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.solrj.response;
 
-package org.apache.solr.client.solrj;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collection;
+import org.apache.solr.common.util.NamedList;
 
 /**
- * Types of Routed Alias supported.
+ * SolrJ Solr response parser.
  *
- * <p>Routed Alias collections have a naming pattern of XYZ where X is the alias name, Y is the
- * separator prefix and Z is the data driven value distinguishing the bucket.
+ * @since solr 1.3
  */
-public enum RoutedAliasTypes {
-  TIME {
-    @Override
-    public String getSeparatorPrefix() {
-      return "__TRA__";
-    }
-  },
-  CATEGORY {
-    @Override
-    public String getSeparatorPrefix() {
-      return "__CRA__";
-    }
-  },
-  DIMENSIONAL {
-    @Override
-    public String getSeparatorPrefix() {
-      throw new UnsupportedOperationException("dimensions within dimensions are not allowed");
-    }
-  };
+public abstract class ResponseParser {
 
-  public abstract String getSeparatorPrefix();
+  /** The writer type placed onto the request as the {@code wt} param. */
+  public abstract String getWriterType(); // for example: wt=XML, JSON, etc
+
+  public abstract NamedList<Object> processResponse(InputStream body, String encoding)
+      throws IOException;
+
+  /**
+   * A well-behaved ResponseParser will return the content-types it supports.
+   *
+   * @return the content-type values that this parser is capable of parsing. Never null. Empty means
+   *     no enforcement.
+   */
+  public abstract Collection<String> getContentTypes();
 }

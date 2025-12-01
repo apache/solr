@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.junit.BeforeClass;
 
 /**

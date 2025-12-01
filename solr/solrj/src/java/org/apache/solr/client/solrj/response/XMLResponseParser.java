@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.response;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -31,7 +31,6 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.EmptyEntityResolver;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;

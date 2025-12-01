@@ -14,10 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.response;
 
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.HTTP_STATUS_KEY;
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.HTTP_STATUS_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -25,8 +25,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
 import java.util.function.Function;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
