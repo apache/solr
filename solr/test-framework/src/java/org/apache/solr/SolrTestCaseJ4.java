@@ -693,7 +693,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * <p>Will be set to null by {@link #deleteCore} and re-initialized as needed by {@link
    * #createCore}. In the event of a test failure, the contents will be left on disk.
    *
-   * Use initAndGetDataDir instead of directly accessing this variable
+   * <p>Use initAndGetDataDir instead of directly accessing this variable
    *
    * @see #createTempDir(String)
    * @see #initAndGetDataDir()
