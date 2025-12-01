@@ -14,49 +14,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.response;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.Collection;
-import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 /**
- * Parses the input as a JSON {@link Map}, and puts the entries onto the response {@link NamedList}.
+ * @since solr 1.3
  */
-public class JsonMapResponseParser extends ResponseParser {
+public class JavaBinResponseParser extends ResponseParser {
+  public static final String JAVABIN_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+  public static final String JAVABIN_CONTENT_TYPE = "application/octet-stream";
+
+  protected JavaBinCodec.StringCache stringCache;
+
+  public JavaBinResponseParser setStringCache(JavaBinCodec.StringCache cache) {
+    this.stringCache = cache;
+    return this;
+  }
+
   @Override
   public String getWriterType() {
-    return "json";
+    return "javabin";
   }
 
   @Override
   @SuppressWarnings({"unchecked"})
   public NamedList<Object> processResponse(InputStream body, String encoding) throws IOException {
-    @SuppressWarnings({"rawtypes"})
-    Map map = null;
-    try (InputStreamReader reader =
-        new InputStreamReader(body, encoding == null ? "UTF-8" : encoding)) {
-      ObjectBuilder builder = new ObjectBuilder(new JSONParser(reader));
-      map = (Map) builder.getObject();
-    } catch (JSONParser.ParseException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JSON parsing error", e);
-    }
-    NamedList<Object> list = new NamedList<>();
-    list.addAll(map);
-    return list;
+    return (NamedList<Object>) createCodec().unmarshal(body);
+  }
+
+  protected JavaBinCodec createCodec() {
+    return new JavaBinCodec(null, stringCache);
   }
 
   @Override
   public Collection<String> getContentTypes() {
-    return Set.of("application/json");
+    return Set.of(JAVABIN_CONTENT_TYPE, JAVABIN_CONTENT_TYPE_V2);
   }
 }
