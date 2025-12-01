@@ -47,7 +47,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.cli.ConfigSetUploadTool;
 import org.apache.solr.cli.DefaultToolRuntime;
@@ -330,7 +329,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   protected String getCloudSchemaFile() {
     return getSchemaFile();
   }
-
 
   @BeforeClass
   public static void beforeClass() {
