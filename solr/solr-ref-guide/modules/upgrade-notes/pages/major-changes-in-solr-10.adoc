@@ -92,6 +92,9 @@ This makes it clear that they pertain specifically to “JavaBin” rather than 
 * The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
 The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient.
 
+* A number of classes moved to different packages to be better organized:
+ShardTerms, DelegatingClusterStateProvider, JavaBinRequestWriter, RoutedAliasTypes, SolrQuery, XMLRequestWriter, JacksonContentWriter, FastStreamingDocsCallback, InputStreamResponse, InputStreamResponseParser, JavaBinResponseParser, ResponseParser, StreamingJavaBinResponseParser, StreamingResponseCallback, XMLResponseParser, JacksonDataBindResponseParser, JsonMapResponseParser, SocketProxy
+
 === SolrCloud Overseer
 
 SolrCloud now supports disabling the "Overseer", which is an elected node responsible for processing all cluster administration requests and collection state updates.

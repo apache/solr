@@ -14,21 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.response;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 
 /**
  * Simply puts the InputStream into an entry in a NamedList named "stream".
  *
- * @see org.apache.solr.client.solrj.InputStreamResponse
+ * @see InputStreamResponse
  */
 public class InputStreamResponseParser extends ResponseParser {
 

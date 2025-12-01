@@ -84,7 +84,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;

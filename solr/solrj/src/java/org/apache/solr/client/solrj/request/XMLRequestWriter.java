@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.request;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;

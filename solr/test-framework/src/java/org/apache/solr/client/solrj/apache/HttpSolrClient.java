@@ -72,17 +72,17 @@ import org.apache.http.entity.mime.content.StringBody;
 import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -130,7 +130,7 @@ public class HttpSolrClient extends SolrClient {
    * <p>This parser represents the default Response Parser chosen to parse the response if the
    * parser were not specified as part of the request.
    *
-   * @see org.apache.solr.client.solrj.impl.JavaBinResponseParser
+   * @see JavaBinResponseParser
    */
   protected volatile ResponseParser parser;
 
@@ -224,7 +224,7 @@ public class HttpSolrClient extends SolrClient {
    * @return The {@link org.apache.solr.common.util.NamedList} result
    * @throws IOException If there is a low-level I/O error.
    * @see #request(org.apache.solr.client.solrj.SolrRequest,
-   *     org.apache.solr.client.solrj.ResponseParser)
+   *     org.apache.solr.client.solrj.response.ResponseParser)
    */
   @Override
   public NamedList<Object> request(final SolrRequest<?> request, String collection)
