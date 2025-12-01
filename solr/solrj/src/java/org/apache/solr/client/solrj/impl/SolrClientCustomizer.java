@@ -16,15 +16,17 @@
  */
 package org.apache.solr.client.solrj.impl;
 
-import java.io.Closeable;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.SolrClient;
 
 /**
- * A config hook for post-configuration of a {@linkplain HttpJettySolrClient} by its builder.
+ * A config hook for post-configuration of a {@linkplain SolrClient} by its builder. It is not
+ * supported by all builders.
  *
- * @see SolrHttpConstants#SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY
+ * @param <T> type of SolrClient this customizer targets
+ * @see org.apache.solr.client.solrj.jetty.HttpJettySolrClient#CLIENT_CUSTOMIZER_SYSPROP
  * @lucene.experimental
  */
-public interface HttpClientBuilderFactory extends Closeable {
-  default void setup(HttpJettySolrClient client) {}
+public interface SolrClientCustomizer<T extends SolrClient> {
+
+  void setup(T client);
 }

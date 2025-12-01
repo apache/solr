@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
-import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
@@ -498,13 +497,13 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testSetCredentialsWithSysProps() throws IOException, SolrServerException {
     System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
+        PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
     System.setProperty(
-        SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
-        PreemptiveBasicAuthClientBuilderFactory.class.getName());
+        HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP,
+        PreemptiveBasicAuthClientCustomizer.class.getName());
     // Hack to ensure we get a new set of parameters for this test
-    PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
-        new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver().defaultParams);
+    PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(
+        new PreemptiveBasicAuthClientCustomizer.CredentialsResolver().defaultParams);
     try (var client =
         new HttpJettySolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
@@ -527,9 +526,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
           "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes(StandardCharsets.UTF_8)),
           authorizationHeader);
     } finally {
-      System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-      System.clearProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
+      System.clearProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
+      System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
+      PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(SolrParams.of());
     }
   }
 
@@ -607,7 +606,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testBadHttpFactory() {
-    System.setProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
+    System.setProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP, "FakeClassName");
     try {
       SolrClient client =
           new HttpJettySolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
