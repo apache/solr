@@ -652,7 +652,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       }
       assertTrue(future.isCompletedExceptionally());
       assertTrue(ee.getCause() instanceof RemoteSolrException);
-      assertTrue(ee.getMessage(), ee.toString().contains("mime type"));
+      assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
   }
 }

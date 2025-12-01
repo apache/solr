@@ -159,7 +159,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
                   .process(cluster.getSolrClient());
             });
     assertEquals(400, rse.code());
-    assertTrue(rse.toString().contains("Collection must be in readOnly mode"));
+    assertTrue(rse.getMessage().contains("Collection must be in readOnly mode"));
 
     // Shard-install has failed so collection should still be empty.
     assertCollectionHasNumDocs(collectionName, 0);
@@ -195,7 +195,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
                         collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
                     .process(cluster.getSolrClient());
               });
-      assertTrue(expectedException.toString().contains("Could not install data to collection"));
+      assertTrue(expectedException.getMessage().contains("Could not install data to collection"));
       assertCollectionHasNumDocs(collectionName, 0);
     }
 

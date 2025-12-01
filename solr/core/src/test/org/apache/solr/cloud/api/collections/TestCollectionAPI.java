@@ -194,7 +194,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         client.request(request);
         fail();
       } catch (RemoteSolrException e) {
-        final String errorMessage = e.toString();
+        final String errorMessage = e.getMessage();
         assertTrue(
             errorMessage.contains(
                 "Cannot specify both replicationFactor and nrtReplicas as they mean the same thing"));
