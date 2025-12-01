@@ -19,7 +19,7 @@ load bats_helper
 
 setup_file() {
   common_clean_setup
-  solr start
+  solr start -Dsolr.delete.unknown.cores=true
 }
 
 teardown_file() {
@@ -60,3 +60,27 @@ teardown() {
   assert_output --partial '"status":0'
 
 }
+
+# @test "add replica when core remnants exist" {
+#   run -0 solr create -c COLL_NAME -rf 2 --solr-url http://localhost:${SOLR_PORT}
+#   assert_output --partial "Created collection 'COLL_NAME'"
+#   assert_output --partial "2 replica(s)"
+
+#   assert [ -e ${SOLR_HOME}/COLL_NAME_shard1_replica_n1 ]
+#   assert [ -e ${SOLR_HOME}/COLL_NAME_shard1_replica_n2 ]
+
+
+#   # Simulate a core remnant still exists.
+#   mkdir -p ${SOLR_HOME}/COLL_NAME_shard1_replica_n4
+#   touch ${SOLR_HOME}/COLL_NAME_shard1_replica_n4/core.properties
+
+#   # Create a new collection that currently fails.
+#   # This passes with the CoreContainer deleting the remnant instance dir if it exists.
+#   run curl -X POST http://localhost:${SOLR_PORT}/api/collections/COLL_NAME/shards/shard1/replicas -H 'Content-Type: application/json' -d '
+#     {
+#       "node":"localhost:'${SOLR_PORT}'_solr"
+#     }
+#   '
+#   assert_output --partial '"status":0'
+
+# }

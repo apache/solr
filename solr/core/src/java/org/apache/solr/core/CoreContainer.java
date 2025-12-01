@@ -41,12 +41,8 @@ import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1455,12 +1451,14 @@ public class CoreContainer {
           preExistingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
         }
 
-        if (Files.exists(cd.getInstanceDir())) {
+        final boolean deleteUnknownCores =
+            Boolean.parseBoolean(
+                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+        if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
           log.warn(
-              "There appears to be an existing directory for core "
-                  + cd.getName()
-                  + ", now deleting it");
-          deleteDir(cd.getInstanceDir());
+              "There appears to be an existing directory for core {}, now deleting it",
+              cd.getName());
+          SolrCore.deleteUnloadedCore(cd, true, true);
         }
 
         // Much of the logic in core handling pre-supposes that the core.properties file already
@@ -2464,30 +2462,5 @@ public class CoreContainer {
             }
           }
         });
-  }
-
-  // Copied from FileSystemConfigSetService.deleteDir
-  private void deleteDir(Path dir) throws IOException {
-    try {
-      Files.walkFileTree(
-          dir,
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path path, BasicFileAttributes attrs)
-                throws IOException {
-              Files.delete(path);
-              return FileVisitResult.CONTINUE;
-            }
-
-            @Override
-            public FileVisitResult postVisitDirectory(Path dir, IOException ioException)
-                throws IOException {
-              Files.delete(dir);
-              return FileVisitResult.CONTINUE;
-            }
-          });
-    } catch (NoSuchFileException e) {
-      // do nothing
-    }
   }
 }
