@@ -51,8 +51,7 @@ import org.slf4j.LoggerFactory;
 public class MoveReplicaTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // used by MoveReplicaHDFSTest
-  protected boolean inPlaceMove = true;
+  protected boolean inPlaceMove = random().nextBoolean();
   protected boolean isCollectionApiDistributed = false;
 
   protected String getConfigSet() {
@@ -61,7 +60,6 @@ public class MoveReplicaTest extends SolrCloudTestCase {
 
   @Before
   public void beforeTest() throws Exception {
-    inPlaceMove = true;
 
     configureCluster(4)
         .addConfig("conf1", configset(getConfigSet()))
