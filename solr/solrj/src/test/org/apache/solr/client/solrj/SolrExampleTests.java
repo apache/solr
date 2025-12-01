@@ -1475,7 +1475,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           "{!key=pivot_key stats=s1}features,manu,cat,inStock"
         }) {
 
-      // for any of these pivot params, the assertions we check should be teh same
+      // for any of these pivot params, the assertions we check should be the same
       // (we stop asserting at the "manu" level)
 
       SolrQuery query = new SolrQuery("*:*");

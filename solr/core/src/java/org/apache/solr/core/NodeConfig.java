@@ -109,8 +109,6 @@ public class NodeConfig {
 
   private final boolean useSchemaCache;
 
-  private final String managementPath;
-
   private final PluginInfo[] backupRepositoryPlugins;
 
   private final MetricsConfig metricsConfig;
@@ -146,7 +144,6 @@ public class NodeConfig {
       int replayUpdatesThreads,
       int indexSearcherExecutorThreads,
       boolean useSchemaCache,
-      String managementPath,
       Path solrHome,
       SolrResourceLoader loader,
       Properties solrProperties,
@@ -185,7 +182,6 @@ public class NodeConfig {
     this.replayUpdatesThreads = replayUpdatesThreads;
     this.indexSearcherExecutorThreads = indexSearcherExecutorThreads;
     this.useSchemaCache = useSchemaCache;
-    this.managementPath = managementPath;
     this.solrHome = solrHome;
     this.loader = loader;
     this.solrProperties = solrProperties;
@@ -378,10 +374,6 @@ public class NodeConfig {
 
   public boolean hasSchemaCache() {
     return useSchemaCache;
-  }
-
-  public String getManagementPath() {
-    return managementPath;
   }
 
   /** Absolute. */
@@ -600,7 +592,6 @@ public class NodeConfig {
     private int replayUpdatesThreads = Runtime.getRuntime().availableProcessors();
     private int indexSearcherExecutorThreads = DEFAULT_INDEX_SEARCHER_EXECUTOR_THREADS;
     private boolean useSchemaCache = false;
-    private String managementPath;
     private Properties solrProperties = new Properties();
     private PluginInfo[] backupRepositoryPlugins;
     private MetricsConfig metricsConfig;
@@ -769,11 +760,6 @@ public class NodeConfig {
       return this;
     }
 
-    public NodeConfigBuilder setManagementPath(String managementPath) {
-      this.managementPath = managementPath;
-      return this;
-    }
-
     public NodeConfigBuilder setSolrProperties(Properties solrProperties) {
       this.solrProperties = solrProperties;
       return this;
@@ -899,7 +885,6 @@ public class NodeConfig {
           replayUpdatesThreads,
           indexSearcherExecutorThreads,
           useSchemaCache,
-          managementPath,
           solrHome,
           loader,
           solrProperties,

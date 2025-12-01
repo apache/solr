@@ -54,7 +54,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -953,7 +953,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
@@ -964,7 +964,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer

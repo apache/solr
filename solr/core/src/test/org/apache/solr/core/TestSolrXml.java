@@ -113,7 +113,6 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     assertTrue("log watcher", cfg.getLogWatcherConfig().isEnabled());
     assertEquals("log watcher size", 88, cfg.getLogWatcherConfig().getWatcherSize());
     assertEquals("log watcher thresh", "99", cfg.getLogWatcherConfig().getWatcherThreshold());
-    assertEquals("manage path", "testManagementPath", cfg.getManagementPath());
     assertEquals("shardLib", "testSharedLib", cfg.getSharedLibDirectory());
     assertTrue("schema cache", cfg.hasSchemaCache());
     assertEquals("zk client timeout", 77, ccfg.getZkClientTimeout());
