@@ -293,7 +293,6 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   @AfterClass
   public static void afterClass() throws Exception {
     System.clearProperty("solrcloud.update.delay");
-    System.clearProperty("genericCoreNodeNames");
   }
 
   public AbstractFullDistribZkTestBase() {
@@ -2154,7 +2153,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   /**
    * This method <i>may</i> randomize unspecified aspects of the resulting SolrClient. Tests that do
    * not wish to have any randomized behavior should use the {@link
-   * org.apache.solr.client.solrj.impl.CloudHttp2SolrClient.Builder} class directly
+   * org.apache.solr.client.solrj.impl.CloudSolrClient.Builder} class directly
    */
   public static CloudSolrClient getCloudSolrClient(
       String zkHost,

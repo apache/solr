@@ -205,7 +205,7 @@ public class DistribFileStore implements FileStore {
       ByteBuffer filedata = null;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
-        final var fileResponse = solrClient.requestWithBaseUrl(baseUrl, null, fileRequest);
+        final var fileResponse = fileRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var stream = fileResponse.getResponseStreamIfSuccessful()) {
           filedata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(stream);
         }
