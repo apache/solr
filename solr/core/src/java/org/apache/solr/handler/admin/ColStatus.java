@@ -201,7 +201,7 @@ public class ColStatus {
               params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
             }
             QueryRequest req = new QueryRequest(params);
-            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, null, req).getResponse();
+            NamedList<Object> rsp = solrClient.requestWithBaseUrl(url, req, null);
             final var segmentResponse =
                 SolrJacksonMapper.getObjectMapper().convertValue(rsp, GetSegmentDataResponse.class);
             segmentResponse.responseHeader = null;

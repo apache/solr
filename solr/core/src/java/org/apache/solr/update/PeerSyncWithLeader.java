@@ -334,7 +334,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private NamedList<Object> request(ModifiableSolrParams params, String onFail) {
     try {
       QueryRequest request = new QueryRequest(params, SolrRequest.METHOD.POST);
-      QueryResponse rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
+      QueryResponse rsp = request.processWithBaseUrl(clientToLeader, leaderBaseUrl, coreName);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);

@@ -390,7 +390,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
       log.debug("Fetching fresh public key from: {}", url);
       var solrClient = cores.getDefaultHttpSolrClient();
-      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request::process).getResponse();
+      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request, null);
 
       String key = (String) resp.get("key");
       if (key == null) {

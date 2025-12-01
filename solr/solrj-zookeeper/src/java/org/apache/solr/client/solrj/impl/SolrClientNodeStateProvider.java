@@ -289,7 +289,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new BinaryResponseParser());
 
       try {
-        return cloudSolrClient.getHttpClient().requestWithBaseUrl(url, request::process);
+        return request.processWithBaseUrl(cloudSolrClient.getHttpClient(), url, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

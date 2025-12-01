@@ -349,6 +349,21 @@ public abstract class HttpSolrClientBase extends SolrClient {
   protected abstract void updateDefaultMimeTypeForParser();
 
   /**
+   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
+   * used by this client
+   *
+   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param solrRequest the SolrRequest to send
+   * @param collection an optional collection or core name used to override the client's "default
+   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
+   *     on the client's default
+   * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
+   */
+  public abstract NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException;
+
+  /**
    * @deprecated use {@link #requestAsync(SolrRequest, String)}.
    * @param solrRequest the request to perform
    * @param collection if null the default collection is used

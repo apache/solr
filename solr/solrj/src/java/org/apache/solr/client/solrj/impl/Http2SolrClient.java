@@ -637,6 +637,13 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  @Override
+  public NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException {
+    return requestWithBaseUrl(baseUrl, c -> c.request(solrRequest, collection));
+  }
+
   /**
    * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
    * used by this client
@@ -647,6 +654,7 @@ public class Http2SolrClient extends HttpSolrClientBase {
    *     on the client's default
    * @param req the SolrRequest to send
    */
+  @Deprecated(since = "9.11")
   public final <R extends SolrResponse> R requestWithBaseUrl(
       String baseUrl, String collection, SolrRequest<R> req)
       throws SolrServerException, IOException {

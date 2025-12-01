@@ -361,7 +361,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -380,8 +380,7 @@ public class IndexFetcher {
     params.set(CommonParams.QT, ReplicationHandler.PATH);
     QueryRequest req = new QueryRequest(params);
     try {
-      NamedList<?> response =
-          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      NamedList<?> response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -1955,7 +1954,7 @@ public class IndexFetcher {
         QueryRequest req = new QueryRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -2101,7 +2100,7 @@ public class IndexFetcher {
 
     QueryRequest request = new QueryRequest(params);
     // TODO use shardhandler
-    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, request, leaderCoreName);
   }
 
   public void destroy() {

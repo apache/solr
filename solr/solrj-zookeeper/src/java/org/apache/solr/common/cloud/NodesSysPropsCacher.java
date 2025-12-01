@@ -88,9 +88,7 @@ public class NodesSysPropsCacher implements NodesSysProps, AutoCloseable {
     try {
       LinkedHashMap<String, Object> result = new LinkedHashMap<>();
       NavigableObject response =
-          solrClient
-              .requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), null, req)
-              .getResponse();
+          solrClient.requestWithBaseUrl(zkStateReader.getBaseUrlForNodeName(nodeName), req, null);
       var metrics = NavigableObject.wrap(response._get("metrics"));
       keys.forEach((tag, key) -> result.put(tag, metrics._get(key)));
       return result;

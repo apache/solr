@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -277,6 +278,29 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     long startNanos = System.nanoTime();
     T res = createResponse(client);
     var namedList = client.request(this, collection);
+    res.setResponse(namedList);
+    long endNanos = System.nanoTime();
+    res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));
+    return res;
+  }
+
+  /**
+   * Send this request to a {@link SolrClient} and return the response
+   *
+   * @param client the SolrClient to communicate with
+   * @param baseUrl the base URL, e.g. {@code Http://localhost:8983/solr}
+   * @param collection the collection to execute the request against
+   * @return the response
+   * @throws SolrServerException if there is an error on the Solr server
+   * @throws IOException if there is a communication error
+   * @lucene.experimental
+   */
+  public final T processWithBaseUrl(HttpSolrClientBase client, String baseUrl, String collection)
+      throws SolrServerException, IOException {
+    // duplicative with process(), except for requestWithBaseUrl
+    long startNanos = System.nanoTime();
+    T res = createResponse(client);
+    var namedList = client.requestWithBaseUrl(baseUrl, this, collection);
     res.setResponse(namedList);
     long endNanos = System.nanoTime();
     res.setElapsedTime(TimeUnit.NANOSECONDS.toMillis(endNanos - startNanos));

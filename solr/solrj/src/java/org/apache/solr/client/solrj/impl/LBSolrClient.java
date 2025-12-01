@@ -564,12 +564,12 @@ public abstract class LBSolrClient extends SolrClient {
       throws SolrServerException, IOException {
     final var solrClient = getClient(baseUrl);
 
-    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
-    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
-    // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient) {
-      final var httpSolrClient = (Http2SolrClient) solrClient;
-      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
+    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClientBase that may not
+    // be pointed at the desired URL (or any URL for that matter).  We special-case that here to
+    // ensure the appropriate URL is provided.
+    if (solrClient instanceof HttpSolrClientBase) {
+      final var httpSolrClient = (HttpSolrClientBase) solrClient;
+      return httpSolrClient.requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'

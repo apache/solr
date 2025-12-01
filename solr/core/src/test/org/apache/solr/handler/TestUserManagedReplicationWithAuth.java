@@ -238,7 +238,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     withBasicAuth(req);
 
     final var baseUrl = buildUrl(Jetty.getLocalPort());
-    solrClient.requestWithBaseUrl(baseUrl, DEFAULT_TEST_CORENAME, req);
+    solrClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private void pullIndexFromTo(
@@ -247,7 +247,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     String srcUrl = buildUrl(srcSolr.getLocalPort()) + "/" + DEFAULT_TEST_CORENAME;
     QueryRequest req = getQueryRequestForFetchIndex(authEnabled, srcUrl);
     final var baseUrl = buildUrl(destSolr.getLocalPort());
-    followerClient.requestWithBaseUrl(baseUrl, DEFAULT_TEST_CORENAME, req);
+    followerClient.requestWithBaseUrl(baseUrl, req, DEFAULT_TEST_CORENAME);
   }
 
   private QueryRequest getQueryRequestForFetchIndex(boolean authEnabled, String srcUrl) {
