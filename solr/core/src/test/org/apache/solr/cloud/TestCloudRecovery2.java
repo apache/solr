@@ -41,7 +41,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", 1, 2)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 

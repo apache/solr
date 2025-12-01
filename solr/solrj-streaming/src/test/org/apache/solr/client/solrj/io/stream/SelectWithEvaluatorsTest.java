@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.io.eval.IfThenElseEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -70,7 +70,7 @@ public class SelectWithEvaluatorsTest extends SolrCloudTestCase {
     }
     CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
