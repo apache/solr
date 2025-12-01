@@ -185,7 +185,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   @Test
   @ShardsFixed(num = 4)
-  protected void test() throws Exception {
+  public void test() throws Exception {
     // setLoggingLevel(null);
 
     ZkStateReader zkStateReader = ZkStateReader.from(cloudClient);
