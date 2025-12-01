@@ -27,7 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -72,7 +72,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
@@ -115,7 +115,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/downconfig1");
 
@@ -134,7 +134,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
-    AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
     Path tmp2 = createTempDir("downConfigNewPlace2");
     args =
         new String[] {
@@ -157,7 +157,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
 
     // Now copy it somewhere else on ZK.
     String[] args =
@@ -398,7 +398,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
 
     // Now move it somewhere else.
     String[] args = new String[] {"mv", "--zk-host", zkAddr, "zk:/configs/mv1", "zk:/mv2"};
@@ -467,7 +467,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
     // Should only find a single level.
     String[] args = new String[] {"ls", "--zk-host", zkAddr, "/configs"};
@@ -540,8 +540,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
 
     // Should fail if recursive not set.
     String[] args = new String[] {"rm", "--zk-host", zkAddr, "/configs/rm1"};
@@ -580,7 +580,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // This should silently just refuse to do anything to the / or /zookeeper
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/"};
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
     res = CLITestHelper.runTool(args, ZkRmTool.class);
     assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
