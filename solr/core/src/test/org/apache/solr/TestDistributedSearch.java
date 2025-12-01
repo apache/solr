@@ -32,6 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -1716,8 +1717,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (SolrClient.RemoteSolrException e) {
-      if (e.getMessage().startsWith("java.lang.NullPointerException")) {
+    } catch (RemoteSolrException e) {
+      if (e.getMessage().contains("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {
         throw e;

@@ -38,7 +38,6 @@ import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -1212,22 +1211,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    */
   public String getDefaultCollection() {
     return defaultCollection;
-  }
-
-  /**
-   * Subclass of SolrException that allows us to capture an arbitrary HTTP status code that may have
-   * been returned by the remote server or a proxy along the way.
-   */
-  public static class RemoteSolrException extends SolrException {
-    /**
-     * @param remoteHost the host the error was received from
-     * @param code Arbitrary HTTP status code
-     * @param msg Exception Message
-     * @param th Throwable to wrap with this Exception
-     */
-    public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
-      super(code, "Error from server at " + remoteHost + ": " + msg, th);
-    }
   }
 
   /** A lambda intended for invoking SolrClient operations */

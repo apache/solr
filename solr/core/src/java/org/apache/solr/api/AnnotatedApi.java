@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
@@ -207,7 +208,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
         fallback.call(req, rsp);
         return;
       } else {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error processing commands",
             CommandOperation.captureErrors(cmds));
@@ -222,7 +223,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
     List<Map<String, Object>> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
       log.error("{}{}", ERR, Utils.toJSONString(errs));
-      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
+      throw new SolrErrorWrappingException(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
     }
   }
 
@@ -355,7 +356,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider, Closeab
 
     private void checkForErrorInPayload(CommandOperation cmd) {
       if (cmd.hasError()) {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST,
             "Error executing command",
             CommandOperation.captureErrors(Collections.singletonList(cmd)));

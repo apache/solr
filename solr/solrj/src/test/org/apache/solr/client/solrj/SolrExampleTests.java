@@ -752,14 +752,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          SolrClient.RemoteSolrException.class,
+          RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
           concurrentClient
               .lastError
               .getMessage()
-              .contains("Remote error message: Document contains multiple values for uniqueKey"));
+              .contains(
+                  "org.apache.solr.common.SolrException: Document contains multiple values for uniqueKey"));
     } else {
       if (log.isInfoEnabled()) {
         log.info("Ignoring update test for client: {}", client.getClass().getName());
@@ -913,31 +914,26 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
-    SolrClient client = createNewSolrClient();
+    try (SolrClient client = createNewSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
 
-    client.deleteByQuery("*:*");
-    client.commit();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id1");
 
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "id1");
+      UpdateRequest req = new UpdateRequest();
+      req.setParam("overwrite", "false");
+      req.add(doc);
+      client.request(req);
+      client.request(req);
+      client.commit();
 
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("overwrite", "false");
-    req.add(doc);
-    client.request(req);
-    client.request(req);
-    client.commit();
+      SolrQuery query = new SolrQuery();
+      query.setQuery("*:*");
+      QueryResponse rsp = client.query(query);
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = client.query(query);
-
-    SolrDocumentList out = rsp.getResults();
-    assertEquals(2, out.getNumFound());
-    if (!(client instanceof EmbeddedSolrServer)) {
-      /* Do not close in case of using EmbeddedSolrServer,
-       * as that would close the CoreContainer */
-      client.close();
+      SolrDocumentList out = rsp.getResults();
+      assertEquals(2, out.getNumFound());
     }
   }
 
@@ -2442,7 +2438,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("Conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
           SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
@@ -2452,7 +2448,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       }
     } catch (SolrException se) {
       assertTrue(
