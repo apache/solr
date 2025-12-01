@@ -68,7 +68,9 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
     return randVals;
   }
 
-  protected String getDirectoryFactory() { return "solr.StandardDirectoryFactory"; }
+  protected String getDirectoryFactory() {
+    return "solr.StandardDirectoryFactory";
+  }
 
   @Override
   public void distribSetUp() throws Exception {

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -28,13 +30,10 @@ import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 
 @Nightly
 @SuppressSSL
-public class TlogReplayBufferedWhileIndexingTest
-    extends AbstractFullDistribZkTestBase {
+public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTestBase {
 
   private List<StoppableIndexingThread> threads;
 
