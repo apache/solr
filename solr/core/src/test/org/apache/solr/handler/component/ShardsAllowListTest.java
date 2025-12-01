@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 
@@ -270,10 +271,9 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
-      fail("Wrong failure type, expecting: RemoteSolrException, thrown: " + e.getClass().getName());
-    } catch (RemoteSolrException e) {
-      assertThat(e.code(), is(SolrException.ErrorCode.FORBIDDEN.code));
-      assertThat(e.getMessage(), containsString(expectedExceptionMessage));
+      assertThat(e.getCause(), instanceOf(RemoteSolrException.class));
+      assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
+      assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
     } finally {
       unIgnoreException(expectedExceptionMessage);
     }
