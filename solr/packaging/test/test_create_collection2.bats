@@ -43,19 +43,20 @@ teardown() {
   run -0 solr create -c COLL_NAME -rf 2 --solr-url http://localhost:${SOLR_PORT}
   assert_output --partial "Created collection 'COLL_NAME'"
   assert_output --partial "2 replica(s)"
-  
+
   assert [ -e ${SOLR_HOME}/COLL_NAME_shard1_replica_n1 ]
   assert [ -e ${SOLR_HOME}/COLL_NAME_shard1_replica_n2 ]
 
-  
+
   solr delete -c "COLL_NAME"
-  
+
   # Simulate a core remnant still exists.
   mkdir -p ${SOLR_HOME}/COLL_NAME_shard1_replica_n2
   touch ${SOLR_HOME}/COLL_NAME_shard1_replica_n2/core.properties
-  
+
   # Create a new collection that currently fails.
+  # This passes with the CoreContainer deleting the remnant instance dir if it exists.
   run curl  "http://localhost:${SOLR_PORT}/solr/admin/collections?action=CREATE&collection.configName=_default&name=COLL_NAME&numShards=1&replicationFactor=3&wt=json"
-  assert_output --partial '"status":0'  
-  
+  assert_output --partial '"status":0'
+
 }
