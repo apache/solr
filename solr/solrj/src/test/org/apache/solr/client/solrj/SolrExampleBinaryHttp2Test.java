@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.junit.BeforeClass;
 
 /**

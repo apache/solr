@@ -243,8 +243,6 @@ public class ZkController implements Closeable {
   private int leaderVoteWait;
   private int leaderConflictResolveWait;
 
-  private boolean genericCoreNodeNames;
-
   private int clientTimeout;
 
   private volatile boolean isClosed;
@@ -298,8 +296,6 @@ public class ZkController implements Closeable {
     this.cc = cc;
 
     this.cloudConfig = cloudConfig;
-
-    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
@@ -2097,8 +2093,8 @@ public class ZkController implements Closeable {
 
   public String getCoreNodeName(CoreDescriptor descriptor) {
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    if (coreNodeName == null && !genericCoreNodeNames) {
-      // it's the default
+    if (coreNodeName == null) {
+      // default core naming pattern
       return getNodeName() + "_" + descriptor.getName();
     }
 

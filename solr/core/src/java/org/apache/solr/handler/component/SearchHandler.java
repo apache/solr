@@ -580,7 +580,7 @@ public class SearchHandler extends RequestHandlerBase
                 String reqPath = (String) req.getContext().get(PATH);
                 if (!"/select".equals(reqPath)) {
                   params.set(CommonParams.QT, reqPath);
-                } // else if path is /select, then the qt gets passed thru if set
+                } // else if path is /select, then the qt gets passed through if set
               }
               if (queryLimits.isLimitsEnabled()) {
                 if (queryLimits.adjustShardRequestLimits(sreq, shard, params, rb)) {
@@ -746,7 +746,7 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   protected String stageToString(int stage) {
-    // This should probably be a enum, but that change should be its own ticket.
+    // This should probably be an enum, but that change should be its own ticket.
     switch (stage) {
       case STAGE_START:
         return "START";

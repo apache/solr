@@ -14,23 +14,34 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
 
-import org.apache.solr.common.SolrDocument;
+package org.apache.solr.client.solrj.request;
 
 /**
- * A callback interface for streaming response
+ * Types of Routed Alias supported.
  *
- * @since solr 4.0
+ * <p>Routed Alias collections have a naming pattern of XYZ where X is the alias name, Y is the
+ * separator prefix and Z is the data driven value distinguishing the bucket.
  */
-public abstract class StreamingResponseCallback {
-  /*
-   * Called for each SolrDocument in the response
-   */
-  public abstract void streamSolrDocument(SolrDocument doc);
+public enum RoutedAliasTypes {
+  TIME {
+    @Override
+    public String getSeparatorPrefix() {
+      return "__TRA__";
+    }
+  },
+  CATEGORY {
+    @Override
+    public String getSeparatorPrefix() {
+      return "__CRA__";
+    }
+  },
+  DIMENSIONAL {
+    @Override
+    public String getSeparatorPrefix() {
+      throw new UnsupportedOperationException("dimensions within dimensions are not allowed");
+    }
+  };
 
-  /*
-   * Called at the beginning of each DocList (and SolrDocumentList)
-   */
-  public abstract void streamDocListInfo(long numFound, long start, Float maxScore);
+  public abstract String getSeparatorPrefix();
 }

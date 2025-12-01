@@ -41,8 +41,6 @@
     <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
-    <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
-
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>

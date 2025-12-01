@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.response;
 
 import org.apache.solr.common.util.DataEntry;
 

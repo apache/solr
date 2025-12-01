@@ -43,7 +43,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -129,9 +129,9 @@ public class TestSubQueryTransformerDistrib extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
 
     ZkStateReader zkStateReader = ZkStateReader.from(client);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(people, zkStateReader, true, true, 30);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(depts, zkStateReader, false, true, 30);
   }
 
   @SuppressWarnings("serial")

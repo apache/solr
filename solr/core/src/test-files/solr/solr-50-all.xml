@@ -22,7 +22,6 @@
   <str name="coreRootDirectory">${coreRootDirectory:testCoreRootDirectory}</str>
   <str name="infoHandler">testInfoHandler</str>
   <str name="configSetsHandler">testConfigSetsHandler</str>
-  <str name="managementPath">testManagementPath</str>
   <str name="sharedLib">testSharedLib</str>
   <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="shareSchema">${shareSchema:true}</str>
