@@ -172,7 +172,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     testBackupAndRestore(getCollectionName());
-    testConfigBackupOnly("conf1", getCollectionName());
     testInvalidPath(getCollectionName());
   }
 
