@@ -126,7 +126,6 @@ import org.slf4j.LoggerFactory;
 public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearchTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  // Fields from AbstractFullDistribZkTestBase
   private static final String REMOVE_VERSION_FIELD = "remove.version.field";
   private static final String ENABLE_UPDATE_LOG = "solr.index.updatelog.enabled";
   private static final String ZK_HOST = "zkHost";
