@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.api.util.SolrVersion;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -100,7 +101,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
                 .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
     }
   }
@@ -174,7 +175,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       client.query(q, method);
       assertEquals(
           client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
   }
 
@@ -228,7 +229,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, (c) -> c.query(queryParams));
-      } catch (SolrClient.RemoteSolrException rse) {
+      } catch (RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);
@@ -239,7 +240,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams), null);
-      } catch (SolrClient.RemoteSolrException rse) {
+      } catch (RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);
@@ -254,7 +255,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.deleteById("id");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
@@ -272,7 +273,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
             .build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();

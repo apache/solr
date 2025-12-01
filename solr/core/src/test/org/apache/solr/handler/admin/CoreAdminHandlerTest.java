@@ -33,6 +33,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -421,9 +422,9 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    SolrClient.RemoteSolrException rse =
+    RemoteSolrException rse =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               try (SolrClient client =
                   new HttpSolrClient.Builder(runner.getBaseUrl().toString())
