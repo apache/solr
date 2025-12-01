@@ -153,7 +153,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     try (SolrZkClient zkClient =
         new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -165,7 +165,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "connectAndAllACLUsername", "connectAndAllACLPasswordWrong", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -176,7 +176,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "connectAndAllACLUsername", "connectAndAllACLPassword", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -188,7 +188,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "readonlyACLUsername", "readonlyACLPassword", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }
@@ -204,7 +204,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -220,7 +220,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -236,7 +236,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -252,7 +252,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }
