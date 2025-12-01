@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
+import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -36,10 +36,13 @@ import org.eclipse.jetty.client.WWWAuthenticationProtocolHandler;
 import org.eclipse.jetty.client.internal.HttpAuthenticationStore;
 
 /**
- * HttpClientConfigurer implementation providing support for preemptive Http Basic authentication
- * scheme.
+ * A {@link HttpJettySolrClient} {@link SolrClientCustomizer} supporting a preemptive Http Basic
+ * authentication scheme.
+ *
+ * @see HttpJettySolrClient#CLIENT_CUSTOMIZER_SYSPROP
  */
-public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilderFactory {
+public class PreemptiveBasicAuthClientCustomizer
+    implements SolrClientCustomizer<HttpJettySolrClient> {
   /**
    * A system property used to specify a properties file containing default parameters used for
    * creating an HTTP client. This is specifically useful for configuring the HTTP basic auth
@@ -65,9 +68,6 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
   public static void setDefaultSolrParams(SolrParams params) {
     CREDENTIAL_RESOLVER.defaultParams = params;
   }
-
-  @Override
-  public void close() throws IOException {}
 
   @Override
   public void setup(HttpJettySolrClient client) {
@@ -99,10 +99,9 @@ public class PreemptiveBasicAuthClientBuilderFactory implements HttpClientBuilde
 
     public CredentialsResolver() {
       String credentials =
-          System.getProperty(
-              PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
+          System.getProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
       String configFile =
-          System.getProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG);
+          System.getProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG);
 
       if (credentials != null && configFile != null) {
         throw new IllegalArgumentException(

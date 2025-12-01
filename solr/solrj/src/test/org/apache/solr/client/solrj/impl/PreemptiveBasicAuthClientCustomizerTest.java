@@ -26,7 +26,7 @@ import java.util.Properties;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 
-public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
+public class PreemptiveBasicAuthClientCustomizerTest extends SolrTestCase {
 
   private void assertIllegalArgumentException(ThrowingRunnable executable, String expectedMessage) {
     Exception e = expectThrows(IllegalArgumentException.class, executable);
@@ -37,43 +37,39 @@ public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-    System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG);
+    System.clearProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
+    System.clearProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG);
     super.tearDown();
   }
 
   public void testBadSysPropsCredentials() {
-    System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo");
+    System.setProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo");
     assertIllegalArgumentException(
-        PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver::new,
+        PreemptiveBasicAuthClientCustomizer.CredentialsResolver::new,
         "Invalid Authentication credentials");
-    System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:");
+    System.setProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:");
     assertIllegalArgumentException(
-        PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver::new,
+        PreemptiveBasicAuthClientCustomizer.CredentialsResolver::new,
         "Invalid Authentication credentials");
-    System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, ":foo");
+    System.setProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, ":foo");
     assertIllegalArgumentException(
-        PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver::new,
+        PreemptiveBasicAuthClientCustomizer.CredentialsResolver::new,
         "Invalid Authentication credentials");
   }
 
   public void testSysPropsAndPropsFile() {
-    System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo");
-    System.setProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG, "foo");
+    System.setProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo");
+    System.setProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG, "foo");
     assertIllegalArgumentException(
-        PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver::new,
+        PreemptiveBasicAuthClientCustomizer.CredentialsResolver::new,
         "Basic authentication credentials passed");
   }
 
   public void testCredentialsFromSystemProperties() {
     System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
-    PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver credentialsResolver =
-        new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver();
+        PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
+    PreemptiveBasicAuthClientCustomizer.CredentialsResolver credentialsResolver =
+        new PreemptiveBasicAuthClientCustomizer.CredentialsResolver();
     assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));
     assertEquals("bar", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS));
   }
@@ -84,14 +80,12 @@ public class PreemptiveBasicAuthClientBuilderFactoryTest extends SolrTestCase {
     p.setProperty("httpBasicAuthPassword", "bar");
     Path f = createTempFile();
     try (BufferedWriter fw = Files.newBufferedWriter(f, StandardCharsets.UTF_8)) {
-      p.store(
-          fw,
-          "tmp properties file for PreemptiveBasicAuthClientBuilderFactoryTest.testCredentialsFromConfigFile");
+      p.store(fw, "tmp properties file for " + getTestName());
     }
     System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_HTTP_CLIENT_CONFIG, f.toString());
-    PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver credentialsResolver =
-        new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver();
+        PreemptiveBasicAuthClientCustomizer.SYS_PROP_HTTP_CLIENT_CONFIG, f.toString());
+    PreemptiveBasicAuthClientCustomizer.CredentialsResolver credentialsResolver =
+        new PreemptiveBasicAuthClientCustomizer.CredentialsResolver();
     assertEquals("foo", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_USER));
     assertEquals("bar", credentialsResolver.defaultParams.get(HttpClientUtil.PROP_BASIC_AUTH_PASS));
   }

@@ -358,9 +358,9 @@ QueryResponse rsp = req.process(client);
 
 === Global (JVM) Basic Auth Credentials
 
-Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` to add basic authentication credentials to _all_ requests automatically.
-To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientBuilderFactory`.
-`PreemptiveBasicAuthClientBuilderFactory` allows applications to provide credentials in two different ways:
+Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientCustomizer` to add basic authentication credentials to _all_ requests automatically.
+To enable this feature, users should set the following system property `-Dsolr.solrj.http.jetty.customizer=org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer`.
+`PreemptiveBasicAuthClientCustomizer` allows applications to provide credentials in two different ways:
 
 . The `solr.security.auth.basicauth.credentials` system property can be passed, containing the credentials directly (e.g., `-Dsolr.security.auth.basicauth.credentials=username:password`).
 This option is straightforward, but may expose the credentials in the command line, depending on how they're set.

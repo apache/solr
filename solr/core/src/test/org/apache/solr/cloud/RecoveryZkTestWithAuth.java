@@ -27,8 +27,8 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientBuilderFactory;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -49,8 +49,8 @@ public class RecoveryZkTestWithAuth extends SolrCloudTestCase {
     // for context)
     if (rarely()) {
       System.setProperty(
-          SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
-          PreemptiveBasicAuthClientBuilderFactory.class.getName());
+          HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP,
+          PreemptiveBasicAuthClientCustomizer.class.getName());
       System.setProperty("solr.security.auth.basicauth.credentials", SecurityJson.USER_PASS);
     }
 

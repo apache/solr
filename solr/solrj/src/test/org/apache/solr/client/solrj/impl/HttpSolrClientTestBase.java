@@ -39,7 +39,7 @@ import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -92,7 +92,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   @Override
   public void tearDown() throws Exception {
     System.clearProperty("solr.security.auth.basicauth.credentials");
-    System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
     DebugServlet.clear();
     super.tearDown();
   }
