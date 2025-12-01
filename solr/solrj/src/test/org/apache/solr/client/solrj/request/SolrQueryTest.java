@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj;
+package org.apache.solr.client.solrj.request;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,7 +26,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.SolrQuery.SortClause;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams;
