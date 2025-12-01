@@ -217,15 +217,6 @@ If used, this attribute should be set to the FQN (fully qualified name) of a cla
 This service is used when Solr is starting to prioritize which cores should be loaded first.
 For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
 
-`managementPath`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Currently non-operational.
-
 `sharedLib`::
 +
 [%autowidth,frame=none]
