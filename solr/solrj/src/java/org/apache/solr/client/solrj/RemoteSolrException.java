@@ -31,6 +31,7 @@ import org.apache.solr.common.util.Utils;
 public final class RemoteSolrException extends SolrException {
 
   private String remoteErrorMessageSuffix = "";
+  private final boolean skipRetry;
 
   /**
    * @param remoteHost the host the error was received from
@@ -40,6 +41,7 @@ public final class RemoteSolrException extends SolrException {
    */
   public RemoteSolrException(String remoteHost, int code, String msg, Throwable th) {
     super(code, "Error from server at " + remoteHost + ": " + msg, th);
+    skipRetry = false;
   }
 
   /**
@@ -49,7 +51,19 @@ public final class RemoteSolrException extends SolrException {
    */
   @SuppressWarnings("unchecked")
   public RemoteSolrException(String remoteHost, int code, Object remoteError) {
+    this(remoteHost, code, remoteError, false);
+  }
+
+  /**
+   * @param remoteHost the host the error was received from
+   * @param code Arbitrary HTTP status code
+   * @param remoteError Error response sent back from remoteHost
+   * @param skipRetry Skip retry if the client is set to retry on failure
+   */
+  @SuppressWarnings("unchecked")
+  public RemoteSolrException(String remoteHost, int code, Object remoteError, boolean skipRetry) {
     super(ErrorCode.getErrorCode(code), "Error from server at " + remoteHost);
+    this.skipRetry = skipRetry;
     setDetails(List.of(Map.of("remoteHost", remoteHost, "remoteError", remoteError)));
     if (remoteError != null) {
       String remoteErrorMessageSuffix = getRemoteErrorMessageSuffix(remoteError, "");
@@ -126,5 +140,9 @@ public final class RemoteSolrException extends SolrException {
     } else {
       return null;
     }
+  }
+
+  public boolean shouldSkipRetry() {
+    return skipRetry;
   }
 }

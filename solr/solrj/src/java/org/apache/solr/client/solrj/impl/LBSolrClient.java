@@ -40,6 +40,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -636,6 +637,9 @@ public abstract class LBSolrClient extends SolrClient {
         reviveZombieServer(baseUrl);
       }
     } catch (SolrException e) {
+      if (!isNonRetryable && e instanceof RemoteSolrException rse) {
+        isNonRetryable = rse.shouldSkipRetry();
+      }
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {

@@ -22,6 +22,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicReference;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -181,6 +182,9 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
     try {
       throw (Exception) oe;
     } catch (SolrException e) {
+      if (!isNonRetryable && e instanceof RemoteSolrException rse) {
+        isNonRetryable = rse.shouldSkipRetry();
+      }
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {

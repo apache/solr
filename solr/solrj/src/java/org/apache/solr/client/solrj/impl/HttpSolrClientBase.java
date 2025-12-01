@@ -225,7 +225,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
       Object error = rsp == null ? null : rsp.get("error");
       if (error != null && isV2Api) {
-        throw new RemoteSolrException(urlExceptionMessage, httpStatus, error);
+        throw new RemoteSolrException(urlExceptionMessage, httpStatus, error, true);
       }
       if (httpStatus != 200 && !isV2Api) {
         if (error == null) {
