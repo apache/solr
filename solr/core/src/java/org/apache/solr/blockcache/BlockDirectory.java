@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
 public class BlockDirectory extends FilterDirectory implements ShutdownAwareDirectory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final long BLOCK_SHIFT = Integer.getInteger("solr.hdfs.blockcache.blockshift", 13);
+  public static final long BLOCK_SHIFT = Integer.getInteger("solr.blockcache.blockshift", 13);
 
   public static final int BLOCK_SIZE = 1 << BLOCK_SHIFT;
   public static final long BLOCK_MOD = BLOCK_SIZE - 1L;
