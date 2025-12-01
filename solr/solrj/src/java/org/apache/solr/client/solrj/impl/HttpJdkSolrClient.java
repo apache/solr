@@ -49,11 +49,11 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.net.ssl.SSLContext;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -90,7 +90,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     HttpClient.Builder b = HttpClient.newBuilder();
 
     HttpClient.Redirect followRedirects =
-        Boolean.TRUE.equals(builder.followRedirects)
+        Boolean.TRUE.equals(builder.getFollowRedirects())
             ? HttpClient.Redirect.NORMAL
             : HttpClient.Redirect.NEVER;
     b.followRedirects(followRedirects);
@@ -103,8 +103,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       b.sslContext(builder.sslContext);
     }
 
-    if (builder.executor != null) {
-      this.executor = builder.executor;
+    if (builder.getExecutor() != null) {
+      this.executor = builder.getExecutor();
       this.shutdownExecutor = false;
     } else {
       BlockingQueue<Runnable> queue = new LinkedBlockingQueue<>(1024);
@@ -129,12 +129,13 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       b.cookieHandler(builder.cookieHandler);
     }
 
-    if (builder.proxyHost != null) {
-      if (builder.proxyIsSocks4) {
+    if (builder.getProxyHost() != null) {
+      if (builder.isProxyIsSocks4()) {
         log.warn(
             "Socks4 is likely not supported by this client.  See https://bugs.openjdk.org/browse/JDK-8214516");
       }
-      b.proxy(ProxySelector.of(new InetSocketAddress(builder.proxyHost, builder.proxyPort)));
+      b.proxy(
+          ProxySelector.of(new InetSocketAddress(builder.getProxyHost(), builder.getProxyPort())));
     }
     this.httpClient = b.build();
     updateDefaultMimeTypeForParser();
@@ -165,7 +166,8 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     }
   }
 
-  protected NamedList<Object> requestWithBaseUrl(
+  @Override
+  public NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
@@ -553,6 +555,11 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new HttpJdkSolrClient.Builder().withHttpClient(this);
   }
 
+  @Override
+  protected LBSolrClient createLBSolrClient() {
+    return new LBSolrClient.Builder<>(this).build();
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
 
@@ -577,7 +584,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     @Override
     public Builder withHttpClient(HttpJdkSolrClient httpSolrClient) {
       super.withHttpClient(httpSolrClient);
-      if (this.executor == null) {
+      if (this.getExecutor() == null) {
         this.executor = httpSolrClient.executor;
       }
       if (this.sslContext == null) {

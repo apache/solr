@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -219,7 +219,7 @@ public class CollectionHandlingUtils {
   }
 
   static void commit(
-      Http2SolrClient solrClient,
+      HttpJettySolrClient solrClient,
       NamedList<Object> results,
       String slice,
       Replica parentShardLeader) {
@@ -244,11 +244,11 @@ public class CollectionHandlingUtils {
   }
 
   private static UpdateResponse softCommit(
-      Http2SolrClient solrClient, String baseUrl, String coreName)
+      HttpJettySolrClient solrClient, String baseUrl, String coreName)
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-    return solrClient.requestWithBaseUrl(baseUrl, coreName, ureq);
+    return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 
   public static String waitForCoreNodeName(

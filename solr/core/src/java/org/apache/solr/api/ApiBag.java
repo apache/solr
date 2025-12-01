@@ -164,7 +164,7 @@ public class ApiBag {
         getCommands().put(entry.getKey(), entry.getValue());
       }
 
-      // Reference to Api must be saved to to merge uncached values (i.e. 'spec') lazily
+      // Reference to Api must be saved to merge uncached values (i.e. 'spec') lazily
       if (newCommandsAdded) {
         combinedApis.add(api);
       }

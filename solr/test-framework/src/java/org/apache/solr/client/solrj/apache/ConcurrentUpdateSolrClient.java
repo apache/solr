@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.StallDetection;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -71,7 +71,7 @@ import org.slf4j.MDC;
  * to use ConcurrentUpdateSolrClient with /update requests. The class {@link HttpSolrClient} is
  * better suited for the query interface.
  *
- * @deprecated Please use {@link ConcurrentUpdateHttp2SolrClient}
+ * @deprecated Please use {@link ConcurrentUpdateBaseSolrClient}
  */
 @Deprecated(since = "9.0")
 public class ConcurrentUpdateSolrClient extends SolrClient {

@@ -32,11 +32,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -44,6 +47,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
 
+/**
+ * Utility/base functionality for direct HTTP client implementations.
+ *
+ * @lucene.internal
+ */
 public abstract class HttpSolrClientBase extends SolrClient {
 
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
@@ -97,6 +105,11 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public abstract HttpSolrClientBuilderBase<?, ?> builder();
 
+  /**
+   * @lucene.internal
+   */
+  protected abstract LBSolrClient createLBSolrClient();
+
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
     return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
@@ -107,7 +120,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
-  protected RequestWriter getRequestWriter() {
+  public RequestWriter getRequestWriter() {
     return requestWriter;
   }
 
@@ -304,6 +317,21 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   protected abstract void updateDefaultMimeTypeForParser();
+
+  /**
+   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
+   * used by this client
+   *
+   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param solrRequest the SolrRequest to send
+   * @param collection an optional collection or core name used to override the client's "default
+   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
+   *     on the client's default
+   * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
+   */
+  public abstract NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException;
 
   /**
    * Execute an asynchronous request against a Solr server for a given collection.

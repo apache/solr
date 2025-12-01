@@ -18,9 +18,9 @@ package org.apache.solr.cloud;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import org.apache.solr.client.solrj.RemoteSolrException;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ShardParams;
@@ -69,9 +69,9 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
     assertThat(response.getStatus(), is(0));
     assertTrue(response.getResults().getNumFound() > 0);
 
-    RemoteSolrException e =
+    SolrServerException e =
         expectThrows(
-            RemoteSolrException.class,
+            SolrServerException.class,
             "Request should have failed because we killed shard1 jetty",
             () ->
                 cluster
@@ -81,8 +81,9 @@ public class TestDownShardTolerantSearch extends SolrCloudTestCase {
                         new SolrQuery("*:*")
                             .setRows(1)
                             .setParam(ShardParams.SHARDS_TOLERANT, false)));
+    assertNotNull(e.getCause());
     assertTrue(
         "Error message from server should have the name of the down shard",
-        e.getMessage().contains("shard"));
+        e.getCause().getMessage().contains("shard"));
   }
 }

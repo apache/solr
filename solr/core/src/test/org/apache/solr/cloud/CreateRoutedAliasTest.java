@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
+import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
 import java.time.Duration;

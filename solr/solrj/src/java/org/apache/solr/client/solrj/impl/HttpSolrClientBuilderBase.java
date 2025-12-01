@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 
 public abstract class HttpSolrClientBuilderBase<
     B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {
@@ -120,7 +120,7 @@ public abstract class HttpSolrClientBuilderBase<
       }
     }
     this.basicAuthAuthorizationStr =
-        Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
+        HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
     return (B) this;
   }
 
@@ -249,5 +249,33 @@ public abstract class HttpSolrClientBuilderBase<
       withBasicAuthCredentials(username, password);
     }
     return (B) this;
+  }
+
+  public Integer getMaxConnectionsPerHost() {
+    return maxConnectionsPerHost;
+  }
+
+  public Boolean getFollowRedirects() {
+    return followRedirects;
+  }
+
+  public String getProxyHost() {
+    return proxyHost;
+  }
+
+  public int getProxyPort() {
+    return proxyPort;
+  }
+
+  public boolean isProxyIsSocks4() {
+    return proxyIsSocks4;
+  }
+
+  public boolean isProxyIsSecure() {
+    return proxyIsSecure;
+  }
+
+  public ExecutorService getExecutor() {
+    return executor;
   }
 }

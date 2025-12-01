@@ -73,6 +73,14 @@ That no longer happens in Solr 10.  It is only used to load a configuration as a
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
 
+* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`.
+The following classes were renamed with some refactorings: `Http2SolrClient` to `HttpJettySolrClient`, `ConcurrentUpdateHttp2SolrClient` to `ConcurrentUpdateJettySolrClient`, `LBHttp2SolrClient` to `LBJettySolrClient`.
+`CloudHttp2SolrClient.Builder` has moved to `CloudSolrClient`; users should generally have no need to refer to `CloudHttp2SolrClient` or any class/member with "http2" in it.
+The builder will check if Jetty `HttpClient` is available and use that, otherwise fallback on a JDK based `HttpClient`.
+`CloudJettySolrClient` is new, proving an explicit option.
+The system property `solr.solrj.http.jetty.customizer` (formerly `solr.httpclient.builder.factory`) can configure a `HttpJettySolrClient`.
+The only built-in implementation is `org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer`, renamed from `PreemptiveBasicAuthClientCustomizer`.
+
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
 
@@ -84,7 +92,9 @@ Users who previously relied on collection-specific URLs to avoid including the c
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
 * The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
-The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient.
+
+* A number of classes moved to different packages to be better organized:
+ShardTerms, DelegatingClusterStateProvider, JavaBinRequestWriter, RoutedAliasTypes, SolrQuery, XMLRequestWriter, JacksonContentWriter, FastStreamingDocsCallback, InputStreamResponse, InputStreamResponseParser, JavaBinResponseParser, ResponseParser, StreamingJavaBinResponseParser, StreamingResponseCallback, XMLResponseParser, JacksonDataBindResponseParser, JsonMapResponseParser, SocketProxy
 
 === SolrCloud Overseer
 

@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -784,7 +784,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
   private static class MockCoreContainer extends CoreContainer {
     UpdateShardHandler updateShardHandler =
         new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
-    Http2SolrClient solrClient;
+    HttpJettySolrClient solrClient;
 
     public MockCoreContainer() {
       super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
@@ -793,7 +793,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       this.shardHandlerFactory = httpShardHandlerFactory;
       this.coreAdminHandler = new CoreAdminHandler();
       this.metricManager = mock(SolrMetricManager.class);
-      this.solrClient = new Http2SolrClient.Builder().build();
+      this.solrClient = new HttpJettySolrClient.Builder().build();
     }
 
     @Override
@@ -812,7 +812,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
     }
 
     @Override
-    public Http2SolrClient getDefaultHttpSolrClient() {
+    public HttpJettySolrClient getDefaultHttpSolrClient() {
       return solrClient;
     }
 
