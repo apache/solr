@@ -335,9 +335,9 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
       }
     }
-    nodesParam = nodesToShow.filter(function (node) {
+    var liveNodesToShow = nodesToShow.filter(function (node) {
       return live_nodes.includes(node);
-    }).join(',');
+    });
     var deadNodes = nodesToShow.filter(function (node) {
       return !live_nodes.includes(node);
     });
@@ -353,7 +353,7 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
       */
-    System.get({"nodes": nodesParam}, function (systemResponse) {
+    System.get({"nodes": liveNodesToShow.join(',')}, function (systemResponse) {
       for (var node in systemResponse) {
         if (node in nodes) {
           var s = systemResponse[node];
@@ -391,23 +391,69 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     });
 
     /*
-     Fetch metrics for all selected nodes. Only pull the metrics that we'll show to save bandwidth
-     Pick the data we want to display and add it to the node-centric data structure
+     Fetch metrics for all selected nodes in parallel. Make one request per node.
+     Only pull the metrics that we'll show to save bandwidth.
       */
-    Metrics.get(
-      {
-        nodes: nodesParam,
-        name: "solr_disk_space_megabytes,solr_core_index_size_megabytes,solr_core_indexsearcher_index_num_docs,solr_core_indexsearcher_index_docs,solr_core_indexsearcher_open_time_milliseconds"
-      },
-      function (response) {
-        // response.metrics contains the parsed merged Prometheus data with node labels
-        var parsedMetrics = response.metrics;
-        if (!parsedMetrics || response.error) {
-          console.error('No metrics in response', response.error);
-          return;
-        }
+    var metricsNameParam = "solr_disk_space_megabytes,solr_core_index_size_megabytes,solr_core_indexsearcher_index_num_docs,solr_core_indexsearcher_index_docs,solr_core_indexsearcher_open_time_milliseconds";
 
-        for (var i = 0; i < nodesToShow.length; i++) {
+    // Create array of promises (one per node)
+    var metricsPromises = [];
+    liveNodesToShow.forEach(function(node) {
+      var promise = Metrics.get({
+        node: node,
+        name: metricsNameParam
+      }).$promise.then(
+        function(response) {
+          // Success - return the parsed metrics with node identifier
+          return {
+            node: node,
+            metrics: response.metrics,
+            success: true
+          };
+        },
+        function(error) {
+          // Failure - log and return error marker
+          console.error('Failed to fetch metrics from node ' + node + ':', error);
+          return {
+            node: node,
+            success: false,
+            error: error
+          };
+        }
+      );
+      metricsPromises.push(promise);
+    });
+
+    // Wait for all requests to complete (success or failure)
+    Promise.all(metricsPromises).then(function(results) {
+      // Separate successful and failed results
+      var successfulResults = results.filter(function(r) { return r.success; });
+      var failedResults = results.filter(function(r) { return !r.success; });
+
+      // Log any failures
+      if (failedResults.length > 0) {
+        console.warn('Failed to fetch metrics from ' + failedResults.length + ' node(s):',
+                     failedResults.map(function(r) { return r.node; }));
+      }
+
+      // If all nodes failed, show error state
+      if (successfulResults.length === 0) {
+        console.error('Failed to fetch metrics from all nodes');
+        $scope.metricsError = true;
+        return;
+      }
+
+      // Merge all successful metrics responses, passing node info along
+      var parsedMetrics = mergePrometheusMetrics(successfulResults);
+
+      if (!parsedMetrics) {
+        console.error('Failed to merge metrics');
+        $scope.metricsError = true;
+        return;
+      }
+
+      // Now process the merged metrics the same way as before
+      for (var i = 0; i < nodesToShow.length; i++) {
           var node = nodesToShow[i];
           if (!nodes[node]) continue;
 
@@ -519,13 +565,8 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
               .style('width', function (d) {
                 return d.pct + '%';
               });
-        }
-      },
-      function(error) {
-        console.error('Failed to fetch metrics:', error);
-        $scope.metricsError = true;
       }
-    );
+    });
     $scope.nodes = nodes;
     $scope.hosts = hosts;
     $scope.live_nodes = live_nodes;
@@ -534,6 +575,60 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
     $scope.filteredNodes = filteredNodes;
     $scope.filteredHosts = filteredHosts;
   };
+
+  /**
+   * Merge multiple Prometheus metrics objects into a single object.
+   * Each result has {node: nodeName, metrics: {...}}
+   * Merging combines all samples from all sources under the same metric names,
+   * and adds a 'node' label to each sample to track which node it came from.
+   *
+   * @param {Array} resultsArray - Array of {node, metrics} objects
+   * @returns {Object} Merged metrics object
+   */
+  function mergePrometheusMetrics(resultsArray) {
+    var merged = {};
+
+    resultsArray.forEach(function(result) {
+      if (!result || !result.metrics) return;
+
+      var nodeName = result.node;
+      var metrics = result.metrics;
+
+      for (var metricName in metrics) {
+        if (!metrics.hasOwnProperty(metricName)) continue;
+
+        var metric = metrics[metricName];
+
+        if (!merged[metricName]) {
+          // First time seeing this metric - initialize
+          merged[metricName] = {
+            type: metric.type,
+            help: metric.help,
+            samples: []
+          };
+        }
+
+        // Add all samples from this metric, injecting the node label
+        if (metric.samples && Array.isArray(metric.samples)) {
+          metric.samples.forEach(function(sample) {
+            // Create a copy of the sample with the node label added
+            var sampleWithNode = {
+              metricName: sample.metricName,
+              labels: Object.assign({}, sample.labels || {}, {node: nodeName}),
+              value: sample.value,
+              metricSuffix: sample.metricSuffix
+            };
+            if (sample.timestamp !== undefined) {
+              sampleWithNode.timestamp = sample.timestamp;
+            }
+            merged[metricName].samples.push(sampleWithNode);
+          });
+        }
+      }
+    });
+
+    return merged;
+  }
 
   // Initialize cluster state
   $scope.initClusterState();

@@ -54,43 +54,54 @@ import org.slf4j.LoggerFactory;
 public class AdminHandlersProxy {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_NODES = "nodes";
+  private static final String PARAM_NODE = "node";
   private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
-  // Proxy this request to a different remote node if 'node' parameter is provided
+  // Proxy this request to a different remote node if 'node' or 'nodes' parameter is provided
   public static boolean maybeProxyToNodes(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
-    String nodeNames = req.getParams().get(PARAM_NODES);
-    if (nodeNames == null || nodeNames.isEmpty()) {
-      return false; // local request
-    }
 
     if (!container.isZooKeeperAware()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Parameter " + PARAM_NODES + " only supported in Cloud mode");
+          "Node proxying only supported in Cloud mode");
     }
 
-    // Resolve the set of nodes to query
-    Set<String> nodes = resolveNodes(nodeNames, container);
     String pathStr = req.getPath();
-
-    if (log.isDebugEnabled()) {
-      log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
-    }
-
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-    params.remove(PARAM_NODES);
 
     // Check if response format is Prometheus/OpenMetrics
     String wt = params.get("wt");
     boolean isPrometheusFormat = "prometheus".equals(wt) || "openmetrics".equals(wt);
 
     if (isPrometheusFormat) {
-      // Handle Prometheus format: fetch from nodes and merge MetricSnapshots
-      handlePrometheusFormat(nodes, pathStr, params, container, rsp);
+      // Prometheus format: use singular 'node' parameter for single-node proxy
+      String nodeName = req.getParams().get(PARAM_NODE);
+      if (nodeName == null || nodeName.isEmpty()) {
+        return false; // No node parameter, handle locally
+      }
+
+      if (log.isDebugEnabled()) {
+        log.debug("{} parameter {} specified on {} request", PARAM_NODE, nodeName, pathStr);
+      }
+
+      params.remove(PARAM_NODE);
+      handlePrometheusSingleNode(nodeName, pathStr, params, container, rsp);
     } else {
-      // Handle other formats (JSON, etc.): use existing NamedList behavior
+      // Other formats (JSON/XML): use plural 'nodes' parameter for multi-node aggregation
+      String nodeNames = req.getParams().get(PARAM_NODES);
+      if (nodeNames == null || nodeNames.isEmpty()) {
+        return false; // No nodes parameter, handle locally
+      }
+
+      if (log.isDebugEnabled()) {
+        log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
+      }
+
+      // Resolve the set of nodes to query
+      Set<String> nodes = resolveNodes(nodeNames, container);
+      params.remove(PARAM_NODES);
       handleNamedListFormat(nodes, pathStr, params, container.getZkController(), rsp);
     }
 
@@ -179,129 +190,67 @@ public class AdminHandlersProxy {
     return nodes;
   }
 
-  /** Handle Prometheus format by fetching from nodes and merging text responses. */
-  private static void handlePrometheusFormat(
-      Set<String> nodes,
+  /**
+   * Handle Prometheus format by proxying to a single node.
+   **
+   * @param nodeName the name of the single node to proxy to
+   * @param pathStr the request path
+   * @param params the request parameters (with 'node' parameter already removed)
+   * @param container the CoreContainer
+   * @param rsp the response to populate
+   */
+  private static void handlePrometheusSingleNode(
+      String nodeName,
       String pathStr,
-      SolrParams params,
+      ModifiableSolrParams params,
       CoreContainer container,
       SolrQueryResponse rsp)
       throws IOException, SolrServerException, InterruptedException {
 
-    ZkController zkController = container.getZkController();
-    Map<String, Future<NamedList<Object>>> responses = new LinkedHashMap<>();
+    // Validate that the node exists in the cluster
+    Set<String> liveNodes =
+        container.getZkController().zkStateReader.getClusterState().getLiveNodes();
 
-    // Ensure wt=prometheus for all requests
-    ModifiableSolrParams prometheusParams = new ModifiableSolrParams(params);
-    if (!prometheusParams.get("wt", "").equals("prometheus")) {
-      prometheusParams.set("wt", "prometheus");
+    if (!liveNodes.contains(nodeName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Requested node " + nodeName + " is not part of cluster");
     }
 
-    // Submit all requests
-    for (String node : nodes) {
-      responses.put(node, callRemoteNode(node, pathStr, prometheusParams, zkController));
-    }
+    // Keep wt=prometheus for the remote request so MetricsHandler accepts it
+    // The InputStreamResponseParser will return the Prometheus text in a "stream" key
+    Future<NamedList<Object>> response =
+        callRemoteNode(nodeName, pathStr, params, container.getZkController());
 
-    // Collect all Prometheus text responses
-    StringBuilder mergedText = new StringBuilder();
-    mergedText
-        .append("# Prometheus response from ")
-        .append(nodes.size())
-        .append(" nodes concatenated.\n");
-    mergedText.append("# ONLY intended for consumption by the Solr Admin UI\n");
-    for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
-      try {
-        NamedList<Object> resp =
-            entry.getValue().get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    try {
+      NamedList<Object> resp = response.get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
-        // Extract text from InputStream response
-        Object streamObj = resp.get("stream");
-        if (streamObj instanceof InputStream) {
-          try (InputStream stream = (InputStream) streamObj) {
-            String prometheusText = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
-            if (!prometheusText.isEmpty()) {
-              // Inject node label into each metric line
-              String labeledText = injectNodeLabelIntoText(prometheusText, entry.getKey());
-              mergedText.append(labeledText);
-            }
-          } catch (IOException ioe) {
-            log.warn("IOException when reading stream from node {}", entry.getKey(), ioe);
-          }
-        } else {
-          log.warn("No stream in response from node {}", entry.getKey());
+      // Extract the Prometheus text stream from response
+      Object streamObj = resp.get("stream");
+      if (streamObj instanceof java.io.InputStream) {
+        try (java.io.InputStream stream = (java.io.InputStream) streamObj) {
+          // TODO: Stream to output instead of buffering in a String?
+          String prometheusText = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+          // Pass the text through directly - PrometheusResponseWriter will write it as-is
+          rsp.add("prometheusText", prometheusText);
         }
-      } catch (ExecutionException ee) {
-        log.warn("Exception when fetching Prometheus result from node {}", entry.getKey(), ee);
-      } catch (TimeoutException te) {
-        log.warn("Timeout when fetching Prometheus result from node {}", entry.getKey(), te);
-      }
-    }
-
-    // Store the merged text in response - will be written as-is
-    rsp.add("prometheusText", mergedText.toString());
-  }
-
-  /**
-   * Escape special characters in Prometheus label values according to Prometheus specification.
-   * Escapes backslash, double quote, and newline characters.
-   */
-  private static String escapePrometheusLabelValue(String value) {
-    return value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
-  }
-
-  /**
-   * Inject node="nodeName" label into Prometheus text format. Each metric line gets the node label
-   * added. Uses regex matching to robustly handle metric lines with or without labels, values in
-   * scientific notation, and optional timestamps.
-   */
-  private static String injectNodeLabelIntoText(String prometheusText, String nodeName) {
-    StringBuilder result = new StringBuilder();
-    String[] lines = prometheusText.split("\n");
-    String escapedNodeName = escapePrometheusLabelValue(nodeName);
-
-    // Regex to match Prometheus metric lines:
-    // Group 1: metric name
-    // Group 2: labels (optional, with braces)
-    // Group 3: value and optional timestamp
-    java.util.regex.Pattern pattern =
-        java.util.regex.Pattern.compile("^([a-zA-Z_:][a-zA-Z0-9_:]*)(?:(\\{[^}]*\\}))?\\s+(.+)$");
-
-    for (String line : lines) {
-      // Skip comments and empty lines
-      if (line.startsWith("#") || line.trim().isEmpty()) {
-        result.append(line).append("\n");
-        continue;
-      }
-
-      java.util.regex.Matcher matcher = pattern.matcher(line);
-      if (matcher.matches()) {
-        String metricName = matcher.group(1);
-        String labels = matcher.group(2); // May be null if no labels
-        String valueAndTimestamp = matcher.group(3);
-
-        result.append(metricName);
-
-        if (labels != null && !labels.isEmpty()) {
-          // Has existing labels - inject node label inside braces
-          // labels is "{existing_labels}", need to inject before the closing brace
-          String labelsContent = labels.substring(1, labels.length() - 1); // Remove { }
-          result.append("{");
-          if (!labelsContent.isEmpty()) {
-            result.append(labelsContent).append(",");
-          }
-          result.append("node=\"").append(escapedNodeName).append("\"}");
-        } else {
-          // No labels - add node label as only label
-          result.append("{node=\"").append(escapedNodeName).append("\"}");
-        }
-
-        result.append(" ").append(valueAndTimestamp).append("\n");
       } else {
-        // Line doesn't match expected format - keep as-is
-        result.append(line).append("\n");
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "No stream in response from node " + nodeName);
       }
+    } catch (ExecutionException ee) {
+      log.warn("Exception when fetching Prometheus result from node {}", nodeName, ee);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Failed to fetch metrics from node " + nodeName,
+          ee);
+    } catch (TimeoutException te) {
+      log.warn("Timeout when fetching Prometheus result from node {}", nodeName, te);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "Timeout fetching metrics from node " + nodeName,
+          te);
     }
-
-    return result.toString();
   }
 }

@@ -41,17 +41,17 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
 
-    // Check if we have pre-merged Prometheus text (from multi-node requests)
+    // Check if we have pre-formatted Prometheus text (from single-node proxy)
     var prometheusText = response.getValues().get("prometheusText");
     if (prometheusText instanceof String) {
       out.write(((String) prometheusText).getBytes(java.nio.charset.StandardCharsets.UTF_8));
       return;
     }
 
-    // Otherwise handle normal MetricSnapshots
+    // Otherwise handle MetricSnapshots
     var metrics = response.getValues().get("metrics");
     if (metrics == null) {
-      throw new IOException("No metrics or prometheusText found in response");
+      throw new IOException("No metrics found in response");
     }
     MetricSnapshots snapshots = (MetricSnapshots) metrics;
     if (writeOpenMetricsFormat(request)) {
