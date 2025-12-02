@@ -23,6 +23,7 @@ import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.p
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrQuery.SortClause;
@@ -91,7 +92,11 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
       String nextCursorMark = rsp.getNextCursorMark();
       for (SolrDocument doc : rsp.getResults()) {
         final String docOutput =
-            String.format("ID: %s; Name: %s", doc.getFieldValue("id"), doc.getFieldValue("name"));
+            String.format(
+                Locale.ROOT,
+                "ID: %s; Name: %s",
+                doc.getFieldValue("id"),
+                doc.getFieldValue("name"));
         print(docOutput);
       }
 

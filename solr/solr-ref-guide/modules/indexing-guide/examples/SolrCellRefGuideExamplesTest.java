@@ -20,7 +20,7 @@ import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.c
 import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
 import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
@@ -73,7 +73,7 @@ public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
           // tag::solr-cell-pdf-extraction[]
           ContentStreamUpdateRequest extractRequest =
               new ContentStreamUpdateRequest("/update/extract");
-          extractRequest.addFile(new File(PDF_DOC_PATH).toPath(), "application/pdf");
+          extractRequest.addFile(Path.of(PDF_DOC_PATH), "application/pdf");
           extractRequest.setParam("extractOnly", "true");
           NamedList<Object> extractResponse =
               cluster.getSolrClient().request(extractRequest, COLLECTION_NAME);
