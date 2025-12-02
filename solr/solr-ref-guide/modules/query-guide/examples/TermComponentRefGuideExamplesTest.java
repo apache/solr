@@ -16,7 +16,10 @@
  */
 package org.apache.solr.client.ref_guide_examples;
 
-import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.clear;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.expectLine;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +49,9 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
   public static class TechProduct {
     @Field public String id;
     @Field public String name;
-    
+
     public TechProduct() {}
+
     public TechProduct(String id, String name) {
       this.id = id;
       this.name = name;
@@ -57,11 +61,9 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).addConfig(CONFIG_NAME, ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
-    
+
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());
-
-        
   }
 
   @Before
@@ -69,14 +71,14 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
 
-    //ExpectedOutputVerifier.clear();
-   indexSampleData(); 
+    clear();
+    indexSampleData();
   }
-  
+
   @Test
   public void testTermsComponentRequest() throws Exception {
-   // expectLine("Top term is fitbit with frequency 2");
-    
+    expectLine("Top term is fitbit with frequency 2");
+
     // tag::term-component-request[]
     final SolrQuery termsQuery = new SolrQuery();
     termsQuery.setRequestHandler("/terms");
@@ -86,34 +88,34 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
     termsQuery.setTermsMinCount(1);
 
     final QueryRequest request = new QueryRequest(termsQuery);
-    final List<Term> terms = request.process(cluster.getSolrClient(), COLLECTION_NAME)
-        .getTermsResponse()
-        .getTerms("name");
-  
+    final List<Term> terms =
+        request
+            .process(cluster.getSolrClient(), COLLECTION_NAME)
+            .getTermsResponse()
+            .getTerms("name");
+
     final Term topTerm = terms.get(0);
-    print("Top term is "+topTerm.getTerm()+" with frequency " + topTerm.getFrequency());
+    print("Top term is " + topTerm.getTerm() + " with frequency " + topTerm.getFrequency());
     // end::term-component-request[]
   }
-  
-  // @After
-  // @Override
-  // public void tearDown() throws Exception {
-  //   super.tearDown();
-  //   ensureNoLeftoverOutputExpectations();
-  // }
-  
+
+  @After
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    ensureNoLeftoverOutputExpectations();
+  }
+
   private void indexSampleData() throws Exception {
     SolrClient client = cluster.getSolrClient();
-    
+
     final List<TechProduct> products = new ArrayList<>();
-    products.add(new TechProduct("1","Fitbit Alta"));
+    products.add(new TechProduct("1", "Fitbit Alta"));
     products.add(new TechProduct("2", "Sony Walkman"));
     products.add(new TechProduct("3", "Garmin GPS"));
     products.add(new TechProduct("4", "Fitbit Flex"));
-    
-    client.addBeans(COLLECTION_NAME, products);
-    client.commit(COLLECTION_NAME);    
-  }
-  
 
+    client.addBeans(COLLECTION_NAME, products);
+    client.commit(COLLECTION_NAME);
+  }
 }

@@ -25,17 +25,18 @@ import java.util.Queue;
 
 public class ExpectedOutputVerifier {
   private static Queue<String> expectedLines = new ArrayDeque<>();
-  
+
   public static void expectLine(String expectedLine) {
     expectedLines.add(expectedLine);
   }
 
   public static void print(String actualOutput) {
     final String nextExpectedLine = expectedLines.poll();
-    assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
+    assertNotNull(
+        "No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
 
-    final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
-        + actualOutput;
+    final String unexpectedOutputMessage =
+        "Expected line containing " + nextExpectedLine + ", but printed line was: " + actualOutput;
     assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
   }
 
@@ -49,7 +50,7 @@ public class ExpectedOutputVerifier {
     }
     fail(builder.toString());
   }
-  
+
   public static void clear() {
     expectedLines.clear();
   }
