@@ -16,13 +16,12 @@
  */
 package org.apache.solr.client.ref_guide_examples;
 
-import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.clear;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
 
 import java.io.File;
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -41,7 +40,8 @@ import org.junit.Test;
  * Guide.
  */
 public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
-  private static final String PDF_DOC_PATH = ExternalPaths.TECHPRODUCTS_CONFIGSET + "/../../../../../example/exampledocs/solr-word.pdf";
+  private static final String PDF_DOC_PATH =
+      ExternalPaths.TECHPRODUCTS_CONFIGSET + "/../../../../../example/exampledocs/solr-word.pdf";
   private static final String COLLECTION_NAME = "techproducts";
   private static final String CONFIG_NAME = "extraction_config";
 
@@ -63,7 +63,7 @@ public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
 
   @Test
   public void testSolrCellPdfExtraction() throws Exception {
-    //expectLine("Update status was: 0");
+    // expectLine("Update status was: 0");
 
     // Best we can do without including extraction module
     assertExceptionThrownWithMessageContaining(
@@ -71,16 +71,15 @@ public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
         List.of("Error loading class 'solr.extraction.ExtractingRequestHandler'"),
         () -> {
           // tag::solr-cell-pdf-extraction[]
-          ContentStreamUpdateRequest extractRequest = new ContentStreamUpdateRequest("/update/extract");
+          ContentStreamUpdateRequest extractRequest =
+              new ContentStreamUpdateRequest("/update/extract");
           extractRequest.addFile(new File(PDF_DOC_PATH).toPath(), "application/pdf");
           extractRequest.setParam("extractOnly", "true");
-          NamedList<Object> extractResponse = cluster.getSolrClient().request(extractRequest, COLLECTION_NAME);
+          NamedList<Object> extractResponse =
+              cluster.getSolrClient().request(extractRequest, COLLECTION_NAME);
           print("Update status was: " + extractResponse.getName(0));
           // end::solr-cell-pdf-extraction[]
         });
-
-
-
   }
 
   @After
@@ -89,5 +88,4 @@ public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
     super.tearDown();
     ensureNoLeftoverOutputExpectations();
   }
-
 }
