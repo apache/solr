@@ -158,7 +158,7 @@
         var labelMatch;
         while ((labelMatch = labelRegex.exec(labelsStr)) !== null) {
           // Unescape label values - must unescape \\ first to avoid double-unescaping
-          var labelValue = labelMatch[2].replace(/\\"/g, '"').replace(/\\n/g, '\n').replace(/\\\\/g, '\\');
+          var labelValue = labelMatch[2].replace(/\\\\/g, '\\').replace(/\\"/g, '"').replace(/\\n/g, '\n');
           labels[labelMatch[1]] = labelValue;
         }
       }
