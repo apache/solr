@@ -16,11 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This module brings the power of *Large Language Models* (*LLM*s) to Solr.  
+This module brings the power of *Large Language Models* (*LLM*s) to Solr.
 
 More specifically, it provides a text-to-vector capability, used on documents or queries, via integrating with popular external services that do this.
 
-The state-of-the-art of such services use an LLM, hence the name of this module. 
+The state-of-the-art of such services use an LLM, hence the name of this module.
 _Without_ this module, vectors must be supplied _to_ Solr for indexing & searching, possibly coordinating with such services.
 
 
@@ -35,7 +35,7 @@ Often this process is called 'text embedding' as it projects a piece of text int
 Vector distance metrics (algorithms) can then be used to compute a pairwise similarity, producing a score.
 
 
-=== Large Language Models 
+=== Large Language Models
 
 Specific Large Language Models are able to encode text to a numerical vector.
 
@@ -53,7 +53,7 @@ Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to conn
 
 [IMPORTANT]
 ====
-This module sends your documents and queries off to some hosted service on the internet. 
+This module sends your documents and queries off to some hosted service on the internet.
 There are cost, privacy, performance, and service availability implications on such a strong dependency that should be diligently examined before employing this module in a serious way.
 
 ====
@@ -72,7 +72,7 @@ This is provided via the `llm` xref:configuration-guide:solr-modules.adoc[Solr M
 
 == LLM Configuration
 
-You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`. 
+You need to register / configure the plugins provided by the LLM module that you want to use. This is done in `solrconfig.xml`.
 
 * Declaration of the `knn_text_to_vector` query parser.
 +
@@ -107,7 +107,7 @@ s|Required |Default: none
 |===
 +
 The model implementation.
-Accepted values: 
+Accepted values:
 
 * `dev.langchain4j.model.huggingface.HuggingFaceEmbeddingModel`.
 * `dev.langchain4j.model.mistralai.MistralAiEmbeddingModel`.
@@ -284,7 +284,7 @@ To vectorise textual fields of your documents at indexing time you need to confi
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 The `TextToVectorUpdateProcessor` update request processor vectorises the content of the 'inputField' for each document processed at indexing time.
@@ -311,34 +311,34 @@ This can be done in Solr defining two update request processors chains: one that
 [source,xml]
 ----
 <updateRequestProcessorChain name="no-vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 [source,xml]
 ----
 <updateRequestProcessorChain name="vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
-<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 You would index your documents first using the 'no-vectorisation' and when finished, incrementally repeat the indexing targeting the 'vectorisation' chain.
@@ -356,28 +356,34 @@ You still define two chains, but this time the 'vectorisation' one only includes
 [source,xml]
 ----
 <updateRequestProcessorChain name="no-vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 [source,xml]
 ----
 <updateRequestProcessorChain name="vectorisation">
-<processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
+
+[NOTE]
+====
+Partial updates are processed by the `DistributedUpdateProcessorFactory`. For this reason, it must be placed at the beginning of the UpdateRequestProcessorChain, before the `TextToVectorUpdateProcessorFactory`.
+====
 
 Add to your schema a simple field that will be useful to track the vectorisation and use atomic updates:
 
