@@ -1,0 +1,670 @@
+From 081fa4b3d692f9eb3c9249f8341446348282b2c4 Mon Sep 17 00:00:00 2001
+From: Jason Gerlowski <gerlowskija@gmail.com>
+Date: Sat, 9 Dec 2017 07:14:45 -0500
+Subject: [PATCH] SOLR-11574: Extract remaining Java example snippets
+
+---
+ solr/solr-ref-guide/src/pagination-of-results.adoc |  16 +--
+ .../solr-ref-guide/src/parallel-sql-interface.adoc |  22 +---
+ solr/solr-ref-guide/src/the-terms-component.adoc   |  14 +--
+ ...ding-data-with-solr-cell-using-apache-tika.adoc |  12 +-
+ .../ref_guide_examples/ExpectedOutputVerifier.java |  56 ++++++++++
+ .../PaginationRefGuideExamplesTest.java            | 123 +++++++++++++++++++++
+ .../ParallelSqlRefGuideExamplesTest.java           | 112 +++++++++++++++++++
+ .../SolrCellRefGuideExamplesTest.java              |  88 +++++++++++++++
+ .../TermComponentRefGuideExamplesTest.java         | 107 ++++++++++++++++++
+ 9 files changed, 500 insertions(+), 50 deletions(-)
+ create mode 100644 solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ExpectedOutputVerifier.java
+ create mode 100644 solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/PaginationRefGuideExamplesTest.java
+ create mode 100644 solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ParallelSqlRefGuideExamplesTest.java
+ create mode 100644 solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/SolrCellRefGuideExamplesTest.java
+ create mode 100644 solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/TermComponentRefGuideExamplesTest.java
+
+diff --git a/solr/solr-ref-guide/src/pagination-of-results.adoc b/solr/solr-ref-guide/src/pagination-of-results.adoc
+index bb21e03..f068f82 100644
+--- a/solr/solr-ref-guide/src/pagination-of-results.adoc
++++ b/solr/solr-ref-guide/src/pagination-of-results.adoc
+@@ -1,4 +1,6 @@
+ = Pagination of Results
++:solr-root-path: ../../
++:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+ // Licensed to the Apache Software Foundation (ASF) under one
+ // or more contributor license agreements.  See the NOTICE file
+ // distributed with this work for additional information
+@@ -131,19 +133,7 @@ Using SolrJ, this pseudo-code would be:
+ 
+ [source,java]
+ ----
+-SolrQuery q = (new SolrQuery(some_query)).setRows(r).setSort(SortClause.asc("id"));
+-String cursorMark = CursorMarkParams.CURSOR_MARK_START;
+-boolean done = false;
+-while (! done) {
+-  q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
+-  QueryResponse rsp = solrServer.query(q);
+-  String nextCursorMark = rsp.getNextCursorMark();
+-  doCustomProcessingOfResults(rsp);
+-  if (cursorMark.equals(nextCursorMark)) {
+-    done = true;
+-  }
+-  cursorMark = nextCursorMark;
+-}
++include::{example-source-dir}PaginationRefGuideExamplesTest.java[tag=cursormark-query]
+ ----
+ 
+ If you wanted to do this by hand using curl, the sequence of requests would look something like this:
+diff --git a/solr/solr-ref-guide/src/parallel-sql-interface.adoc b/solr/solr-ref-guide/src/parallel-sql-interface.adoc
+index a6875b6..eb793a0 100644
+--- a/solr/solr-ref-guide/src/parallel-sql-interface.adoc
++++ b/solr/solr-ref-guide/src/parallel-sql-interface.adoc
+@@ -1,5 +1,7 @@
+ = Parallel SQL Interface
+ :page-children: solr-jdbc-dbvisualizer, solr-jdbc-squirrel-sql, solr-jdbc-apache-zeppelin, solr-jdbc-python-jython, solr-jdbc-r
++:solr-root-path: ../../
++:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+ // Licensed to the Apache Software Foundation (ASF) under one
+ // or more contributor license agreements.  See the NOTICE file
+ // distributed with this work for additional information
+@@ -91,23 +93,9 @@ The SQL Interface provides a basic JDBC driver and an HTTP interface to perform
+ 
+ The JDBC Driver ships with SolrJ. Below is sample code for creating a connection and executing a query with the JDBC driver:
+ 
+-[source,java]
+-----
+-Connection con = null;
+-try {
+-    con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
+-    stmt = con.createStatement();
+-    rs = stmt.executeQuery("SELECT a_s, sum(a_f) as sum FROM collection1 GROUP BY a_s ORDER BY sum desc");
+-
+-    while(rs.next()) {
+-        String a_s = rs.getString("a_s");
+-        double s = rs.getDouble("sum");
+-    }
+-} finally {
+-    rs.close();
+-    stmt.close();
+-    con.close();
+-}
++[source,java,indent=0]
++----
++include::{example-source-dir}ParallelSqlRefGuideExamplesTest.java[tag=jdbc-query-interface]
+ ----
+ 
+ The connection URL must contain the `zkHost` and the `collection` parameters. The collection must be a valid SolrCloud collection at the specified ZooKeeper host. The collection must also be configured with the `/sql` handler. The `aggregationMode` and `numWorkers` parameters are optional.
+diff --git a/solr/solr-ref-guide/src/the-terms-component.adoc b/solr/solr-ref-guide/src/the-terms-component.adoc
+index 6fe40d9..10dde2a 100644
+--- a/solr/solr-ref-guide/src/the-terms-component.adoc
++++ b/solr/solr-ref-guide/src/the-terms-component.adoc
+@@ -1,4 +1,6 @@
+ = The Terms Component
++:solr-root-path: ../../
++:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+ // Licensed to the Apache Software Foundation (ASF) under one
+ // or more contributor license agreements.  See the NOTICE file
+ // distributed with this work for additional information
+@@ -227,17 +229,7 @@ Results:
+ 
+ [source,java]
+ ----
+-    SolrQuery query = new SolrQuery();
+-    query.setRequestHandler("/terms");
+-    query.setTerms(true);
+-    query.setTermsLimit(5);
+-    query.setTermsLower("s");
+-    query.setTermsPrefix("s");
+-    query.addTermsField("terms_s");
+-    query.setTermsMinCount(1);
+-
+-    QueryRequest request = new QueryRequest(query);
+-    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
++include::{example-source-dir}TermComponentRefGuideExamplesTest.java[tag=term-component-request]
+ ----
+ 
+ == Using the Terms Component for an Auto-Suggest Feature
+diff --git a/solr/solr-ref-guide/src/uploading-data-with-solr-cell-using-apache-tika.adoc b/solr/solr-ref-guide/src/uploading-data-with-solr-cell-using-apache-tika.adoc
+index 5202b0d..d727297 100644
+--- a/solr/solr-ref-guide/src/uploading-data-with-solr-cell-using-apache-tika.adoc
++++ b/solr/solr-ref-guide/src/uploading-data-with-solr-cell-using-apache-tika.adoc
+@@ -1,4 +1,6 @@
+ = Uploading Data with Solr Cell using Apache Tika
++:solr-root-path: ../../
++:example-source-dir: {solr-root-path}solrj/src/test/org/apache/solr/client/ref_guide_examples/
+ // Licensed to the Apache Software Foundation (ASF) under one
+ // or more contributor license agreements.  See the NOTICE file
+ // distributed with this work for additional information
+@@ -328,15 +330,7 @@ First, let's use SolrJ to create a new SolrClient, then we'll construct a reques
+ 
+ [source,java]
+ ----
+-public class SolrCellRequestDemo {
+-  public static void main (String[] args) throws IOException, SolrServerException {
+-    SolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr/my_collection").build();
+-    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update/extract");
+-    req.addFile(new File("my-file.pdf"));
+-    req.setParam(ExtractingParams.EXTRACT_ONLY, "true");
+-    NamedList<Object> result = client.request(req);
+-    System.out.println("Result: " + result);
+-}
++include::{example-source-dir}SolrCellRefGuideExamplesTest.java[tag=solr-cell-pdf-extraction]
+ ----
+ 
+ This operation streams the file `my-file.pdf` into the Solr index for `my_collection`.
+diff --git a/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ExpectedOutputVerifier.java b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ExpectedOutputVerifier.java
+new file mode 100644
+index 0000000..cbd5bbf
+--- /dev/null
++++ b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ExpectedOutputVerifier.java
+@@ -0,0 +1,56 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.solr.client.ref_guide_examples;
++
++import static org.junit.Assert.assertNotNull;
++import static org.junit.Assert.assertTrue;
++import static org.junit.Assert.fail;
++
++import java.util.ArrayDeque;
++import java.util.Queue;
++
++public class ExpectedOutputVerifier {
++  private static Queue<String> expectedLines = new ArrayDeque();
++  
++  public static void expectLine(String expectedLine) {
++    expectedLines.add(expectedLine);
++  }
++
++  public static void print(String actualOutput) {
++    final String nextExpectedLine = expectedLines.poll();
++    assertNotNull("No more output expected, but was asked to print: " + actualOutput, nextExpectedLine);
++
++    final String unexpectedOutputMessage = "Expected line containing " + nextExpectedLine + ", but printed line was: "
++        + actualOutput;
++    assertTrue(unexpectedOutputMessage, actualOutput.contains(nextExpectedLine));
++  }
++
++  public static void ensureNoLeftoverOutputExpectations() {
++    if (expectedLines.isEmpty()) return;
++
++    final StringBuilder builder = new StringBuilder();
++    builder.append("Leftover output was expected but not printed:");
++    for (String expectedLine : expectedLines) {
++      builder.append("\n\t" + expectedLine);
++    }
++    fail(builder.toString());
++  }
++  
++  public static void clear() {
++    expectedLines.clear();
++  }
++}
+diff --git a/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/PaginationRefGuideExamplesTest.java b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/PaginationRefGuideExamplesTest.java
+new file mode 100644
+index 0000000..f4125d6
+--- /dev/null
++++ b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/PaginationRefGuideExamplesTest.java
+@@ -0,0 +1,123 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.solr.client.ref_guide_examples;
++
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
++
++import java.io.File;
++import java.util.List;
++
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
++
++import org.apache.solr.client.solrj.SolrClient;
++import org.apache.solr.client.solrj.SolrQuery;
++import org.apache.solr.client.solrj.SolrQuery.SortClause;
++import org.apache.solr.client.solrj.request.CollectionAdminRequest;
++import org.apache.solr.client.solrj.response.QueryResponse;
++import org.apache.solr.cloud.SolrCloudTestCase;
++import org.apache.solr.common.SolrDocument;
++import org.apache.solr.common.SolrInputDocument;
++import org.apache.solr.common.params.CursorMarkParams;
++import org.apache.solr.util.ExternalPaths;
++import org.carrot2.shaded.guava.common.collect.Lists;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++
++/**
++ * Example Cursormark usage in SolrJ.
++ *
++ * Snippets surrounded by "tag" and "end" comments are extracted and used in the Solr Reference Guide.
++ */
++public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
++  private static final int NUM_INDEXED_DOCUMENTS = 9;
++  private static final int BATCH_SIZE = 1;
++  private static final int NUM_LIVE_NODES = 1;
++  private static final String COLLECTION_NAME = "techproducts";
++
++  @BeforeClass
++  public static void setUpCluster() throws Exception {
++    configureCluster(NUM_LIVE_NODES)
++        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
++        .configure();
++
++    CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
++        .process(cluster.getSolrClient());
++  }
++
++  @Before
++  @Override
++  public void setUp() throws Exception {
++    super.setUp();
++    
++    ExpectedOutputVerifier.clear();
++    indexSampleData();
++  }
++  
++  @After
++  @Override
++  public void tearDown() throws Exception {
++    super.tearDown();
++    ensureNoLeftoverOutputExpectations();
++  }
++  
++  @Test
++  public void testCursormarkWithSolrJExample() throws Exception {
++    for (int i = 0; i < NUM_INDEXED_DOCUMENTS; i++) {
++      expectLine("ID: " + i + "; Name: Fitbit Model " + i);
++    }
++    
++    // tag::cursormark-query[]
++    SolrQuery q = (new SolrQuery("*:*")).setRows(BATCH_SIZE).setSort(SortClause.asc("id"));
++    String cursorMark = CursorMarkParams.CURSOR_MARK_START;
++    boolean done = false;
++    
++    while (! done) {
++      q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
++      QueryResponse rsp = getSolrClient().query(COLLECTION_NAME, q);
++      String nextCursorMark = rsp.getNextCursorMark();
++      for (SolrDocument doc : rsp.getResults()) {
++        final String docOutput = String.format("ID: %s; Name: %s", doc.getFieldValue("id"), doc.getFieldValue("name"));
++        print(docOutput);
++      }
++      
++      done = cursorMark.equals(nextCursorMark);
++      cursorMark = nextCursorMark;
++    }
++    // end::cursormark-query[]
++  }
++  
++  private SolrClient getSolrClient() {
++    return cluster.getSolrClient();
++  }
++  
++  private void indexSampleData() throws Exception {
++    final SolrClient client = getSolrClient();
++    
++    final List<SolrInputDocument> docList = Lists.newArrayList();
++    for (int i = 0; i < NUM_INDEXED_DOCUMENTS; i++) {
++      final SolrInputDocument doc = new SolrInputDocument();
++      doc.addField("id", i);
++      doc.addField("name", "Fitbit Model " + i);
++      docList.add(doc);
++    }
++    
++    client.add(COLLECTION_NAME, docList);
++    client.commit(COLLECTION_NAME);
++  }
++}
+diff --git a/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ParallelSqlRefGuideExamplesTest.java b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ParallelSqlRefGuideExamplesTest.java
+new file mode 100644
+index 0000000..379faaf
+--- /dev/null
++++ b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/ParallelSqlRefGuideExamplesTest.java
+@@ -0,0 +1,112 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.solr.client.ref_guide_examples;
++
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.expectLine;
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
++
++import java.io.File;
++import java.sql.Connection;
++import java.sql.DriverManager;
++import java.sql.ResultSet;
++import java.sql.Statement;
++import java.util.List;
++
++import org.apache.solr.client.solrj.SolrClient;
++import org.apache.solr.client.solrj.request.CollectionAdminRequest;
++import org.apache.solr.cloud.SolrCloudTestCase;
++import org.apache.solr.common.SolrInputDocument;
++import org.apache.solr.util.ExternalPaths;
++import org.carrot2.shaded.guava.common.collect.Lists;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++
++public class ParallelSqlRefGuideExamplesTest extends SolrCloudTestCase {
++  private static final int NUM_INDEXED_DOCUMENTS = 3;
++  private static final int NUM_LIVE_NODES = 1;
++
++  @BeforeClass
++  public static void setUpCluster() throws Exception {
++    configureCluster(NUM_LIVE_NODES)
++        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
++        .configure();
++
++    CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
++        .process(cluster.getSolrClient());
++  }
++
++  @Before
++  @Override
++  public void setUp() throws Exception {
++    super.setUp();
++    
++    ExpectedOutputVerifier.clear();
++    indexSampleData();
++  }
++  
++  @After
++  @Override
++  public void tearDown() throws Exception {
++    super.tearDown();
++    ensureNoLeftoverOutputExpectations();
++  }
++  
++  @Test
++  public void testQueryOnJdbcSqlInterface() throws Exception {
++    expectLine("Item: 0; Price: 0.0");
++    expectLine("Item: 1; Price: 2.0");
++    expectLine("Item: 2; Price: 4.0");
++
++    final String zkHost = cluster.getZkClient().getZkServerAddress();
++    // tag::jdbc-query-interface[]
++    final String connString = "jdbc:solr://" + zkHost + "?collection=techproducts&aggregationMode=map_reduce&numWorkers=2";
++    try (Connection con = DriverManager.getConnection(connString)){
++      try (final Statement stmt = con.createStatement()) {
++        final String sqlQuery = "SELECT id, price_d FROM techproducts LIMIT 3";
++        try (ResultSet rs = stmt.executeQuery(sqlQuery)) {
++          while(rs.next()) {
++            final String resultString = String.format("Item: %s; Price: %s", rs.getString("id"), rs.getString("price_d"));
++            print(resultString);
++          }
++        }
++      }
++    }
++    // end::jdbc-query-interface[]
++  }
++  
++  private void indexSampleData() throws Exception {
++    final SolrClient client = getSolrClient();
++    
++    final List<SolrInputDocument> docList = Lists.newArrayList();
++    for (int i = 0; i < NUM_INDEXED_DOCUMENTS; i++) {
++      final SolrInputDocument doc = new SolrInputDocument();
++      doc.addField("id", i);
++      doc.addField("price_d", i * 2.0);
++      docList.add(doc);
++    }
++    
++    client.add("techproducts", docList);
++    client.commit("techproducts");
++  }
++  
++  private SolrClient getSolrClient() {
++    return cluster.getSolrClient();
++  }
++}
+diff --git a/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/SolrCellRefGuideExamplesTest.java b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/SolrCellRefGuideExamplesTest.java
+new file mode 100644
+index 0000000..966a7c2
+--- /dev/null
++++ b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/SolrCellRefGuideExamplesTest.java
+@@ -0,0 +1,88 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.solr.client.ref_guide_examples;
++
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
++
++import java.io.File;
++
++import org.apache.solr.client.solrj.SolrClient;
++import org.apache.solr.client.solrj.request.CollectionAdminRequest;
++import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
++import org.apache.solr.client.solrj.response.UpdateResponse;
++import org.apache.solr.cloud.SolrCloudTestCase;
++import org.apache.solr.handler.extraction.ExtractingParams;
++import org.apache.solr.util.ExternalPaths;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++
++public class SolrCellRefGuideExamplesTest extends SolrCloudTestCase {
++  private static final int NUM_LIVE_NODES = 1;
++  private static final String PDF_DOC_PATH = ExternalPaths.SOURCE_HOME + "/example/exampledocs/solr-word.pdf";
++  private static final String COLLECTION_NAME = "techproducts";
++  
++  @BeforeClass
++  public static void setUpCluster() throws Exception {
++    configureCluster(NUM_LIVE_NODES)
++        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
++        .configure();
++
++    CollectionAdminRequest.createCollection("techproducts", "conf", 1, 1)
++        .process(cluster.getSolrClient());
++  }
++
++  @Before
++  @Override
++  public void setUp() throws Exception {
++    super.setUp();
++    
++    ExpectedOutputVerifier.clear();
++  }
++  
++  @Test
++  public void letsGetOurPdfPath() {
++    System.out.println(PDF_DOC_PATH);
++  }
++  
++  @Test
++  public void testSolrCellPdfExtraction() throws Exception {
++    final SolrClient client = getSolrClient();
++    expectLine("Update status was: 0");
++    
++    // tag::solr-cell-pdf-extraction[]
++    ContentStreamUpdateRequest extractRequest = new ContentStreamUpdateRequest("/update/extract");
++    extractRequest.addFile(new File(PDF_DOC_PATH), "application/pdf");
++    extractRequest.setParam(ExtractingParams.EXTRACT_ONLY, "true");
++    final UpdateResponse extractResponse = extractRequest.process(client, COLLECTION_NAME);
++    
++    print("Update status was: " + extractResponse.getStatus());
++    // end::solr-cell-pdf-extraction[]
++  }
++  
++  @After
++  @Override
++  public void tearDown() throws Exception {
++    super.tearDown();
++    ensureNoLeftoverOutputExpectations();
++  }
++  
++  private SolrClient getSolrClient() {
++    return cluster.getSolrClient();
++  }
++}
+diff --git a/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/TermComponentRefGuideExamplesTest.java b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/TermComponentRefGuideExamplesTest.java
+new file mode 100644
+index 0000000..93902e1
+--- /dev/null
++++ b/solr/solrj/src/test/org/apache/solr/client/ref_guide_examples/TermComponentRefGuideExamplesTest.java
+@@ -0,0 +1,107 @@
++/*
++ * Licensed to the Apache Software Foundation (ASF) under one or more
++ * contributor license agreements.  See the NOTICE file distributed with
++ * this work for additional information regarding copyright ownership.
++ * The ASF licenses this file to You under the Apache License, Version 2.0
++ * (the "License"); you may not use this file except in compliance with
++ * the License.  You may obtain a copy of the License at
++ *
++ *     http://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++package org.apache.solr.client.ref_guide_examples;
++
++import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
++
++import java.io.File;
++import java.util.ArrayList;
++import java.util.List;
++
++import org.apache.solr.client.ref_guide_examples.UsingSolrJRefGuideExamplesTest.TechProduct;
++import org.apache.solr.client.solrj.SolrClient;
++import org.apache.solr.client.solrj.SolrQuery;
++import org.apache.solr.client.solrj.request.CollectionAdminRequest;
++import org.apache.solr.client.solrj.request.QueryRequest;
++import org.apache.solr.client.solrj.response.CollectionAdminResponse;
++import org.apache.solr.client.solrj.response.TermsResponse.Term;
++import org.apache.solr.cloud.SolrCloudTestCase;
++import org.apache.solr.util.ExternalPaths;
++import org.junit.After;
++import org.junit.Before;
++import org.junit.BeforeClass;
++import org.junit.Test;
++
++public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
++  private static final int NUM_LIVE_NODES = 1;
++  private static final String COLLECTION_NAME = "techproducts";
++
++  @BeforeClass
++  public static void setUpCluster() throws Exception {
++    configureCluster(NUM_LIVE_NODES)
++        .addConfig("conf", new File(ExternalPaths.TECHPRODUCTS_CONFIGSET).toPath())
++        .configure();
++
++    CollectionAdminResponse response = CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf", 1, 1)
++        .process(cluster.getSolrClient());
++  }
++
++  @Before
++  @Override
++  public void setUp() throws Exception {
++    super.setUp();
++
++    ExpectedOutputVerifier.clear();
++    indexSampleData();
++  }
++  
++  @Test
++  public void testTermsComponentRequest() throws Exception {
++    expectLine("Top term is fitbit with frequency 2");
++    
++    // tag::term-component-request[]
++    final SolrQuery termsQuery = new SolrQuery();
++    termsQuery.setRequestHandler("/terms");
++    termsQuery.setTerms(true);
++    termsQuery.setTermsLimit(5);
++    termsQuery.addTermsField("name");
++    termsQuery.setTermsMinCount(1);
++
++    final QueryRequest request = new QueryRequest(termsQuery);
++    final List<Term> terms = request.process(getSolrClient(), COLLECTION_NAME)
++        .getTermsResponse()
++        .getTerms("name");
++  
++    final Term topTerm = terms.get(0);
++    print("Top term is "+topTerm.getTerm()+" with frequency " + topTerm.getFrequency());
++    // end::term-component-request[]
++  }
++  
++  @After
++  @Override
++  public void tearDown() throws Exception {
++    super.tearDown();
++    ensureNoLeftoverOutputExpectations();
++  }
++  
++  private void indexSampleData() throws Exception {
++    final SolrClient client = getSolrClient();
++    
++    final List<TechProduct> products = new ArrayList<TechProduct>();
++    products.add(new TechProduct("1","Fitbit Alta"));
++    products.add(new TechProduct("2", "Sony Walkman"));
++    products.add(new TechProduct("3", "Garmin GPS"));
++    products.add(new TechProduct("4", "Fitbit Flex"));
++    
++    client.addBeans(COLLECTION_NAME, products);
++    client.commit(COLLECTION_NAME);    
++  }
++  
++  private SolrClient getSolrClient() {
++    return cluster.getSolrClient();
++  }
++}
+-- 
+2.7.4
+
