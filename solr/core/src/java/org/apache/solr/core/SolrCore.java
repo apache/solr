@@ -503,19 +503,39 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private long calculateIndexSize() {
     Directory dir;
     long size = 0;
-    try {
-      if (directoryFactory.exists(getIndexDir())) {
-        dir =
-            directoryFactory.get(
-                getIndexDir(), DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+    // This method is optimized to optimistically bypass `directoryFactory.exists(indexDir)`
+    // existence check. If IOException is thrown for any reason upon the initial optimistic attempt
+    // to open the directory, a second non-optimistic pass is taken. This loop should almost always
+    // execute once, and is guaranteed to never execute more than twice.
+    boolean passedExistenceCheck = false;
+    String indexDir = getIndexDir();
+    for (; ; ) {
+      try {
+        try {
+          dir = directoryFactory.get(indexDir, DirContext.DEFAULT, solrConfig.indexConfig.lockType);
+        } catch (IOException e) {
+          if (passedExistenceCheck) {
+            throw e;
+          } else {
+            // second pass, non-optimistic
+            indexDir = getIndexDir();
+            if (directoryFactory.exists(indexDir)) {
+              passedExistenceCheck = true;
+              continue;
+            } else {
+              break;
+            }
+          }
+        }
         try {
           size = directoryFactory.size(dir);
         } finally {
           directoryFactory.release(dir);
         }
+      } catch (IOException e) {
+        log.error("IO error while trying to get the size of the Directory", e);
       }
-    } catch (IOException e) {
-      log.error("IO error while trying to get the size of the Directory", e);
+      break;
     }
     return size;
   }
