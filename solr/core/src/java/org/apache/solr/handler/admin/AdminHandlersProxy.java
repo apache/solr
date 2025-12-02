@@ -18,10 +18,8 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -64,8 +62,7 @@ public class AdminHandlersProxy {
 
     if (!container.isZooKeeperAware()) {
       throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Node proxying only supported in Cloud mode");
+          SolrException.ErrorCode.BAD_REQUEST, "Node proxying only supported in Cloud mode");
     }
 
     String pathStr = req.getPath();
@@ -191,8 +188,8 @@ public class AdminHandlersProxy {
   }
 
   /**
-   * Handle Prometheus format by proxying to a single node.
-   **
+   * Handle Prometheus format by proxying to a single node. *
+   *
    * @param nodeName the name of the single node to proxy to
    * @param pathStr the request path
    * @param params the request parameters (with 'node' parameter already removed)
@@ -230,14 +227,14 @@ public class AdminHandlersProxy {
       if (streamObj instanceof java.io.InputStream) {
         try (java.io.InputStream stream = (java.io.InputStream) streamObj) {
           // TODO: Stream to output instead of buffering in a String?
-          String prometheusText = new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+          String prometheusText =
+              new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
           // Pass the text through directly - PrometheusResponseWriter will write it as-is
           rsp.add("prometheusText", prometheusText);
         }
       } else {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "No stream in response from node " + nodeName);
+            SolrException.ErrorCode.SERVER_ERROR, "No stream in response from node " + nodeName);
       }
     } catch (ExecutionException ee) {
       log.warn("Exception when fetching Prometheus result from node {}", nodeName, ee);
