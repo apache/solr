@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.AddressUtils;
 import org.apache.zookeeper.server.ServerConfig;
@@ -41,19 +42,19 @@ public class SolrZkServer {
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
 
-  String zkRun;
+  boolean zkRun = false;
   String zkHost;
 
   int solrPort;
   Properties props;
   SolrZkServerProps zkProps;
 
-  private Thread zkThread; // the thread running a zookeeper server, only if zkRun is set
+  private Thread zkThread; // the thread running a zookeeper server, only if zkRun is true
 
   private Path dataHome; // o.a.zookeeper.**.QuorumPeerConfig needs a File not a Path
   private String confHome;
 
-  public SolrZkServer(String zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
+  public SolrZkServer(boolean zkRun, String zkHost, Path dataHome, String confHome, int solrPort) {
     this.zkRun = zkRun;
     this.zkHost = zkHost;
     this.dataHome = dataHome;
@@ -62,12 +63,18 @@ public class SolrZkServer {
   }
 
   public String getClientString() {
-    if (zkHost != null) return zkHost;
+    if (zkHost != null) {
+      return zkHost;
+    }
 
-    if (zkProps == null) return null;
+    if (zkProps == null) {
+      return null;
+    }
 
     // if the string wasn't passed as zkHost, then use the standalone server we started
-    if (zkRun == null) return null;
+    if (!zkRun) {
+      return null;
+    }
 
     InetSocketAddress addr = zkProps.getClientPortAddress();
     String hostName;
@@ -110,13 +117,15 @@ public class SolrZkServer {
       // This is the address that the embedded Zookeeper will bind to. Like Solr, it defaults to
       // "127.0.0.1".
       props.setProperty(
-          "clientPortAddress", System.getProperty("solr.zk.embedded.host", "127.0.0.1"));
+          "clientPortAddress", EnvUtils.getProperty("solr.zookeeper.embedded.host", "127.0.0.1"));
       if (props.getProperty("clientPort") == null) {
         props.setProperty("clientPort", Integer.toString(solrPort + 1000));
       }
       zkProps.parseProperties(props);
     } catch (QuorumPeerConfig.ConfigException | IOException e) {
-      if (zkRun != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      if (zkRun) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      }
     }
   }
 
@@ -125,7 +134,9 @@ public class SolrZkServer {
   }
 
   public void start() {
-    if (zkRun == null) return;
+    if (!zkRun) {
+      return;
+    }
 
     if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
@@ -192,7 +203,9 @@ public class SolrZkServer {
   }
 
   public void stop() {
-    if (zkRun == null) return;
+    if (!zkRun) {
+      return;
+    }
     zkThread.interrupt();
   }
 }
@@ -203,7 +216,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String solrPort; // port that Solr is listening on
-  String zkRun;
+  boolean zkRun;
 
   /**
    * Parse a ZooKeeper configuration file
@@ -232,13 +245,15 @@ class SolrZkServerProps extends QuorumPeerConfig {
   // Given zkHost=localhost:1111,localhost:2222 this will inject
   // server.0=localhost:1112:1113
   // server.1=localhost:2223:2224
-  public static void injectServers(Properties props, String zkRun, String zkHost) {
+  public static void injectServers(Properties props, boolean zkRun, String zkHost) {
 
     // if clientPort not already set, use zkRun
-    if (zkRun != null && props.getProperty("clientPort") == null) {
-      int portIdx = zkRun.lastIndexOf(':');
+    if (zkRun && props.getProperty("clientPort") == null) {
+      // int portIdx = zkRun.lastIndexOf(':');
+      int portIdx = "".lastIndexOf(':');
       if (portIdx > 0) {
-        String portStr = zkRun.substring(portIdx + 1);
+        // String portStr = zkRun.substring(portIdx + 1);
+        String portStr = "".substring(portIdx + 1);
         props.setProperty("clientPort", portStr);
       }
     }

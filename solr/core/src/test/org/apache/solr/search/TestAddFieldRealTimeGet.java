@@ -46,7 +46,7 @@ public class TestAddFieldRealTimeGet extends TestRTGBase {
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore(configFileName, schemaFileName, tmpSolrHome);
   }
 

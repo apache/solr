@@ -111,7 +111,8 @@ public class SolrResourceLoader
     "security.cert.",
     "handler.sql.",
     "crossdc.handler.",
-    "crossdc.update.processor."
+    "crossdc.update.processor.",
+    "index."
   };
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
   public static final String SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM =
@@ -322,14 +323,6 @@ public class SolrResourceLoader
 
   public Path getConfigPath() {
     return instanceDir.resolve("conf");
-  }
-
-  /**
-   * @deprecated use {@link #getConfigPath()}
-   */
-  @Deprecated(since = "9.0.0")
-  public String getConfigDir() {
-    return getConfigPath().toString();
   }
 
   /**

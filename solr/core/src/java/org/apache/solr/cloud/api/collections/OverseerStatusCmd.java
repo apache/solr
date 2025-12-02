@@ -61,8 +61,6 @@ import org.slf4j.LoggerFactory;
  *   <li><b>{@code leader}:</b> {@code ID} of the current overseer leader node
  *   <li><b>{@code overseer_queue_size}:</b> count of entries in the {@code /overseer/queue}
  *       Zookeeper queue/directory
- *   <li><b>{@code overseer_work_queue_size}:</b> count of entries in the {@code
- *       /overseer/queue-work} Zookeeper queue/directory
  *   <li><b>{@code overseer_collection_queue_size}:</b> count of entries in the {@code
  *       /overseer/collection-queue-work} Zookeeper queue/directory
  *   <li><b>{@code overseer_operations}:</b> map (of maps) of success and error counts for
@@ -128,17 +126,15 @@ import org.slf4j.LoggerFactory;
  *         <li>{@code remove_event}
  *         <li>{@code take}
  *       </ul>
- *   <li><b>{@code overseer_internal_queue}:</b> same as above but for queue {@code
- *       /overseer/queue-work}
  *   <li><b>{@code collection_queue}:</b> same as above but for queue {@code
  *       /overseer/collection-queue-work}
  * </ul>
  *
  * <p>Maps returned as values of keys in <b>{@code overseer_operations}</b>, <b>{@code
- * collection_operations}</b>, <b>{@code overseer_queue}</b>, <b>{@code overseer_internal_queue}</b>
- * and <b>{@code collection_queue}</b> include additional stats. These stats are provided by {@link
- * MetricUtils}, and represent metrics on each type of operation execution (be it failed or
- * successful), see calls to {@link Stats#time(String)}. The metric keys are:
+ * collection_operations}</b>, <b>{@code overseer_queue}</b> and <b>{@code collection_queue}</b>
+ * include additional stats. These stats are provided by {@link MetricUtils}, and represent metrics
+ * on each type of operation execution (be it failed or successful), see calls to {@link
+ * Stats#time(String)}. The metric keys are:
  *
  * <ul>
  *   <li>{@code avgRequestsPerSecond}
@@ -179,16 +175,12 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     zkStateReader.getZkClient().getData("/overseer/queue", null, stat, true);
     results.add("overseer_queue_size", stat.getNumChildren());
     stat = new Stat();
-    zkStateReader.getZkClient().getData("/overseer/queue-work", null, stat, true);
-    results.add("overseer_work_queue_size", stat.getNumChildren());
-    stat = new Stat();
     zkStateReader.getZkClient().getData("/overseer/collection-queue-work", null, stat, true);
     results.add("overseer_collection_queue_size", stat.getNumChildren());
 
     NamedList<Object> overseerStats = new NamedList<>();
     NamedList<Object> collectionStats = new NamedList<>();
     NamedList<Object> stateUpdateQueueStats = new NamedList<>();
-    NamedList<Object> workQueueStats = new NamedList<>();
     NamedList<Object> collectionQueueStats = new NamedList<>();
     Stats stats = ccc.getOverseerStats();
     for (Map.Entry<String, Stats.Stat> entry : stats.getStats().entrySet()) {
@@ -213,8 +205,6 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
         }
       } else if (key.startsWith("/overseer/queue_")) {
         stateUpdateQueueStats.add(key.substring(16), lst);
-      } else if (key.startsWith("/overseer/queue-work_")) {
-        workQueueStats.add(key.substring(21), lst);
       } else if (key.startsWith("/overseer/collection-queue-work_")) {
         collectionQueueStats.add(key.substring(32), lst);
       } else {
@@ -232,7 +222,6 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
     results.add("overseer_operations", overseerStats);
     results.add("collection_operations", collectionStats);
     results.add("overseer_queue", stateUpdateQueueStats);
-    results.add("overseer_internal_queue", workQueueStats);
     results.add("collection_queue", collectionQueueStats);
   }
 }

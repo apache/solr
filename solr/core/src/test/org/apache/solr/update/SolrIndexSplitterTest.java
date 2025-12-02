@@ -26,8 +26,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocRouter;
@@ -51,7 +51,8 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    // System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    // System.setProperty("solr.index.updatelog.enabled", "false"); // schema12 doesn't support
+    // _version_
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
     System.setProperty("solr.tests.lockType", DirectoryFactory.LOCK_TYPE_SIMPLE);
 

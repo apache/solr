@@ -1,0 +1,7 @@
+title: Update org.owasp.dependencycheck to v12
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3138
+  url: https://github.com/apache/solr/pull/3138

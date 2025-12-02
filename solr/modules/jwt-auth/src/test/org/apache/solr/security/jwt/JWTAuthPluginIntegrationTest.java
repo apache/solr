@@ -57,13 +57,12 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.RTimer;
@@ -343,6 +342,24 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return "Bearer " + jws.getCompactSerialization();
   }
 
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        JWTAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
+  }
+
   /**
    * Configure solr cluster with a security.json talking to MockOAuth2 server
    *
@@ -530,7 +547,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(
         "Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
 
     // HACK (continued)...
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

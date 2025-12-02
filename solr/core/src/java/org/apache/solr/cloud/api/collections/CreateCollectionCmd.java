@@ -37,19 +37,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
-import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.DelegatingClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
@@ -85,7 +84,6 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -96,7 +94,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CollectionCommandContext ccc;
 
-  public static final String PRS_DEFAULT_PROP = "solr.prs.default";
+  public static final String PRS_DEFAULT_PROP = "solr.cloud.prs.enabled";
 
   public CreateCollectionCmd(CollectionCommandContext ccc) {
     this.ccc = ccc;
@@ -118,8 +116,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final boolean isPRS = message.getBool(CollectionStateProps.PER_REPLICA_STATE, prsDefault);
     if (log.isInfoEnabled()) {
       log.info(
-          "solr.prs.default : {} and collection prs : {}, isPRS : {}",
-          System.getProperty("solr.prs.default", null),
+          "solr.cloud.prs.enabled : {} and collection prs : {}, isPRS : {}",
+          prsDefault,
           message.getStr(CollectionStateProps.PER_REPLICA_STATE),
           isPRS);
     }
@@ -268,7 +266,9 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 "Creating SolrCores for new collection {0}, shardNames {1} , message : {2}",
                 collectionName, shardNames, message));
       }
-      Map<String, ShardRequest> coresToCreate = new LinkedHashMap<>();
+
+      Map<String, ModifiableSolrParams> coresToCreate = new LinkedHashMap<>();
+      Map<String, String> nodeNames = new HashMap<>();
       ShardHandler shardHandler = ccc.newShardHandler();
       final DistributedClusterStateUpdater.StateChangeRecorder scr;
 
@@ -361,19 +361,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         if (async != null) {
           String coreAdminAsyncId = async + Math.abs(System.nanoTime());
           params.add(ASYNC, coreAdminAsyncId);
-          shardRequestTracker.track(nodeName, coreAdminAsyncId);
         }
         CollectionHandlingUtils.addPropertyParams(message, params);
 
-        ShardRequest sreq = new ShardRequest();
-        sreq.nodeName = nodeName;
-        params.set("qt", ccc.getAdminPath());
-        sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
-        sreq.shards = new String[] {baseUrl};
-        sreq.actualShards = sreq.shards;
-        sreq.params = params;
-
-        coresToCreate.put(coreName, sreq);
+        coresToCreate.put(coreName, params);
+        nodeNames.put(coreName, nodeName);
       }
 
       // Update the state.json for PRS collection in a single operation
@@ -413,10 +405,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 coresToCreate.keySet());
       }
 
-      for (Map.Entry<String, ShardRequest> e : coresToCreate.entrySet()) {
-        ShardRequest sreq = e.getValue();
-        sreq.params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-        shardHandler.submit(sreq, sreq.shards[0], sreq.params);
+      for (Map.Entry<String, ModifiableSolrParams> e : coresToCreate.entrySet()) {
+        ModifiableSolrParams params = e.getValue();
+        String nodeName = nodeNames.get(e.getKey());
+        params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
+        shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
       }
 
       shardRequestTracker.processResponses(
@@ -684,32 +677,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                   stateManager, collection, collectionPath, collectionProps, configSetService);
             }
 
-          } else if (System.getProperty("bootstrap_confdir") != null) {
-            String defaultConfigName =
-                System.getProperty(
-                    ZkController.COLLECTION_PARAM_PREFIX + ZkController.CONFIGNAME_PROP,
-                    collection);
-
-            // if we are bootstrapping a collection, default the config for
-            // a new collection to the collection we are bootstrapping
-            log.info("Setting config for collection: {} to {}", collection, defaultConfigName);
-
-            Properties sysProps = System.getProperties();
-            for (String sprop : System.getProperties().stringPropertyNames()) {
-              if (sprop.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
-                collectionProps.put(
-                    sprop.substring(ZkController.COLLECTION_PARAM_PREFIX.length()),
-                    sysProps.getProperty(sprop));
-              }
-            }
-
-            // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey(ZkController.CONFIGNAME_PROP))
-              collectionProps.put(ZkController.CONFIGNAME_PROP, defaultConfigName);
-
-          } else if (Boolean.getBoolean("bootstrap_conf")) {
-            // the conf name should should be the collection name of this core
-            collectionProps.put(ZkController.CONFIGNAME_PROP, collection);
           } else {
             getConfName(
                 stateManager, collection, collectionPath, collectionProps, configSetService);

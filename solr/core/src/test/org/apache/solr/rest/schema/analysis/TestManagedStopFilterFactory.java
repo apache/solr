@@ -48,7 +48,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome,
@@ -63,7 +63,7 @@ public class TestManagedStopFilterFactory extends RestTestBase {
   public void after() throws Exception {
     solrClientTestRule.reset();
     System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
 
     if (restTestHarness != null) {
       restTestHarness.close();

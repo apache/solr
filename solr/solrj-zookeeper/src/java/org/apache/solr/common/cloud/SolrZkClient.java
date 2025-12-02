@@ -47,7 +47,6 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -86,7 +85,7 @@ public class SolrZkClient implements Closeable {
   private int minStateByteLenForCompression;
 
   // The metrics collector is shared across all SolrZkClient objects
-  public MapWriter getMetrics() {
+  public SolrZKMetricsListener getMetrics() {
     return metricsListener;
   }
 

@@ -40,7 +40,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
   static final String INCLUDE_TAGS = "includeTags";
 
   private final String denseVectorFieldName;
-  private final String vectorToSearch;
+  protected String vectorToSearch;
 
   public AbstractVectorQParserBase(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -79,7 +79,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
   protected Query getFilterQuery() throws SolrException, SyntaxError {
 
     // Default behavior of FQ wrapping, and suitability of some local params
-    // depends on wether we are a sub-query or not
+    // depends on whether we are a sub-query or not
     final boolean isSubQuery = recurseCount != 0;
 
     // include/exclude tags for global fqs to wrap;

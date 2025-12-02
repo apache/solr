@@ -122,18 +122,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+  // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
+  public static void setSolrEnableUrlUrlAllowList() throws Exception {
+    systemSetPropertyEnableUrlAllowList(false);
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
-  }
-
-  private static String getHostContextSuitableForServletContext() {
-    return "/solr";
+  public static void clearSolrEnableUrlUrlAllowList() throws Exception {
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   protected BaseDistributedSearchTestCase() {
@@ -594,7 +591,12 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  protected QueryResponse queryServer(ModifiableSolrParams params)
+  /**
+   * Queries a random shard; nothing more.
+   *
+   * <p>WARNING: tests should generally not call this as it doesn't compare to the control client
+   */
+  protected QueryResponse queryRandomShard(ModifiableSolrParams params)
       throws SolrServerException, IOException {
     // query a random server
     int which = r.nextInt(clients.size());
@@ -603,24 +605,24 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     return rsp;
   }
 
-  /** Sets distributed params. Returns the QueryResponse from {@link #queryServer}, */
+  /** Sets distributed params. Returns the distributed QueryResponse */
   protected QueryResponse query(Object... q) throws Exception {
     return query(true, q);
   }
 
-  /** Sets distributed params. Returns the QueryResponse from {@link #queryServer}, */
+  /** Sets distributed params. Returns the distributed QueryResponse */
   protected QueryResponse query(SolrParams params) throws Exception {
     return query(true, params);
   }
 
-  /** Returns the QueryResponse from {@link #queryServer} */
+  /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, Object[] q) throws Exception {
 
     final ModifiableSolrParams params = createParams(q);
     return query(setDistribParams, params);
   }
 
-  /** Returns the QueryResponse from {@link #queryServer} */
+  /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
 
     final ModifiableSolrParams params = new ModifiableSolrParams(p);
@@ -637,7 +639,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     params.remove("distrib");
     if (setDistribParams) setDistributedParams(params);
 
-    QueryResponse rsp = queryServer(params);
+    QueryResponse rsp = queryRandomShard(params);
 
     compareResponses(rsp, controlRsp);
 
@@ -981,7 +983,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     if (System.getProperty("remove.version.field") != null) {
-      // we don't care if one has a version and the other doesnt -
+      // we don't care if one has a version and the other doesn't -
       // control vs distrib
       // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the
       // responses?

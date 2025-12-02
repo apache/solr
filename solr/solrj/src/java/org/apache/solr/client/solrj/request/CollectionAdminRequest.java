@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -167,6 +166,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse>
       return asyncId;
     }
 
+    @Deprecated(since = "9.10")
     public void setWaitForFinalState(boolean waitForFinalState) {
       this.waitForFinalState = waitForFinalState;
     }

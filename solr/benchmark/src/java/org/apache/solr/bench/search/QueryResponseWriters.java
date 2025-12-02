@@ -26,8 +26,8 @@ import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
@@ -86,7 +86,7 @@ public class QueryResponseWriters {
       params.set(CommonParams.WT, wt);
       params.set(CommonParams.ROWS, docs);
       q = new QueryRequest(params);
-      q.setResponseParser(new NoOpResponseParser(wt));
+      q.setResponseParser(new InputStreamResponseParser(wt));
       String base = miniClusterState.nodes.get(0);
     }
   }

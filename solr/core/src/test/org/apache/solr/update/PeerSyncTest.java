@@ -231,11 +231,11 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     assertSync(client1, numVersions, false, shardsArr[0]);
 
     // if we turn off fingerprinting, it should succeed
-    System.setProperty("solr.disableFingerprint", "true");
+    System.setProperty("solr.index.replication.fingerprint.enabled", "false");
     try {
       assertSync(client1, numVersions, true, shardsArr[0]);
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
 
     // let's add the missing document and verify that order doesn't matter

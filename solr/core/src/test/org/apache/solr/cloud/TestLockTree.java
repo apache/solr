@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICAPROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETEREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOCK_REPLICA_TASK;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
 
@@ -49,10 +50,6 @@ public class TestLockTree extends SolrTestCaseJ4 {
             .getSession()
             .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), null));
 
-    assertNull(
-        lockTree
-            .getSession()
-            .lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"), null));
     coll1Lock.unlock();
     Lock shard1Lock =
         lockTree
@@ -67,7 +64,7 @@ public class TestLockTree extends SolrTestCaseJ4 {
     assertNotNull(replica1Lock);
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
-    operations.add(new Pair<>(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2")));
+    operations.add(new Pair<>(MOCK_REPLICA_TASK, Arrays.asList("coll1", "shard1", "core_node2")));
     operations.add(new Pair<>(MODIFYCOLLECTION, Arrays.asList("coll1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll1", "shard1")));
     operations.add(new Pair<>(SPLITSHARD, Arrays.asList("coll2", "shard2")));

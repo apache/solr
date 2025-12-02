@@ -70,6 +70,7 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
@@ -92,7 +93,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   private static final int DEFAULT_NUM_SUB_SHARDS = 2;
 
   public static final String SHARDSPLIT_CHECKDISKSPACE_ENABLED =
-      "solr.shardSplit.checkDiskSpace.enabled";
+      "solr.cloud.shardsplit.checkdiskspace.enabled";
 
   private final CollectionCommandContext ccc;
 
@@ -195,8 +196,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     RTimerTree t;
     if (ccc.getCoreContainer().getNodeConfig().getMetricsConfig().isEnabled()) {
-      // check disk space for shard split
-      if (Boolean.parseBoolean(System.getProperty(SHARDSPLIT_CHECKDISKSPACE_ENABLED, "true"))) {
+      // check disk space before shard split
+      if (EnvUtils.getPropertyAsBool(SHARDSPLIT_CHECKDISKSPACE_ENABLED, true)) {
         // 1. verify that there is enough space on disk to create sub-shards
         log.debug(
             "SplitShardCmd: verify that there is enough space on disk to create sub-shards for slice: {}",
@@ -854,7 +855,10 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws Exception {
-
+    if (true) {
+      log.warn("checkDiskSpace disabled SOLR-17458 SOLR-17955");
+      return;
+    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 

@@ -46,15 +46,15 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -185,7 +185,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
       log.info("Restored from backup, took {}ms", timeTaken);
       t = System.nanoTime();
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
       log.info("Restored collection healthy, took {}ms", timeTaken);
@@ -422,7 +422,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           .setRepositoryName(BACKUP_REPO_NAME)
           .processAndWait(solrClient, 500);
 
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
       assertEquals(
           numDocs,
@@ -566,7 +566,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         .setRepositoryName(BACKUP_REPO_NAME)
         .process(solrClient);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
 
     // check num docs are the same
@@ -727,7 +727,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
 
     public void verify(List<URI> newFilesCopiedOver) throws IOException {
-      // Verify zk files are reuploaded to a appropriate each time a backup is called
+      // Verify zk files are reuploaded to an appropriate each time a backup is called
       // TODO make a little change to zk files and make sure that backed up files match with zk data
       BackupId prevBackupId = new BackupId(Math.max(0, numBackup - 1));
 

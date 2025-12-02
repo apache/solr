@@ -23,7 +23,7 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
@@ -59,9 +59,9 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     }
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         "testCollection1", cluster.getZkStateReader(), false, true, 30);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         "testCollection2", cluster.getZkStateReader(), false, true, 30);
   }
 

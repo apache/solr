@@ -36,10 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -219,7 +219,7 @@ public class CollectionHandlingUtils {
   }
 
   static void commit(
-      Http2SolrClient solrClient,
+      HttpJettySolrClient solrClient,
       NamedList<Object> results,
       String slice,
       Replica parentShardLeader) {
@@ -244,11 +244,11 @@ public class CollectionHandlingUtils {
   }
 
   private static UpdateResponse softCommit(
-      Http2SolrClient solrClient, String baseUrl, String coreName)
+      HttpJettySolrClient solrClient, String baseUrl, String coreName)
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-    return solrClient.requestWithBaseUrl(baseUrl, coreName, ureq);
+    return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 
   public static String waitForCoreNodeName(
@@ -441,8 +441,8 @@ public class CollectionHandlingUtils {
       String shard,
       Set<String> okayExceptions) {
     String rootThrowable = null;
-    if (e instanceof SolrClient.RemoteSolrException) {
-      rootThrowable = ((SolrClient.RemoteSolrException) e).getRootThrowable();
+    if (e instanceof RemoteSolrException remoteSolrException) {
+      rootThrowable = remoteSolrException.getRootThrowable();
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
@@ -588,12 +588,6 @@ public class CollectionHandlingUtils {
   }
 
   public static class ShardRequestTracker {
-    /*
-     * backward compatibility reasons, add the response with the async ID as top level.
-     * This can be removed in Solr 9
-     */
-    @Deprecated static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
-
     private final String asyncId;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
@@ -656,7 +650,8 @@ public class CollectionHandlingUtils {
       if (asyncId != null) {
         String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
         params.set(ASYNC, coreAdminAsyncId);
-        track(nodeName, coreAdminAsyncId);
+        // Track async requests
+        shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
       }
 
       ShardRequest sreq = new ShardRequest();
@@ -718,9 +713,6 @@ public class CollectionHandlingUtils {
         NamedList<Object> reqResult =
             waitForCoreAdminAsyncCallToComplete(
                 shardHandlerFactory, adminPath, zkStateReader, node, shardAsyncId);
-        if (INCLUDE_TOP_LEVEL_RESPONSE) {
-          results.add(shardAsyncId, reqResult);
-        }
         if ("failed".equalsIgnoreCase(((String) reqResult.get("STATUS")))) {
           log.error("Error from shard {}: {}", node, reqResult);
           addFailure(results, node, reqResult);
@@ -728,14 +720,6 @@ public class CollectionHandlingUtils {
           addSuccess(results, node, reqResult);
         }
       }
-    }
-
-    /**
-     * @deprecated consider to make it private after {@link CreateCollectionCmd} refactoring
-     */
-    @Deprecated
-    void track(String nodeName, String coreAdminAsyncId) {
-      shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
     }
   }
 }
