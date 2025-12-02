@@ -18,9 +18,9 @@ package org.apache.solr.llm.textvectorisation.update.processor;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.llm.TestLlmBase;
@@ -88,7 +88,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     RuntimeException thrown =
         assertThrows(
             "model not found should throw an exception",
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               addWithChain(
                   sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");

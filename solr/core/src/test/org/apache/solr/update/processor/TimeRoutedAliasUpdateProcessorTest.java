@@ -17,7 +17,7 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
+import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_START;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;

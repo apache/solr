@@ -33,7 +33,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.ListSnapshots;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -216,7 +216,7 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
       } else {
         assertEquals(RequestStatusState.COMPLETED, restore.processAndWait(solrClient, 30)); // async
       }
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
       BackupRestoreUtils.verifyDocs(nDocs, solrClient, restoreCollectionName);
     }

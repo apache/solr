@@ -35,10 +35,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -149,9 +150,9 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
 
     final String singleShardLocation = singleShard1Uri.toString();
-    final SolrClient.RemoteSolrException rse =
+    final RemoteSolrException rse =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               CollectionAdminRequest.installDataToShard(
                       collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
@@ -188,7 +189,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     { // Test synchronous request error reporting
       final var expectedException =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.installDataToShard(
                         collectionName, "shard1", nonExistentLocation, BACKUP_REPO_NAME)
@@ -261,7 +262,6 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "    <str name=\"host\">127.0.0.1</str>\n"
         + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
         + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
-        + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
         + "    <int name=\"leaderVoteWait\">10000</int>\n"
         + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
         + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"

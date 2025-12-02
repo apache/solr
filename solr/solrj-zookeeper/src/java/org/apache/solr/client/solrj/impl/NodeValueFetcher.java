@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -180,10 +181,10 @@ public class NodeValueFetcher {
 
       String baseUrl =
           ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(ctx.getNode());
-      SimpleSolrResponse rsp = ctx.http2SolrClient().requestWithBaseUrl(baseUrl, req::process);
+      NamedList<Object> response = ctx.httpSolrClient().requestWithBaseUrl(baseUrl, req, null);
 
       // TODO come up with a better solution to stream this response instead of loading in memory
-      try (InputStream prometheusStream = (InputStream) rsp.getResponse().get(STREAM_KEY)) {
+      try (InputStream prometheusStream = (InputStream) response.get(STREAM_KEY)) {
         List<String> prometheusLines = Metrics.prometheusMetricStream(prometheusStream).toList();
         for (Metrics t : requestedMetricNames) {
           Object value = t.extractFromPrometheus(prometheusLines);
