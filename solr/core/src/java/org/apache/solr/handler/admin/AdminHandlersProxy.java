@@ -204,7 +204,10 @@ public class AdminHandlersProxy {
 
     // Collect all Prometheus text responses
     StringBuilder mergedText = new StringBuilder();
-    mergedText.append("# Prometheus response from ").append(nodes.size()).append(" nodes concatenated.\n");
+    mergedText
+        .append("# Prometheus response from ")
+        .append(nodes.size())
+        .append(" nodes concatenated.\n");
     mergedText.append("# ONLY intended for consumption by the Solr Admin UI\n");
     for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
       try {
