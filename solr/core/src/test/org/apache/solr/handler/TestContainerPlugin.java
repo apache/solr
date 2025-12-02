@@ -39,8 +39,8 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
@@ -51,6 +51,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -78,7 +79,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   /**
    * A package listener that will count how many times it has been triggered. Useful to wait for
-   * changes accross multiple cores.
+   * changes across multiple cores.
    *
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
@@ -112,7 +113,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Before
   public void setup() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     phaser = new Phaser();
     forceV2 = random().nextBoolean();
 
@@ -143,7 +144,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() throws Exception {
     shutdownCluster();
-    System.clearProperty("enable.packages");
+    System.clearProperty("solr.packages.enabled");
   }
 
   @SuppressWarnings("unchecked")
@@ -212,12 +213,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    RemoteExecutionException e =
+    RemoteSolrException e =
         assertThrows(
-            RemoteExecutionException.class,
-            () -> getPlugin("/my-random-prefix/their/plugin").call());
+            RemoteSolrException.class, () -> getPlugin("/my-random-prefix/their/plugin").call());
     assertEquals(404, e.code());
-    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    final String msg = Utils.getObjectByPath(e.getRemoteErrorObject(), false, "msg").toString();
     assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
@@ -580,15 +580,17 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   }
 
   private void expectError(V2Request req, String expectErrorMsg) {
-    String errPath = "/error/details[0]/errorMessages[0]";
+    String errPath = "details[0]/errorMessages[0]";
     expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
   }
 
   private static void expectError(
       V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
-    RemoteExecutionException e =
-        expectThrows(RemoteExecutionException.class, () -> req.process(client));
-    String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
+    RemoteSolrException e = expectThrows(RemoteSolrException.class, () -> req.process(client));
+    String msg =
+        Objects.requireNonNullElse(
+                Utils.getObjectByPath(e.getRemoteErrorObject(), false, errPath), "")
+            .toString();
     assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

@@ -35,10 +35,11 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -81,7 +82,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
   @Rule
   public TestRule syspropRestore =
-      new TestRuleRestoreSystemProperties(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+      new TestRuleRestoreSystemProperties(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME);
 
   @Before
   public void before() {
@@ -89,14 +90,14 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     log.info(
         "NOTE: This Test ignores the randomized SSL & clientAuth settings selected by base class");
     HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
-    Http2SolrClient.resetSslContextFactory();
+    HttpJettySolrClient.resetSslContextFactory();
     System.clearProperty(ZkStateReader.URL_SCHEME);
   }
 
   @After
   public void after() {
     HttpClientUtil.resetHttpClientBuilder(); // also resets SocketFactoryRegistryProvider
-    Http2SolrClient.resetSslContextFactory();
+    HttpJettySolrClient.resetSslContextFactory();
     System.clearProperty(ZkStateReader.URL_SCHEME);
     SSLContext.setDefault(DEFAULT_SSL_CONTEXT);
   }
@@ -105,7 +106,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(false, false);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider()); // must be reset
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig()); // must be reset
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig()); // must be reset
     System.setProperty(ZkStateReader.URL_SCHEME, "http");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -117,7 +118,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(false, true);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "http");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -126,7 +127,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -138,7 +139,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -147,7 +148,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, true);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     checkClusterWithNodeReplacement(sslConfig);
   }
@@ -177,9 +178,10 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
       SSLContext.setDefault(
           sslConfig.isSSLMode() ? sslConfig.buildClientSSLContext() : DEFAULT_SSL_CONTEXT);
       System.setProperty(
-          HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, Boolean.toString(sslConfig.getCheckPeerName()));
+          SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME,
+          Boolean.toString(sslConfig.getCheckPeerName()));
       HttpClientUtil.resetHttpClientBuilder();
-      Http2SolrClient.resetSslContextFactory();
+      HttpJettySolrClient.resetSslContextFactory();
 
       // recheck that we can communicate with all the jetty instances in our cluster
       checkClusterJettys(cluster, sslConfig);
@@ -195,7 +197,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     final SSLTestConfig sslConfig = new SSLTestConfig(true, false, false);
     HttpClientUtil.setSocketFactoryRegistryProvider(
         sslConfig.buildClientSocketFactoryRegistryProvider());
-    Http2SolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
+    HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     System.setProperty(ZkStateReader.URL_SCHEME, "https");
     final JettyConfig config =
         JettyConfig.builder().withSSLConfig(sslConfig.buildServerSSLConfig()).build();
@@ -206,9 +208,9 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
 
       // now initialize a client that still uses the existing SSLContext/Provider, so it will accept
       // our existing certificate, but *does* care about validating the peer name
-      System.setProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME, "true");
+      System.setProperty(SolrHttpConstants.SYS_PROP_CHECK_PEER_NAME, "true");
       HttpClientUtil.resetHttpClientBuilder();
-      Http2SolrClient.resetSslContextFactory();
+      HttpJettySolrClient.resetSslContextFactory();
 
       // and validate we get failures when trying to talk to our cluster...
       final List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
@@ -430,7 +432,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // ... so we are hopefully future proofing against possible changes to
     // SolrTestCaseJ4.getHttpSolrClient that "optimize" the test client construction in a way that
     // would prevent us from finding bugs with regular HttpSolrClient instantiation.
-    // This test fails if you return a Http2SolrClient
+    // This test fails if you return a HttpJettySolrClient
     if (random().nextBoolean()) {
       return (new HttpSolrClient.Builder(url)).build();
     } // else...

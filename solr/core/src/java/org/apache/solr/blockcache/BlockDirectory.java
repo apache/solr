@@ -322,20 +322,22 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context) {
+    switch (context.context()) {
         // depending on params, we don't cache on merges or when only reading once
       case MERGE:
         {
           return cacheMerges;
         }
-      case READ:
-        {
-          if (context.readOnce) {
-            return cacheReadOnce;
-          } else {
-            return true;
+        /* TODO
+        case READ:
+          {
+            if (context.readOnce) {
+              return cacheReadOnce;
+            } else {
+              return true;
+            }
           }
-        }
+          */
       default:
         {
           return true;
@@ -347,13 +349,13 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
   boolean useWriteCache(String name, IOContext context) {
     if (!blockCacheWriteEnabled || name.startsWith(IndexFileNames.PENDING_SEGMENTS)) {
       // for safety, don't bother caching pending commits.
-      // the cache does support renaming (renameCacheFile), but thats a scary optimization.
+      // the cache does support renaming (renameCacheFile), but that's a scary optimization.
       return false;
     }
     if (blockCacheFileTypes != null && !isCachableFile(name)) {
       return false;
     }
-    switch (context.context) {
+    switch (context.context()) {
       case MERGE:
         {
           // we currently don't cache any merge context writes

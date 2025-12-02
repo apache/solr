@@ -16,13 +16,18 @@
  */
 package org.apache.solr.search;
 
+import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.ThreadCpuTimer;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,7 +38,7 @@ public class TestQueryLimits extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty(ThreadCpuTimer.ENABLE_CPU_TIME, "true");
-    configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
+    configureCluster(4).addConfig("conf", configset("exitable-directory")).configure();
     SolrClient solrClient = cluster.getSolrClient();
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, "conf", 3, 2);
@@ -53,6 +58,11 @@ public class TestQueryLimits extends SolrCloudTestCase {
     solrClient.commit(COLLECTION);
   }
 
+  @After
+  public void teardown() {
+    TestInjection.queryTimeout = null;
+  }
+
   // TODO: add more tests and better assertions once SOLR-17151 / SOLR-17158 is done
   @Test
   public void testQueryLimits() throws Exception {
@@ -66,10 +76,11 @@ public class TestQueryLimits extends SolrCloudTestCase {
           "SearchHandler.handleRequestBody",
           "QueryComponent",
           "QueryComponent.process",
-          "FacetComponent.process"
+          "TimeLimitingBulkScorer.score",
+          "FacetComponent.process:2"
         };
     for (String matchingExpr : matchingExprTests) {
-      CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(matchingExpr);
+      CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(Set.of(matchingExpr));
       TestInjection.queryTimeout = limit;
       rsp =
           solrClient.query(
@@ -88,13 +99,64 @@ public class TestQueryLimits extends SolrCloudTestCase {
       assertNotNull(
           "should have partial results for expr " + matchingExpr,
           rsp.getHeader().get("partialResults"));
-      if (matchingExpr.contains(".")) {
-        assertEquals(matchingExpr, limit.trippedBy);
-      } else {
-        assertTrue(
-            "expected result to start with " + matchingExpr + " but was " + limit.trippedBy,
-            limit.trippedBy.startsWith(matchingExpr));
-      }
+      assertFalse("should have trippedBy info", limit.getCallerMatcher().getTrippedBy().isEmpty());
+      assertTrue(
+          "expected result to start with "
+              + matchingExpr
+              + " but was "
+              + limit.getCallerMatcher().getTrippedBy(),
+          limit.getCallerMatcher().getTrippedBy().iterator().next().startsWith(matchingExpr));
+      Map<String, Integer> callCounts = limit.getCallerMatcher().getCallCounts();
+      assertTrue("call count should be > 0", callCounts.get(matchingExpr) > 0);
     }
+  }
+
+  @Test
+  public void testAdjustShardRequestLimits() throws Exception {
+    SolrClient solrClient = cluster.getSolrClient();
+    String timeAllowed = "500"; // ms
+    ModifiableSolrParams params =
+        params(
+            "q",
+            "id:*",
+            "cache",
+            "false",
+            "group",
+            "true",
+            "group.field",
+            "val_i",
+            "timeAllowed",
+            timeAllowed,
+            "sleep",
+            "100");
+    QueryResponse rsp = solrClient.query(COLLECTION, params);
+    assertNull("should have full results: " + rsp.jsonStr(), rsp.getHeader().get("partialResults"));
+
+    // reduce timeAllowed to force partial results
+    params.set("timeAllowed", "100");
+    // pretend this is a request with some time already used
+    params.set(TimeAllowedLimit.USED_PARAM, "60");
+    // set a high skew to trigger skipping shard requests
+    params.set(TimeAllowedLimit.INFLIGHT_PARAM, "50");
+    QueryResponse rsp1 = solrClient.query(COLLECTION, params);
+    assertNotNull(
+        "should have partial results: " + rsp1.jsonStr(), rsp1.getHeader().get("partialResults"));
+    assertEquals(
+        "partialResults should be true", "true", rsp1.getHeader().get("partialResults").toString());
+    assertTrue(
+        "partialResultsDetails should contain 'skipped':" + rsp1.jsonStr(),
+        rsp1.getHeader().get("partialResultsDetails").toString().contains("skipped"));
+
+    params.set(CommonParams.PARTIAL_RESULTS, false);
+    QueryResponse rsp2 = solrClient.query(COLLECTION, params);
+    assertNotNull(
+        "should have partial results: " + rsp2.jsonStr(), rsp2.getHeader().get("partialResults"));
+    assertEquals(
+        "partialResults should be omitted: " + rsp2.jsonStr(),
+        "omitted",
+        rsp2.getHeader().get("partialResults").toString());
+    assertTrue(
+        "partialResultsDetails should contain 'skipped': " + rsp2.jsonStr(),
+        rsp2.getHeader().get("partialResultsDetails").toString().contains("skipped"));
   }
 }

@@ -60,7 +60,8 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
     index();
   }
@@ -377,6 +378,12 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
             "q.op", "AND",
             "q", "the big"),
         oner);
+
+    // test for ignoring stopwords when all query terms are stopwords
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the"), oner);
+
+    // test for not ignoring stopwords when all query terms are stopwords and alwaysStopwords is set
+    assertQ(req("defType", "edismax", "qf", "text_sw", "q", "the", "alwaysStopwords", "true"), nor);
 
     // searching for a literal colon value when clearly not used for a field
     assertQ(
@@ -3172,7 +3179,7 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
   private boolean containsClause(
       BooleanQuery query, String field, String value, int boost, boolean fuzzy) {
     for (BooleanClause clause : query) {
-      if (containsClause(clause.getQuery(), field, value, boost, fuzzy)) {
+      if (containsClause(clause.query(), field, value, boost, fuzzy)) {
         return true;
       }
     }
@@ -3285,13 +3292,13 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
           for (BooleanClause clause : ((BooleanQuery) q).clauses()) {
-            Query subQ = clause.getQuery();
+            Query subQ = clause.query();
             if (subQ instanceof TermQuery) {
               Term subTerm = ((TermQuery) subQ).getTerm();
               if (frequentlyMisspelledWords.contains(subTerm.text())) {
                 rewrittenSubQ = true;
                 Query fuzzySubQ = newFuzzyQuery(subTerm, MIN_SIMILARITY, getFuzzyPrefixLength());
-                clause = newBooleanClause(fuzzySubQ, clause.getOccur());
+                clause = newBooleanClause(fuzzySubQ, clause.occur());
               }
             }
             builder.add(clause);

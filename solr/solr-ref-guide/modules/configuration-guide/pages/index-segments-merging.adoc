@@ -96,7 +96,7 @@ Defines how merging segments is done.
 
 The default in Solr is to use `TieredMergePolicy`, which merges segments of approximately equal size, subject to an allowed number of segments per tier.
 
-Other policies available are the `LogByteSizeMergePolicy` and `LogDocMergePolicy`.
+Other policies available are the `LogByteSizeMergePolicy`, `LogDocMergePolicy` and `MergeOnFlushMergePolicy`.
 For more information on these policies, please see {lucene-javadocs}/core/org/apache/lucene/index/MergePolicy.html[the MergePolicy javadocs].
 
 [source,xml]
@@ -134,6 +134,9 @@ Having fewer segments in the index generally accelerates searches, because there
 It also can also result in fewer physical files on disk.
 But to keep the number of segments low, merges will occur more often, which can add load to the system and slow down updates to the index.
 
+`MergeOnFlushMergePolicy` allows users to ensure that all segments are larger than a specified `smallSegmentThresholdMB` option (default `100`).
+When using this merge policy, all segments smaller than the given threshold will be merged during a commit.
+
 Conversely, keeping more segments can accelerate indexing, because merges happen less often, making an update is less likely to trigger a merge.
 But searches become more computationally expensive and will likely be slower, because search terms must be looked up in more index segments.
 Faster index updates also means shorter commit turnaround times, which means more timely search results.
@@ -141,7 +144,7 @@ Faster index updates also means shorter commit turnaround times, which means mor
 === Controlling Deleted Document Percentages
 
 When a document is deleted or updated, the document is marked as deleted but it not removed from the index until the segment is merged.
-There are two parameters that can can be adjusted when using the default `TieredMergePolicy` that influence the number of deleted documents in an index.
+There are two parameters that can be adjusted when using the default `TieredMergePolicy` that influence the number of deleted documents in an index.
 
 `forceMergeDeletesPctAllowed`::
 +
@@ -221,7 +224,7 @@ This must be less than `maxMergeCount`.
 |===
 +
 A Boolean value (`true` or `false`) to explicitly control I/O throttling.
-By default throttling is enabled and the CMS will limit I/O throughput when merging to leave other (search, indexing) some room.
+By default throttling is disabled and the CMS will not limit I/O throughput when merging to leave other (search, indexing) some room.
 
 .Example: Dynamic defaults
 [source,xml]
@@ -285,7 +288,7 @@ The LockFactory options specify the locking implementation to use.
 
 The set of valid lock type options depends on the xref:index-location-format.adoc[DirectoryFactory] you have configured.
 
-The values listed below are are supported by `StandardDirectoryFactory` (the default):
+The values listed below are supported by `StandardDirectoryFactory` (the default):
 
 * `native` (default) uses `NativeFSLockFactory` to specify native OS file locking.
 If a second Solr process attempts to access the directory, it will fail.

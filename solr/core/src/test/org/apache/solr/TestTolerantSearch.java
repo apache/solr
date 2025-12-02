@@ -23,9 +23,9 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -58,7 +58,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
     createAndStartJetty(solrHome);
     String url = getBaseUrl();
@@ -109,7 +109,7 @@ public class TestTolerantSearch extends SolrJettyTestBase {
       collection2 = null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @SuppressWarnings("unchecked")

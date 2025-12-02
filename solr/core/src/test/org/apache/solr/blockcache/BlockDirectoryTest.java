@@ -150,7 +150,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   }
 
   private void testEof(String name, Directory directory, long length) throws IOException {
-    IndexInput input = directory.openInput(name, new IOContext());
+    IndexInput input = directory.openInput(name, IOContext.DEFAULT);
     try {
       input.seek(length);
       try {
@@ -191,8 +191,8 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private void assertInputsEquals(String name, Directory fsDir, Directory hdfs) throws IOException {
     int reads = random.nextInt(MAX_NUMBER_OF_READS);
-    IndexInput fsInput = fsDir.openInput(name, new IOContext());
-    IndexInput hdfsInput = hdfs.openInput(name, new IOContext());
+    IndexInput fsInput = fsDir.openInput(name, IOContext.DEFAULT);
+    IndexInput hdfsInput = hdfs.openInput(name, IOContext.DEFAULT);
     assertEquals(fsInput.length(), hdfsInput.length());
     int fileLength = (int) fsInput.length();
     for (int i = 0; i < reads; i++) {
@@ -257,7 +257,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
     try {
       IOUtils.rm(file);
     } catch (Throwable ignored) {
-      // TODO: should this class care if a file couldnt be deleted?
+      // TODO: should this class care if a file couldn't be deleted?
       // this just emulates previous behavior, where only SecurityException would be handled.
     }
   }
@@ -265,7 +265,7 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   /** Verify the configuration options for the block cache are handled appropriately. */
   @Test
   public void ensureCacheConfigurable() throws Exception {
-    IOContext mergeContext = new IOContext(new MergeInfo(1, 1, false, 1));
+    IOContext mergeContext = IOContext.merge(new MergeInfo(1, 1, false, 1));
 
     BlockDirectory d = directory;
     assertTrue(d.useReadCache("", IOContext.DEFAULT));

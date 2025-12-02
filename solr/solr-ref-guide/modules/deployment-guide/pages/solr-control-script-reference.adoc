@@ -557,13 +557,10 @@ Base Solr URL, which can be used in SolrCloud mode to determine the ZooKeeper co
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: `localhost:9983`
+|Optional |Default: `localhost:9983` if env var `ZK_HOST` is not set.
 |===
 +
 ZooKeeper connection string.
-If you are running Solr on a port other than 8983, you will have to specify the ZooKeeper connection string.
-By default, this will be the Solr port + 1000.
-This parameter is unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `bin/solr healthcheck -z localhost:2181`
 
@@ -1144,6 +1141,17 @@ Usage: solr zk upconfig|downconfig -d <confdir> -n <configName> [-z zkHost] [-s 
 NOTE: Solr should have been started at least once before issuing these commands to initialize ZooKeeper with the znodes Solr expects.
 Once ZooKeeper is initialized, Solr doesn't need to be running on any node to use these commands.
 
+=== ZooKeeper Connection String
+
+All `bin/solr zk` sub-commands require a ZooKeeper connection string to function. You can provide this in three ways, in order of precedence:
+
+1. Explicitly pass the `-z` or `--zk-host` option: `bin/solr zk <command> -z <zkHost>`
+2. Set the `ZK_HOST` environment variable: `export ZK_HOST=<zkHost>`
+3. Define `ZK_HOST` in `solr.in.sh` (or `solr.in.cmd` on Windows)
+4. If none are provided, the tools will default to `localhost:2181`
+
+This means if you have `ZK_HOST` configured in your environment, you do not need to pass the `-z` option to every command.
+
 === Upload a Configuration Set
 
 Use the `zk upconfig` command to upload one of the pre-configured configuration sets or a customized configuration set to ZooKeeper.
@@ -1191,11 +1199,10 @@ An absolute path may be supplied instead.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Is not required if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1263,11 +1270,10 @@ In either case, _pre-existing configurations at the destination will be overwrit
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1347,11 +1353,10 @@ If `<dest>` ends in a slash character it names a directory.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1430,11 +1435,10 @@ The path is assumed to be a ZooKeeper node, no `zk:` prefix is necessary.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1488,11 +1492,10 @@ The `zk:` prefix is assumed.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Unnecessary if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1543,11 +1546,10 @@ The path on ZooKeeper to list.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1592,11 +1594,10 @@ A leading slash is assumed if not present.
 +
 [%autowidth,frame=none]
 |===
-s|Required |Default: none
+|Optional |Default: `localhost:2181` if `ZK_HOST` env var not set
 |===
 +
 The ZooKeeper connection string.
-Optional if `ZK_HOST` is defined in `solr.in.sh` or `solr.in.cmd`.
 +
 *Example*: `-z 123.321.23.43:2181`
 
@@ -1619,12 +1620,12 @@ Examples of this command:
 
 === Exporting Documents to a File
 
-The `export` command will allow you to export documents from a collection in JSON, JSON with Lines, or Javabin format.
-All documents can be exported, or only those that match a query.
+The `export` command will allow you to export documents from a collection in JSON, https://jsonlines.org/[JSON Lines], or Javabin format.
+All documents can be exported, or only those that match a query.  You may need to wrap some parameters with quotes.
 
 NOTE: This hasn't been tested with nested child documents and your results will vary.
 
-NOTE: The `export` command only works with in a Solr running in cloud mode.
+NOTE: The `export` command only works with Solr running in cloud mode.
 
 `bin/solr export [options]`
 
@@ -1661,9 +1662,11 @@ Name of the collection to run an export against.
 |Optional |Default: `json`
 |===
 +
-The file format of the export, `json`, `jsonl`, or `javabin`.
-Choosing `javabin` exports in the native Solr format, and is compact and fast to import.
-`jsonl` is the Json with Lines format, learn more at https://jsonlines.org/.
+The file format of the export, `json` (default) or `jsonl` or `javabin`, this also specifies the file extension to be used.
+`json` and `jsonl` both export documents in the same format as using `wt=json`.  The `json` output file is suitable for
+immediately posting back to solr via the `/update/json` endpoint.  `jsonl` outputs each Solr document on its own line,
+and is useful for parallel processing tasks. Learn more at https://jsonlines.org/.
+Choosing `javabin` exports in the native binary Solr format and is compact and faster to import.
 
 `--output <path>`::
 +
@@ -1673,6 +1676,7 @@ Choosing `javabin` exports in the native Solr format, and is compact and fast to
 |===
 +
 Either the path to the directory for the exported data to be written to, or a specific file to be written out.
+If the file name ends with `.gz` the output will be compressed into a .gz file.
 +
 If only a directory is specified then the file will be created with the name of the collection, as in `<collection>.json`.
 
@@ -1692,7 +1696,7 @@ If you specify `--compress` then the resulting outputting file with will be gzip
 |Optional |Default: `\*:*`
 |===
 +
-A custom query.
+A custom query to select documents for exporting.
 The default is `\*:*` which will export all documents.
 
 `--fields <fields>`::
@@ -1727,7 +1731,7 @@ This parameter is unnecessary if `SOLR_AUTH_TYPE` is defined in `solr.in.sh` or 
 
 *Examples*
 
-Export all documents from a collection `gettingstarted`:
+Export all documents from a collection `gettingstarted` into a file called `gettingstarted.json`:
 
 [source,bash]
 bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1
@@ -1741,7 +1745,12 @@ bin/solr export --solr-url http://localhost:8983 -c gettingstarted --limit -1 --
 
 === Importing Documents into a Collection
 
-Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc[/update request handler] to import them to a new Solr collection.
+Once you have exported documents in a file, you can use the xref:indexing-guide:indexing-with-update-handlers.adoc#json-formatted-index-updates[/update request handler] to import them to a new Solr collection.
+Notice the different endpoints used depending on the format.
+
+*Example: import `json` files*
+
+`curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json http://localhost:8983/solr/gettingstarted/update/json?commit=true`
 
 *Example: import `json` files*
 
@@ -1763,7 +1772,7 @@ Now import the data with either of these methods:
 
 [,console]
 ----
-$ curl -X POST -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
+$ curl -X POST --header "Content-Type: application/json" -d @gettingstarted.json 'http://localhost:8983/solr/test_collection/update/json/docs?commit=true'
 ----
 or
 [,console]

@@ -1,0 +1,63 @@
+name: Auto-generate Changelog for Renovate PRs
+
+# Automatically generate changelog entries when Renovate opens or updates a PR
+on:
+  pull_request_target:
+    types:
+      - opened
+      - synchronize
+    branches:
+      - main
+      - 'branch_*'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  add-changelog:
+    # Only run for Renovate bot PRs
+    if: github.event.pull_request.user.login == 'solrbot'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          token: ${{ secrets.SOLRBOT_GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --quiet pyyaml
+
+      - name: Generate changelog entry
+        run: |
+          python3 .github/scripts/generate-renovate-changelog.py \
+            --pr-number "${{ github.event.pull_request.number }}" \
+            --pr-title "${{ github.event.pull_request.title }}"
+
+      - name: Commit and push changelog
+        run: |
+          # Check if there are any new (untracked) or modified files in changelog/unreleased/
+          if [ -z "$(git status --porcelain changelog/unreleased/)" ]; then
+            echo "No changelog changes to commit"
+            exit 0
+          fi
+
+          # Configure git with a separate author identity for the workflow
+          git config user.name "SolrBot"
+          git config user.email "<solrbot@cominvent.com>"
+
+          # Add and commit the changelog entry
+          git add changelog/unreleased/
+          git commit -m "Add changelog entry"
+
+          # Push back to the PR branch
+          git push

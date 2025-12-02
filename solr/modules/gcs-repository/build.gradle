@@ -49,5 +49,8 @@ dependencies {
     testImplementation libs.carrotsearch.randomizedtesting.runner
     testImplementation libs.junit.junit
 
-    testImplementation libs.google.cloud.nio
+    testImplementation(libs.google.cloud.nio) {
+      exclude group: 'javax.inject'
+    }
 }
+

@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -80,7 +80,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
     System.setProperty("managed.schema.mutable", "false");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     initCore("solrconfig-managed-schema.xml", "schema-minimal.xml", tmpSolrHome);
   }
 
@@ -88,7 +88,7 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   public void afterClass() {
     deleteCore();
     System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public void testUpgrade() throws Exception {

@@ -56,17 +56,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -219,10 +218,18 @@ public class ExportTool extends ToolBase {
       } else if (Files.isDirectory(Path.of(this.out))) {
         this.out = this.out + "/" + coll;
       }
-      this.out = this.out + '.' + this.format;
-      if (compress) {
+      if (!hasExtension(this.out)) {
+        this.out = this.out + '.' + this.format;
+      }
+      if (compress & !this.out.endsWith(".gz")) {
         this.out = this.out + ".gz";
       }
+    }
+
+    public static boolean hasExtension(String filename) {
+      return filename.contains(".json")
+          || filename.contains(".jsonl")
+          || filename.contains(".javabin");
     }
 
     DocsSink getSink() {
@@ -244,20 +251,21 @@ public class ExportTool extends ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      Http2SolrClient.Builder builder =
-          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+      var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
-              .withInternalClientBuilder(builder)
+          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
+              .withHttpClientBuilder(builder)
               .build();
       NamedList<Object> response =
           solrClient.request(
               new GenericSolrRequest(
                       SolrRequest.METHOD.GET,
                       "/schema/uniquekey",
-                      SolrParams.of("collection", coll))
-                  .setRequiresCollection(true));
+                      SolrRequest.SolrRequestType.ADMIN,
+                      SolrParams.of())
+                  .setRequiresCollection(true),
+              coll);
       uniqueKey = (String) response.get("uniqueKey");
     }
 
@@ -311,6 +319,51 @@ public class ExportTool extends ToolBase {
     Info info;
     OutputStream fos;
 
+    /** Process a SolrDocument into a Map, handling special fields and date conversion. */
+    protected Map<String, Object> processDocument(SolrDocument doc) {
+      Map<String, Object> m = CollectionUtil.newLinkedHashMap(doc.size());
+      doc.forEach(
+          (s, field) -> {
+            if (s.equals("_version_") || s.equals("_roor_")) return;
+            if (field instanceof List) {
+              if (((List<?>) field).size() == 1) {
+                field = ((List<?>) field).get(0);
+              }
+            }
+            field = constructDateStr(field);
+            if (field instanceof List<?> list) {
+              if (hasDate(list)) {
+                ArrayList<Object> listCopy = new ArrayList<>(list.size());
+                for (Object o : list) listCopy.add(constructDateStr(o));
+                field = listCopy;
+              }
+            }
+            m.put(s, field);
+          });
+      return m;
+    }
+
+    /** Check if a list contains any Date objects */
+    protected boolean hasDate(List<?> list) {
+      boolean hasDate = false;
+      for (Object o : list) {
+        if (o instanceof Date) {
+          hasDate = true;
+          break;
+        }
+      }
+      return hasDate;
+    }
+
+    /** Convert Date objects to ISO formatted strings */
+    protected Object constructDateStr(Object field) {
+      if (field instanceof Date) {
+        field =
+            DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
+      }
+      return field;
+    }
+
     abstract void start() throws IOException;
 
     @SuppressForbidden(reason = "Command line tool prints out to console")
@@ -356,48 +409,11 @@ public class ExportTool extends ToolBase {
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
-      Map<String, Object> m = CollectionUtil.newLinkedHashMap(doc.size());
-      doc.forEach(
-          (s, field) -> {
-            if (s.equals("_version_") || s.equals("_roor_")) return;
-            if (field instanceof List) {
-              if (((List<?>) field).size() == 1) {
-                field = ((List<?>) field).get(0);
-              }
-            }
-            field = constructDateStr(field);
-            if (field instanceof List<?> list) {
-              if (hasdate(list)) {
-                ArrayList<Object> listCopy = new ArrayList<>(list.size());
-                for (Object o : list) listCopy.add(constructDateStr(o));
-                field = listCopy;
-              }
-            }
-            m.put(s, field);
-          });
+      Map<String, Object> m = processDocument(doc);
       jsonWriter.write(m);
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
       super.accept(doc);
-    }
-
-    private boolean hasdate(List<?> list) {
-      boolean hasDate = false;
-      for (Object o : list) {
-        if (o instanceof Date) {
-          hasDate = true;
-          break;
-        }
-      }
-      return hasDate;
-    }
-
-    private Object constructDateStr(Object field) {
-      if (field instanceof Date) {
-        field =
-            DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
-      }
-      return field;
     }
   }
 
@@ -435,25 +451,7 @@ public class ExportTool extends ToolBase {
     @Override
     public synchronized void accept(SolrDocument doc) throws IOException {
       charArr.reset();
-      Map<String, Object> m = CollectionUtil.newLinkedHashMap(doc.size());
-      doc.forEach(
-          (s, field) -> {
-            if (s.equals("_version_") || s.equals("_roor_")) return;
-            if (field instanceof List) {
-              if (((List<?>) field).size() == 1) {
-                field = ((List<?>) field).get(0);
-              }
-            }
-            field = constructDateStr(field);
-            if (field instanceof List<?> list) {
-              if (hasdate(list)) {
-                ArrayList<Object> listCopy = new ArrayList<>(list.size());
-                for (Object o : list) listCopy.add(constructDateStr(o));
-                field = listCopy;
-              }
-            }
-            m.put(s, field);
-          });
+      Map<String, Object> m = processDocument(doc);
       if (firstDoc) {
         firstDoc = false;
       } else {
@@ -463,25 +461,6 @@ public class ExportTool extends ToolBase {
       writer.write(charArr.getArray(), charArr.getStart(), charArr.getEnd());
       writer.append('\n');
       super.accept(doc);
-    }
-
-    private boolean hasdate(List<?> list) {
-      boolean hasDate = false;
-      for (Object o : list) {
-        if (o instanceof Date) {
-          hasDate = true;
-          break;
-        }
-      }
-      return hasDate;
-    }
-
-    private Object constructDateStr(Object field) {
-      if (field instanceof Date) {
-        field =
-            DateTimeFormatter.ISO_INSTANT.format(Instant.ofEpochMilli(((Date) field).getTime()));
-      }
-      return field;
     }
   }
 

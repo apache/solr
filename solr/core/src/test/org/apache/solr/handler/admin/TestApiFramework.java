@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
@@ -56,7 +55,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.JsonSchemaValidator;
-import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -282,26 +280,6 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
     api.call(req, rsp);
     return rsp;
-  }
-
-  public void testTrailingTemplatePaths() {
-    PathTrie<Api> registry = new PathTrie<>();
-    Api api =
-        new Api(EMPTY_SPEC) {
-          @Override
-          public void call(SolrQueryRequest req, SolrQueryResponse rsp) {}
-        };
-    Api intropsect = new ApiBag.IntrospectApi(api, false);
-    ApiBag.registerIntrospect(
-        Collections.emptyMap(), registry, "/c/.system/blob/{name}", intropsect);
-    ApiBag.registerIntrospect(
-        Collections.emptyMap(), registry, "/c/.system/{x}/{name}", intropsect);
-    assertEquals(
-        intropsect, registry.lookup("/c/.system/blob/random_string/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/blob/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/v1/_introspect", new HashMap<>()));
-    assertEquals(intropsect, registry.lookup("/c/.system/v1/v2/_introspect", new HashMap<>()));
   }
 
   private SolrQueryResponse invoke(

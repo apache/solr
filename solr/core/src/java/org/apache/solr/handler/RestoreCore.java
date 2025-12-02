@@ -196,8 +196,7 @@ public class RestoreCore implements Callable<Boolean> {
   }
 
   private void openNewSearcher() throws Exception {
-    @SuppressWarnings("unchecked")
-    Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+    Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
     core.getSearcher(true, false, waitSearcher, true);
     if (waitSearcher[0] != null) {
       waitSearcher[0].get();

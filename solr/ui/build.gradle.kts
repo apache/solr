@@ -42,7 +42,7 @@ kotlin {
     // Add targets to support
     @OptIn(ExperimentalWasmDsl::class)
     wasmJs {
-        moduleName = "composeApp"
+        outputModuleName = provider { "composeApp" }
         browser {
             commonWebpackConfig {
                 outputFileName = "composeApp.js"
@@ -91,6 +91,7 @@ kotlin {
                 implementation(libs.mvikotlin.main)
                 implementation(libs.mvikotlin.logging)
 
+                implementation(libs.ktor.client.auth)
                 implementation(libs.ktor.client.core)
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.contentNegotiation)
@@ -174,4 +175,22 @@ tasks.matching { task ->
     // Note that "gradlew check -x test --dry-run" does not correctly resolve this exclusion rule,
     // and you will see the test tasks being listed there as well, but they will be skipped as
     // expected
+}
+
+// Explicitly enable or disable development tasks based on the build variant
+// This prevents any invalid task dependencies on assemble task execution
+tasks.matching {
+    val taskName = it.name.lowercase()
+    taskName.contains("wasmjs") && taskName.contains("development")
+}.configureEach {
+    onlyIf { rootProject.ext["development"] as Boolean }
+}
+
+// Explicitly enable or disable production tasks based on the build variant
+// This prevents any invalid task dependencies on assemble task execution
+tasks.matching {
+    val taskName = it.name.lowercase()
+    taskName.contains("wasmjs") && taskName.contains("production")
+}.configureEach {
+    onlyIf { !(rootProject.ext["development"] as Boolean) }
 }

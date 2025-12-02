@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -581,8 +582,7 @@ public class ZkMaintenanceUtils {
     return ret;
   }
 
-  public static final String FORBIDDEN_FILE_TYPES_PROP = "solrConfigSetForbiddenFileTypes";
-  public static final String FORBIDDEN_FILE_TYPES_ENV = "SOLR_CONFIG_SET_FORBIDDEN_FILE_TYPES";
+  public static final String FORBIDDEN_FILE_TYPES_PROP = "solr.configset.forbidden.file.types";
   public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
       Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
   private static volatile Set<String> USE_FORBIDDEN_FILE_TYPES = null;
@@ -592,9 +592,7 @@ public class ZkMaintenanceUtils {
     if (USE_FORBIDDEN_FILE_TYPES == null) {
       synchronized (DEFAULT_FORBIDDEN_FILE_TYPES) {
         if (USE_FORBIDDEN_FILE_TYPES == null) {
-          String userForbiddenFileTypes =
-              System.getProperty(
-                  FORBIDDEN_FILE_TYPES_PROP, System.getenv(FORBIDDEN_FILE_TYPES_ENV));
+          String userForbiddenFileTypes = EnvUtils.getProperty(FORBIDDEN_FILE_TYPES_PROP);
           if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
             USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
           } else {

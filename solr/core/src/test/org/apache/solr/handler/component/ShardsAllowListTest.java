@@ -27,8 +27,9 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.MultiSolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -270,7 +271,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       numDocs(query, shards, cluster);
       fail("Expecting failure for shards parameter: '" + shards + "'");
     } catch (SolrServerException e) {
-      assertThat(e.getCause(), instanceOf(SolrException.class));
+      assertThat(e.getCause(), instanceOf(RemoteSolrException.class));
       assertThat(((SolrException) e.getCause()).code(), is(SolrException.ErrorCode.FORBIDDEN.code));
       assertThat(e.getCause().getMessage(), containsString(expectedExceptionMessage));
     } finally {

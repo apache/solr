@@ -66,11 +66,12 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -417,7 +418,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
-        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
         try {
           long statusCode =
               uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
@@ -428,7 +429,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               enabled ? 0l : 400l,
               statusCode);
         } finally {
-          System.clearProperty("configset.upload.enabled");
+          System.clearProperty("solr.configset.upload.enabled");
         }
       }
       unIgnoreException("Configset upload feature is disabled");
@@ -1078,7 +1079,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("uploaded without any authentication in place");
     Throwable thrown =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection2",
@@ -1670,12 +1671,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * the real directory which matches what {@link ZkController} finds and uses to bootstrap ZK in
    * cloud based tests.
    *
-   * <p>This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property
-   * has not been externally set in the environment where this test is being run -- which should
-   * <b>never</b> be the case, since it would prevent the test-framework from using {@link
+   * <p>This assumes the {@link SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE} system
+   * property has not been externally set in the environment where this test is being run -- which
+   * should <b>never</b> be the case, since it would prevent the test-framework from using {@link
    * ExternalPaths#DEFAULT_CONFIGSET}
    *
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */

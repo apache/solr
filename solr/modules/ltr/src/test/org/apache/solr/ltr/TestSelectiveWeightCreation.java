@@ -38,7 +38,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;
@@ -137,7 +137,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
     final IndexSearcher searcher = getSearcher(r);
     // first run the standard query
     final TopDocs hits = searcher.search(bqBuilder.build(), 10);
-    assertEquals(2, hits.totalHits.value);
+    assertEquals(2, hits.totalHits.value());
     assertEquals("10", searcher.storedFields().document(hits.scoreDocs[0].doc).get("id"));
     assertEquals("11", searcher.storedFields().document(hits.scoreDocs[1].doc).get("id"));
 
@@ -167,7 +167,7 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             searcher,
             hits.scoreDocs[0].doc,
             new LTRScoringQuery(ltrScoringModel1)); // features not requested in response
-    LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getFeaturesInfo();
+    LTRScoringQuery.FeatureInfo[] featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
     int nonDefaultFeatures = 0;
@@ -189,13 +189,12 @@ public class TestSelectiveWeightCreation extends TestRerankBase {
             TestLinearModel.makeFeatureWeights(features));
     LTRScoringQuery ltrQuery2 = new LTRScoringQuery(ltrScoringModel2);
     // features requested in response
-    ltrQuery2.setFeatureLogger(
-        new CSVFeatureLogger("test", FeatureLogger.FeatureFormat.DENSE, true));
+    ltrQuery2.setFeatureLogger(new CSVFeatureLogger(FeatureLogger.FeatureFormat.DENSE, true));
     modelWeight = performQuery(hits, searcher, hits.scoreDocs[0].doc, ltrQuery2);
-    featuresInfo = modelWeight.getFeaturesInfo();
+    featuresInfo = modelWeight.getAllFeaturesInStore();
 
     assertEquals(features.size(), modelWeight.getModelFeatureValuesNormalized().length);
-    assertEquals(allFeatures.size(), modelWeight.getExtractedFeatureWeights().length);
+    assertEquals(allFeatures.size(), ltrQuery2.getExtractedFeatureWeights().length);
 
     nonDefaultFeatures = 0;
     for (int i = 0; i < featuresInfo.length; ++i) {

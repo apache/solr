@@ -29,17 +29,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection.CollectionStateProps;
-import org.apache.solr.common.cloud.Replica.ReplicaStateProps;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.Utils;
 import org.noggit.JSONParser;
@@ -165,63 +162,9 @@ public class ClusterState implements MapWriter {
     return immutableCollectionStates.keySet();
   }
 
-  /**
-   * Get a map of collection name vs DocCollection objects
-   *
-   * <p>Implementation note: This method resolves the collection reference by calling {@link
-   * CollectionRef#get()} which can make a call to ZooKeeper. This is necessary because the
-   * semantics of how collection list is loaded have changed in SOLR-6629.
-   *
-   * @return a map of collection name vs DocCollection object
-   * @deprecated see {@link #collectionStream()}
-   */
-  @Deprecated
-  public Map<String, DocCollection> getCollectionsMap() {
-    Map<String, DocCollection> result = CollectionUtil.newHashMap(collectionStates.size());
-    for (Entry<String, CollectionRef> entry : collectionStates.entrySet()) {
-      DocCollection collection = entry.getValue().get();
-      if (collection != null) {
-        result.put(entry.getKey(), collection);
-      }
-    }
-    return result;
-  }
-
   /** Get names of the currently live nodes. */
   public Set<String> getLiveNodes() {
     return liveNodes;
-  }
-
-  @Deprecated
-  public String getShardId(String nodeName, String coreName) {
-    return getShardId(null, nodeName, coreName);
-  }
-
-  @Deprecated
-  public String getShardId(String collectionName, String nodeName, String coreName) {
-    if (coreName == null || nodeName == null) {
-      return null;
-    }
-    Collection<CollectionRef> states = Collections.emptyList();
-    if (collectionName != null) {
-      CollectionRef c = collectionStates.get(collectionName);
-      if (c != null) states = Collections.singletonList(c);
-    } else {
-      states = collectionStates.values();
-    }
-
-    for (CollectionRef ref : states) {
-      DocCollection coll = ref.get();
-      if (coll == null) continue; // this collection got removed in between, skip
-      // TODO: for really large clusters, we could 'index' on this
-      return Optional.ofNullable(coll.getReplicasOnNode(nodeName)).stream()
-          .flatMap(List::stream)
-          .filter(r -> coreName.equals(r.getStr(ReplicaStateProps.CORE_NAME)))
-          .map(Replica::getShard)
-          .findAny()
-          .orElse(null);
-    }
-    return null;
   }
 
   @Deprecated
@@ -233,7 +176,7 @@ public class ClusterState implements MapWriter {
         .forEach(
             col -> {
               List<Replica> replicas = col.getReplicasOnNode(nodeName);
-              if (replicas != null && !replicas.isEmpty()) {
+              if (!replicas.isEmpty()) {
                 replicaNamesPerCollectionOnNode.put(col.getName(), replicas);
               }
             });
@@ -283,11 +226,6 @@ public class ClusterState implements MapWriter {
   }
 
   @Deprecated
-  public static ClusterState createFromJson(int version, byte[] bytes, Set<String> liveNodes) {
-    return createFromJson(version, bytes, liveNodes, Instant.EPOCH, null);
-  }
-
-  @Deprecated
   public static ClusterState createFromCollectionMap(
       int version,
       Map<String, Object> stateMap,
@@ -309,12 +247,6 @@ public class ClusterState implements MapWriter {
     }
 
     return new ClusterState(collections, liveNodes);
-  }
-
-  @Deprecated
-  public static ClusterState createFromCollectionMap(
-      int version, Map<String, Object> stateMap, Set<String> liveNodes) {
-    return createFromCollectionMap(version, stateMap, liveNodes, Instant.EPOCH, null);
   }
 
   /**
@@ -399,33 +331,11 @@ public class ClusterState implements MapWriter {
   }
 
   /**
-   * Be aware that this may return collections which may not exist now. You can confirm that this
-   * collection exists after verifying CollectionRef.get() != null
-   *
-   * @deprecated see {@link #collectionStream()}
-   */
-  @Deprecated
-  public Map<String, CollectionRef> getCollectionStates() {
-    return immutableCollectionStates;
-  }
-
-  /**
    * Streams the resolved {@link DocCollection}s, which will often fetch from ZooKeeper for each one
    * for a many-collection scenario. Use this sparingly; some users have thousands of collections!
    */
   public Stream<DocCollection> collectionStream() {
     return collectionStates.values().stream().map(CollectionRef::get).filter(Objects::nonNull);
-  }
-
-  /**
-   * Calls {@code consumer} with a resolved {@link DocCollection}s for all collections. Use this
-   * sparingly in case there are many collections.
-   *
-   * @deprecated see {@link #collectionStream()}
-   */
-  @Deprecated
-  public void forEachCollection(Consumer<DocCollection> consumer) {
-    collectionStream().forEach(consumer);
   }
 
   public static class CollectionRef {

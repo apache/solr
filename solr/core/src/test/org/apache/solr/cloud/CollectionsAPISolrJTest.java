@@ -229,9 +229,10 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
   @Test
   public void testCreateAndDeleteCollection() throws Exception {
     String collectionName = getSaferTestName();
-    CollectionAdminResponse response =
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
-            .process(cluster.getSolrClient());
+    CollectionAdminRequest.Create createREq =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2);
+    createREq.setWaitForFinalState(false);
+    CollectionAdminResponse response = createREq.process(cluster.getSolrClient());
 
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
@@ -242,6 +243,16 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       assertEquals(0, (int) status.get("status"));
       assertTrue(status.get("QTime") > 0);
     }
+
+    waitForState(
+        "Expected " + collectionName + " to disappear from cluster state",
+        collectionName,
+        ((liveNodes, collectionState) ->
+            collectionState.getSlices().stream()
+                .flatMap(
+                    s -> s.getReplicas(r -> !r.getState().equals(Replica.State.ACTIVE)).stream())
+                .findAny()
+                .isEmpty()));
 
     response =
         CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
