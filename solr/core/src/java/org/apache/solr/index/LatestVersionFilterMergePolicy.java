@@ -10,11 +10,11 @@ import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.util.Version;
 
 /**
- * Prevents any older version segment (< {@link Version.LATEST}), either original or one derived as
- * a result of merging with an older version segment, from being considered for merges. That way a
- * snapshot of older segments remains consistent. This assists in upgrading to a future Lucene major
- * version if existing documents are reindexed in the current version with this merge policy in
- * place.
+ * Prevents any older version segment (i.e. older than current lucene major version), either
+ * original or one derived as a result of merging with an older version segment, from being
+ * considered for merges. That way a snapshot of older segments remains consistent. This assists in
+ * upgrading to a future Lucene major version if existing documents are reindexed in the current
+ * version with this merge policy in place.
  */
 public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
 
@@ -52,14 +52,33 @@ public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
   }
 
   private SegmentInfos getFilteredInfosClone(SegmentInfos infos) {
-    // We should not remove from the original SegmentInfos. Hence we clone.
-    SegmentInfos infosClone = infos.clone();
-    infosClone.clear();
+    SegmentInfos infosClone = null;
+
     for (SegmentCommitInfo info : infos) {
-      if (allowSegmentForMerge(info)) {
-        infosClone.add(info);
+      if (!allowSegmentForMerge(info)) {
+        // There are older version segments present.
+        // We should not remove from the original SegmentInfos. Hence we clone.
+        infosClone = infos.clone();
+        infosClone.clear();
+        break;
       }
     }
+
+    if (infosClone == null) {
+      // All segments are latest major version
+      return infos;
+    } else {
+      // Either mixed versions or all older version segments.
+      // If we are here, most runs should fall in the former case.
+      // The latter case should only happen once right after an upgrade, so we are ok with incurring
+      // this redundant iteration for that one time to keep the logic simple
+      for (SegmentCommitInfo info : infos) {
+        if (allowSegmentForMerge(info)) {
+          infosClone.add(info);
+        }
+      }
+    }
+
     return infosClone;
   }
 
