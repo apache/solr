@@ -25,7 +25,7 @@ public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
   @Override
   public MergeSpecification findMerges(
       MergeTrigger mergeTrigger, SegmentInfos infos, MergeContext mergeContext) throws IOException {
-    return in.findMerges(mergeTrigger, getFilteredInfosClone(infos), mergeContext);
+    return in.findMerges(mergeTrigger, getFilteredInfos(infos), mergeContext);
   }
 
   @Override
@@ -36,22 +36,22 @@ public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
       MergeContext mergeContext)
       throws IOException {
     return in.findForcedMerges(
-        getFilteredInfosClone(infos), maxSegmentCount, segmentsToMerge, mergeContext);
+        getFilteredInfos(infos), maxSegmentCount, segmentsToMerge, mergeContext);
   }
 
   @Override
   public MergeSpecification findForcedDeletesMerges(SegmentInfos infos, MergeContext mergeContext)
       throws IOException {
-    return in.findForcedDeletesMerges(getFilteredInfosClone(infos), mergeContext);
+    return in.findForcedDeletesMerges(getFilteredInfos(infos), mergeContext);
   }
 
   @Override
   public MergeSpecification findFullFlushMerges(
       MergeTrigger mergeTrigger, SegmentInfos infos, MergeContext mergeContext) throws IOException {
-    return in.findFullFlushMerges(mergeTrigger, getFilteredInfosClone(infos), mergeContext);
+    return in.findFullFlushMerges(mergeTrigger, getFilteredInfos(infos), mergeContext);
   }
 
-  private SegmentInfos getFilteredInfosClone(SegmentInfos infos) {
+  private SegmentInfos getFilteredInfos(SegmentInfos infos) {
     SegmentInfos infosClone = null;
 
     for (SegmentCommitInfo info : infos) {
@@ -65,7 +65,7 @@ public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
     }
 
     if (infosClone == null) {
-      // All segments are latest major version
+      // All segments are latest major version and allowed to participate in merge
       return infos;
     } else {
       // Either mixed versions or all older version segments.
