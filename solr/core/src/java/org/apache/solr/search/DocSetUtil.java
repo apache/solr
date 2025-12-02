@@ -335,4 +335,81 @@ public class DocSetUtil {
       dest.set(adjustedSegDocBase + segOrd, adjustedSegDocBase + limit);
     } while (segOrd > srcOffset);
   }
+
+  private static long clearLow(long v, int numBits) {
+    return (v >>> numBits) << numBits;
+  }
+
+  private static long clearHigh(long v, int numBits) {
+    return (v << numBits) >>> numBits;
+  }
+
+  /**
+   * Analogous to {@link System#arraycopy(Object, int, Object, int, int)}, but copies {@code long[]}
+   * of the format that is used to back {@link FixedBitSet}, e.g., with offset and length args
+   * specified in terms of <i>bit</i> index, not {@code long} word (array index).
+   *
+   * <p>This method is optimized to avoid inspecting individual bits, instead issuing far fewer
+   * instructions and bit-shifting "words" as necessary to align with potentially different word
+   * boundaries in the destination array. It is vastly more efficient than analogous bit-by-bit
+   * operations -- on the order of ~100x.
+   */
+  public static void copyBitRange(
+      final long[] src, final int srcIdx, final long[] dest, final int destIdx, final int len) {
+    if (len == 0) return;
+    int srcOuterOffset = srcIdx >> 6;
+    int destOuterOffset = destIdx >> 6;
+    int srcInnerOffset = srcIdx & 63;
+    int destInnerOffset = destIdx & 63;
+    int rightShift1;
+    int leftShift2;
+    long srcWord1;
+    long srcWord2;
+
+    // the array offset of the word for the last "bit" element.
+    final int destOuterLimit = (destIdx + len - 1) >> 6;
+
+    if (srcInnerOffset <= destInnerOffset) {
+      leftShift2 = destInnerOffset - srcInnerOffset;
+      rightShift1 = Long.SIZE - leftShift2;
+      srcWord1 = 0;
+      srcWord2 = clearLow(src[srcOuterOffset], srcInnerOffset); // clear out-of-scope bits
+    } else {
+      rightShift1 = srcInnerOffset - destInnerOffset;
+      leftShift2 = Long.SIZE - rightShift1;
+      srcWord1 = clearLow(src[srcOuterOffset], srcInnerOffset); // clear out-of-scope bits
+      srcWord2 = ++srcOuterOffset < src.length ? src[srcOuterOffset] : 0;
+    }
+    // NOTE: we have to special-case the `leftShift=0` case because right-shift over too-large
+    // values is defined as `shift % Long.SIZE`. i.e., `N >>> 64` does _not_ clear all bits,
+    // but rather is equivalent to `N >>> 0` (identity).
+    long incoming = (leftShift2 == 0 ? 0 : (srcWord1 >>> rightShift1)) | (srcWord2 << leftShift2);
+    long extant = clearHigh(dest[destOuterOffset], Long.SIZE - destInnerOffset);
+    if (destOuterOffset == destOuterLimit) {
+      // very short `len` -- special case
+      int remainder = ((destIdx + len - 1) & 63) + 1;
+      extant |= clearLow(dest[destOuterOffset], remainder);
+      incoming = clearHigh(incoming, Long.SIZE - remainder);
+      dest[destOuterOffset] = extant | incoming;
+      return;
+    }
+    // special handling for the first word, which may be partial
+    dest[destOuterOffset] = extant | incoming;
+
+    for (int i = destOuterOffset + 1; i < destOuterLimit; i++) {
+      // inner words are guaranteed to not be partial, so this can be very simple
+      srcWord1 = srcWord2;
+      srcWord2 = src[++srcOuterOffset];
+      dest[i] = (leftShift2 == 0 ? 0 : (srcWord1 >>> rightShift1)) | (srcWord2 << leftShift2);
+    }
+    srcWord1 = srcWord2;
+    srcWord2 = ++srcOuterOffset < src.length ? src[srcOuterOffset] : 0;
+
+    // special handling for the last word, which may be partial
+    int remainder = ((destIdx + len - 1) & 63) + 1;
+    extant = clearLow(dest[destOuterLimit], remainder);
+    incoming = (leftShift2 == 0 ? 0 : (srcWord1 >>> rightShift1)) | (srcWord2 << leftShift2);
+    incoming = clearHigh(incoming, Long.SIZE - remainder);
+    dest[destOuterLimit] = extant | incoming;
+  }
 }

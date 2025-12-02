@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.search.DocSetUtil.copyBitRange;
 import static org.apache.solr.search.OrdMapRegenerator.getRegenKeepAliveNanos;
 
 import java.io.IOException;
@@ -46,7 +47,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -441,7 +444,7 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
     return true;
   }
 
-  private static class FrankensteinQuery extends Query {
+  private static class FrankensteinQuery extends Query implements DocSetProducer {
 
     private final Query backing;
     private final Map<IndexReader.CacheKey, SegmentMap.Segment> segs;
@@ -452,6 +455,133 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
       this.backing = backing;
       this.segs = segs;
       this.stale = stale;
+    }
+
+    @Override
+    public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
+      int maxDoc = searcher.maxDoc();
+      int smallSetSize = DocSetUtil.smallSetSize(maxDoc);
+      if (stale.size() < smallSetSize) {
+        // TODO: it's possible that for small-set TermQuery specifically, it may actually be
+        //  more efficient to use the below optimized `createDocSet()` method, instead of
+        //  reconstructing from stale cache values:
+        //  if (backing instanceof TermQuery) {
+        //    return DocSetUtil.createDocSet(searcher, ((TermQuery) backing).getTerm());
+        //  }
+        // for small set sizes just use `createDocSetGeneric()`. This will work
+        // via `createWeight()`, and will properly handle choosing DocSet type, etc.
+        // for smaller sets it's likely that.
+        // TODO: it would be possible to directly implement optimized DocSet creation here;
+        //  but for smaller sets the impact is probably not significant enough to warrant
+        //  the effort (incl. having to add special handling for choosing DocSet type, etc.)
+        return DocSetUtil.createDocSetGeneric(searcher, this);
+      } else {
+        final Weight backingWeight =
+            backing.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f);
+        final long[] staleBits;
+        if (stale instanceof BitDocSet) {
+          staleBits = ((BitDocSet) stale).getBits().getBits();
+        } else {
+          staleBits = null;
+        }
+        int size = 0;
+        long[] bits = new long[FixedBitSet.bits2words(maxDoc)];
+        for (LeafReaderContext context : searcher.getLeafContexts()) {
+          final Bits liveDocs = context.reader().getLiveDocs();
+          final int newDocBase = context.docBase;
+          final SegmentMap.Segment segment =
+              segs.get(context.reader().getCoreCacheHelper().getKey());
+          if (segment == null) {
+            Scorer scorer = backingWeight.scorer(context);
+            TwoPhaseIterator tpi;
+            if (scorer == null) {
+              continue; // nothing to do for this segment
+            } else if ((tpi = scorer.twoPhaseIterator()) == null) {
+              DocIdSetIterator iter = scorer.iterator();
+              int doc;
+              while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (liveDocs == null || liveDocs.get(doc)) {
+                  int globalId = newDocBase + doc;
+                  bits[globalId >> 6] |= (1L << globalId);
+                  size++;
+                }
+              }
+            } else {
+              DocIdSetIterator iter = tpi.approximation();
+              int doc;
+              while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (tpi.matches() && (liveDocs == null || liveDocs.get(doc))) {
+                  int globalId = newDocBase + doc;
+                  bits[globalId >> 6] |= (1L << globalId);
+                  size++;
+                }
+              }
+            }
+          } else {
+            // backed by existing (partially stale) DocSet
+            final int docBase = segment.docBase;
+            final DocIdSetIterator disi;
+            if (staleBits == null) {
+              assert stale instanceof SortedIntDocSet;
+              final int[] docs = ((SortedIntDocSet) stale).getDocs();
+              final int first = Arrays.binarySearch(docs, docBase);
+              disi =
+                  new DocIdSetIterator() {
+                    final int limit = segment.maxDoc + docBase;
+                    int idx = (first < 0 ? ~first : first) - 1;
+                    int id = -1;
+
+                    @Override
+                    public int docID() {
+                      return id == NO_MORE_DOCS ? NO_MORE_DOCS : id - docBase;
+                    }
+
+                    @Override
+                    public int nextDoc() {
+                      if (++idx >= docs.length || (id = docs[idx]) >= limit) {
+                        return id = NO_MORE_DOCS;
+                      } else {
+                        return id - docBase;
+                      }
+                    }
+
+                    @Override
+                    public int advance(int target) {
+                      while (nextDoc() < target) {
+                        // advance
+                      }
+                      return id == NO_MORE_DOCS ? NO_MORE_DOCS : id - docBase;
+                    }
+
+                    @Override
+                    public long cost() {
+                      return 0;
+                    }
+                  };
+              int doc;
+              while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+                if (liveDocs == null || liveDocs.get(doc)) {
+                  int globalId = newDocBase + doc;
+                  bits[globalId >> 6] |= (1L << globalId);
+                  size++;
+                }
+              }
+            } else {
+              copyBitRange(staleBits, docBase, bits, newDocBase, segment.maxDoc);
+            }
+          }
+        }
+        BitDocSet ret;
+        if (staleBits == null) {
+          ret = new BitDocSet(new FixedBitSet(bits, maxDoc), size);
+        } else {
+          // we don't know the size upfront, and we still have to handle live docs
+          FixedBitSet fbs = new FixedBitSet(bits, maxDoc);
+          fbs.and(searcher.getLiveDocSet().getBits());
+          ret = new BitDocSet(fbs);
+        }
+        return ret;
+      }
     }
 
     @Override
@@ -587,7 +717,7 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
 
     @Override
     public int hashCode() {
-      return FrankensteinQuery.class.hashCode() ^ backing.hashCode();
+      return classHash() ^ backing.hashCode();
     }
   }
 }
