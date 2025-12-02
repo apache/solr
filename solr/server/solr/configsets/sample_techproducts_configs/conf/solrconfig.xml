@@ -15,6 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
+
 <!--
      For more details about configurations options that may appear in
      this file, see https://solr.apache.org/guide/solr/latest/configuration-guide/configuring-solrconfig-xml.html.
@@ -59,10 +60,8 @@
 
        solr.RAMDirectoryFactory is memory based and not persistent.
     -->
-  <directoryFactory
-        name="DirectoryFactory"
-        class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"
-    />
+  <directoryFactory name="DirectoryFactory"
+                    class="${solr.directoryFactory:solr.NRTCachingDirectoryFactory}"/>
 
   <!-- The CodecFactory for defining the format of the inverted index.
        The default implementation is SchemaCodecFactory, which is the official Lucene
@@ -76,7 +75,7 @@
        between the existing compression modes in the default codec: "BEST_SPEED" (default)
        or "BEST_COMPRESSION".
   -->
-  <codecFactory class="solr.SchemaCodecFactory" />
+  <codecFactory class="solr.SchemaCodecFactory"/>
 
   <!-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
        Index Config - These settings control low-level behavior of indexing
@@ -202,9 +201,7 @@
          IndexWriter to write its info stream to solr's log. By default,
          this is enabled here, and controlled through log4j2.xml
       -->
-     <!--
-     <infoStream>false</infoStream>
-     -->
+      <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
   <!-- The default high-performance update handler -->
@@ -348,7 +345,9 @@
                       to occupy. Note that when this option is specified, the size
                       and initialSize parameters are ignored.
       -->
-    <filterCache size="512" initialSize="512" autowarmCount="0" />
+    <filterCache size="512"
+                 initialSize="512"
+                 autowarmCount="0"/>
 
     <!-- Query Result Cache
 
@@ -358,7 +357,9 @@
            maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                       to occupy
      -->
-    <queryResultCache size="512" initialSize="512" autowarmCount="0" />
+    <queryResultCache size="512"
+                     initialSize="512"
+                     autowarmCount="0"/>
 
     <!-- Document Cache
 
@@ -366,17 +367,17 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.
       -->
-    <documentCache size="512" initialSize="512" autowarmCount="0" />
+    <documentCache size="512"
+                   initialSize="512"
+                   autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
-    <cache
-            name="perSegFilter"
-            class="solr.CaffeineCache"
-            size="10"
-            initialSize="0"
-            autowarmCount="10"
-            regenerator="solr.NoOpRegenerator"
-        />
+    <cache name="perSegFilter"
+      class="solr.CaffeineCache"
+      size="10"
+      initialSize="0"
+      autowarmCount="10"
+      regenerator="solr.NoOpRegenerator" />
 
     <!-- Field Value Cache
 
@@ -400,13 +401,11 @@
 
          https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
-    <featureVectorCache
-            enable="${solr.ltr.enabled:false}"
-            class="solr.CaffeineCache"
-            size="4096"
-            initialSize="2048"
-            autowarmCount="0"
-        />
+    <featureVectorCache enable="${solr.ltr.enabled:false}"
+           class="solr.CaffeineCache"
+           size="4096"
+           initialSize="2048"
+           autowarmCount="0" />
 
     <!-- Custom Cache
 
@@ -540,9 +539,8 @@
 
        -->
     <requestParsers
-            multipartUploadLimitInKB="-1"
-            formdataUploadLimitInKB="-1"
-        />
+                    multipartUploadLimitInKB="-1"
+                    formdataUploadLimitInKB="-1"/>
 
     <!-- HTTP Caching
 
@@ -672,11 +670,9 @@
        https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-tika.html
 
     -->
-  <requestHandler
-        name="/update/extract"
-        startup="lazy"
-        class="solr.extraction.ExtractingRequestHandler"
-    >
+  <requestHandler name="/update/extract"
+                  startup="lazy"
+                  class="solr.extraction.ExtractingRequestHandler" >
     <!-- Assuming user has started a Tika Server locally -->
     <str name="tikaserver.url">http://localhost:9998</str>
 
@@ -696,11 +692,9 @@
        https://solr.apache.org/guide/solr/latest/indexing-guide/indexing-with-update-handlers.html#using-xslt-to-transform-xml-index-updates
 
     -->
-  <requestHandler
-        name="/update/xslt"
-        startup="lazy"
-        class="solr.scripting.xslt.XSLTUpdateRequestHandler"
-    >
+  <requestHandler name="/update/xslt"
+                  startup="lazy"
+                  class="solr.scripting.xslt.XSLTUpdateRequestHandler" >
     <int name="xsltCacheLifetimeSeconds">5</int>
   </requestHandler>
 
@@ -848,7 +842,8 @@
     </lst>
   </searchComponent>
 
-  <requestHandler name="/suggest" class="solr.SearchHandler" startup="lazy">
+  <requestHandler name="/suggest" class="solr.SearchHandler"
+                  startup="lazy" >
     <lst name="defaults">
       <str name="suggest">true</str>
       <str name="suggest.count">10</str>
@@ -863,7 +858,7 @@
 
        https://solr.apache.org/guide/solr/latest/query-guide/term-vector-component.html
     -->
-  <searchComponent name="tvComponent" class="solr.TermVectorComponent" />
+  <searchComponent name="tvComponent" class="solr.TermVectorComponent"/>
 
   <!-- A request handler for demonstrating the term vector component
 
@@ -889,11 +884,9 @@
 
        https://solr.apache.org/guide/solr/latest/query-guide/result-clustering.html
     -->
-  <searchComponent
-        name="clustering"
-        enable="${solr.clustering.enabled:false}"
-        class="solr.clustering.ClusteringComponent"
-    >
+  <searchComponent name="clustering"
+                   enable="${solr.clustering.enabled:false}"
+                   class="solr.clustering.ClusteringComponent" >
     <!--
     Declaration of "engines" (named sets of configuration parameters).
 
@@ -945,12 +938,10 @@
        This is meant as an example - in reality you will likely want
        to add the clustering component to your default request handler.
     -->
-  <requestHandler
-        name="/clustering"
-        startup="lazy"
-        enable="${solr.clustering.enabled:false}"
-        class="solr.SearchHandler"
-    >
+  <requestHandler name="/clustering"
+                  startup="lazy"
+                  enable="${solr.clustering.enabled:false}"
+                  class="solr.SearchHandler">
     <lst name="defaults">
       <!-- Enable clustering component by default. -->
       <bool name="clustering">true</bool>
@@ -979,7 +970,7 @@
        results for a given query regardless of the normal lucene
        scoring.
     -->
-  <searchComponent name="elevator" class="solr.QueryElevationComponent">
+  <searchComponent name="elevator" class="solr.QueryElevationComponent" >
     <!-- pick a fieldType to analyze queries -->
     <str name="queryFieldType">string</str>
     <str name="config-file">elevate.xml</str>
@@ -1005,11 +996,9 @@ via parameters.  The below configuration supports hl.method=original and fastVec
     <highlighting>
       <!-- Configure the standard fragmenter -->
       <!-- This could most likely be commented out in the "default" case -->
-      <fragmenter
-                name="gap"
-                default="true"
-                class="solr.highlight.GapFragmenter"
-            >
+      <fragmenter name="gap"
+                  default="true"
+                  class="solr.highlight.GapFragmenter">
         <lst name="defaults">
           <int name="hl.fragsize">100</int>
         </lst>
@@ -1018,7 +1007,8 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       <!-- A regular-expression-based fragmenter
            (for sentence extraction)
         -->
-      <fragmenter name="regex" class="solr.highlight.RegexFragmenter">
+      <fragmenter name="regex"
+                  class="solr.highlight.RegexFragmenter">
         <lst name="defaults">
           <!-- slightly smaller fragsizes work better because of slop -->
           <int name="hl.fragsize">70</int>
@@ -1030,11 +1020,9 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       </fragmenter>
 
       <!-- Configure the standard formatter -->
-      <formatter
-                name="html"
-                default="true"
-                class="solr.highlight.HtmlFormatter"
-            >
+      <formatter name="html"
+                 default="true"
+                 class="solr.highlight.HtmlFormatter">
         <lst name="defaults">
           <str name="hl.simple.pre"><![CDATA[<em>]]></str>
           <str name="hl.simple.post"><![CDATA[</em>]]></str>
@@ -1042,33 +1030,26 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       </formatter>
 
       <!-- Configure the standard encoder -->
-      <encoder name="html" class="solr.highlight.HtmlEncoder" />
+      <encoder name="html"
+               class="solr.highlight.HtmlEncoder" />
 
       <!-- Configure the standard fragListBuilder -->
-      <fragListBuilder
-                name="simple"
-                class="solr.highlight.SimpleFragListBuilder"
-            />
+      <fragListBuilder name="simple"
+                       class="solr.highlight.SimpleFragListBuilder"/>
 
       <!-- Configure the single fragListBuilder -->
-      <fragListBuilder
-                name="single"
-                class="solr.highlight.SingleFragListBuilder"
-            />
+      <fragListBuilder name="single"
+                       class="solr.highlight.SingleFragListBuilder"/>
 
       <!-- Configure the weighted fragListBuilder -->
-      <fragListBuilder
-                name="weighted"
-                default="true"
-                class="solr.highlight.WeightedFragListBuilder"
-            />
+      <fragListBuilder name="weighted"
+                       default="true"
+                       class="solr.highlight.WeightedFragListBuilder"/>
 
       <!-- default tag FragmentsBuilder -->
-      <fragmentsBuilder
-                name="default"
-                default="true"
-                class="solr.highlight.ScoreOrderFragmentsBuilder"
-            >
+      <fragmentsBuilder name="default"
+                        default="true"
+                        class="solr.highlight.ScoreOrderFragmentsBuilder">
         <!--
         <lst name="defaults">
           <str name="hl.multiValuedSeparatorChar">/</str>
@@ -1077,14 +1058,10 @@ via parameters.  The below configuration supports hl.method=original and fastVec
       </fragmentsBuilder>
 
       <!-- multi-colored tag FragmentsBuilder -->
-      <fragmentsBuilder
-                name="colored"
-                class="solr.highlight.ScoreOrderFragmentsBuilder"
-            >
+      <fragmentsBuilder name="colored"
+                        class="solr.highlight.ScoreOrderFragmentsBuilder">
         <lst name="defaults">
-          <str
-                        name="hl.tag.pre"
-                    ><![CDATA[
+          <str name="hl.tag.pre"><![CDATA[
                <b style="background:yellow">,<b style="background:lawgreen">,
                <b style="background:aquamarine">,<b style="background:magenta">,
                <b style="background:palegreen">,<b style="background:coral">,
@@ -1094,21 +1071,17 @@ via parameters.  The below configuration supports hl.method=original and fastVec
         </lst>
       </fragmentsBuilder>
 
-      <boundaryScanner
-                name="default"
-                default="true"
-                class="solr.highlight.SimpleBoundaryScanner"
-            >
+      <boundaryScanner name="default"
+                       default="true"
+                       class="solr.highlight.SimpleBoundaryScanner">
         <lst name="defaults">
           <str name="hl.bs.maxScan">10</str>
           <str name="hl.bs.chars">.,!? &#9;&#10;&#13;</str>
         </lst>
       </boundaryScanner>
 
-      <boundaryScanner
-                name="breakIterator"
-                class="solr.highlight.BreakIteratorBoundaryScanner"
-            >
+      <boundaryScanner name="breakIterator"
+                       class="solr.highlight.BreakIteratorBoundaryScanner">
         <lst name="defaults">
           <!-- type should be one of CHARACTER, WORD(default), LINE and SENTENCE -->
           <str name="hl.bs.type">WORD</str>
@@ -1220,11 +1193,9 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
        See more about this response writer at https://solr.apache.org/guide/solr/latest/query-guide/response-writers.html#xslt-response-writer
   -->
-  <queryResponseWriter
-        name="xslt"
-        startup="lazy"
-        class="solr.scripting.xslt.XSLTResponseWriter"
-    >
+  <queryResponseWriter name="xslt"
+                          startup="lazy"
+                          class="solr.scripting.xslt.XSLTResponseWriter">
     <int name="xsltCacheLifetimeSeconds">5</int>
   </queryResponseWriter>
 
@@ -1264,11 +1235,7 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
         Query parser is used to rerank top docs with a provided model
     -->
-  <queryParser
-        enable="${solr.ltr.enabled:false}"
-        name="ltr"
-        class="org.apache.solr.ltr.search.LTRQParserPlugin"
-    />
+  <queryParser enable="${solr.ltr.enabled:false}" name="ltr" class="org.apache.solr.ltr.search.LTRQParserPlugin"/>
 
   <!-- Document Transformers
        https://solr.apache.org/guide/solr/latest/query-guide/document-transformers.html
@@ -1307,10 +1274,6 @@ via parameters.  The below configuration supports hl.method=original and fastVec
 
       https://solr.apache.org/guide/solr/latest/query-guide/learning-to-rank.html
       -->
-    <transformer
-        enable="${solr.ltr.enabled:false}"
-        name="features"
-        class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory"
-    >
+    <transformer enable="${solr.ltr.enabled:false}" name="features" class="org.apache.solr.ltr.response.transform.LTRFeatureLoggerTransformerFactory">
     </transformer>
 </config>
