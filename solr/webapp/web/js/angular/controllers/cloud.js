@@ -402,8 +402,8 @@ var nodesSubController = function($scope, Collections, System, Metrics, MetricsE
       function (response) {
         // response.metrics contains the parsed merged Prometheus data with node labels
         var parsedMetrics = response.metrics;
-        if (!parsedMetrics) {
-          console.error('No metrics in response');
+        if (!parsedMetrics || response.error) {
+          console.error('No metrics in response', response.error);
           return;
         }
 
