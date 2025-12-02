@@ -1728,11 +1728,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // check if we should try and use the filter cache
     final boolean needSort;
     final boolean useFilterCache;
-    if ((flags & (GET_SCORES | NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
+    Float constantScore = 1.0f;
+    if ((flags & (NO_CHECK_FILTERCACHE)) != 0 || filterCache == null) {
       needSort = true; // this value should be irrelevant when `useFilterCache=false`
       useFilterCache = false;
     } else if (q instanceof MatchAllDocsQuery
-        || (useFilterForSortedQuery && QueryUtils.isConstantScoreQuery(q))) {
+        || (useFilterForSortedQuery && (constantScore = QueryUtils.getConstantScore(q)) != null)) {
       // special-case MatchAllDocsQuery: implicit default useFilterForSortedQuery=true;
       // otherwise, default behavior should not risk filterCache thrashing, so require
       // `useFilterForSortedQuery==true`
@@ -1774,13 +1775,17 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       // todo: there could be a sortDocSet that could take a list of
       // the filters instead of anding them first...
       // perhaps there should be a multi-docset-iterator
+      if ((flags & GET_SCORES) == 0) {
+        constantScore = null;
+      }
       if (needSort) {
         fullSortCount.increment();
-        sortDocSet(qr, cmd);
+        sortDocSet(qr, cmd, constantScore);
       } else {
         skipSortCount.increment();
         // put unsorted list in place
-        out.docList = constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet);
+        out.docList =
+            constantScoreDocList(cmd.getOffset(), cmd.getLen(), out.docSet, constantScore);
         if (0 == cmd.getSupersetMaxDoc()) {
           // this is the only case where `cursorMark && !needSort`
           qr.setNextCursorMark(cmd.getCursorMark());
@@ -2428,7 +2433,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         .getDocListAndSet();
   }
 
-  private DocList constantScoreDocList(int offset, int length, DocSet docs) {
+  private DocList constantScoreDocList(int offset, int length, DocSet docs, Float score) {
     final int size = docs.size();
 
     // NOTE: it would be possible to special-case `length == 0 || size <= offset` here
@@ -2446,16 +2451,29 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     for (int i = 0; i < returnSize; i++) {
       docIds[i] = iter.nextDoc();
     }
-    return new DocSlice(0, returnSize, docIds, null, size, 0f, TotalHits.Relation.EQUAL_TO);
+
+    float maxScore;
+    float[] scores;
+    if (score == null) {
+      maxScore = 0f;
+      scores = null;
+    } else {
+      maxScore = score;
+      scores = new float[returnSize];
+      Arrays.fill(scores, maxScore);
+    }
+
+    return new DocSlice(0, returnSize, docIds, scores, size, maxScore, TotalHits.Relation.EQUAL_TO);
   }
 
-  protected void sortDocSet(QueryResult qr, QueryCommand cmd) throws IOException {
+  protected void sortDocSet(QueryResult qr, QueryCommand cmd, Float constantScore)
+      throws IOException {
     DocSet set = qr.getDocListAndSet().docSet;
     int nDocs = cmd.getSupersetMaxDoc();
     if (nDocs == 0) {
       // SOLR-2923
       qr.getDocListAndSet().docList =
-          new DocSlice(0, 0, new int[0], null, set.size(), 0f, TotalHits.Relation.EQUAL_TO);
+          new DocSlice(0, 0, new int[0], new float[0], set.size(), 0f, TotalHits.Relation.EQUAL_TO);
       qr.setNextCursorMark(cmd.getCursorMark());
       return;
     }
@@ -2490,10 +2508,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       ids[i] = scoreDoc.doc;
     }
 
-    assert topDocs.totalHits.relation == TotalHits.Relation.EQUAL_TO;
+    float maxScore;
+    float[] scores;
+    if (constantScore == null) {
+      maxScore = 0f;
+      scores = null;
+    } else {
+      maxScore = constantScore;
+      scores = new float[nDocsReturned];
+      Arrays.fill(scores, maxScore);
+    }
+
+    TotalHits totalHits = topDocs.totalHits;
+    assert totalHits.relation == TotalHits.Relation.EQUAL_TO;
     qr.getDocListAndSet().docList =
-        new DocSlice(
-            0, nDocsReturned, ids, null, topDocs.totalHits.value, 0.0f, topDocs.totalHits.relation);
+        new DocSlice(0, nDocsReturned, ids, scores, totalHits.value, maxScore, totalHits.relation);
     populateNextCursorMarkFromTopDocs(qr, cmd, topDocs);
   }
 
