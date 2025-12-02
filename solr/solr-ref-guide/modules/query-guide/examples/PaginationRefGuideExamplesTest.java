@@ -16,7 +16,10 @@
  */
 package org.apache.solr.client.ref_guide_examples;
 
-import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.*;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.clear;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.expectLine;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,11 +52,7 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
-        .addConfig(
-            CONFIG_NAME,
-            ExternalPaths.TECHPRODUCTS_CONFIGSET.resolve("conf"))
-        .configure();
+    configureCluster(1).addConfig(CONFIG_NAME, ExternalPaths.TECHPRODUCTS_CONFIGSET).configure();
 
     CollectionAdminRequest.createCollection(COLLECTION_NAME, CONFIG_NAME, 1, 1)
         .process(cluster.getSolrClient());
@@ -63,51 +62,48 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    
-    ExpectedOutputVerifier.clear();
+
+    clear();
     indexSampleData();
   }
-  
+
   @After
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
     ensureNoLeftoverOutputExpectations();
   }
-  
+
   @Test
   public void testCursormarkWithSolrJExample() throws Exception {
     for (int i = 0; i < NUM_INDEXED_DOCUMENTS; i++) {
       expectLine("ID: " + i + "; Name: Fitbit Model " + i);
     }
-    
+
     // tag::cursormark-query[]
     SolrQuery q = (new SolrQuery("*:*")).setRows(BATCH_SIZE).setSort(SortClause.asc("id"));
     String cursorMark = CursorMarkParams.CURSOR_MARK_START;
     boolean done = false;
-    
-    while (! done) {
+
+    while (!done) {
       q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-      QueryResponse rsp = getSolrClient().query(COLLECTION_NAME, q);
+      QueryResponse rsp = cluster.getSolrClient().query(COLLECTION_NAME, q);
       String nextCursorMark = rsp.getNextCursorMark();
       for (SolrDocument doc : rsp.getResults()) {
-        final String docOutput = String.format("ID: %s; Name: %s", doc.getFieldValue("id"), doc.getFieldValue("name"));
+        final String docOutput =
+            String.format("ID: %s; Name: %s", doc.getFieldValue("id"), doc.getFieldValue("name"));
         print(docOutput);
       }
-      
+
       done = cursorMark.equals(nextCursorMark);
       cursorMark = nextCursorMark;
     }
     // end::cursormark-query[]
   }
-  
-  private SolrClient getSolrClient() {
-    return cluster.getSolrClient();
-  }
-  
+
   private void indexSampleData() throws Exception {
-    final SolrClient client = getSolrClient();
-    
+    final SolrClient client = cluster.getSolrClient();
+
     final List<SolrInputDocument> docList = new ArrayList<>();
     for (int i = 0; i < NUM_INDEXED_DOCUMENTS; i++) {
       final SolrInputDocument doc = new SolrInputDocument();
@@ -115,7 +111,7 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
       doc.addField("name", "Fitbit Model " + i);
       docList.add(doc);
     }
-    
+
     client.add(COLLECTION_NAME, docList);
     client.commit(COLLECTION_NAME);
   }
