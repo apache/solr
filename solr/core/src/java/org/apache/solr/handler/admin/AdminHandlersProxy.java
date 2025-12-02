@@ -55,15 +55,10 @@ public class AdminHandlersProxy {
   private static final String PARAM_NODE = "node";
   private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
-  // Proxy this request to a different remote node if 'node' or 'nodes' parameter is provided
+  /** Proxy this request to a different remote node if 'node' or 'nodes' parameter is provided */
   public static boolean maybeProxyToNodes(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
-
-    if (!container.isZooKeeperAware()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Node proxying only supported in Cloud mode");
-    }
 
     String pathStr = req.getPath();
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
@@ -79,10 +74,6 @@ public class AdminHandlersProxy {
         return false; // No node parameter, handle locally
       }
 
-      if (log.isDebugEnabled()) {
-        log.debug("{} parameter {} specified on {} request", PARAM_NODE, nodeName, pathStr);
-      }
-
       params.remove(PARAM_NODE);
       handlePrometheusSingleNode(nodeName, pathStr, params, container, rsp);
     } else {
@@ -92,13 +83,8 @@ public class AdminHandlersProxy {
         return false; // No nodes parameter, handle locally
       }
 
-      if (log.isDebugEnabled()) {
-        log.debug("{} parameter {} specified on {} request", PARAM_NODES, nodeNames, pathStr);
-      }
-
-      // Resolve the set of nodes to query
-      Set<String> nodes = resolveNodes(nodeNames, container);
       params.remove(PARAM_NODES);
+      Set<String> nodes = resolveNodes(nodeNames, container);
       handleNamedListFormat(nodes, pathStr, params, container.getZkController(), rsp);
     }
 
@@ -111,8 +97,7 @@ public class AdminHandlersProxy {
       String pathStr,
       SolrParams params,
       ZkController zkController,
-      SolrQueryResponse rsp)
-      throws IOException, SolrServerException, InterruptedException {
+      SolrQueryResponse rsp) {
 
     Map<String, Future<NamedList<Object>>> responses = new LinkedHashMap<>();
     for (String node : nodes) {
@@ -124,9 +109,13 @@ public class AdminHandlersProxy {
         NamedList<Object> resp = entry.getValue().get(10, TimeUnit.SECONDS);
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {
-        log.warn("Exception when fetching result from node {}", entry.getKey(), ee);
+        log.warn("Exception when fetching result from node {}", entry.getKey(), ee.getCause());
       } catch (TimeoutException te) {
-        log.warn("Timeout when fetching result from node {}", entry.getKey(), te);
+        log.warn("Timeout when fetching result from node {}", entry.getKey());
+      } catch (InterruptedException e) {
+        log.warn("Interrupted when fetching result from node {}", entry.getKey());
+        Thread.currentThread().interrupt();
+        break; // stop early
       }
     }
     if (log.isDebugEnabled()) {
@@ -136,8 +125,15 @@ public class AdminHandlersProxy {
 
   /** Makes a remote request asynchronously. */
   public static CompletableFuture<NamedList<Object>> callRemoteNode(
-      String nodeName, String uriPath, SolrParams params, ZkController zkController)
-      throws IOException, SolrServerException {
+      String nodeName, String uriPath, SolrParams params, ZkController zkController) {
+
+    // Validate that the node exists in the cluster
+    if (!zkController.zkStateReader.getClusterState().getLiveNodes().contains(nodeName)) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Requested node " + nodeName + " is not part of cluster");
+    }
+
     log.debug("Proxying {} request to node {}", uriPath, nodeName);
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
     SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, uriPath, params);
@@ -148,10 +144,16 @@ public class AdminHandlersProxy {
       proxyReq.setResponseParser(new InputStreamResponseParser(wt));
     }
 
-    return zkController
-        .getCoreContainer()
-        .getDefaultHttpSolrClient()
-        .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(proxyReq));
+    try {
+      return zkController
+          .getCoreContainer()
+          .getDefaultHttpSolrClient()
+          .requestWithBaseUrl(baseUri.toString(), c -> c.requestAsync(proxyReq));
+    } catch (SolrServerException | IOException e) {
+      // requestWithBaseUrl declares it throws these but it actually depends on the lambda
+      assert false : "requestAsync doesn't throw; it returns a Future";
+      throw new RuntimeException(e);
+    }
   }
 
   /**
@@ -160,7 +162,7 @@ public class AdminHandlersProxy {
    * @param nodeNames the value of the "nodes" parameter ("all" or comma-separated node names)
    * @param container the CoreContainer
    * @return set of resolved node names
-   * @throws SolrException if node format is invalid or node is not in cluster
+   * @throws SolrException if node format is invalid
    */
   private static Set<String> resolveNodes(String nodeNames, CoreContainer container) {
     Set<String> liveNodes =
@@ -176,11 +178,6 @@ public class AdminHandlersProxy {
       if (!nodeName.matches("^[^/:]+:\\d+_[\\w/]+$")) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST, "Parameter " + PARAM_NODES + " has wrong format");
-      }
-      if (!liveNodes.contains(nodeName)) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST,
-            "Requested node " + nodeName + " is not part of cluster");
       }
     }
     log.debug("Nodes requested: {}", nodes);
@@ -202,17 +199,7 @@ public class AdminHandlersProxy {
       ModifiableSolrParams params,
       CoreContainer container,
       SolrQueryResponse rsp)
-      throws IOException, SolrServerException, InterruptedException {
-
-    // Validate that the node exists in the cluster
-    Set<String> liveNodes =
-        container.getZkController().zkStateReader.getClusterState().getLiveNodes();
-
-    if (!liveNodes.contains(nodeName)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "Requested node " + nodeName + " is not part of cluster");
-    }
+      throws IOException, SolrServerException {
 
     // Keep wt=prometheus for the remote request so MetricsHandler accepts it
     // The InputStreamResponseParser will return the Prometheus text in a "stream" key
@@ -220,34 +207,16 @@ public class AdminHandlersProxy {
         callRemoteNode(nodeName, pathStr, params, container.getZkController());
 
     try {
-      NamedList<Object> resp = response.get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-
-      // Extract the Prometheus text stream from response
-      Object streamObj = resp.get("stream");
-      if (streamObj instanceof java.io.InputStream) {
-        try (java.io.InputStream stream = (java.io.InputStream) streamObj) {
-          // TODO: Stream to output instead of buffering in a String?
-          String prometheusText =
-              new String(stream.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
-          // Pass the text through directly - PrometheusResponseWriter will write it as-is
-          rsp.add("prometheusText", prometheusText);
-        }
-      } else {
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "No stream in response from node " + nodeName);
+      try {
+        NamedList<Object> resp = response.get(PROMETHEUS_FETCH_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        rsp.getValues().addAll(resp);
+      } catch (ExecutionException e) {
+        throw e.getCause();
       }
-    } catch (ExecutionException ee) {
-      log.warn("Exception when fetching Prometheus result from node {}", nodeName, ee);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Failed to fetch metrics from node " + nodeName,
-          ee);
-    } catch (TimeoutException te) {
-      log.warn("Timeout when fetching Prometheus result from node {}", nodeName, te);
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          "Timeout fetching metrics from node " + nodeName,
-          te);
+    } catch (IOException | SolrServerException | RuntimeException | Error e) {
+      throw e;
+    } catch (Throwable t) { // unlikely?
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, t);
     }
   }
 }
