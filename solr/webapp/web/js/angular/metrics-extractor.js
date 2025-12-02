@@ -133,7 +133,7 @@
           var labelsMatch = true;
           for (var key in coreLabels) {
             if (coreLabels.hasOwnProperty(key)) {
-              if (sample.labels[key] !== coreLabels[key]) {
+              if (!sample.labels || sample.labels[key] !== coreLabels[key]) {
                 labelsMatch = false;
                 break;
               }
