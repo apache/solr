@@ -23,7 +23,7 @@ solrAdminServices.factory('System',
   }])
 .factory('Metrics',
   ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
-    return $resource('admin/metrics', {"wt":"prometheus", "nodes": "@nodes", "core": "@core", "_":Date.now()}, {
+    return $resource('admin/metrics', {"wt":"prometheus", "nodes": "@nodes", "_":Date.now()}, {
       get: {
         method: 'GET',
         transformResponse: function(data) {
@@ -33,6 +33,13 @@ solrAdminServices.factory('System',
           } catch (e) {
             return {metrics: {}, error: e.message};
           }
+        }
+      },
+      "raw": {
+        method: 'GET',
+        params: {wt: 'prometheus', core: '@core'},
+        transformResponse: function(data) {
+          return {data: data};
         }
       }
     });
