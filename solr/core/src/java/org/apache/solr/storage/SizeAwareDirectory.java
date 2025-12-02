@@ -236,8 +236,9 @@ public class SizeAwareDirectory extends FilterDirectory
       long onDiskDiff = extant.onDiskSize - ret.onDiskSize;
       boolean initializing = !initialized;
       if (!initializing
-          && Math.abs(diff) < reconcileThreshold
-          && Math.abs(onDiskDiff) < reconcileThreshold) {
+          && (reconcileThreshold == null
+              || (Math.abs(diff) < reconcileThreshold
+                  && Math.abs(onDiskDiff) < reconcileThreshold))) {
         double ratio = (double) extant.size / ret.size;
         if (log.isInfoEnabled()) {
           log.info(
