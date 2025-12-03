@@ -146,21 +146,30 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   @Test
   public void testConstantScoreFlScore() throws Exception {
-    // explicitly requesting scores should unconditionally disable caching and sorting optimizations
+    // explicitly requesting scores no longer unconditionally disables all cache consultation and
+    // sort optimization; but `{!cache=false}` on the main query does disable cache/sort
+    // optimization.
+    boolean noCache = random().nextBoolean();
+    String prefix = noCache ? "{!cache=false}" : "";
+
+    boolean noOptimize = noCache || !USE_FILTER_FOR_SORTED_QUERY;
+
+    // should no longer matter whether we request score.
+    String fl = random().nextBoolean() ? "id" : "id,score";
     String response =
         JQ(
             req(
                 "q",
-                CONSTANT_SCORE_QUERY,
+                prefix.concat(CONSTANT_SCORE_QUERY),
                 "indent",
                 "true",
                 "rows",
                 "0",
                 "fl",
-                "id,score",
+                fl,
                 "sort",
                 (random().nextBoolean() ? "id asc" : "score desc")));
-    assertMetricCounts(response, false, 0, 1, 0);
+    assertMetricCounts(response, false, noOptimize ? 0 : 1, noOptimize ? 1 : 0, noOptimize ? 0 : 1);
   }
 
   @Test
