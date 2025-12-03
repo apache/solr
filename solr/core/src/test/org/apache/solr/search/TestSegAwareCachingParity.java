@@ -139,7 +139,7 @@ public class TestSegAwareCachingParity extends SolrTestCaseJ4 {
     vals.subList(0, count)
         .forEach(
             (i) -> {
-              builder.add(new TermQuery(new Term("field_s", "d" + i)), BooleanClause.Occur.MUST);
+              builder.add(new TermQuery(new Term("field_s", "d" + i)), BooleanClause.Occur.SHOULD);
             });
     return builder.build();
   }
@@ -173,13 +173,14 @@ public class TestSegAwareCachingParity extends SolrTestCaseJ4 {
                 if (i == 1 || s.numDocs() == 0) {
                   // special case for MatchAllDocsQuery and empty index
                   assertEquals(docSet, uncachedDocSet);
-                } else {
+                }
+                int size = docSet.size();
+                if (size != s.numDocs()) {
                   assertNotEquals(
                       "cached and uncached should be different! compare: " + docSet,
                       docSet,
                       uncachedDocSet);
                 }
-                int size = docSet.size();
                 assertEquals(size, uncachedDocSet.size());
                 assertEquals(size, docSet.intersectionSize(uncachedDocSet));
                 return null;
