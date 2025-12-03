@@ -152,7 +152,7 @@ public class MiniSolrCloudCluster {
           + "</solr>\n";
 
   private final Object startupWait = new Object();
-  private volatile ZkTestServer zkServer; // non-final due to injectChaos()
+  private final ZkTestServer zkServer;
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
@@ -214,7 +214,7 @@ public class MiniSolrCloudCluster {
 
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
+   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
    * SolrCloudTestCase} to configure any additional parameters.
    *
    * @param numServers number of Solr servers to start
@@ -247,7 +247,7 @@ public class MiniSolrCloudCluster {
 
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
+   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
    * SolrCloudTestCase} to configure any additional parameters.
    *
    * @param numServers number of Solr servers to start
@@ -542,7 +542,7 @@ public class MiniSolrCloudCluster {
    * Stop a Solr instance
    *
    * @param index the index of node in collection returned by {@link #getJettySolrRunners()}
-   * @return the shut down node
+   * @return the now shut down node
    */
   public JettySolrRunner stopJettySolrRunner(int index) throws Exception {
     JettySolrRunner jetty = jettys.get(index);
@@ -592,7 +592,7 @@ public class MiniSolrCloudCluster {
             }
           });
 
-      reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
+      reader.createClusterStateWatchersAndUpdate(); // up-to-date aliases & collections
       reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
       for (String collection : reader.getClusterState().getCollectionNames()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
@@ -800,32 +800,6 @@ public class MiniSolrCloudCluster {
     ChaosMonkey.expireSession(jetty, zkServer);
   }
 
-  // Currently not used ;-(
-  public synchronized void injectChaos(Random random) throws Exception {
-
-    // sometimes we restart one of the jetty nodes
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      jetty.stop();
-      log.info("============ Restarting jetty");
-      jetty.start();
-    }
-
-    // sometimes we restart zookeeper
-    if (random.nextBoolean()) {
-      zkServer.shutdown();
-      log.info("============ Restarting zookeeper");
-      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
-      zkServer.run(false);
-    }
-
-    // sometimes we cause a connection loss - sometimes it will hit the overseer
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      ChaosMonkey.causeConnectionLoss(jetty);
-    }
-  }
-
   public Overseer getOpenOverseer() {
     List<Overseer> overseers = new ArrayList<>();
     for (int i = 0; i < jettys.size(); i++) {
@@ -995,13 +969,6 @@ public class MiniSolrCloudCluster {
       InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
-    }
-
-    /**
-     * @return optional subj. It may be null, if it's not yet created.
-     */
-    public MetricRegistry getMetricRegistry() {
-      return metricRegistry;
     }
   }
 
