@@ -179,7 +179,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
 
     // cbor
 
-    byte[] cborBytes = convertJsonToCborFormat(json.getBytes());
+    byte[] cborBytes = convertJsonToCborFormat(json.getBytes(StandardCharsets.UTF_8));
     assertEquals(25, cborBytes.length);
     LongAdder numberOfObjectsInResponse = new LongAdder();
     new CborLoader(null, (document) -> numberOfObjectsInResponse.increment())
