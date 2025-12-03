@@ -348,9 +348,6 @@ public class SolrXmlConfig {
               case "maxBooleanClauses":
                 builder.setBooleanQueryMaxClauseCount(it.intVal(-1));
                 break;
-              case "managementPath":
-                builder.setManagementPath(it.txt());
-                break;
               case "sharedLib":
                 builder.setSharedLibDirectory(it.txt());
                 break;
@@ -525,9 +522,6 @@ public class SolrXmlConfig {
           break;
         case "zkHost":
           builder.setZkHost(value);
-          break;
-        case "genericCoreNodeNames":
-          builder.setUseGenericCoreNames(Boolean.parseBoolean(value));
           break;
         case "zkACLProvider":
           builder.setZkACLProviderClass(value);

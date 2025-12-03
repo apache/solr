@@ -56,17 +56,16 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.StreamingJavaBinResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.cloud.DocCollection;
@@ -252,11 +251,10 @@ public class ExportTool extends ToolBase {
     abstract void exportDocs() throws Exception;
 
     void fetchUniqueKey() throws SolrServerException, IOException {
-      Http2SolrClient.Builder builder =
-          new Http2SolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
+      var builder = new HttpJettySolrClient.Builder().withOptionalBasicAuthCredentials(credentials);
 
       solrClient =
-          new CloudHttp2SolrClient.Builder(Collections.singletonList(baseurl))
+          new CloudSolrClient.Builder(Collections.singletonList(baseurl))
               .withHttpClientBuilder(builder)
               .build();
       NamedList<Object> response =

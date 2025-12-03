@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
@@ -30,7 +31,6 @@ import org.apache.solr.request.SolrQueryRequest;
  * jackson library to write the stream out
  */
 public class CborResponseWriter implements QueryResponseWriter {
-  public static final String APPLICATION_CBOR_VALUE = "application/cbor";
   final CBORFactory cborFactory;
   final CBORFactory cborFactoryCompact;
 
@@ -52,7 +52,7 @@ public class CborResponseWriter implements QueryResponseWriter {
 
   @Override
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return APPLICATION_CBOR_VALUE;
+    return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
   }
 
   static class WriterImpl extends JSONWriter {

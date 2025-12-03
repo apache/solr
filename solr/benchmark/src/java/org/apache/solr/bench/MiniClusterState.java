@@ -36,11 +36,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
@@ -82,7 +82,7 @@ public class MiniClusterState {
     MiniSolrCloudCluster cluster;
 
     /** The Client. */
-    public Http2SolrClient client;
+    public HttpJettySolrClient client;
 
     /** The Run cnt. */
     int runCnt = 0;
@@ -291,7 +291,7 @@ public class MiniClusterState {
       }
       zkHost = cluster.getZkServer().getZkAddress();
 
-      client = new Http2SolrClient.Builder(nodes.get(0)).useHttp1_1(useHttp1).build();
+      client = new HttpJettySolrClient.Builder(nodes.get(0)).useHttp1_1(useHttp1).build();
 
       log("done starting mini cluster");
       log("");

@@ -38,23 +38,25 @@ import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -121,20 +123,20 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
 
     httpJettyBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(solrUrls)
-            .withHttpClientBuilder(new Http2SolrClient.Builder())
+        new CloudSolrClient.Builder(solrUrls)
+            .withHttpClientBuilder(new HttpJettySolrClient.Builder())
             .build();
-    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
     assertTrue(
         httpJettyBasedCloudSolrClient.getClusterStateProvider()
-            instanceof Http2ClusterStateProvider<?>);
+            instanceof HttpClusterStateProvider<?>);
     assertTrue(
-        ((Http2ClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
+        ((HttpClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
                 .getHttpClient()
-            instanceof Http2SolrClient);
+            instanceof HttpJettySolrClient);
 
     httpJdkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(solrUrls)
+        new CloudSolrClient.Builder(solrUrls)
             .withHttpClientBuilder(
                 new HttpJdkSolrClient.Builder()
                     .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT))
@@ -142,17 +144,17 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertTrue(httpJdkBasedCloudSolrClient.getHttpClient() instanceof HttpJdkSolrClient);
     assertTrue(
         httpJdkBasedCloudSolrClient.getClusterStateProvider()
-            instanceof Http2ClusterStateProvider<?>);
+            instanceof HttpClusterStateProvider<?>);
     assertTrue(
-        ((Http2ClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider())
+        ((HttpClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider())
                 .getHttpClient()
             instanceof HttpJdkSolrClient);
 
     zkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
-    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof Http2SolrClient);
+    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
     assertTrue(
         zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
   }
@@ -345,7 +347,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    return new CloudHttp2SolrClient.Builder(solrUrls).build();
+    return new CloudSolrClient.Builder(solrUrls).build();
   }
 
   @Test
@@ -821,7 +823,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    SolrClient.RemoteSolrException sse = null;
+    RemoteSolrException sse = null;
 
     try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
@@ -875,7 +877,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
@@ -1062,7 +1064,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
@@ -1073,7 +1075,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer

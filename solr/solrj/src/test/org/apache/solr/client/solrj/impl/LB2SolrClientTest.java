@@ -29,8 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -114,7 +115,7 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
   private LBClientHolder client(LBSolrClient.Endpoint... baseSolrEndpoints) {
     if (random().nextBoolean()) {
       var delegateClient =
-          new Http2SolrClient.Builder()
+          new HttpJettySolrClient.Builder()
               .withConnectionTimeout(1000, TimeUnit.MILLISECONDS)
               .withIdleTimeout(2000, TimeUnit.MILLISECONDS)
               .build();
