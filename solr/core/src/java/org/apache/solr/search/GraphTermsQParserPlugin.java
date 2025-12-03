@@ -545,6 +545,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer, Accountabl
   }
 
   @Override
+  public boolean alwaysCreatesDocSet() {
+    return true;
+  }
+
+  @Override
   public long ramBytesUsed() {
     return ramBytesUsed;
   }

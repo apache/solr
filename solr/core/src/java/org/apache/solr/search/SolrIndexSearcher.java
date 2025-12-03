@@ -1276,15 +1276,18 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           if (eq.getCost() >= 100 && eq instanceof PostFilter) {
             if (postFilters == null) postFilters = new ArrayList<>(sets.length - end);
             postFilters.add((PostFilter) q);
+            continue;
+          } else if (DocSetProducer.alwaysCreatesDocSet(q)) {
+            // proceed to pull the DocSet anyway
           } else {
             if (notCached == null) notCached = new ArrayList<>(sets.length - end);
             notCached.add((ExtendedQuery) q);
+            continue;
           }
-          continue;
         }
       }
 
-      if (filterCache == null) {
+      if (filterCache == null && !DocSetProducer.alwaysCreatesDocSet(q)) {
         // there is no cache: don't pull bitsets
         if (notCached == null) notCached = new ArrayList<>(sets.length - end);
         WrappedQuery uncached = new WrappedQuery(q);

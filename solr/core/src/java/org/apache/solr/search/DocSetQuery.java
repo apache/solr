@@ -76,6 +76,11 @@ class DocSetQuery extends Query implements DocSetProducer {
   }
 
   @Override
+  public boolean alwaysCreatesDocSet() {
+    return true;
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost)
       throws IOException {
     return new ConstantScoreWeight(this, boost) {
