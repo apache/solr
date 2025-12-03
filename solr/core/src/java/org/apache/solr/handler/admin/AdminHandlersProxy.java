@@ -109,7 +109,8 @@ public class AdminHandlersProxy {
         NamedList<Object> resp = entry.getValue().get(10, TimeUnit.SECONDS);
         rsp.add(entry.getKey(), resp);
       } catch (ExecutionException ee) {
-        log.warn("Exception when fetching result from node {}", entry.getKey(), ee.getCause());
+        log.warn(
+            "Exception when fetching result from node {}", entry.getKey(), ee.getCause()); // nowarn
       } catch (TimeoutException te) {
         log.warn("Timeout when fetching result from node {}", entry.getKey());
       } catch (InterruptedException e) {
