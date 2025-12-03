@@ -216,6 +216,6 @@ org.semver4j:semver4j:6.0.0=apiHelper,jarValidation,runtimeClasspath,runtimeLibs
 org.slf4j:jcl-over-slf4j:2.0.17=apiHelper,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 org.slf4j:jul-to-slf4j:2.0.17=solrPlatformLibs
 org.slf4j:slf4j-api:2.0.17=apiHelper,compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-org.threeten:threetenbp:1.7.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
+org.threeten:threetenbp:1.7.2=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,testCompileClasspath,testRuntimeClasspath
 org.xerial.snappy:snappy-java:1.1.10.8=apiHelper,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 empty=apiHelperTest,compileOnlyHelper,compileOnlyHelperTest,missingdoclet,packaging,permitAggregatorUse,permitTestAggregatorUse,permitTestUnusedDeclared,permitTestUsedUndeclared,permitUnusedDeclared,permitUsedUndeclared,signatures
