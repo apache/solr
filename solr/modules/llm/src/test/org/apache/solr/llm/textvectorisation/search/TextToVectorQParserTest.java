@@ -18,7 +18,7 @@ package org.apache.solr.llm.textvectorisation.search;
 
 import java.util.Arrays;
 import java.util.Locale;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.llm.TestLlmBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

@@ -102,13 +102,15 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.security.allow.urls|solr.allowUrls||A comma seperated list of urls for reading from.
 
-|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled. 
+|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled.
 
 |solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
 
 |solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
 
 |solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
+
+|solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
 
 |solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
 
@@ -163,8 +165,8 @@ System properties can be set in several ways:
 2. In `solr.in.sh` (Unix) or `solr.in.cmd` (Windows) using environment variables
 3. Through environment variables (with appropriate naming conventions)
 
-Environment variables can also be used to set these properties.  
-You may find this useful in environments such as Docker.  
+Environment variables can also be used to set these properties.
+You may find this useful in environments such as Docker.
 Environment variables should be uppercase with dot notations equivalents, e.g. `SOLR_API_V2_ENABLED` for the property `solr.api.v2.enabled`.
 
 == See Also

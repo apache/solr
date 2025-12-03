@@ -59,9 +59,9 @@ public class LeaderElectionContextKeyTest extends SolrCloudTestCase {
           .process(cluster.getSolrClient());
     }
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         "testCollection1", cluster.getZkStateReader(), false, true, 30);
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         "testCollection2", cluster.getZkStateReader(), false, true, 30);
   }
 
