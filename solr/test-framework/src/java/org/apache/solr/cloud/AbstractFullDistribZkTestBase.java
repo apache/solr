@@ -134,6 +134,12 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   private final AtomicInteger homeCount = new AtomicInteger();
 
   @BeforeClass
+  public static void beforeThisClass() throws Exception {
+    // Only For Manual Testing: this will force an fs based dir factory
+    // useFactory(null);
+  }
+
+  @BeforeClass
   public static void beforeFullSolrCloudTest() {}
 
   @Before
