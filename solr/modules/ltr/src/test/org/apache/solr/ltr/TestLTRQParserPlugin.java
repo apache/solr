@@ -16,7 +16,7 @@
  */
 package org.apache.solr.ltr;
 
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;

@@ -30,21 +30,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
 import org.apache.solr.client.solrj.impl.HttpSolrClientTestBase;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -101,7 +101,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
                 .build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
     }
   }
@@ -175,7 +175,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       client.query(q, method);
       assertEquals(
           client.getParser().getWriterType(), DebugServlet.parameters.get(CommonParams.WT)[0]);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
   }
 
@@ -229,7 +229,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, (c) -> c.query(queryParams));
-      } catch (SolrClient.RemoteSolrException rse) {
+      } catch (RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);
@@ -240,7 +240,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams), null);
-      } catch (SolrClient.RemoteSolrException rse) {
+      } catch (RemoteSolrException rse) {
       }
 
       assertEquals(urlToUse + "/select", DebugServlet.url);
@@ -255,7 +255,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_CORE).build()) {
       try {
         client.deleteById("id");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
@@ -273,7 +273,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
             .build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
@@ -498,13 +498,13 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testSetCredentialsWithSysProps() throws IOException, SolrServerException {
     System.setProperty(
-        PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
+        PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS, "foo:bar");
     System.setProperty(
-        SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY,
-        PreemptiveBasicAuthClientBuilderFactory.class.getName());
+        HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP,
+        PreemptiveBasicAuthClientCustomizer.class.getName());
     // Hack to ensure we get a new set of parameters for this test
-    PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(
-        new PreemptiveBasicAuthClientBuilderFactory.CredentialsResolver().defaultParams);
+    PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(
+        new PreemptiveBasicAuthClientCustomizer.CredentialsResolver().defaultParams);
     try (var client =
         new HttpJettySolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_CORE)
@@ -527,9 +527,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
           "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes(StandardCharsets.UTF_8)),
           authorizationHeader);
     } finally {
-      System.clearProperty(PreemptiveBasicAuthClientBuilderFactory.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-      System.clearProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
-      PreemptiveBasicAuthClientBuilderFactory.setDefaultSolrParams(SolrParams.of());
+      System.clearProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
+      System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
+      PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(SolrParams.of());
     }
   }
 
@@ -607,7 +607,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testBadHttpFactory() {
-    System.setProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY, "FakeClassName");
+    System.setProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP, "FakeClassName");
     try {
       SolrClient client =
           new HttpJettySolrClient.Builder(getBaseUrl() + DEBUG_SERVLET_PATH)

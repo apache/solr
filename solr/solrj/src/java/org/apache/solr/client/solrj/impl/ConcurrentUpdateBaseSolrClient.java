@@ -29,6 +29,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -231,7 +232,6 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
-    @SuppressWarnings({"unchecked"})
     void sendUpdateStream() throws Exception {
 
       try {
@@ -255,34 +255,18 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
             int statusCode = response.getStatus();
             if (statusCode != HttpStatus.OK_200) {
-              StringBuilder msg = new StringBuilder();
-              msg.append(response.getReason());
-              msg.append("\n\n\n\n");
-              msg.append("request: ").append(basePath);
-
               SolrException solrExc;
-              NamedList<String> metadata = null;
+              Object remoteError = null;
               // parse out the metadata from the SolrException
               try {
                 String encoding = "UTF-8"; // default
                 NamedList<Object> resp = client.getParser().processResponse(rspBody, encoding);
-                NamedList<Object> error = (NamedList<Object>) resp.get("error");
-                if (error != null) {
-                  metadata = (NamedList<String>) error.get("metadata");
-                  String remoteMsg = (String) error.get("msg");
-                  if (remoteMsg != null) {
-                    msg.append("\nRemote error message: ");
-                    msg.append(remoteMsg);
-                  }
-                }
+                remoteError = resp.get("error");
               } catch (Exception exc) {
                 // don't want to fail to report error if parsing the response fails
                 log.warn("Failed to parse error response from {} due to: ", basePath, exc);
               } finally {
-                solrExc = new RemoteSolrException(basePath, statusCode, msg.toString(), null);
-                if (metadata != null) {
-                  solrExc.setMetadata(metadata);
-                }
+                solrExc = new RemoteSolrException(basePath, statusCode, remoteError);
               }
 
               handleError(solrExc);
