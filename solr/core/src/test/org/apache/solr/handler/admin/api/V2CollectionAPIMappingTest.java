@@ -22,8 +22,8 @@ import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ACTION;
 
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.TestCollectionAPIs;
@@ -51,7 +51,6 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   public void populateApiBag() {
     final CollectionsHandler collectionsHandler = getRequestHandler();
     apiBag.registerObject(new MigrateDocsAPI(collectionsHandler));
-    apiBag.registerObject(new ModifyCollectionAPI(collectionsHandler));
     apiBag.registerObject(new MoveReplicaAPI(collectionsHandler));
     apiBag.registerObject(new RebalanceLeadersAPI(collectionsHandler));
   }
@@ -67,31 +66,47 @@ public class V2CollectionAPIMappingTest extends V2ApiMappingTest<CollectionsHand
   }
 
   @Test
-  public void testModifyCollectionAllProperties() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/collections/collName",
-            "POST",
-            "{ 'modify': {"
-                + "'replicationFactor': 123, "
-                + "'readOnly': true, "
-                + "'config': 'techproducts_config', "
-                + "'async': 'requestTrackingId', "
-                + "'properties': {"
-                + "     'foo': 'bar', "
-                + "     'baz': 456 "
-                + "}"
-                + "}}");
+  public void testModifyCollectionV2Mapping() throws Exception {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.add(ACTION, "modifycollection");
+    v1Params.add("replicationFactor", "123");
+    v1Params.add("readOnly", "true");
+    v1Params.add(COLL_CONF, "someConfig");
+    v1Params.add("async", "asdf");
+    v1Params.add("property.foo", "bar");
+    v1Params.add("perReplicaState", "true");
 
-    assertEquals(
-        CollectionParams.CollectionAction.MODIFYCOLLECTION.lowerName, v1Params.get(ACTION));
-    assertEquals("collName", v1Params.get(COLLECTION));
-    assertEquals(123, v1Params.getPrimitiveInt(ZkStateReader.REPLICATION_FACTOR));
-    assertTrue(v1Params.getPrimitiveBool(ZkStateReader.READ_ONLY));
-    assertEquals("techproducts_config", v1Params.get(COLL_CONF));
-    assertEquals("requestTrackingId", v1Params.get(ASYNC));
-    assertEquals("bar", v1Params.get("property.foo"));
-    assertEquals(456, v1Params.getPrimitiveInt("property.baz"));
+    final var requestBody = ModifyCollectionAPI.createV2RequestBody(v1Params);
+
+    assertEquals(123, Integer.valueOf(requestBody.replicationFactor).intValue());
+    assertEquals(true, requestBody.readOnly);
+    assertEquals("someConfig", requestBody.config);
+    assertEquals("asdf", requestBody.async);
+    assertEquals(true, requestBody.perReplicaState);
+    assertEquals(1, requestBody.properties.size());
+    assertEquals("bar", requestBody.properties.get("foo"));
+  }
+
+  @Test
+  public void testModifyCollectionV2MappingEmptyString() throws Exception {
+    final var v1Params = new ModifiableSolrParams();
+    v1Params.add(ACTION, "modifycollection");
+    v1Params.add("replicationFactor", "123");
+    v1Params.add("readOnly", "");
+    v1Params.add(COLL_CONF, "someConfig");
+    v1Params.add("async", "asdf");
+    v1Params.add("property.foo", "bar");
+    v1Params.add("perReplicaState", "true");
+
+    final var requestBody = ModifyCollectionAPI.createV2RequestBody(v1Params);
+
+    assertEquals(123, Integer.valueOf(requestBody.replicationFactor).intValue());
+    assertEquals(true, requestBody.readOnly);
+    assertEquals("someConfig", requestBody.config);
+    assertEquals("asdf", requestBody.async);
+    assertEquals(true, requestBody.perReplicaState);
+    assertEquals(1, requestBody.properties.size());
+    assertEquals("bar", requestBody.properties.get("foo"));
   }
 
   @Test
