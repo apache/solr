@@ -1,0 +1,7 @@
+title: Update langchain4j to v1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3372
+  url: https://github.com/apache/solr/pull/3372
