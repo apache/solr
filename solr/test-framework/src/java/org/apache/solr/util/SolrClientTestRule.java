@@ -44,7 +44,7 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
-   * used. Otherwise a default testing configuration is used.
+   * used. Otherwise, a default testing configuration is used.
    */
   public abstract void startSolr(Path solrHome);
 
@@ -59,7 +59,6 @@ public abstract class SolrClientTestRule extends ExternalResource {
   public class NewCollectionBuilder {
     private String name;
     private String configSet;
-    private String configFile;
     private String schemaFile;
     private String basicAuthUser;
     private String basicAuthPwd;
@@ -85,11 +84,6 @@ public abstract class SolrClientTestRule extends ExternalResource {
       return this;
     }
 
-    public NewCollectionBuilder withConfigFile(String configFile) {
-      this.configFile = configFile;
-      return this;
-    }
-
     public NewCollectionBuilder withSchemaFile(String schemaFile) {
       this.schemaFile = schemaFile;
       return this;
@@ -107,10 +101,6 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
     public String getConfigSet() {
       return configSet;
-    }
-
-    public String getConfigFile() {
-      return configFile;
     }
 
     public String getSchemaFile() {
@@ -138,10 +128,6 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
     if (b.getConfigSet() != null) {
       req.setConfigSet(b.getConfigSet());
-    }
-
-    if (b.getConfigFile() != null) {
-      req.setConfigName(b.getConfigFile());
     }
 
     if (b.getSchemaFile() != null) {

@@ -61,11 +61,6 @@ public class SSLTestConfig {
   private final boolean useSsl;
   private final boolean clientAuth;
 
-  /** Creates an SSLTestConfig that does not use SSL or client authentication */
-  public SSLTestConfig() {
-    this(false, false);
-  }
-
   /**
    * Create an SSLTestConfig based on a few caller specified options, implicitly assuming <code>
    * checkPeerName=false</code>.
@@ -210,7 +205,7 @@ public class SSLTestConfig {
    *
    * <p>NOTE: Uses a completely insecure {@link SecureRandom} instance to prevent tests from
    * blocking due to lack of entropy, also explicitly allows the use of self-signed certificates
-   * (since that's what is almost always used during testing). almost always used during testing).
+   * (since that's what is almost always used during testing).
    */
   public SSLConfig buildServerSSLConfig() {
     if (!isSSLMode()) {
@@ -330,16 +325,16 @@ public class SSLTestConfig {
   /**
    * A mocked up instance of SecureRandom that just uses {@link Random} under the covers. This is to
    * prevent blocking issues that arise in platform default SecureRandom instances due to too many
-   * instances / not enough random entropy. Tests do not need secure SSL.
+   * instances / not enough random entropy. Tests do not need to use secure SSL.
    */
   private static class NotSecurePseudoRandom extends SecureRandom {
     public static final SecureRandom INSTANCE = new NotSecurePseudoRandom();
 
     /**
-     * Helper method that can be used to fill an array with non-zero data. (Attempted workarround of
+     * Helper method that can be used to fill an array with non-zero data. (Attempted workaround of
      * Solaris SSL Padding bug: SOLR-9068)
      */
-    private static final byte[] fillData(byte[] data) {
+    private static byte[] fillData(byte[] data) {
       ThreadLocalRandom.current().nextBytes(data);
       return data;
     }
