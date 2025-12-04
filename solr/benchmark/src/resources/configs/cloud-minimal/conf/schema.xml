@@ -15,7 +15,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
 -->
-<schema name="minimal" version="1.7">
+<schema name="minimal" version="1.6">
     <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
     <fieldType name="string" class="solr.StrField"/>
     <fieldType name="int" class="org.apache.solr.schema.IntPointField" docValues="false" omitNorms="true"
@@ -47,15 +47,25 @@
     <dynamicField name="*_ts" type="text" indexed="true" stored="true"/>
     <dynamicField name="*_i" type="int" indexed="true" stored="false"/>
     <dynamicField name="*_i_dv" type="int" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_i_e" type="int" indexed="true" stored="false" enhancedIndex="true"/>
+    <dynamicField name="*_i_dv_e" type="int" indexed="true" docValues="true" stored="false" enhancedIndex="true"/>
     <dynamicField name="*_is" type="int" indexed="false" stored="true"/>
     <dynamicField name="*_l" type="long" indexed="true" stored="false"/>
     <dynamicField name="*_l_dv" type="long" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_l_e" type="long" indexed="true" stored="false" enhancedIndex="true"/>
+    <dynamicField name="*_l_dv_e" type="long" indexed="true" docValues="true" stored="false" enhancedIndex="true"/>
     <dynamicField name="*_f" type="float" indexed="true" stored="false"/>
     <dynamicField name="*_f_dv" type="float" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_f_e" type="float" indexed="true" stored="false" enhancedIndex="true"/>
+    <dynamicField name="*_f_dv_e" type="float" indexed="true" docValues="true" stored="false" enhancedIndex="true"/>
     <dynamicField name="*_d" type="double" indexed="true" stored="false"/>
     <dynamicField name="*_d_dv" type="double" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_d_e" type="double" indexed="true" stored="false" enhancedIndex="true"/>
+    <dynamicField name="*_d_dv_e" type="double" indexed="true" docValues="true" stored="false" enhancedIndex="true"/>
     <dynamicField name="*_dt" type="date" indexed="true" stored="false"/>
     <dynamicField name="*_dt_dv" type="date" indexed="true" docValues="true" stored="false"/>
+    <dynamicField name="*_dt_e" type="date" indexed="true" stored="false" enhancedIndex="true"/>
+    <dynamicField name="*_dt_dv_e" type="date" indexed="true" docValues="true" stored="false" enhancedIndex="true"/>
 
     <uniqueKey>id</uniqueKey>
 </schema>

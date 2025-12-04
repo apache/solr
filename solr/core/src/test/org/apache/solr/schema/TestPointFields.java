@@ -60,7 +60,7 @@ import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermInSetQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -5319,7 +5319,6 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     }
     builder.append(')');
-    if (sf.indexed()) { // SolrQueryParser should also be generating a PointInSetQuery if indexed
       assertQ(
           req(
               CommonParams.DEBUG,
@@ -5331,23 +5330,9 @@ public class TestPointFields extends SolrTestCaseJ4 {
               "fl",
               "id," + fieldName),
           "//*[@numFound='" + numTerms + "']",
-          "//*[@name='parsed_filter_queries']/str[.='"
+          "//*[@name='parsed_filter_queries']/str["
               + getSetQueryToString(fieldName, values, numTerms)
-              + "']");
-    } else {
-      // Won't use PointInSetQuery if the field is not indexed, but should match the same docs
-      assertQ(
-          req(
-              CommonParams.DEBUG,
-              CommonParams.QUERY,
-              "q",
-              "*:*",
-              "fq",
-              builder.toString(),
-              "fl",
-              "id," + fieldName),
-          "//*[@numFound='" + numTerms + "']");
-    }
+              + "]");
 
     if (multiValued) {
       clearIndex();
@@ -5388,12 +5373,33 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   private String getSetQueryToString(String fieldName, String[] values, int numTerms) {
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
-    Query setQuery =
-        sf.getType().getSetQuery(null, sf, Arrays.asList(Arrays.copyOf(values, numTerms)));
+    List<String> rules = new ArrayList<>();
+    boolean isMultiQuery = false;
     if (sf.indexed() && sf.hasDocValues()) {
-      return IndexOrDocValuesQuery.class.getSimpleName() + "(" + setQuery.toString() + ")";
+      isMultiQuery = true;
+      rules.add("starts-with(., 'IndexOrDocValuesQuery')");
     }
-    return "(" + setQuery.toString() + ")";
+    if (sf.enhancedIndex()) {
+      if (isMultiQuery) {
+        rules.add("contains(., 'indexQuery=" + fieldName + ":(')");
+      } else {
+        rules.add("starts-with(., 'TermInSetQuery(" + fieldName + ":(')");
+      }
+    } else if (sf.indexed()) {
+      if (isMultiQuery) {
+        rules.add("contains(., 'indexQuery=" + fieldName + ":{')");
+      } else {
+        rules.add("starts-with(., '(" + fieldName + ":{')");
+      }
+    }
+    if (sf.hasDocValues()) {
+      if (isMultiQuery) {
+        rules.add("contains(., 'dvQuery=" + fieldName + ": [')");
+      } else {
+        rules.add("starts-with(., 'SortedNumericDocValuesSetQuery(" + fieldName + ": [')");
+      }
+    }
+    return String.join(" and ", rules);
   }
 
   private void doTestDatePointFieldExactQuery(final String field, final String baseDate)

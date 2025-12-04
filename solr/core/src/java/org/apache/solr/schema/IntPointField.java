@@ -20,18 +20,23 @@ package org.apache.solr.schema;
 import java.util.Collection;
 import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.IntFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
+import org.apache.solr.util.DateMathParser;
 
 /**
  * {@code PointField} implementation for {@code Integer} values.
@@ -104,26 +109,42 @@ public class IntPointField extends PointField implements IntValueFieldType {
   }
 
   @Override
-  protected Query getExactQuery(SchemaField field, String externalVal) {
-    return IntPoint.newExactQuery(field.getName(), parseIntFromUser(field.getName(), externalVal));
-  }
-
-  @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
-    assert externalVal.size() > 0;
-    if (!field.indexed()) {
-      return super.getSetQuery(parser, field, externalVal);
-    }
-    int[] values = new int[externalVal.size()];
-    int i = 0;
-    for (String val : externalVal) {
-      values[i] = parseIntFromUser(field.getName(), val);
-      i++;
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    assert externalVals.size() > 0;
+    Query indexQuery = null;
+    int[] values = null;
+    if (hasIndexedTerms(field)) {
+      indexQuery = super.getSetQuery(parser, field, externalVals);
+    } else if (field.indexed()) {
+      values = new int[externalVals.size()];
+      int i = 0;
+      for (String val : externalVals) {
+        values[i++] = parseIntFromUser(field.getName(), val);
+      }
+      indexQuery = IntPoint.newSetQuery(field.getName(), values);
     }
     if (field.hasDocValues()) {
-      return IntField.newSetQuery(field.getName(), values);
+      long[] points = new long[externalVals.size()];
+      if (values != null) {
+        for (int i = 0; i < values.length; i++) {
+          points[i] = values[i];
+        }
+      } else {
+        int i = 0;
+        for (String val : externalVals) {
+          points[i++] = parseIntFromUser(field.getName(), val);
+        }
+      }
+      Query docValuesQuery = SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
+      if (indexQuery != null) {
+        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
+      } else {
+        return docValuesQuery;
+      }
+    } else if (indexQuery != null) {
+      return indexQuery;
     } else {
-      return IntPoint.newSetQuery(field.getName(), values);
+      return super.getSetQuery(parser, field, externalVals);
     }
   }
 
