@@ -199,6 +199,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
+* The deprecated 'solrcore.properties` configuration method has been removed.  The ability to configure a core via properties file via the `core.proprties` "property" setting remains.
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
