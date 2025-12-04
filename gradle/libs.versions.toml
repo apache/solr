@@ -157,7 +157,7 @@ kotlinx-serialization = "1.9.0"
 # @keep used by spotless
 ktlint = "1.7.1"
 ktor = "3.2.2"
-langchain4j = "0.35.0"
+langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.5"
@@ -448,11 +448,12 @@ ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotia
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
-langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }
-langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face", version.ref = "langchain4j" }
-langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai", version.ref = "langchain4j" }
-langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai", version.ref = "langchain4j" }
+langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
+langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere"}
+langchain4j-core = { module = "dev.langchain4j:langchain4j-core"}
+langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face"}
+langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai"}
+langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai"}
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
