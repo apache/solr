@@ -24,10 +24,10 @@ import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.p
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.util.ExternalPaths;
@@ -81,13 +81,13 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
 
     // tag::term-component-request[]
     final SolrQuery termsQuery = new SolrQuery();
-    termsQuery.setRequestHandler("/terms");
     termsQuery.setTerms(true);
     termsQuery.setTermsLimit(5);
     termsQuery.addTermsField("name");
     termsQuery.setTermsMinCount(1);
 
     final QueryRequest request = new QueryRequest(termsQuery);
+    request.setPath("/terms");
     final List<Term> terms =
         request
             .process(cluster.getSolrClient(), COLLECTION_NAME)

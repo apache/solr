@@ -25,9 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrQuery.SortClause;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -82,7 +81,8 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
     }
 
     // tag::cursormark-query[]
-    SolrQuery q = (new SolrQuery("*:*")).setRows(BATCH_SIZE).setSort(SortClause.asc("id"));
+    SolrQuery q =
+        (new SolrQuery("*:*")).setRows(BATCH_SIZE).setSort(SolrQuery.SortClause.asc("id"));
     String cursorMark = CursorMarkParams.CURSOR_MARK_START;
     boolean done = false;
 
