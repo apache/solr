@@ -61,7 +61,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     deleteReplica(clusterState, message, results, null);
   }
@@ -313,7 +314,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     final ShardRequestTracker shardRequestTracker =
         CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
     if (isLive) {
-      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
     }
 
     Callable<Boolean> callable =

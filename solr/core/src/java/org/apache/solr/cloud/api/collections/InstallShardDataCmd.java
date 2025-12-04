@@ -23,11 +23,18 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import org.apache.solr.cloud.ZkShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -58,7 +65,9 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  @SuppressWarnings("unchecked")
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     final RemoteMessage typedMessage =
         new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
@@ -79,23 +88,200 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     // Build the core-admin request
     final ModifiableSolrParams coreApiParams = new ModifiableSolrParams();
     coreApiParams.set(
-        CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.INSTALLCOREDATA.toString());
-    typedMessage.toMap(new HashMap<>()).forEach((k, v) -> coreApiParams.set(k, v.toString()));
+        CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
+    coreApiParams.set(CoreAdminParams.BACKUP_LOCATION, typedMessage.location);
+    coreApiParams.set(CoreAdminParams.BACKUP_REPOSITORY, typedMessage.repository);
+    coreApiParams.set(CoreAdminParams.NAME, typedMessage.name);
+    coreApiParams.set(CoreAdminParams.SHARD_BACKUP_ID, typedMessage.shardBackupId);
 
     // Send the core-admin request to each replica in the slice
     final ShardHandler shardHandler = ccc.newShardHandler();
-    shardRequestTracker.sliceCmd(clusterState, coreApiParams, null, installSlice, shardHandler);
+    List<Replica> notLiveReplicas =
+        shardRequestTracker.sliceCmd(clusterState, coreApiParams, null, installSlice, shardHandler);
     final String errorMessage =
         String.format(
             Locale.ROOT,
-            "Could not install data to collection [%s] and shard [%s]",
+            "Could not install data to collection [%s] and shard [%s] on any leader-eligible replicas",
             typedMessage.collection,
             typedMessage.shard);
-    shardRequestTracker.processResponses(results, shardHandler, true, errorMessage);
+    shardRequestTracker.processResponses(results, shardHandler, false, errorMessage);
+    Collection<Replica> allReplicas =
+        clusterState
+            .getCollection(typedMessage.collection)
+            .getSlice(typedMessage.shard)
+            .getReplicas();
+
+    // Ensure that terms are correct for this shard after the execution is done
+    // We only care about leader eligible replicas, all others will eventually get updated.
+    List<Replica> leaderEligibleReplicas =
+        allReplicas.stream().filter(r -> r.getType().leaderEligible).collect(Collectors.toList());
+
+    NamedList<Object> failures = (NamedList<Object>) results.get("failure");
+    Set<Replica> successfulReplicas =
+        leaderEligibleReplicas.stream()
+            .filter(replica -> !notLiveReplicas.contains(replica))
+            .filter(
+                replica ->
+                    failures == null
+                        || failures.get(CollectionHandlingUtils.requestKey(replica)) == null)
+            .collect(Collectors.toSet());
+
+    if (successfulReplicas.isEmpty()) {
+      // No leader-eligible replicas succeeded, return failure
+      if (failures == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            errorMessage + ". No leader-eligible replicas are live.");
+      } else {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, errorMessage, (Throwable) failures.getVal(0));
+      }
+    } else if (successfulReplicas.size() < leaderEligibleReplicas.size()) {
+      // Some, but not all, leader-eligible replicas succeeded.
+      // Ensure the shard terms are correct so that the non-successful replicas go into recovery
+      ZkShardTerms shardTerms =
+          ccc.getCoreContainer()
+              .getZkController()
+              .getShardTerms(typedMessage.collection, typedMessage.shard);
+      shardTerms.ensureHighestTerms(
+          successfulReplicas.stream().map(Replica::getName).collect(Collectors.toSet()));
+      Set<String> replicasToRecover =
+          leaderEligibleReplicas.stream()
+              .filter(r -> !successfulReplicas.contains(r))
+              .map(Replica::getName)
+              .collect(Collectors.toSet());
+      ccc.getZkStateReader()
+          .waitForState(
+              typedMessage.collection,
+              10,
+              TimeUnit.SECONDS,
+              (liveNodes, collectionState) ->
+                  collectionState.getSlice(typedMessage.shard).getReplicas().stream()
+                      .filter(r -> replicasToRecover.contains(r.getName()))
+                      .allMatch(r -> Replica.State.RECOVERING.equals(r.getState())));
+
+      // In order for the async request to succeed, we need to ensure that there is no failure
+      // message
+      NamedList<Object> successes = (NamedList<Object>) results.get("success");
+      failures.forEach(
+          (replicaKey, value) -> {
+            successes.add(
+                replicaKey,
+                new NamedList<>(
+                    Map.of(
+                        "explanation",
+                        "Core install failed, but is now recovering from the leader",
+                        "failure",
+                        value)));
+          });
+      results.remove("failure");
+    } else {
+      // other replicas to-be-created will know that they are out of date by
+      // looking at their term : 0 compare to term of this core : 1
+      ccc.getCoreContainer()
+          .getZkController()
+          .getShardTerms(typedMessage.collection, typedMessage.shard)
+          .ensureHighestTermsAreNotZero();
+    }
   }
+
+  /*
+  public static void handleCoreRestoreResponses(
+      CoreContainer coreContainer,
+      String collection,
+      List<String> shards,
+      NamedList<Object> results,
+      List<Replica> notLiveReplicas,
+      String errorMessage) {
+    DocCollection collectionState = coreContainer.getZkController().getZkStateReader().getCollectionLive(collection);
+    Collection<Replica> allReplicas =
+        shards.stream()
+            .flatMap(shard -> collectionState.getSlice(shard).getReplicas().stream())
+            .toList();
+
+    // Ensure that terms are correct for this shard after the execution is done
+    // We only care about leader eligible replicas, all others will eventually get updated.
+    List<Replica> leaderEligibleReplicas =
+        allReplicas.stream()
+            .filter(r -> r.getType().leaderEligible)
+            .toList();
+
+    NamedList<Object> failures = (NamedList<Object>) results.get("failure");
+    Set<Replica> successfulReplicas =
+        leaderEligibleReplicas.stream()
+            .filter(replica -> !notLiveReplicas.contains(replica))
+            .filter(
+                replica ->
+                    failures == null
+                        || failures.get(CollectionHandlingUtils.requestKey(replica)) == null)
+            .collect(Collectors.toSet());
+
+    if (successfulReplicas.isEmpty()) {
+      // No leader-eligible replicas succeeded, return failure
+      if (failures == null) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            errorMessage + ". No leader-eligible replicas are live.");
+      } else {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, errorMessage, (Throwable) failures.getVal(0));
+      }
+    } else if (successfulReplicas.size() < leaderEligibleReplicas.size()) {
+      // Some, but not all, leader-eligible replicas succeeded.
+      // Ensure the shard terms are correct so that the non-successful replicas go into recovery
+      ZkShardTerms shardTerms =
+          coreContainer
+              .getZkController()
+              .getShardTerms(typedMessage.collection, typedMessage.shard);
+      shardTerms.ensureHighestTerms(
+          successfulReplicas.stream().map(Replica::getName).collect(Collectors.toSet()));
+      Set<String> replicasToRecover =
+          leaderEligibleReplicas.stream()
+              .filter(r -> !successfulReplicas.contains(r))
+              .map(Replica::getName)
+              .collect(Collectors.toSet());
+      coreContainer
+          .getZkController()
+          .getZkStateReader()
+          .waitForState(
+              collection,
+              10,
+              TimeUnit.SECONDS,
+              (liveNodes, colState) ->
+                  colState.getSlice(typedMessage.shard).getReplicas().stream()
+                      .filter(r -> replicasToRecover.contains(r.getName()))
+                      .allMatch(r -> Replica.State.RECOVERING.equals(r.getState())));
+
+      // In order for the async request to succeed, we need to ensure that there is no failure
+      // message
+      NamedList<Object> successes = (NamedList<Object>) results.get("success");
+      failures.forEach(
+          (replicaKey, value) -> {
+            successes.add(
+                replicaKey,
+                new NamedList<>(
+                    Map.of(
+                        "explanation",
+                        "Core install failed, but is now recovering from the leader",
+                        "failure",
+                        value)));
+          });
+      results.remove("failure");
+    } else {
+      // other replicas to-be-created will know that they are out of date by
+      // looking at their term : 0 compare to term of this core : 1
+      coreContainer
+          .getZkController()
+          .getShardTerms(collection, typedMessage.shard)
+          .ensureHighestTermsAreNotZero();
+    }
+  }
+  */
 
   /** A value-type representing the message received by {@link InstallShardDataCmd} */
   public static class RemoteMessage implements JacksonReflectMapWriter {
+
+    @JsonProperty public String callingLockId;
 
     @JsonProperty(QUEUE_OPERATION)
     public String operation = CollectionParams.CollectionAction.INSTALLSHARDDATA.toLower();
@@ -107,6 +293,10 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     @JsonProperty public String repository;
 
     @JsonProperty public String location;
+
+    @JsonProperty public String name = "";
+
+    @JsonProperty public String shardBackupId;
 
     @JsonProperty(ASYNC)
     public String asyncId;
