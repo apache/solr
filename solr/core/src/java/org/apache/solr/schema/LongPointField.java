@@ -18,8 +18,6 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import org.apache.lucene.document.IntPoint;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
@@ -34,7 +32,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import org.apache.solr.util.DateMathParser;
 
 /**
  * {@code PointField} implementation for {@code Long} values.

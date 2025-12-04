@@ -18,11 +18,8 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import org.apache.lucene.document.DoublePoint;
-import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
-import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;

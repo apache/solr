@@ -60,7 +60,6 @@ import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.PointRangeQuery;
-import org.apache.lucene.search.TermInSetQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -5319,20 +5318,20 @@ public class TestPointFields extends SolrTestCaseJ4 {
       }
     }
     builder.append(')');
-      assertQ(
-          req(
-              CommonParams.DEBUG,
-              CommonParams.QUERY,
-              "q",
-              "*:*",
-              "fq",
-              builder.toString(),
-              "fl",
-              "id," + fieldName),
-          "//*[@numFound='" + numTerms + "']",
-          "//*[@name='parsed_filter_queries']/str["
-              + getSetQueryToString(fieldName, values, numTerms)
-              + "]");
+    assertQ(
+        req(
+            CommonParams.DEBUG,
+            CommonParams.QUERY,
+            "q",
+            "*:*",
+            "fq",
+            builder.toString(),
+            "fl",
+            "id," + fieldName),
+        "//*[@numFound='" + numTerms + "']",
+        "//*[@name='parsed_filter_queries']/str["
+            + getSetQueryToString(fieldName, values, numTerms)
+            + "]");
 
     if (multiValued) {
       clearIndex();
