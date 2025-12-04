@@ -176,7 +176,7 @@ public abstract class PointField extends NumericFieldType {
   }
 
   final Query getExactQuery(QParser parser, SchemaField field, String externalVal) {
-    if (hasIndexedTerms(field) && false) {
+    if (hasIndexedTerms(field)) {
       BytesRefBuilder br = new BytesRefBuilder();
       readableToIndexed(externalVal, br);
       return new TermQuery(new Term(field.getName(), br));
