@@ -46,6 +46,8 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -877,7 +879,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    SolrResponse resp = req.process(cloudManager.getSolrClient());
+    var cloudClient = (CloudHttp2SolrClient) cloudManager.getSolrClient();
+    var http2Client = (Http2SolrClient) cloudClient.getHttpClient();
+
+    SolrResponse resp =
+        http2Client.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req::process);
 
     double[] sizes = new double[] {-1.0, -1.0}; // [indexSize, freeSize]
     try (InputStream prometheusStream = (InputStream) resp.getResponse().get(STREAM_KEY);
@@ -900,12 +906,18 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
     if (indexSize == -1.0) {
       log.warn("cannot verify information for parent shard leader");
-      return;
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "cannot verify index size information for parent shard leader on node "
+              + parentShardLeader.getNodeName());
     }
 
     if (freeSize == -1.0) {
       log.warn("missing node disk space information for parent shard leader");
-      return;
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "missing node disk space information for parent shard leader on node "
+              + parentShardLeader.getNodeName());
     }
 
     // 100% more for REWRITE, 5% more for LINK
