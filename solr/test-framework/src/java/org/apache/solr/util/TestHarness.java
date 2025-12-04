@@ -17,14 +17,18 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
@@ -37,16 +41,14 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -59,7 +61,6 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 public class TestHarness extends BaseTestHarness {
   public String coreName;
   protected volatile CoreContainer container;
-  public UpdateRequestHandler updater;
 
   /**
    * Creates a SolrConfig object for the specified coreName assuming it follows the basic
@@ -179,8 +180,6 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
     container = new CoreContainer(config, coresLocator);
     container.load();
-    updater = new UpdateRequestHandler();
-    updater.init(null);
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
@@ -274,14 +273,28 @@ public class TestHarness extends BaseTestHarness {
     try (var mdcSnap = MDCSnapshot.create();
         SolrCore core = getCoreInc()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
-      DirectSolrConnection connection = new DirectSolrConnection(core);
-      SolrRequestHandler handler = core.getRequestHandler("/update");
-      // prefer the handler mapped to /update, but use our generic backup handler
-      // if that lookup fails
-      if (handler == null) {
-        handler = updater;
+
+      EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
+      DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
+
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      NamedList<Object> response = server.request(xmlRequest);
+      server.close();
+      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
+        SolrQueryResponse rsp = new SolrQueryResponse();
+
+        // Transfer the response data
+        if (response != null) {
+          rsp.setAllValues(response);
+        }
+
+        // Write as XML
+        StringWriter sw = new StringWriter();
+        XMLResponseWriter xmlWriter = new XMLResponseWriter();
+        xmlWriter.write(sw, req, rsp);
+        return sw.toString();
       }
-      return connection.request(handler, null, xml);
+
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
