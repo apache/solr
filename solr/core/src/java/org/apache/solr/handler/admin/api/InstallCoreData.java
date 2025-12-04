@@ -57,10 +57,6 @@ public class InstallCoreData extends CoreAdminAPIBase implements InstallCoreData
       throws Exception {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
 
-    // TODO: This is for testing, we need to figure out how to get the leader to fail
-    // if (coreContainer.getCoreDescriptor(coreName).getCloudDescriptor().isLeader()) {
-    //   throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Is leader");
-    // }
     if (requestBody == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Required request body is missing");

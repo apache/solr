@@ -41,10 +41,14 @@ abstract class ZkDistributedLock implements DistributedLock {
   static final char LOCK_PREFIX_SUFFIX = '_';
 
   /** Prefix of EPHEMERAL read lock node names */
-  static final String READ_LOCK_PREFIX = "R" + LOCK_PREFIX_SUFFIX;
+  static final char READ_LOCK_PREFIX_CHAR = 'R';
+
+  static final String READ_LOCK_PREFIX = "" + READ_LOCK_PREFIX_CHAR + LOCK_PREFIX_SUFFIX;
 
   /** Prefix of EPHEMERAL write lock node names */
-  static final String WRITE_LOCK_PREFIX = "W" + LOCK_PREFIX_SUFFIX;
+  static final char WRITE_LOCK_PREFIX_CHAR = 'W';
+
+  static final String WRITE_LOCK_PREFIX = "" + WRITE_LOCK_PREFIX_CHAR + LOCK_PREFIX_SUFFIX;
 
   /** Read lock. */
   static class Read extends ZkDistributedLock {
@@ -59,6 +63,11 @@ abstract class ZkDistributedLock implements DistributedLock {
       // Lower numbered read locks are ok, they can coexist.
       return otherLockName.startsWith(WRITE_LOCK_PREFIX);
     }
+
+    @Override
+    boolean canMirrorLock(String lockId) {
+      return true;
+    }
   }
 
   /** Write lock. */
@@ -72,6 +81,17 @@ abstract class ZkDistributedLock implements DistributedLock {
     boolean isBlockedByNodeType(String otherLockName) {
       // A write lock is blocked by another read or write lock with a lower sequence number
       return true;
+    }
+
+    @Override
+    boolean canMirrorLock(String lockId) {
+      // Only another Write lock can be mirrored
+      int lockTypeSuffixIndex = lockId.indexOf(LOCK_PREFIX_SUFFIX) - 1;
+      if (lockTypeSuffixIndex < 0) {
+        return false;
+      } else {
+        return lockId.charAt(lockTypeSuffixIndex) == WRITE_LOCK_PREFIX_CHAR;
+      }
     }
   }
 
@@ -90,7 +110,7 @@ abstract class ZkDistributedLock implements DistributedLock {
 
     // Create the SEQUENTIAL EPHEMERAL node. We enter the locking rat race here. We MUST eventually
     // call release() or we block others.
-    if (mirroredLockId == null || mirroredLockId.startsWith(lockDir)) {
+    if (mirroredLockId == null || !mirroredLockId.startsWith(lockDir)) {
       lockNode =
           zkClient.create(
               lockDir
@@ -102,6 +122,11 @@ abstract class ZkDistributedLock implements DistributedLock {
 
       mirrored = false;
     } else {
+      if (!canMirrorLock(mirroredLockId)) {
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR,
+            "Cannot mirror lock " + mirroredLockId + " with given lockPrefix: " + lockNodePrefix);
+      }
       lockNode = mirroredLockId;
       mirrored = true;
     }
@@ -264,6 +289,8 @@ abstract class ZkDistributedLock implements DistributedLock {
   public boolean isMirroringLock() {
     return mirrored;
   }
+
+  abstract boolean canMirrorLock(String lockId);
 
   @Override
   public String toString() {

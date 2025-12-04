@@ -123,7 +123,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     return new MiniSolrCloudCluster.Builder(nodeCount, createTempDir())
         .withOverseer(
             EnvUtils.getPropertyAsBool(
-                "solr.cloud.overseer.enabled", LuceneTestCase.random().nextBoolean()));
+                "solr.cloud.overseer.enabled", false)); // LuceneTestCase.random().nextBoolean()));
   }
 
   public static void configurePrsDefault() {

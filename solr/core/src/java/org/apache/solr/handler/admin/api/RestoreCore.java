@@ -63,6 +63,10 @@ public class RestoreCore extends CoreAdminAPIBase implements RestoreCoreApi {
   public SolrJerseyResponse restoreCore(String coreName, RestoreCoreRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    // TODO: This is for testing, we need to figure out how to get the leader to fail
+    if (coreContainer.getCoreDescriptor(coreName).getCloudDescriptor().isLeader()) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Is leader");
+    }
     ensureRequiredParameterProvided("coreName", coreName);
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
