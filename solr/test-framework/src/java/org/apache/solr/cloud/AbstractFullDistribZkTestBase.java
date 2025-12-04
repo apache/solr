@@ -316,10 +316,11 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         }
       }
     }
-
-    log.info(
-        "Will use {} replicas unless explicitly asked otherwise",
-        useTlogReplicas() ? Replica.Type.TLOG : Replica.Type.NRT);
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Will use {} replicas unless explicitly asked otherwise",
+          useTlogReplicas() ? Replica.Type.TLOG : Replica.Type.NRT);
+    }
   }
 
   protected String getCloudSolrConfig() {
