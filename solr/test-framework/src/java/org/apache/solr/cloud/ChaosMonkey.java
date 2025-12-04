@@ -562,7 +562,7 @@ public class ChaosMonkey {
   }
 
   public static void monkeyLog(String msg, Object... logParams) {
-    log.info("monkey: {}, logParams: {}", msg, logParams);
+    log.info("monkey: {}", msg, logParams);
   }
 
   public void stopTheMonkey() {
