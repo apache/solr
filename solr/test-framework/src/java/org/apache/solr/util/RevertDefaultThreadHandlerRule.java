@@ -35,7 +35,7 @@ public final class RevertDefaultThreadHandlerRule implements TestRule {
         if (!applied.getAndSet(true)) {
           UncaughtExceptionHandler p = Thread.getDefaultUncaughtExceptionHandler();
           try {
-            // Try to initialize a zookeeper class that reinitialized default exception handler.
+            // Try to initialize a zookeeper class that reinitializes default exception handler.
             Class<?> cl = NIOServerCnxnFactory.class;
             // Make sure static initializers have been called.
             Class.forName(cl.getName(), true, cl.getClassLoader());

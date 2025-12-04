@@ -152,7 +152,7 @@ public class MiniSolrCloudCluster {
           + "</solr>\n";
 
   private final Object startupWait = new Object();
-  private final ZkTestServer zkServer;
+  private volatile ZkTestServer zkServer;
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
