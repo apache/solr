@@ -17,11 +17,12 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 
 /**
- * @see org.apache.solr.client.solrj.impl.JavaBinRequestWriter
+ * @see JavaBinRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.apache.solr.cloud.AbstractFullDistribZkTestBase.verifyReplicaStatus;
 import static org.apache.zookeeper.WatchedEvent.NO_ZXID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;

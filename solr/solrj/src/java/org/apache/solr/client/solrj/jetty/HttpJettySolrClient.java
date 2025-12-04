@@ -38,18 +38,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrClientFunction;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.HttpClientBuilderFactory;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.impl.SolrClientCustomizer;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpListenerFactory.RequestResponseListener;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
@@ -102,7 +101,15 @@ import org.slf4j.MDC;
  */
 public class HttpJettySolrClient extends HttpSolrClientBase {
   // formerly known at Http2SolrClient
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * A Java system property to select the {@linkplain SolrClientCustomizer} used for configuring
+   * this client.
+   */
+  public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
+
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;
@@ -157,7 +164,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     this.idleTimeoutMillis = builder.getIdleTimeoutMillis();
 
     try {
-      applyHttpClientBuilderFactory();
+      applyClientCustomizer();
     } catch (RuntimeException e) {
       try {
         this.close();
@@ -178,16 +185,16 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     this.authenticationStore = (AuthenticationStoreHolder) httpClient.getAuthenticationStore();
   }
 
-  private void applyHttpClientBuilderFactory() {
-    String factoryClassName =
-        System.getProperty(SolrHttpConstants.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+  @SuppressWarnings("unchecked")
+  private void applyClientCustomizer() {
+    String factoryClassName = EnvUtils.getProperty(CLIENT_CUSTOMIZER_SYSPROP);
     if (factoryClassName != null) {
-      log.debug("Using Http Builder Factory: {}", factoryClassName);
-      HttpClientBuilderFactory factory;
+      log.debug("Using {}", factoryClassName);
+      SolrClientCustomizer<HttpJettySolrClient> instance;
       try {
-        factory =
+        instance =
             Class.forName(factoryClassName)
-                .asSubclass(HttpClientBuilderFactory.class)
+                .asSubclass(SolrClientCustomizer.class)
                 .getDeclaredConstructor()
                 .newInstance();
       } catch (InstantiationException
@@ -198,7 +205,7 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
         throw new RuntimeException(
             "Unable to instantiate " + HttpJettySolrClient.class.getName(), e);
       }
-      factory.setup(this);
+      instance.setup(this);
     }
   }
 

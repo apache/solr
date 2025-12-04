@@ -1378,7 +1378,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     // Streaming updates can delay shutdown and cause big update reorderings (new streams can't be
     // initiated, but existing streams carry on).  This is why we check if the CC is shutdown.
-    // See SOLR-8203 and loop HdfsChaosMonkeyNothingIsSafeTest (and check for inconsistent shards)
+    // See SOLR-8203 and loop ChaosMonkeyNothingIsSafeTest (and check for inconsistent shards)
     // to test.
     if (req.getCoreContainer().isShutDown()) {
       throw new SolrException(
