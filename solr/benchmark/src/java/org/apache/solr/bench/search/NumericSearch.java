@@ -147,6 +147,10 @@ public class NumericSearch {
       miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), reload, null);
     }
 
+    public QueryRequest intTrieSetQuery(boolean dvs, boolean enhancedIndex) {
+      return setQuery("numbers_it" + (dvs ? "_dv" : ""));
+    }
+
     public QueryRequest intSetQuery(boolean dvs, boolean enhancedIndex) {
       return setQuery("numbers_i" + (dvs ? "_dv" : "") + (enhancedIndex ? "_e" : ""));
     }
@@ -173,6 +177,30 @@ public class NumericSearch {
                   "{!terms cache=false f='" + field + "'}" + queries.next()));
       return q;
     }
+  }
+
+  @Benchmark
+  public Object intTrieSet(
+      Blackhole blackhole,
+      BenchState benchState,
+      MiniClusterState.MiniClusterBenchState miniClusterState)
+      throws SolrServerException, IOException {
+    QueryResponse response =
+        benchState.intTrieSetQuery(false, false).process(miniClusterState.client, COLLECTION);
+    blackhole.consume(response);
+    return response;
+  }
+
+  @Benchmark
+  public Object intTrieDvSet(
+      Blackhole blackhole,
+      BenchState benchState,
+      MiniClusterState.MiniClusterBenchState miniClusterState)
+      throws SolrServerException, IOException {
+    QueryResponse response =
+        benchState.intTrieSetQuery(false, false).process(miniClusterState.client, COLLECTION);
+    blackhole.consume(response);
+    return response;
   }
 
   @Benchmark
