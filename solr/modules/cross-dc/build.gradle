@@ -36,7 +36,7 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.apache.kafka.clients
   implementation libs.google.guava
-  implementation libs.dropwizard.metrics.core
+  implementation libs.opentelemetry.api
   implementation libs.apache.zookeeper.zookeeper
   implementation libs.apache.zookeeper.jute
 

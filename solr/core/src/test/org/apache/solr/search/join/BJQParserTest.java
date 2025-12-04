@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Objects;
 import javax.xml.xpath.XPathConstants;
 import org.apache.lucene.search.Query;
@@ -31,13 +30,12 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.BaseTestHarness;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -49,6 +47,8 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   private static final String[] klm = new String[] {"k", "l", "m"};
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
   private static final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
+  private static final String PER_SEG_FILTER_CACHE_NAME = "perSegFilter";
+  private static final String FILTER_CACHE_NAME = "filterCache";
 
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
@@ -397,28 +397,15 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   @Test
   public void testCacheHit() {
 
-    MetricsMap parentFilterCache =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper<?>)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.perSegFilter"))
-                .getGauge();
-    MetricsMap filterCache =
-        (MetricsMap)
-            ((SolrMetricManager.GaugeWrapper<?>)
-                    h.getCore()
-                        .getCoreMetricManager()
-                        .getRegistry()
-                        .getMetrics()
-                        .get("CACHE.searcher.filterCache"))
-                .getGauge();
+    // Get initial values
+    long parentLookupsBefore = getCacheLookups(PER_SEG_FILTER_CACHE_NAME);
+    ;
+    long parentHitsBefore = getCacheHits(PER_SEG_FILTER_CACHE_NAME);
+    long parentInsertsBefore = getCacheInserts(PER_SEG_FILTER_CACHE_NAME);
+    ;
 
-    Map<String, Object> parentsBefore = parentFilterCache.getValue();
-
-    Map<String, Object> filtersBefore = filterCache.getValue();
+    long filterHitsBefore = getCacheHits(FILTER_CACHE_NAME);
+    long filterInsertsBefore = getCacheInserts(FILTER_CACHE_NAME);
 
     // it should be weird enough to be uniq
     String parentFilter = "parent_s:([a TO c] [d TO f])";
@@ -433,8 +420,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         req("q", "*:*", "fq", "{!parent which=\"" + parentFilter + "\"}"),
         "//*[@numFound='6']");
 
-    assertEquals(
-        "didn't hit fqCache yet ", 0L, delta("hits", filterCache.getValue(), filtersBefore));
+    assertEquals("didn't hit fqCache yet ", 0L, getCacheHits(FILTER_CACHE_NAME) - filterHitsBefore);
 
     assertQ(
         "filter by join",
@@ -444,28 +430,24 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     assertEquals(
         "in cache mode every request lookups",
         3,
-        delta("lookups", parentFilterCache.getValue(), parentsBefore));
+        getCacheLookups(PER_SEG_FILTER_CACHE_NAME) - parentLookupsBefore);
     assertEquals(
         "last two lookups causes hits",
         2,
-        delta("hits", parentFilterCache.getValue(), parentsBefore));
+        getCacheHits(PER_SEG_FILTER_CACHE_NAME) - parentHitsBefore);
     assertEquals(
         "the first lookup gets insert",
         1,
-        delta("inserts", parentFilterCache.getValue(), parentsBefore));
+        getCacheInserts(PER_SEG_FILTER_CACHE_NAME) - parentInsertsBefore);
 
     assertEquals(
         "true join query was not in fqCache",
         0L,
-        delta("hits", filterCache.getValue(), filtersBefore));
+        getCacheHits(FILTER_CACHE_NAME) - filterHitsBefore);
     assertEquals(
         "true join query is cached in fqCache",
         1L,
-        delta("inserts", filterCache.getValue(), filtersBefore));
-  }
-
-  private long delta(String key, Map<String, Object> a, Map<String, Object> b) {
-    return (Long) a.get(key) - (Long) b.get(key);
+        getCacheInserts(FILTER_CACHE_NAME) - filterInsertsBefore);
   }
 
   @Test
@@ -473,7 +455,6 @@ public class BJQParserTest extends SolrTestCaseJ4 {
     final BlockJoinParentQParserPlugin blockJoinParentQParserPlugin =
         new BlockJoinParentQParserPlugin();
     blockJoinParentQParserPlugin.init(null);
-    blockJoinParentQParserPlugin.close();
   }
 
   private static final String eParent[] =
@@ -662,5 +643,17 @@ public class BJQParserTest extends SolrTestCaseJ4 {
   public void cleanAfterTestFiltersCache() {
     assertU("should be noop", delI("12275"));
     assertU("most of the time", commit());
+  }
+
+  private long getCacheHits(String cacheName) {
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsHits(h.getCore(), cacheName).getValue();
+  }
+
+  private long getCacheLookups(String cacheName) {
+    return (long) SolrMetricTestUtils.getCacheSearcherTotalLookups(h.getCore(), cacheName);
+  }
+
+  private long getCacheInserts(String cacheName) {
+    return (long) SolrMetricTestUtils.getCacheSearcherOpsInserts(h.getCore(), cacheName).getValue();
   }
 }

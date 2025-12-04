@@ -39,9 +39,7 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
   public static void beforeClass() throws Exception {
     initCore("solrconfig-languageidentifier.xml", "schema.xml", getFile("langid/solr"));
     SolrCore core = h.getCore();
-    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_tika");
-    assertNotNull(chained);
-    chained = core.getUpdateProcessingChain("lang_id_lang_detect");
+    UpdateRequestProcessorChain chained = core.getUpdateProcessingChain("lang_id_lang_detect");
     assertNotNull(chained);
     chained = core.getUpdateProcessingChain("lang_id_opennlp");
     assertNotNull(chained);
@@ -468,19 +466,6 @@ public abstract class LanguageIdentifierUpdateProcessorFactoryTestCase extends S
     parameters.add("langid.fl", "name,subject");
     parameters.add("langid.langField", "language_s");
     parameters.add("langid.allowlist", "no,en ,, ,sv, sv");
-    liProcessor = createLangIdProcessor(parameters);
-
-    // Make sure that empty language codes have been filtered out and others trimmed.
-    assertEquals(Set.of("no", "en", "sv"), liProcessor.langAllowlist);
-  }
-
-  @Test
-  public void testAllowlistBackwardsCompatabilityWithLegacyAllowlist() throws Exception {
-    // The "legacy allowlist" is "langid.whitelist"
-    ModifiableSolrParams parameters = new ModifiableSolrParams();
-    parameters.add("langid.fl", "name,subject");
-    parameters.add("langid.langField", "language_s");
-    parameters.add("langid.whitelist", "no,en ,, ,sv, sv");
     liProcessor = createLangIdProcessor(parameters);
 
     // Make sure that empty language codes have been filtered out and others trimmed.

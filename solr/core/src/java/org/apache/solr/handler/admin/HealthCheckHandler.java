@@ -260,7 +260,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
         // are
         // 1) commit generation rolls over Long.MAX_VALUE (really unlikely)
         // 2) Leader's index is wiped clean and the follower is still showing commit generation
-        // from the the old index
+        // from the old index
         if (generationDiff < 0) {
           log.warn("core:[{}], generation lag:[{}] is negative.");
         } else if (generationDiff < maxGenerationLag) {

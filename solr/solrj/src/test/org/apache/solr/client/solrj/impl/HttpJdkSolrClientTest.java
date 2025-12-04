@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.net.CookieHandler;
 import java.net.CookieManager;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,16 +32,21 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.junit.After;
 import org.junit.Test;
 
@@ -103,7 +110,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client = builder(url).build()) {
       try {
         client.deleteById("id");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("javabin", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
@@ -118,7 +125,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         builder(url).withResponseParser(new XMLResponseParser()).build()) {
       try {
         client.deleteByQuery("*:*");
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       assertEquals("xml", DebugServlet.parameters.get(CommonParams.WT)[0]);
       validateDelete();
@@ -218,7 +225,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
             builder(getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0).build()) {
       try {
         client.query(q, SolrRequest.METHOD.GET);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
     }
   }
@@ -328,9 +335,9 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       testUpdate(client, HttpSolrClientTestBase.WT.XML, "application/xml; charset=UTF-8", value);
       if (http11) {
         assertEquals(HttpClient.Version.HTTP_1_1, client.httpClient.version());
-        assertFalse(
+        assertNull(
             "The HEAD request should not be performed if already forcing Http/1.1.",
-            client.headRequested);
+            client.headSucceededByBaseUri.get(baseUri()));
       } else {
         assertEquals(HttpClient.Version.HTTP_2, client.httpClient.version());
       }
@@ -504,7 +511,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
       assertTrue(client.maybeTryHeadRequest(url));
 
       // if https, the client won't attempt a HEAD request
-      if (client.headRequested) {
+      if (!client.headSucceededByBaseUri.isEmpty()) {
         assertEquals("head", DebugServlet.lastMethod);
         assertTrue(DebugServlet.headers.containsKey("content-type"));
       }
@@ -524,7 +531,17 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
 
   private void assertNoHeadRequestWithSsl(HttpJdkSolrClient client) {
     if (isSSLMode()) {
-      assertFalse("The HEAD request should not be performed if using SSL.", client.headRequested);
+      assertNull(
+          "The HEAD request should not be performed if using SSL.",
+          client.headSucceededByBaseUri.get(baseUri()));
+    }
+  }
+
+  private URI baseUri() {
+    try {
+      return new URI(getBaseUrl());
+    } catch (URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 

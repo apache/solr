@@ -122,18 +122,15 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   @SuppressWarnings("deprecation")
   @BeforeClass
-  public static void setSolrDisableShardsWhitelist() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+  // Sets the solr.security.allow.urls.enable=false, disabling the need to provide an allow list.
+  public static void setSolrEnableUrlUrlAllowList() throws Exception {
+    systemSetPropertyEnableUrlAllowList(false);
   }
 
   @SuppressWarnings("deprecation")
   @AfterClass
-  public static void clearSolrDisableShardsWhitelist() throws Exception {
-    systemClearPropertySolrDisableUrlAllowList();
-  }
-
-  private static String getHostContextSuitableForServletContext() {
-    return "/solr";
+  public static void clearSolrEnableUrlUrlAllowList() throws Exception {
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   protected BaseDistributedSearchTestCase() {
@@ -986,7 +983,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     if (System.getProperty("remove.version.field") != null) {
-      // we don't care if one has a version and the other doesnt -
+      // we don't care if one has a version and the other doesn't -
       // control vs distrib
       // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the
       // responses?

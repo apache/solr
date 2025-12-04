@@ -66,11 +66,12 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
@@ -1078,7 +1079,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("uploaded without any authentication in place");
     Throwable thrown =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection2",

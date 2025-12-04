@@ -196,12 +196,6 @@ public class HttpSolrCall {
       reason =
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   protected void init() throws Exception {
-    // check for management path
-    String alternate = cores.getManagementPath();
-    if (alternate != null && path.startsWith(alternate)) {
-      path = path.substring(0, alternate.length());
-    }
-
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
 
     // Check for container handlers
@@ -719,10 +713,6 @@ public class HttpSolrCall {
   }
 
   protected void executeCoreRequest(SolrQueryResponse rsp) {
-    // a custom filter could add more stuff to the request before passing it on.
-    // for example: sreq.getContext().put( "HttpServletRequest", req );
-    // used for logging query stats in SolrCore.execute()
-    solrReq.getContext().put("webapp", req.getContextPath());
     solrReq.getCore().execute(handler, solrReq, rsp);
   }
 
@@ -893,7 +883,7 @@ public class HttpSolrCall {
 
     if (isPreferLeader) {
       SolrCore core = null;
-      if (replicas != null && !replicas.isEmpty()) {
+      if (!replicas.isEmpty()) {
         List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
         core = randomlyGetSolrCore(liveNodes, leaderReplicas);
         if (core != null) return core;

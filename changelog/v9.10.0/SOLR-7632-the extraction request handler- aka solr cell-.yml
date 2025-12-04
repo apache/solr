@@ -1,0 +1,11 @@
+title: The Extraction Request Handler, aka Solr Cell, now supports delegating the
+  parsing of rich documents to an external Tika Server. This allows for a more stable
+  Solr server, and easier to configure and scale parsing independently. The local
+  in-process Tika parser is now deprecated.
+type: added
+authors:
+- name: Jan Høydahl
+- name: Eric Pugh
+links:
+- name: SOLR-7632
+  url: https://issues.apache.org/jira/browse/SOLR-7632

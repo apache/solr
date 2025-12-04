@@ -56,9 +56,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -78,11 +78,10 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
@@ -107,7 +106,7 @@ public class MiniSolrCloudCluster {
       "<solr>\n"
           + "\n"
           + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
-          + "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "  <str name=\"allowPaths\">${solr.security.allow.paths:}</str>\n"
           + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
           + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
           + "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n"
@@ -125,7 +124,6 @@ public class MiniSolrCloudCluster {
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
-          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
@@ -1169,9 +1167,8 @@ public class MiniSolrCloudCluster {
     public MiniSolrCloudCluster build() throws Exception {
       System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
-      // eager init to prevent OTEL init races caused by test setup
-      if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
-        SimplePropagator.load();
+      if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
+        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
         injectRandomRecordingFlag();
       }
 

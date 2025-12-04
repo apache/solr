@@ -356,7 +356,7 @@ public class DocumentBuilder {
           destinationField,
           fieldValue,
           destinationField.getName().equals(uniqueKeyFieldName) ? false : forInPlaceUpdate);
-      // record the field as having a originalFieldValue
+      // record the field as having an originalFieldValue
       usedFields.add(destinationField.getName());
       used = true;
     }

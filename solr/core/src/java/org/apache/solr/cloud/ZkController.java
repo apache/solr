@@ -27,6 +27,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.UNSUPPORTED_SOLR_XML;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
+import io.opentelemetry.api.internal.StringUtils;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -54,17 +55,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -205,7 +207,7 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
 
-  private CloudHttp2SolrClient cloudSolrClient;
+  private CloudSolrClient cloudSolrClient;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -241,18 +243,12 @@ public class ZkController implements Closeable {
   private int leaderVoteWait;
   private int leaderConflictResolveWait;
 
-  private boolean genericCoreNodeNames;
-
   private int clientTimeout;
 
   private volatile boolean isClosed;
 
   private final ConcurrentHashMap<String, Throwable> replicasMetTragicEvent =
       new ConcurrentHashMap<>();
-
-  @Deprecated
-  // keeps track of replicas that have been asked to recover by leaders running on this node
-  private final Map<String, String> replicasInLeaderInitiatedRecovery = new HashMap<>();
 
   // keeps track of a list of objects that need to know a new ZooKeeper session was created after
   // expiration occurred ref is held as a HashSet since we clone the set before notifying to avoid
@@ -301,8 +297,6 @@ public class ZkController implements Closeable {
 
     this.cloudConfig = cloudConfig;
 
-    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
-
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
     this.hostName = normalizeHostName(cloudConfig.getHost());
@@ -310,38 +304,29 @@ public class ZkController implements Closeable {
     MDCLoggingContext.setNode(nodeName);
     this.leaderVoteWait = cloudConfig.getLeaderVoteWait();
     this.leaderConflictResolveWait = cloudConfig.getLeaderConflictResolveWait();
-
-    String zkCredentialsInjectorClass = cloudConfig.getZkCredentialsInjectorClass();
-    ZkCredentialsInjector zkCredentialsInjector =
-        StrUtils.isNullOrEmpty(zkCredentialsInjectorClass)
-            ? new DefaultZkCredentialsInjector()
-            : cc.getResourceLoader()
-                .newInstance(zkCredentialsInjectorClass, ZkCredentialsInjector.class);
-
     this.clientTimeout = cloudConfig.getZkClientTimeout();
 
-    String zkACLProviderClass = cloudConfig.getZkACLProviderClass();
-    ZkACLProvider zkACLProvider =
-        StrUtils.isNullOrEmpty(zkACLProviderClass)
-            ? new DefaultZkACLProvider()
-            : cc.getResourceLoader().newInstance(zkACLProviderClass, ZkACLProvider.class);
+    final var zkCredentialsInjector =
+        loadPluginOrDefault(
+            ZkCredentialsInjector.class,
+            cloudConfig.getZkCredentialsInjectorClass(),
+            new DefaultZkCredentialsInjector());
+    final var zkACLProvider =
+        loadPluginOrDefault(
+            ZkACLProvider.class, cloudConfig.getZkACLProviderClass(), new DefaultZkACLProvider());
     zkACLProvider.setZkCredentialsInjector(zkCredentialsInjector);
-
-    String zkCredentialsProviderClass = cloudConfig.getZkCredentialsProviderClass();
-    ZkCredentialsProvider zkCredentialsProvider =
-        StrUtils.isNullOrEmpty(zkCredentialsProviderClass)
-            ? new DefaultZkCredentialsProvider()
-            : cc.getResourceLoader()
-                .newInstance(zkCredentialsProviderClass, ZkCredentialsProvider.class);
-
+    final var zkCredentialsProvider =
+        loadPluginOrDefault(
+            ZkCredentialsProvider.class,
+            cloudConfig.getZkCredentialsProviderClass(),
+            new DefaultZkCredentialsProvider());
     zkCredentialsProvider.setZkCredentialsInjector(zkCredentialsInjector);
+
     addOnReconnectListener(getConfigDirListener());
 
-    String stateCompressionProviderClass = cloudConfig.getStateCompressorClass();
-    Compressor compressor =
-        StrUtils.isNullOrEmpty(stateCompressionProviderClass)
-            ? new ZLibCompressor()
-            : cc.getResourceLoader().newInstance(stateCompressionProviderClass, Compressor.class);
+    final var compressor =
+        loadPluginOrDefault(
+            Compressor.class, cloudConfig.getStateCompressorClass(), new ZLibCompressor());
 
     zkClient =
         new SolrZkClient.Builder()
@@ -349,6 +334,7 @@ public class ZkController implements Closeable {
             .withTimeout(clientTimeout, TimeUnit.MILLISECONDS)
             .withConnTimeOut(zkClientConnectTimeout, TimeUnit.MILLISECONDS)
             .withAclProvider(zkACLProvider)
+            .withZkCredentialsProvider(zkCredentialsProvider)
             .withClosedCheck(cc::isShutDown)
             .withCompressor(compressor)
             .build();
@@ -438,6 +424,15 @@ public class ZkController implements Closeable {
       descriptor.getCloudDescriptor().setLeader(false);
       descriptor.getCloudDescriptor().setHasRegistered(false);
     }
+  }
+
+  private <T> T loadPluginOrDefault(
+      Class<T> basePluginType, String concretePluginClassName, T defaultPluginInstance) {
+    if (StringUtils.isNullOrEmpty(concretePluginClassName)) {
+      return defaultPluginInstance;
+    }
+
+    return cc.getResourceLoader().newInstance(concretePluginClassName, basePluginType);
   }
 
   private void onReconnect() {
@@ -964,7 +959,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudJettySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
@@ -1195,8 +1190,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
-                    .flatMap(List::stream)
+                collectionState.getReplicasOnNode(nodeName).stream()
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
             if (allStatesCorrect
@@ -2071,15 +2065,25 @@ public class ZkController implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("waiting to find shard id in clusterstate for {}", cd.getName());
     }
+
+    Predicate<Replica> replicaPredicate = (Replica r) -> cd.getName().equals(r.getCoreName());
     try {
       DocCollection collection =
           zkStateReader.waitForState(
               cd.getCollectionName(),
               320,
               TimeUnit.SECONDS,
-              c -> c != null && c.getShardId(getNodeName(), cd.getName()) != null);
+              c ->
+                  c != null
+                      && c.getReplicasOnNode(getNodeName()).stream().anyMatch(replicaPredicate));
       // Read outside the predicate to avoid multiple potential writes
-      cd.getCloudDescriptor().setShardId(collection.getShardId(getNodeName(), cd.getName()));
+      String shardId =
+          collection.getReplicasOnNode(getNodeName()).stream()
+              .filter(replicaPredicate)
+              .map(Replica::getShard)
+              .findFirst()
+              .orElseThrow();
+      cd.getCloudDescriptor().setShardId(shardId);
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(
@@ -2089,8 +2093,8 @@ public class ZkController implements Closeable {
 
   public String getCoreNodeName(CoreDescriptor descriptor) {
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    if (coreNodeName == null && !genericCoreNodeNames) {
-      // it's the default
+    if (coreNodeName == null) {
+      // default core naming pattern
       return getNodeName() + "_" + descriptor.getName();
     }
 
@@ -2308,12 +2312,13 @@ public class ZkController implements Closeable {
         }
 
         // short timeouts, we may be in a storm and this is just best effort, and maybe we should be
-        // the
-        // leader now
+        // the leader now
+        // TODO ideally want 8sec connection timeout but can't easily also share the client
+        // listeners
         try (SolrClient client =
-            new Builder(leaderBaseUrl)
-                .withConnectionTimeout(8000, TimeUnit.MILLISECONDS)
-                .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
+            new HttpJettySolrClient.Builder(leaderBaseUrl)
+                .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
+                .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
           WaitForState prepCmd = new WaitForState();
           prepCmd.setCoreName(leaderCoreName);

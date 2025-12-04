@@ -20,6 +20,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -44,6 +45,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.zookeeper.KeeperException;
@@ -59,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * <p>An {@link OverseerMessageHandlerSelector} determines which {@link OverseerMessageHandler}
  * handles specific messages in the queue.
  */
-public class OverseerTaskProcessor implements Runnable, Closeable {
+public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable {
 
   /** Maximum number of overseer collection operations which can be executed concurrently */
   public static final int MAX_PARALLEL_TASKS = 100;
@@ -91,6 +93,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private final Stats stats;
   private final SolrMetricsContext overseerTaskProcessorMetricsContext;
+  private AutoCloseable toClose;
 
   /**
    * This map may contain tasks which are read from work queue but could not be executed because
@@ -148,9 +151,8 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
     this.runningTasks = new HashMap<>();
     thisNode = MDCLoggingContext.getNodeName();
 
-    overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
-    overseerTaskProcessorMetricsContext.gauge(
-        () -> workQueue.getZkStats().getQueueLength(), true, "collectionWorkQueueSize", "queue");
+    this.overseerTaskProcessorMetricsContext = solrMetricsContext.getChildContext(this);
+    initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
   }
 
   @Override
@@ -404,6 +406,22 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   }
 
   @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    this.toClose =
+        parentContext.observableLongGauge(
+            "solr_overseer_collection_work_queue_size",
+            "Size of overseer's collection work queue",
+            (observableLongMeasurement) -> {
+              observableLongMeasurement.record(workQueue.getZkStats().getQueueLength(), attributes);
+            });
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return overseerTaskProcessorMetricsContext;
+  }
+
+  @Override
   public void close() {
     isClosed = true;
     overseerTaskProcessorMetricsContext.unregister();
@@ -413,6 +431,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
       }
     }
     IOUtils.closeQuietly(selector);
+    IOUtils.closeQuietly(toClose);
   }
 
   public static List<String> getSortedOverseerNodeNames(SolrZkClient zk)
@@ -671,6 +690,21 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   String getId() {
     return myId;
+  }
+
+  @Override
+  public String getName() {
+    return this.getClass().getName();
+  }
+
+  @Override
+  public String getDescription() {
+    return "Processor in Overseer handling items added to a distributed work queue";
+  }
+
+  @Override
+  public Category getCategory() {
+    return Category.OVERSEER;
   }
 
   /**

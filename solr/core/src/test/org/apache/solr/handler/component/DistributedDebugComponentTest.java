@@ -29,9 +29,9 @@ import java.util.Set;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -58,7 +58,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void createThings() throws Exception {
-    systemSetPropertySolrDisableUrlAllowList("true");
+    systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
     createAndStartJetty(solrHome);
     String url = getBaseUrl();
@@ -102,7 +102,7 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
       collection2 = null;
     }
     resetExceptionIgnores();
-    systemClearPropertySolrDisableUrlAllowList();
+    systemClearPropertySolrEnableUrlAllowList();
   }
 
   @Test

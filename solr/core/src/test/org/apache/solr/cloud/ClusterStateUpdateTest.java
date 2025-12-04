@@ -41,7 +41,6 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase {
   public static void afterClass() throws Exception {
     shutdownCluster();
     System.clearProperty("solrcloud.skip.autorecovery");
-    System.clearProperty("genericCoreNodeNames");
   }
 
   @Test

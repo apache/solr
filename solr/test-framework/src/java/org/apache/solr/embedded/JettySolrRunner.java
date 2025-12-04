@@ -16,9 +16,7 @@
  */
 package org.apache.solr.embedded;
 
-import com.codahale.metrics.ConsoleReporter;
-import com.codahale.metrics.MetricFilter;
-import com.codahale.metrics.MetricRegistry;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -40,7 +38,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -56,9 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -66,6 +62,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -688,21 +685,14 @@ public class JettySolrRunner {
 
       Set<String> registryNames = metricsManager.registryNames();
       for (String registryName : registryNames) {
-        MetricRegistry metricsRegisty = metricsManager.registry(registryName);
-        try (PrintStream ps =
-            outputDirectory == null
-                ? new PrintStream(OutputStream.nullOutputStream(), false, StandardCharsets.UTF_8)
-                : new PrintStream(
-                    outputDirectory.resolve(registryName + "_" + fileName).toString(),
-                    StandardCharsets.UTF_8)) {
-          ConsoleReporter reporter =
-              ConsoleReporter.forRegistry(metricsRegisty)
-                  .convertRatesTo(TimeUnit.SECONDS)
-                  .convertDurationsTo(TimeUnit.MILLISECONDS)
-                  .filter(MetricFilter.ALL)
-                  .outputTo(ps)
-                  .build();
-          reporter.report();
+        var prometheusReader = metricsManager.getPrometheusMetricReader(registryName);
+        if (prometheusReader != null) {
+          try (OutputStream os =
+              outputDirectory == null
+                  ? OutputStream.nullOutputStream()
+                  : Files.newOutputStream(outputDirectory.resolve(registryName + "_" + fileName))) {
+            new PrometheusTextFormatWriter(false).write(os, prometheusReader.collect());
+          }
         }
       }
 

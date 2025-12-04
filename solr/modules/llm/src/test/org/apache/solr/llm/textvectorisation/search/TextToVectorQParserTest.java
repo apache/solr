@@ -17,7 +17,8 @@
 package org.apache.solr.llm.textvectorisation.search;
 
 import java.util.Arrays;
-import org.apache.solr.client.solrj.SolrQuery;
+import java.util.Locale;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.llm.TestLlmBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -388,5 +389,30 @@ public class TextToVectorQParserTest extends TestLlmBase {
         "/response/docs/[1]/id=='2'",
         "/response/docs/[2]/id=='3'",
         "/response/docs/[3]/id=='9'");
+  }
+
+  @Test
+  public void earlyTerminationEnabled_returnsPatienceKnnVectorQuery() throws Exception {
+    final String solrQuery =
+        "{!knn_text_to_vector model=dummy-1 f=vector topK=5 earlyTermination=true}hello world";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id");
+    query.add("debugQuery", "true");
+
+    double defaultSaturationThreshold = 0.995;
+    int defaultPatience = 7;
+
+    String expectedParsedQuery =
+        String.format(
+            Locale.US,
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][5]})",
+            defaultSaturationThreshold,
+            defaultPatience);
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==5]",
+        "/debug/parsedquery=='" + expectedParsedQuery + "'");
   }
 }

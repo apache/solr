@@ -28,6 +28,13 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.handler.component.QueryComponent;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.grouping.distributed.requestfactory.TopGroupsShardRequestFactory;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -38,6 +45,11 @@ import org.junit.Test;
  */
 @SuppressPointFields(bugUrl = "https://issues.apache.org/jira/browse/SOLR-10844")
 public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-delaying-component.xml", "schema.xml");
+  }
 
   public TestDistributedGrouping() {
     // SOLR-10844: Even with points suppressed, this test breaks if we (randomize) docvalues="true"
@@ -1251,19 +1263,48 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
       for (String rows : new String[] {"10", "0"}) {
         simpleQuery(
             "q", "*:*", "group", "true", "group.field", i1, "group.ngroups", ngroups, "rows", rows);
-        simpleQuery(
-            "q",
-            "*:*",
-            "group",
-            "true",
-            "group.field",
-            i1,
-            "group.ngroups",
-            ngroups,
-            "rows",
-            rows,
-            "timeAllowed",
-            "123456");
+        // delaying component introduces a delay longer than timeAllowed
+        QueryResponse rsp =
+            simpleQuery(
+                "q",
+                t1 + ":eggs",
+                "group",
+                "true",
+                "group.field",
+                i1,
+                "group.ngroups",
+                ngroups,
+                "rows",
+                rows,
+                "cache",
+                "false",
+                "timeAllowed",
+                "200",
+                "sleep",
+                "300");
+        assertTrue(
+            "header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
+        //
+        rsp =
+            simpleQuery(
+                "q",
+                t1 + ":eggs",
+                "group",
+                "true",
+                "group.field",
+                i1,
+                "group.ngroups",
+                ngroups,
+                "rows",
+                rows,
+                "cache",
+                "false",
+                "timeAllowed",
+                "200",
+                "sleep",
+                "10");
+        assertFalse(
+            "header: " + rsp.getHeader(), SolrQueryResponse.isPartialResults(rsp.getHeader()));
       }
     }
 
@@ -1650,13 +1691,51 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "true");
   }
 
-  private void simpleQuery(Object... queryParams) throws Exception {
+  @Test
+  public void testShardRequestFactory() throws Exception {
+    SolrQueryRequest req =
+        req(
+            "q",
+            "*:*",
+            "rows",
+            "100",
+            "fl",
+            "id," + i1,
+            "group",
+            "true",
+            "group.field",
+            i1,
+            "group.limit",
+            "-1",
+            "sort",
+            i1 + " asc, id asc",
+            "timeAllowed",
+            "200");
+    try {
+      SolrQueryResponse rsp = new SolrQueryResponse();
+      ResponseBuilder rb = new ResponseBuilder(req, rsp, List.of());
+      new QueryComponent().prepare(rb);
+      rb.setNeedDocSet(true);
+
+      TopGroupsShardRequestFactory f = new TopGroupsShardRequestFactory();
+      ShardRequest[] sreq = f.constructRequest(rb);
+      assertTrue(sreq.length > 0);
+
+      rb.firstPhaseElapsedTime = 200; // simulate timeout
+      sreq = f.constructRequest(rb);
+      assertEquals(0, sreq.length);
+    } finally {
+      req.close();
+    }
+  }
+
+  private QueryResponse simpleQuery(Object... queryParams) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     for (int i = 0; i < queryParams.length; i += 2) {
       params.add(queryParams[i].toString(), queryParams[i + 1].toString());
     }
     params.set("shards", shards);
-    queryRandomShard(params);
+    return queryRandomShard(params);
   }
 
   /**

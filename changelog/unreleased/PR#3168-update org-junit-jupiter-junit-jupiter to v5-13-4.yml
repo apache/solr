@@ -1,0 +1,7 @@
+title: Update org.junit.jupiter:junit-jupiter to v5.13.4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3168
+  url: https://github.com/apache/solr/pull/3168

@@ -150,6 +150,7 @@ configure(project(":solr:test-framework")) {
     javadocMissingIgnore = [
         "org.apache.solr",
         "org.apache.solr.analysis",
+        "org.apache.solr.client.solrj.impl",
         "org.apache.solr.cloud",
         "org.apache.solr.cloud.api.collections",
         "org.apache.solr.common.cloud",
