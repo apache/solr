@@ -36,9 +36,9 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.ssl.SSLContexts;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.client.solrj.apache.HttpClientUtil.SocketFactoryRegistryProvider;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.eclipse.jetty.util.security.CertificateUtils;
@@ -99,7 +99,7 @@ public class SSLTestConfig {
    * @param clientAuth - whether client authentication should be required.
    * @param checkPeerName - whether the client should validate the 'peer name' of the SSL
    *     Certificate (and which testing Cert should be used)
-   * @see HttpClientUtil#SYS_PROP_CHECK_PEER_NAME
+   * @see SolrHttpConstants#SYS_PROP_CHECK_PEER_NAME
    */
   @SuppressWarnings("removal")
   public SSLTestConfig(boolean useSsl, boolean clientAuth, boolean checkPeerName) {

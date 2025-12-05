@@ -25,7 +25,7 @@ sources of information for learning about developing on Solr:
 details, see the information in `/solr/licenses/README.committers.txt`.
 
 3. The Solr Reference Guide, which provides primarily end user oriented documentation.
-However, the Ref Guide hosts it's own documentation on how to write Ref Guide content.
+However, the Ref Guide hosts its own documentation on how to write Ref Guide content.
 
 There are a number of tools related to doing development on Solr available in the `/dev-tools`
 directory.

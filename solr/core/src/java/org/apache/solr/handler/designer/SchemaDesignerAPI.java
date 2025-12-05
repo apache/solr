@@ -33,6 +33,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -49,10 +50,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -60,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -1119,8 +1121,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
-    if (coll.getActiveSlicesArr().length > 0) {
-      String coreName = coll.getActiveSlicesArr()[0].getLeader().getCoreName();
+    Collection<Slice> activeSlices = coll.getActiveSlices();
+    if (!activeSlices.isEmpty()) {
+      String coreName = activeSlices.stream().findAny().orElseThrow().getLeader().getCoreName();
       response.put("core", coreName);
     }
 

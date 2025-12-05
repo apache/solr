@@ -75,7 +75,7 @@ public class EnvUtils {
           CUSTOM_MAPPINGS.put(key, props.getProperty(key));
         }
         for (String key : deprecatedProps.stringPropertyNames()) {
-          DEPRECATED_MAPPINGS.put(key, deprecatedProps.getProperty(key));
+          DEPRECATED_MAPPINGS.put(deprecatedProps.getProperty(key), key);
         }
         init(false, System.getenv(), System.getProperties());
       }
@@ -218,25 +218,22 @@ public class EnvUtils {
 
     // Convert deprecated keys to non deprecated versions
     for (String key : sysProperties.stringPropertyNames()) {
-      if (DEPRECATED_MAPPINGS.containsKey(key)) {
+      if (DEPRECATED_MAPPINGS.containsKey(key) || DEPRECATED_MAPPINGS.containsKey("!" + key)) {
         String deprecatedKey = key;
+        boolean invertValue = false;
         key = DEPRECATED_MAPPINGS.get(deprecatedKey);
+        if (key == null) {
+          key = DEPRECATED_MAPPINGS.get("!" + deprecatedKey);
+          invertValue = true;
+        }
         log.warn(
             "You are passing in deprecated system property {} and should upgrade to using {} instead.  The deprecated property support will be removed in future version of Solr.",
             deprecatedKey,
             key);
 
-        if (key.endsWith(".enabled") && deprecatedKey.endsWith(".disabled")) {
+        if (invertValue) {
           log.warn(
-              "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
-              deprecatedKey,
-              key);
-          setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));
-        } else if (deprecatedKey.equals("disable.config.edit")
-            || deprecatedKey.equals("disable.v2.api")
-            || deprecatedKey.equals("solr.hide.stack.trace")) {
-          log.warn(
-              "Converting from legacy system property {} to modern .enabled equivalent {} by flipping the boolean property value.",
+              "Converting from legacy system property {} to modern equivalent {} by inverting the boolean value.",
               deprecatedKey,
               key);
           setProperty(key, String.valueOf(!Boolean.getBoolean(deprecatedKey)));

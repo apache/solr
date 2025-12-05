@@ -20,8 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.ResponseParser;
 
 public abstract class HttpSolrClientBuilderBase<
     B extends HttpSolrClientBuilderBase<?, ?>, C extends HttpSolrClientBase> {
@@ -46,6 +46,37 @@ public abstract class HttpSolrClientBuilderBase<
   protected boolean proxyIsSecure;
 
   public abstract C build();
+
+  /**
+   * Provide a seed HttpSolrClient for the builder values, values can still be overridden by using
+   * builder methods
+   */
+  @SuppressWarnings("unchecked")
+  public B withHttpClient(C httpSolrClient) {
+    if (this.basicAuthAuthorizationStr == null) {
+      this.basicAuthAuthorizationStr = httpSolrClient.basicAuthAuthorizationStr;
+    }
+    if (this.requestTimeoutMillis == null) {
+      this.requestTimeoutMillis = httpSolrClient.requestTimeoutMillis;
+    }
+    if (this.requestWriter == null) {
+      this.requestWriter = httpSolrClient.requestWriter;
+    }
+    if (this.responseParser == null) {
+      this.responseParser = httpSolrClient.parser;
+    }
+    if (this.urlParamNames == null) {
+      this.urlParamNames = httpSolrClient.urlParamNames;
+    }
+    return (B) (this);
+  }
+
+  /** Provides the Base Solr Url. */
+  @SuppressWarnings("unchecked")
+  public B withBaseSolrUrl(String baseSolrUrl) {
+    this.baseSolrUrl = baseSolrUrl;
+    return (B) this;
+  }
 
   /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
   @SuppressWarnings("unchecked")
@@ -89,7 +120,7 @@ public abstract class HttpSolrClientBuilderBase<
       }
     }
     this.basicAuthAuthorizationStr =
-        Http2SolrClient.basicAuthCredentialsToAuthorizationString(user, pass);
+        HttpSolrClientBase.basicAuthCredentialsToAuthorizationString(user, pass);
     return (B) this;
   }
 
@@ -130,7 +161,7 @@ public abstract class HttpSolrClientBuilderBase<
   public long getIdleTimeoutMillis() {
     return idleTimeoutMillis != null && idleTimeoutMillis > 0
         ? idleTimeoutMillis
-        : HttpClientUtil.DEFAULT_SO_TIMEOUT;
+        : SolrHttpConstants.DEFAULT_SO_TIMEOUT;
   }
 
   /** The max time a connection can take to connect to destinations. */
@@ -143,7 +174,7 @@ public abstract class HttpSolrClientBuilderBase<
   public long getConnectionTimeoutMillis() {
     return connectionTimeoutMillis != null && connectionTimeoutMillis > 0
         ? connectionTimeoutMillis
-        : HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+        : SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
   }
 
   /** Set a timeout for requests to receive a response. */
@@ -218,5 +249,33 @@ public abstract class HttpSolrClientBuilderBase<
       withBasicAuthCredentials(username, password);
     }
     return (B) this;
+  }
+
+  public Integer getMaxConnectionsPerHost() {
+    return maxConnectionsPerHost;
+  }
+
+  public Boolean getFollowRedirects() {
+    return followRedirects;
+  }
+
+  public String getProxyHost() {
+    return proxyHost;
+  }
+
+  public int getProxyPort() {
+    return proxyPort;
+  }
+
+  public boolean isProxyIsSocks4() {
+    return proxyIsSocks4;
+  }
+
+  public boolean isProxyIsSecure() {
+    return proxyIsSecure;
+  }
+
+  public ExecutorService getExecutor() {
+    return executor;
   }
 }

@@ -122,7 +122,7 @@ public class OutOfBoxZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
     try {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     } finally {
       zkClient.close();

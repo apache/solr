@@ -115,14 +115,14 @@ public class CallerSpecificQueryLimitTest extends SolrTestCaseJ4 {
       matchingCallCounts.add(matchingClassName + ".doWork");
     }
 
-    CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(callerExpr);
+    CallerSpecificQueryLimit limit = new CallerSpecificQueryLimit(Set.of(callerExpr));
     LimitedWorker limitedWorker = new LimitedWorker(limit);
     LimitedWorker2 limitedWorker2 = new LimitedWorker2(limit);
     for (int i = 0; i < count * 2; i++) {
       limitedWorker2.doWork();
       limitedWorker.doWork();
     }
-    Set<String> trippedBy = limit.getTrippedBy();
+    Set<String> trippedBy = limit.getCallerMatcher().getTrippedBy();
     if (shouldTrip) {
       assertFalse("Limit should have been tripped, callerExpr: " + callerExpr, trippedBy.isEmpty());
       for (String nonMatchingCallerExpr : nonMatchingCallerExprs) {
@@ -141,7 +141,7 @@ public class CallerSpecificQueryLimitTest extends SolrTestCaseJ4 {
               + trippedBy,
           trippedBy.isEmpty());
     }
-    Map<String, Integer> callCounts = limit.getCallCounts();
+    Map<String, Integer> callCounts = limit.getCallerMatcher().getCallCounts();
     for (String matchingCallCount : matchingCallCounts) {
       assertTrue(
           "Call count for " + matchingCallCount + " should be > 0, callCounts: " + callCounts,

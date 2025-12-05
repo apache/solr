@@ -35,7 +35,7 @@
     -->
     <init-param>
       <param-name>excludePatterns</param-name>
-      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+</param-value>
+      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+,/ui/.*</param-value>
     </init-param>
   </filter>
 
