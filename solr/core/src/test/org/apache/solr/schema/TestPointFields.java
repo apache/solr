@@ -251,7 +251,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, no docvalues
     for (String r :
         Arrays.asList(
-            "*_p_i_mv", "*_p_i_e_mv", "*_p_i_e_mv_smf", "*_p_i_e_mv_sml", "*_p_i_ni_mv", "*_p_i_ni_ns_mv", "*_p_i_mv_smf", "*_p_i_mv_sml")) {
+            "*_p_i_mv",
+            "*_p_i_e_mv",
+            "*_p_i_e_mv_smf",
+            "*_p_i_e_mv_sml",
+            "*_p_i_ni_mv",
+            "*_p_i_ni_ns_mv",
+            "*_p_i_mv_smf",
+            "*_p_i_mv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -268,11 +275,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, w/ docValues
     for (String r :
         Arrays.asList(
-            "*_p_i_ni_mv_dv", "*_p_i_ni_dv_ns_mv",
-            "*_p_i_e_mv_dv", "*_p_i_e_mv_dv_smf", "*_p_i_e_mv_dv_sml",
-            "*_p_i_dv_ns_mv", "*_p_i_mv_dv",
-            "*_p_i_mv_dv_smf", "*_p_i_ni_mv_dv_smf",
-            "*_p_i_mv_dv_sml", "*_p_i_ni_mv_dv_sml")) {
+            "*_p_i_ni_mv_dv",
+            "*_p_i_ni_dv_ns_mv",
+            "*_p_i_e_mv_dv",
+            "*_p_i_e_mv_dv_smf",
+            "*_p_i_e_mv_dv_sml",
+            "*_p_i_dv_ns_mv",
+            "*_p_i_mv_dv",
+            "*_p_i_mv_dv_smf",
+            "*_p_i_ni_mv_dv_smf",
+            "*_p_i_mv_dv_sml",
+            "*_p_i_ni_mv_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
 
@@ -297,7 +310,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldFacetField("number_p_i", "number_p_i_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestPointFieldFacetField("number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
+    doTestPointFieldFacetField(
+        "number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
     doTestPointFieldFacetField(
@@ -519,7 +533,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     String[] randomSortedInts =
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
     doTestPointFieldMultiValuedFacetField("number_p_i_mv", "number_p_i_mv_dv", randomSortedInts);
-    doTestPointFieldMultiValuedFacetField("number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
+    doTestPointFieldMultiValuedFacetField(
+        "number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
   }
 
   @Test
@@ -923,8 +938,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, no docvalues
     for (String r :
         Arrays.asList(
-            "*_p_d_mv", "*_p_d_ni_mv", "*_p_d_ni_ns_mv", "*_p_d_mv_smf", "*_p_d_mv_sml",
-            "*_p_d_e_mv", "*_p_d_e_mv_smf", "*_p_d_e_mv_sml")) {
+            "*_p_d_mv",
+            "*_p_d_ni_mv",
+            "*_p_d_ni_ns_mv",
+            "*_p_d_mv_smf",
+            "*_p_d_mv_sml",
+            "*_p_d_e_mv",
+            "*_p_d_e_mv_smf",
+            "*_p_d_e_mv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -937,11 +958,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, w/ docValues
     for (String r :
         Arrays.asList(
-            "*_p_d_ni_mv_dv", "*_p_d_ni_dv_ns_mv",
-            "*_p_d_dv_ns_mv", "*_p_d_mv_dv",
-            "*_p_d_e_mv_dv", "*_p_d_e_mv_dv_smf", "*_p_d_e_mv_dv_sml",
-            "*_p_d_mv_dv_smf", "*_p_d_ni_mv_dv_smf",
-            "*_p_d_mv_dv_sml", "*_p_d_ni_mv_dv_sml")) {
+            "*_p_d_ni_mv_dv",
+            "*_p_d_ni_dv_ns_mv",
+            "*_p_d_dv_ns_mv",
+            "*_p_d_mv_dv",
+            "*_p_d_e_mv_dv",
+            "*_p_d_e_mv_dv_smf",
+            "*_p_d_e_mv_dv_sml",
+            "*_p_d_mv_dv_smf",
+            "*_p_d_ni_mv_dv_smf",
+            "*_p_d_mv_dv_sml",
+            "*_p_d_ni_mv_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
 
@@ -1141,7 +1168,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointStats("number_p_d", "number_p_d_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestPointStats("number_p_d_e", "number_p_d_e_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestPointStats("number_p_d_mv", "number_p_d_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestPointStats("number_p_d_e_mv", "number_p_d_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
+    doTestPointStats(
+        "number_p_d_e_mv", "number_p_d_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
   }
 
   @Test
@@ -1591,7 +1619,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, no docvalues
     for (String r :
         Arrays.asList(
-            "*_p_f_mv", "*_p_f_e_mv", "*_p_f_ni_mv", "*_p_f_ni_ns_mv", "*_p_f_mv_smf", "*_p_f_e_mv_smf", "*_p_f_mv_sml", "*_p_f_e_mv_sml")) {
+            "*_p_f_mv",
+            "*_p_f_e_mv",
+            "*_p_f_ni_mv",
+            "*_p_f_ni_ns_mv",
+            "*_p_f_mv_smf",
+            "*_p_f_e_mv_smf",
+            "*_p_f_mv_sml",
+            "*_p_f_e_mv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -1604,11 +1639,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, w/ docValues
     for (String r :
         Arrays.asList(
-            "*_p_f_ni_mv_dv", "*_p_f_ni_dv_ns_mv",
-            "*_p_f_dv_ns_mv", "*_p_f_mv_dv",
-            "*_p_f_e_mv_dv", "*_p_f_e_mv_dv_smf", "*_p_f_e_mv_dv_sml",
-            "*_p_f_mv_dv_smf", "*_p_f_ni_mv_dv_smf",
-            "*_p_f_mv_dv_sml", "*_p_f_ni_mv_dv_sml")) {
+            "*_p_f_ni_mv_dv",
+            "*_p_f_ni_dv_ns_mv",
+            "*_p_f_dv_ns_mv",
+            "*_p_f_mv_dv",
+            "*_p_f_e_mv_dv",
+            "*_p_f_e_mv_dv_smf",
+            "*_p_f_e_mv_dv_sml",
+            "*_p_f_mv_dv_smf",
+            "*_p_f_ni_mv_dv_smf",
+            "*_p_f_mv_dv_sml",
+            "*_p_f_ni_mv_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
 
@@ -1808,7 +1849,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointStats("number_p_f", "number_p_f_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestPointStats("number_p_f_e", "number_p_f_e_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestPointStats("number_p_f_mv", "number_p_f_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestPointStats("number_p_f_e_mv", "number_p_f_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
+    doTestPointStats(
+        "number_p_f_e_mv", "number_p_f_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
   }
 
   @Test
@@ -2217,7 +2259,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, no docvalues
     for (String r :
         Arrays.asList(
-            "*_p_l_mv", "*_p_l_e_mv", "*_p_l_ni_mv", "*_p_l_ni_ns_mv", "*_p_l_mv_smf", "*_p_l_e_mv_smf", "*_p_l_mv_sml", "*_p_l_e_mv_sml")) {
+            "*_p_l_mv",
+            "*_p_l_e_mv",
+            "*_p_l_ni_mv",
+            "*_p_l_ni_ns_mv",
+            "*_p_l_mv_smf",
+            "*_p_l_e_mv_smf",
+            "*_p_l_mv_sml",
+            "*_p_l_e_mv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2233,11 +2282,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, w/ docValues
     for (String r :
         Arrays.asList(
-            "*_p_l_ni_mv_dv", "*_p_l_ni_dv_ns_mv",
-            "*_p_l_dv_ns_mv", "*_p_l_mv_dv",
-            "*_p_l_e_mv_dv", "*_p_l_e_mv_dv_smf", "*_p_l_e_mv_dv_sml",
-            "*_p_l_mv_dv_smf", "*_p_l_ni_mv_dv_smf",
-            "*_p_l_mv_dv_sml", "*_p_l_ni_mv_dv_sml")) {
+            "*_p_l_ni_mv_dv",
+            "*_p_l_ni_dv_ns_mv",
+            "*_p_l_dv_ns_mv",
+            "*_p_l_mv_dv",
+            "*_p_l_e_mv_dv",
+            "*_p_l_e_mv_dv_smf",
+            "*_p_l_e_mv_dv_sml",
+            "*_p_l_mv_dv_smf",
+            "*_p_l_ni_mv_dv_smf",
+            "*_p_l_mv_dv_sml",
+            "*_p_l_ni_mv_dv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2262,7 +2317,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestPointFieldFacetField("number_p_l", "number_p_l_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestPointFieldFacetField("number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
+    doTestPointFieldFacetField(
+        "number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
     doTestPointFieldFacetField(
@@ -2833,7 +2889,14 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, no docvalues
     for (String r :
         Arrays.asList(
-            "*_p_dt_mv", "*_p_dt_e_mv", "*_p_dt_ni_mv", "*_p_dt_ni_ns_mv", "*_p_dt_mv_smf", "*_p_dt_e_mv_smf", "*_p_dt_mv_sml", "*_p_dt_e_mv_sml")) {
+            "*_p_dt_mv",
+            "*_p_dt_e_mv",
+            "*_p_dt_ni_mv",
+            "*_p_dt_ni_ns_mv",
+            "*_p_dt_mv_smf",
+            "*_p_dt_e_mv_smf",
+            "*_p_dt_mv_sml",
+            "*_p_dt_e_mv_sml")) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2848,11 +2911,17 @@ public class TestPointFields extends SolrTestCaseJ4 {
     // multivalued, w/ docValues
     for (String r :
         Arrays.asList(
-            "*_p_dt_ni_mv_dv", "*_p_dt_ni_dv_ns_mv",
-            "*_p_dt_dv_ns_mv", "*_p_dt_mv_dv",
-            "*_p_dt_e_mv_dv", "*_p_dt_e_mv_dv_smf", "*_p_dt_e_mv_dv_sml",
-            "*_p_dt_mv_dv_smf", "*_p_dt_ni_mv_dv_smf",
-            "*_p_dt_mv_dv_sml", "*_p_dt_ni_mv_dv_sml")) {
+            "*_p_dt_ni_mv_dv",
+            "*_p_dt_ni_dv_ns_mv",
+            "*_p_dt_dv_ns_mv",
+            "*_p_dt_mv_dv",
+            "*_p_dt_e_mv_dv",
+            "*_p_dt_e_mv_dv_smf",
+            "*_p_dt_e_mv_dv_sml",
+            "*_p_dt_mv_dv_smf",
+            "*_p_dt_ni_mv_dv_smf",
+            "*_p_dt_mv_dv_sml",
+            "*_p_dt_ni_mv_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
 
@@ -3437,45 +3506,65 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertTrue(
           fieldTypes[i].getRangeQuery(null, fieldIndexed, min[i], max[i], true, true)
               instanceof PointRangeQuery);
-      String expectedDocValuesRangeQueryClass = ((fieldTypeNames[i].endsWith("d") || fieldTypeNames[i].endsWith("f")) && min[i].startsWith("-") && !max[i].startsWith("-")) ? "FunctionRangeQuery" : "SortedNumericDocValuesRangeQuery";
+      String expectedDocValuesRangeQueryClass =
+          ((fieldTypeNames[i].endsWith("d") || fieldTypeNames[i].endsWith("f"))
+                  && min[i].startsWith("-")
+                  && !max[i].startsWith("-"))
+              ? "FunctionRangeQuery"
+              : "SortedNumericDocValuesRangeQuery";
       q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDv, min[i], max[i], true, true);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(expectedDocValuesRangeQueryClass, ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          expectedDocValuesRangeQueryClass,
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
           fieldTypes[i].getRangeQuery(null, fieldIndexedMv, min[i], max[i], true, true)
               instanceof PointRangeQuery);
       q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDvMv, min[i], max[i], true, true);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
           fieldTypes[i].getFieldQuery(null, fieldIndexed, min[i]) instanceof PointRangeQuery);
       q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDv, min[i]);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
           fieldTypes[i].getFieldQuery(null, fieldIndexedMv, min[i]) instanceof PointRangeQuery);
       q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDvMv, min[i]);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexed, List.of(min[i], max[i])) instanceof PointInSetQuery);
+          fieldTypes[i].getSetQuery(null, fieldIndexed, List.of(min[i], max[i]))
+              instanceof PointInSetQuery);
       q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDv, List.of(min[i], max[i]));
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointInSetQuery);
-      assertEquals("SortedNumericDocValuesSetQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointInSetQuery);
+      assertEquals(
+          "SortedNumericDocValuesSetQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexedMv, List.of(min[i], max[i])) instanceof PointInSetQuery);
+          fieldTypes[i].getSetQuery(null, fieldIndexedMv, List.of(min[i], max[i]))
+              instanceof PointInSetQuery);
       q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDvMv, List.of(min[i], max[i]));
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointInSetQuery);
-      assertEquals("SortedNumericDocValuesSetQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointInSetQuery);
+      assertEquals(
+          "SortedNumericDocValuesSetQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
     }
     for (int i = 0; i < fieldTypeNames.length; i++) {
-      SchemaField fieldIndexed = h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e");
+      SchemaField fieldIndexed =
+          h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e");
       SchemaField fieldIndexedAndDv =
           h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e_dv");
       SchemaField fieldIndexedMv =
@@ -3485,42 +3574,59 @@ public class TestPointFields extends SolrTestCaseJ4 {
       assertTrue(
           fieldTypes[i].getRangeQuery(null, fieldIndexed, min[i], max[i], true, true)
               instanceof PointRangeQuery);
-      String expectedDocValuesRangeQueryClass = ((fieldTypeNames[i].endsWith("d") || fieldTypeNames[i].endsWith("f")) && min[i].startsWith("-") && !max[i].startsWith("-")) ? "FunctionRangeQuery" : "SortedNumericDocValuesRangeQuery";
+      String expectedDocValuesRangeQueryClass =
+          ((fieldTypeNames[i].endsWith("d") || fieldTypeNames[i].endsWith("f"))
+                  && min[i].startsWith("-")
+                  && !max[i].startsWith("-"))
+              ? "FunctionRangeQuery"
+              : "SortedNumericDocValuesRangeQuery";
       q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDv, min[i], max[i], true, true);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(expectedDocValuesRangeQueryClass, ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          expectedDocValuesRangeQueryClass,
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
           fieldTypes[i].getRangeQuery(null, fieldIndexedMv, min[i], max[i], true, true)
               instanceof PointRangeQuery);
       q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDvMv, min[i], max[i], true, true);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getFieldQuery(null, fieldIndexed, min[i]) instanceof TermQuery);
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexed, min[i]) instanceof TermQuery);
       q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDv, min[i]);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof TermQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getFieldQuery(null, fieldIndexedMv, min[i]) instanceof TermQuery);
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof TermQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(fieldTypes[i].getFieldQuery(null, fieldIndexedMv, min[i]) instanceof TermQuery);
       q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDvMv, min[i]);
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof TermQuery);
-      assertEquals("SortedNumericDocValuesRangeQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof TermQuery);
+      assertEquals(
+          "SortedNumericDocValuesRangeQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexed, List.of(min[i], max[i])) instanceof TermInSetQuery);
+          fieldTypes[i].getSetQuery(null, fieldIndexed, List.of(min[i], max[i]))
+              instanceof TermInSetQuery);
       q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDv, List.of(min[i], max[i]));
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof TermInSetQuery);
-      assertEquals("SortedNumericDocValuesSetQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof TermInSetQuery);
+      assertEquals(
+          "SortedNumericDocValuesSetQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
       assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexedMv, List.of(min[i], max[i])) instanceof TermInSetQuery);
+          fieldTypes[i].getSetQuery(null, fieldIndexedMv, List.of(min[i], max[i]))
+              instanceof TermInSetQuery);
       q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDvMv, List.of(min[i], max[i]));
       assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery)q).getIndexQuery() instanceof TermInSetQuery);
-      assertEquals("SortedNumericDocValuesSetQuery", ((IndexOrDocValuesQuery)q).getRandomAccessQuery().getClass().getSimpleName());
+      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof TermInSetQuery);
+      assertEquals(
+          "SortedNumericDocValuesSetQuery",
+          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
     }
   }
 
