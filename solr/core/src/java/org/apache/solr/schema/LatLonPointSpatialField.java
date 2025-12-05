@@ -309,15 +309,12 @@ public class LatLonPointSpatialField
 
       @Override
       public SortField getSortField(boolean reverse) {
-        // Use the optimized Lucene distance sort
         SortField distanceSort =
             LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
 
-        // If descending, we need to wrap it to reverse the sort order
-        // Note: We can't just use super.getSortField(true) because that uses a different code path
-        // that doesn't work correctly with the spatial filter query context
         if (reverse) {
-          // Create a reverse sort field that delegates to the distance sort comparator
+          // Create a reverse sort field that delegates to Lucene's distance sort comparator
+          // We can't use super.getSortField(true) because that calls getValues() which may be null
           return new SortField(distanceSort.getField(), distanceSort.getType(), true) {
             @Override
             public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
