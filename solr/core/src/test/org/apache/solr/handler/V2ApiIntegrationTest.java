@@ -26,19 +26,19 @@ import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -79,9 +79,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .withPayload(payload)
             .build();
     v2Request.setResponseParser(responseParser);
-    SolrClient.RemoteSolrException ex =
+    RemoteSolrException ex =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               v2Request.process(cluster.getSolrClient());
             });
@@ -117,10 +117,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   public void testWTParam() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
     // TODO: If possible do this in a better way
-    request.setResponseParser(new NoOpResponseParser("bleh"));
-
-    Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
-    String respString = resp.toString();
+    request.setResponseParser(new InputStreamResponseParser("bleh"));
+    NamedList<Object> res = cluster.getSolrClient().request(request);
+    String respString = InputStreamResponseParser.consumeResponseToString(res);
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
     assertFalse(respString.contains("500"));
@@ -133,7 +132,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
     // no response parser
     request.setResponseParser(null);
-    resp = resAsMap(cluster.getSolrClient(), request);
+    Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
     respString = resp.toString();
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
@@ -236,7 +235,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertEquals(
         "/collections/collection1/get",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
-    String tempDir = createTempDir().toFile().getPath();
+    String tempDir = createTempDir().toString();
     Map<String, Object> backupParams = new HashMap<>();
     backupParams.put("location", tempDir);
     cluster

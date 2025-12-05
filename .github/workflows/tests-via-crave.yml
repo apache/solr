@@ -3,8 +3,7 @@ name: Solr Tests
 on:
   pull_request:
     branches:
-      - 'main'
-      - 'branch_*'
+      - '*'
 
 jobs:
   test:
@@ -26,7 +25,7 @@ jobs:
     - name: Initialize, build, test
       run: |
         cd /crave-devspaces/pipeline/runs/${GITHUB_RUN_ID}_${GITHUB_RUN_NUMBER}
-        crave run --clean
+        crave run --clean --message "PR: ${GITHUB_REF_NAME}" -- ./gradlew --console=plain test
     - name: Cleanup
       if: ${{ always() }}
       run: |

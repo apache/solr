@@ -27,7 +27,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
@@ -72,7 +72,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
@@ -115,7 +115,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/downconfig1");
 
@@ -134,7 +134,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
-    AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
     Path tmp2 = createTempDir("downConfigNewPlace2");
     args =
         new String[] {
@@ -146,7 +146,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     verifyZkLocalPathsMatch(tmp.resolve("conf"), "/configs/downconfig2");
     // And insure the empty file is a text file
     Path destEmpty = tmp2.resolve("conf").resolve("stopwords").resolve("emptyfile");
-    assertTrue("Empty files should NOT be copied down as directories", destEmpty.toFile().isFile());
+    assertTrue(
+        "Empty files should NOT be copied down as directories", Files.isRegularFile(destEmpty));
   }
 
   @Test
@@ -156,7 +157,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
 
     // Now copy it somewhere else on ZK.
     String[] args =
@@ -326,7 +327,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     // Next, copy cp7 down and verify that zknode.data exists for cp7
     Path zData = tmp.resolve("conf/stopwords/zknode.data");
-    assertTrue("znode.data should have been copied down", zData.toFile().exists());
+    assertTrue("znode.data should have been copied down", Files.exists(zData));
 
     // Finally, copy up to cp8 and verify that the data is up there.
     args = new String[] {"cp", "--recursive", "--zk-host", zkAddr, "file:" + tmp, "zk:/cp9"};
@@ -385,7 +386,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     Path locEmpty = tmp2.resolve("stopwords/emptyfile");
-    assertTrue("Empty files should NOT be copied down as directories", locEmpty.toFile().isFile());
+    assertTrue(
+        "Empty files should NOT be copied down as directories", Files.isRegularFile(locEmpty));
   }
 
   @Test
@@ -396,7 +398,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
 
     // Now move it somewhere else.
     String[] args = new String[] {"mv", "--zk-host", zkAddr, "zk:/configs/mv1", "zk:/mv2"};
@@ -465,7 +467,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
     // Should only find a single level.
     String[] args = new String[] {"ls", "--zk-host", zkAddr, "/configs"};
@@ -538,8 +540,8 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
 
     // Should fail if recursive not set.
     String[] args = new String[] {"rm", "--zk-host", zkAddr, "/configs/rm1"};
@@ -578,7 +580,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // This should silently just refuse to do anything to the / or /zookeeper
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/"};
 
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
+    AbstractFullDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
     res = CLITestHelper.runTool(args, ZkRmTool.class);
     assertNotEquals("Should fail when trying to remove /.", 0, res);
   }

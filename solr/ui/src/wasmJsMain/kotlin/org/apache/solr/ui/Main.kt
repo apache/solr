@@ -32,10 +32,10 @@ import kotlinx.browser.window
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.integration.SimpleRootComponent
-import org.apache.solr.ui.views.root.RootContent
-import org.apache.solr.ui.views.theme.SolrTheme
 import org.apache.solr.ui.utils.DefaultAppComponentContext
 import org.apache.solr.ui.utils.getDefaultClient
+import org.apache.solr.ui.views.root.RootContent
+import org.apache.solr.ui.views.theme.SolrTheme
 
 /**
  * Entry point of the Compose application for all wasmJs (browser) targets.

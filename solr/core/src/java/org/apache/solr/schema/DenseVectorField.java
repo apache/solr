@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
+import org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.KnnByteVectorField;
 import org.apache.lucene.document.KnnFloatVectorField;
@@ -38,12 +39,16 @@ import org.apache.lucene.queries.function.valuesource.ByteKnnVectorFieldSource;
 import org.apache.lucene.queries.function.valuesource.FloatKnnVectorFieldSource;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
+import org.apache.lucene.search.PatienceKnnVectorQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SeededKnnVectorQuery;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.hnsw.HnswGraph;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.neural.KnnQParser.EarlyTerminationParams;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.util.vector.ByteDenseVectorParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -64,6 +69,7 @@ import org.slf4j.LoggerFactory;
 public class DenseVectorField extends FloatPointField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String HNSW_ALGORITHM = "hnsw";
+  public static final String CAGRA_HNSW_ALGORITHM = "cagra_hnsw";
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_ALGORITHM = "knnAlgorithm";
@@ -73,6 +79,20 @@ public class DenseVectorField extends FloatPointField {
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
   static final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
+
+  static final String CUVS_WRITER_THREADS = "cuvsWriterThreads";
+  static final String CUVS_INT_GRAPH_DEGREE = "cuvsIntGraphDegree";
+  static final String CUVS_GRAPH_DEGREE = "cuvsGraphDegree";
+  static final String CUVS_HNSW_LAYERS = "cuvsHnswLayers";
+  static final String CUVS_HNSW_MAX_CONNECTIONS = "cuvsHnswM";
+  static final String CUVS_HNSW_EF_CONSTRUCTION = "cuvsHNSWEfConstruction";
+  static final int DEFAULT_CUVS_WRITER_THREADS = 32;
+  static final int DEFAULT_CUVS_INT_GRAPH_DEGREE = 128;
+  static final int DEFAULT_CUVS_GRAPH_DEGREE = 64;
+  static final int DEFAULT_CUVS_HNSW_LAYERS = 1;
+  static final int DEFAULT_CUVS_HNSW_MAX_CONNECTIONS = 16;
+  static final int DEFAULT_CUVS_HNSW_EF_CONSTRUCTION = 100;
+
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
@@ -94,6 +114,13 @@ public class DenseVectorField extends FloatPointField {
    * encoding is FLOAT32
    */
   private VectorEncoding vectorEncoding;
+
+  private int cuvsWriterThreads;
+  private int cuvsIntGraphDegree;
+  private int cuvsGraphDegree;
+  private int cuvsHnswLayers;
+  private int cuvsHnswM;
+  private int cuvsHNSWEfConstruction;
 
   public DenseVectorField() {
     super();
@@ -150,6 +177,42 @@ public class DenseVectorField extends FloatPointField {
         ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
     args.remove(HNSW_BEAM_WIDTH);
 
+    this.cuvsWriterThreads =
+        ofNullable(args.get(CUVS_WRITER_THREADS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_WRITER_THREADS);
+    args.remove(CUVS_WRITER_THREADS);
+
+    this.cuvsIntGraphDegree =
+        ofNullable(args.get(CUVS_INT_GRAPH_DEGREE))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_INT_GRAPH_DEGREE);
+    args.remove(CUVS_INT_GRAPH_DEGREE);
+
+    this.cuvsGraphDegree =
+        ofNullable(args.get(CUVS_GRAPH_DEGREE))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_GRAPH_DEGREE);
+    args.remove(CUVS_GRAPH_DEGREE);
+
+    this.cuvsHnswLayers =
+        ofNullable(args.get(CUVS_HNSW_LAYERS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_LAYERS);
+    args.remove(CUVS_HNSW_LAYERS);
+
+    this.cuvsHnswM =
+        ofNullable(args.get(CUVS_HNSW_MAX_CONNECTIONS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_MAX_CONNECTIONS);
+    args.remove(CUVS_HNSW_MAX_CONNECTIONS);
+
+    this.cuvsHNSWEfConstruction =
+        ofNullable(args.get(CUVS_HNSW_EF_CONSTRUCTION))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_EF_CONSTRUCTION);
+    args.remove(CUVS_HNSW_EF_CONSTRUCTION);
+
     this.properties &= ~MULTIVALUED;
     this.properties &= ~UNINVERTIBLE;
 
@@ -178,6 +241,30 @@ public class DenseVectorField extends FloatPointField {
 
   public VectorEncoding getVectorEncoding() {
     return vectorEncoding;
+  }
+
+  public int getCuvsWriterThreads() {
+    return cuvsWriterThreads;
+  }
+
+  public int getCuvsIntGraphDegree() {
+    return cuvsIntGraphDegree;
+  }
+
+  public int getCuvsGraphDegree() {
+    return cuvsGraphDegree;
+  }
+
+  public int getCuvsHnswLayers() {
+    return cuvsHnswLayers;
+  }
+
+  public int getCuvsHnswMaxConn() {
+    return cuvsHnswM;
+  }
+
+  public int getCuvsHnswEfConstruction() {
+    return cuvsHNSWEfConstruction;
   }
 
   @Override
@@ -346,6 +433,10 @@ public class DenseVectorField extends FloatPointField {
     }
   }
 
+  public KnnVectorsFormat buildKnnVectorsFormat() {
+    return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
+  }
+
   @Override
   public UninvertingReader.Type getUninversionType(SchemaField sf) {
     return null;
@@ -366,22 +457,58 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public Query getKnnVectorQuery(
-      String fieldName, String vectorToSearch, int topK, Query filterQuery) {
+      String fieldName,
+      String vectorToSearch,
+      int topK,
+      Query filterQuery,
+      Query seedQuery,
+      EarlyTerminationParams earlyTermination,
+      Integer filteredSearchThreshold) {
 
     DenseVectorParser vectorBuilder =
         getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
 
-    switch (vectorEncoding) {
-      case FLOAT32:
-        return new KnnFloatVectorQuery(
-            fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
-      case BYTE:
-        return new KnnByteVectorQuery(fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR,
-            "Unexpected state. Vector Encoding: " + vectorEncoding);
-    }
+    final Query knnQuery =
+        switch (vectorEncoding) {
+          case FLOAT32 -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnFloatVectorQuery(
+                  fieldName, vectorBuilder.getFloatVector(), topK, filterQuery);
+            }
+          }
+          case BYTE -> {
+            if (filteredSearchThreshold != null) {
+              KnnSearchStrategy knnSearchStrategy =
+                  new KnnSearchStrategy.Hnsw(filteredSearchThreshold);
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery, knnSearchStrategy);
+            } else {
+              yield new KnnByteVectorQuery(
+                  fieldName, vectorBuilder.getByteVector(), topK, filterQuery);
+            }
+          }
+        };
+
+    final boolean seedEnabled = (seedQuery != null);
+    final boolean earlyTerminationEnabled =
+        (earlyTermination != null && earlyTermination.isEnabled());
+
+    int caseNumber = (seedEnabled ? 1 : 0) + (earlyTerminationEnabled ? 2 : 0);
+    return switch (caseNumber) {
+        // 0: no seed, no early termination -> knnQuery
+      default -> knnQuery;
+        // 1: only seed -> Seeded(knnQuery)
+      case 1 -> getSeededQuery(knnQuery, seedQuery);
+        // 2: only early termination -> Patience(knnQuery)
+      case 2 -> getEarlyTerminationQuery(knnQuery, earlyTermination);
+        // 3: seed + early termination -> Patience(Seeded(knnQuery))
+      case 3 -> getEarlyTerminationQuery(getSeededQuery(knnQuery, seedQuery), earlyTermination);
+    };
   }
 
   /**
@@ -413,5 +540,42 @@ public class DenseVectorField extends FloatPointField {
   public SortField getSortField(SchemaField field, boolean top) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST, "Cannot sort on a Dense Vector field");
+  }
+
+  private Query getSeededQuery(Query knnQuery, Query seed) {
+    return switch (knnQuery) {
+      case KnnFloatVectorQuery knnFloatQuery -> SeededKnnVectorQuery.fromFloatQuery(
+          knnFloatQuery, seed);
+      case KnnByteVectorQuery knnByteQuery -> SeededKnnVectorQuery.fromByteQuery(
+          knnByteQuery, seed);
+      default -> throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
+    };
+  }
+
+  private Query getEarlyTerminationQuery(Query knnQuery, EarlyTerminationParams earlyTermination) {
+    final boolean useExplicitParams =
+        (earlyTermination.getSaturationThreshold() != null
+            && earlyTermination.getPatience() != null);
+    return switch (knnQuery) {
+      case KnnFloatVectorQuery knnFloatQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromFloatQuery(
+              knnFloatQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromFloatQuery(knnFloatQuery);
+      case KnnByteVectorQuery knnByteQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromByteQuery(
+              knnByteQuery,
+              earlyTermination.getSaturationThreshold(),
+              earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromByteQuery(knnByteQuery);
+      case SeededKnnVectorQuery seedQuery -> useExplicitParams
+          ? PatienceKnnVectorQuery.fromSeededQuery(
+              seedQuery, earlyTermination.getSaturationThreshold(), earlyTermination.getPatience())
+          : PatienceKnnVectorQuery.fromSeededQuery(seedQuery);
+      default -> throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Invalid type of knn query");
+    };
   }
 }

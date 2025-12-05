@@ -18,8 +18,6 @@
 package org.apache.solr.client.solrj.cloud;
 
 import java.io.IOException;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.common.SolrCloseable;
@@ -51,7 +49,4 @@ public interface SolrCloudManager extends SolrCloseable {
   ObjectCache getObjectCache();
 
   TimeSource getTimeSource();
-
-  @Deprecated
-  <T extends SolrResponse> T request(SolrRequest<T> req) throws IOException;
 }

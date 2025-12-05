@@ -17,13 +17,12 @@
 package org.apache.solr.client.solrj.request;
 
 import java.util.Objects;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
 
-public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse>
-    implements IsUpdateRequest {
+public abstract class AbstractUpdateRequest extends CollectionRequiringSolrRequest<UpdateResponse> {
   protected ModifiableSolrParams params = new ModifiableSolrParams(); // maybe make final; no setter
   protected int commitWithin = -1;
 
@@ -33,7 +32,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   public AbstractUpdateRequest(METHOD m, String path) {
-    super(m, path);
+    super(m, path, SolrRequestType.UPDATE);
   }
 
   /** Sets appropriate parameters for the given ACTION */
@@ -121,13 +120,8 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   }
 
   @Override
-  protected UpdateResponse createResponse(SolrClient client) {
+  protected UpdateResponse createResponse(NamedList<Object> namedList) {
     return new UpdateResponse();
-  }
-
-  @Override
-  public String getRequestType() {
-    return SolrRequestType.UPDATE.toString();
   }
 
   public boolean isWaitSearcher() {
@@ -150,18 +144,6 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
 
   public AbstractUpdateRequest setCommitWithin(int commitWithin) {
     this.commitWithin = commitWithin;
-    return this;
-  }
-
-  private boolean sendToLeaders = true;
-
-  @Override
-  public boolean isSendToLeaders() {
-    return sendToLeaders;
-  }
-
-  public AbstractUpdateRequest setSendToLeaders(final boolean sendToLeaders) {
-    this.sendToLeaders = sendToLeaders;
     return this;
   }
 }

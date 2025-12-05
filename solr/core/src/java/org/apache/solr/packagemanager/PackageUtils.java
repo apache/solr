@@ -35,12 +35,13 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.cli.CLIUtils;
+import org.apache.solr.client.api.model.UploadToFileStoreResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -96,7 +97,7 @@ public class PackageUtils {
         uploadReq.setSig(List.of(sig));
       }
 
-      final var uploadRsp = uploadReq.process(client).getParsed();
+      final UploadToFileStoreResponse uploadRsp = uploadReq.process(client);
       if (!name.equals(uploadRsp.file)) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,

@@ -181,13 +181,8 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     if (get("infoStream").boolVal(false)) {
-      if (get("infoStream").attr("file") == null) {
-        log.info("IndexWriter infoStream solr logging is enabled");
-        infoStream = new LoggingInfoStream();
-      } else {
-        throw new IllegalArgumentException(
-            "Remove @file from <infoStream> to output messages to solr's logfile");
-      }
+      log.info("IndexWriter infoStream solr logging is enabled");
+      infoStream = new LoggingInfoStream();
     }
     mergedSegmentWarmerInfo =
         getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);
@@ -340,8 +335,8 @@ public class SolrIndexConfig implements MapSerializable {
         ((ConcurrentMergeScheduler) scheduler)
             .setMaxMergesAndThreads(maxMergeCount, maxThreadCount);
         Boolean ioThrottle = (Boolean) args.remove("ioThrottle");
-        if (ioThrottle != null && !ioThrottle) { // by-default 'enabled'
-          ((ConcurrentMergeScheduler) scheduler).disableAutoIOThrottle();
+        if (ioThrottle != null && ioThrottle) { // by-default 'disabled'
+          ((ConcurrentMergeScheduler) scheduler).enableAutoIOThrottle();
         }
         SolrPluginUtils.invokeSetters(scheduler, args);
       } else {

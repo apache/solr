@@ -48,12 +48,12 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void reset() {
-    System.setProperty("solr.deleteUnknownCores", "false");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false");
   }
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
-    System.setProperty("solr.deleteUnknownCores", "true");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "true");
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
@@ -65,7 +65,8 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
         "Expected a cluster of 2 shards and 2 replicas",
         collectionName,
         (n, c) -> {
-          return DocCollection.isFullyActive(n, c, numShards, replicationFactor);
+          return SolrCloudTestCase.replicasForCollectionAreFullyActive(
+              n, c, numShards, replicationFactor);
         });
 
     DocCollection collectionState = getCollectionState(collectionName);

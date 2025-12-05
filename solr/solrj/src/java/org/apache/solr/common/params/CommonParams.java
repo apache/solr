@@ -37,9 +37,11 @@ public interface CommonParams {
 
   /**
    * the Request Handler (formerly known as the Query Type) - which Request Handler should handle
-   * the request
+   * the request.
+   *
+   * @deprecated route requests by path instead, not using this parameter
    */
-  String QT = "qt";
+  @Deprecated String QT = "qt";
 
   /** the response writer type - the format of the response */
   String WT = "wt";
@@ -91,9 +93,6 @@ public interface CommonParams {
 
   /** stylesheet to apply to XML results */
   String XSL = "xsl";
-
-  /** version parameter to check request-response compatibility */
-  String VERSION = "version";
 
   /** query and init param for field list */
   String FL = "fl";
@@ -183,6 +182,9 @@ public interface CommonParams {
    */
   String MEM_ALLOWED = "memAllowed";
 
+  /** The max hits to be collected per shard. */
+  String MAX_HITS_ALLOWED = "maxHitsAllowed";
+
   /** Is the query cancellable? */
   String IS_QUERY_CANCELLABLE = "canCancel";
 
@@ -224,6 +226,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
+  /** /admin paths which don't require a target collection */
   Set<String> ADMIN_PATHS =
       Set.of(
           CORES_HANDLER_PATH,
@@ -236,6 +239,7 @@ public interface CommonParams {
           AUTHC_PATH,
           AUTHZ_PATH,
           METRICS_PATH);
+
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -274,9 +278,6 @@ public interface CommonParams {
   String THREADS = "threads";
   String TRUE = Boolean.TRUE.toString();
   String FALSE = Boolean.FALSE.toString();
-
-  /** document type in {@link CollectionAdminParams#SYSTEM_COLL} collection. * */
-  String TYPE = "type";
 
   /**
    * Used as a local parameter on queries. cache=false means don't check any query or filter caches.

@@ -89,11 +89,12 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.api.model.FileMetaData;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -102,6 +103,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.FastInputStream;
 import org.apache.solr.common.util.IOUtils;
@@ -177,9 +179,7 @@ public class IndexFetcher {
 
   boolean fetchFromLeader = false;
 
-  private final Http2SolrClient solrClient;
-
-  private Integer connTimeout;
+  private final HttpJettySolrClient solrClient;
 
   private Integer soTimeout;
 
@@ -251,14 +251,13 @@ public class IndexFetcher {
   // It's crucial not to remove the authentication credentials as they are essential for User
   // managed replication.
   // GitHub PR #2276
-  private Http2SolrClient createSolrClient(
+  private HttpJettySolrClient createSolrClient(
       SolrCore core, String httpBasicAuthUser, String httpBasicAuthPassword, String leaderBaseUrl) {
     final UpdateShardHandler updateShardHandler = core.getCoreContainer().getUpdateShardHandler();
-    return new Http2SolrClient.Builder(leaderBaseUrl)
+    return new HttpJettySolrClient.Builder(leaderBaseUrl)
         .withHttpClient(updateShardHandler.getRecoveryOnlyHttpClient())
         .withBasicAuthCredentials(httpBasicAuthUser, httpBasicAuthPassword)
         .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(connTimeout, TimeUnit.MILLISECONDS)
         .build();
   }
 
@@ -287,11 +286,10 @@ public class IndexFetcher {
     String compress = (String) initArgs.get(COMPRESSION);
     useInternalCompression = ReplicationHandler.INTERNAL.equals(compress);
     useExternalCompression = ReplicationHandler.EXTERNAL.equals(compress);
-    connTimeout = getParameter(initArgs, HttpClientUtil.PROP_CONNECTION_TIMEOUT, 30000, null);
-    soTimeout = getParameter(initArgs, HttpClientUtil.PROP_SO_TIMEOUT, 120000, null);
+    soTimeout = getParameter(initArgs, SolrHttpConstants.PROP_SO_TIMEOUT, 120000, null);
 
-    String httpBasicAuthUser = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_USER);
-    String httpBasicAuthPassword = (String) initArgs.get(HttpClientUtil.PROP_BASIC_AUTH_PASS);
+    String httpBasicAuthUser = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_USER);
+    String httpBasicAuthPassword = (String) initArgs.get(SolrHttpConstants.PROP_BASIC_AUTH_PASS);
     solrClient =
         createSolrClient(solrCore, httpBasicAuthUser, httpBasicAuthPassword, leaderBaseUrl);
   }
@@ -344,15 +342,23 @@ public class IndexFetcher {
     return toReturn;
   }
 
+  private GenericSolrRequest createReplicationHandlerRequest(SolrParams solrParams) {
+    return new GenericSolrRequest(
+            SolrRequest.METHOD.GET,
+            ReplicationHandler.PATH,
+            SolrRequest.SolrRequestType.ADMIN,
+            solrParams)
+        .setRequiresCollection(true);
+  }
+
   /** Gets the latest commit version and generation from the leader */
   public NamedList<Object> getLatestVersion() throws IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_INDEX_VERSION);
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
-      return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      return solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
     } catch (SolrServerException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e);
     }
@@ -368,11 +374,9 @@ public class IndexFetcher {
     params.set(COMMAND, CMD_GET_FILE_LIST);
     params.set(GENERATION, String.valueOf(gen));
     params.set(CommonParams.WT, JAVABIN);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req = createReplicationHandlerRequest(params);
     try {
-      NamedList<?> response =
-          solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+      NamedList<?> response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
 
       List<Map<String, Object>> files = (List<Map<String, Object>>) response.get(CMD_GET_FILE_LIST);
       if (files != null) filesToDownload = Collections.synchronizedList(files);
@@ -1014,8 +1018,7 @@ public class IndexFetcher {
       if (core == null) {
         return; // core closed, presumably
       }
-      @SuppressWarnings("unchecked")
-      Future<Void>[] waitSearcher = (Future<Void>[]) Array.newInstance(Future.class, 1);
+      Future<?>[] waitSearcher = (Future<?>[]) Array.newInstance(Future.class, 1);
       RefCounted<SolrIndexSearcher> searcher = core.getSearcher(true, true, waitSearcher, true);
       try {
         if (waitSearcher[0] != null) {
@@ -1880,7 +1883,6 @@ public class IndexFetcher {
       // the method is command=filecontent
       params.set(COMMAND, CMD_GET_FILE);
       params.set(GENERATION, Long.toString(indexGen));
-      params.set(CommonParams.QT, ReplicationHandler.PATH);
       // add the version to download. This is used to reserve the download
       params.set(solrParamOutput, fileName);
       if (useInternalCompression) {
@@ -1900,12 +1902,11 @@ public class IndexFetcher {
 
       NamedList<?> response;
       InputStream is = null;
-      // TODO use shardhandler
       try {
-        QueryRequest req = new QueryRequest(params);
+        var req = createReplicationHandlerRequest(params);
         req.setResponseParser(new InputStreamResponseParser(FILE_STREAM));
         if (useExternalCompression) req.addHeader("Accept-Encoding", "gzip");
-        response = solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, req).getResponse();
+        response = solrClient.requestWithBaseUrl(leaderBaseUrl, req, leaderCoreName);
         final var responseStatus = (Integer) response.get("responseStatus");
         is = (InputStream) response.get("stream");
 
@@ -2046,11 +2047,9 @@ public class IndexFetcher {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(COMMAND, CMD_DETAILS);
     params.set("follower", false);
-    params.set(CommonParams.QT, ReplicationHandler.PATH);
 
-    QueryRequest request = new QueryRequest(params);
-    // TODO use shardhandler
-    return solrClient.requestWithBaseUrl(leaderBaseUrl, leaderCoreName, request).getResponse();
+    var request = createReplicationHandlerRequest(params);
+    return solrClient.requestWithBaseUrl(leaderBaseUrl, request, leaderCoreName);
   }
 
   public void destroy() {

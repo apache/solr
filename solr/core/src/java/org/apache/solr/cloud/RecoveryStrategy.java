@@ -32,7 +32,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
@@ -176,9 +177,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
-  private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
+  private HttpJettySolrClient.Builder recoverySolrClientBuilder(
+      String baseUrl, String leaderCoreName) {
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return new Http2SolrClient.Builder(baseUrl)
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient());
   }
@@ -365,9 +367,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (!successfulRecovery && !Thread.currentThread().isInterrupted() && !isClosed()) {
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        ZkNodeProps leaderprops =
+        Replica leader =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
-        final String leaderUrl = ZkCoreNodeProps.getCoreUrl(leaderprops);
+        final String leaderUrl = leader.getCoreUrl();
         final String ourUrl = ZkCoreNodeProps.getCoreUrl(baseUrl, coreName);
 
         // TODO: We can probably delete most of this code if we say this strategy can only be used
@@ -407,7 +409,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             log.info("Stopping background replicate from leader process");
             zkController.stopReplicationFromLeader(coreName);
           }
-          replicate(zkController.getNodeName(), core, leaderprops);
+          replicate(zkController.getNodeName(), core, leader);
 
           if (isClosed()) {
             if (log.isInfoEnabled()) {
@@ -799,11 +801,14 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return null;
       }
 
-      Replica leaderReplica;
+      Replica leaderReplica = null;
       try {
         leaderReplica =
             zkStateReader.getLeaderRetry(cloudDesc.getCollectionName(), cloudDesc.getShardId());
       } catch (SolrException e) {
+        // ignore
+      }
+      if (leaderReplica == null) {
         Thread.sleep(500);
         continue;
       }
@@ -916,7 +921,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
     // side
     int readTimeout =
         conflictWaitMs
-            + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
+            + EnvUtils.getPropertyAsInteger(
+                "solr.cloud.prep.recovery.read.timeout.additional.ms", 8000);
     try (SolrClient client =
         recoverySolrClientBuilder(
                 leaderBaseUrl,

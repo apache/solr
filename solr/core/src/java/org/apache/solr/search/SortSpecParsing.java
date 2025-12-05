@@ -19,9 +19,7 @@ package org.apache.solr.search;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.lucene.queries.function.FunctionQuery;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
@@ -113,46 +111,13 @@ public class SortSpecParsing {
           String funcStr = sp.val.substring(start);
 
           QParser parser = QParser.getParser(funcStr, FunctionQParserPlugin.NAME, optionalReq);
-          Query q = null;
           try {
-            if (parser instanceof FunctionQParser fparser) {
-              fparser.setParseMultipleSources(false);
-              fparser.setParseToEnd(false);
-
-              q = fparser.getQuery();
-
-              if (fparser.localParams != null) {
-                if (fparser.valFollowedParams) {
-                  // need to find the end of the function query via the string parser
-                  int leftOver = fparser.sp.end - fparser.sp.pos;
-                  sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-                } else {
-                  // the value was via the "v" param in localParams, so we need to find
-                  // the end of the local params themselves to pick up where we left off
-                  sp.pos = start + fparser.localParamsEnd;
-                }
-              } else {
-                // need to find the end of the function query via the string parser
-                int leftOver = fparser.sp.end - fparser.sp.pos;
-                sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
-              }
-            } else {
-              // A QParser that's not for function queries.
-              // It must have been specified via local params.
-              q = parser.getQuery();
-
-              assert parser.getLocalParams() != null;
-              sp.pos = start + parser.localParamsEnd;
-            }
+            ValueSource vs = parseValueSource(parser, sp, start);
 
             Boolean top = sp.getSortDirection();
             if (null != top) {
-              // we have a Query and a valid direction
-              if (q instanceof FunctionQuery) {
-                sorts.add(((FunctionQuery) q).getValueSource().getSortField(top));
-              } else {
-                sorts.add((new QueryValueSource(q, 0.0f)).getSortField(top));
-              }
+              // we have a value source and a valid direction
+              sorts.add(vs.getSortField(top));
               fields.add(null);
               continue;
             }
@@ -218,6 +183,39 @@ public class SortSpecParsing {
 
     Sort s = new Sort(sorts.toArray(new SortField[0]));
     return new SortSpec(s, fields);
+  }
+
+  static ValueSource parseValueSource(QParser parser, StrParser sp, int start) throws SyntaxError {
+    ValueSource vs;
+    if (parser instanceof FunctionQParser fparser) {
+      fparser.setParseToEnd(false);
+
+      vs = fparser.parseAsValueSource();
+
+      if (fparser.localParams != null) {
+        if (fparser.valFollowedParams) {
+          // need to find the end of the function query via the string parser
+          int leftOver = fparser.sp.end - fparser.sp.pos;
+          sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
+        } else {
+          // the value was via the "v" param in localParams, so we need to find
+          // the end of the local params themselves to pick up where we left off
+          sp.pos = start + fparser.localParamsEnd;
+        }
+      } else {
+        // need to find the end of the function query via the string parser
+        int leftOver = fparser.sp.end - fparser.sp.pos;
+        sp.pos = sp.end - leftOver; // reset our parser to the same amount of leftover
+      }
+    } else {
+      // A QParser that's not for function queries.
+      // It must have been specified via local params.
+      vs = parser.parseAsValueSource();
+
+      assert parser.getLocalParams() != null;
+      sp.pos = start + parser.localParamsEnd;
+    }
+    return vs;
   }
 
   private static SortSpec newEmptySortSpec() {

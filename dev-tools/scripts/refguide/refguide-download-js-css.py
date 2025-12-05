@@ -90,6 +90,8 @@ def process_html_file(html_file_path, js_dir, css_dir, skip_files=None):
 
         if script and is_external_url(script["src"]):
             src = script["src"]
+            if "MathJax" in src:
+                src = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
             filename = os.path.basename(urlparse(src).path)
             version = extract_version_from_url(src)
             if version and not re.search(r'\d+\.\d+(\.\d+)?', filename):
@@ -101,6 +103,8 @@ def process_html_file(html_file_path, js_dir, css_dir, skip_files=None):
             modified = True
         elif link and is_external_url(link["href"]):
             href = link["href"]
+            if "MathJax" in href:
+                href = "https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
             filename = os.path.basename(urlparse(href).path)
             if filename not in skip_files:
                 version = extract_version_from_url(href)

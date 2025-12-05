@@ -2,8 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Runs Renovate with solrbot, see dev-docs/dependency-upgrades.adoc for more",
   "enabled": true,
+  "gitIgnoredAuthors": ["renovate-bot <renovate-bot@noreply.github.com>"],
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
+  "labels": ["exempt-stale"],
   "includePaths": ["gradle/libs.versions.toml", "versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
     "commands": [
@@ -86,10 +88,15 @@
         "https://gitbox.apache.org/repos/asf?p=commons-configuration.git"
       ],
       "changelogUrl": "https://commons.apache.org/proper/commons-configuration/changes-report.html"
+    },
+    {
+      "description": "Group these UI dependency upgrades together in same PR",
+      "matchPackagePrefixes": ["com.arkivanov", "org.jetbrains.compose"],
+      "groupName": "Admin UI libraries"
     }
   ],
   "schedule": ["* * * * *"],
-  "prConcurrentLimit": 100,
-  "prHourlyLimit": 10,
+  "prConcurrentLimit": 300,
+  "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"
 }

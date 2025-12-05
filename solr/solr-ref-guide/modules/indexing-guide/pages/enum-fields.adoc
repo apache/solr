@@ -19,12 +19,6 @@
 The EnumFieldType allows defining a field whose values are a closed set, and the sort order is pre-determined but is not alphabetic nor numeric.
 Examples of this are severity lists, or risk definitions.
 
-.EnumField has been Deprecated
-[WARNING]
-====
-EnumField has been deprecated in favor of EnumFieldType; all configuration examples below use EnumFieldType.
-====
-
 == Defining an EnumFieldType in the Schema
 
 The EnumFieldType type definition is quite simple, as in this example defining field types for "priorityLevel" and "riskLevel" enumerations:

@@ -31,7 +31,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.LinkedHashMapWriter;
@@ -150,7 +150,7 @@ public class TestSolrConfigHandlerConcurrent extends AbstractFullDistribZkTestBa
         Thread.sleep(100);
         errmessages.clear();
         MapWriter respMap = getAsMap(url + "/config/overlay", cloudClient);
-        MapWriter m = (MapWriter) respMap._get("overlay/props", null);
+        MapWriter m = (MapWriter) respMap._get("overlay/props");
         if (m == null) {
           errmessages.add(
               StrUtils.formatString(

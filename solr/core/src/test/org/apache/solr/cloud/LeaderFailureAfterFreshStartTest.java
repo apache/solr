@@ -152,7 +152,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       // shutdown the original leader
       log.info("Now shutting down initial leader");
       forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", (Replica) initialLeaderJetty.client.info);
+      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
       waitTillNodesActive();
       log.info("Updating mappings from zk");
       updateMappingsFromZk(jettys, clients, true);
@@ -163,7 +163,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
 
       success = true;
     } finally {
-      System.clearProperty("solr.disableFingerprint");
+      System.clearProperty("solr.index.replication.fingerprint.enabled");
     }
   }
 

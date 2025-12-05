@@ -23,8 +23,7 @@ import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchCount;
 import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.codahale.metrics.Metered;
-import com.codahale.metrics.MetricRegistry;
+import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.lang.invoke.MethodHandles;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -34,8 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -58,7 +55,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   private static final String sleep = "2";
 
   private static final String COLLECTION = "exitable";
-  private static Map<String, Metered> fiveHundredsByNode;
+  private static Map<String, Long> fiveHundredsByNode;
 
   /**
    * Client used for all test requests.
@@ -95,28 +92,45 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
             COLLECTION,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 1));
 
     fiveHundredsByNode = new LinkedHashMap<>();
     long httpOk = 0;
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
-      MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics) jetty).getMetricRegistry();
+      var reader =
+          jetty.getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.node");
 
-      httpOk +=
-          ((Metered)
-                  metricRegistry
-                      .getMetrics()
-                      .get("org.eclipse.jetty.servlet.ServletContextHandler.2xx-responses"))
-              .getCount();
+      var errorsSnapshots = reader.collect("solr_node_requests_errors"::equals);
+      long errorCount = 0L;
 
-      Metered old =
-          fiveHundredsByNode.put(
-              jetty.getNodeName(),
-              (Metered)
-                  metricRegistry
-                      .getMetrics()
-                      .get("org.eclipse.jetty.servlet.ServletContextHandler.5xx-responses"));
+      if (errorsSnapshots.size() > 0) {
+        var errorSnapshot =
+            errorsSnapshots.stream().map(CounterSnapshot.class::cast).findFirst().orElse(null);
+        if (errorSnapshot != null) {
+          errorCount =
+              errorSnapshot.getDataPoints().stream()
+                  .mapToLong((value) -> (long) value.getValue())
+                  .sum();
+        }
+      }
+
+      Long old = fiveHundredsByNode.put(jetty.getNodeName(), errorCount);
       assertNull("expecting uniq nodenames", old);
+
+      var requestsSnapshots = reader.collect("solr_node_requests"::equals);
+
+      if (requestsSnapshots.size() > 0) {
+        var requestsSnapshot =
+            requestsSnapshots.stream().map(CounterSnapshot.class::cast).findFirst().orElse(null);
+        if (requestsSnapshot != null) {
+          long totalRequests = (long) requestsSnapshot.getDataPoints().getFirst().getValue();
+          // Calculate successful requests (total - errors)
+          long successfulRequests = totalRequests - errorCount;
+          httpOk += successfulRequests;
+        }
+      }
+
+      assertTrue(reader.collect().size() > 0);
     }
     assertTrue("expecting some http activity during collection creation", httpOk > 0);
     indexDocs();
@@ -350,7 +364,8 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
 
   public void assertNo500s(String msg) {
-    assertTrue(msg, fiveHundredsByNode.values().stream().allMatch((m) -> m.getCount() == 0));
+    assertTrue(
+        msg, fiveHundredsByNode.values().stream().allMatch((errorCount) -> errorCount == 0L));
   }
 
   /** execute a request, verify that we get an expected error */

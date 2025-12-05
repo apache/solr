@@ -37,6 +37,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   private static final String BUCKET_NAME = S3IncrementalBackupTest.class.getSimpleName();
 
   @ClassRule
+  @SuppressWarnings("removal")
   public static final S3MockRule S3_MOCK_RULE =
       S3MockRule.builder().withInitialBuckets(BUCKET_NAME).withSecureConnection(false).build();
 
@@ -56,8 +57,7 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
-          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
           + "    <int name=\"leaderVoteWait\">10000</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
@@ -87,6 +87,19 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
   public static void setupClass() throws Exception {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
+    String retryMode;
+    switch (random().nextInt(3)) {
+      case 0:
+        retryMode = "legacy";
+        break;
+      case 1:
+        retryMode = "standard";
+        break;
+      default:
+        retryMode = "adaptive";
+        break;
+    }
+    System.setProperty("aws.retryMode", retryMode);
 
     AbstractS3ClientTest.setS3ConfFile();
 

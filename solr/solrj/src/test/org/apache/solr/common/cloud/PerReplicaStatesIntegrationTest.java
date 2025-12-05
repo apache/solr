@@ -95,7 +95,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       assertEquals(5, prs.states.size());
 
       // Test delete replica
-      Replica leader = c.getReplica((s, replica) -> replica.isLeader());
+      Replica leader = c.getReplicas().stream().filter(Replica::isLeader).findFirst().orElseThrow();
       CollectionAdminRequest.deleteReplica(testCollection, leader.shard, leader.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
@@ -198,20 +198,16 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
 
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node2/state"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/leader"));
         assertNull(
             rsp._get(
-                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state",
-                null));
+                "cluster/collections/prs_restart_test/shards/shard1/replicas/core_node4/state"));
 
         jsr.start();
         cluster.waitForActiveCollection(testCollection, 1, 2);
@@ -290,7 +286,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
     String PRS_COLL = "prs_test_coll2";
     MiniSolrCloudCluster cluster =
         configureCluster(3)
-            .withDistributedClusterStateUpdates(false, false)
+            .withOverseer(true)
             .addConfig(
                 "conf",
                 getFile("solrj")
@@ -380,7 +376,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +1 for a new replica
       assertEquals(4, stat.getVersion());
       DocCollection c = cluster.getZkStateReader().getCollection(PRS_COLL);
-      Replica newreplica = c.getReplica((s, replica) -> replica.node.equals(j2.getNodeName()));
+      Replica newreplica = c.getReplicasOnNode(j2.getNodeName()).getFirst();
 
       // let's stop the old leader
       JettySolrRunner oldJetty = cluster.getReplicaJetty(leader);

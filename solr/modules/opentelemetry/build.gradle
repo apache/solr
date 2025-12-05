@@ -17,7 +17,7 @@
 
 apply plugin: 'java-library'
 
-description = 'Open Telemetry (OTEL) tracer'
+description = 'Open Telemetry (OTEL) tracer and OTLP exporter'
 
 dependencies {
   implementation platform(project(':platform'))
@@ -30,8 +30,10 @@ dependencies {
   implementation libs.slf4j.api
 
   implementation libs.opentelemetry.api
-  implementation libs.opentelemetry.sdkextension.autoconfigure
-  runtimeOnly libs.opentelemetry.exporter.otlp
+  implementation libs.opentelemetry.sdk
+  implementation libs.opentelemetry.sdk.metrics
+  implementation libs.opentelemetry.sdk.extension.autoconfigure
+  implementation libs.opentelemetry.exporter.otlp
   // End users must recompile with jaeger exporter and/or zipkin exporter if they need these
 
   // NOTE: sdk-autoconfigure needs both opentelemetry-sdk-metrics and opentelemetry-sdk-logs even if we don't use them
@@ -46,7 +48,6 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
-  testImplementation libs.opentelemetry.sdk
-  testImplementation libs.opentelemetry.sdktrace
-  testImplementation libs.opentelemetry.sdktesting
+  testImplementation libs.opentelemetry.sdk.trace
+  testImplementation libs.opentelemetry.sdk.testing
 }

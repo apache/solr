@@ -18,9 +18,9 @@ package org.apache.solr.client.solrj.request;
 
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
 import org.apache.solr.common.params.ConfigSetParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
 /** Basic error checking of ConfigSetAdminRequests. */
@@ -95,7 +95,7 @@ public class TestConfigSetAdminRequest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public ConfigSetAdminResponse createResponse(SolrClient client) {
+    public ConfigSetAdminResponse createResponse(NamedList<Object> namedList) {
       return new ConfigSetAdminResponse();
     }
   }

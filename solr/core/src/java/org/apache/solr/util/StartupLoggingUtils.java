@@ -47,8 +47,8 @@ public final class StartupLoggingUtils {
 
   /** Checks whether mandatory log dir is given */
   public static void checkLogDir() {
-    if (EnvUtils.getProperty("solr.log.dir") == null) {
-      log.error("Missing Java Option solr.log.dir. Logging may be missing or incomplete.");
+    if (EnvUtils.getProperty("solr.logs.dir") == null) {
+      log.error("Missing Java Option solr.logs.dir. Logging may be missing or incomplete.");
     }
   }
 
@@ -207,11 +207,12 @@ public final class StartupLoggingUtils {
 
   /**
    * Check whether Jetty request logging is enabled and log info about it. The property
-   * "solr.log.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
+   * "solr.logs.requestlog.enabled is set in solr/server/etc/jetty-requestlog.xml
    */
   public static void checkRequestLogging() {
-    boolean requestLogEnabled = Boolean.getBoolean("solr.log.requestlog.enabled");
-    String retainDays = System.getProperty("solr.log.requestlog.retaindays");
+    // EnvUtils doesn't work here.
+    boolean requestLogEnabled = Boolean.getBoolean("solr.logs.requestlog.enabled");
+    String retainDays = System.getProperty("solr.logs.requestlog.retain.days");
     if (requestLogEnabled) {
       if (retainDays == null) {
         log.warn(

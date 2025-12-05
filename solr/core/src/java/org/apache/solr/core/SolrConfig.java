@@ -53,7 +53,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -127,10 +126,6 @@ public class SolrConfig implements MapSerializable {
   private int multipartUploadLimitKB;
 
   private int formUploadLimitKB;
-
-  private boolean handleSelect;
-
-  private boolean addHttpRequestToContext;
 
   private final SolrRequestParsers solrRequestParsers;
 
@@ -269,12 +264,12 @@ public class SolrConfig implements MapSerializable {
       indexConfig = new SolrIndexConfig(get("indexConfig"), null);
 
       booleanQueryMaxClauseCount =
-          get("query").get("maxBooleanClauses").intVal(BooleanQuery.getMaxClauseCount());
+          get("query").get("maxBooleanClauses").intVal(IndexSearcher.getMaxClauseCount());
       if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
         log.warn(
             "solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} and will have no effect {}",
             booleanQueryMaxClauseCount,
-            BooleanQuery.getMaxClauseCount(),
+            IndexSearcher.getMaxClauseCount(),
             "set 'maxBooleanClauses' in solr.xml to increase global limit");
       }
       prefixQueryMinPrefixLength =
@@ -306,6 +301,9 @@ public class SolrConfig implements MapSerializable {
       queryResultCacheConfig =
           CacheConfig.getConfig(
               this, get("query").get("queryResultCache"), "query/queryResultCache");
+      featureVectorCacheConfig =
+          CacheConfig.getConfig(
+              this, get("query").get("featureVectorCache"), "query/featureVectorCache");
       documentCacheConfig =
           CacheConfig.getConfig(this, get("query").get("documentCache"), "query/documentCache");
       CacheConfig conf =
@@ -364,9 +362,6 @@ public class SolrConfig implements MapSerializable {
       if (requestParsersNode.attr("enableStreamBody") != null) {
         log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
       }
-
-      handleSelect = get("requestDispatcher").boolAttr("handleSelect", false);
-      addHttpRequestToContext = requestParsersNode.boolAttr("addHttpRequestToContext", false);
 
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
@@ -670,6 +665,7 @@ public class SolrConfig implements MapSerializable {
   public final CacheConfig queryResultCacheConfig;
   public final CacheConfig documentCacheConfig;
   public final CacheConfig fieldValueCacheConfig;
+  public final CacheConfig featureVectorCacheConfig;
   public final Map<String, CacheConfig> userCacheConfigs;
   // SolrIndexSearcher - more...
   public final boolean useFilterForSortedQuery;
@@ -803,6 +799,7 @@ public class SolrConfig implements MapSerializable {
     public final long autoCommitMaxSizeBytes;
     public final boolean openSearcher; // is opening a new searcher part of hard autocommit?
     public final boolean commitWithinSoftCommit;
+    public final String commitPollInterval;
     public final boolean aggregateNodeLevelMetricsEnabled;
 
     /**
@@ -818,7 +815,8 @@ public class SolrConfig implements MapSerializable {
         boolean openSearcher,
         int autoSoftCommmitMaxDocs,
         int autoSoftCommmitMaxTime,
-        boolean commitWithinSoftCommit) {
+        boolean commitWithinSoftCommit,
+        String commitPollInterval) {
       this.className = className;
       this.autoCommmitMaxDocs = autoCommmitMaxDocs;
       this.autoCommmitMaxTime = autoCommmitMaxTime;
@@ -829,6 +827,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = autoSoftCommmitMaxTime;
 
       this.commitWithinSoftCommit = commitWithinSoftCommit;
+      this.commitPollInterval = commitPollInterval;
       this.aggregateNodeLevelMetricsEnabled = false;
     }
 
@@ -844,6 +843,7 @@ public class SolrConfig implements MapSerializable {
       this.autoSoftCommmitMaxTime = updateHandler.get("autoSoftCommit").get("maxTime").intVal(-1);
       this.commitWithinSoftCommit =
           updateHandler.get("commitWithin").get("softCommit").boolVal(true);
+      this.commitPollInterval = updateHandler.get("commitPollInterval").txt();
       this.aggregateNodeLevelMetricsEnabled =
           updateHandler.boolAttr("aggregateNodeLevelMetricsEnabled", false);
     }
@@ -860,6 +860,7 @@ public class SolrConfig implements MapSerializable {
       map.put(
           "autoSoftCommit",
           Map.of("maxDocs", autoSoftCommmitMaxDocs, "maxTime", autoSoftCommmitMaxTime));
+      map.put("commitPollInterval", commitPollInterval);
       return map;
     }
   }
@@ -957,14 +958,6 @@ public class SolrConfig implements MapSerializable {
     return formUploadLimitKB;
   }
 
-  public boolean isHandleSelect() {
-    return handleSelect;
-  }
-
-  public boolean isAddHttpRequestToContext() {
-    return addHttpRequestToContext;
-  }
-
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (znodeVersion > -1) result.put(ZNODEVER, znodeVersion);
@@ -1009,10 +1002,14 @@ public class SolrConfig implements MapSerializable {
     }
 
     addCacheConfig(
-        m, filterCacheConfig, queryResultCacheConfig, documentCacheConfig, fieldValueCacheConfig);
+        m,
+        filterCacheConfig,
+        queryResultCacheConfig,
+        documentCacheConfig,
+        fieldValueCacheConfig,
+        featureVectorCacheConfig);
     m = new LinkedHashMap<>();
     result.put("requestDispatcher", m);
-    m.put("handleSelect", handleSelect);
     if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
     m.put(
         "requestParsers",
@@ -1020,9 +1017,7 @@ public class SolrConfig implements MapSerializable {
             "multipartUploadLimitKB",
             multipartUploadLimitKB,
             "formUploadLimitKB",
-            formUploadLimitKB,
-            "addHttpRequestToContext",
-            addHttpRequestToContext));
+            formUploadLimitKB));
     if (indexConfig != null) result.put("indexConfig", indexConfig);
 
     // TODO there is more to add

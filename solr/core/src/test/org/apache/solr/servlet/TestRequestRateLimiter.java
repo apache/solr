@@ -23,6 +23,7 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,12 +38,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
-import javax.servlet.http.HttpServletRequest;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -50,9 +52,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
-import org.eclipse.jetty.server.Request;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TestRequestRateLimiter extends SolrCloudTestCase {
   private static final String FIRST_COLLECTION = "c1";
@@ -60,6 +62,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
@@ -274,32 +277,15 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE).isEmpty());
   }
 
-  private static final HttpServletRequest QUERY_REQ = new DummyRequest(null, "QUERY");
-  private static final HttpServletRequest UPDATE_REQ = new DummyRequest(null, "UPDATE");
-
-  private static class DummyRequest extends Request {
-
-    private final String ctx;
-    private final String type;
-
-    public DummyRequest(String ctx, String type) {
-      super(null, null);
-      this.ctx = ctx;
-      this.type = type;
-    }
-
-    @Override
-    public String getHeader(String name) {
-      switch (name) {
-        case SOLR_REQUEST_CONTEXT_PARAM:
-          return ctx;
-        case SOLR_REQUEST_TYPE_PARAM:
-          return type;
-        default:
-          throw new IllegalArgumentException();
-      }
-    }
+  private static HttpServletRequest newRequest(String type, String ctx) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getHeader(SOLR_REQUEST_TYPE_PARAM)).thenReturn(type);
+    Mockito.when(req.getHeader(SOLR_REQUEST_CONTEXT_PARAM)).thenReturn(ctx);
+    return req;
   }
+
+  private static final HttpServletRequest QUERY_REQ = newRequest("QUERY", null);
+  private static final HttpServletRequest UPDATE_REQ = newRequest("UPDATE", null);
 
   @Nightly
   public void testSlotBorrowing() throws Exception {
@@ -391,9 +377,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         try {
           assertNotNull(future.get());
         } catch (ExecutionException e) {
-          assertThat(e.getCause().getCause(), instanceOf(SolrClient.RemoteSolrException.class));
-          SolrClient.RemoteSolrException rse =
-              (SolrClient.RemoteSolrException) e.getCause().getCause();
+          assertThat(e.getCause().getCause(), instanceOf(RemoteSolrException.class));
+          RemoteSolrException rse = (RemoteSolrException) e.getCause().getCause();
           assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, rse.code());
           assertThat(
               rse.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));

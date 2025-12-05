@@ -19,6 +19,8 @@ package org.apache.solr.cloud;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 
 import com.codahale.metrics.MetricRegistry;
+import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
+import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
@@ -52,12 +54,11 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
-import javax.servlet.Filter;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -71,20 +72,20 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
-import org.apache.solr.util.tracing.SimplePropagator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -105,7 +106,7 @@ public class MiniSolrCloudCluster {
       "<solr>\n"
           + "\n"
           + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
-          + "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "  <str name=\"allowPaths\">${solr.security.allow.paths:}</str>\n"
           + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
           + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
           + "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n"
@@ -122,8 +123,7 @@ public class MiniSolrCloudCluster {
           + "  <solrcloud>\n"
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
-          + "    <int name=\"zkClientTimeout\">${solr.zkclienttimeout:30000}</int>\n"
-          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
+          + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
@@ -140,8 +140,6 @@ public class MiniSolrCloudCluster {
               ? PRE_GENERATED_PUBLIC_KEY_URL.toExternalForm()
               : "")
           + "}</str> \n"
-          + "    <str name=\"distributedClusterStateUpdates\">${solr.distributedClusterStateUpdates:false}</str> \n"
-          + "    <str name=\"distributedCollectionConfigSetExecution\">${solr.distributedCollectionConfigSetExecution:false}</str> \n"
           + "  </solrcloud>\n"
           +
           // NOTE: this turns off the metrics collection unless overridden by a sysprop
@@ -775,9 +773,11 @@ public class MiniSolrCloudCluster {
       try {
         future.get();
       } catch (ExecutionException e) {
+        log.error(message, e);
         parsed.addSuppressed(e.getCause());
         ok = false;
       } catch (InterruptedException e) {
+        log.error(message, e);
         Thread.interrupted();
         throw e;
       }
@@ -990,10 +990,9 @@ public class MiniSolrCloudCluster {
     private volatile MetricRegistry metricRegistry;
 
     @Override
-    protected HandlerWrapper injectJettyHandlers(HandlerWrapper chain) {
+    protected Handler.Wrapper injectJettyHandlers(Handler.Wrapper chain) {
       metricRegistry = new MetricRegistry();
-      io.dropwizard.metrics.jetty10.InstrumentedHandler metrics =
-          new io.dropwizard.metrics.jetty10.InstrumentedHandler(metricRegistry);
+      InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
     }
@@ -1029,8 +1028,8 @@ public class MiniSolrCloudCluster {
     private Map<String, Object> clusterProperties = new HashMap<>();
 
     private boolean trackJettyMetrics;
-    private boolean useDistributedCollectionConfigSetExecution;
-    private boolean useDistributedClusterStateUpdate;
+    private boolean overseerEnabled =
+        EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
 
@@ -1108,63 +1107,25 @@ public class MiniSolrCloudCluster {
     }
 
     /**
-     * This method makes the MiniSolrCloudCluster use the "other" Collection API execution strategy
-     * than it normally would. When some test classes call this method (and some don't) we make sure
-     * that a run of multiple tests with a single seed will exercise both code lines (distributed
-     * and Overseer based Collection API) so regressions can be spotted faster.
-     *
-     * <p>The real need is for a few tests covering reasonable use cases to call this method. If
-     * you're adding a new test, you don't have to call it (but it's ok if you do).
-     */
-    public Builder useOtherCollectionConfigSetExecution() {
-      // Switch from Overseer to distributed Collection execution and vice versa
-      useDistributedCollectionConfigSetExecution = !useDistributedCollectionConfigSetExecution;
-      // Reverse distributed cluster state updates as well if possible (state can't be Overseer
-      // based if Collections API is distributed)
-      useDistributedClusterStateUpdate =
-          !useDistributedClusterStateUpdate || useDistributedCollectionConfigSetExecution;
-      return this;
-    }
-
-    /**
      * Force the cluster Collection and config state API execution as well as the cluster state
      * update strategy to be either Overseer based or distributed. <b>This method can be useful when
      * debugging tests</b> failing in only one of the two modes to have all local runs exhibit the
      * issue, as well obviously for tests that are not compatible with one of the two modes.
+     * Alternatively, a system property can be used in lieu of this method.
      *
-     * <p>If this method is not called, the strategy being used will be random if the configuration
-     * passed to the cluster ({@code solr.xml} equivalent) contains a placeholder similar to:
+     * <p>If this method is not called nor set via system property, the strategy being used will
+     * default to Overseer mode (overseerEnabled=true). However, note {@link SolrCloudTestCase}
+     * (above this) randomly chooses the mode.
      *
-     * <pre>{@code
-     * <solrcloud>
-     *   ....
-     *   <str name="distributedClusterStateUpdates">${solr.distributedClusterStateUpdates:false}</str>
-     *   <str name="distributedCollectionConfigSetExecution">${solr.distributedCollectionConfigSetExecution:false}</str>
-     *   ....
-     * </solrcloud>
-     * }</pre>
+     * <p>For tests that need to explicitly test distributed vs Overseer behavior, use this method
+     * to control which mode is used. The cluster property 'overseerEnabled' will be set
+     * accordingly.
      *
-     * For an example of a configuration supporting this setting, see {@link
-     * MiniSolrCloudCluster#DEFAULT_CLOUD_SOLR_XML}. When a test sets a different {@code solr.xml}
-     * config (using {@link #withSolrXml}), if the config does not contain the placeholder, the
-     * strategy will be defined by the values assigned to {@code useDistributedClusterStateUpdates}
-     * and {@code useDistributedCollectionConfigSetExecution} in {@link
-     * org.apache.solr.core.CloudConfig.CloudConfigBuilder}.
-     *
-     * @param distributedCollectionConfigSetApi When {@code true}, Collection and Config Set API
-     *     commands are executed in a distributed way by nodes. When {@code false}, they are
-     *     executed by Overseer.
-     * @param distributedClusterStateUpdates When {@code true}, cluster state updates are handled in
-     *     a distributed way by nodes. When {@code false}, cluster state updates are handled by
-     *     Overseer.
-     *     <p>If {@code distributedCollectionConfigSetApi} is {@code true} then this parameter must
-     *     be {@code true}.
+     * @param overseerEnabled When {@code false}, Collection and Config Set API commands are
+     *     executed in a distributed way by nodes. When {@code true}, they are executed by Overseer.
      */
-    @SuppressWarnings("InvalidParam")
-    public Builder withDistributedClusterStateUpdates(
-        boolean distributedCollectionConfigSetApi, boolean distributedClusterStateUpdates) {
-      useDistributedCollectionConfigSetExecution = distributedCollectionConfigSetApi;
-      useDistributedClusterStateUpdate = distributedClusterStateUpdates;
+    public Builder withOverseer(boolean overseerEnabled) {
+      this.overseerEnabled = overseerEnabled;
       return this;
     }
 
@@ -1204,27 +1165,10 @@ public class MiniSolrCloudCluster {
      * @throws Exception if an error occurs on startup
      */
     public MiniSolrCloudCluster build() throws Exception {
-      // Two lines below will have an impact on how the MiniSolrCloudCluster and therefore the test
-      // run if the config being
-      // used in the test does have the appropriate placeholders. See for example
-      // DEFAULT_CLOUD_SOLR_XML in MiniSolrCloudCluster.
-      // Hard coding values here will impact such tests.
-      // To hard code behavior for tests not having these placeholders - and for SolrCloud as well
-      // for that matter! -
-      // change the values assigned to useDistributedClusterStateUpdates and
-      // useDistributedCollectionConfigSetExecution in
-      // org.apache.solr.core.CloudConfig.CloudConfigBuilder. Do not forget then to revert before
-      // commit!
-      System.setProperty(
-          "solr.distributedCollectionConfigSetExecution",
-          Boolean.toString(useDistributedCollectionConfigSetExecution));
-      System.setProperty(
-          "solr.distributedClusterStateUpdates",
-          Boolean.toString(useDistributedClusterStateUpdate));
+      System.setProperty("solr.cloud.overseer.enabled", Boolean.toString(overseerEnabled));
 
-      // eager init to prevent OTEL init races caused by test setup
-      if (!disableTraceIdGeneration && TracerConfigurator.TRACE_ID_GEN_ENABLED) {
-        SimplePropagator.load();
+      if (!disableTraceIdGeneration && OpenTelemetryConfigurator.TRACE_ID_GEN_ENABLED) {
+        OpenTelemetryConfigurator.initializeOpenTelemetrySdk(null, null);
         injectRandomRecordingFlag();
       }
 
@@ -1243,6 +1187,7 @@ public class MiniSolrCloudCluster {
         cluster.uploadConfigSet(config.path, config.name);
       }
 
+      // TODO process BEFORE nodes start up!  Some props are only read on node start.
       if (clusterProperties.size() > 0) {
         ClusterProperties props = new ClusterProperties(cluster.getZkClient());
         for (Map.Entry<String, Object> entry : clusterProperties.entrySet()) {

@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
@@ -210,7 +211,7 @@ public class KnnStream extends TupleStream implements Expressible {
       doCloseCache = false;
     }
 
-    ModifiableSolrParams params = getParams(this.props);
+    var params = new ModifiableSolrParams(new MapSolrParams(this.props)); // copy
 
     StringBuilder builder = new StringBuilder();
 
@@ -259,15 +260,6 @@ public class KnnStream extends TupleStream implements Expressible {
     } else {
       return Tuple.EOF();
     }
-  }
-
-  private ModifiableSolrParams getParams(Map<String, String> props) {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    for (Entry<String, String> entry : props.entrySet()) {
-      String value = entry.getValue();
-      params.add(entry.getKey(), value);
-    }
-    return params;
   }
 
   @Override

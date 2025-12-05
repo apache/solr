@@ -159,7 +159,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
             () -> {
               if (random().nextBoolean()) {
                 setDistributedParams(params);
-                queryServer(params);
+                queryRandomShard(params);
               } else {
                 params.set("distrib", "false");
                 controlClient.query(params);

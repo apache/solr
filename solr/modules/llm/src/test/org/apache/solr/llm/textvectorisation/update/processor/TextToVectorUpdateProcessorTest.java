@@ -17,13 +17,14 @@
 package org.apache.solr.llm.textvectorisation.update.processor;
 
 import java.io.IOException;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.llm.TestLlmBase;
 import org.apache.solr.llm.textvectorisation.store.rest.ManagedTextToVectorModelStore;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,6 +41,13 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     afterTest();
   }
 
+  @After
+  public void afterEachTest() throws Exception {
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+    restTestHarness.delete(
+        ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean
+  }
+
   @Test
   public void processAdd_inputField_shouldVectoriseInputField() throws Exception {
     loadModel("dummy-model.json"); // preparation
@@ -50,10 +58,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
         "textToVector");
     assertU(commit());
 
-    final String solrQuery = "*:*";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "id,vector");
+    final SolrQuery query = getSolrQuery();
 
     assertJQ(
         "/query" + query.toQueryString(),
@@ -66,6 +71,14 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
+  private SolrQuery getSolrQuery() {
+    final String solrQuery = "*:*";
+    final SolrQuery query = new SolrQuery();
+    query.setQuery(solrQuery);
+    query.add("fl", "id,vector");
+    return query;
+  }
+
   /*
   This test looks for the 'dummy-1' model, but such model is not loaded, the model store is empty, so the update fails
    */
@@ -74,7 +87,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     RuntimeException thrown =
         assertThrows(
             "model not found should throw an exception",
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               addWithChain(
                   sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
@@ -93,10 +106,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     addWithChain(sdoc("id", "98", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     assertU(commit());
 
-    final String solrQuery = "*:*";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "id,vector");
+    final SolrQuery query = getSolrQuery();
 
     assertJQ(
         "/query" + query.toQueryString(),
@@ -116,10 +126,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
     assertU(adoc("id", "98"));
     assertU(commit());
 
-    final String solrQuery = "*:*";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "id,vector");
+    final SolrQuery query = getSolrQuery();
 
     assertJQ(
         "/query" + query.toQueryString(),
@@ -141,10 +148,7 @@ public class TextToVectorUpdateProcessorTest extends TestLlmBase {
         "failingTextToVector");
     assertU(commit());
 
-    final String solrQuery = "*:*";
-    final SolrQuery query = new SolrQuery();
-    query.setQuery(solrQuery);
-    query.add("fl", "id,vector");
+    final SolrQuery query = getSolrQuery();
 
     assertJQ(
         "/query" + query.toQueryString(),

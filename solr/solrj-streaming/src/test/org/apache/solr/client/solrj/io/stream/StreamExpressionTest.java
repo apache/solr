@@ -163,14 +163,14 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\")");
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias_a_i, a_s=name\")");
       stream = new CloudSolrStream(expression, factory);
       stream.setStreamContext(streamContext);
       tuples = getTuples(stream);
 
       assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
-      assertLong(tuples.get(0), "alias.a_i", 0);
+      assertLong(tuples.get(0), "alias_a_i", 0);
       assertString(tuples.get(0), "name", "hello0");
 
       // Basic filtered test
@@ -433,7 +433,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
           StreamExpressionParser.parse(
               "search("
                   + COLLECTIONORALIAS
-                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias.a_i, a_s=name\", zkHost="
+                  + ", q=*:*, fl=\"id,a_s,a_i,a_f\", sort=\"a_f asc, a_i asc\", aliases=\"a_i=alias_a_i, a_s=name\", zkHost="
                   + cluster.getZkServer().getZkAddress()
                   + ")");
       stream = new CloudSolrStream(expression, factory);
@@ -442,7 +442,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
       assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
-      assertLong(tuples.get(0), "alias.a_i", 0);
+      assertLong(tuples.get(0), "alias_a_i", 0);
       assertString(tuples.get(0), "name", "hello0");
 
       // Basic filtered test
@@ -493,8 +493,8 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testParameterSubstitution() throws Exception {
-    String oldVal = System.getProperty("StreamingExpressionMacros", "false");
-    System.setProperty("StreamingExpressionMacros", "true");
+    String oldVal = System.getProperty("solr.streamingexpressions.macros.enabled", "false");
+    System.setProperty("solr.streamingexpressions.macros.enabled", "true");
     try {
       new UpdateRequest()
           .add(id, "0", "a_s", "hello0", "a_i", "0", "a_f", "0")
@@ -549,7 +549,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertEquals(5, tuples.size());
       assertOrder(tuples, 0, 2, 1, 3, 4);
     } finally {
-      System.setProperty("StreamingExpressionMacros", oldVal);
+      System.setProperty("solr.streamingexpressions.macros.enabled", oldVal);
     }
   }
 

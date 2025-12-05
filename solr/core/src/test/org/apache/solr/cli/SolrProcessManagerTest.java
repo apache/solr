@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.math3.util.Pair;
 import org.apache.solr.SolrTestCase;
@@ -53,9 +55,8 @@ public class SolrProcessManagerTest extends SolrTestCase {
     long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
-    System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
-    Path pidDir = Files.createTempDirectory("solr-pid-dir").toAbsolutePath();
-    pidDir.toFile().deleteOnExit();
+    System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
+    Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
         pidDir.resolve("solr-" + processHttpValue + PID_SUFFIX), Long.toString(processHttpValue));
@@ -70,7 +71,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
     SolrProcessManager.enableTestingMode = false;
-    System.clearProperty("jetty.port");
+    System.clearProperty("solr.port.listen");
     System.clearProperty("solr.pid.dir");
   }
 
@@ -91,7 +92,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     ProcessBuilder processBuilder =
         new ProcessBuilder(
             System.getProperty("java.home") + "/bin/java",
-            "-Djetty.port=" + port,
+            "-Dsolr.port.listen=" + port,
             "-DisHttps=" + https,
             "-DmockSolr=true",
             "-cp",
@@ -177,6 +178,15 @@ public class SolrProcessManagerTest extends SolrTestCase {
     assertEquals("https://localhost:" + processHttps.getKey() + "/solr", https.getLocalUrl());
   }
 
+  public void testParseWindowsPidToCommandLineJson() throws JsonProcessingException {
+    String jsonResponseFromPowershell =
+        "[{\"ProcessId\": 9356, \"CommandLine\":  \"date\"}, {\"ProcessId\": 4736, \"CommandLine\":  null}\n]";
+    Map<Long, String> pidToCommandLine =
+        SolrProcessManager.parseWindowsPidToCommandLineJson(jsonResponseFromPowershell);
+    assertEquals(1, pidToCommandLine.size());
+    assertEquals("date", pidToCommandLine.get(9356L));
+  }
+
   /**
    * This class is started as new java process by {@link SolrProcessManagerTest#createProcess}, and
    * it listens to a HTTP(s) port to simulate a real Solr process.
@@ -184,7 +194,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
   @SuppressWarnings("NewClassNamingConvention")
   public static class MockSolrProcess {
     public static void main(String[] args) {
-      int port = Integer.parseInt(System.getProperty("jetty.port"));
+      int port = Integer.parseInt(System.getProperty("solr.port.listen"));
       boolean https = System.getProperty("isHttps").equals("true");
       try (ServerSocket serverSocket = new ServerSocket(port)) {
         System.out.println("Listening on " + (https ? "https" : "http") + " port " + port);

@@ -110,7 +110,7 @@ public class StatsComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (!rb.doStats || rb.stage != ResponseBuilder.STAGE_GET_FIELDS) return;
+    if (!rb.doStats || rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) return;
     // wait until STAGE_GET_FIELDS
     // so that "result" is already stored in the response (for aesthetics)
 

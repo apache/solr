@@ -16,6 +16,9 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
@@ -30,24 +33,15 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.security.auth.Subject;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.Header;
-import org.apache.http.HttpHeaders;
-import org.apache.http.HttpRequest;
-import org.apache.http.annotation.Contract;
-import org.apache.http.annotation.ThreadingBehavior;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.message.BasicHeader;
-import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
-import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +49,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     implements ConfigEditablePlugin, SpecProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private AuthenticationProvider authenticationProvider;
-  private static final ThreadLocal<Header> authHeader = new ThreadLocal<>();
+  private static final ThreadLocal<HttpField> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
   private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
@@ -128,7 +122,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     boolean isAjaxRequest = isAjaxRequest(request);
 
     if (authHeader != null) {
-      BasicAuthPlugin.authHeader.set(new BasicHeader("Authorization", authHeader));
+      BasicAuthPlugin.authHeader.set(new HttpField("Authorization", authHeader));
       StringTokenizer st = new StringTokenizer(authHeader);
       if (st.hasMoreTokens()) {
         String basic = st.nextToken();
@@ -154,7 +148,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
                   return true;
                 }
               } else {
-                numErrors.mark();
+                numErrors.inc();
                 authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
                 return false;
               }
@@ -162,7 +156,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
               throw new Error("Couldn't retrieve authentication", e);
             }
           } else {
-            numErrors.mark();
+            numErrors.inc();
             authenticationFailure(response, isAjaxRequest, "Malformed Basic Auth header");
             return false;
           }
@@ -192,13 +186,14 @@ public class BasicAuthPlugin extends AuthenticationPlugin
    */
   private Map<String, String> getPromptHeaders(boolean isAjaxRequest) {
     Map<String, String> headers = new HashMap<>(authenticationProvider.getPromptHeaders());
+    String WWW_AUTH = HttpHeader.WWW_AUTHENTICATE.asString();
     if (isAjaxRequest
-        && headers.containsKey(HttpHeaders.WWW_AUTHENTICATE)
-        && headers.get(HttpHeaders.WWW_AUTHENTICATE).startsWith("Basic ")) {
-      headers.put(HttpHeaders.WWW_AUTHENTICATE, "x" + headers.get(HttpHeaders.WWW_AUTHENTICATE));
+        && headers.containsKey(WWW_AUTH)
+        && headers.get(WWW_AUTH).startsWith("Basic ")) {
+      headers.put(WWW_AUTH, "x" + headers.get(WWW_AUTH));
       log.debug(
           "Prefixing {} header for Basic Auth with 'x' to prevent browser basic auth popup",
-          HttpHeaders.WWW_AUTHENTICATE);
+          WWW_AUTH);
     }
     return headers;
   }
@@ -220,34 +215,18 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   }
 
   @Override
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    if (forwardCredentials) {
-      if (httpContext instanceof HttpClientContext httpClientContext) {
-        if (httpClientContext.getUserToken() instanceof BasicAuthUserPrincipal principal) {
-          String userPassBase64 =
-              Base64.getEncoder()
-                  .encodeToString(
-                      (principal.getName() + ":" + principal.getPassword())
-                          .getBytes(StandardCharsets.UTF_8));
-          httpRequest.setHeader(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-
-  @Override
   protected boolean interceptInternodeRequest(Request request) {
     if (forwardCredentials) {
-      Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+      Object userToken = request.getAttributes().get(HttpJettySolrClient.REQ_PRINCIPAL_KEY);
       if (userToken instanceof BasicAuthUserPrincipal principal) {
         String userPassBase64 =
             Base64.getEncoder()
                 .encodeToString(
                     (principal.getName() + ":" + principal.getPassword())
                         .getBytes(StandardCharsets.UTF_8));
-        request.header(HttpHeaders.AUTHORIZATION, "Basic " + userPassBase64);
+        request.headers(
+            httpFields ->
+                httpFields.add(HttpHeader.AUTHORIZATION.asString(), "Basic " + userPassBase64));
         return true;
       }
     }
@@ -279,7 +258,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
     return "XMLHttpRequest".equalsIgnoreCase(request.getHeader(X_REQUESTED_WITH_HEADER));
   }
 
-  @Contract(threading = ThreadingBehavior.IMMUTABLE)
+  // IMMUTABLE
   private static class BasicAuthUserPrincipal implements Principal, Serializable {
     private String username;
     private final String password;

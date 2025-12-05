@@ -80,8 +80,7 @@ In order to support SSL over HTTP/2 connections, Solr uses ALPN.
 Java 8 does not include an implementation of ALPN, therefore Solr will start with HTTP/1 only when SSL is enabled and Java 8 is in use.
 
 ==== Client Changes for HTTP/2
-{solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`]
-with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
+`Http2SolrClient` with HTTP/2 and async capabilities based on Jetty Client is introduced. This client replaced
 `HttpSolrClient` and `ConcurrentUpdateSolrClient` for sending most internal requests (sent by
 `UpdateShardHandler` and `HttpShardHandler`).
 
@@ -289,7 +288,7 @@ The login screen's purpose is cosmetic only - Admin UI-triggered Solr requests w
 In SolrCloud mode this allow-list is automatically configured to contain all live nodes.
 
 In a user-managed cluster or a single-node installation the allow-list is empty by default.
-Upgrading users who use the `shards` parameter in these installations can set this value by setting the `shardsWhitelist` property in any `shardHandler` configurations in their `solrconfig.xml` file.
+Upgrading users who use the `shards` parameter in these installations can set this value by setting the `allowUrls` property in any `shardHandler` configurations in their `solrconfig.xml` file.
 +
 For more information, see the xref:deployment-guide:solrcloud-distributed-requests.adoc#configuring-the-shardhandlerfactory[Distributed Request] documentation.
 

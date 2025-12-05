@@ -31,7 +31,7 @@ import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
@@ -55,6 +55,7 @@ import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.util.SolrDefaultScorerSupplier;
 
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
@@ -291,13 +292,13 @@ public class BlockJoinParentQParser extends FiltersQParser {
         throws IOException {
       return new ConstantScoreWeight(BitSetProducerQuery.this, boost) {
         @Override
-        public Scorer scorer(LeafReaderContext context) throws IOException {
+        public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
           BitSet bitSet = bitSetProducer.getBitSet(context);
           if (bitSet == null) {
             return null;
           }
           DocIdSetIterator disi = new BitSetIterator(bitSet, bitSet.approximateCardinality());
-          return new ConstantScoreScorer(this, boost, scoreMode, disi);
+          return new SolrDefaultScorerSupplier(new ConstantScoreScorer(boost, scoreMode, disi));
         }
 
         @Override
