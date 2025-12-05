@@ -34,6 +34,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LeafFieldComparator;
@@ -53,11 +54,10 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 
 /**
- * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}.
+ * A spatial implementation based on Lucene's {@link LatLonPoint} and {@link LatLonDocValuesField}.
  * The first is based on Lucene's "Points" API, which is a BKD Index. This field type is strictly
  * limited to coordinates in lat/lon decimal degrees. The accuracy is about a centimeter (1.042cm).
  */
-// TODO once LLP & LLDVF are out of Lucene Sandbox, we should be able to javadoc reference them.
 public class LatLonPointSpatialField
     extends AbstractSpatialFieldType<LatLonPointSpatialField.LatLonPointSpatialStrategy>
     implements SchemaAware {
@@ -264,13 +264,15 @@ public class LatLonPointSpatialField
 
       @Override
       public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
-        @SuppressWarnings("unchecked")
-        final FieldComparator<Double> comparator =
-            (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
-        final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
-        final double mult = multiplier; // so it's a local field
-
         return new DoubleValues() {
+
+          @SuppressWarnings("unchecked")
+          final FieldComparator<Double> comparator =
+              (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
+
+          final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
+          final double mult = multiplier; // so it's a local field
+
           double value = Double.POSITIVE_INFINITY;
 
           @Override
@@ -309,24 +311,49 @@ public class LatLonPointSpatialField
 
       @Override
       public SortField getSortField(boolean reverse) {
-        SortField distanceSort =
+        SortField distanceSortAsc =
             LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
-
+        // If only we could call sortField.setReverse(), we would.  So instead we create a SortField
+        // using a reverse boolean constructor.  The FieldComparatorSource is always ascending.
         if (reverse) {
-          // Create a reverse sort field that delegates to Lucene's distance sort comparator
-          // We can't use super.getSortField(true) because that calls getValues() which may be null
-          return new SortField(distanceSort.getField(), distanceSort.getType(), true) {
-            @Override
-            public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
-              // Get the base comparator (for ascending order)
-              @SuppressWarnings("unchecked")
-              FieldComparator<Double> baseComparator =
-                  (FieldComparator<Double>) distanceSort.getComparator(numHits, pruning);
-              return baseComparator;
-            }
-          };
+          return new SortField(
+              distanceSortAsc.getField(),
+              new DistanceFieldComparatorSource(distanceSortAsc, queryPoint),
+              true);
         }
-        return distanceSort;
+        return distanceSortAsc;
+      }
+
+      // to implement equals & hashCode on info that isn't in SortField -- just the queryPoint
+      private static class DistanceFieldComparatorSource extends FieldComparatorSource {
+        private final SortField distanceSortAsc;
+        private final Point queryPoint;
+
+        DistanceFieldComparatorSource(SortField distanceSortAsc, Point queryPoint) {
+          this.distanceSortAsc = distanceSortAsc;
+          this.queryPoint = queryPoint;
+        }
+
+        @Override
+        public FieldComparator<?> newComparator(
+            String fieldname,
+            int numHits,
+            Pruning pruning,
+            boolean reversed) { // 'reversed' is an FYI.  It's implemented by the caller chain.
+          return distanceSortAsc.getComparator(numHits, pruning);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+          if (o == null || getClass() != o.getClass()) return false;
+          var that = (DistanceFieldComparatorSource) o;
+          return Objects.equals(queryPoint, that.queryPoint);
+        }
+
+        @Override
+        public int hashCode() {
+          return Objects.hashCode(queryPoint);
+        }
       }
     }
   }
