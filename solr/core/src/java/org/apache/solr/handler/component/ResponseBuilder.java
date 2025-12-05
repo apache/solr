@@ -143,6 +143,7 @@ public class ResponseBuilder {
   public String shortCircuitedURL;
   private boolean forcedDistrib = false;
 
+  /** @see SearchComponent#isForceDistributed() */
   public boolean isForcedDistrib() {
     return forcedDistrib;
   }

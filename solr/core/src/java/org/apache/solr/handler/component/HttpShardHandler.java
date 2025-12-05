@@ -22,7 +22,6 @@ import static org.apache.solr.request.SolrQueryRequest.disallowPartialResults;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CompletableFuture;
@@ -55,7 +54,6 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.zookeeper.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -406,12 +404,9 @@ public class HttpShardHandler extends ShardHandler {
 
   @Override
   public void prepDistributed(ResponseBuilder rb) {
-    if (rb.isForcedDistrib()) {
-      forceDistributed(rb);
-    }
     final SolrQueryRequest req = rb.req;
     final SolrParams params = req.getParams();
-    final String shards = params.get(ShardParams.SHARDS);
+    String shards = params.get(ShardParams.SHARDS);
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = req.getCloudDescriptor();
@@ -450,7 +445,7 @@ public class HttpShardHandler extends ShardHandler {
               .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
-      if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+      if (!rb.isForcedDistrib() && canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;
         rb.shortCircuitedURL =
             ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
@@ -482,6 +477,9 @@ public class HttpShardHandler extends ShardHandler {
         }
       }
     } else {
+      if (shards == null) {
+        shards = req.getHttpSolrCall().getThisNodeUrl() + "/" + req.getCore().getName();
+      }
       replicaSource =
           new StandaloneReplicaSource.Builder()
               .allowListUrlChecker(urlChecker)
@@ -505,30 +503,11 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
-  private static void forceDistributed(ResponseBuilder rb) {
-    SolrQueryRequest req = rb.req;
-    ModifiableSolrParams solrParams = new ModifiableSolrParams(req.getParams());
-    solrParams.set("shortCircuit", false);
-    req.setParams(solrParams);
-    if (req.getHttpSolrCall() != null
-        && StringUtils.isEmpty(req.getParams().get(ShardParams.SHARDS))
-        && !req.getCoreContainer().isZooKeeperAware()) {
-      String scheme = req.getHttpSolrCall().getReq().getScheme();
-      String host = req.getHttpSolrCall().getReq().getServerName();
-      int port = req.getHttpSolrCall().getReq().getServerPort();
-      String context = req.getHttpSolrCall().getReq().getContextPath();
-      String core = req.getCore().getName();
-      String localShardUrl =
-          String.format(Locale.ROOT, "%s://%s:%d%s/%s", scheme, host, port, context, core);
-      solrParams.set(ShardParams.SHARDS, localShardUrl);
-      req.setParams(solrParams);
-    }
-  }
-
   private static String createSliceShardsStr(final List<String> shardUrls) {
     return String.join("|", shardUrls);
   }
 
+  /** Can we avoid distributed search / coordinator? */
   private boolean canShortCircuit(
       String[] slices,
       boolean onlyNrtReplicas,

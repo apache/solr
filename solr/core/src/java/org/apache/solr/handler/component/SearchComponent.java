@@ -94,10 +94,8 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   public abstract String getDescription();
 
   /**
-   * A component can force SearchHandler to run in distributed mode to prevent extra development
-   * cost of an optimized single-shard algorithm.
-   *
-   * @return the boolean
+   * Can force SearchHandler to run in distributed/coordinator mode that would otherwise
+   * have been short-circuited.  There's usually no need for this.
    */
   protected boolean isForceDistributed() {
     return false;

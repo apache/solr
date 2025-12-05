@@ -1122,6 +1122,16 @@ public class HttpSolrCall {
     return Collections.emptyMap();
   }
 
+  /** The URL to this core, e.g. {@code http://localhost:8983/solr}. */
+  public String getThisNodeUrl() {
+    String scheme = getReq().getScheme();
+    String host = getReq().getServerName();
+    int port = getReq().getServerPort();
+    String context = getReq().getContextPath();
+    return
+        String.format(Locale.ROOT, "%s://%s:%d%s", scheme, host, port, context);
+  }
+
   /** A faster method for randomly picking items when you do not need to consume all items. */
   private static class RandomIterator<E> implements Iterator<E> {
     private Random rand;

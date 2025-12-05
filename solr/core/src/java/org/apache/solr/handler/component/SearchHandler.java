@@ -472,7 +472,10 @@ public class SearchHandler extends RequestHandlerBase
       RTimerTree timer,
       List<SearchComponent> components)
       throws IOException {
-    updateForcedDistributed(req, rb, components);
+    if (isForcedDistributed(req, rb, components)) {
+      rb.isDistrib = true;
+      rb.setForcedDistrib(true);
+    }
     // creates a ShardHandler object only if it's needed
     final ShardHandler shardHandler1 = getAndPrepShardHandler(req, rb);
 
@@ -746,17 +749,20 @@ public class SearchHandler extends RequestHandlerBase
     return true;
   }
 
-  private static void updateForcedDistributed(
+  /**
+   * Can force SearchHandler to run in distributed/coordinator mode that would otherwise
+   * have been short-circuited.  There's usually no need for this.
+   */
+  protected boolean isForcedDistributed(
       SolrQueryRequest req, ResponseBuilder rb, List<SearchComponent> components) {
     if (!req.getParams().getBool(ShardParams.IS_SHARD, false)) {
       for (SearchComponent component : components) {
         if (component.isForceDistributed()) {
-          rb.isDistrib = true;
-          rb.setForcedDistrib(true);
-          return;
+          return true;
         }
       }
     }
+    return false;
   }
 
   protected String stageToString(int stage) {
