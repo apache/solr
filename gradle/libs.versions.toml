@@ -139,7 +139,7 @@ jersey = "3.1.11"
 # TODO Sync with jersey versions
 jersey-containers = "2.39.1"
 # @keep for version alignment
-jetbrains-annotations = "26.0.2"
+jetbrains-annotations = "26.0.2-1"
 # @keep for version alignment
 jna = "5.13.0"
 # @keep for version alignment
