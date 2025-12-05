@@ -43,7 +43,7 @@
    <str name="dir">${solr.data.dir:}</str>
   </updateLog>
  </updateHandler>
- 
+
  <!-- Query request handler managing models and features -->
  <requestHandler name="/query" class="solr.SearchHandler">
   <lst name="defaults">
@@ -55,7 +55,7 @@
  </requestHandler>
 
  <updateRequestProcessorChain name="textToVector">
-  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
@@ -64,14 +64,22 @@
  </updateRequestProcessorChain>
 
  <updateRequestProcessorChain name="failingTextToVector">
-  <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">exception-throwing-model</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
- 
- 
+
+  <updateRequestProcessorChain name="textToVectorPartialUpdates">
+    <processor class="solr.DistributedUpdateProcessorFactory"/>
+    <processor class="solr.llm.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+      <str name="inputField">_text_</str>
+      <str name="outputField">vector</str>
+      <str name="model">dummy-1</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
 
 </config>

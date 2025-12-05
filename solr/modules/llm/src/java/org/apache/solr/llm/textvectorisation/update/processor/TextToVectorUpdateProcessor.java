@@ -69,7 +69,7 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
         for (float f : vector) {
           vectorAsList.add(f);
         }
-        doc.addField(outputField, vectorAsList);
+        doc.setField(outputField, vectorAsList);
       } catch (RuntimeException vectorisationFailure) {
         if (log.isErrorEnabled()) {
           SchemaField uniqueKeyField = schema.getUniqueKeyField();
