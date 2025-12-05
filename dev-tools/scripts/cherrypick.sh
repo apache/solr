@@ -180,7 +180,7 @@ for BRANCH in "${BRANCHES[@]}"; do
   if [[ "$PRECOMMIT" ]] || [[ "$TEST" ]]; then
     LOG "INFO" "Testing the cherry-pick on $BRANCH by running 'gradlew check ${TESTARG}'"
     # shellcheck disable=SC2086
-    ./gradlew check -q $TESTARG
+    ./gradlew check -q $TESTARG -Pvalidation.errorprone=true
     if [ $? -gt 0 ]; then
       LOG "WARN" "Tests failed. Please fix and push manually"
       exit 2
