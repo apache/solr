@@ -264,15 +264,13 @@ public class LatLonPointSpatialField
 
       @Override
       public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
+        @SuppressWarnings("unchecked")
+        final FieldComparator<Double> comparator =
+            (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
+        final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
+        final double mult = multiplier; // so it's a local field
+
         return new DoubleValues() {
-
-          @SuppressWarnings("unchecked")
-          final FieldComparator<Double> comparator =
-              (FieldComparator<Double>) getSortField(false).getComparator(1, Pruning.NONE);
-
-          final LeafFieldComparator leafComparator = comparator.getLeafComparator(ctx);
-          final double mult = multiplier; // so it's a local field
-
           double value = Double.POSITIVE_INFINITY;
 
           @Override
@@ -311,11 +309,27 @@ public class LatLonPointSpatialField
 
       @Override
       public SortField getSortField(boolean reverse) {
+        // Use the optimized Lucene distance sort
+        SortField distanceSort =
+            LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
+
+        // If descending, we need to wrap it to reverse the sort order
+        // Note: We can't just use super.getSortField(true) because that uses a different code path
+        // that doesn't work correctly with the spatial filter query context
         if (reverse) {
-          return super.getSortField(true); // will use an impl that calls getValues
+          // Create a reverse sort field that delegates to the distance sort comparator
+          return new SortField(distanceSort.getField(), distanceSort.getType(), true) {
+            @Override
+            public FieldComparator<?> getComparator(int numHits, Pruning pruning) {
+              // Get the base comparator (for ascending order)
+              @SuppressWarnings("unchecked")
+              FieldComparator<Double> baseComparator =
+                  (FieldComparator<Double>) distanceSort.getComparator(numHits, pruning);
+              return baseComparator;
+            }
+          };
         }
-        return LatLonDocValuesField.newDistanceSort(
-            fieldName, queryPoint.getY(), queryPoint.getX());
+        return distanceSort;
       }
     }
   }
