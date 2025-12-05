@@ -497,7 +497,7 @@ The `filteredSearchThreshold` regulates this behavior. If the percentage of docu
 Here is an example of a `knn` search using a `filteredSearchThreshold`:
 
 [source,text]
-?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]&fq=section:0
 
 === knn_text_to_vector Query Parser
 
