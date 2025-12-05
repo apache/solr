@@ -571,9 +571,9 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     // Expected order by distance DESC from pt=48.11308880280511,11.622015740056845:
     // pt-003 (48.137154,11.576124) - farthest
     // pt-004 (48.135125,11.581981)
+    // pt-006 (48.09,11.64)
     // pt-005 (48.121,11.612)
     // pt-001 (48.106651,11.628476)
-    // pt-006 (48.09,11.64)
     // pt-002 (48.113089,11.622016) - closest
     assertJQ(
         req(
