@@ -671,16 +671,7 @@ First, let's use SolrJ to create a new SolrClient, then we'll construct a reques
 
 [source,java]
 ----
-public class SolrCellRequestDemo {
-  public static void main (String[] args) throws IOException, SolrServerException {
-    SolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr/my_collection").build();
-    ContentStreamUpdateRequest req = new ContentStreamUpdateRequest("/update/extract");
-    req.addFile(new File("my-file.pdf"));
-    req.setParam(ExtractingParams.EXTRACT_ONLY, "true");
-    NamedList<Object> result = client.request(req);
-    System.out.println("Result: " + result);
-  }
-}
+include::example$SolrCellRefGuideExamplesTest.java[tag=solr-cell-pdf-extraction]
 ----
 
 This operation streams the file `my-file.pdf` into the Solr index for `my_collection`.
