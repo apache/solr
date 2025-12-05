@@ -49,7 +49,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
 
     log.info("Create shard invoked: {}", message);
     if (extCollectionName == null || sliceName == null)
