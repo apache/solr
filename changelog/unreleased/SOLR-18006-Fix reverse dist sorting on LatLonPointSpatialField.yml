@@ -6,6 +6,7 @@ authors:
     url: https://home.apache.org/phonebook.html?uid=janhoy
   - name: Umut Saribiyik
     nick: umut-sar
+  - name: David Smiley
 links:
   - name: SOLR-18006
     url: https://issues.apache.org/jira/browse/SOLR-18006
