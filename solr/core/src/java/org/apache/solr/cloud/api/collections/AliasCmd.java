@@ -56,6 +56,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
       String aliasName,
       Map<String, String> aliasMetadata,
       String createCollName,
+      String lockId,
       CollectionCommandContext ccc)
       throws Exception {
     // Map alias metadata starting with a prefix to a create-collection API request
@@ -83,7 +84,7 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
       // CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't.
       // We currently should already have a lock on the alias name which should be sufficient.
-      new CreateCollectionCmd(ccc).call(clusterState, createMessage, results);
+      new CreateCollectionCmd(ccc).call(clusterState, createMessage, lockId, results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.
       if (!e.getMessage().contains("collection already exists")) {

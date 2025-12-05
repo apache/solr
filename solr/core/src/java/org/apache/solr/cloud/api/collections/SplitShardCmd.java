@@ -102,9 +102,10 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
-    split(state, message, results);
+    split(state, message, lockId, results);
   }
 
   /**
@@ -132,7 +133,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
    * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
    * illustrated with diagrams.
    */
-  public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public boolean split(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
@@ -342,7 +344,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(SHARD_ID_PROP, subSlice);
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
-              new DeleteShardCmd(ccc).call(clusterState, m, new NamedList<>());
+              new DeleteShardCmd(ccc).call(clusterState, m, lockId, new NamedList<>());
             } catch (Exception e) {
               throw new SolrException(
                   SolrException.ErrorCode.SERVER_ERROR,
@@ -828,7 +830,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
       if (!success) {
         cleanupAfterFailure(
-            zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+            zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices, lockId);
         unlockForSplit(ccc.getSolrCloudManager(), collectionName, parentSlice.getName());
       }
     }
@@ -908,7 +910,8 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       String collectionName,
       String parentShard,
       List<String> subSlices,
-      Set<String> offlineSlices) {
+      Set<String> offlineSlices,
+      String lockId) {
     log.info("Cleaning up after a failed split of {}/{}", collectionName, parentShard);
     // get the latest state
     try {
@@ -1005,7 +1008,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       props.put(SHARD_ID_PROP, subSlice);
       ZkNodeProps m = new ZkNodeProps(props);
       try {
-        new DeleteShardCmd(ccc).call(clusterState, m, new NamedList<Object>());
+        new DeleteShardCmd(ccc).call(clusterState, m, lockId, new NamedList<Object>());
       } catch (Exception e) {
         log.warn(
             "Cleanup failed after failed split of {}/{} : (deleting existing sub shard{})",

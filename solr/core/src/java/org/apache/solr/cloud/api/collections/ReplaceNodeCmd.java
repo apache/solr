@@ -45,7 +45,8 @@ public class ReplaceNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     String source = message.getStr(CollectionParams.SOURCE_NODE);

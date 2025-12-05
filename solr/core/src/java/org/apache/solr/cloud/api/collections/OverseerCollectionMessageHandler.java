@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
@@ -112,7 +113,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
   }
 
   @Override
-  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation, Lock lock) {
     // sometimes overseer messages have the collection name in 'name' field, not 'collection'
     MDCLoggingContext.setCollection(
         message.getStr(COLLECTION_PROP) != null
@@ -127,7 +128,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
-        command.call(cloudManager.getClusterState(), message, results);
+        command.call(cloudManager.getClusterState(), message, lock.id(), results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
       }
@@ -193,7 +194,8 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
         Arrays.asList(
             getTaskKey(message),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
-            message.getStr(ZkStateReader.REPLICA_PROP)));
+            message.getStr(ZkStateReader.REPLICA_PROP)),
+        message.getStr(CollectionAdminParams.CALLING_LOCK_ID));
   }
 
   @Override

@@ -34,6 +34,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -100,6 +101,7 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
+import static org.apache.solr.common.params.CoreAdminParams.SHARD_BACKUP_ID;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
@@ -359,7 +361,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
         zkController.getDistributedCommandRunner();
     if (distribCommandRunner.isPresent()) {
-      return distribCommandRunner.get().runCollectionCommand(m, action, timeout);
+      return distribCommandRunner.get().runCollectionCommand(m, action, timeout, m.getStr(CALLING_LOCK_ID));
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
       String operation = m.getStr(QUEUE_OPERATION);
       if (operation == null) {
@@ -1061,6 +1063,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           reqBody.async = req.getParams().get(ASYNC);
           reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
+          reqBody.name = req.getParams().get(NAME);
+          reqBody.shardBackupId = req.getParams().get(SHARD_BACKUP_ID);
+          reqBody.callingLockId = req.getParams().get(CALLING_LOCK_ID);
 
           final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =
