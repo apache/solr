@@ -5,5 +5,5 @@ authors:
   - name: Jan Høydahl
     url: https://home.apache.org/phonebook.html?uid=janhoy
 links:
-  - name: SOLR-XXXX
-    url: https://issues.apache.org/jira/browse/SOLR-XXXX
+  - name: PR#3926
+    url: https://github.com/apache/solr/pull/3926
