@@ -33,15 +33,6 @@ public class IpTables {
   private static final Set<Integer> BLOCK_PORTS =
       Collections.synchronizedSet(new HashSet<Integer>());
 
-  public static void blockPort(int port) throws IOException, InterruptedException {
-    if (ENABLED) {
-      log.info("Block port with iptables: {}", port);
-      BLOCK_PORTS.add(port);
-      runCmd(("iptables -A INPUT -p tcp --dport " + port + " -j DROP").split("\\s"));
-      runCmd(("iptables -A OUTPUT -p tcp --dport " + port + " -j DROP").split("\\s"));
-    }
-  }
-
   public static void unblockPort(int port) throws IOException, InterruptedException {
     if (ENABLED && BLOCK_PORTS.contains(port)) {
       log.info("Unblock port with iptables: {}", port);

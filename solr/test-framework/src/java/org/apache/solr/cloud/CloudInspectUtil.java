@@ -165,9 +165,9 @@ public class CloudInspectUtil {
       sb.append(" numFound=").append(lst.getNumFound());
     }
     sb.append("]=");
-    sb.append(lst.subList(0, maxSz / 2).toString());
+    sb.append(lst.subList(0, maxSz / 2));
     sb.append(" , [...] , ");
-    sb.append(lst.subList(lst.size() - maxSz / 2, lst.size()).toString());
+    sb.append(lst.subList(lst.size() - maxSz / 2, lst.size()));
 
     return sb.toString();
   }

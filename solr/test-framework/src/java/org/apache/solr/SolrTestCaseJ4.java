@@ -27,7 +27,6 @@ import com.carrotsearch.randomizedtesting.RandomizedTest;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.io.UncheckedIOException;
@@ -229,7 +228,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * Annotation for test classes that want to disable PointFields. PointFields will otherwise
-   * randomly used by some schemas.
+   * randomly be used by some schemas.
    */
   @Documented
   @Inherited
@@ -375,7 +374,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
           "SOLR-11606: ByteBuddy used by Mockito is not working with this JVM version.",
           e.getTargetException());
     } catch (ReflectiveOperationException e) {
-      fail("ByteBuddy and Mockito are not available on classpath: " + e.toString());
+      fail("ByteBuddy and Mockito are not available on classpath: " + e);
     }
   }
 
@@ -403,7 +402,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     changedFactory = true;
   }
 
-  public static void resetFactory() throws Exception {
+  public static void resetFactory() {
     if (!changedFactory) return;
     changedFactory = false;
     if (savedFactory != null) {
@@ -425,7 +424,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
       sslRandomizer =
           new SSLRandomizer(
-              sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
+              sslRandomizer.ssl,
+              0.0D,
+              (sslRandomizer.debug + " w/ MAC_OS_X suppressed clientAuth"));
     }
 
     SSLTestConfig result = sslRandomizer.createSSLTestConfig();
@@ -443,13 +444,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return (isSSLMode() ? "https" : "http") + "://127.0.0.1:" + port + "/solr";
   }
 
-  protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
-    MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-    mockTokenizer.setReader(input);
-    return mockTokenizer;
-  }
-
-  protected static MockTokenizer whitespaceMockTokenizer(String input) throws IOException {
+  protected static MockTokenizer whitespaceMockTokenizer(String input) {
     MockTokenizer mockTokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
     mockTokenizer.setReader(new StringReader(input));
     return mockTokenizer;
@@ -528,9 +523,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * re-initialize a new value. All directories returned by any calls to this method will
    * automatically be cleaned up per {@link #createTempDir}
    *
-   * <p>NOTE: calling this method is not requried, it will be implicitly called as needed when
+   * <p>NOTE: calling this method is not required, it will be implicitly called as needed when
    * initializing cores. Callers that don't care about using {@link #initCore} and just want a
-   * temporary directory to put data in sould instead be using {@link #createTempDir} directly.
+   * temporary directory to put data in should instead be using {@link #createTempDir} directly.
    *
    * @see #initCoreDataDir
    */
@@ -551,7 +546,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Counter for ensuring we don't ask {@link #createTempDir} to try and re-create the same dir
    * prefix over and over.
    *
-   * <p>(createTempDir has it's own counter for uniqueness, but it tries all numbers in a loop until
+   * <p>(createTempDir has its own counter for uniqueness, but it tries all numbers in a loop until
    * it finds one available. No reason to force that O(N^2) behavior when we know we've already
    * created N previous directories with the same prefix.)
    */
@@ -651,10 +646,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return getTestClass().getName();
   }
 
-  protected static String getSimpleClassName() {
-    return getTestClass().getSimpleName();
-  }
-
   protected static String configString;
   protected static String schemaString;
   protected static Path testSolrHome;
@@ -709,8 +700,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *   <li>initializes the LocalRequestFactory lrf using sensible defaults.
    * </ul>
    */
-  private static String factoryProp;
-
   public static void initCore() throws Exception {
     log.info("####initCore");
 
@@ -830,12 +819,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       h.close();
     }
 
-    if (factoryProp == null) {
-      System.clearProperty("solr.directoryFactory");
-    }
+    System.clearProperty("solr.directoryFactory");
 
     if (System.getProperty(UPDATELOG_SYSPROP) != null) {
-      // clears the updatelog sysprop at the end of the test run
+      // clears the updatelog system property at the end of the test run
       System.clearProperty(UPDATELOG_SYSPROP);
     }
 
@@ -1002,7 +989,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       }
 
       for (String test : tests) {
-        if (test == null || test.length() == 0) continue;
+        if (test == null || test.isEmpty()) continue;
         String testJSON = json(test);
 
         try {
@@ -1197,7 +1184,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Map<String, String[]> params = new HashMap<>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
     params.put(UpdateParams.UPDATE_CHAIN, new String[] {updateRequestProcessorChain});
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), (SolrParams) mmparams) {};
+    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams) {};
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
@@ -1209,7 +1196,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Generates an &lt;add&gt;&lt;doc&gt;... XML String with options on the add.
+   * Generates a &lt;add&gt;&lt;doc&gt;... XML String with options on the add.
    *
    * @param doc the Document to add
    * @param args 0th and Even numbered args are param names, Odds are param values.
@@ -1338,10 +1325,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /**
    * Does a low level delete of all docs in the index.
    *
-   * <p>The behavior of this method is slightly different then doing a normal <code>*:*</code> DBQ
+   * <p>The behavior of this method is slightly different from doing a normal <code>*:*</code> DBQ
    * because it takes advantage of internal methods to ensure all index data is wiped, regardless of
    * optimistic concurrency version constraints -- making it suitable for tests that create
-   * synthetic versions, and/or require a completely pristine index w/o any field metdata.
+   * synthetic versions, and/or require a completely pristine index w/o any field metadata.
    *
    * @see #deleteByQueryAndGetVersion
    */
@@ -1418,7 +1405,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
   /**
    * Converts "test JSON" strings into JSON parseable by our JSON parser. For example, this method
-   * changed single quoted strings into double quoted strings before the parser could natively
+   * changed single quoted strings into double-quoted strings before the parser could natively
    * handle them.
    *
    * <p>This transformation is automatically applied to JSON test strings (like assertJQ).
@@ -1826,10 +1813,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     public IVals numValues;
     public Vals vals;
 
-    public FldType(String fname, Vals vals) {
-      this(fname, ZERO_ONE, vals);
-    }
-
     public FldType(String fname, IVals numValues, Vals vals) {
       this.fname = fname;
       this.numValues = numValues;
@@ -2160,7 +2143,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
     throw new RuntimeException(
         "Cannot find resource in classpath or in file-system (relative to CWD): "
-            + Path.of(name).toAbsolutePath());
+            + file.toAbsolutePath());
   }
 
   public static Path TEST_HOME() {
@@ -2678,7 +2661,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * We want "realistic" unicode strings beyond simple ascii, but because our updates use XML we
+   * We want "realistic" Unicode strings beyond simple ascii, but because our updates use XML we
    * need to ensure we don't get "special" code block.
    */
   public static String randomXmlUsableUnicodeString() {
@@ -2721,7 +2704,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @BeforeClass
-  public static void assertNonBlockingRandomGeneratorAvailable() throws InterruptedException {
+  public static void assertNonBlockingRandomGeneratorAvailable() {
     final String EGD = "java.security.egd";
     final String URANDOM = "file:/dev/./urandom";
     final String ALLOWED = "test.solr.allowed.securerandom";
@@ -2854,7 +2837,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     final boolean useDV = random().nextBoolean();
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "" + useDV);
 
-    // consume a consistent amount of random data even if sysprop/annotation is set
+    // consume a consistent amount of random data even if system property/annotation is set
     final boolean randUsePoints = 0 != random().nextInt(5); // 80% likelihood
 
     final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
@@ -2904,7 +2887,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Cleans up the randomized sysproperties and variables set by {@link
+   * Cleans up the randomized system properties and variables set by {@link
    * #randomizeNumericTypesProperties}
    *
    * @see #randomizeNumericTypesProperties

@@ -35,18 +35,6 @@ public class ClusterStateUtil {
    * Wait to see *all* cores live and active.
    *
    * @param zkStateReader to use for ClusterState
-   * @param timeoutInMs how long to wait before giving up
-   * @return false if timed out
-   */
-  public static boolean waitForAllActiveAndLiveReplicas(
-      ZkStateReader zkStateReader, int timeoutInMs) {
-    return waitForAllActiveAndLiveReplicas(zkStateReader, null, timeoutInMs);
-  }
-
-  /**
-   * Wait to see *all* cores live and active.
-   *
-   * @param zkStateReader to use for ClusterState
    * @param collection to look at
    * @param timeoutInMs how long to wait before giving up
    * @return false if timed out
@@ -86,34 +74,10 @@ public class ClusterStateUtil {
                 .noneMatch(replica -> liveNodes.contains(replica.getNodeName())));
   }
 
-  public static int getLiveAndActiveReplicaCount(ZkStateReader zkStateReader, String collection) {
-    ClusterState clusterState = zkStateReader.getClusterState();
-    var liveNodes = clusterState.getLiveNodes();
-    var state = clusterState.getCollection(collection);
-    return (int)
-        replicasOfActiveSlicesStream(state)
-            .filter(replica -> liveAndActivePredicate(replica, liveNodes))
-            .count();
-  }
-
   public static Stream<Replica> replicasOfActiveSlicesStream(DocCollection collectionState) {
     return collectionState.getActiveSlices().stream()
         .map(Slice::getReplicas)
         .flatMap(Collection::stream);
-  }
-
-  public static boolean waitForLiveAndActiveReplicaCount(
-      ZkStateReader zkStateReader, String collection, int replicaCount, int timeoutInMs) {
-    return waitFor(
-        zkStateReader,
-        collection,
-        timeoutInMs,
-        TimeUnit.MILLISECONDS,
-        (liveNodes, state) ->
-            replicasOfActiveSlicesStream(state)
-                    .filter(replica -> liveAndActivePredicate(replica, liveNodes))
-                    .count()
-                == replicaCount);
   }
 
   /**

@@ -40,7 +40,7 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDomainHostPortMatch() throws Exception {
+  public void testDomainHostPortMatch() {
     final BasicClientCookie cookie = new BasicClientCookie("name", "value");
     final CookieOrigin origin = new CookieOrigin("myhost", 80, "/", false);
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
@@ -120,7 +120,7 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDomainMatch1() throws Exception {
+  public void testDomainMatch1() {
     final BasicClientCookie cookie = new BasicClientCookie("name", "value");
     final CookieOrigin origin = new CookieOrigin("www.somedomain.com", 80, "/", false);
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
@@ -133,7 +133,7 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDomainMatch2() throws Exception {
+  public void testDomainMatch2() {
     final BasicClientCookie cookie = new BasicClientCookie("name", "value");
     final CookieOrigin origin = new CookieOrigin("www.whatever.somedomain.com", 80, "/", false);
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
@@ -143,7 +143,7 @@ public class SolrPortAwareCookieSpecTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testDomainInvalidInput() throws Exception {
+  public void testDomainInvalidInput() {
     final CookieAttributeHandler h = new SolrPortAwareCookieSpecFactory.PortAwareDomainHandler();
     SolrTestCaseJ4.expectThrows(IllegalArgumentException.class, () -> h.match(null, null));
     SolrTestCaseJ4.expectThrows(

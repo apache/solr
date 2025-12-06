@@ -190,7 +190,8 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   public void testJettyUsingSysProp() throws Exception {
     try {
-      // this cluster will use a sysprop to communicate zkHost to it's nodes -- not node props in
+      // this cluster will use a system property to communicate zkHost to its nodes -- not node
+      // props in
       // the servlet context
       final MiniSolrCloudCluster x =
           new MiniSolrCloudCluster(1, createTempDir(), JettyConfig.builder().build()) {
@@ -234,6 +235,6 @@ public class MiniSolrCloudClusterTest extends SolrTestCaseJ4 {
 
   private static void assertZkHost(
       final String msg, final String zkHost, final JettySolrRunner node) {
-    assertEquals(zkHost, node.getCoreContainer().getNodeConfig().getCloudConfig().getZkHost());
+    assertEquals(msg, zkHost, node.getCoreContainer().getNodeConfig().getCloudConfig().getZkHost());
   }
 }

@@ -64,8 +64,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final int NUM_SHARDS = 2; // granted we sometimes shard split to get more
-  protected static final int NUM_SPLIT_SHARDS =
-      3; // We always split shard1 so total shards post split will be 3
   protected static final String BACKUPNAME_PREFIX = "mytestbackup";
 
   int replFactor;
@@ -340,19 +338,19 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     String restoreCollectionName = collectionName + "_restored";
     boolean sameConfig = random().nextBoolean();
 
-    int restoreReplcationFactor = replFactor;
+    int restoreReplicationFactor = replFactor;
     int restoreTlogReplicas = numTlogReplicas;
     int restorePullReplicas = numPullReplicas;
     boolean setExternalReplicationFactor = false;
     if (random().nextBoolean()) { // Override replicationFactor / tLogReplicas / pullReplicas
       setExternalReplicationFactor = true;
       restoreTlogReplicas = TestUtil.nextInt(random(), 0, 1);
-      restoreReplcationFactor = TestUtil.nextInt(random(), 1, 2);
+      restoreReplicationFactor = TestUtil.nextInt(random(), 1, 2);
       restorePullReplicas = TestUtil.nextInt(random(), 0, 1);
     }
     int numShards = backupCollection.getActiveSlices().size();
 
-    int restoreReplFactor = restoreReplcationFactor + restoreTlogReplicas + restorePullReplicas;
+    int restoreReplFactor = restoreReplicationFactor + restoreTlogReplicas + restorePullReplicas;
 
     CollectionAdminRequest.Restore restore =
         CollectionAdminRequest.restoreCollection(restoreCollectionName, backupName)
@@ -361,7 +359,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     // explicitly specify the replicationFactor/pullReplicas/nrtReplicas/tlogReplicas.
     if (setExternalReplicationFactor) {
-      restore.setReplicationFactor(restoreReplcationFactor);
+      restore.setReplicationFactor(restoreReplicationFactor);
       restore.setTlogReplicas(restoreTlogReplicas);
       restore.setPullReplicas(restorePullReplicas);
     }
@@ -427,11 +425,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
 
     assertEquals(
         restoreCollection.toString(),
-        restoreReplcationFactor,
+        restoreReplicationFactor,
         restoreCollection.getReplicationFactor().intValue());
     assertEquals(
         restoreCollection.toString(),
-        restoreReplcationFactor,
+        restoreReplicationFactor,
         restoreCollection.getNumReplicas(Replica.Type.NRT));
     assertEquals(
         restoreCollection.toString(),
