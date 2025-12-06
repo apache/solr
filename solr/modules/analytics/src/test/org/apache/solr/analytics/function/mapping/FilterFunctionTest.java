@@ -715,7 +715,7 @@ public class FilterFunctionTest extends SolrTestCaseJ4 {
           fail("There should be no values to stream");
         });
 
-    val.setValues(50.343F, -74.9874F, 2.34233242E+9F);
+    val.setValues(50.343F, -74.9874F, 2.3423324E+9f);
     filter.setExists(false);
     func.streamFloats(
         value -> {
