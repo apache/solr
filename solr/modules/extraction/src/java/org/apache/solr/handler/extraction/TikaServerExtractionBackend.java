@@ -177,6 +177,8 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
             ? Duration.ofSeconds(request.tikaServerTimeoutSeconds)
             : defaultTimeout;
     req.timeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    // Also set idle timeout in case of heavy server side work like OCR
+    req.idleTimeout(effectiveTimeout.toMillis(), TimeUnit.MILLISECONDS);
 
     // Headers
     String accept = (request.tikaServerRecursive ? "application/json" : "text/xml");
