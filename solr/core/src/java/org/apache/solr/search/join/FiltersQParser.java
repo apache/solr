@@ -73,7 +73,7 @@ public class FiltersQParser extends QParser {
     return query;
   }
 
-  protected Query wrapSubordinateClause(BooleanQuery subordinate) throws SyntaxError {
+  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
     return subordinate;
   }
 

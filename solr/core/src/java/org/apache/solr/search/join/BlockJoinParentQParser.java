@@ -18,41 +18,26 @@ package org.apache.solr.search.join;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.KnnByteVectorQuery;
-import org.apache.lucene.search.KnnFloatVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScorerSupplier;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.BitSetProducer;
-import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
-import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
 import org.apache.lucene.search.join.QueryBitSetProducer;
 import org.apache.lucene.search.join.ScoreMode;
-import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.util.BitSet;
 import org.apache.lucene.util.BitSetIterator;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.transform.ChildDocTransformer;
-import org.apache.solr.response.transform.DocTransformer;
-import org.apache.solr.response.transform.DocTransformers;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryLimits;
-import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
@@ -83,7 +68,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   @Override
-  protected Query wrapSubordinateClause(BooleanQuery subordinate) throws SyntaxError {
+  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
     String scoreMode = localParams.get("score", ScoreMode.None.name());
     Query parentQ = parseParentFilter();
     return createQuery(parentQ, subordinate, scoreMode);
@@ -94,131 +79,10 @@ public class BlockJoinParentQParser extends FiltersQParser {
     return new BitSetProducerQuery(getBitSetProducer(parseParentFilter()));
   }
 
-  protected Query createQuery(final Query allParents, BooleanQuery childrenQuery, String scoreMode)
+  protected Query createQuery(final Query parentList, Query query, String scoreMode)
       throws SyntaxError {
-    try {
-      List<BooleanClause> childrenClauses = childrenQuery.clauses();
-      KnnByteVectorQuery knnByteChildrenQuery = getBytetKnnQuery(childrenClauses);
-      BitSetProducer allParentsBitSet = getBitSetProducer(allParents);
-      BooleanQuery parentsFilter = getParentsFilter();
-
-      if (knnByteChildrenQuery != null) {
-        String vectorField = knnByteChildrenQuery.getField();
-        byte[] queryVector = knnByteChildrenQuery.getTargetCopy();
-        int topK = knnByteChildrenQuery.getK();
-
-        Query acceptedChildren =
-            getChildrenFilter(knnByteChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
-
-        Query knnChildren =
-            new DiversifyingChildrenByteKnnVectorQuery(
-                vectorField, queryVector, acceptedChildren, topK, allParentsBitSet);
-        knnChildren = knnChildren.rewrite(req.getSearcher());
-        this.setAppropriateChildrenListingTransformer(req, knnChildren);
-
-        return new ToParentBlockJoinQuery(
-            knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
-      } else {
-        KnnFloatVectorQuery knnFLoatChildrenQuery = getFloatKnnQuery(childrenClauses);
-        if (knnFLoatChildrenQuery != null) {
-          String vectorField = knnFLoatChildrenQuery.getField();
-          float[] queryVector = knnFLoatChildrenQuery.getTargetCopy();
-          int topK = knnFLoatChildrenQuery.getK();
-
-          Query childrenFilter =
-              getChildrenFilter(knnFLoatChildrenQuery.getFilter(), parentsFilter, allParentsBitSet);
-
-          Query knnChildren =
-              new DiversifyingChildrenFloatKnnVectorQuery(
-                  vectorField, queryVector, childrenFilter, topK, allParentsBitSet);
-          knnChildren = knnChildren.rewrite(req.getSearcher());
-          this.setAppropriateChildrenListingTransformer(req, knnChildren);
-
-          return new ToParentBlockJoinQuery(
-              knnChildren, allParentsBitSet, ScoreModeParser.parse(scoreMode));
-        } else {
-          return new AllParentsAware(
-              childrenQuery, allParentsBitSet, ScoreModeParser.parse(scoreMode), allParents);
-        }
-      }
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  private void setAppropriateChildrenListingTransformer(
-      SolrQueryRequest request, Query knnOnVectorField) throws IOException {
-    QueryLimits currentLimits = QueryLimits.getCurrentLimits();
-    ReturnFields returnFields = currentLimits.getRsp().getReturnFields();
-    DocTransformer originalTransformer = returnFields.getTransformer();
-
-    if (originalTransformer instanceof DocTransformers) {
-      DocTransformers transformers = (DocTransformers) originalTransformer;
-      boolean noChildTransformer = true;
-      for (int i = 0; i < transformers.size() && noChildTransformer; i++) {
-        DocTransformer t = transformers.getTransformer(i);
-        if (t instanceof ChildDocTransformer) {
-          ChildDocTransformer childTransformer = (ChildDocTransformer) t;
-          if (childTransformer.getChildDocSet() == null) {
-            childTransformer.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
-          }
-          noChildTransformer = false;
-        }
-      }
-    } else if ((originalTransformer instanceof ChildDocTransformer)) {
-        ChildDocTransformer childTransformer = (ChildDocTransformer) originalTransformer;
-        if (childTransformer.getChildDocSet() == null) {
-          childTransformer.setChildDocSet(request.getSearcher().getDocSet(knnOnVectorField));
-        }
-    }
-  }
-
-  private KnnFloatVectorQuery getFloatKnnQuery(List<BooleanClause> childrenClauses) {
-    if (childrenClauses.size() == 1) {
-      Query query = childrenClauses.get(0).getQuery();
-      if (query instanceof KnnFloatVectorQuery) {
-        return (KnnFloatVectorQuery) query;
-      }
-    }
-    return null;
-  }
-
-  private KnnByteVectorQuery getBytetKnnQuery(List<BooleanClause> childrenClauses) {
-    if (childrenClauses.size() == 1) {
-      Query query = childrenClauses.get(0).getQuery();
-      if (query instanceof KnnByteVectorQuery) {
-        return (KnnByteVectorQuery) query;
-      }
-    }
-    return null;
-  }
-
-  private Query getChildrenFilter(
-      Query childrenKnnPreFilter, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
-    Query childrenFilter = childrenKnnPreFilter;
-
-    if (!parentsFilter.clauses().isEmpty()) {
-      Query acceptedChildrenBasedOnParentsFilter =
-          new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet); // no scoring happens here
-      BooleanQuery.Builder acceptedChildrenBuilder = createBuilder();
-      if (childrenFilter != null) {
-        acceptedChildrenBuilder.add(childrenFilter, BooleanClause.Occur.FILTER);
-      }
-      acceptedChildrenBuilder.add(acceptedChildrenBasedOnParentsFilter, BooleanClause.Occur.FILTER);
-
-      childrenFilter = acceptedChildrenBuilder.build();
-    }
-    return childrenFilter;
-  }
-
-  private BooleanQuery getParentsFilter() throws SyntaxError {
-    List<Query> parentFilterQueries = QueryUtils.parseFilterQueries(req);
-    BooleanQuery.Builder acceptedParentsBuilder = createBuilder();
-    for (Query filter : parentFilterQueries) {
-      acceptedParentsBuilder.add(filter, BooleanClause.Occur.FILTER);
-    }
-    BooleanQuery acceptedParents = acceptedParentsBuilder.build();
-    return acceptedParents;
+    return new AllParentsAware(
+        query, getBitSetProducer(parentList), ScoreModeParser.parse(scoreMode), parentList);
   }
 
   BitSetProducer getBitSetProducer(Query query) {

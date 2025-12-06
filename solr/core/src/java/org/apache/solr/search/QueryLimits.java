@@ -247,8 +247,4 @@ public final class QueryLimits implements QueryTimeout {
     final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
     return info != null ? info.getLimits() : NONE;
   }
-
-  public SolrQueryResponse getRsp() {
-    return rsp;
-  }
 }

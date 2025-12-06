@@ -220,7 +220,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             // "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$allParents' allParents=$allParents}" + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
