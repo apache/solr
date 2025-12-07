@@ -177,12 +177,12 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         "{\"queries\":"
             + "{\"lexical1\":{\"lucene\":{\"query\":\"id:(2^2 OR 3^1 OR 6^2 OR 5^1)\"}},"
             + "\"lexical2\":{\"lucene\":{\"query\":\"id:(4^1 OR 5^2 OR 7^3 OR 10^2)\"}}},"
-            + "\"limit\":5,\"sort\":\"mod3_idv desc\""
+            + "\"limit\":5,\"sort\":\"mod3_idv desc, score desc\""
             + "\"fields\":[\"id\",\"score\",\"title\"],"
             + "\"params\":{\"combiner\":true,\"combiner.query\":[\"lexical1\",\"lexical2\"]}}";
     QueryResponse rsp = query(CommonParams.JSON, jsonQuery, CommonParams.QT, "/search");
     assertEquals(5, rsp.getResults().size());
-    assertFieldValues(rsp.getResults(), id, "5", "2", "7", "4", "10");
+    assertFieldValues(rsp.getResults(), id, "5", "2", "7", "10", "4");
   }
 
   /**
