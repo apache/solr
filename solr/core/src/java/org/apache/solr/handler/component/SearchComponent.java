@@ -94,14 +94,6 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   @Override
   public abstract String getDescription();
 
-  /**
-   * Can force SearchHandler to run in distributed/coordinator mode that would otherwise
-   * have been short-circuited.  There's usually no need for this.
-   */
-  protected boolean isForceDistributed() {
-    return false;
-  }
-
   @Override
   public Category getCategory() {
     return Category.OTHER;

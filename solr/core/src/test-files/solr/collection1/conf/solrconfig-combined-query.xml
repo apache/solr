@@ -95,15 +95,6 @@
   <requestHandler name="/select" class="solr.SearchHandler">
   </requestHandler>
 
-  <requestHandler name="/tfd" class="solr.SearchHandler">
-    <arr name="last-components">
-      <str>fd</str>
-    </arr>
-  </requestHandler>
-
-  <searchComponent class="org.apache.solr.handler.component.ForcedDistributedComponent" name="fd">
-  </searchComponent>
-
   <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
     </requestHandler>
 
@@ -165,7 +156,7 @@
   </highlighting>
   </searchComponent>
 
-    <initParams path="/select,/search,/tfd">
+    <initParams path="/select,/search">
         <lst name="defaults">
             <str name="df">text</str>
         </lst>

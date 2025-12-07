@@ -21,7 +21,6 @@ import static java.lang.Math.max;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -61,21 +60,29 @@ import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.search.SortSpec;
 import org.apache.solr.util.SolrResponseUtil;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * The CombinedQueryComponent class extends QueryComponent and provides support for executing
- * multiple queries and combining their results.
+ * Extends QueryComponent with support for executing multiple queries and combining their results,
+ * like hybrid search with RFF. Does nothing special if not activated.
+ *
+ * <p>When activated, this component only works in distributed search / coordinator mode.
+ *
+ * @see CombinedQuerySearchHandler
+ * @see CombinerParams
+ * @see QueryAndResponseCombiner
  */
 public class CombinedQueryComponent extends QueryComponent implements SolrCoreAware {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String COMPONENT_NAME = "combined_query";
   protected NamedList<?> initParams;
   private final Map<String, QueryAndResponseCombiner> combiners = new HashMap<>();
   private int maxCombinerQueries;
   private static final String RESPONSE_PER_QUERY_KEY = "response_per_query";
+
+  @Override
+  public String getDescription() {
+    return "Combined Query Component to support multiple query execution like RRF";
+  }
 
   @Override
   public void init(NamedList<?> args) {
@@ -123,19 +130,8 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   }
 
   @Override
-  protected boolean isForceDistributed() {
-    return true;
-  }
-
-  /**
-   * Overrides the prepare method to handle combined queries.
-   *
-   * @param rb the ResponseBuilder to prepare
-   * @throws IOException if an I/O error occurs during preparation
-   */
-  @Override
   public void prepare(ResponseBuilder rb) throws IOException {
-    if (rb instanceof CombinedQueryResponseBuilder crb) {
+    if (rb instanceof CombinedQueryResponseBuilder crb) { // see CombinedQuerySearchHandler
       SolrParams params = crb.req.getParams();
       if (params.get(CursorMarkParams.CURSOR_MARK_PARAM) != null
           || params.getBool(GroupParams.GROUP, false)) {
@@ -172,7 +168,7 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
   @Override
   @SuppressWarnings("unchecked")
   public void process(ResponseBuilder rb) throws IOException {
-    if (rb instanceof CombinedQueryResponseBuilder crb) {
+    if (rb instanceof CombinedQueryResponseBuilder crb) { // see CombinedQuerySearchHandler
       boolean partialResults = false;
       boolean segmentTerminatedEarly = false;
       Boolean setMaxHitsTerminatedEarly = null;
@@ -614,10 +610,5 @@ public class CombinedQueryComponent extends QueryComponent implements SolrCoreAw
     responseDocs.setMaxScore(maxScore);
     for (int i = 0; i < resultSize; i++) responseDocs.add(null);
     return resultIds;
-  }
-
-  @Override
-  public String getDescription() {
-    return "Combined Query Component to support multiple query execution";
   }
 }

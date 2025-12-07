@@ -16,66 +16,31 @@
  */
 package org.apache.solr.handler.component;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.facet.FacetModule;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
- * The CombinedQuerySearchHandler class extends the SearchHandler and provides custom behavior for
- * handling combined queries. It overrides methods to create a response builder based on the {@link
- * CombinerParams#COMBINER} parameter and to define the default components included in the search
- * configuration.
+ * Extends the SearchHandler combining/fusing multiple queries (e.g. RRF) when the {@link
+ * CombinerParams#COMBINER} param is provided. If it isn't, does nothing special over SearchHandler.
+ *
+ * @see CombinedQueryComponent
  */
 public class CombinedQuerySearchHandler extends SearchHandler {
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * Overrides the default response builder creation method. This method checks if the {@link
-   * CombinerParams#COMBINER} parameter is set to true in the request. If it is, it returns an
-   * instance of {@link CombinedQueryResponseBuilder}, otherwise, it returns an instance of {@link
-   * ResponseBuilder}.
-   *
-   * @param req the SolrQueryRequest object
-   * @param rsp the SolrQueryResponse object
-   * @param components the list of SearchComponent objects
-   * @return the appropriate ResponseBuilder instance based on the CombinerParams.COMBINER parameter
-   */
+  /** Overrides to potentially return a custom {@link CombinedQueryResponseBuilder}. */
   @Override
   protected ResponseBuilder newResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     if (req.getParams().getBool(CombinerParams.COMBINER, false)) {
-      return new CombinedQueryResponseBuilder(req, rsp, components);
+      var rb = new CombinedQueryResponseBuilder(req, rsp, components);
+      // CombinedQueryComponent is only designed to work with distributed search.
+      rb.setForcedDistrib(true);
+      return rb;
     }
     return super.newResponseBuilder(req, rsp, components);
-  }
-
-  /**
-   * Overrides the default components and returns a list of component names that are included in the
-   * default configuration.
-   *
-   * @return a list of component names
-   */
-  @Override
-  @SuppressWarnings("unchecked")
-  protected List<String> getDefaultComponents() {
-    List<String> names = new ArrayList<>(9);
-    names.add(CombinedQueryComponent.COMPONENT_NAME);
-    names.add(FacetComponent.COMPONENT_NAME);
-    names.add(FacetModule.COMPONENT_NAME);
-    names.add(MoreLikeThisComponent.COMPONENT_NAME);
-    names.add(HighlightComponent.COMPONENT_NAME);
-    names.add(StatsComponent.COMPONENT_NAME);
-    names.add(DebugComponent.COMPONENT_NAME);
-    names.add(ExpandComponent.COMPONENT_NAME);
-    names.add(TermsComponent.COMPONENT_NAME);
-    return names;
   }
 
   @Override
@@ -85,5 +50,14 @@ public class CombinedQuerySearchHandler extends SearchHandler {
     if (rb instanceof CombinedQueryResponseBuilder crb) {
       crb.propagate();
     }
+  }
+
+  /** Overrides the default list to include {@link CombinedQueryComponent}. */
+  @Override
+  protected List<String> getDefaultComponents() {
+    List<String> names = new ArrayList<>(super.getDefaultComponents());
+    String replaced = names.set(0, CombinedQueryComponent.COMPONENT_NAME);
+    assert replaced.equals(QueryComponent.COMPONENT_NAME);
+    return names;
   }
 }

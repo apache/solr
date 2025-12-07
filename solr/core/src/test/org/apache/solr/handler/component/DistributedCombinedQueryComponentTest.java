@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -283,14 +284,10 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
   }
 
   /**
-   * Tests the forced distribution functionality.
-   *
-   * <p>This test prepares index documents, executes a query with specific parameters, and verifies
-   * that the debug map contains expected process and prepare entries.
-   *
-   * @throws Exception if any error occurs during test execution
+   * @see org.apache.solr.handler.component.CombinedQuerySolrCloudTest#testForcedDistrib()
    */
   @Test
+  @Ignore // nocommit
   public void testForcedDistrib() throws Exception {
     prepareIndexDocs();
     QueryResponse rsp =

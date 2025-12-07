@@ -170,11 +170,11 @@ public class ResponseBuilder {
   public String shortCircuitedURL;
   private boolean forcedDistrib = false;
 
-  /** @see SearchComponent#isForceDistributed() */
   public boolean isForcedDistrib() {
     return forcedDistrib;
   }
 
+  /** Force distributed-search / coordinator logic when not a sub-shard request. */
   public void setForcedDistrib(boolean forcedDistrib) {
     this.forcedDistrib = forcedDistrib;
   }

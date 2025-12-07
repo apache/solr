@@ -26,18 +26,11 @@ import org.apache.solr.response.SolrQueryResponse;
  * building a combined response for multiple SearchComponent objects. It orchestrates the process of
  * constructing the SolrQueryResponse by aggregating results from various components.
  */
-public class CombinedQueryResponseBuilder extends ResponseBuilder {
+class CombinedQueryResponseBuilder extends ResponseBuilder {
 
-  public final List<ResponseBuilder> responseBuilders = new ArrayList<>();
+  final List<ResponseBuilder> responseBuilders = new ArrayList<>();
 
-  /**
-   * Constructs a CombinedQueryResponseBuilder instance.
-   *
-   * @param req the SolrQueryRequest object containing the query parameters and context.
-   * @param rsp the SolrQueryResponse object to which the combined results will be added.
-   * @param components a list of SearchComponent objects that will be used to build the response.
-   */
-  public CombinedQueryResponseBuilder(
+  CombinedQueryResponseBuilder(
       SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
     super(req, rsp, components);
   }
@@ -46,7 +39,7 @@ public class CombinedQueryResponseBuilder extends ResponseBuilder {
    * Propagates all the properties from parent ResponseBuilder to the all the children which are
    * being set later after the CombinedQueryComponent is prepared.
    */
-  public final void propagate() {
+  final void propagate() {
     responseBuilders.forEach(
         thisRb -> {
           thisRb.setNeedDocSet(isNeedDocSet());

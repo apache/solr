@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,10 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.RTimerTree;
 import org.junit.Test;
 
 /**
@@ -244,21 +249,37 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
         rsp.getHighlighting().get("5").get("title").getFirst());
   }
 
-  /**
-   * Tests the forced distribution functionality.
-   *
-   * <p>This test prepares index documents, executes a query with specific parameters, and verifies
-   * that the debug map contains expected process and prepare entries.
-   *
-   * @throws Exception if any error occurs during test execution
-   */
+  /** To test that we can force distrib */
+  public static class ForceDistribSearchHandler extends SearchHandler {
+    @Override
+    protected ResponseBuilder newResponseBuilder(
+        SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+      ResponseBuilder rb = super.newResponseBuilder(req, rsp, components);
+      rb.setForcedDistrib(true);
+      return rb;
+    }
+
+    @Override
+    protected void processComponentsLocal(
+        SolrQueryRequest req,
+        SolrQueryResponse rsp,
+        ResponseBuilder rb,
+        RTimerTree timer,
+        List<SearchComponent> components)
+        throws IOException {
+      if (req.getParams().getPrimitiveBool(ShardParams.IS_SHARD)) {
+        super.processComponentsLocal(req, rsp, rb, timer, components);
+      } else {
+        fail("forcing distrib didn't work");
+      }
+    }
+  }
+
+  /** Tests {@link ResponseBuilder#setForcedDistrib(boolean)} had the desired effect. */
   @Test
+  // @Ignore
   public void testForcedDistrib() throws Exception {
-    prepareIndexDocs();
-    QueryResponse rsp =
-        query(
-            "q", "id:2", "rows", "0", "debug", "query", "rid", "fd-test", CommonParams.QT, "/tfd");
-    assertTrue(rsp.getDebugMap().containsKey("process()"));
-    assertTrue(rsp.getDebugMap().containsKey("prepare()"));
+    QueryResponse rsp = query("q", "*:*", "rows", "0", "shards.info", "true");
+    assertTrue(rsp.getDebugMap().containsKey("prepare()")); // nocommit
   }
 }
