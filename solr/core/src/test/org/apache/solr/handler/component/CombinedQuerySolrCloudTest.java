@@ -250,7 +250,7 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
   }
 
   /** To test that we can force distrib */
-  public static class ForceDistribSearchHandler extends SearchHandler {
+  public static class ForcedDistribSearchHandler extends SearchHandler {
     @Override
     protected ResponseBuilder newResponseBuilder(
         SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
@@ -277,9 +277,8 @@ public class CombinedQuerySolrCloudTest extends AbstractFullDistribZkTestBase {
 
   /** Tests {@link ResponseBuilder#setForcedDistrib(boolean)} had the desired effect. */
   @Test
-  // @Ignore
   public void testForcedDistrib() throws Exception {
-    QueryResponse rsp = query("q", "*:*", "rows", "0", "shards.info", "true");
-    assertTrue(rsp.getDebugMap().containsKey("prepare()")); // nocommit
+    QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
+    // ForcedDistribSearchHandler would trigger a failure if this didn't work
   }
 }

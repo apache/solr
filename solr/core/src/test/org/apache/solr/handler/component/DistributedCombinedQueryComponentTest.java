@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -287,13 +286,8 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
    * @see org.apache.solr.handler.component.CombinedQuerySolrCloudTest#testForcedDistrib()
    */
   @Test
-  @Ignore // nocommit
   public void testForcedDistrib() throws Exception {
-    prepareIndexDocs();
-    QueryResponse rsp =
-        query(
-            "q", "id:2", "rows", "0", "debug", "query", "rid", "fd-test", CommonParams.QT, "/tfd");
-    assertTrue(rsp.getDebugMap().containsKey("process()"));
-    assertTrue(rsp.getDebugMap().containsKey("prepare()"));
+    QueryResponse rsp = query("qt", "/forcedDistribTest", "q", "*:*", "rows", "0");
+    // ForcedDistribSearchHandler would trigger a failure if this didn't work
   }
 }

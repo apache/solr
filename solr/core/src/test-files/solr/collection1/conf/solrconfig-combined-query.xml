@@ -96,7 +96,7 @@
   </requestHandler>
 
   <requestHandler name="/search" class="solr.CombinedQuerySearchHandler">
-    </requestHandler>
+  </requestHandler>
 
     <searchComponent class="solr.CombinedQueryComponent" name="combined_query">
         <int name="maxCombinerQueries">2</int>
@@ -108,6 +108,9 @@
             </lst>
         </lst>
     </searchComponent>
+
+  <requestHandler name="/forcedDistribTest" class="org.apache.solr.handler.component.CombinedQuerySolrCloudTest$ForcedDistribSearchHandler">
+  </requestHandler>
 
   <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
