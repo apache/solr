@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -177,5 +178,19 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   @Override
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), (Float) this.toNativeType(value));
+  }
+
+  /**
+   * Override the default existence behavior, so that the non-docValued/norms implementation matches
+   * NaN values for double and float fields. The [* TO *] query for those fields does not match
+   * 'NaN' values, so they must be matched separately.
+   *
+   * <p>For doubles and floats the query behavior is equivalent to field:[-Infinity TO NaN] since
+   * NaN has a value greater than +Infinity
+   */
+  @Override
+  public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
+    return new ConstantScoreQuery(
+        FloatPoint.newRangeQuery(field.getName(), Float.NEGATIVE_INFINITY, Float.NaN));
   }
 }

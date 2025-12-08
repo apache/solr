@@ -32,6 +32,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -40,6 +42,7 @@ import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PointInSetQuery;
+import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
@@ -1839,24 +1842,55 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                     + query
                     + "\".",
                 createdQuery instanceof ConstantScoreQuery);
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must be an OR.",
-                1,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                    .getMinimumNumberShouldMatch());
-            assertEquals(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\". This boolean query must have 2 clauses.",
-                2,
-                ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            if (schemaField.getType().isPointField()) {
+              assertTrue(
+                  "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof PointRangeQuery);
+              if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Double.NaN,
+                    DoublePoint.decodeDimension(
+                        ((PointRangeQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                            .getUpperPoint(),
+                        0),
+                    0);
+              } else {
+                assertEquals(
+                    "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
+                        + query
+                        + "\".",
+                    Float.NaN,
+                    FloatPoint.decodeDimension(
+                        ((PointRangeQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                            .getUpperPoint(),
+                        0),
+                    0);
+              }
+            } else {
+              assertTrue(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof BooleanQuery);
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must be an OR.",
+                  1,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery())
+                      .getMinimumNumberShouldMatch());
+              assertEquals(
+                  "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\". This boolean query must have 2 clauses.",
+                  2,
+                  ((BooleanQuery) ((ConstantScoreQuery) createdQuery).getQuery()).clauses().size());
+            }
           } else {
             assertFalse(
                 "Field doesn't have docValues, so existence query \""
