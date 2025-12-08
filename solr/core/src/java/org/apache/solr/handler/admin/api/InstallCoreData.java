@@ -20,6 +20,8 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
 import java.net.URI;
+
+import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.InstallCoreDataApi;
 import org.apache.solr.client.api.model.InstallCoreDataRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -43,6 +45,7 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public class InstallCoreData extends CoreAdminAPIBase implements InstallCoreDataApi {
 
+  @Inject
   public InstallCoreData(
       CoreContainer coreContainer,
       CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
