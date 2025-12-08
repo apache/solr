@@ -63,32 +63,49 @@ class TextToVectorUpdateProcessor extends UpdateRequestProcessor {
     SolrInputField inputFieldContent = doc.get(inputField);
     if (!isNullOrEmpty(inputFieldContent)) {
       try {
-        String textToVectorise = inputFieldContent.getValue().toString();
-        float[] vector = textToVector.vectorise(textToVectorise);
-        List<Float> vectorAsList = new ArrayList<Float>(vector.length);
-        for (float f : vector) {
-          vectorAsList.add(f);
-        }
+        List<Float> vectorAsList = getVectorAsList(inputFieldContent);
         doc.addField(outputField, vectorAsList);
       } catch (RuntimeException vectorisationFailure) {
-        if (log.isErrorEnabled()) {
-          SchemaField uniqueKeyField = schema.getUniqueKeyField();
-          String uniqueKeyFieldName = uniqueKeyField.getName();
-          log.error(
-              "Could not vectorise: {} for the document with {}: {}",
-              inputField,
-              uniqueKeyFieldName,
-              doc.getFieldValue(uniqueKeyFieldName),
-              vectorisationFailure);
-        }
+        logError(vectorisationFailure, doc);
       }
     }
     super.processAdd(cmd);
+  }
+
+  protected void logError(RuntimeException vectorisationFailure, SolrInputDocument doc) {
+    if (log.isErrorEnabled()) {
+      SchemaField uniqueKeyField = getSchema().getUniqueKeyField();
+      String uniqueKeyFieldName = uniqueKeyField.getName();
+      log.error(
+          "Could not vectorise: {} for the document with {}: {}",
+          getInputField(),
+          uniqueKeyFieldName,
+          doc.getFieldValue(uniqueKeyFieldName),
+          vectorisationFailure);
+    }
+  }
+
+  protected List<Float> getVectorAsList(SolrInputField inputFieldContent) {
+    String textToVectorise = inputFieldContent.getValue().toString();
+    float[] vector = textToVector.vectorise(textToVectorise);
+    List<Float> vectorAsList = new ArrayList<Float>(vector.length);
+    for (float f : vector) {
+      vectorAsList.add(f);
+    }
+    return vectorAsList;
   }
 
   protected boolean isNullOrEmpty(SolrInputField inputFieldContent) {
     return (inputFieldContent == null
         || inputFieldContent.getValue() == null
         || inputFieldContent.getValue().toString().isEmpty());
+  }
+
+  protected IndexSchema getSchema() {
+    return schema;
+  }
+
+  protected String getInputField() {
+    return inputField;
   }
 }

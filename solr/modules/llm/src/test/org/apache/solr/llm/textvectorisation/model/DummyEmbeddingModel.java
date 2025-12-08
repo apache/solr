@@ -32,8 +32,12 @@ public class DummyEmbeddingModel implements EmbeddingModel {
 
   @Override
   public Response<Embedding> embed(String text) {
-    Embedding dummy = new Embedding(embedding);
-    return new Response<Embedding>(dummy);
+    if ("text additionalFieldText".equals(text)) {
+
+      float[] floats = {1, 1, 1, 1};
+      return new Response<>(new Embedding(floats));
+    }
+    return new Response<>(new Embedding(embedding));
   }
 
   @Override
