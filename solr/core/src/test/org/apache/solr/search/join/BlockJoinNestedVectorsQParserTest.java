@@ -172,10 +172,9 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   public void parentRetrievalFloat_knnChildren_shouldReturnKnnParents() {
     assertQ(
         req(
-            // "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+            "children.q", "{!knn f=vector topK=3 childrenOf=$allParents allParents=$allParents}" + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
@@ -184,14 +183,26 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents() {
+  public void parentRetrievalFloat_knnChildrenWithNoDiversifying_shouldReturnOneParent() {
     assertQ(
         req(
-            "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
             "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/str[@name='id'][.='10']");
+  }
+
+  @Test
+  public void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,score",
+            "children.q", "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(a c)"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -203,11 +214,11 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
       parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
     assertQ(
         req(
-            "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector topK=3 preFilter=child_s:m}" + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "children.q", "{!knn f=vector topK=3 preFilter=child_s:m childrenOf=$someParents allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(a c)"),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='2']");
@@ -217,10 +228,9 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   public void parentRetrievalByte_knnChildren_shouldReturnKnnParents() {
     assertQ(
         req(
-            // "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$allParents' allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$allParents allParents=$allParents}" + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
@@ -232,11 +242,11 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   public void parentRetrievalByte_knnChildrenWithParentFilter_shouldReturnKnnParents() {
     assertQ(
         req(
-            "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(a c)"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='6']",
@@ -248,11 +258,11 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
       parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
     assertQ(
         req(
-            "fq", "parent_s:(a c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector_byte topK=3 preFilter=child_s:m}" + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "children.q", "{!knn f=vector_byte topK=3 preFilter=child_s:m childrenOf=$someParents allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(a c)"),
         "//*[@numFound='2']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[2]/str[@name='id'][.='2']");
@@ -263,12 +273,11 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
       parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
     assertQ(
         req(
-            "fq", "parent_s:(b c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score,vectors,vector,[child limit=2 fl=vector childFilter=$all_children]",
-            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
+            "fl", "id,score,vectors,vector,[child limit=2 fl=vector]",
+            "children.q", "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}" + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
-            "all_children", "child_s:[* TO *]"),
+            "someParents", "parent_s:(a c)"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='10.0']",
@@ -279,12 +288,12 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[2][.='1.0']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[3][.='1.0']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[4][.='1.0']",
-        "//result/doc[2]/str[@name='id'][.='7']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='13.0']",
+        "//result/doc[2]/str[@name='id'][.='6']",
+        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='16.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[1][.='12.0']",
+        "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[1][.='15.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[2][.='1.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[3][.='1.0']",
         "//result/doc[2]/arr[@name='vectors'][1]/doc[2]/arr[@name='vector']/float[4][.='1.0']",
@@ -301,14 +310,14 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
 
   @Test
   public void
-      parentRetrievalFloat_topKWithChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild() {
     assertQ(
         req(
-            "fq", "parent_s:(b c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score,vectors,vector,[child fl=vector]",
-            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "fl", "id,score,vectors,vector,[child fl=vector childFilter=$children.q]",
+            "children.q", "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(b c)"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='8.0']",
@@ -327,46 +336,18 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']");
   }
 
-  @Test
-  public void
-      parentRetrievalFloat_topKWithOnlyChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
-    assertQ(
-        req(
-            "fq", "parent_s:(b c)",
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,vectors,vector,[child fl=vector]",
-            "children.q", "{!knn f=vector topK=3}" + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
-        "//result[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='8']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='8.0']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
-        "//result/doc[2]/str[@name='id'][.='7']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='11.0']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']",
-        "//result/doc[3]/str[@name='id'][.='2']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[1][.='26.0']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[2][.='1.0']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[3][.='1.0']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector']/float[4][.='1.0']");
-  }
 
   @Test
   public void
-      parentRetrievalByte_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
+      parentRetrievalByte_topKWithChildTransformer_shouldReturnAllChildren() {
     assertQ(
         req(
-            "fq", "parent_s:(b c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl",
-                "id,score,vectors,vector_byte,[child limit=2 fl=vector_byte childFilter=$all_children]",
-            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
+                "id,score,vectors,vector_byte,[child limit=2 fl=vector_byte]",
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}" + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
-            "all_children", "child_s:[* TO *]"),
+            "someParents", "parent_s:(b c)"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='10']",
@@ -398,43 +379,14 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void
-      parentRetrievalByte_topKWithChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
+  public void parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild() {
     assertQ(
         req(
-            "fq", "parent_s:(b c)",
             "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score,vectors,vector_byte,[child fl=vector_byte]",
-            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
-        "//result[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='8']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='8']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
-        "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
-        "//result/doc[2]/str[@name='id'][.='7']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='11']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
-        "//result/doc[2]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']",
-        "//result/doc[3]/str[@name='id'][.='2']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='26']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[2][.='1']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[3][.='1']",
-        "//result/doc[3]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[4][.='1']");
-  }
-
-  @Test
-  public void
-      parentRetrievalByte_topKWithOnlyChildTransformerWithNoFilter_shouldUseBestChildrenVectorTransformerFilter() {
-    assertQ(
-        req(
-            "fq", "parent_s:(b c)",
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,vectors,vector_byte,[child fl=vector_byte]",
-            "children.q", "{!knn f=vector_byte topK=3}" + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "fl", "id,score,vectors,vector_byte,[child fl=vector_byte childFilter=$children.q]",
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]",
+            "someParents", "parent_s:(b c)"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='8']",
         "//result/doc[1]/arr[@name='vectors'][1]/doc[1]/arr[@name='vector_byte']/int[1][.='8']",
