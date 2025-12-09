@@ -24,7 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;

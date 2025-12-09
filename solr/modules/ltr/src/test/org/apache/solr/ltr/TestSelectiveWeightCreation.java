@@ -38,7 +38,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.tests.index.RandomIndexWriter;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.model.LTRScoringModel;

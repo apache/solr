@@ -29,7 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -53,7 +53,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 

@@ -201,7 +201,7 @@
          IndexWriter to write its info stream to solr's log. By default,
          this is enabled here, and controlled through log4j2.xml
       -->
-     <infoStream>true</infoStream>
+      <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
   <!-- The default high-performance update handler -->

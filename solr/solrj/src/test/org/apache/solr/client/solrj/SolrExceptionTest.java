@@ -22,6 +22,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.junit.Test;
 
 /**

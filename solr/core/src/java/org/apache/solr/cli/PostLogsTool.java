@@ -38,7 +38,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -107,8 +107,8 @@ public class PostLogsTool extends ToolBase {
               + "] must point to a particular collection but appears to be a Solr base URL");
     }
 
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
+    var builder =
+        new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(baseUrl))
             .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(baseUrl))
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
