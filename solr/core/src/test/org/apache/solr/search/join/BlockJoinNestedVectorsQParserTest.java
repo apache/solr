@@ -135,6 +135,24 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void parentRetrieval_knnChildrenDiversifyingWithNoAllParents_shouldThrowException() {
+    assertQEx(
+        "When running a diversifying children KNN query, 'allParents' parameter is required",
+        req(
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id,score",
+            "children.q",
+            "{!knn f=vector topK=3 childrenOf=$someParents}" + FLOAT_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]",
+            "someParents",
+            "parent_s:(a c)"),
+        400);
+  }
+
+  @Test
   public void childrenRetrievalFloat_filteringByParentMetadata_shouldReturnKnnChildren() {
     assertQ(
         req(
@@ -174,9 +192,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q",
-                "{!knn f=vector topK=3 childrenOf=$allParents allParents=$allParents}"
-                    + FLOAT_QUERY_VECTOR,
+            "children.q", "{!knn f=vector topK=3 allParents=$allParents}" + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
@@ -236,9 +252,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q",
-                "{!knn f=vector_byte topK=3 childrenOf=$allParents allParents=$allParents}"
-                    + BYTE_QUERY_VECTOR,
+            "children.q", "{!knn f=vector_byte topK=3 allParents=$allParents}" + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",

@@ -125,15 +125,24 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
     // check for parent diversification logic...
     final String parentsFilterQuery = localParams.get(CHILDREN_OF);
-    if (null != parentsFilterQuery) {
-      final String allParentsQuery = localParams.get(ALL_PARENTS);
+    final String allParentsQuery = localParams.get(ALL_PARENTS);
+
+    boolean isDiversifyingChildrenKnnQuery = null != parentsFilterQuery || null != allParentsQuery;
+    if (isDiversifyingChildrenKnnQuery) {
+      if (null == allParentsQuery) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "When running a diversifying children KNN query, 'allParents' parameter is required");
+      }
+      final DenseVectorParser vectorBuilder =
+          denseVectorType.getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
+      final VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
+
       final BitSetProducer allParentsBitSet =
           BlockJoinParentQParser.getCachedBitSetProducer(
               req, subQuery(allParentsQuery, null).getQuery());
       final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQuery);
-      final DenseVectorParser vectorBuilder =
-          denseVectorType.getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
-      final VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
+
       Query acceptedChildren =
           getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
       switch (vectorEncoding) {
@@ -165,9 +174,11 @@ public class KnnQParser extends AbstractVectorQParserBase {
   }
 
   private BooleanQuery getParentsFilter(String parentsFilterQuery) throws SyntaxError {
-    final Query parentsFilter = subQuery(parentsFilterQuery, null).getQuery();
     BooleanQuery.Builder acceptedParentsBuilder = new BooleanQuery.Builder();
-    acceptedParentsBuilder.add(parentsFilter, BooleanClause.Occur.FILTER);
+    if (parentsFilterQuery != null) {
+      final Query parentsFilter = subQuery(parentsFilterQuery, null).getQuery();
+      acceptedParentsBuilder.add(parentsFilter, BooleanClause.Occur.FILTER);
+    }
     BooleanQuery acceptedParents = acceptedParentsBuilder.build();
     return acceptedParents;
   }
