@@ -31,7 +31,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.join.BlockJoinParentQParser;
 import org.apache.solr.util.vector.DenseVectorParser;
@@ -128,16 +127,23 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final String parentsFilterQuery = localParams.get(CHILDREN_OF);
     if (null != parentsFilterQuery) {
       final String allParentsQuery = localParams.get(ALL_PARENTS);
-      final BitSetProducer allParentsBitSet = BlockJoinParentQParser.getCachedBitSetProducer(req, subQuery(allParentsQuery, null).getQuery());
+      final BitSetProducer allParentsBitSet =
+          BlockJoinParentQParser.getCachedBitSetProducer(
+              req, subQuery(allParentsQuery, null).getQuery());
       final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQuery);
       final DenseVectorParser vectorBuilder =
           denseVectorType.getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
       final VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
-      Query acceptedChildren = getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
+      Query acceptedChildren =
+          getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
       switch (vectorEncoding) {
         case FLOAT32:
           return new DiversifyingChildrenFloatKnnVectorQuery(
-              vectorField, vectorBuilder.getFloatVector(), acceptedChildren, topK, allParentsBitSet);
+              vectorField,
+              vectorBuilder.getFloatVector(),
+              acceptedChildren,
+              topK,
+              allParentsBitSet);
         case BYTE:
           return new DiversifyingChildrenByteKnnVectorQuery(
               vectorField, vectorBuilder.getByteVector(), acceptedChildren, topK, allParentsBitSet);
@@ -145,7 +151,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected encoding. Vector Encoding: " + vectorEncoding);
-      }}
+      }
+    }
 
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(),

@@ -190,13 +190,13 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 ====
 It is quite common to encode the original text of a document into multiple nested vectors.
 
-This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and the vector representation.
+This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and its vector representation.
 
-Solr doesn't need to have denormalised nested documents, you can still retrieve the children paragraphs by knn vector search and prefilter them using parent level metadata.
+You don't need the redundant parent metadata in each child document (the traditional flat approach), you can still retrieve the children paragraphs by knn vector search, prefilter them using parent level metadata and finally retrieve only K parents if needed.
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'fq={!child of=$block_mask filters=$parentsFilter}&q={!knn f=childVectorField topK=5}[1.0,2.5,3.0...]' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/" parentsFilter="name_s:pen"})'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'fq={!child of=$block_mask filters=$parentsFilter}&q={!knn f=childVectorField topK=5 childrenOf=$someParents allParents=$allParents}[1.0,2.5,3.0...]' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/" parentsFilter="name_s:pen"})'
 ----
 ====
 
@@ -281,24 +281,6 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 Note that in the above example, the `/` characters in the `\_nest_path_` were "double escaped" in the `which` parameter, for the <<double-escaping-nest-path-slashes,same reasons discussed above>> regarding the `{!child} pasers `of` parameter.
 ====
 
-[#vector-search-parent
-[CAUTION]
-.Vector search - children are nested documents with a vector field
-====
-It is quite common to encode the original text of a document into multiple nested vectors.
-
-This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and the vector representation.
-
-You can run knn vector search on children documents (with potential prefiltering on children and/or parents metadata) and retrieve top-K parents.
-
-N.B. Solr ensures that the knn search for children keeps track of parent metadata filtering, guaranteeing top-k parents retrieval
-
-[source,text]
-----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'fq=parentField:term&q={!parent which=$block_mask score=max v=$children.q}' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/" children.q="{!knn f=vector topK=3 preFilter=childField:term}"[1.0,2.5,3.0...]})'
-----
-====
-
 === Combining Block Join Query Parsers with Child Doc Transformer
 
 The combination of these two parsers with the `[child]` transformer enables seamless creation of very powerful queries.
@@ -329,4 +311,44 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
             "content_t":"...",
             "_version_":1676585794196733952}]}]
   }}
+----
+
+=== Nested Vectors search through Block Join Query Parsers and Child Doc Transformer
+
+
+
+When dealing with vector search a possible use case involves having multiple vectors for a single document.
+
+This in Solr can be implemented with the block join and nested documents.
+Each nested document has a vector field (among other metadata)
+
+This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and the vector representation.
+
+You can run knn vector search on children documents (with potential prefiltering on children and/or parents metadata) and retrieve top-K parents.
+
+N.B. Solr ensures that the knn search for children keeps track of parent metadata filtering, guaranteeing top-k parents retrieval
+
+An example:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}&
+children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]&
+allParents=*:* -_nest_path_:*&
+someParents=color_s:RED&
+fl=id,score,vectors,vector,[child fl=vector childFilter=$children.q]
+
+The search results retrieved are the top k=3 parents of the nearest children to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
+
+Let's decompose the query to better explain it:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}
+
+This query returns the parent solr documents using the block join parent query parser on a query that filters on the children documents ('children.q'). For each child retrieved, the parent is returned.
+
+[source,text]
+children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+
+This query is a knn vector search on the children documents.
+Specifically it retrieves the top k=3 children documents, filtered by 'someParent' metadata.
+This query ensures only one child per parent is retrieved.
+
 ----
