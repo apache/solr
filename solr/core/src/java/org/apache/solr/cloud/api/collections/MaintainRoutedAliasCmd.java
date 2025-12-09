@@ -109,7 +109,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     // ---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on
@@ -146,7 +147,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
                     () -> {
                       try {
                         deleteTargetCollection(
-                            clusterState, results, aliasName, aliasesManager, action);
+                            clusterState, results, aliasName, aliasesManager, action, lockId);
                       } catch (Exception e) {
                         log.warn(
                             "Deletion of {} by {} {} failed (this might be ok if two clients were",
@@ -161,7 +162,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
         case ENSURE_EXISTS:
           if (!exists) {
             addTargetCollection(
-                clusterState, results, aliasName, aliasesManager, aliasMetadata, action);
+                clusterState, results, aliasName, aliasesManager, aliasMetadata, action, lockId);
           } else {
             // check that the collection is properly integrated into the alias (see
             // TimeRoutedAliasUpdateProcessorTest.java:141). Presently we need to ensure inclusion
@@ -194,11 +195,12 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       String aliasName,
       ZkStateReader.AliasesManager aliasesManager,
       Map<String, String> aliasMetadata,
-      RoutedAlias.Action action)
+      RoutedAlias.Action action,
+      String lockId)
       throws Exception {
     NamedList<Object> createResults =
         createCollectionAndWait(
-            clusterState, aliasName, aliasMetadata, action.targetCollection, ccc);
+            clusterState, aliasName, aliasMetadata, action.targetCollection, lockId, ccc);
     if (createResults != null) {
       results.add("create", createResults);
     }
@@ -210,7 +212,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       NamedList<Object> results,
       String aliasName,
       ZkStateReader.AliasesManager aliasesManager,
-      RoutedAlias.Action action)
+      RoutedAlias.Action action,
+      String lockId)
       throws Exception {
     Map<String, Object> delProps = new HashMap<>();
     delProps.put(
@@ -219,6 +222,6 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
             () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));
     delProps.put(NAME, action.targetCollection);
     ZkNodeProps messageDelete = new ZkNodeProps(delProps);
-    new DeleteCollectionCmd(ccc).call(clusterState, messageDelete, results);
+    new DeleteCollectionCmd(ccc).call(clusterState, messageDelete, lockId, results);
   }
 }

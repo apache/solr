@@ -169,7 +169,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
 
     log.debug("*** called: {}", message);
@@ -299,7 +300,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 CollectionParams.CollectionAction.DELETE.toLower(),
                 CommonParams.NAME,
                 chkCollection);
-        new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+        new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
         CollectionHandlingUtils.checkResults(
             "deleting old checkpoint collection " + chkCollection, cmdResults, true);
       }
@@ -338,7 +339,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
-      new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      new CreateCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
       createdTarget = true;
       CollectionHandlingUtils.checkResults(
           "creating target collection " + targetCollection, cmdResults, true);
@@ -353,7 +354,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               CollectionAdminParams.COLL_CONF, "_default",
               CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       cmdResults = new NamedList<>();
-      new CreateCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      new CreateCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
       CollectionHandlingUtils.checkResults(
           "creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
@@ -480,7 +481,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.debug("- setting up alias from {} to {}", extCollection, targetCollection);
         cmd = new ZkNodeProps(CommonParams.NAME, extCollection, "collections", targetCollection);
         cmdResults = new NamedList<>();
-        new CreateAliasCmd(ccc).call(clusterState, cmd, cmdResults);
+        new CreateAliasCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
         CollectionHandlingUtils.checkResults(
             "setting up alias " + extCollection + " -> " + targetCollection, cmdResults, true);
         reindexingState.put("alias", extCollection + " -> " + targetCollection);
@@ -505,7 +506,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               CommonParams.NAME,
               chkCollection);
       cmdResults = new NamedList<>();
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
       CollectionHandlingUtils.checkResults(
           "deleting checkpoint collection " + chkCollection, cmdResults, true);
 
@@ -521,7 +522,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 FOLLOW_ALIASES,
                 "false");
         cmdResults = new NamedList<>();
-        new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+        new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
         CollectionHandlingUtils.checkResults(
             "deleting source collection " + collection, cmdResults, true);
       } else {
@@ -580,7 +581,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             chkCollection,
             daemonReplica,
             targetCollection,
-            createdTarget);
+            createdTarget,
+            lockId);
         if (exc != null) {
           results.add("error", exc.toString());
         }
@@ -874,7 +876,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       String chkCollection,
       Replica daemonReplica,
       String daemonName,
-      boolean createdTarget)
+      boolean createdTarget,
+      String lockId)
       throws Exception {
     log.info("## Cleaning up after abort or error");
     // 1. kill the daemon
@@ -898,7 +901,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               targetCollection,
               FOLLOW_ALIASES,
               "false");
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
       CollectionHandlingUtils.checkResults(
           "CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
     }
@@ -914,7 +917,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
               FOLLOW_ALIASES,
               "false");
       cmdResults = new NamedList<>();
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, cmdResults);
+      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
       CollectionHandlingUtils.checkResults(
           "CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
     }

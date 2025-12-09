@@ -22,6 +22,7 @@ import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.solr.cloud.OverseerMessageHandler.Lock;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CollectionParams.LockLevel;
@@ -38,18 +39,33 @@ public class LockTree {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Node root = new Node(null, LockLevel.CLUSTER, null);
 
+  public final Map<String, Lock> allLocks = new HashMap<>();
+
   private class LockImpl implements Lock {
     final Node node;
+    final String id;
 
     LockImpl(Node node) {
       this.node = node;
+      this.id = UUID.randomUUID().toString();
     }
 
     @Override
     public void unlock() {
       synchronized (LockTree.this) {
         node.unlock(this);
+        allLocks.remove(id);
       }
+    }
+
+    @Override
+    public String id() {
+      return id;
+    }
+
+    @Override
+    public boolean validateSubpath(int lockLevel, List<String> path) {
+      return node.validateSubpath(lockLevel, path);
     }
 
     @Override
@@ -71,12 +87,33 @@ public class LockTree {
   public class Session {
     private SessionNode root = new SessionNode(LockLevel.CLUSTER);
 
-    public Lock lock(CollectionParams.CollectionAction action, List<String> path) {
+    public Lock lock(
+        CollectionParams.CollectionAction action, List<String> path, String callingLockId) {
       if (action.lockLevel == LockLevel.NONE) return FREELOCK;
+      log.info("Calling lock level: {}", callingLockId);
+      Node startingNode = LockTree.this.root;
+      SessionNode startingSession = root;
+
+      // If a callingLockId was passed in, validate it with the current lock path, and only start
+      // locking below the calling lock
+      Lock callingLock = callingLockId != null ? allLocks.get(callingLockId) : null;
+      boolean ignoreCallingLock = false;
+      if (callingLock != null && callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
+        startingNode = ((LockImpl) callingLock).node;
+        startingSession = startingSession.find(startingNode.level.getHeight(), path);
+        if (startingSession == null) {
+          startingSession = root;
+        }
+        ignoreCallingLock = true;
+      }
       synchronized (LockTree.this) {
-        if (root.isBusy(action.lockLevel, path)) return null;
-        Lock lockObject = LockTree.this.root.lock(action.lockLevel, path);
-        if (lockObject == null) root.markBusy(action.lockLevel, path);
+        if (startingSession.isBusy(action.lockLevel, path)) return null;
+        Lock lockObject = startingNode.lock(action.lockLevel, path, ignoreCallingLock);
+        if (lockObject == null) {
+          startingSession.markBusy(action.lockLevel, path);
+        } else {
+          allLocks.put(lockObject.id(), lockObject);
+        }
         return lockObject;
       }
     }
@@ -125,6 +162,18 @@ public class LockTree {
         return false;
       }
     }
+
+    SessionNode find(int lockLevel, List<String> path) {
+      if (level.getHeight() == lockLevel) {
+        return this;
+      } else if (level.getHeight() < lockLevel
+          && kids != null
+          && kids.containsKey(path.get(level.getHeight()))) {
+        return kids.get(path.get(level.getHeight())).find(lockLevel, path);
+      } else {
+        return null;
+      }
+    }
   }
 
   public Session getSession() {
@@ -158,8 +207,9 @@ public class LockTree {
       }
     }
 
-    Lock lock(LockLevel lockLevel, List<String> path) {
-      if (myLock != null) return null; // I'm already locked. no need to go any further
+    Lock lock(LockLevel lockLevel, List<String> path, boolean ignoreCurrentLock) {
+      if (myLock != null && !ignoreCurrentLock)
+        return null; // I'm already locked. no need to go any further
       if (lockLevel == level) {
         // lock is supposed to be acquired at this level
         // If I am locked or any of my children or grandchildren are locked
@@ -171,8 +221,14 @@ public class LockTree {
         Node child = children.get(childName);
         if (child == null)
           children.put(childName, child = new Node(childName, level.getChild(), this));
-        return child.lock(lockLevel, path);
+        return child.lock(lockLevel, path, false);
       }
+    }
+
+    boolean validateSubpath(int lockLevel, List<String> path) {
+      return level.getHeight() < lockLevel
+          && (level.getHeight() == 0 || name.equals(path.get(level.getHeight() - 1)))
+          && (mom == null || mom.validateSubpath(lockLevel, path));
     }
 
     ArrayDeque<String> constructPath(ArrayDeque<String> collect) {
@@ -182,5 +238,20 @@ public class LockTree {
     }
   }
 
-  static final Lock FREELOCK = () -> {};
+  static final String FREELOCK_ID = "-1";
+  static final Lock FREELOCK =
+      new Lock() {
+        @Override
+        public void unlock() {}
+
+        @Override
+        public String id() {
+          return FREELOCK_ID;
+        }
+
+        @Override
+        public boolean validateSubpath(int lockLevel, List<String> path) {
+          return false;
+        }
+      };
 }

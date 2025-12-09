@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.util.List;
 import org.apache.solr.common.cloud.ZkNodeProps;
 
 /** Interface for processing messages received by an {@link OverseerTaskProcessor} */
@@ -26,7 +27,7 @@ public interface OverseerMessageHandler {
    * @param operation the operation to process
    * @return response
    */
-  OverseerSolrResponse processMessage(ZkNodeProps message, String operation);
+  OverseerSolrResponse processMessage(ZkNodeProps message, String operation, Lock lock);
 
   /**
    * @return the name of the OverseerMessageHandler
@@ -41,6 +42,10 @@ public interface OverseerMessageHandler {
 
   interface Lock {
     void unlock();
+
+    String id();
+
+    boolean validateSubpath(int lockLevel, List<String> path);
   }
 
   /**

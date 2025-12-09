@@ -24,5 +24,11 @@ public class InstallShardDataRequestBody {
 
   @JsonProperty public String repository;
 
+  @JsonProperty public String name;
+
+  @JsonProperty public String shardBackupId;
+
   @JsonProperty public String async;
+
+  @JsonProperty public String callingLockId;
 }
