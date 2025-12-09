@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SafeXMLParsing;
 import org.apache.tika.parser.ParseContext;
+import org.apache.tika.parser.pdf.PDFParserConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -41,13 +42,18 @@ public class ParseContextConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<Class<?>, Object> entries = new HashMap<>();
+  // Track explicitly configured properties to avoid overriding user settings
+  private boolean extractAcroFormContentExplicitlySet = false;
 
   /** Creates an empty Config without any settings (used as placeholder). */
-  public ParseContextConfig() {}
+  public ParseContextConfig() {
+    // Secure defaults will be applied in create() method
+  }
 
   /** Creates a {@code ParseContextConfig} from the given XML DOM element. */
   public ParseContextConfig(SolrResourceLoader resourceLoader, Element element) throws Exception {
     extract(element, resourceLoader);
+    // Secure defaults will be applied in create() method
   }
 
   /**
@@ -117,6 +123,12 @@ public class ParseContextConfig {
         }
         method.invoke(
             instance, getValueFromString(propertyDescriptor.getPropertyType(), propertyValue));
+
+        // Track if extractAcroFormContent was explicitly set
+        if ("org.apache.tika.parser.pdf.PDFParserConfig".equals(className)
+            && "extractAcroFormContent".equals(propertyName)) {
+          extractAcroFormContentExplicitlySet = true;
+        }
       }
 
       entries.put(interfaceClass, instance);
@@ -136,8 +148,33 @@ public class ParseContextConfig {
   public ParseContext create() {
     final ParseContext result = new ParseContext();
 
+    // Apply user-configured entries first
     for (Map.Entry<Class<?>, Object> entry : entries.entrySet()) {
       result.set((Class) entry.getKey(), entry.getValue());
+    }
+
+    // Apply secure defaults for PDF parsing to mitigate CVE-2025-54988
+    PDFParserConfig pdfConfig = result.get(PDFParserConfig.class);
+
+    if (pdfConfig == null) {
+      // No user config - create secure defaults
+      pdfConfig = new PDFParserConfig();
+      pdfConfig.setExtractAcroFormContent(false);
+      pdfConfig.setIfXFAExtractOnlyXFA(false);
+      result.set(PDFParserConfig.class, pdfConfig);
+      log.debug("Applied secure PDF parsing defaults: extractAcroFormContent=false (CVE-2025-54988 mitigation)");
+    } else if (!extractAcroFormContentExplicitlySet) {
+      // User provided PDFParserConfig but did NOT explicitly set extractAcroFormContent
+      // Apply secure default to protect against CVE-2025-54988
+      pdfConfig.setExtractAcroFormContent(false);
+      pdfConfig.setIfXFAExtractOnlyXFA(false);
+      log.debug("Applied secure default extractAcroFormContent=false for CVE-2025-54988 mitigation");
+    } else {
+      // User explicitly set extractAcroFormContent - respect their choice but warn if vulnerable
+      if (pdfConfig.getExtractAcroFormContent()) {
+        log.warn("extractAcroFormContent=true is explicitly set, which may be vulnerable to CVE-2025-54988 XXE attacks. "
+            + "Ensure you trust all PDF sources or disable XFA parsing.");
+      }
     }
 
     return result;
