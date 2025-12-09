@@ -42,18 +42,14 @@ public class ParseContextConfig {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<Class<?>, Object> entries = new HashMap<>();
-  // Track explicitly configured properties to avoid overriding user settings
   private boolean extractAcroFormContentExplicitlySet = false;
 
   /** Creates an empty Config without any settings (used as placeholder). */
-  public ParseContextConfig() {
-    // Secure defaults will be applied in create() method
-  }
+  public ParseContextConfig() {}
 
   /** Creates a {@code ParseContextConfig} from the given XML DOM element. */
   public ParseContextConfig(SolrResourceLoader resourceLoader, Element element) throws Exception {
     extract(element, resourceLoader);
-    // Secure defaults will be applied in create() method
   }
 
   /**
