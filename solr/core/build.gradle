@@ -94,7 +94,6 @@ dependencies {
 
   // Collections & lang utilities
   implementation libs.google.guava
-  implementation libs.apache.commons.lang3
   implementation libs.apache.commons.math3
   implementation libs.commonsio.commonsio
   implementation libs.carrotsearch.hppc
