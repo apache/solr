@@ -17,4 +17,19 @@
   -->
 <properties>
   <service-loader initializableProblemHandler="ignore"/>
+  <parsers>
+    <!--
+      Security hardening: Disable XFA parsing in PDFs to mitigate CVE-2025-54988.
+      This prevents XXE (XML External Entity) injection attacks via crafted XFA content.
+    -->
+    <parser class="org.apache.tika.parser.DefaultParser">
+      <parser-exclude class="org.apache.tika.parser.pdf.PDFParser"/>
+    </parser>
+    <parser class="org.apache.tika.parser.pdf.PDFParser">
+      <params>
+        <param name="extractAcroFormContent" type="bool">false</param>
+        <param name="ifXFAExtractOnlyXFA" type="bool">false</param>
+      </params>
+    </parser>
+  </parsers>
 </properties>
