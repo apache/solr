@@ -505,9 +505,6 @@ Here is an example of a `knn` search using a `filteredSearchThreshold`:
 |===
 |Optional |Default: none
 |===
-+
-A query that enables the Lucene’s implementation of {lucene-javadocs}/join/org/apache/lucene/search/join/DiversifyingChildrenFloatKnnVectorQuery.html[Diversifying Knn Query] .
-+
 This parameter is meant to be a filter query on parent document metadata.
 The knn search returns the top-k nearest children documents that satify the filter on the parent.
 +
