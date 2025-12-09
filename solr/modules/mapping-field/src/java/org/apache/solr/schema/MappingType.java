@@ -54,8 +54,8 @@ import org.slf4j.LoggerFactory;
  * supported for keys and values.
  *
  * <p>Define the mapping value type using {@code subFieldSuffix} or {@code subFieldType}, as for any
- * subclass of {@link AbstractSubTypeFieldType}. The key type is the first found {@link StrField} by default,
- * or it can be defined using {@code keyFieldSuffix} or {@code keyFieldType}.
+ * subclass of {@link AbstractSubTypeFieldType}. The key type is the first found {@link StrField} by
+ * default, or it can be defined using {@code keyFieldSuffix} or {@code keyFieldType}.
  *
  * <p>Expected input document would have a CSV field value:<br>
  * {@code <field name="my_mapping"­>"key","value"</field­>}

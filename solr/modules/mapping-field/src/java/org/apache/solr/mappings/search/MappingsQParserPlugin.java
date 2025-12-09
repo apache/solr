@@ -17,7 +17,6 @@
 package org.apache.solr.mappings.search;
 
 import java.lang.invoke.MethodHandles;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -28,8 +27,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.MappingType;
-import org.apache.solr.schema.NumberType;
-import org.apache.solr.schema.NumericValueFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
@@ -74,7 +71,9 @@ public class MappingsQParserPlugin extends QParserPlugin {
 
     @Override
     public Query parse() throws SyntaxError {
-      log.debug("Parse local params: {}", localParams.toQueryString());
+      if (log.isDebugEnabled()) {
+        log.debug("Parse local params: {}", localParams.toQueryString());
+      }
       String searchField = localParams.get(FIELD_PARAM);
       String keySearch = localParams.get(KEY_PARAM);
       String valueSearch = localParams.get(VALUE_PARAM);
@@ -112,7 +111,9 @@ public class MappingsQParserPlugin extends QParserPlugin {
       addSubQuery(boolQuery, BooleanClause.Occur.MUST, mappingType.getValueField(sf), valueSearch);
 
       BooleanQuery query = boolQuery.build();
-      log.debug("Parsed query: {}", query.toString());
+      if (log.isDebugEnabled()) {
+        log.debug("Parsed query: {}", query.toString());
+      }
       return query;
     }
 
@@ -139,7 +140,9 @@ public class MappingsQParserPlugin extends QParserPlugin {
               });
 
       BooleanQuery query = boolQuery.build();
-      log.debug("Parsed query: {}", query.toString());
+      if (log.isDebugEnabled()) {
+        log.debug("Parsed query: {}", query.toString());
+      }
       return query;
     }
 
@@ -149,22 +152,32 @@ public class MappingsQParserPlugin extends QParserPlugin {
         BooleanClause.Occur occur,
         SchemaField field,
         String search) {
-      log.info("Create sub-query for: {}", search);
+      if (log.isDebugEnabled()) {
+        log.debug("Create sub-query for: {}", search);
+      }
       if (search != null) {
         if (search.equals("*")) {
           Query existQ = field.getType().getExistenceQuery(this, field);
           boolQuery.add(existQ, occur);
           return;
-        } else{
+        } else {
           if (search.startsWith("[") && search.endsWith("]")) {
             String[] parts = search.substring(1, search.length() - 1).split(" TO ");
             String min = parts[0].trim();
             String max = parts[1].trim();
-            Query rangeQ = field.getType().getRangeQuery(this, field, "*".equals(min) ? null: min, 
-                "*".equals(max) ? null: max, true, true);
+            Query rangeQ =
+                field
+                    .getType()
+                    .getRangeQuery(
+                        this,
+                        field,
+                        "*".equals(min) ? null : min,
+                        "*".equals(max) ? null : max,
+                        true,
+                        true);
             boolQuery.add(rangeQ, occur);
             return;
-          } else if (search.contains("*") || search.contains("?")){
+          } else if (search.contains("*") || search.contains("?")) {
             Query termQ = new WildcardQuery(new Term(field.getName(), search));
             boolQuery.add(termQ, occur);
             return;
@@ -172,7 +185,7 @@ public class MappingsQParserPlugin extends QParserPlugin {
             Query termQ = field.getType().getFieldTermQuery(this, field, search);
             boolQuery.add(termQ, occur);
           }
-        } 
+        }
       }
     }
   }

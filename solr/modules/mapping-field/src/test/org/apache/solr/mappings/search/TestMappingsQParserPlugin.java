@@ -18,7 +18,6 @@ package org.apache.solr.mappings.search;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.solr.SolrTestCaseJ4;
@@ -67,7 +66,9 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
 
     try {
       Query query = parser.parse();
-      log.info(query.toString());
+      if (log.isInfoEnabled()) {
+        log.info(query.toString());
+      }
       Assert.assertEquals(
           "+FieldExistsQuery [field=multi_mapping] +multi_mapping_key___string:key_1 +multi_mapping_value___string:{* TO *}",
           query.toString());
@@ -97,7 +98,9 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
 
     try {
       Query query = parser.parse();
-      log.info(query.toString());
+      if (log.isInfoEnabled()) {
+        log.info(query.toString());
+      }
       Assert.assertEquals(
           "+FieldExistsQuery [field=float_mapping] +float_mapping_value___float:[12.34 TO 12.34]",
           query.toString());
@@ -127,7 +130,9 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
 
     try {
       Query query = parser.parse();
-      log.info(query.toString());
+      if (log.isInfoEnabled()) {
+        log.info(query.toString());
+      }
       Assert.assertEquals(
           "multi_mapping_key___string:2025-12-08T00:00:00Z single_mapping_key___string:2025-12-08T00:00:00Z float_mapping_key___string:2025-12-08T00:00:00Z date_str_mapping_key___date:[1765152000000 TO 1765152000000]",
           query.toString());
@@ -154,7 +159,9 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
             req("q", queryStr.trim(), "indent", "true"),
             "//doc/mapping[@name=\"single_mapping\"]/str[@name=\"key\"][text()='key_1']",
             "//result[@name=\"response\"][@numFound=\"1\"]");
-    log.info("Parsed query response: {}", response);
+    if (log.isInfoEnabled()) {
+      log.info("Parsed query response: {}", response);
+    }
   }
 
   @Test
@@ -181,7 +188,9 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
             "/response/docs/[0]/float_mapping/value==\"30.0\"",
             "/response/docs/[1]/float_mapping/value==\"40.0\"",
             "/response/docs/[2]/float_mapping/value==\"50.0\"");
-    log.info("Value range query response: {}", response);
+    if (log.isInfoEnabled()) {
+      log.info("Value range query response: {}", response);
+    }
   }
 
   @Test
@@ -202,8 +211,10 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
         assertXmlQ(
             req("q", queryStr1.trim(), "indent", "true"),
             "//result[@name=\"response\"][@numFound=\"5\"]");
-    log.info("Wildcard query response 1: {}", response1);
-    
+    if (log.isInfoEnabled()) {
+      log.info("Wildcard query response 1: {}", response1);
+    }
+
     // wildcard query with quotes
     String queryStr2 = """
         {!mappings f=single_mapping key="key?1"}
@@ -219,7 +230,8 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
         assertXmlQ(
             req("q", queryStr2.trim(), "indent", "true"),
             "//result[@name=\"response\"][@numFound=\"1\"]");
-    log.info("Wildcard query response 2: {}", response2);
-    
+    if (log.isInfoEnabled()) {
+      log.info("Wildcard query response 2: {}", response2);
+    }
   }
 }

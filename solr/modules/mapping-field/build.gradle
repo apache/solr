@@ -20,20 +20,13 @@ apply plugin: 'java-library'
 description = 'mapping-field plugin'
 
 dependencies {
-  //implementation(libs.cuvs.lucene) {
-  //  changing = true
-  //}
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core
-  //implementation libs.apache.lucene.backward.codecs
   implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')
-  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
-  //testImplementation libs.commonsio.commonsio
-
-  //permitUnusedDeclared libs.apache.lucene.backward.codecs
 }
 
