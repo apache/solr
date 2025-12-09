@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -190,7 +189,6 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
    */
   @Override
   public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
-    return new ConstantScoreQuery(
-        DoublePoint.newRangeQuery(field.getName(), Double.NEGATIVE_INFINITY, Double.NaN));
+    return DoublePoint.newRangeQuery(field.getName(), Double.NEGATIVE_INFINITY, Double.NaN);
   }
 }

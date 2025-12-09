@@ -1837,17 +1837,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                 createdQuery instanceof FieldExistsQuery);
           } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE
               || schemaField.getType().getNumberType() == NumberType.FLOAT) {
-            assertTrue(
-                "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
-                    + query
-                    + "\".",
-                createdQuery instanceof ConstantScoreQuery);
             if (schemaField.getType().isPointField()) {
               assertTrue(
                   "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
                       + query
                       + "\".",
-                  ((ConstantScoreQuery) createdQuery).getQuery() instanceof PointRangeQuery);
+                  createdQuery instanceof PointRangeQuery);
               if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
                 assertEquals(
                     "PointField with NaN values must do a range query with an upper bound of NaN (Sorted higher than +Infinity) if the field doesn't have norms or docValues: \""
@@ -1855,9 +1850,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                         + "\".",
                     Double.NaN,
                     DoublePoint.decodeDimension(
-                        ((PointRangeQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                            .getUpperPoint(),
-                        0),
+                        ((PointRangeQuery) createdQuery).getUpperPoint(), 0),
                     0);
               } else {
                 assertEquals(
@@ -1865,13 +1858,15 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                         + query
                         + "\".",
                     Float.NaN,
-                    FloatPoint.decodeDimension(
-                        ((PointRangeQuery) ((ConstantScoreQuery) createdQuery).getQuery())
-                            .getUpperPoint(),
-                        0),
+                    FloatPoint.decodeDimension(((PointRangeQuery) createdQuery).getUpperPoint(), 0),
                     0);
               }
             } else {
+              assertTrue(
+                  "PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
+                      + query
+                      + "\".",
+                  createdQuery instanceof ConstantScoreQuery);
               assertTrue(
                   "NumericField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \""
                       + query

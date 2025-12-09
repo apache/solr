@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -190,7 +189,6 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
    */
   @Override
   public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
-    return new ConstantScoreQuery(
-        FloatPoint.newRangeQuery(field.getName(), Float.NEGATIVE_INFINITY, Float.NaN));
+    return FloatPoint.newRangeQuery(field.getName(), Float.NEGATIVE_INFINITY, Float.NaN);
   }
 }
