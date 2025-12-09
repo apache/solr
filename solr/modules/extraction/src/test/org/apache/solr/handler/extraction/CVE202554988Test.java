@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
@@ -47,22 +46,26 @@ public class CVE202554988Test extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore(
-        "solrconfig.xml", "schema.xml", getFile("extraction/solr/collection1").getParent());
+    initCore("solrconfig.xml", "schema.xml", getFile("extraction/solr/collection1").getParent());
   }
 
   /**
-   * Test that the default Tika configuration prevents XFA parsing and thus mitigates CVE-2025-54988.
+   * Test that the default Tika configuration prevents XFA parsing and thus mitigates
+   * CVE-2025-54988.
    *
    * <p>The default configuration should NOT extract XFA content, preventing XXE attacks.
    */
   @Test
   public void testDefaultConfigPreventsXFAParsing() throws Exception {
     // Load the PDF with XFA/XXE content using hardened default config
-    loadLocal("extraction/pdf-with-xfa-xxe.pdf",
-        "literal.id", "doc-default",
-        "fmap.content", "extractedContent",
-        "uprefix", "ignored_");
+    loadLocal(
+        "extraction/pdf-with-xfa-xxe.pdf",
+        "literal.id",
+        "doc-default",
+        "fmap.content",
+        "extractedContent",
+        "uprefix",
+        "ignored_");
 
     assertU(commit());
 
@@ -70,48 +73,40 @@ public class CVE202554988Test extends SolrTestCaseJ4 {
     assertQ(req("id:doc-default"), "//*[@numFound='1']");
 
     // Verify the document has extractedContent field
-    assertQ(
-        req("id:doc-default"),
-        "//arr[@name='extractedContent']/str"
-    );
+    assertQ(req("id:doc-default"), "//arr[@name='extractedContent']/str");
 
     // Verify that XFA form field names are NOT extracted (proves XFA parsing is disabled)
     // The PDF contains XFA fields named "companyName", "secretData", and "xxeField"
     // These field names should NOT appear when XFA parsing is disabled
-    assertQ(
-        req("id:doc-default AND extractedContent:companyName"),
-        "//*[@numFound='0']"
-    );
+    assertQ(req("id:doc-default AND extractedContent:companyName"), "//*[@numFound='0']");
 
-    assertQ(
-        req("id:doc-default AND extractedContent:secretData"),
-        "//*[@numFound='0']"
-    );
+    assertQ(req("id:doc-default AND extractedContent:secretData"), "//*[@numFound='0']");
 
-    assertQ(
-        req("id:doc-default AND extractedContent:xxeField"),
-        "//*[@numFound='0']"
-    );
+    assertQ(req("id:doc-default AND extractedContent:xxeField"), "//*[@numFound='0']");
   }
-  
+
   /**
    * Test with vulnerable parseContext configuration to demonstrate CVE-2025-54988.
    *
    * <p>This test uses a parseContext configuration that explicitly enables XFA parsing
    * (extractAcroFormContent=true), which was the vulnerable default before the fix.
    *
-   * <p>This test verifies that:
-   * 1. PDFs can still be extracted when XFA parsing is enabled
-   * 2. XFA form field names ARE extracted when extractAcroFormContent=true
-   * 3. This demonstrates the attack vector for CVE-2025-54988
+   * <p>This test verifies that: 1. PDFs can still be extracted when XFA parsing is enabled 2. XFA
+   * form field names ARE extracted when extractAcroFormContent=true 3. This demonstrates the attack
+   * vector for CVE-2025-54988
    */
   @Test
   public void testVulnerableConfigEnablesXFAParsing() throws Exception {
     // Load using the /update/extract/vulnerable handler which has extractAcroFormContent=true
-    loadLocalFromHandler("/update/extract/vulnerable", "extraction/pdf-with-xfa-xxe.pdf",
-        "literal.id", "doc-vulnerable",
-        "fmap.content", "extractedContent",
-        "uprefix", "ignored_");
+    loadLocalFromHandler(
+        "/update/extract/vulnerable",
+        "extraction/pdf-with-xfa-xxe.pdf",
+        "literal.id",
+        "doc-vulnerable",
+        "fmap.content",
+        "extractedContent",
+        "uprefix",
+        "ignored_");
 
     assertU(commit());
 
@@ -121,38 +116,25 @@ public class CVE202554988Test extends SolrTestCaseJ4 {
     // Verify basic PDF content is extracted (the non-XFA text "Test PDF")
     assertQ(
         req("id:doc-vulnerable AND extractedContent:Test AND extractedContent:PDF"),
-        "//*[@numFound='1']"
-    );
+        "//*[@numFound='1']");
 
     // CRITICAL: With extractAcroFormContent=true, XFA field names ARE extracted
     // This proves XFA content is being parsed - the attack vector for CVE-2025-54988
-    assertQ(
-        req("id:doc-vulnerable AND extractedContent:companyName"),
-        "//*[@numFound='1']"
-    );
+    assertQ(req("id:doc-vulnerable AND extractedContent:companyName"), "//*[@numFound='1']");
 
-    assertQ(
-        req("id:doc-vulnerable AND extractedContent:secretData"),
-        "//*[@numFound='1']"
-    );
+    assertQ(req("id:doc-vulnerable AND extractedContent:secretData"), "//*[@numFound='1']");
 
-    assertQ(
-        req("id:doc-vulnerable AND extractedContent:xxeField"),
-        "//*[@numFound='1']"
-    );
+    assertQ(req("id:doc-vulnerable AND extractedContent:xxeField"), "//*[@numFound='1']");
   }
 
-  /**
-   * Helper method to load a file into the default extraction handler.
-   */
+  /** Helper method to load a file into the default extraction handler. */
   private SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     return loadLocalFromHandler("/update/extract", filename, args);
   }
 
-  /**
-   * Helper method to load a file into a specific extraction handler.
-   */
-  private SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args) throws Exception {
+  /** Helper method to load a file into a specific extraction handler. */
+  private SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)
+      throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
     try {
       // Create content stream from test file

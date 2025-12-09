@@ -162,18 +162,21 @@ public class ParseContextConfig {
       pdfConfig.setExtractAcroFormContent(false);
       pdfConfig.setIfXFAExtractOnlyXFA(false);
       result.set(PDFParserConfig.class, pdfConfig);
-      log.debug("Applied secure PDF parsing defaults: extractAcroFormContent=false (CVE-2025-54988 mitigation)");
+      log.debug(
+          "Applied secure PDF parsing defaults: extractAcroFormContent=false (CVE-2025-54988 mitigation)");
     } else if (!extractAcroFormContentExplicitlySet) {
       // User provided PDFParserConfig but did NOT explicitly set extractAcroFormContent
       // Apply secure default to protect against CVE-2025-54988
       pdfConfig.setExtractAcroFormContent(false);
       pdfConfig.setIfXFAExtractOnlyXFA(false);
-      log.debug("Applied secure default extractAcroFormContent=false for CVE-2025-54988 mitigation");
+      log.debug(
+          "Applied secure default extractAcroFormContent=false for CVE-2025-54988 mitigation");
     } else {
       // User explicitly set extractAcroFormContent - respect their choice but warn if vulnerable
       if (pdfConfig.getExtractAcroFormContent()) {
-        log.warn("extractAcroFormContent=true is explicitly set, which may be vulnerable to CVE-2025-54988 XXE attacks. "
-            + "Ensure you trust all PDF sources or disable XFA parsing.");
+        log.warn(
+            "extractAcroFormContent=true is explicitly set, which may be vulnerable to CVE-2025-54988 XXE attacks. "
+                + "Ensure you trust all PDF sources or disable XFA parsing.");
       }
     }
 
