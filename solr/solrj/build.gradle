@@ -44,6 +44,7 @@ dependencies {
   runtimeOnly libs.eclipse.jetty.alpnjavaclient
 
   compileOnly libs.stephenc.jcip.annotations
+  compileOnly libs.benmanes.caffeine
 
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore

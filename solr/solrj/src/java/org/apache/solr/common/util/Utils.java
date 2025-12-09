@@ -72,6 +72,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+
+import com.github.benmanes.caffeine.cache.Interner;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
@@ -362,6 +365,7 @@ public class Utils {
           throw new RuntimeException(e);
         }
       };
+
   public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER =
       jsonParser -> {
         try {
@@ -369,6 +373,27 @@ public class Utils {
             @Override
             public Object newObject() {
               return new LinkedHashMapWriter<>();
+            }
+          };
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      };
+
+  public static final Function<JSONParser, ObjectBuilder> WEAKSTRINGINTERNEROBJBUILDER =
+      jsonParser -> {
+        try {
+          Interner<String> interner = Interner.newWeakInterner();
+          return new ObjectBuilder(jsonParser) {
+            @Override
+            public void addKeyVal(Object map, Object key, Object val) throws IOException {
+              if (key != null) {
+                key = interner.intern(key.toString());
+              }
+              if (val instanceof String) {
+                val = interner.intern((String) val);
+              }
+              super.addKeyVal(map, key, val);
             }
           };
         } catch (IOException e) {
