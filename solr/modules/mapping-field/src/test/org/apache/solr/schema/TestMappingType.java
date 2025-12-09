@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.schema;
 
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import java.lang.invoke.MethodHandles;
-import java.text.SimpleDateFormat;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Date;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
+import org.apache.solr.mappings.MappingsTestUtils;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -42,15 +39,9 @@ import org.slf4j.LoggerFactory;
 public class TestMappingType extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final SimpleDateFormat format =
-      new SimpleDateFormat("yyy-MM-dd'T'HH:mm:ss'Z'", Locale.ENGLISH);
-
-  private static Random random;
-
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-basic.xml", "schema-mappings.xml");
-    random = random();
+    initCore("solrconfig-mappings.xml", "schema-mappings.xml");
   }
 
   @After
@@ -65,7 +56,7 @@ public class TestMappingType extends SolrTestCaseJ4 {
     IndexSchema schema = h.getCore().getLatestSchema();
 
     Map<String, FieldType> fieldTypes = schema.getFieldTypes();
-    Assert.assertEquals("Wrong number of fieldType", 10, fieldTypes.size());
+    Assert.assertEquals("Wrong number of fieldType", 11, fieldTypes.size());
     Map<String, FieldType> mappingTypes =
         fieldTypes.entrySet().stream()
             .filter(e -> e.getKey().equals("mapping"))
@@ -270,6 +261,29 @@ public class TestMappingType extends SolrTestCaseJ4 {
     log.info(response);
   }
 
+  @Test
+  public void testSearchField() {
+    int requiredDocs = 5;
+    Map<String, String> mappings = doAddDocs("single_mapping", requiredDocs, false, false);
+
+    String findKeyFormat =
+        "//doc/mapping[@name=\"single_mapping\"]/str[@name=\"key\"][text()='%s']";
+    String findValueFormat = "/parent::mapping/str[@name=\"value\"][text()='%s']";
+
+    String[] tests =
+        mappings.entrySet().stream()
+            .map(
+                e ->
+                    String.format(Locale.ENGLISH, findKeyFormat, e.getKey())
+                        + String.format(Locale.ENGLISH, findValueFormat, e.getValue()))
+            .toList()
+            .toArray(new String[0]);
+
+    // q=single_mapping:* requires docValues on 'single_mapping'
+    String response = assertXmlQ(req("q", "single_mapping:*", "indent", "true"), tests);
+    log.info(response);
+  }
+
   // generate string-string mappings
   private Map<String, String> doAddDocs(
       String field, int nb, boolean multiVal, boolean predictableStrKey) {
@@ -282,6 +296,7 @@ public class TestMappingType extends SolrTestCaseJ4 {
     return doAddDocs(field, nb, multiVal, subType, null, predictableStrKey);
   }
 
+  // generate solr input documents with the given keyType and subType (value type)
   private Map<String, String> doAddDocs(
       String field,
       int nb,
@@ -289,70 +304,22 @@ public class TestMappingType extends SolrTestCaseJ4 {
       NumberType subType,
       NumberType keyType,
       boolean predictableStrKey) {
+    List<SolrInputDocument> docs =
+        MappingsTestUtils.generateDocs(
+            random(), field, nb, multiVal, subType, keyType, predictableStrKey);
     Map<String, String> mappings = new HashMap<>();
-    if (multiVal) {
-      for (int i = 0; i < nb; i++) {
-        SolrInputDocument sdoc = new SolrInputDocument();
-        sdoc.addField("id", "" + i);
-        for (int j = 0; j < nb; j++) {
-          String key = null;
-          if (predictableStrKey) {
-            key = "key_" + i + "_" + j;
-          } else {
-            key = getRandomValue(keyType);
-          }
-          String val = getRandomValue(subType);
-          sdoc.addField(field, "\"" + key + "\",\"" + val + "\"");
-          mappings.put(key, val);
+    for (SolrInputDocument doc : docs) {
+      SolrInputField inField = doc.getField(field);
+      if (inField.getName().endsWith("mapping")) {
+        Collection<Object> values = inField.getValues();
+        for (Object value : values) {
+          String[] mapping = MappingType.parseCommaSeparatedList(value.toString());
+          mappings.put(mapping[MappingType.KEY], mapping[MappingType.VALUE]);
         }
-        assertU(adoc(sdoc));
       }
-    } else {
-      for (int i = 0; i < nb; i++) {
-        String key = null;
-        if (predictableStrKey) {
-          key = "key_" + i;
-        } else {
-          key = getRandomValue(keyType);
-        }
-        String val = getRandomValue(subType);
-        String mapping = "\"" + key + "\",\"" + val + "\"";
-        assertU(adoc("id", "" + i, field, mapping));
-        mappings.put(key, val);
-      }
+      assertU(adoc(doc));
     }
     assertU(commit());
     return mappings;
-  }
-
-  private String getRandomValue(NumberType nbType) {
-    String str = null;
-
-    if (nbType != null) {
-      Double dbl = random.nextDouble() * 10;
-      switch (nbType) {
-        case NumberType.INTEGER:
-          str = String.valueOf(dbl.intValue());
-          break;
-        case NumberType.LONG:
-          str = String.valueOf(dbl.longValue());
-          break;
-        case NumberType.FLOAT:
-          str = String.valueOf(dbl.floatValue());
-          break;
-        case NumberType.DATE:
-          Instant instant =
-              Instant.ofEpochSecond(random.nextInt(0, (int) Instant.now().getEpochSecond()));
-          Date dt = Date.from(instant);
-          str = format.format(dt);
-          break;
-        default:
-          str = String.valueOf(dbl.doubleValue());
-          break;
-      }
-    } else {
-      str = RandomStrings.randomAsciiAlphanumOfLengthBetween(random, 5, 10);
-    }
-    return str;
   }
 }

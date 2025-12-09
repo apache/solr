@@ -25,10 +25,16 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.MapSolrParams;
@@ -48,8 +54,8 @@ import org.slf4j.LoggerFactory;
  * supported for keys and values.
  *
  * <p>Define the mapping value type using {@code subFieldSuffix} or {@code subFieldType}, as for any
- * subclass of {@link AbstractSubTypeFieldType}. The key type is {@link String} by default, or it
- * can be defined using {@code keyFieldSuffix} or {@code keyFieldType}.
+ * subclass of {@link AbstractSubTypeFieldType}. The key type is the first found {@link StrField} by default,
+ * or it can be defined using {@code keyFieldSuffix} or {@code keyFieldType}.
  *
  * <p>Expected input document would have a CSV field value:<br>
  * {@code <field name="my_mapping"­>"key","value"</field­>}
@@ -64,18 +70,19 @@ import org.slf4j.LoggerFactory;
 public class MappingType extends AbstractSubTypeFieldType {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  protected static final int KEY = 0;
+  protected static final int VALUE = 1;
+
   private static final int KEY_VALUE_SIZE = 2;
-  private static final int KEY = 0;
-  private static final int VALUE = 1;
 
   private static final String KEY_ATTR = "key";
   private static final String VAL_ATTR = "value";
 
-  public static final String KEY_FIELD_SUFFIX = "keyFieldSuffix";
-  public static final String KEY_FIELD_TYPE = "keyFieldType";
+  private static final String KEY_FIELD_SUFFIX = "keyFieldSuffix";
+  private static final String KEY_FIELD_TYPE = "keyFieldType";
 
   private String keyFieldType = null;
-  protected String keySuffix;
+  private String keySuffix = null;
   private FieldType keyType = null;
 
   @Override
@@ -96,8 +103,16 @@ public class MappingType extends AbstractSubTypeFieldType {
       keySuffix = POLY_FIELD_SEPARATOR + keyType.typeName;
     } else if (keySuffix != null) {
       args.remove(KEY_FIELD_SUFFIX);
+      keyType = schema.getDynamicFieldType("keyField_" + keySuffix);
     } else {
-      keyType = schema.getFieldTypeByName("string");
+      String strFieldType =
+          schema.getFieldTypes().entrySet().stream()
+              .filter(e -> (e.getValue() instanceof StrField))
+              .findFirst()
+              .get()
+              .getKey();
+      keyType = schema.getFieldTypeByName(strFieldType);
+      keySuffix = POLY_FIELD_SEPARATOR + keyType.typeName;
     }
 
     createSuffixCache(KEY_VALUE_SIZE);
@@ -116,11 +131,10 @@ public class MappingType extends AbstractSubTypeFieldType {
     if (keyType != null) {
       SchemaField protoKey = registerDynamicPrototype(schema, keyType, keySuffix, this);
       dynFieldProps += protoKey.getProperties();
-
-      if (subType != null && !subFieldType.equals(keyFieldType)) {
-        SchemaField protoVal = registerDynamicPrototype(schema, subType, suffix, this);
-        dynFieldProps += protoVal.getProperties();
-      }
+    }
+    if (subType != null) {
+      SchemaField protoVal = registerDynamicPrototype(schema, subType, suffix, this);
+      dynFieldProps += protoVal.getProperties();
     }
   }
 
@@ -128,20 +142,43 @@ public class MappingType extends AbstractSubTypeFieldType {
       IndexSchema schema, FieldType type, String fieldSuffix, FieldType polyField) {
     String name = "*" + fieldSuffix;
     Map<String, String> props = new HashMap<>();
-    // Just set these, delegate everything else to the field type
     props.put("indexed", "true");
+    log.warn(
+        "MappingType requires indexed subtypes (key, value).  "
+            + "Setting the subtype '{}' to 'indexed=true'",
+        type.getTypeName());
+
     props.put("stored", "false");
+    log.warn(
+        "MappingType does not support stored on the subtypes (key, value).  "
+            + "Setting the subtype '{}' to 'stored=false'",
+        type.getTypeName());
+
     props.put("multiValued", "false");
-    // does not support docValues
+    log.warn(
+        "MappingType does not support multiValued on the subtypes (key, value).  "
+            + "Setting the subtype '{}' to 'multiValued=false'",
+        type.getTypeName());
+
     props.put("docValues", "false");
     log.warn(
         "MappingType does not support docValues on the subtypes (key, value).  "
             + "Setting the subtype '{}' to 'docValues=false'",
         type.getTypeName());
+
     int p = SchemaField.calcProps(name, type, props);
     SchemaField proto = SchemaField.create(name, type, p, null);
     schema.registerDynamicFields(proto);
     return proto;
+  }
+
+  @Override
+  protected void checkSupportsDocValues() {
+    // DocValues supported only when enabled at the fieldType
+    if (!hasProperty(DOC_VALUES)) {
+      throw new UnsupportedOperationException(
+          "MappingType can't have docValues=true in the field definition, use docValues=true in the fieldType definition.");
+    }
   }
 
   @Override
@@ -154,21 +191,36 @@ public class MappingType extends AbstractSubTypeFieldType {
     String externalVal = value.toString();
     String[] csv = parseCommaSeparatedList(externalVal);
 
-    List<IndexableField> fields = new ArrayList<>((KEY_VALUE_SIZE * 2) + 1);
+    List<IndexableField> fields = new ArrayList<>((suffixes.length * 2) + 1);
 
     if (field.indexed()) {
-      SchemaField keyField = subField(field, KEY, schema);
+      SchemaField keyField = getKeyField(field);
       fields.addAll(keyField.createFields(csv[KEY]));
-      SchemaField valField = subField(field, VALUE, schema);
+
+      SchemaField valField = getValueField(field);
       fields.addAll(valField.createFields(csv[VALUE]));
     }
 
     if (field.stored()) {
-      String storedVal = externalVal;
-      fields.add(createField(field.getName(), storedVal, StoredField.TYPE));
+      fields.add(createField(field.getName(), externalVal, StoredField.TYPE));
+    }
+
+    if (field.hasDocValues()) {
+      fields.add(createDocValuesField(field, value.toString()));
     }
 
     return fields;
+  }
+
+  private IndexableField createDocValuesField(SchemaField field, String value) {
+    IndexableField docval;
+    final BytesRef bytes = new BytesRef(toInternal(value));
+    if (field.multiValued()) {
+      docval = new SortedSetDocValuesField(field.getName(), bytes);
+    } else {
+      docval = new SortedDocValuesField(field.getName(), bytes);
+    }
+    return docval;
   }
 
   @Override
@@ -185,9 +237,9 @@ public class MappingType extends AbstractSubTypeFieldType {
    * @return An array of the values that make up the mapping
    * @throws SolrException if the input value cannot be parsed
    */
-  private String[] parseCommaSeparatedList(String externalVal) throws SolrException {
+  protected static String[] parseCommaSeparatedList(String externalVal) throws SolrException {
     String[] out = new String[KEY_VALUE_SIZE];
-    // input is "key","value"
+    // input is: "key","value"
     CSVParser parser = new CSVParser(new StringReader(externalVal));
     try {
       String[] tokens = parser.getLine();
@@ -242,7 +294,7 @@ public class MappingType extends AbstractSubTypeFieldType {
     w.write("\">");
     writeSubFieldObject(writer, KEY_ATTR, key, keyType.getClass().getSimpleName());
     writeSubFieldObject(writer, VAL_ATTR, val, subType.getClass().getSimpleName());
-    // writer.writeVal(key, val, false);
+
     if (writer.doIndent()) {
       writer.decLevel();
       writer.indent();
@@ -288,7 +340,6 @@ public class MappingType extends AbstractSubTypeFieldType {
   /** Sorting is not supported on {@code MappingType} */
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    // TODO : sort on keys?
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Sorting not supported on MappingType " + field.getName());
@@ -312,5 +363,21 @@ public class MappingType extends AbstractSubTypeFieldType {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         "Range query not supported on MappingType " + field.getName());
+  }
+
+  public SchemaField getKeyField(SchemaField base) {
+    return schema.getField(base.getName() + suffixes[KEY]);
+  }
+
+  public SchemaField getValueField(SchemaField base) {
+    return schema.getField(base.getName() + suffixes[VALUE]);
+  }
+
+  /** Returns a Query to support existence search on the mapping field name */
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    BytesRefBuilder br = new BytesRefBuilder();
+    readableToIndexed(externalVal, br);
+    return new TermQuery(new Term(field.getName(), br));
   }
 }
