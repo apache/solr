@@ -390,10 +390,17 @@ public class ClusterState implements MapWriter {
     return collectionStates.size();
   }
 
-  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER ;
-  static {
-    boolean enable = "true".equals(System.getProperty("solr.use.str.intern", "true"));
-       STR_INTERNER_OBJ_BUILDER = !enable?  STANDARDOBJBUILDER: WEAKSTRINGINTERNEROBJBUILDER;
-  }
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER;
 
+  static {
+    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+    if (contextClassLoader == null) {
+      contextClassLoader = ClusterState.class.getClassLoader();
+    }
+    String resourcePath = "com/github/benmanes/caffeine/cache/Interner.class";
+    boolean hasInterner =
+        contextClassLoader.getResource(resourcePath) != null
+            || ClassLoader.getSystemResource(resourcePath) != null;
+    STR_INTERNER_OBJ_BUILDER = hasInterner ? WEAKSTRINGINTERNEROBJBUILDER : STANDARDOBJBUILDER;
+  }
 }

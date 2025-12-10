@@ -22,6 +22,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.github.benmanes.caffeine.cache.Interner;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
@@ -72,9 +73,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-
-import com.github.benmanes.caffeine.cache.Interner;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.LinkedHashMapWriter;
 import org.apache.solr.common.MapWriter;
