@@ -38,8 +38,11 @@ import org.slf4j.LoggerFactory;
  * <p>CVE-2025-54988 affects Apache Tika versions 1.13 through 3.2.1, allowing attackers to exploit
  * XXE vulnerabilities in PDF parsing when XFA forms are processed.
  *
- * <p>The mitigation disables XFA parsing by setting: - extractAcroFormContent = false -
- * ifXFAExtractOnlyXFA = false
+ * <p>The mitigation disables XFA parsing by setting:
+ * <ul>
+ *   <li>extractAcroFormContent = false</li>
+ *   <li>ifXFAExtractOnlyXFA = false</li>
+ * </ul>
  */
 public class CVE202554988Test extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
