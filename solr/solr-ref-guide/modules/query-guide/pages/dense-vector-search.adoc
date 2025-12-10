@@ -534,12 +534,11 @@ A query that matches ALL parents.
 It's required to work with the 'childrenOf' parameter.
 
 
-Here is an example of a `knn` search using a `childrenOf`:
+Here is an example of a `knn` search using a `allParents`:
 
 [source,text]
-?q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=3 allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
 &allParents=*:* -_nest_path_:*
-&someParents=color_s:RED
 
 The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'allParents' parameter must return all parents to guarantee the correct functioning of the query.
 

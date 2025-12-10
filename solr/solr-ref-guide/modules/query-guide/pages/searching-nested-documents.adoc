@@ -184,22 +184,6 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 ----
 ====
 
-[#vector-search-child]
-[CAUTION]
-.Vector search - children are nested documents with a vector field
-====
-It is quite common to encode the original text of a document into multiple nested vectors.
-
-This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and its vector representation.
-
-You don't need the redundant parent metadata in each child document (the traditional flat approach), you can still retrieve the children paragraphs by knn vector search, prefilter them using parent level metadata and finally retrieve only K parents if needed.
-
-[source,text]
-----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'fq={!child of=$block_mask filters=$parentsFilter}&q={!knn f=childVectorField topK=5 childrenOf=$someParents allParents=$allParents}[1.0,2.5,3.0...]' --data-urlencode 'block_mask=(*:* -{!prefix f="_nest_path_" v="/skus/" parentsFilter="name_s:pen"})'
-----
-====
-
 === Parent Query Parser
 
 The inverse of the `{!child}` query parser is the `{!parent}` query parser, which lets you search for the _ancestor_ documents of some child documents matching a wrapped query.
