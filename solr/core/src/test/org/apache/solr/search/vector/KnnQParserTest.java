@@ -139,6 +139,49 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void efSearchScaleFactorLessThanOne_shouldThrowException() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQEx(
+        "efSearchScaleFactor < 1.0 should throw Exception",
+        "efSearchScaleFactor (0.5) must be >= 1.0",
+        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=0.5}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx(
+        "efSearchScaleFactor = 0.0 should throw Exception",
+        "efSearchScaleFactor (0.0) must be >= 1.0",
+        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=0.0}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void efSearchScaleFactorNaN_shouldThrowException() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    assertQEx(
+        "efSearchScaleFactor = NaN should throw Exception",
+        "efSearchScaleFactor (NaN) must be >= 1.0",
+        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=NaN}" + vectorToSearch, "fl", "id"),
+        SolrException.ErrorCode.BAD_REQUEST);
+  }
+
+  @Test
+  public void efSearchScaleFactorSet_shouldWorkCorrectly() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // Test functional behavior with efSearchScaleFactor = 2.0
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=2.0}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='10']",
+        "//result/doc[5]/str[@name='id'][.='3']");
+  }
+
+  @Test
   public void topKMissing_shouldReturnDefaultTopK() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
 
@@ -440,6 +483,59 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[8]/str[@name='id'][.='6']",
         "//result/doc[9]/str[@name='id'][.='9']",
         "//result/doc[10]/str[@name='id'][.='8']");
+  }
+
+
+  @Test
+  public void efSearchScaleFactorWithEarlyTermination_shouldWorkCorrectly() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // Test efSearchScaleFactor with early termination enabled - should return results
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 efSearchScaleFactor=2.0 earlyTermination=true saturationThreshold=0.989 patience=10}"
+                + vectorToSearch,
+            "fl",
+            "id"),
+        "//result[@numFound='5']",
+        "//result/doc[1]/str[@name='id'][.='1']",
+        "//result/doc[2]/str[@name='id'][.='4']");
+  }
+
+  @Test
+  public void efSearchScaleFactorWithSeedQuery_shouldWorkCorrectly() {
+    String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
+
+    // Test efSearchScaleFactor with seed query - should return results
+    assertQ(
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=4 efSearchScaleFactor=1.5 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "fl",
+            "id"),
+        "//result[@numFound='4']");
+  }
+
+  @Test
+  public void efSearchScaleFactorWithByteVectors_shouldWorkCorrectly() {
+    String vectorToSearch = "[2, 2, 1, 3]";
+
+    // Test functional behavior with byte vectors and efSearchScaleFactor
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3 efSearchScaleFactor=1.5}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']",
+        "//result/doc[3]/str[@name='id'][.='1']");
+
+    // Also test with default efSearchScaleFactor
+    assertQ(
+        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3}" + vectorToSearch, "fl", "id"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='2']",
+        "//result/doc[2]/str[@name='id'][.='3']",
+        "//result/doc[3]/str[@name='id'][.='1']");
   }
 
   @Test

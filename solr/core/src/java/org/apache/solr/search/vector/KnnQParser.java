@@ -110,8 +110,9 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final int topK = localParams.getInt(TOP_K, DEFAULT_TOP_K);
 
     final double efSearchScaleFactor = localParams.getDouble("efSearchScaleFactor", 1.0);
-    if (efSearchScaleFactor < 1.0) {
-      throw new IllegalArgumentException(
+    if (Double.isNaN(efSearchScaleFactor) || efSearchScaleFactor < 1.0) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
           "efSearchScaleFactor (" + efSearchScaleFactor + ") must be >= 1.0");
     }
     final int efSearch = (int) Math.round(efSearchScaleFactor * topK);
