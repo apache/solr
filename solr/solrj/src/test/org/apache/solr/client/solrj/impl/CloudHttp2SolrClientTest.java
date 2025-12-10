@@ -310,8 +310,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // with the default cache timeout from before the system property was set.
     try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
       // Create collection using the test's client, not cluster.getSolrClient()
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-          .process(solrClient);
+      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(solrClient);
       cluster.waitForActiveCollection(collectionName, 2, 2);
 
       // Start logging AFTER collection creation to avoid counting collection creation admin calls
