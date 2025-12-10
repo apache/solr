@@ -173,8 +173,10 @@ public class ParseContextConfig {
         log.warn(
             "extractAcroFormContent=true is explicitly set, which may be vulnerable to CVE-2025-54988 XXE attacks. "
                 + "Ensure you trust all PDF sources or disable XFA parsing.");
+      } else {
+        // User explicitly disabled extractAcroFormContent - also disable ifXFAExtractOnlyXFA for complete mitigation
+        pdfConfig.setIfXFAExtractOnlyXFA(false);
       }
-    }
 
     return result;
   }
