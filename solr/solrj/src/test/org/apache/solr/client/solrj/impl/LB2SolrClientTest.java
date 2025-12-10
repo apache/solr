@@ -217,6 +217,10 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
         fail("The alive check query was not logged within 10 seconds.");
       }
+      // Give extra time for the alive server list update to fully propagate
+      // and for the server to be ready to serve requests, especially on
+      // highly parallel systems where timing issues are more likely
+      Thread.sleep(600);
     }
   }
 
