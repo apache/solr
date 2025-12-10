@@ -17,6 +17,8 @@
 package org.apache.solr.mappings.search;
 
 import java.lang.invoke.MethodHandles;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -162,7 +164,9 @@ public class MappingsQParserPlugin extends QParserPlugin {
           return;
         } else {
           if (search.startsWith("[") && search.endsWith("]")) {
-            String[] parts = search.substring(1, search.length() - 1).split(" TO ");
+            String decoded =
+                URLDecoder.decode(search.substring(1, search.length() - 1), StandardCharsets.UTF_8);
+            String[] parts = decoded.split("TO");
             String min = parts[0].trim();
             String max = parts[1].trim();
             Query rangeQ =

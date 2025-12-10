@@ -166,10 +166,6 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
 
   @Test
   public void testSearchWithValueRangeQuery() throws Exception {
-    // must wrap the range query in quotes
-    String queryStr = """
-        {!mappings f=float_mapping value="[30.0 TO *]"}
-        """;
     int requiredDocs = 5;
     for (int i = 0; i <= requiredDocs; i++) {
       SolrInputDocument sdoc = new SolrInputDocument();
@@ -181,16 +177,31 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
     }
     assertU(commit());
 
-    String response =
+    // URL-encoded range query
+    String queryStr1 = """
+        {!mappings f=float_mapping value=[30.0+TO+*]}
+        """;
+    String response1 =
         assertJQ(
-            req("q", queryStr.trim(), "indent", "true", "wt", "json"),
+            req("q", queryStr1.trim(), "indent", "true", "wt", "json"),
             "/response/numFound==3",
             "/response/docs/[0]/float_mapping/value==\"30.0\"",
             "/response/docs/[1]/float_mapping/value==\"40.0\"",
             "/response/docs/[2]/float_mapping/value==\"50.0\"");
     if (log.isInfoEnabled()) {
-      log.info("Value range query response: {}", response);
+      log.info("Value range query response: {}", response1);
     }
+
+    // wrap the range query in quotes
+    String queryStr2 = """
+        {!mappings f=float_mapping value="[30.0 TO *]"}
+        """;
+    assertJQ(
+        req("q", queryStr2.trim(), "indent", "true", "wt", "json"),
+        "/response/numFound==3",
+        "/response/docs/[0]/float_mapping/value==\"30.0\"",
+        "/response/docs/[1]/float_mapping/value==\"40.0\"",
+        "/response/docs/[2]/float_mapping/value==\"50.0\"");
   }
 
   @Test
@@ -215,7 +226,7 @@ public class TestMappingsQParserPlugin extends SolrTestCaseJ4 {
       log.info("Wildcard query response 1: {}", response1);
     }
 
-    // wildcard query with quotes
+    // wildcard query in quotes
     String queryStr2 = """
         {!mappings f=single_mapping key="key?1"}
         """;

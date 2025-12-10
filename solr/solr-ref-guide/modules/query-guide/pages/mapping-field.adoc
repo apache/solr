@@ -103,5 +103,5 @@ See xref:query-guide:local-params.adoc[Local Params] for general usage of local 
 * `value`: Optional. Value of a mapping value to search for.  May contain wildcards `*`or `?`.  May be a range query if the mapping value field type supports range queries.
 
 [NOTE]
-IMPORTANT: A range query used in the local parameters *must* be wrapped in quotes.
+IMPORTANT: A range query used in the local parameters *must* be URL-encoded OR wrapped in quotes.
 
