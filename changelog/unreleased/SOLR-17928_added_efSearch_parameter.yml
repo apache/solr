@@ -1,8 +1,9 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: Added efSearch parameter to knn query, exposed efSearchScaleFactor that is used to calculate efSearch internally
-type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+type: added
 authors:
   - name: Puneet Ahuja
+  - name: Elia Porciani
 links:
   - name: SOLR-17928
     url: https://issues.apache.org/jira/browse/SOLR-17928
