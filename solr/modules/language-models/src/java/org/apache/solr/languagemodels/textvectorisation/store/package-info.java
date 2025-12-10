@@ -14,15 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
 
-import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
-
-public class BinaryQuantizedDenseVectorField extends DenseVectorField {
-
-  @Override
-  public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswM(), getHnswEfConstruction());
-  }
-}
+/** Contains model store related classes. */
+package org.apache.solr.languagemodels.textvectorisation.store;

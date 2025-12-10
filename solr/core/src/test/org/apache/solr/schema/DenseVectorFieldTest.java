@@ -42,7 +42,7 @@ import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.apache.solr.handler.loader.JavabinLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.neural.KnnQParser;
+import org.apache.solr.search.vector.KnnQParser;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
@@ -155,8 +155,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type1.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(type1.getDimension(), is(4));
       assertThat(type1.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type1.getHnswMaxConn(), is(10));
-      assertThat(type1.getHnswBeamWidth(), is(40));
+      assertThat(type1.getHnswM(), is(10));
+      assertThat(type1.getHnswEfConstruction(), is(40));
+      assertThat(type1.getHnswMaxConn(), is(type1.getHnswM()));
+      assertThat(type1.getHnswBeamWidth(), is(type1.getHnswEfConstruction()));
 
       SchemaField vector2 = schema.getField("vector2");
       assertNotNull(vector2);
@@ -165,8 +167,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type2.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(type2.getDimension(), is(4));
       assertThat(type2.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type2.getHnswMaxConn(), is(6));
-      assertThat(type2.getHnswBeamWidth(), is(60));
+      assertThat(type2.getHnswM(), is(6));
+      assertThat(type2.getHnswEfConstruction(), is(60));
+      assertThat(type2.getHnswMaxConn(), is(type2.getHnswM()));
+      assertThat(type2.getHnswBeamWidth(), is(type2.getHnswEfConstruction()));
 
       SchemaField vector3 = schema.getField("vector3");
       assertNotNull(vector3);
@@ -176,8 +180,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(type3.getDimension(), is(5));
 
       assertThat(type3.getKnnAlgorithm(), is("hnsw"));
-      assertThat(type3.getHnswMaxConn(), is(8));
-      assertThat(type3.getHnswBeamWidth(), is(46));
+      assertThat(type3.getHnswM(), is(8));
+      assertThat(type3.getHnswEfConstruction(), is(46));
+      assertThat(type3.getHnswMaxConn(), is(type3.getHnswM()));
+      assertThat(type3.getHnswBeamWidth(), is(type3.getHnswEfConstruction()));
 
       SchemaField vectorDefault = schema.getField("vector_default");
       assertNotNull(vectorDefault);
@@ -186,8 +192,10 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(typeDefault.getSimilarityFunction(), is(VectorSimilarityFunction.COSINE));
       assertThat(typeDefault.getKnnAlgorithm(), is("hnsw"));
       assertThat(typeDefault.getDimension(), is(4));
-      assertThat(typeDefault.getHnswMaxConn(), is(16));
-      assertThat(typeDefault.getHnswBeamWidth(), is(100));
+      assertThat(typeDefault.getHnswM(), is(16));
+      assertThat(typeDefault.getHnswEfConstruction(), is(100));
+      assertThat(typeDefault.getHnswMaxConn(), is(typeDefault.getHnswM()));
+      assertThat(typeDefault.getHnswBeamWidth(), is(typeDefault.getHnswEfConstruction()));
     } finally {
       deleteCore();
     }
