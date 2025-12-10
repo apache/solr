@@ -37,7 +37,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
@@ -94,7 +93,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** This test would be faster if we simulated the zk state instead. */
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18024")
 public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -305,13 +303,19 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     String collectionName = "HTTPCSPTEST";
 
-    // Create the test's own CloudSolrClient BEFORE creating the collection to avoid using
-    // the shared cluster client which may have a background refresh job already running
-    // with the default cache timeout from before the system property was set.
-    try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
-      // Create collection using the test's client, not cluster.getSolrClient()
-      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(solrClient);
+    // Create collection using a dedicated client to avoid polluting the test client's cache.
+    // We avoid using cluster.getSolrClient() because it may have a background refresh job
+    // already running with the default cache timeout from before the system property was set.
+    CloudSolrClient setupClient = createHttpCSPBasedCloudSolrClient();
+    try {
+      CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(setupClient);
       cluster.waitForActiveCollection(collectionName, 2, 2);
+    } finally {
+      setupClient.close();
+    }
+
+    // Now create a fresh CloudSolrClient for the actual test
+    try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
 
       // Start logging AFTER collection creation to avoid counting collection creation admin calls
       try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
@@ -349,6 +353,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           assertEquals(2, adminLogs.getCount());
         }
       }
+
+      // Clean up the collection to allow test iterations to succeed
+      CollectionAdminRequest.deleteCollection(collectionName).process(solrClient);
     }
   }
 
