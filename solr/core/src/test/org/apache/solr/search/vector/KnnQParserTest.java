@@ -145,13 +145,21 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "efSearchScaleFactor < 1.0 should throw Exception",
         "efSearchScaleFactor (0.5) must be >= 1.0",
-        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=0.5}" + vectorToSearch, "fl", "id"),
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 efSearchScaleFactor=0.5}" + vectorToSearch,
+            "fl",
+            "id"),
         SolrException.ErrorCode.BAD_REQUEST);
 
     assertQEx(
         "efSearchScaleFactor = 0.0 should throw Exception",
         "efSearchScaleFactor (0.0) must be >= 1.0",
-        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=0.0}" + vectorToSearch, "fl", "id"),
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 efSearchScaleFactor=0.0}" + vectorToSearch,
+            "fl",
+            "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -162,7 +170,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     assertQEx(
         "efSearchScaleFactor = NaN should throw Exception",
         "efSearchScaleFactor (NaN) must be >= 1.0",
-        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=NaN}" + vectorToSearch, "fl", "id"),
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 efSearchScaleFactor=NaN}" + vectorToSearch,
+            "fl",
+            "id"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -172,7 +184,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     // Test functional behavior with efSearchScaleFactor = 2.0
     assertQ(
-        req(CommonParams.Q, "{!knn f=vector topK=5 efSearchScaleFactor=2.0}" + vectorToSearch, "fl", "id"),
+        req(
+            CommonParams.Q,
+            "{!knn f=vector topK=5 efSearchScaleFactor=2.0}" + vectorToSearch,
+            "fl",
+            "id"),
         "//result[@numFound='5']",
         "//result/doc[1]/str[@name='id'][.='1']",
         "//result/doc[2]/str[@name='id'][.='4']",
@@ -485,7 +501,6 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//result/doc[10]/str[@name='id'][.='8']");
   }
 
-
   @Test
   public void efSearchScaleFactorWithEarlyTermination_shouldWorkCorrectly() {
     String vectorToSearch = "[1.0, 2.0, 3.0, 4.0]";
@@ -511,7 +526,8 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
     assertQ(
         req(
             CommonParams.Q,
-            "{!knn f=vector topK=4 efSearchScaleFactor=1.5 seedQuery='id:(1 4 7 8 9)'}" + vectorToSearch,
+            "{!knn f=vector topK=4 efSearchScaleFactor=1.5 seedQuery='id:(1 4 7 8 9)'}"
+                + vectorToSearch,
             "fl",
             "id"),
         "//result[@numFound='4']");
@@ -523,7 +539,11 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
 
     // Test functional behavior with byte vectors and efSearchScaleFactor
     assertQ(
-        req(CommonParams.Q, "{!knn f=vector_byte_encoding topK=3 efSearchScaleFactor=1.5}" + vectorToSearch, "fl", "id"),
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_byte_encoding topK=3 efSearchScaleFactor=1.5}" + vectorToSearch,
+            "fl",
+            "id"),
         "//result[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='2']",
         "//result/doc[2]/str[@name='id'][.='3']",
