@@ -23,7 +23,6 @@ import static org.hamcrest.CoreMatchers.is;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
