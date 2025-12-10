@@ -103,13 +103,16 @@ the cosine similarity scores returned by Solr are normalized like this : `(1 + c
 [NOTE]
 the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
 
+[NOTE]
+The HNSW parameters `hnswM` and `hnswEfConstruction`, previously known as `hnswMaxConnections` and `hnswBeamWidth` respectively.
+
 To use the following advanced parameters that customise the codec format
 and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
 
 Here's how `DenseVectorField` can be configured with the advanced hyperparameters:
 
 [source,xml]
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswMaxConnections="10" hnswBeamWidth="40"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" knnAlgorithm="hnsw" hnswM="10" hnswEfConstruction="40"/>
 <field name="vector" type="knn_vector" indexed="true" stored="true"/>
 
 `knnAlgorithm`::
@@ -139,7 +142,7 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 Accepted values: `FLOAT32`, `BYTE`.
 
 
-`hnswMaxConnections`::
+`hnswM`::
 +
 [%autowidth,frame=none]
 |===
@@ -150,12 +153,12 @@ Accepted values: `FLOAT32`, `BYTE`.
 +
 Controls how many of the nearest neighbor candidates are connected to the new node.
 +
-It has the same meaning as `M` from the 2018 paper.
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `M` is defined.
 +
 Accepted values:
 Any integer.
 
-`hnswBeamWidth`::
+`hnswEfConstruction`::
 +
 [%autowidth,frame=none]
 |===
@@ -166,7 +169,7 @@ Any integer.
 +
 It is the number of nearest neighbor candidates to track while searching the graph for each newly inserted node.
 +
-It has the same meaning as `efConstruction` from the 2018 paper.
+For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 paper], where this parameter `efConstruction` is defined.
 +
 Accepted values:
 Any integer.
@@ -759,7 +762,21 @@ Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
 
 [source,xml]
 ----
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswM="16" cuvsHNSWEfConstruction="100"/>
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" />
+----
+
+Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
+
+[source,xml]
+----
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
+    <str name="cuvsWriterThreads">8</str>
+    <str name="intGraphDegree">128</str>
+    <str name="graphDegree">64</str>
+    <str name="hnswLayers">1</str>
+    <str name="hnswM">16</str>
+    <str name="hnswEfConstruction">100</str>
+</codecFactory>
 ----
 
 Where:
@@ -772,16 +789,9 @@ Where:
 
 * `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `cuvsHnswM` - Max connections parameter passed to the fallback Lucene99HnswVectorsWriter
+* `hnswM` - hnswM parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `cuvsHNSWEfConstruction` - Beam width parameter passed to the fallback Lucene99HnswVectorsWriter
-
-Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
-
-[source,xml]
-----
-<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
-----
+* `hnswEfConstruction` - hnswEfConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
@@ -914,7 +924,14 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         </autoSoftCommit>
     </updateHandler>
 
-    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
+        <str name="cuvsWriterThreads">32</str>
+        <str name="intGraphDegree">128</str>
+        <str name="graphDegree">64</str>
+        <str name="hnswLayers">1</str>
+        <str name="hnswM">16</str>
+        <str name="hnswEfConstruction">100</str>
+    </codecFactory>
 
     <requestHandler name="/select" class="solr.SearchHandler">
         <lst name="defaults">

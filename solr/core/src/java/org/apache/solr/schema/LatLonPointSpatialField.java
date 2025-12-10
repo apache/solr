@@ -336,7 +336,7 @@ public class LatLonPointSpatialField
 
         @Override
         public FieldComparator<?> newComparator(
-            String fieldname,
+            String fieldName,
             int numHits,
             Pruning pruning,
             boolean reversed) { // 'reversed' is an FYI.  It's implemented by the caller chain.
@@ -345,7 +345,7 @@ public class LatLonPointSpatialField
 
         @Override
         public boolean equals(Object o) {
-          if (o == null || getClass() != o.getClass()) return false;
+          if (!(o instanceof DistanceFieldComparatorSource)) return false;
           var that = (DistanceFieldComparatorSource) o;
           return Objects.equals(queryPoint, that.queryPoint);
         }
