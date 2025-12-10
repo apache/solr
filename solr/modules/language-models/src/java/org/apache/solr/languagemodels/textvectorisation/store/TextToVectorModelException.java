@@ -14,15 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.languagemodels.textvectorisation.store;
 
-import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene102.Lucene102HnswBinaryQuantizedVectorsFormat;
+public class TextToVectorModelException extends RuntimeException {
 
-public class BinaryQuantizedDenseVectorField extends DenseVectorField {
+  private static final long serialVersionUID = 1L;
 
-  @Override
-  public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene102HnswBinaryQuantizedVectorsFormat(getHnswM(), getHnswEfConstruction());
+  public TextToVectorModelException(String message) {
+    super(message);
+  }
+
+  public TextToVectorModelException(String message, Exception cause) {
+    super(message, cause);
   }
 }

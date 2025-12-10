@@ -28,8 +28,8 @@ import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
-import org.apache.solr.search.neural.KnnQParserPlugin;
-import org.apache.solr.search.neural.VectorSimilarityQParserPlugin;
+import org.apache.solr.search.vector.KnnQParserPlugin;
+import org.apache.solr.search.vector.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 public abstract class QParserPlugin implements NamedListInitializedPlugin {
