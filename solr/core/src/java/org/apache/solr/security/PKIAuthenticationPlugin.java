@@ -41,8 +41,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.HttpListenerFactory;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpListenerFactory;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -383,7 +383,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       final var request = new GenericSolrRequest(GET, PublicKeyHandler.PATH, solrParams);
       log.debug("Fetching fresh public key from: {}", url);
       var solrClient = cores.getDefaultHttpSolrClient();
-      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request::process).getResponse();
+      NamedList<Object> resp = solrClient.requestWithBaseUrl(url, request, null);
 
       String key = (String) resp.get("key");
       if (key == null) {
@@ -403,7 +403,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
   }
 
   @Override
-  public void setup(Http2SolrClient client) {
+  public void setup(HttpJettySolrClient client) {
     final HttpListenerFactory.RequestResponseListener listener =
         new HttpListenerFactory.RequestResponseListener() {
           private static final String CACHED_REQUEST_USER_KEY = "cachedRequestUser";

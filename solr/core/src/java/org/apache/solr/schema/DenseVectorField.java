@@ -69,6 +69,7 @@ import org.slf4j.LoggerFactory;
 public class DenseVectorField extends FloatPointField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String HNSW_ALGORITHM = "hnsw";
+  public static final String CAGRA_HNSW_ALGORITHM = "cagra_hnsw";
   public static final String DEFAULT_KNN_ALGORITHM = HNSW_ALGORITHM;
   static final String KNN_VECTOR_DIMENSION = "vectorDimension";
   static final String KNN_ALGORITHM = "knnAlgorithm";
@@ -78,6 +79,20 @@ public class DenseVectorField extends FloatPointField {
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
   static final VectorSimilarityFunction DEFAULT_SIMILARITY = VectorSimilarityFunction.EUCLIDEAN;
+
+  static final String CUVS_WRITER_THREADS = "cuvsWriterThreads";
+  static final String CUVS_INT_GRAPH_DEGREE = "cuvsIntGraphDegree";
+  static final String CUVS_GRAPH_DEGREE = "cuvsGraphDegree";
+  static final String CUVS_HNSW_LAYERS = "cuvsHnswLayers";
+  static final String CUVS_HNSW_MAX_CONNECTIONS = "cuvsHnswM";
+  static final String CUVS_HNSW_EF_CONSTRUCTION = "cuvsHNSWEfConstruction";
+  static final int DEFAULT_CUVS_WRITER_THREADS = 32;
+  static final int DEFAULT_CUVS_INT_GRAPH_DEGREE = 128;
+  static final int DEFAULT_CUVS_GRAPH_DEGREE = 64;
+  static final int DEFAULT_CUVS_HNSW_LAYERS = 1;
+  static final int DEFAULT_CUVS_HNSW_MAX_CONNECTIONS = 16;
+  static final int DEFAULT_CUVS_HNSW_EF_CONSTRUCTION = 100;
+
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
   private String knnAlgorithm;
@@ -99,6 +114,13 @@ public class DenseVectorField extends FloatPointField {
    * encoding is FLOAT32
    */
   private VectorEncoding vectorEncoding;
+
+  private int cuvsWriterThreads;
+  private int cuvsIntGraphDegree;
+  private int cuvsGraphDegree;
+  private int cuvsHnswLayers;
+  private int cuvsHnswM;
+  private int cuvsHNSWEfConstruction;
 
   public DenseVectorField() {
     super();
@@ -155,6 +177,42 @@ public class DenseVectorField extends FloatPointField {
         ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
     args.remove(HNSW_BEAM_WIDTH);
 
+    this.cuvsWriterThreads =
+        ofNullable(args.get(CUVS_WRITER_THREADS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_WRITER_THREADS);
+    args.remove(CUVS_WRITER_THREADS);
+
+    this.cuvsIntGraphDegree =
+        ofNullable(args.get(CUVS_INT_GRAPH_DEGREE))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_INT_GRAPH_DEGREE);
+    args.remove(CUVS_INT_GRAPH_DEGREE);
+
+    this.cuvsGraphDegree =
+        ofNullable(args.get(CUVS_GRAPH_DEGREE))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_GRAPH_DEGREE);
+    args.remove(CUVS_GRAPH_DEGREE);
+
+    this.cuvsHnswLayers =
+        ofNullable(args.get(CUVS_HNSW_LAYERS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_LAYERS);
+    args.remove(CUVS_HNSW_LAYERS);
+
+    this.cuvsHnswM =
+        ofNullable(args.get(CUVS_HNSW_MAX_CONNECTIONS))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_MAX_CONNECTIONS);
+    args.remove(CUVS_HNSW_MAX_CONNECTIONS);
+
+    this.cuvsHNSWEfConstruction =
+        ofNullable(args.get(CUVS_HNSW_EF_CONSTRUCTION))
+            .map(Integer::parseInt)
+            .orElse(DEFAULT_CUVS_HNSW_EF_CONSTRUCTION);
+    args.remove(CUVS_HNSW_EF_CONSTRUCTION);
+
     this.properties &= ~MULTIVALUED;
     this.properties &= ~UNINVERTIBLE;
 
@@ -183,6 +241,30 @@ public class DenseVectorField extends FloatPointField {
 
   public VectorEncoding getVectorEncoding() {
     return vectorEncoding;
+  }
+
+  public int getCuvsWriterThreads() {
+    return cuvsWriterThreads;
+  }
+
+  public int getCuvsIntGraphDegree() {
+    return cuvsIntGraphDegree;
+  }
+
+  public int getCuvsGraphDegree() {
+    return cuvsGraphDegree;
+  }
+
+  public int getCuvsHnswLayers() {
+    return cuvsHnswLayers;
+  }
+
+  public int getCuvsHnswMaxConn() {
+    return cuvsHnswM;
+  }
+
+  public int getCuvsHnswEfConstruction() {
+    return cuvsHNSWEfConstruction;
   }
 
   @Override

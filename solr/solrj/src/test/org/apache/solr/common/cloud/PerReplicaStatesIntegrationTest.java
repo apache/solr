@@ -95,7 +95,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       assertEquals(5, prs.states.size());
 
       // Test delete replica
-      Replica leader = c.getReplica((s, replica) -> replica.isLeader());
+      Replica leader = c.getReplicas().stream().filter(Replica::isLeader).findFirst().orElseThrow();
       CollectionAdminRequest.deleteReplica(testCollection, leader.shard, leader.getName())
           .process(cluster.getSolrClient());
       cluster.waitForActiveCollection(testCollection, 2, 4);
@@ -376,7 +376,7 @@ public class PerReplicaStatesIntegrationTest extends SolrCloudTestCase {
       // +1 for a new replica
       assertEquals(4, stat.getVersion());
       DocCollection c = cluster.getZkStateReader().getCollection(PRS_COLL);
-      Replica newreplica = c.getReplica((s, replica) -> replica.node.equals(j2.getNodeName()));
+      Replica newreplica = c.getReplicasOnNode(j2.getNodeName()).getFirst();
 
       // let's stop the old leader
       JettySolrRunner oldJetty = cluster.getReplicaJetty(leader);

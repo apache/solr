@@ -20,7 +20,7 @@
 
 <schema name="schema-densevector" version="1.7">
     <fieldType name="string" class="solr.StrField" multiValued="true"/>
-    <fieldType name="knn_vector1" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine"/>
+    <fieldType name="knn_vector1" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswM="16" cuvsHNSWEfConstruction="100"/>
     <fieldType name="knn_vector2" class="solr.DenseVectorField" vectorDimension="8" similarityFunction="cosine"/>
 
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>

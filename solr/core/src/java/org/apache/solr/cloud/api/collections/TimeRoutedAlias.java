@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;

@@ -30,14 +30,14 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -167,7 +167,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     assertEquals(nodeCount, cluster.getJettySolrRunners().size());
 
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear(
+    AbstractFullDistribZkTestBase.waitForCollectionToDisappear(
         collectionName, ZkStateReader.from(client), true, 330);
 
     // create it again
@@ -206,7 +206,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
 
     // delete the collection
     CollectionAdminRequest.deleteCollection(collectionName).process(client);
-    AbstractDistribZkTestBase.waitForCollectionToDisappear(
+    AbstractFullDistribZkTestBase.waitForCollectionToDisappear(
         collectionName, ZkStateReader.from(client), true, 330);
   }
 

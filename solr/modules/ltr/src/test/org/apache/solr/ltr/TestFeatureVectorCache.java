@@ -19,7 +19,7 @@ package org.apache.solr.ltr;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;

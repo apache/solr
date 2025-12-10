@@ -17,7 +17,7 @@
 
 package org.apache.solr.jersey;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_REQUEST;
 import static org.apache.solr.jersey.RequestContextKeys.SOLR_QUERY_RESPONSE;
 import static org.apache.solr.response.QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;

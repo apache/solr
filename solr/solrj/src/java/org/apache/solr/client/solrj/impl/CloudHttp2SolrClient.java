@@ -17,48 +17,23 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.impl.SolrZkClientTimeout.SolrZkClientTimeoutAware;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.SolrException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.solr.common.util.IOUtils;
 
 /**
- * SolrJ client class to communicate with SolrCloud using an Http/2-capable Solr Client. Instances
- * of this class communicate with Zookeeper to discover Solr endpoints for SolrCloud collections,
- * and then use the {@link LBHttp2SolrClient} to issue requests.
+ * This {@link CloudSolrClient} is a base implementation using a {@link HttpSolrClientBase}. The '2'
+ * in the name has no differentiating significance anymore.
  *
  * @since solr 8.0
+ * @lucene.internal
  */
 @SuppressWarnings("serial")
 public class CloudHttp2SolrClient extends CloudSolrClient {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final ClusterStateProvider stateProvider;
-  private final LBHttp2SolrClient<HttpSolrClientBase> lbClient;
+  private final LBSolrClient lbClient;
   private final HttpSolrClientBase myClient;
   private final boolean clientIsInternal;
-
-  private static final boolean JETTY_CLIENT_AVAILABLE;
-
-  static {
-    boolean jettyClientAvailable = true;
-    try {
-      Class.forName("org.eclipse.jetty.client.HttpClient");
-    } catch (ClassNotFoundException e) {
-      jettyClientAvailable = false;
-    }
-    JETTY_CLIENT_AVAILABLE = jettyClientAvailable;
-  }
 
   /**
    * Create a new client object that connects to Zookeeper and is always aware of the SolrCloud
@@ -66,14 +41,19 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    * every shard in a collection, there is no single point of failure. Updates will be sent to shard
    * leaders by default.
    *
-   * @param builder a {@link CloudHttp2SolrClient.Builder} with the options used to create the
-   *     client.
+   * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
     super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
     this.clientIsInternal = builder.httpClient == null;
-    this.myClient = createOrGetHttpClientFromBuilder(builder);
-    this.stateProvider = createClusterStateProvider(builder);
+    try {
+      this.myClient = builder.createOrGetHttpClient();
+      this.lbClient = builder.createOrGetLbClient(myClient);
+      this.stateProvider = createClusterStateProvider(builder);
+    } catch (RuntimeException e) {
+      close();
+      throw e;
+    }
     this.retryExpiryTimeNano = builder.retryExpiryTimeNano;
     this.defaultCollection = builder.defaultCollection;
     if (builder.requestWriter != null) {
@@ -89,87 +69,31 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
     //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
     // locks.
     this.locks = objectList(builder.parallelCacheRefreshesLocks);
-
-    this.lbClient = new LBHttp2SolrClient.Builder<>(myClient).build();
-  }
-
-  private HttpSolrClientBase createOrGetHttpClientFromBuilder(Builder builder) {
-    if (builder.httpClient != null) {
-      return builder.httpClient;
-    } else if (builder.internalClientBuilder != null) {
-      return builder.internalClientBuilder.build();
-    } else if (JETTY_CLIENT_AVAILABLE) {
-      log.debug("Using {} as the delegate http client", Http2SolrClient.class);
-      return new Http2SolrClient.Builder().build();
-    } else {
-      log.debug("Using {} as the delegate http client", HttpJdkSolrClient.class);
-      return new HttpJdkSolrClient.Builder().build();
-    }
   }
 
   private ClusterStateProvider createClusterStateProvider(Builder builder) {
     if (builder.stateProvider != null) {
       return builder.stateProvider;
     } else if (builder.zkHosts.isEmpty()) {
-      return createHttp2ClusterStateProvider(builder.solrUrls, this.myClient);
+      return builder.createHttpClusterStateProvider(this.myClient);
     } else {
-      return createZkClusterStateProvider(builder);
-    }
-  }
-
-  private ClusterStateProvider createZkClusterStateProvider(Builder builder) {
-    try {
-      ClusterStateProvider stateProvider =
-          ClusterStateProvider.newZkClusterStateProvider(
-              builder.zkHosts, builder.zkChroot, builder.canUseZkACLs);
-      if (stateProvider instanceof SolrZkClientTimeoutAware timeoutAware) {
-        timeoutAware.setZkClientTimeout(builder.zkClientTimeout);
-        timeoutAware.setZkConnectTimeout(builder.zkConnectTimeout);
-      }
-      return stateProvider;
-    } catch (Exception e) {
-      closeMyClientIfNeeded();
-      throw (e);
-    }
-  }
-
-  private ClusterStateProvider createHttp2ClusterStateProvider(
-      List<String> solrUrls, HttpSolrClientBase httpClient) {
-    try {
-      return new Http2ClusterStateProvider<>(solrUrls, httpClient);
-    } catch (Exception e) {
-      closeMyClientIfNeeded();
-      throw new RuntimeException(
-          "Couldn't initialize a HttpClusterStateProvider (is/are the "
-              + "Solr server(s), "
-              + solrUrls
-              + ", down?)",
-          e);
-    }
-  }
-
-  private void closeMyClientIfNeeded() {
-    try {
-      if (clientIsInternal && myClient != null) {
-        myClient.close();
-      }
-    } catch (Exception e) {
-      throw new RuntimeException("Exception on closing myClient", e);
+      return builder.createZkClusterStateProvider();
     }
   }
 
   @Override
-  public void close() throws IOException {
-    stateProvider.close();
-    lbClient.close();
+  public void close() {
+    IOUtils.closeQuietly(stateProvider);
+    IOUtils.closeQuietly(lbClient);
 
-    closeMyClientIfNeeded();
-
+    if (clientIsInternal) {
+      IOUtils.closeQuietly(myClient);
+    }
     super.close();
   }
 
   @Override
-  public LBHttp2SolrClient<?> getLbClient() {
+  public LBSolrClient getLbClient() {
     return lbClient;
   }
 
@@ -180,286 +104,5 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
   public HttpSolrClientBase getHttpClient() {
     return myClient;
-  }
-
-  /** Constructs {@link CloudHttp2SolrClient} instances from provided configuration. */
-  public static class Builder {
-    protected Collection<String> zkHosts = new ArrayList<>();
-    protected List<String> solrUrls = new ArrayList<>();
-    protected String zkChroot;
-    protected HttpSolrClientBase httpClient;
-    protected boolean shardLeadersOnly = true;
-    protected boolean directUpdatesToLeadersOnly = false;
-    protected boolean parallelUpdates = true;
-    protected ClusterStateProvider stateProvider;
-    protected HttpSolrClientBuilderBase<?, ?> internalClientBuilder;
-    private RequestWriter requestWriter;
-    private ResponseParser responseParser;
-    private long retryExpiryTimeNano =
-        TimeUnit.NANOSECONDS.convert(3, TimeUnit.SECONDS); // 3 seconds or 3 million nanos
-
-    private String defaultCollection;
-    private long timeToLiveSeconds = 60;
-    private int parallelCacheRefreshesLocks = 3;
-    private int zkConnectTimeout = SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT;
-    private int zkClientTimeout = SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT;
-    private boolean canUseZkACLs = true;
-
-    /**
-     * Provide a series of Solr URLs to be used when configuring {@link CloudHttp2SolrClient}
-     * instances. The solr client will use these urls to understand the cluster topology, which solr
-     * nodes are active etc.
-     *
-     * <p>Provided Solr URLs are expected to point to the root Solr path
-     * ("http://hostname:8983/solr"); they should not include any collections, cores, or other path
-     * components.
-     *
-     * <p>Usage example:
-     *
-     * <pre>
-     *   final List&lt;String&gt; solrBaseUrls = new ArrayList&lt;String&gt;();
-     *   solrBaseUrls.add("http://solr1:8983/solr"); solrBaseUrls.add("http://solr2:8983/solr"); solrBaseUrls.add("http://solr3:8983/solr");
-     *   final SolrClient client = new CloudHttp2SolrClient.Builder(solrBaseUrls).build();
-     * </pre>
-     */
-    public Builder(List<String> solrUrls) {
-      this.solrUrls = solrUrls;
-    }
-
-    /**
-     * Provide a series of ZK hosts which will be used when configuring {@link CloudHttp2SolrClient}
-     * instances.
-     *
-     * <p>Usage example when Solr stores data at the ZooKeeper root ('/'):
-     *
-     * <pre>
-     *   final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *   zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *   final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.empty()).build();
-     * </pre>
-     *
-     * Usage example when Solr data is stored in a ZooKeeper chroot:
-     *
-     * <pre>
-     *    final List&lt;String&gt; zkServers = new ArrayList&lt;String&gt;();
-     *    zkServers.add("zookeeper1:2181"); zkServers.add("zookeeper2:2181"); zkServers.add("zookeeper3:2181");
-     *    final SolrClient client = new CloudHttp2SolrClient.Builder(zkServers, Optional.of("/solr")).build();
-     *  </pre>
-     *
-     * @param zkHosts a List of at least one ZooKeeper host and port (e.g. "zookeeper1:2181")
-     * @param zkChroot the path to the root ZooKeeper node containing Solr data. Provide {@code
-     *     java.util.Optional.empty()} if no ZK chroot is used.
-     */
-    public Builder(List<String> zkHosts, Optional<String> zkChroot) {
-      this.zkHosts = zkHosts;
-      if (zkChroot.isPresent()) this.zkChroot = zkChroot.get();
-    }
-
-    /** for an expert use-case */
-    public Builder(ClusterStateProvider stateProvider) {
-      this.stateProvider = stateProvider;
-    }
-
-    /** Whether to use the default ZK ACLs when building a ZK Client. */
-    public Builder canUseZkACLs(boolean canUseZkACLs) {
-      this.canUseZkACLs = canUseZkACLs;
-      return this;
-    }
-
-    /**
-     * Tells {@link Builder} that created clients should be configured such that {@link
-     * CloudSolrClient#isUpdatesToLeaders} returns <code>true</code>.
-     *
-     * @see #sendUpdatesToAnyReplica
-     * @see CloudSolrClient#isUpdatesToLeaders
-     */
-    public Builder sendUpdatesOnlyToShardLeaders() {
-      shardLeadersOnly = true;
-      return this;
-    }
-
-    /**
-     * Tells {@link Builder} that created clients should be configured such that {@link
-     * CloudSolrClient#isUpdatesToLeaders} returns <code>false</code>.
-     *
-     * @see #sendUpdatesOnlyToShardLeaders
-     * @see CloudSolrClient#isUpdatesToLeaders
-     */
-    public Builder sendUpdatesToAnyReplica() {
-      shardLeadersOnly = false;
-      return this;
-    }
-
-    /**
-     * Tells {@link CloudHttp2SolrClient.Builder} that created clients should send direct updates to
-     * shard leaders only.
-     *
-     * <p>UpdateRequests whose leaders cannot be found will "fail fast" on the client side with a
-     * {@link SolrException}
-     *
-     * @see #sendDirectUpdatesToAnyShardReplica
-     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
-     */
-    public Builder sendDirectUpdatesToShardLeadersOnly() {
-      directUpdatesToLeadersOnly = true;
-      return this;
-    }
-
-    /**
-     * Tells {@link CloudHttp2SolrClient.Builder} that created clients can send updates to any shard
-     * replica (shard leaders and non-leaders).
-     *
-     * <p>Shard leaders are still preferred, but the created clients will fall back to using other
-     * replicas if a leader cannot be found.
-     *
-     * @see #sendDirectUpdatesToShardLeadersOnly
-     * @see CloudSolrClient#isDirectUpdatesToLeadersOnly
-     */
-    public Builder sendDirectUpdatesToAnyShardReplica() {
-      directUpdatesToLeadersOnly = false;
-      return this;
-    }
-
-    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
-    public Builder withRequestWriter(RequestWriter requestWriter) {
-      this.requestWriter = requestWriter;
-      return this;
-    }
-
-    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
-    public Builder withResponseParser(ResponseParser responseParser) {
-      this.responseParser = responseParser;
-      return this;
-    }
-
-    /**
-     * Tells {@link CloudHttp2SolrClient.Builder} whether created clients should send shard updates
-     * serially or in parallel
-     *
-     * <p>When an {@link UpdateRequest} affects multiple shards, {@link CloudHttp2SolrClient} splits
-     * it up and sends a request to each affected shard. This setting chooses whether those
-     * sub-requests are sent serially or in parallel.
-     *
-     * <p>If not set, this defaults to 'true' and sends sub-requests in parallel.
-     */
-    public Builder withParallelUpdates(boolean parallelUpdates) {
-      this.parallelUpdates = parallelUpdates;
-      return this;
-    }
-
-    /**
-     * When caches are expired then they are refreshed after acquiring a lock. Use this to set the
-     * number of locks.
-     *
-     * <p>Defaults to 3.
-     */
-    public Builder withParallelCacheRefreshes(int parallelCacheRefreshesLocks) {
-      this.parallelCacheRefreshesLocks = parallelCacheRefreshesLocks;
-      return this;
-    }
-
-    /**
-     * This is the time to wait to re-fetch the state after getting the same state version from ZK
-     */
-    public Builder withRetryExpiryTime(long expiryTime, TimeUnit unit) {
-      this.retryExpiryTimeNano = TimeUnit.NANOSECONDS.convert(expiryTime, unit);
-      return this;
-    }
-
-    /** Sets the default collection for request. */
-    public Builder withDefaultCollection(String defaultCollection) {
-      this.defaultCollection = defaultCollection;
-      return this;
-    }
-
-    /**
-     * Sets the cache ttl for DocCollection Objects cached.
-     *
-     * @param timeToLive ttl value
-     */
-    public Builder withCollectionCacheTtl(long timeToLive, TimeUnit unit) {
-      assert timeToLive > 0;
-      this.timeToLiveSeconds = TimeUnit.SECONDS.convert(timeToLive, unit);
-      return this;
-    }
-
-    /**
-     * Set the internal Solr HTTP client.
-     *
-     * <p>Note: closing the client instance is the responsibility of the caller.
-     *
-     * @return this
-     */
-    public Builder withHttpClient(HttpSolrClientBase httpSolrClient) {
-      if (this.internalClientBuilder != null) {
-        throw new IllegalStateException(
-            "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
-      }
-      this.httpClient = httpSolrClient;
-      return this;
-    }
-
-    /**
-     * If provided, the CloudHttp2SolrClient will build it's internal client using this builder
-     * (instead of the empty default one). Providing this builder allows users to configure the
-     * internal clients (authentication, timeouts, etc.).
-     *
-     * @param internalClientBuilder the builder to use for creating the internal http client.
-     * @return this
-     */
-    public Builder withHttpClientBuilder(HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
-      if (this.httpClient != null) {
-        throw new IllegalStateException(
-            "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
-      }
-      this.internalClientBuilder = internalClientBuilder;
-      return this;
-    }
-
-    @Deprecated(since = "9.10")
-    public Builder withInternalClientBuilder(
-        HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
-      return withHttpClientBuilder(internalClientBuilder);
-    }
-
-    /**
-     * Sets the Zk connection timeout
-     *
-     * @param zkConnectTimeout timeout value
-     * @param unit time unit
-     */
-    public Builder withZkConnectTimeout(int zkConnectTimeout, TimeUnit unit) {
-      this.zkConnectTimeout = Math.toIntExact(unit.toMillis(zkConnectTimeout));
-      return this;
-    }
-
-    /**
-     * Sets the Zk client session timeout
-     *
-     * @param zkClientTimeout timeout value
-     * @param unit time unit
-     */
-    public Builder withZkClientTimeout(int zkClientTimeout, TimeUnit unit) {
-      this.zkClientTimeout = Math.toIntExact(unit.toMillis(zkClientTimeout));
-      return this;
-    }
-
-    /** Create a {@link CloudHttp2SolrClient} based on the provided configuration. */
-    public CloudHttp2SolrClient build() {
-      int providedOptions = 0;
-      if (!zkHosts.isEmpty()) providedOptions++;
-      if (!solrUrls.isEmpty()) providedOptions++;
-      if (stateProvider != null) providedOptions++;
-
-      if (providedOptions > 1) {
-        throw new IllegalArgumentException(
-            "Only one of zkHost(s), solrUrl(s), or stateProvider should be specified.");
-      } else if (providedOptions == 0) {
-        throw new IllegalArgumentException(
-            "One of zkHosts, solrUrls, or stateProvider must be specified.");
-      }
-
-      return new CloudHttp2SolrClient(this);
-    }
   }
 }

@@ -23,10 +23,10 @@ import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 

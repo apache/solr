@@ -25,9 +25,9 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -280,7 +280,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
 
       commit();
 
-      // TODO: assert we didnt kill everyone
+      // TODO: assert we didn't kill everyone
 
       zkStateReader.updateLiveNodes();
       assertTrue(zkStateReader.getClusterState().getLiveNodes().size() > 0);
