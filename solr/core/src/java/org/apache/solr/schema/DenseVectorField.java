@@ -75,6 +75,8 @@ public class DenseVectorField extends FloatPointField {
   static final String KNN_ALGORITHM = "knnAlgorithm";
   static final String HNSW_MAX_CONNECTIONS = "hnswMaxConnections";
   static final String HNSW_BEAM_WIDTH = "hnswBeamWidth";
+  static final String HNSW_M = "hnswM";
+  static final String HNSW_EF_CONSTRUCTION = "hnswEfConstruction";
   static final String VECTOR_ENCODING = "vectorEncoding";
   static final VectorEncoding DEFAULT_VECTOR_ENCODING = VectorEncoding.FLOAT32;
   static final String KNN_SIMILARITY_FUNCTION = "similarityFunction";
@@ -101,13 +103,13 @@ public class DenseVectorField extends FloatPointField {
    * This parameter is coupled with the hnsw algorithm. Controls how many of the nearest neighbor
    * candidates are connected to the new node. See {@link HnswGraph} for more details.
    */
-  private int hnswMaxConn;
+  private int hnswM;
 
   /**
    * This parameter is coupled with the hnsw algorithm. The number of candidate neighbors to track
    * while searching the graph for each newly inserted node. See {@link HnswGraph} for details.
    */
-  private int hnswBeamWidth;
+  private int hnswEfConstruction;
 
   /**
    * Encoding for vector value representation. The possible values are FLOAT32 or BYTE. The default
@@ -142,8 +144,24 @@ public class DenseVectorField extends FloatPointField {
     this.vectorEncoding = vectorEncoding;
   }
 
+  private String getFieldTypeName(IndexSchema schema) {
+    return schema != null ? schema.getSchemaName() : "unknown";
+  }
+
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
+
+    if (args.containsKey("hnswMaxConnections")) {
+      log.warn(
+          "Deprecated parameter 'hnswMaxConnections' detected in fieldType '{}'. Use 'hnswM' instead.",
+          getFieldTypeName(schema));
+    }
+    if (args.containsKey("hnswBeamWidth")) {
+      log.warn(
+          "Deprecated parameter 'hnswBeamWidth' detected in fieldType '{}'. Use 'hnswEfConstruction' instead.",
+          getFieldTypeName(schema));
+    }
+
     this.dimension =
         ofNullable(args.get(KNN_VECTOR_DIMENSION))
             .map(Integer::parseInt)
@@ -169,12 +187,26 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_VECTOR_ENCODING);
     args.remove(VECTOR_ENCODING);
 
-    this.hnswMaxConn =
-        ofNullable(args.get(HNSW_MAX_CONNECTIONS)).map(Integer::parseInt).orElse(DEFAULT_MAX_CONN);
+    this.hnswM =
+        ofNullable(args.get(HNSW_M))
+            .map(Integer::parseInt)
+            .orElseGet(
+                () ->
+                    ofNullable(args.get(HNSW_MAX_CONNECTIONS))
+                        .map(Integer::parseInt)
+                        .orElse(DEFAULT_MAX_CONN));
+    args.remove(HNSW_M);
     args.remove(HNSW_MAX_CONNECTIONS);
 
-    this.hnswBeamWidth =
-        ofNullable(args.get(HNSW_BEAM_WIDTH)).map(Integer::parseInt).orElse(DEFAULT_BEAM_WIDTH);
+    this.hnswEfConstruction =
+        ofNullable(args.get(HNSW_EF_CONSTRUCTION))
+            .map(Integer::parseInt)
+            .orElseGet(
+                () ->
+                    ofNullable(args.get(HNSW_BEAM_WIDTH))
+                        .map(Integer::parseInt)
+                        .orElse(DEFAULT_BEAM_WIDTH));
+    args.remove(HNSW_EF_CONSTRUCTION);
     args.remove(HNSW_BEAM_WIDTH);
 
     this.cuvsWriterThreads =
@@ -231,12 +263,22 @@ public class DenseVectorField extends FloatPointField {
     return knnAlgorithm;
   }
 
+  @Deprecated
   public Integer getHnswMaxConn() {
-    return hnswMaxConn;
+    return hnswM;
   }
 
+  @Deprecated
   public Integer getHnswBeamWidth() {
-    return hnswBeamWidth;
+    return hnswEfConstruction;
+  }
+
+  public Integer getHnswM() {
+    return hnswM;
+  }
+
+  public Integer getHnswEfConstruction() {
+    return hnswEfConstruction;
   }
 
   public VectorEncoding getVectorEncoding() {
@@ -434,7 +476,7 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene99HnswVectorsFormat(hnswMaxConn, hnswBeamWidth);
+    return new Lucene99HnswVectorsFormat(hnswM, hnswEfConstruction);
   }
 
   @Override
