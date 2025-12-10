@@ -23,6 +23,7 @@ import static org.hamcrest.CoreMatchers.is;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -46,6 +47,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18025")
 public class LeaderTragicEventTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
