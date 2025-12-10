@@ -39,9 +39,10 @@ import org.slf4j.LoggerFactory;
  * XXE vulnerabilities in PDF parsing when XFA forms are processed.
  *
  * <p>The mitigation disables XFA parsing by setting:
+ *
  * <ul>
- *   <li>extractAcroFormContent = false</li>
- *   <li>ifXFAExtractOnlyXFA = false</li>
+ *   <li>extractAcroFormContent = false
+ *   <li>ifXFAExtractOnlyXFA = false
  * </ul>
  */
 public class CVE202554988Test extends SolrTestCaseJ4 {
@@ -95,10 +96,11 @@ public class CVE202554988Test extends SolrTestCaseJ4 {
    * (extractAcroFormContent=true), which was the vulnerable default before the fix.
    *
    * <p>This test verifies that:
+   *
    * <ol>
-   *   <li>PDFs can still be extracted when XFA parsing is enabled</li>
-   *   <li>XFA form field names ARE extracted when extractAcroFormContent=true</li>
-   *   <li>This demonstrates the attack vector for CVE-2025-54988</li>
+   *   <li>PDFs can still be extracted when XFA parsing is enabled
+   *   <li>XFA form field names ARE extracted when extractAcroFormContent=true
+   *   <li>This demonstrates the attack vector for CVE-2025-54988
    * </ol>
    */
   @Test
