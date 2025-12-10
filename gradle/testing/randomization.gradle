@@ -81,6 +81,7 @@ allprojects {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
+          [propName: 'lucene.fixedbitset.maxwordsshift', value: "17", description: "May set lower to exercise FixedBitSet partitioning"],
           // seed, repetition and amplification.
           [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
           [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],

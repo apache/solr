@@ -19,7 +19,6 @@ package org.apache.solr.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import org.apache.lucene.index.IndexReader;
@@ -31,7 +30,11 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
+import org.apache.lucene.search.DisiPriorityQueue;
+import org.apache.lucene.search.DisiWrapper;
+import org.apache.lucene.search.DisjunctionDISIApproximation;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -447,30 +450,78 @@ class JoinQuery extends Query {
 
       int sz = 0;
 
+      // TODO: there's got to be a better way to estimate final size ...
       for (DocSet set : resultList) sz += set.size();
 
-      int[] docs = new int[sz];
-      int pos = 0;
+      DisiPriorityQueue pq = new DisiPriorityQueue(resultList.size());
       for (DocSet set : resultList) {
-        System.arraycopy(((SortedIntDocSet) set).getDocs(), 0, docs, pos, set.size());
-        pos += set.size();
-      }
-      Arrays.sort(docs);
-      int[] dedup = new int[sz];
-      pos = 0;
-      int last = -1;
-      for (int doc : docs) {
-        if (doc != last) dedup[pos++] = doc;
-        last = doc;
-      }
+        SortedIntDocSet sorted = (SortedIntDocSet) set;
+        int capacity = sorted.capacity;
+        final int[][] docs = sorted.getDocs();
+        pq.add(
+            new DisiWrapper(
+                new ConstantScoreScorer(
+                    DUMMY,
+                    1f,
+                    ScoreMode.COMPLETE_NO_SCORES,
+                    new DocIdSetIterator() {
+                      int idx = -1;
+                      int id = -1;
 
-      if (pos != dedup.length) {
-        dedup = Arrays.copyOf(dedup, pos);
-      }
+                      @Override
+                      public int docID() {
+                        return id;
+                      }
 
-      return new SortedIntDocSet(dedup, dedup.length);
+                      @Override
+                      public int nextDoc() {
+                        if (++idx >= capacity) {
+                          return id = NO_MORE_DOCS;
+                        } else {
+                          return id =
+                              docs[idx >> SortedIntDocSet.WORDS_SHIFT][
+                                  idx & SortedIntDocSet.ARR_MASK];
+                        }
+                      }
+
+                      @Override
+                      public int advance(int target) {
+                        while (nextDoc() < target) {
+                          // advance
+                        }
+                        return id;
+                      }
+
+                      @Override
+                      public long cost() {
+                        return capacity;
+                      }
+                    })));
+      }
+      DocSetBuilder dsb = new DocSetBuilder(toSearcher.maxDoc(), sz);
+      dsb.add(new DisjunctionDISIApproximation(pq), 0);
+
+      return dsb.buildUniqueInOrder(null);
     }
   }
+
+  private static final Weight DUMMY =
+      new Weight(null) {
+        @Override
+        public Explanation explain(LeafReaderContext context, int doc) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isCacheable(LeafReaderContext ctx) {
+          throw new UnsupportedOperationException();
+        }
+      };
 
   @Override
   public String toString(String field) {

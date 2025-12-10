@@ -170,14 +170,16 @@ public class MultiThreadedSearcher {
     }
 
     void update(FixedBitSet allBitSet) {
-      final long[] allBits = allBitSet.getBits();
+      final long[][] allBits = allBitSet.getBits();
       for (int bs_idx = 0; bs_idx < this.bitSets.size(); ++bs_idx) {
         final FixedBitSet itBitSet = this.bitSets.get(bs_idx);
         if (itBitSet != null) {
           final int skipWords = this.skipWords.get(bs_idx);
-          final long[] itBits = itBitSet.getBits();
+          final long[][] itBits = itBitSet.getBits();
           for (int idx = 0; idx < itBits.length && skipWords + idx < allBits.length; ++idx) {
-            allBits[skipWords + idx] ^= itBits[idx];
+            int allIdx = skipWords + idx;
+            allBits[allIdx >> FixedBitSet.WORDS_SHIFT][allIdx & FixedBitSet.BLOCK_MASK] ^=
+                itBits[idx >> FixedBitSet.WORDS_SHIFT][idx & FixedBitSet.BLOCK_MASK];
           }
         }
       }

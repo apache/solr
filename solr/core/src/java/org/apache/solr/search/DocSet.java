@@ -40,7 +40,7 @@ public abstract class DocSet implements Accountable, Cloneable /* extends Collec
   // can't use a trivial static initializer "EMPTY = new SortedIntDocSet" because it can lead to
   // classloader deadlock
   private static class EmptyLazyHolder {
-    static final DocSet INSTANCE = new SortedIntDocSet(new int[0]);
+    static final DocSet INSTANCE = new SortedIntDocSet(new int[0][]);
   }
 
   /** An empty instance (has no docs). */

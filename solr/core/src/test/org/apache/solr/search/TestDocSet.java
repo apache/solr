@@ -98,10 +98,11 @@ public class TestDocSet extends SolrTestCase {
   }
 
   public DocSet getIntDocSet(FixedBitSet bs) {
-    int[] docs = new int[bs.cardinality()];
+    int size = bs.cardinality();
+    int[][] docs = SortedIntDocSet.allocate(size);
     BitSetIterator iter = new BitSetIterator(bs, 0);
-    for (int i = 0; i < docs.length; i++) {
-      docs[i] = iter.nextDoc();
+    for (int i = 0; i < size; i++) {
+      docs[i >> SortedIntDocSet.WORDS_SHIFT][i & SortedIntDocSet.ARR_MASK] = iter.nextDoc();
     }
     return new SortedIntDocSet(docs);
   }
@@ -242,7 +243,11 @@ public class TestDocSet extends SolrTestCase {
     if (n <= smallSetCutoff) {
       if (smallSetType == 0) {
         Arrays.sort(a);
-        return new SortedIntDocSet(a);
+        int[][] dimensional = SortedIntDocSet.allocate(n);
+        for (int i = 0; i < n; i++) {
+          dimensional[i >> SortedIntDocSet.WORDS_SHIFT][i & SortedIntDocSet.ARR_MASK] = a[i];
+        }
+        return new SortedIntDocSet(dimensional);
       }
     }
 
@@ -691,6 +696,24 @@ public class TestDocSet extends SolrTestCase {
     System.err.println("testCopyBitRange successful seed count: " + successfulSeeds);
   }
 
+  public void testCopyBitRangeArr() {
+    Random r = random();
+    int successfulSeeds = 0;
+    for (int i = 100 * RANDOM_MULTIPLIER; i > 0; i--) {
+      long seed = r.nextLong();
+      try {
+        assertTrue(
+            "failed for inner seed " + Long.toUnsignedString(seed, 16),
+            doTestCopyBitRangeArr(seed));
+        successfulSeeds++;
+      } catch (Throwable ex) {
+        System.err.println("exception for inner seed: " + Long.toUnsignedString(seed, 16));
+        throw ex;
+      }
+    }
+    System.err.println("testCopyBitRange successful seed count: " + successfulSeeds);
+  }
+
   /**
    * Tests the correctness of {@link DocSetUtil#copyBitRange(long[], int, long[], int, int)} by
    * copying arbitrary ranges from a source "bitset" array to a dest "bitset" array, and back into
@@ -738,5 +761,74 @@ public class TestDocSet extends SolrTestCase {
       copyBitRange(dest, mapping[2], rtx, mapping[0], mapping[1]);
     }
     return Arrays.equals(src, rtx);
+  }
+
+  /**
+   * Tests the correctness of {@link DocSetUtil#copyBitRange(long[], int, long[], int, int)} by
+   * copying arbitrary ranges from a source "bitset" array to a dest "bitset" array, and back into
+   * their original positions in a new array (essentially a round-trip), and comparing the source
+   * and "round-tripped" final array for equality.
+   */
+  private static boolean doTestCopyBitRangeArr(long seed) {
+    Random r = new Random(seed);
+    long[] src = new long[r.nextInt(1026) + 1];
+    for (int i = src.length - 1; i >= 0; i--) {
+      src[i] = r.nextLong();
+    }
+    int bitLen = src.length * Long.SIZE;
+    int boundary2 = r.nextInt(bitLen);
+    int boundary1 = r.nextInt(boundary2 + 1);
+    int boundary3 = boundary2 + r.nextInt(bitLen - boundary2);
+    int[][] regions =
+        new int[][] {
+          new int[] {0, boundary1},
+          new int[] {boundary1, boundary2 - boundary1},
+          new int[] {boundary2, boundary3 - boundary2},
+          new int[] {boundary3, bitLen - boundary3}
+        };
+    Integer[] regionIdxs = new Integer[regions.length];
+    for (int i = regionIdxs.length - 1; i >= 0; i--) {
+      regionIdxs[i] = i;
+    }
+    Collections.shuffle(Arrays.asList(regionIdxs), r);
+    int[][] mappings = new int[regions.length][];
+    int newOffset = 0;
+    for (int i = 0; i < regions.length; i++) {
+      int[] region = regions[regionIdxs[i]];
+      mappings[i] = Arrays.copyOf(region, 3);
+      mappings[i][2] = newOffset;
+      newOffset += region[1];
+    }
+    long[][] srcArr = new FixedBitSet.BitsBuilder(src.length).bits;
+    int idx = 0;
+    for (long[] a : srcArr) {
+      for (int i = 0, lim = a.length; i < lim; i++) {
+        a[i] = src[idx++];
+      }
+    }
+
+    long[][] destArr = new FixedBitSet.BitsBuilder(src.length).bits;
+    Collections.shuffle(Arrays.asList(mappings), r);
+    for (int[] mapping : mappings) {
+      copyBitRange(srcArr, mapping[0], destArr, mapping[2], mapping[1]);
+    }
+    long[][] rtx = new FixedBitSet.BitsBuilder(src.length).bits;
+    Collections.shuffle(Arrays.asList(mappings), r);
+    for (int[] mapping : mappings) {
+      copyBitRange(destArr, mapping[2], rtx, mapping[0], mapping[1]);
+    }
+    boolean ret = Arrays.deepEquals(srcArr, rtx);
+    if (!ret) {
+      System.err.println(srcArr.length + " ?= " + rtx.length);
+      for (int i = 0; i < srcArr.length; i++) {
+        long[] a = srcArr[i];
+        long[] b = rtx[i];
+        System.err.println(
+            "\t" + a.length + " ?= " + b.length + " equals?: " + Arrays.equals(a, b));
+        System.err.println("\t\t" + Arrays.toString(a));
+        System.err.println("\t\t" + Arrays.toString(b));
+      }
+    }
+    return ret;
   }
 }

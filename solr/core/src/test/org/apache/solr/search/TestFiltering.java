@@ -417,16 +417,16 @@ public class TestFiltering extends SolrTestCaseJ4 {
     } else {
       // term or boolean query
       int numWords = FixedBitSet.bits2words(model.indexSize);
-      long[] psetBits = new long[numWords];
-      for (int i = 0; i < psetBits.length; i++) {
-        psetBits[i] = random().nextLong(); // set 50% of the bits on average
+      FixedBitSet.BitsBuilder psetBits = new FixedBitSet.BitsBuilder(numWords);
+      for (int i = 0; i < numWords; i++) {
+        psetBits.set(i, random().nextLong()); // set 50% of the bits on average
       }
       // Make sure no 'ghost' bits are set beyond model.indexSize (see
       // FixedBitSet.verifyGhostBitsClear)
       if ((model.indexSize & 0x3f) != 0) {
         long mask = -1L << model.indexSize; // & 0x3f is implicit
 
-        psetBits[numWords - 1] &= ~mask;
+        psetBits.and(numWords - 1, ~mask);
       }
       FixedBitSet pset = new FixedBitSet(psetBits, model.indexSize);
       if (positive) {

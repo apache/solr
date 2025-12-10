@@ -197,7 +197,7 @@ public class DocSetUtil {
   private static DocSet createSmallSet(
       List<LeafReaderContext> leaves, PostingsEnum[] postList, int maxPossible, int firstReader)
       throws IOException {
-    int[] docs = new int[maxPossible];
+    int[][] docs = SortedIntDocSet.allocate(maxPossible);
     int sz = 0;
     for (int i = firstReader; i < postList.length; i++) {
       PostingsEnum postings = postList[i];
@@ -210,7 +210,7 @@ public class DocSetUtil {
         if (subId == DocIdSetIterator.NO_MORE_DOCS) break;
         if (liveDocs != null && !liveDocs.get(subId)) continue;
         int globalId = subId + base;
-        docs[sz++] = globalId;
+        docs[sz >> SortedIntDocSet.WORDS_SHIFT][sz++ & SortedIntDocSet.ARR_MASK] = globalId;
       }
     }
 
@@ -220,7 +220,7 @@ public class DocSetUtil {
   private static DocSet createBigSet(
       List<LeafReaderContext> leaves, PostingsEnum[] postList, int maxDoc, int firstReader)
       throws IOException {
-    long[] bits = new long[FixedBitSet.bits2words(maxDoc)];
+    FixedBitSet.BitsBuilder bits = new FixedBitSet.BitsBuilder(FixedBitSet.bits2words(maxDoc));
     int sz = 0;
     for (int i = firstReader; i < postList.length; i++) {
       PostingsEnum postings = postList[i];
@@ -233,7 +233,7 @@ public class DocSetUtil {
         if (subId == DocIdSetIterator.NO_MORE_DOCS) break;
         if (liveDocs != null && !liveDocs.get(subId)) continue;
         int globalId = subId + base;
-        bits[globalId >> 6] |= (1L << globalId);
+        bits.or(globalId >> 6, 1L << globalId);
         sz++;
       }
     }
@@ -253,12 +253,12 @@ public class DocSetUtil {
 
   public static DocSet toSmallSet(BitDocSet bitSet) {
     int sz = bitSet.size();
-    int[] docs = new int[sz];
+    int[][] docs = SortedIntDocSet.allocate(sz);
     FixedBitSet bs = bitSet.getBits();
     int doc = -1;
     for (int i = 0; i < sz; i++) {
       doc = bs.nextSetBit(doc + 1);
-      docs[i] = doc;
+      docs[i >> SortedIntDocSet.WORDS_SHIFT][i & SortedIntDocSet.ARR_MASK] = doc;
     }
     return new SortedIntDocSet(docs);
   }
@@ -307,6 +307,11 @@ public class DocSetUtil {
    */
   static void copyTo(
       Bits src, final int srcOffset, int srcLimit, FixedBitSet dest, int destOffset) {
+    long[][] rawBits = FixedBitSet.getBits(src);
+    if (rawBits != null) {
+      copyBitRange(rawBits, srcOffset, dest.getBits(), destOffset, srcLimit - srcOffset);
+      return;
+    }
     /*
     NOTE: `adjustedSegDocBase` +1 to compensate for the fact that `segOrd` always has to "read
     ahead" by 1. Adding 1 to set `adjustedSegDocBase` once allows us to use `segOrd` as-is (with
@@ -342,6 +347,91 @@ public class DocSetUtil {
 
   private static long clearHigh(long v, int numBits) {
     return (v << numBits) >>> numBits;
+  }
+
+  private static final int BITS_SHIFT = FixedBitSet.WORDS_SHIFT + 6; // per long[] and per long
+  private static final int BITS_PER_ARRAY = 1 << BITS_SHIFT;
+  private static final int BITS_MASK = BITS_PER_ARRAY - 1;
+
+  /**
+   * Analogous to {@link #copyBitRange(long[], int, long[], int, int)}, but takes 2-dimensional
+   * {@code long[]} as input (formatted according to boundaries defined by partitioning scheme of
+   * {@link FixedBitSet#WORDS_SHIFT}.
+   */
+  public static void copyBitRange(
+      final long[][] src, final int srcIdx, final long[][] dest, final int destIdx, final int len) {
+    if (len == 0) return;
+    int srcOuterOffset = srcIdx >> BITS_SHIFT;
+    final int destOuterOffset = destIdx >> BITS_SHIFT;
+    int srcInnerOffset = srcIdx & BITS_MASK;
+    int destInnerOffset = destIdx & BITS_MASK;
+    final int len1;
+    final int len2;
+    long[] srcArr1;
+    long[] srcArr2;
+
+    // the array offset of the word for the last "bit" element.
+    final int destOuterLimit = (destIdx + len - 1) >> BITS_SHIFT;
+
+    if (srcInnerOffset <= destInnerOffset) {
+      len1 = destInnerOffset - srcInnerOffset;
+      len2 = BITS_PER_ARRAY - len1;
+      srcArr1 = null;
+      srcArr2 = src[srcOuterOffset];
+    } else {
+      len2 = srcInnerOffset - destInnerOffset;
+      len1 = BITS_PER_ARRAY - len2;
+      srcArr1 = src[srcOuterOffset]; // clear out-of-scope bits
+      srcArr2 = ++srcOuterOffset < src.length ? src[srcOuterOffset] : null;
+    }
+    // special handling for the first word, which may be partial
+    long[] destArr = dest[destOuterOffset];
+    if (srcArr1 == null) {
+      copyBitRange(
+          srcArr2,
+          srcInnerOffset,
+          destArr,
+          destInnerOffset,
+          Math.min(len, BITS_PER_ARRAY - destInnerOffset));
+    } else if (srcArr2 == null) {
+      copyBitRange(
+          srcArr1,
+          srcInnerOffset,
+          destArr,
+          destInnerOffset,
+          Math.min(len, BITS_PER_ARRAY - srcInnerOffset));
+    } else {
+      int initialLen = BITS_PER_ARRAY - srcInnerOffset;
+      if (len <= initialLen) {
+        copyBitRange(srcArr1, srcInnerOffset, destArr, destInnerOffset, len);
+      } else {
+        copyBitRange(srcArr1, srcInnerOffset, destArr, destInnerOffset, initialLen);
+        copyBitRange(
+            srcArr2, 0, destArr, destInnerOffset + initialLen, Math.min(len2, len - initialLen));
+      }
+    }
+    if (destOuterOffset == destOuterLimit) return;
+
+    for (int i = destOuterOffset + 1; i < destOuterLimit; i++) {
+      // inner words are guaranteed to not be partial, so this can be very simple
+      srcArr1 = srcArr2;
+      srcArr2 = src[++srcOuterOffset];
+      destArr = dest[i];
+      copyBitRange(srcArr1, len2, destArr, 0, len1);
+      copyBitRange(srcArr2, 0, destArr, len1, len2);
+    }
+    srcArr1 = srcArr2;
+    srcArr2 = ++srcOuterOffset < src.length ? src[srcOuterOffset] : null;
+
+    // special handling for the last word, which may be partial
+    int remainder = ((destIdx + len - 1) & BITS_MASK) + 1;
+    destArr = dest[destOuterLimit];
+    if (srcArr2 == null || remainder <= len1) {
+      copyBitRange(srcArr1, len2, destArr, 0, remainder);
+    } else {
+      copyBitRange(srcArr1, len2, destArr, 0, len1);
+      copyBitRange(srcArr2, 0, destArr, len1, remainder - len1);
+    }
   }
 
   /**

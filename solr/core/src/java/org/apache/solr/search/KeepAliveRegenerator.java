@@ -21,7 +21,6 @@ import static org.apache.solr.search.OrdMapRegenerator.getRegenKeepAliveNanos;
 
 import java.io.IOException;
 import java.util.AbstractMap;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -478,14 +477,14 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
       } else {
         final Weight backingWeight =
             backing.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f);
-        final long[] staleBits;
+        final long[][] staleBits;
         if (stale instanceof BitDocSet) {
           staleBits = ((BitDocSet) stale).getBits().getBits();
         } else {
           staleBits = null;
         }
         int size = 0;
-        long[] bits = new long[FixedBitSet.bits2words(maxDoc)];
+        FixedBitSet.BitsBuilder bits = new FixedBitSet.BitsBuilder(FixedBitSet.bits2words(maxDoc));
         for (LeafReaderContext context : searcher.getLeafContexts()) {
           final Bits liveDocs = context.reader().getLiveDocs();
           final int newDocBase = context.docBase;
@@ -502,7 +501,7 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
               while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (liveDocs == null || liveDocs.get(doc)) {
                   int globalId = newDocBase + doc;
-                  bits[globalId >> 6] |= (1L << globalId);
+                  bits.or(globalId >> 6, 1L << globalId);
                   size++;
                 }
               }
@@ -512,7 +511,7 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
               while ((doc = iter.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (tpi.matches() && (liveDocs == null || liveDocs.get(doc))) {
                   int globalId = newDocBase + doc;
-                  bits[globalId >> 6] |= (1L << globalId);
+                  bits.or(globalId >> 6, 1L << globalId);
                   size++;
                 }
               }
@@ -523,8 +522,11 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
             final DocIdSetIterator disi;
             if (staleBits == null) {
               assert stale instanceof SortedIntDocSet;
-              final int[] docs = ((SortedIntDocSet) stale).getDocs();
-              final int first = Arrays.binarySearch(docs, docBase);
+              SortedIntDocSet staleSorted = (SortedIntDocSet) stale;
+              int capacity = staleSorted.capacity;
+              final int[][] docs = staleSorted.getDocs();
+              final int first =
+                  SortedIntDocSet.binarySearch(docs, 0, staleSorted.capacity, docBase);
               disi =
                   new DocIdSetIterator() {
                     final int limit = segment.maxDoc + docBase;
@@ -538,7 +540,11 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
 
                     @Override
                     public int nextDoc() {
-                      if (++idx >= docs.length || (id = docs[idx]) >= limit) {
+                      if (++idx >= capacity
+                          || (id =
+                                  docs[idx >> SortedIntDocSet.WORDS_SHIFT][
+                                      idx & SortedIntDocSet.ARR_MASK])
+                              >= limit) {
                         return id = NO_MORE_DOCS;
                       } else {
                         return id - docBase;
@@ -562,12 +568,12 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
               while ((doc = disi.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
                 if (liveDocs == null || liveDocs.get(doc)) {
                   int globalId = newDocBase + doc;
-                  bits[globalId >> 6] |= (1L << globalId);
+                  bits.or(globalId >> 6, 1L << globalId);
                   size++;
                 }
               }
             } else {
-              copyBitRange(staleBits, docBase, bits, newDocBase, segment.maxDoc);
+              copyBitRange(staleBits, docBase, bits.bits, newDocBase, segment.maxDoc);
             }
           }
         }
@@ -605,8 +611,11 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
             final int docBase = segment.docBase;
             final DocIdSetIterator disi;
             if (stale instanceof SortedIntDocSet) {
-              final int[] docs = ((SortedIntDocSet) stale).getDocs();
-              final int first = Arrays.binarySearch(docs, docBase);
+              SortedIntDocSet staleSorted = (SortedIntDocSet) stale;
+              int capacity = staleSorted.capacity;
+              final int[][] docs = staleSorted.getDocs();
+              final int first =
+                  SortedIntDocSet.binarySearch(docs, 0, staleSorted.capacity, docBase);
               disi =
                   new DocIdSetIterator() {
                     final int limit = segment.maxDoc + docBase;
@@ -620,7 +629,11 @@ public class KeepAliveRegenerator<M extends MetaEntry<Query, DocSet, M>>
 
                     @Override
                     public int nextDoc() {
-                      if (++idx >= docs.length || (id = docs[idx]) >= limit) {
+                      if (++idx >= capacity
+                          || (id =
+                                  docs[idx >> SortedIntDocSet.WORDS_SHIFT][
+                                      idx & SortedIntDocSet.ARR_MASK])
+                              >= limit) {
                         return id = NO_MORE_DOCS;
                       } else {
                         return id - docBase;
