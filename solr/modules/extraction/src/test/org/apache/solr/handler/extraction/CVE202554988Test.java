@@ -91,9 +91,12 @@ public class CVE202554988Test extends SolrTestCaseJ4 {
    * <p>This test uses a parseContext configuration that explicitly enables XFA parsing
    * (extractAcroFormContent=true), which was the vulnerable default before the fix.
    *
-   * <p>This test verifies that: 1. PDFs can still be extracted when XFA parsing is enabled 2. XFA
-   * form field names ARE extracted when extractAcroFormContent=true 3. This demonstrates the attack
-   * vector for CVE-2025-54988
+   * <p>This test verifies that:
+   * <ol>
+   *   <li>PDFs can still be extracted when XFA parsing is enabled</li>
+   *   <li>XFA form field names ARE extracted when extractAcroFormContent=true</li>
+   *   <li>This demonstrates the attack vector for CVE-2025-54988</li>
+   * </ol>
    */
   @Test
   public void testVulnerableConfigEnablesXFAParsing() throws Exception {
