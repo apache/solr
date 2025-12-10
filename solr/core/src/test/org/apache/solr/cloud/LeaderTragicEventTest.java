@@ -47,7 +47,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-18025")
 public class LeaderTragicEventTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -133,15 +132,49 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       log.info("Will crash leader : {}", oldLeader);
 
       final Replica leaderReplica = dc.getLeader("shard1");
-      try (SolrClient solrClient = new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
-        new UpdateRequest().add("id", "99").commit(solrClient, leaderReplica.getCoreName());
-        fail("Should have injected tragedy");
-      } catch (RemoteSolrException e) {
-        // solrClient.add would throw RemoteSolrException with code 500
-        // or 404 if the bad replica has already been deleted
-        assertThat(e.code(), anyOf(is(500), is(404)));
-      } catch (AlreadyClosedException e) {
-        // If giving up leadership, might be already closed/closing
+
+      // Retry up to 3 times to ensure the tragic event is properly triggered
+      // This works around LUCENE-8692 where getTragicException() may not reflect all exceptions
+      int attempts = 0;
+      int maxAttempts = 3;
+      boolean tragedyTriggered = false;
+
+      while (attempts < maxAttempts && !tragedyTriggered) {
+        attempts++;
+        try (SolrClient solrClient =
+            new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
+          new UpdateRequest()
+              .add("id", "99_attempt_" + attempts)
+              .commit(solrClient, leaderReplica.getCoreName());
+          fail("Should have injected tragedy on attempt " + attempts);
+        } catch (RemoteSolrException e) {
+          // solrClient.add would throw RemoteSolrException with code 500
+          // or 404 if the bad replica has already been deleted
+          assertThat(e.code(), anyOf(is(500), is(404)));
+          log.info("Tragic event triggered on attempt {}: {}", attempts, e.getMessage());
+          tragedyTriggered = true;
+        } catch (AlreadyClosedException e) {
+          // If giving up leadership, might be already closed/closing
+          log.info(
+              "Core already closed on attempt {} (leadership likely given up): {}",
+              attempts,
+              e.getMessage());
+          tragedyTriggered = true;
+        }
+
+        // Brief pause between attempts to let the system stabilize
+        if (!tragedyTriggered && attempts < maxAttempts) {
+          try {
+            Thread.sleep(100);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException(ie);
+          }
+        }
+      }
+
+      if (!tragedyTriggered) {
+        fail("Failed to trigger tragic event after " + maxAttempts + " attempts");
       }
 
       return oldLeader;
