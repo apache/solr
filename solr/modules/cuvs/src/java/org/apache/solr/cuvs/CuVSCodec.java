@@ -40,14 +40,6 @@ import org.slf4j.LoggerFactory;
 public class CuVSCodec extends FilterCodec {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final int DEFAULT_CUVS_WRITER_THREADS = 32;
-  private static final int DEFAULT_INT_GRAPH_DEGREE = 128;
-  private static final int DEFAULT_GRAPH_DEGREE = 64;
-  private static final int DEFAULT_HNSW_LAYERS = 1;
-  private static final int DEFAULT_HNSW_M = 16;
-  private static final int DEFAULT_HNSW_EF_CONSTRUCTION = 100;
-
-  private static final String CAGRA_HNSW = "cagra_hnsw";
   private static final String FALLBACK_CODEC = "Lucene103";
   private final SolrCore core;
   private final Lucene103Codec fallbackCodec;
@@ -56,41 +48,6 @@ public class CuVSCodec extends FilterCodec {
     super(FALLBACK_CODEC, fallback);
     this.core = core;
     this.fallbackCodec = fallback;
-
-    String cwt = args._getStr("cuvsWriterThreads");
-    int cuvsWriterThreads = cwt != null ? Integer.parseInt(cwt) : DEFAULT_CUVS_WRITER_THREADS;
-    String igd = args._getStr("intGraphDegree");
-    int intGraphDegree = igd != null ? Integer.parseInt(igd) : DEFAULT_INT_GRAPH_DEGREE;
-    String gd = args._getStr("graphDegree");
-    int graphDegree = gd != null ? Integer.parseInt(gd) : DEFAULT_GRAPH_DEGREE;
-    String hl = args._getStr("hnswLayers");
-    int hnswLayers = hl != null ? Integer.parseInt(hl) : DEFAULT_HNSW_LAYERS;
-    String mc = args._getStr("hnswM");
-    int hnswM = mc != null ? Integer.parseInt(mc) : DEFAULT_HNSW_M;
-    String bw = args._getStr("hnswEfConstruction");
-    int hnswEfConstruction = bw != null ? Integer.parseInt(bw) : DEFAULT_HNSW_EF_CONSTRUCTION;
-
-    assert cuvsWriterThreads > 0 : "cuvsWriterThreads cannot be less then or equal to 0";
-    assert intGraphDegree > 0 : "intGraphDegree cannot be less then or equal to 0";
-    assert graphDegree > 0 : "graphDegree cannot be less then or equal to 0";
-    assert hnswLayers > 0 : "hnswLayers cannot be less then or equal to 0";
-    assert hnswM > 0 : "hnswM cannot be less then or equal to 0";
-    assert hnswEfConstruction > 0 : "hnswEfConstruction cannot be less then or equal to 0";
-
-    cuvsHNSWVectorsFormat =
-        new Lucene99AcceleratedHNSWVectorsFormat(
-            cuvsWriterThreads, intGraphDegree, graphDegree, hnswLayers, hnswM, hnswEfConstruction);
-
-    if (log.isInfoEnabled()) {
-      log.info(
-          "Lucene99AcceleratedHNSWVectorsFormat initialized with parameter values: cuvsWriterThreads {}, intGraphDegree {}, graphDegree {}, hnswLayers {}, hnswM {}, hnswEfConstruction {}",
-          cuvsWriterThreads,
-          intGraphDegree,
-          graphDegree,
-          hnswLayers,
-          hnswM,
-          hnswEfConstruction);
-    }
   }
 
   @Override

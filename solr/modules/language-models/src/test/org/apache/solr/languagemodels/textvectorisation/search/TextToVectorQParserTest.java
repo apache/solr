@@ -18,7 +18,7 @@ package org.apache.solr.languagemodels.textvectorisation.search;
 
 import java.util.Arrays;
 import java.util.Locale;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.languagemodels.TestLanguageModelBase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
