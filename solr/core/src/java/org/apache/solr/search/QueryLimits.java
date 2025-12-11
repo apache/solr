@@ -49,11 +49,6 @@ public final class QueryLimits implements QueryTimeout {
   public static final QueryLimits NONE = new QueryLimits();
 
   private final SolrQueryResponse rsp;
-
-  public SolrQueryResponse getRsp() {
-    return rsp;
-  }
-
   private final boolean allowPartialResults;
 
   // short-circuit the checks if any limit has been tripped

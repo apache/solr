@@ -19,9 +19,7 @@ package org.apache.solr.schema;
 import static java.util.Optional.ofNullable;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_BEAM_WIDTH;
 import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_MAX_CONN;
-import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;

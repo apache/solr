@@ -115,6 +115,4 @@ public abstract class ReturnFields {
 
   /** Returns the DocTransformer used to modify documents, or <code>null</code> */
   public abstract DocTransformer getTransformer();
-
-  public abstract void setTransformer(DocTransformer transformer);
 }

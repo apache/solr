@@ -298,6 +298,7 @@ public class SolrReturnFields extends ReturnFields {
           sp.pos = start;
           field = null;
         }
+
         if (field == null) {
           // We didn't find a simple name, so let's see if it's a globbed field name.
           // Globbing only works with field names of the recommended form (roughly like java
@@ -515,12 +516,6 @@ public class SolrReturnFields extends ReturnFields {
       augmenters.addTransformer(new ScoreAugmenter(disp));
       scoreDependentFields.put(disp, disp.equals(SCORE) ? "" : SCORE);
     }
-    /*
-    if("vector_multivalued".equals(field)){
-      ChildDocTransformerFactory childFactory = new ChildDocTransformerFactory();
-      DocTransformer multiValuedTrans = childFactory.create("vector_multivalued", null, null);
-      augmenters.addTransformer(multiValuedTrans);
-    }*/
   }
 
   @Override
@@ -587,11 +582,6 @@ public class SolrReturnFields extends ReturnFields {
   @Override
   public DocTransformer getTransformer() {
     return transformer;
-  }
-
-  @Override
-  public void setTransformer(DocTransformer transformer) {
-this.transformer = transformer;
   }
 
   @Override

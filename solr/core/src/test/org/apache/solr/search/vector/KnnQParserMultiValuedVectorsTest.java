@@ -14,35 +14,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search.neural;
+package org.apache.solr.search.vector;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
-import org.apache.solr.util.RestTestBase;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.apache.solr.search.neural.KnnQParser.DEFAULT_TOP_K;
-
 public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
   private static final List<Float> FLOAT_QUERY_VECTOR = Arrays.asList(1.0f, 1.0f, 1.0f, 1.0f);
   private static final List<Integer> BYTE_QUERY_VECTOR = Arrays.asList(1, 1, 1, 1);
-  
+
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
@@ -56,7 +45,7 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
   public static void prepareIndex() throws Exception {
     List<SolrInputDocument> docsToIndex = prepareDocs();
     for (SolrInputDocument doc : docsToIndex) {
-      updateJ(jsonAdd(doc), null);    
+      updateJ(jsonAdd(doc), null);
     }
     assertU(commit());
   }
@@ -75,7 +64,7 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
     int totalParentDocuments = 10;
     int totalNestedVectors = 30;
     int perParentChildren = totalNestedVectors / totalParentDocuments;
-    
+
     final String[] abcdef = new String[] {"a", "b", "c", "d", "e", "f"};
 
     List<SolrInputDocument> docs = new ArrayList<>(totalParentDocuments);
@@ -140,7 +129,6 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
     }
     return result;
   }
-  
 
   @Test
   public void topK_shouldReturnOnlyTopKResults() {
@@ -157,100 +145,123 @@ public class KnnQParserMultiValuedVectorsTest extends SolrTestCaseJ4 {
   @Test
   public void topKWithFilter_shouldReturnOnlyTopKResults() {
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id","fq","_text_:(b OR c)"),
-            "//result[@numFound='4']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[2]/str[@name='id'][.='7']",
-            "//result/doc[3]/str[@name='id'][.='2']",
-            "//result/doc[4]/str[@name='id'][.='1']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR,
+            "fl",
+            "id",
+            "fq",
+            "_text_:(b OR c)"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[2]/str[@name='id'][.='7']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[4]/str[@name='id'][.='1']");
   }
-  
 
   @Test
   public void topKWithoutTransformer_shouldDefaultToBestChildren() {
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id,vector_multivalued","fq","_text_:(b OR c)"),
-            "//result[@numFound='4']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='8.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[2]/str[@name='id'][.='7']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='11.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[3]/str[@name='id'][.='2']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='26.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[4]/str[@name='id'][.='1']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='29.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR,
+            "fl",
+            "id,vector_multivalued",
+            "fq",
+            "_text_:(b OR c)"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='8.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='7']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='11.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='26.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[4]/str[@name='id'][.='1']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='29.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']");
   }
 
   @Test
   public void topKWithTransformer_shouldAddDefaultToBestChildren() {
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR, "fl", "id,vector_multivalued,score","fq","_text_:(b OR c)"),
-            "//result[@numFound='4']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='8.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[2]/str[@name='id'][.='7']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='11.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[3]/str[@name='id'][.='2']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='26.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[4]/str[@name='id'][.='1']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='29.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_multivalued topK=5}" + FLOAT_QUERY_VECTOR,
+            "fl",
+            "id,vector_multivalued,score",
+            "fq",
+            "_text_:(b OR c)"),
+        "//result[@numFound='4']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='8.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='7']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='11.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='26.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[4]/str[@name='id'][.='1']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='29.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[4]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']");
   }
 
   @Test
   public void topKWithChildTransformer_shouldUseOriginalChildTransformer() {
     assertQ(
-            req(CommonParams.Q, "{!knn f=vector_multivalued topK=3}" + FLOAT_QUERY_VECTOR, "fl", "id,vector_multivalued,score,[child limit=2 fl=vector_multivalued]","fq","_text_:(b OR c)"),
-            "//result[@numFound='3']",
-            "//result/doc[1]/str[@name='id'][.='8']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='10.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='9.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[2]/str[@name='id'][.='7']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='13.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='12.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[3]/str[@name='id'][.='2']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='28.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='27.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
-            "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']");
+        req(
+            CommonParams.Q,
+            "{!knn f=vector_multivalued topK=3}" + FLOAT_QUERY_VECTOR,
+            "fl",
+            "id,vector_multivalued,score,[child limit=2 fl=vector_multivalued]",
+            "fq",
+            "_text_:(b OR c)"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='10.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='9.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='7']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='13.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='12.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[1][.='28.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[1]/arr[@name='vector_multivalued']/float[4][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[1][.='27.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='vector_multivalued'][1]/doc[2]/arr[@name='vector_multivalued']/float[4][.='1.0']");
   }
 }

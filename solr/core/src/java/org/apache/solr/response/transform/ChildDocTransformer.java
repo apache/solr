@@ -59,15 +59,11 @@ public class ChildDocTransformer extends DocTransformer {
 
   private final String name;
   private final BitSetProducer parentsFilter; // if null; resolve parent via uniqueKey instead
-  private DocSet childDocSet;
+  private final DocSet childDocSet;
   private final int limit;
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
   private final String[] extraRequestedFields;
-
-  public void setChildDocSet(DocSet childDocSet) {
-    this.childDocSet = childDocSet;
-  }
 
   ChildDocTransformer(
       String name,
