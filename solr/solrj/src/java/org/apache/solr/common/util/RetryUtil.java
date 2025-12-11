@@ -25,9 +25,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Utility class for retrying operations with various strategies.
- **/
+/** Utility class for retrying operations with various strategies. */
 public class RetryUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
