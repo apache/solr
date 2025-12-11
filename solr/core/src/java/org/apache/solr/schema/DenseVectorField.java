@@ -86,7 +86,7 @@ public class DenseVectorField extends FloatPointField {
   static final String CUVS_GRAPH_DEGREE = "cuvsGraphDegree";
   static final String CUVS_HNSW_LAYERS = "cuvsHnswLayers";
   static final String CUVS_HNSW_MAX_CONNECTIONS = "cuvsHnswM";
-  static final String CUVS_HNSW_EF_CONSTRUCTION = "cuvsHNSWEfConstruction";
+  static final String CUVS_HNSW_EF_CONSTRUCTION = "cuvsHnswEfConstruction";
   static final int DEFAULT_CUVS_WRITER_THREADS = 32;
   static final int DEFAULT_CUVS_INT_GRAPH_DEGREE = 128;
   static final int DEFAULT_CUVS_GRAPH_DEGREE = 64;
@@ -121,7 +121,7 @@ public class DenseVectorField extends FloatPointField {
   private int cuvsGraphDegree;
   private int cuvsHnswLayers;
   private int cuvsHnswM;
-  private int cuvsHNSWEfConstruction;
+  private int cuvsHnswEfConstruction;
 
   public DenseVectorField() {
     super();
@@ -238,7 +238,7 @@ public class DenseVectorField extends FloatPointField {
             .orElse(DEFAULT_CUVS_HNSW_MAX_CONNECTIONS);
     args.remove(CUVS_HNSW_MAX_CONNECTIONS);
 
-    this.cuvsHNSWEfConstruction =
+    this.cuvsHnswEfConstruction =
         ofNullable(args.get(CUVS_HNSW_EF_CONSTRUCTION))
             .map(Integer::parseInt)
             .orElse(DEFAULT_CUVS_HNSW_EF_CONSTRUCTION);
@@ -305,7 +305,7 @@ public class DenseVectorField extends FloatPointField {
   }
 
   public int getCuvsHnswEfConstruction() {
-    return cuvsHNSWEfConstruction;
+    return cuvsHnswEfConstruction;
   }
 
   @Override
