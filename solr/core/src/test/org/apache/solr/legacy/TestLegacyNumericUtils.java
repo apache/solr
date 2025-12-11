@@ -266,7 +266,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         new float[] {
           Float.NEGATIVE_INFINITY,
           -2.3E25f,
-          -1.0E+15f,
+          Float.intBitsToFloat(0xd8635fa9), // -1.0E15
           -1.0f,
           -1.0E-1f,
           -1.0E-2f,
@@ -275,7 +275,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
           1.0E-2f,
           1.0E-1f,
           1.0f,
-          1.0E+15f,
+          Float.intBitsToFloat(0x58635fa9), // 1.0E15
           2.3E25f,
           Float.POSITIVE_INFINITY,
           Float.NaN
