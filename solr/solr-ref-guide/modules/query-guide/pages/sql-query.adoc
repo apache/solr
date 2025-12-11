@@ -408,21 +408,7 @@ Below is sample code for creating a connection and executing a query with the JD
 
 [source,java]
 ----
-Connection con = null;
-try {
-    con = DriverManager.getConnection("jdbc:solr://" + zkHost + "?collection=collection1&aggregationMode=map_reduce&numWorkers=2");
-    stmt = con.createStatement();
-    rs = stmt.executeQuery("SELECT a_s, sum(a_f) as sum FROM collection1 GROUP BY a_s ORDER BY sum desc");
-
-    while(rs.next()) {
-        String a_s = rs.getString("a_s");
-        double s = rs.getDouble("sum");
-    }
-} finally {
-    rs.close();
-    stmt.close();
-    con.close();
-}
+include::example$ParallelSqlRefGuideExamplesTest.java[tag=jdbc-query-interface]
 ----
 
 The connection URL must contain the `zkHost` and the `collection` parameters.

@@ -155,19 +155,7 @@ Using SolrJ, this pseudocode would be:
 
 [source,java]
 ----
-SolrQuery q = (new SolrQuery(some_query)).setRows(r).setSort(SortClause.asc("id"));
-String cursorMark = CursorMarkParams.CURSOR_MARK_START;
-boolean done = false;
-while (! done) {
-  q.set(CursorMarkParams.CURSOR_MARK_PARAM, cursorMark);
-  QueryResponse rsp = solrServer.query(q);
-  String nextCursorMark = rsp.getNextCursorMark();
-  doCustomProcessingOfResults(rsp);
-  if (cursorMark.equals(nextCursorMark)) {
-    done = true;
-  }
-  cursorMark = nextCursorMark;
-}
+include::example$PaginationRefGuideExamplesTest.java[tag=cursormark-query]
 ----
 
 If you wanted to do this by hand using curl, the sequence of requests would look something like this:
