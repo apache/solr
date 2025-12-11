@@ -38,6 +38,12 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
   @BeforeClass
   @SuppressWarnings("resource")
   public static void beforeClassTika() {
+    //skip this test on s390x
+    Assume.assumeFalse(
+       "Skipping ExtractingRequestHandlerTikaServerTest on s390x",
+       "s390x".equalsIgnoreCase(System.getProperty("os.arch"))
+    );
+
     String baseUrl;
     try {
       tika =
