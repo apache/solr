@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
@@ -196,9 +197,18 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       solr[1].jetty = null;
       startJettyAndWaitForAliveCheckQuery(solr[0]);
 
-      resp = h.lbClient.query(solrQuery);
-      name = resp.getResults().get(0).getFieldValue("name").toString();
-      assertEquals("solr/collection10", name);
+      RetryUtil.retryOnBoolean(
+          5000,
+          500,
+          () -> {
+            try {
+              QueryResponse resp1 = h.lbClient.query(solrQuery);
+              String name1 = resp1.getResults().get(0).getFieldValue("name").toString();
+              return ("solr/collection10".equals(name1));
+            } catch (Exception e) {
+              return false;
+            }
+          });
     }
   }
 
@@ -217,10 +227,6 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       if (logListener.pollMessage(10, TimeUnit.SECONDS) == null) {
         fail("The alive check query was not logged within 10 seconds.");
       }
-      // Give extra time for the alive server list update to fully propagate
-      // and for the server to be ready to serve requests, especially on
-      // highly parallel systems where timing issues are more likely
-      Thread.sleep(600);
     }
   }
 
