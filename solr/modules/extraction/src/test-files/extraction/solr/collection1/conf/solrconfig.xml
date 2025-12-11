@@ -157,6 +157,12 @@
     <str name="tikaserver.metadata.compatibility">${solr.test.tikaserver.metadata.compatibility:false}</str>
   </requestHandler>
 
+  <!-- Handler with vulnerable parseContext for testing CVE-2025-54988 -->
+  <requestHandler name="/update/extract/vulnerable" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
+    <str name="parseContext.config">parseContext-vulnerable.xml</str>
+    <str name="extraction.backend">local</str>
+  </requestHandler>
+
   <requestHandler name="/update/extract/lit-def" class="org.apache.solr.handler.extraction.ExtractingRequestHandler">
     <str name="extraction.backend">${solr.test.extraction.backend:local}</str>
     <str name="tikaserver.url">${solr.test.tikaserver.url:}</str>
