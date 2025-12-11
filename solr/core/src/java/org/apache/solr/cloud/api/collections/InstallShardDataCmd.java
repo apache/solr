@@ -58,7 +58,9 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  @SuppressWarnings("unchecked")
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     final RemoteMessage typedMessage =
         new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
@@ -97,6 +99,8 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
   /** A value-type representing the message received by {@link InstallShardDataCmd} */
   public static class RemoteMessage implements JacksonReflectMapWriter {
 
+    @JsonProperty public String callingLockId;
+
     @JsonProperty(QUEUE_OPERATION)
     public String operation = CollectionParams.CollectionAction.INSTALLSHARDDATA.toLower();
 
@@ -107,6 +111,10 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     @JsonProperty public String repository;
 
     @JsonProperty public String location;
+
+    @JsonProperty public String name = "";
+
+    @JsonProperty public String shardBackupId;
 
     @JsonProperty(ASYNC)
     public String asyncId;

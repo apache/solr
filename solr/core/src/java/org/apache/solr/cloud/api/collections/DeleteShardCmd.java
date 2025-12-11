@@ -58,7 +58,8 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);

@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,6 +69,10 @@ public class DistributedMultiLock {
       }
     }
     return true;
+  }
+
+  public String getLockId() {
+    return locks.stream().map(DistributedLock::getLockId).collect(Collectors.joining(","));
   }
 
   @VisibleForTesting
