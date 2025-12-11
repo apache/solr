@@ -125,6 +125,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
         topK,
         efSearch,
         getFilterQuery(),
-        getEarlyTerminationParams());
+        getSeedQuery(),
+        getEarlyTerminationParams(),
+        filteredSearchThreshold);
   }
 }

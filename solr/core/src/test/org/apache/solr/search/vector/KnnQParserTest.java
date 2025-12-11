@@ -1354,7 +1354,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "id",
             "debugQuery",
             "true"),
-        "//result[@numFound='4']",
+        "//result[@numFound='4']");
   }
 
   @Test
@@ -1400,7 +1400,7 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
             "id",
             "debugQuery",
             "true"),
-        "//result[@numFound='4']",
+        "//result[@numFound='4']");
   }
 
   @Test
@@ -1428,9 +1428,9 @@ public class KnnQParserTest extends SolrTestCaseJ4 {
         "//str[@name='parsedquery'][contains(.,'seed=id:1 id:4 id:7 id:8 id:9')]",
         // Verify that a seedWeight field is present — its value (BooleanWeight@<hash>) includes a
         // hash code that changes on each run, so it cannot be asserted explicitly
-        "//str[@name='parsedquery'][contains(.,'seedWeight=')]",
-        // Verify that the final delegate is a KnnFloatVectorQuery with the expected vector and topK
-        // value
+        "//str[@name='parsedquery'][contains(.,'seedWeight=')]");
+    // Verify that the final delegate is a KnnFloatVectorQuery with the expected vector and topK
+    // value
   }
 
   @Test

@@ -19,6 +19,7 @@ package org.apache.solr.search.vector;
 import org.apache.lucene.search.KnnByteVectorQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.knn.KnnSearchStrategy;
 
 public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
   private final int topK;
@@ -27,6 +28,19 @@ public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
     // efSearch is used as 'k' to explore this many vectors in HNSW, then topK results are returned
     // to the user
     super(field, target, efSearch, filter);
+    this.topK = topK;
+  }
+
+  public SolrKnnByteVectorQuery(
+      String field,
+      byte[] target,
+      int topK,
+      int efSearch,
+      Query filter,
+      KnnSearchStrategy searchStrategy) {
+    // efSearch is used as 'k' to explore this many vectors in HNSW, then topK results are returned
+    // to the user
+    super(field, target, efSearch, filter, searchStrategy);
     this.topK = topK;
   }
 
