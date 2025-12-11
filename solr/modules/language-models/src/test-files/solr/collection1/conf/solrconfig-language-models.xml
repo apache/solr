@@ -72,10 +72,19 @@
   <processor class="solr.RunUpdateProcessorFactory"/>
  </updateRequestProcessorChain>
 
-  <updateRequestProcessorChain name="textToVectorPartialUpdates">
+  <updateRequestProcessorChain name="textToVectorStoredInputField">
+    <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+      <str name="inputField">string_field</str>
+      <str name="outputField">vector</str>
+      <str name="model">dummy-1</str>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory"/>
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="textToVectorForPartialUpdates">
     <processor class="solr.DistributedUpdateProcessorFactory"/>
     <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
-      <str name="inputField">_text_</str>
+      <str name="inputField">string_field</str>
       <str name="outputField">vector</str>
       <str name="model">dummy-1</str>
     </processor>

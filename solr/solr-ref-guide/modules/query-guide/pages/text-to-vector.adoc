@@ -382,7 +382,7 @@ You still define two chains, but this time the 'vectorisation' one only includes
 
 [NOTE]
 ====
-Partial updates are processed by the `DistributedUpdateProcessorFactory`. For this reason, it must be placed at the beginning of the UpdateRequestProcessorChain, before the `TextToVectorUpdateProcessorFactory`.
+Since Partial updates are processed by the `DistributedUpdateProcessorFactory`, this processor must be placed at the beginning of the UpdateRequestProcessorChain, before the `TextToVectorUpdateProcessorFactory`.
 ====
 
 Add to your schema a simple field that will be useful to track the vectorisation and use atomic updates:

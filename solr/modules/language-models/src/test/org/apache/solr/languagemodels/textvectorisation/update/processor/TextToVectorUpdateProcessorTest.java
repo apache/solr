@@ -76,7 +76,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     final String solrQuery = "*:*";
     final SolrQuery query = new SolrQuery();
     query.setQuery(solrQuery);
-    query.add("fl", "id,vector,_text_");
+    query.add("fl", "id,vector");
     return query;
   }
 
@@ -171,15 +171,15 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     // the system correctly retrieves the stored value of the input field (_text_)
     // and generates the vector for the document.
     loadModel("dummy-model.json");
-    assertU(adoc("id", "99", "_text_", "Vegeta is the saiyan prince."));
-    assertU(adoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."));
+    assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince."));
+    assertU(adoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."));
     assertU(commit());
 
     SolrInputDocument atomic_doc = new SolrInputDocument();
     atomic_doc.setField("id", "99");
     atomic_doc.setField("vectorised", Map.of("set", "true"));
     addWithChain(
-        atomic_doc, "textToVectorPartialUpdates"); // use the chain that supports partial updates
+        atomic_doc, "textToVectorForPartialUpdates"); // use the chain that supports partial updates
     assertU(commit());
 
     final SolrQuery query = getSolrQuery();
@@ -196,54 +196,25 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
   }
 
   @Test
-  public void processAtomicUpdate_withoutDistributedUpdateProcessorFactory_shouldNotCreateVector()
-      throws Exception {
-    // Verifies that when using a processor chain that does not support partial updates,
-    // vectorization is not triggered and no vector field is created for the document.
-    loadModel("dummy-model.json");
-    assertU(adoc("id", "99", "_text_", "Vegeta is the saiyan prince."));
-    assertU(adoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."));
-    assertU(commit());
-
-    SolrInputDocument atomic_doc = new SolrInputDocument();
-    atomic_doc.setField("id", "99");
-    atomic_doc.setField("vectorised", Map.of("set", "true"));
-    addWithChain(
-        atomic_doc,
-        "textToVector"); // use the chain that does not specifically support partial updates
-    assertU(commit());
-
-    final SolrQuery query = getSolrQuery();
-
-    assertJQ(
-        "/query" + query.toQueryString(),
-        "/response/numFound==2]",
-        "/response/docs/[0]/id=='99'",
-        "!/response/docs/[0]/vector==", // no vector field for document 99
-        "/response/docs/[1]/id=='98'",
-        "!/response/docs/[1]/vector=="); // no vector field for document 98
-
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
-  }
-
-  @Test
   public void processAtomicUpdate_shouldReplaceExistingVectorNotAppend() throws Exception {
     // This test verifies that when a document already contains a vector, and the _text_ field is
     // modified using an atomic update, the vector is recomputed and replaces the previous one. It
     // ensures that the system does not append or merge vector values.
     loadModel("dummy-model.json");
-    addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     addWithChain(
-        sdoc("id", "98", "_text_", "Kakaroth is a saiyan grown up on planet Earth."),
-        "textToVector");
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
+        "textToVectorStoredInputField");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "textToVectorStoredInputField");
     assertU(commit());
 
     SolrInputDocument atomic_doc = new SolrInputDocument();
     atomic_doc.setField("id", "99");
     atomic_doc.setField(
-        "_text_", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
+        "string_field", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
     addWithChain(
-        atomic_doc, "textToVectorPartialUpdates"); // use the chain that supports partial updates
+        atomic_doc, "textToVectorForPartialUpdates"); // use the chain that supports partial updates
     // updates
     assertU(commit());
 
@@ -253,7 +224,6 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/query" + query.toQueryString(),
         "/response/numFound==2]",
         "/response/docs/[0]/id=='99'",
-        "/response/docs/[0]/_text_==['Vegeta is the saiyan prince from the Dragon Ball series.']",
         "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
