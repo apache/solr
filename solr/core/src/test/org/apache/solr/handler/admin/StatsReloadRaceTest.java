@@ -18,13 +18,16 @@ package org.apache.solr.handler.admin;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,7 +56,6 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     for (int i = 0; i < atLeast(random, 2); i++) {
 
       int asyncId = taskNum.incrementAndGet();
-
       h.getCoreContainer()
           .getMultiCoreHandler()
           .handleRequest(
@@ -67,18 +69,19 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
                   "async",
                   "" + asyncId),
               new SolrQueryResponse());
+      try (SolrCore core = h.getCoreInc()) {
+        boolean isCompleted;
+        do {
+          if (random.nextBoolean()) {
+            requestMetrics(core, true);
+          } else {
+            requestCoreStatus();
+          }
 
-      boolean isCompleted;
-      do {
-        if (random.nextBoolean()) {
-          requestMetrics(true);
-        } else {
-          requestCoreStatus();
-        }
-
-        isCompleted = checkReloadCompletion(asyncId);
-      } while (!isCompleted);
-      requestMetrics(false);
+          isCompleted = checkReloadCompletion(asyncId);
+        } while (!isCompleted);
+        requestMetrics(core, false);
+      }
     }
   }
 
@@ -119,41 +122,40 @@ public class StatsReloadRaceTest extends SolrTestCaseJ4 {
     return isCompleted;
   }
 
-  private void requestMetrics(boolean softFail) throws Exception {
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    String registry = "solr.core." + h.coreName;
-    String key = "SEARCHER.searcher.indexVersion";
-    boolean found = false;
-    int count = 10;
-    while (!found && count-- > 0) {
-      h.getCoreContainer()
-          .getRequestHandler("/admin/metrics")
-          .handleRequest(req("prefix", "SEARCHER", "registry", registry, "compact", "true"), rsp);
-
-      NamedList<?> values = rsp.getValues();
+  private void requestMetrics(SolrCore core, boolean softFail) throws Exception {
+    try {
       // this is not guaranteed to exist right away after core reload - there's a
       // small window between core load and before searcher metrics are registered,
       // so we may have to check a few times, and then fail softly if reload is not complete yet
-      NamedList<?> metrics = (NamedList<?>) values.get("metrics");
-      if (metrics == null) {
-        if (softFail) {
-          return;
-        } else {
-          fail("missing 'metrics' element in handler's output: " + values.asMap(5).toString());
-        }
+      RetryUtil.retryUntil(
+          "solr_searcher_index_version metric not found",
+          10,
+          500,
+          TimeUnit.MILLISECONDS,
+          () -> {
+            var reader =
+                core.getSolrMetricsContext()
+                    .getMetricManager()
+                    .getPrometheusMetricReader(core.getSolrMetricsContext().getRegistryName());
+            if (reader == null) {
+              return false;
+            }
+
+            var datapoint =
+                SolrMetricTestUtils.getGaugeDatapoint(
+                    reader,
+                    "solr_core_indexsearcher_index_version",
+                    SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+                        .label("category", "SEARCHER")
+                        .build());
+
+            return datapoint != null;
+          });
+    } catch (Exception e) {
+      if (softFail) {
+        return;
       }
-      metrics = (NamedList<?>) metrics.get(registry);
-      if (metrics.get(key) != null) {
-        found = true;
-        assertTrue(metrics.get(key) instanceof Long);
-        break;
-      } else {
-        Thread.sleep(500);
-      }
+      throw e;
     }
-    if (softFail && !found) {
-      return;
-    }
-    assertTrue("Key " + key + " not found in registry " + registry, found);
   }
 }

@@ -21,12 +21,12 @@ import java.nio.file.Path;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -44,7 +44,7 @@ public class TestStreamBody extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-minimal.xml", "schema-rest.xml", "/solr", true, extraServlets);
@@ -68,7 +68,7 @@ public class TestStreamBody extends RestTestBase {
   // SOLR-3161
   @Test
   public void testQtUpdateFails() throws Exception {
-    System.setProperty("solr.enableStreamBody", "true");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     startSolr();
 
     SolrQuery query = new SolrQuery();

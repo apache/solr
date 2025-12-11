@@ -32,9 +32,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.SpatialUtils;
 import org.apache.solr.util.TestUtils;
 import org.junit.Before;
@@ -369,21 +368,15 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     if (testCache) {
       // The tricky thing is verifying the cache works correctly...
 
-      MetricsMap cacheMetrics =
-          (MetricsMap)
-              ((SolrMetricManager.GaugeWrapper)
-                      h.getCore()
-                          .getCoreMetricManager()
-                          .getRegistry()
-                          .getMetrics()
-                          .get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName))
-                  .getGauge();
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_inserts").toString());
-      assertEquals("0", cacheMetrics.getValue().get("cumulative_hits").toString());
+      long inserts = getSpatialFieldCacheInserts(fieldName);
+      long hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(1, inserts);
+      assertEquals(0, hits);
 
       // Repeat the query earlier
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
-      assertEquals("1", cacheMetrics.getValue().get("cumulative_hits").toString());
+      hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(1, hits);
 
       assertEquals("1 segment", 1, getSearcher().getRawReader().leaves().size());
       // Get key of first leaf reader -- this one contains the match for sure.
@@ -404,18 +397,8 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       Object leafKey2 = getFirstLeafReaderKey();
       // get the current instance of metrics - the old one may not represent the current cache
       // instance
-      cacheMetrics =
-          (MetricsMap)
-              ((SolrMetricManager.GaugeWrapper)
-                      h.getCore()
-                          .getCoreMetricManager()
-                          .getRegistry()
-                          .getMetrics()
-                          .get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName))
-                  .getGauge();
-      assertEquals(
-          leafKey1.equals(leafKey2) ? "2" : "1",
-          cacheMetrics.getValue().get("cumulative_hits").toString());
+      hits = getSpatialFieldCacheHits(fieldName);
+      assertEquals(leafKey1.equals(leafKey2) ? 2 : 1, hits);
     }
 
     if (testHeatmap) {
@@ -454,6 +437,20 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
           req("q", fieldName + ":[55.0260828,-115.5085624 TO 55.02646,-115.507337]"),
           "/response/numFound==0");
     }
+  }
+
+  private long getSpatialFieldCacheInserts(String fieldName) {
+    return (long)
+        SolrMetricTestUtils.getCacheSearcherOps(
+                h.getCore(), "perSegSpatialFieldCache_" + fieldName, "inserts")
+            .getValue();
+  }
+
+  private long getSpatialFieldCacheHits(String fieldName) {
+    return (long)
+        SolrMetricTestUtils.getCacheSearcherLookups(
+                h.getCore(), "perSegSpatialFieldCache_" + fieldName, "hit")
+            .getValue();
   }
 
   protected SolrIndexSearcher getSearcher() {
@@ -553,5 +550,46 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
             "sfield", "srpt_quad",
             "sort", "min(geodist(),geodist(55.4721936,-2.24703,llp)) asc"),
         "/response/docs/[0]/id=='2'");
+  }
+
+  @Test
+  public void testSOLR18006_GeodistDescWithFilterQuery() throws Exception {
+    // SOLR-18006: geodist() desc sorting causes NPE when spatial query is in filter query
+    // Reproduction from JIRA issue with exact coordinates and parameters
+    String fieldName = "llp_km";
+
+    // Index sample documents from JIRA issue
+    assertU(adoc("id", "pt-001", fieldName, "48.106651,11.628476"));
+    assertU(adoc("id", "pt-002", fieldName, "48.113089,11.622016"));
+    assertU(adoc("id", "pt-003", fieldName, "48.137154,11.576124"));
+    assertU(adoc("id", "pt-004", fieldName, "48.135125,11.581981"));
+    assertU(adoc("id", "pt-005", fieldName, "48.121,11.612"));
+    assertU(adoc("id", "pt-006", fieldName, "48.09,11.64"));
+    assertU(commit());
+
+    // Test descending sort with filter query - exact query from JIRA that triggers NPE
+    // Expected order by distance DESC from pt=48.11308880280511,11.622015740056845:
+    // pt-003 (48.137154,11.576124) - farthest
+    // pt-004 (48.135125,11.581981)
+    // pt-006 (48.09,11.64)
+    // pt-005 (48.121,11.612)
+    // pt-001 (48.106651,11.628476)
+    // pt-002 (48.113089,11.622016) - closest
+    assertJQ(
+        req(
+            "q", "*:*",
+            "fq", "{!geofilt}",
+            "sfield", fieldName,
+            "pt", "48.11308880280511,11.622015740056845",
+            "d", "10",
+            "fl", "id",
+            "sort", "geodist() desc"),
+        "/response/numFound==6",
+        "/response/docs/[0]/id=='pt-003'", // farthest
+        "/response/docs/[1]/id=='pt-004'",
+        "/response/docs/[2]/id=='pt-006'",
+        "/response/docs/[3]/id=='pt-005'",
+        "/response/docs/[4]/id=='pt-001'",
+        "/response/docs/[5]/id=='pt-002'"); // closest
   }
 }

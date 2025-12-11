@@ -28,8 +28,8 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -44,9 +44,8 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    System.setProperty("solr.enableRemoteStreaming", "true");
-    System.setProperty("solr.enableStreamBody", "true");
-    // this one has handleSelect=true which a test here needs
+    System.setProperty("solr.requests.streaming.remote.enabled", "true");
+    System.setProperty("solr.requests.streaming.body.enabled", "true");
     Path solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory.toAbsolutePath());

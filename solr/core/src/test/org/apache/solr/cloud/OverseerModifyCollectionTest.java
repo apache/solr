@@ -46,7 +46,7 @@ public class OverseerModifyCollectionTest extends SolrCloudTestCase {
         CollectionAdminRequest.modifyCollection(
                 collName, Collections.singletonMap("collection.configName", "conf2"))
             .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    assertEquals(requestStatusState, RequestStatusState.COMPLETED);
+    assertEquals(RequestStatusState.COMPLETED, requestStatusState);
 
     String configName =
         cluster.getSolrClient().getClusterStateProvider().getCollection(collName).getConfigName();

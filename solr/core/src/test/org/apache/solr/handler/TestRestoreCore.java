@@ -30,7 +30,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -117,7 +117,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
     // Use the default backup location or an externally provided location.
     if (random().nextBoolean()) {
-      location = createTempDir().toFile().getAbsolutePath();
+      location = createTempDir().toString();
       leaderJetty
           .getCoreContainer()
           .getAllowPaths()
@@ -182,8 +182,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   public void testBackupFailsMissingAllowPaths() throws Exception {
     final String params =
-        "&location="
-            + URLEncoder.encode(createTempDir().toFile().getAbsolutePath(), StandardCharsets.UTF_8);
+        "&location=" + URLEncoder.encode(createTempDir().toString(), StandardCharsets.UTF_8);
     Throwable t =
         expectThrows(
             IOException.class,
@@ -199,7 +198,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
   public void testFailedRestore() throws Exception {
     int nDocs = BackupRestoreUtils.indexDocs(leaderClient, "collection1", docsSeed);
 
-    String location = createTempDir().toFile().getAbsolutePath();
+    String location = createTempDir().toString();
     leaderJetty.getCoreContainer().getAllowPaths().add(Path.of(location));
     String snapshotName = TestUtil.randomSimpleString(random(), 1, 5);
     String params =

@@ -32,9 +32,10 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -538,7 +539,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
             + ":[2008-01-01T00:00:00Z TO 2009-09-01T00:00:00Z]"); // Should be removed from response
 
     setDistributedParams(minParams);
-    QueryResponse minResp = queryServer(minParams);
+    QueryResponse minResp = queryRandomShard(minParams);
 
     // Check that exactly the right numbers of counts came through
     assertEquals(
@@ -584,7 +585,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
         "facet.query",
         tdate_b + ":[2009-01-01T00:00:00Z TO 2010-01-01T00:00:00Z]"); // Should be removed
     setDistributedParams(minParams);
-    minResp = queryServer(minParams);
+    minResp = queryRandomShard(minParams);
 
     assertEquals(
         "Should only be 1 query facets returned after minCounts taken into account ",
@@ -1550,9 +1551,10 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     // Check Info is added to for each shard
     ModifiableSolrParams q = new ModifiableSolrParams();
     q.set("q", "*:*");
+    q.set("rows", "0");
     q.set(ShardParams.SHARDS_INFO, true);
     setDistributedParams(q);
-    rsp = queryServer(q);
+    rsp = queryRandomShard(q);
     NamedList<?> sinfo = (NamedList<?>) rsp.getResponse().get(ShardParams.SHARDS_INFO);
     String shards = getShardsString();
     int cnt = shards.length() - shards.replace(",", "").length() + 1;
@@ -1560,6 +1562,13 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     assertNotNull("missing shard info", sinfo);
     assertEquals(
         "should have an entry for each shard [" + sinfo + "] " + shards, cnt, sinfo.size());
+    // We are setting rows=0, so scores should not be collected
+    for (int i = 0; i < cnt; i++) {
+      String shard = sinfo.getName(i);
+      assertNull(
+          "should not have any score information (maxScore) in the shard info: " + shard,
+          ((Map<String, Object>) sinfo.get(shard)).get("maxScore"));
+    }
 
     // test shards.tolerant=true
 
@@ -1708,8 +1717,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
           tdate_b,
           "stats.calcdistinct",
           "true");
-    } catch (SolrClient.RemoteSolrException e) {
-      if (e.getMessage().startsWith("java.lang.NullPointerException")) {
+    } catch (RemoteSolrException e) {
+      if (e.getMessage().contains("java.lang.NullPointerException")) {
         fail("NullPointerException with stats request on empty index");
       } else {
         throw e;

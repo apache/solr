@@ -1,0 +1,11 @@
+title: Resolved overlapping arguments in the Solr CLI. Removed duplicative but differing
+  arguments, consolidated use of short form arguments -v to not have differing meanings
+  based on tool. Provide deprecation warning in command line when deprecated arguments
+  are used.
+type: changed
+authors:
+- name: Eric Pugh
+- name: Christos Malliaridis
+links:
+- name: SOLR-17383
+  url: https://issues.apache.org/jira/browse/SOLR-17383

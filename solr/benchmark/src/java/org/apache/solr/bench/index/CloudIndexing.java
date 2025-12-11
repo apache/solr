@@ -130,6 +130,6 @@ public class CloudIndexing {
     updateRequest.add(state.getNextDoc());
     final var url =
         miniClusterState.nodes.get(miniClusterState.getRandom().nextInt(state.nodeCount));
-    return miniClusterState.client.requestWithBaseUrl(url, BenchState.COLLECTION, updateRequest);
+    return miniClusterState.client.requestWithBaseUrl(url, updateRequest, BenchState.COLLECTION);
   }
 }

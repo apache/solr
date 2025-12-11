@@ -46,8 +46,9 @@ Enabling it is not recommended in a production situation without additional secu
 
 [IMPORTANT]
 ====
-If remote streaming is used, be aware that this allows _anyone_ to send a request to any URL or local file.
-And with the <<Debugging Requests,DumpRequestHandler>> anyone can view what Solr has access to.
+If remote streaming is used, be aware that this allows _anyone_ to send a request referencing any URL or local file.
+Remote streaming can be used in conjunction with the <<Debugging Requests,DumpRequestHandler>> or other request handlers to read any file that Solr has file-system access to.
+As a result, remote streaming should only be enabled when absolutely necessary and after careful consideration of the security implications.
 ====
 
 Enable it with this environment variable: `SOLR_ENABLE_REMOTE_STREAMING=true`

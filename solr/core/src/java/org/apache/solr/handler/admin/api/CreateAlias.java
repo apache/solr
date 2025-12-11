@@ -46,8 +46,8 @@ import org.apache.solr.client.api.model.RoutedAliasProperties;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
-import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
 import org.apache.solr.cloud.api.collections.TimeRoutedAlias;
@@ -111,8 +111,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
+            coreContainer.getZkController(),
             remoteMessage,
             CollectionParams.CollectionAction.CREATEALIAS,
             DEFAULT_COLLECTION_OP_TIMEOUT);

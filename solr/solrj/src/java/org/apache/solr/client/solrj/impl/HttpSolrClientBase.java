@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.common.util.Utils.getObjectByPath;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,26 +26,32 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
-import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 
+/**
+ * Utility/base functionality for direct HTTP client implementations.
+ *
+ * @lucene.internal
+ */
 public abstract class HttpSolrClientBase extends SolrClient {
 
   protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
@@ -56,8 +60,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   /** The URL of the Solr server. */
   protected final String serverBaseUrl;
-
-  protected final long idleTimeoutMillis;
 
   protected final long requestTimeoutMillis;
 
@@ -85,11 +87,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
     } else {
       this.serverBaseUrl = null;
     }
-    if (builder.idleTimeoutMillis != null) {
-      this.idleTimeoutMillis = builder.idleTimeoutMillis;
-    } else {
-      this.idleTimeoutMillis = -1;
-    }
+    this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
       this.requestWriter = builder.requestWriter;
@@ -98,17 +96,19 @@ public abstract class HttpSolrClientBase extends SolrClient {
       this.parser = builder.responseParser;
     }
     this.defaultCollection = builder.defaultCollection;
-    if (builder.requestTimeoutMillis != null) {
-      this.requestTimeoutMillis = builder.requestTimeoutMillis;
-    } else {
-      this.requestTimeoutMillis = -1;
-    }
     if (builder.urlParamNames != null) {
       this.urlParamNames = builder.urlParamNames;
     } else {
       this.urlParamNames = Set.of();
     }
   }
+
+  public abstract HttpSolrClientBuilderBase<?, ?> builder();
+
+  /**
+   * @lucene.internal
+   */
+  protected abstract LBSolrClient createLBSolrClient();
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
@@ -120,24 +120,15 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return solrRequest.getResponseParser() == null ? this.parser : solrRequest.getResponseParser();
   }
 
-  protected RequestWriter getRequestWriter() {
+  public RequestWriter getRequestWriter() {
     return requestWriter;
-  }
-
-  // TODO: Remove this for 10.0, there is a typo in the method name
-  @Deprecated(since = "9.8", forRemoval = true)
-  protected ModifiableSolrParams initalizeSolrParams(
-      SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    return initializeSolrParams(solrRequest, parserToUse);
   }
 
   protected ModifiableSolrParams initializeSolrParams(
       SolrRequest<?> solrRequest, ResponseParser parserToUse) {
-    // The parser 'wt=' and 'version=' params are used instead of the original
-    // params
+    // The parser 'wt=' param is used instead of the original params
     ModifiableSolrParams wparams = new ModifiableSolrParams(solrRequest.getParams());
     wparams.set(CommonParams.WT, parserToUse.getWriterType());
-    wparams.set(CommonParams.VERSION, parserToUse.getVersion());
     return wparams;
   }
 
@@ -208,7 +199,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
           break;
         default:
           if (processor == null || mimeType == null) {
-            throw new SolrClient.RemoteSolrException(
+            throw new RemoteSolrException(
                 urlExceptionMessage,
                 httpStatus,
                 "non ok status: " + httpStatus + ", message:" + responseReason,
@@ -229,59 +220,26 @@ public abstract class HttpSolrClientBase extends SolrClient {
       try {
         rsp = processor.processResponse(is, encoding);
       } catch (Exception e) {
-        throw new SolrClient.RemoteSolrException(
-            urlExceptionMessage, httpStatus, e.getMessage(), e);
+        throw new RemoteSolrException(urlExceptionMessage, httpStatus, e.getMessage(), e);
       }
 
       Object error = rsp == null ? null : rsp.get("error");
-      if (rsp != null && error == null && processor instanceof NoOpResponseParser) {
-        error = rsp.get("response");
-      }
-      if (error != null
-          && (String.valueOf(getObjectByPath(error, true, errPath))
-              .endsWith("ExceptionWithErrObject"))) {
-        throw BaseHttpSolrClient.RemoteExecutionException.create(urlExceptionMessage, rsp);
+      if (error != null && isV2Api) {
+        throw new RemoteSolrException(urlExceptionMessage, httpStatus, error, true);
       }
       if (httpStatus != 200 && !isV2Api) {
-        NamedList<String> metadata = null;
-        String reason = null;
-        try {
-          if (error != null) {
-            reason = (String) Utils.getObjectByPath(error, false, Collections.singletonList("msg"));
-            if (reason == null) {
-              reason =
-                  (String) Utils.getObjectByPath(error, false, Collections.singletonList("trace"));
-            }
-            Object metadataObj =
-                Utils.getObjectByPath(error, false, Collections.singletonList("metadata"));
-            if (metadataObj instanceof NamedList) {
-              metadata = (NamedList<String>) metadataObj;
-            } else if (metadataObj instanceof List) {
-              // NamedList parsed as List convert to NamedList again
-              List<Object> list = (List<Object>) metadataObj;
-              metadata = new NamedList<>(list.size() / 2);
-              for (int i = 0; i < list.size(); i += 2) {
-                metadata.add((String) list.get(i), (String) list.get(i + 1));
-              }
-            } else if (metadataObj instanceof Map) {
-              metadata = new NamedList((Map) metadataObj);
-            }
-          }
-        } catch (Exception ex) {
-          /* Ignored */
+        if (error == null) {
+          StringBuilder msg =
+              new StringBuilder()
+                  .append(responseReason)
+                  .append("\n")
+                  .append("request: ")
+                  .append(responseMethod);
+          String reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
+          throw new RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
+        } else {
+          throw new RemoteSolrException(urlExceptionMessage, httpStatus, error);
         }
-        if (reason == null) {
-          StringBuilder msg = new StringBuilder();
-          msg.append(responseReason).append("\n").append("request: ").append(responseMethod);
-          if (error != null) {
-            msg.append("\n\nError returned:\n").append(error);
-          }
-          reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
-        }
-        SolrClient.RemoteSolrException rss =
-            new SolrClient.RemoteSolrException(urlExceptionMessage, httpStatus, reason, null);
-        if (metadata != null) rss.setMetadata(metadata);
-        throw rss;
       }
       return rsp;
     } finally {
@@ -335,10 +293,10 @@ public abstract class HttpSolrClientBase extends SolrClient {
         try {
           ByteArrayOutputStream body = new ByteArrayOutputStream();
           is.transferTo(body);
-          throw new SolrClient.RemoteSolrException(
+          throw new RemoteSolrException(
               urlExceptionMessage, httpStatus, prefix + body.toString(exceptionEncoding), null);
         } catch (IOException e) {
-          throw new SolrClient.RemoteSolrException(
+          throw new RemoteSolrException(
               urlExceptionMessage,
               httpStatus,
               "Could not parse response with encoding " + exceptionEncoding,
@@ -359,6 +317,21 @@ public abstract class HttpSolrClientBase extends SolrClient {
   }
 
   protected abstract void updateDefaultMimeTypeForParser();
+
+  /**
+   * Executes a SolrRequest using the provided URL to temporarily override any "base URL" currently
+   * used by this client
+   *
+   * @param baseUrl a URL to a root Solr path (i.e. "/solr") that should be used for this request
+   * @param solrRequest the SolrRequest to send
+   * @param collection an optional collection or core name used to override the client's "default
+   *     collection". May be 'null' for any requests that don't require a collection or wish to rely
+   *     on the client's default
+   * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
+   */
+  public abstract NamedList<Object> requestWithBaseUrl(
+      String baseUrl, SolrRequest<?> solrRequest, String collection)
+      throws SolrServerException, IOException;
 
   /**
    * Execute an asynchronous request against a Solr server for a given collection.
@@ -396,10 +369,6 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public ResponseParser getParser() {
     return parser;
-  }
-
-  public long getIdleTimeout() {
-    return idleTimeoutMillis;
   }
 
   public Set<String> getUrlParamNames() {

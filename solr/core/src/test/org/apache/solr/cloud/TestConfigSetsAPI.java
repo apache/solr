@@ -21,6 +21,10 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
 import static org.hamcrest.CoreMatchers.containsString;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.ByteArrayInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,10 +55,6 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import javax.script.ScriptEngineManager;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletRequestWrapper;
-import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.auth.BasicUserPrincipal;
@@ -66,15 +66,18 @@ import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest.METHOD;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Create;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Delete;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest.Upload;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.ConfigSetAdminResponse;
@@ -205,7 +208,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       throws Exception {
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     if (oldProps != null) {
       Files.writeString(
@@ -416,7 +418,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
       ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
-        System.setProperty("configset.upload.enabled", String.valueOf(enabled));
+        System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
         try {
           long statusCode =
               uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
@@ -427,7 +429,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               enabled ? 0l : 400l,
               statusCode);
         } finally {
-          System.clearProperty("configset.upload.enabled");
+          System.clearProperty("solr.configset.upload.enabled");
         }
       }
       unIgnoreException("Configset upload feature is disabled");
@@ -592,7 +594,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
             .build()) {
       String configPath = "/configs/" + configsetName + configsetSuffix;
       assertEquals(
-          0, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
+          400, uploadConfigSet(configsetName, configsetSuffix, null, true, false, v2, true, false));
+
       for (String fileEnding : ZkMaintenanceUtils.DEFAULT_FORBIDDEN_FILE_TYPES) {
         String f = configPath + "/test." + fileEnding;
         assertFalse(
@@ -1076,7 +1079,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     ignoreException("uploaded without any authentication in place");
     Throwable thrown =
         expectThrows(
-            SolrClient.RemoteSolrException.class,
+            RemoteSolrException.class,
             () -> {
               createCollection(
                   "newcollection2",
@@ -1487,8 +1490,8 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     params.set("name", collectionName);
     params.set("numShards", numShards);
     params.set("replicationFactor", replicationFactor);
-    QueryRequest request = new QueryRequest(params);
-    request.setPath("/admin/collections");
+    var request =
+        new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     res.setResponse(client.request(request));
@@ -1565,7 +1568,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
     final SolrClient solrClient = getHttpSolrClient(baseUrl);
     final Path configDir = getFile("solr").resolve("configsets/configset-2/conf");
     final Path tmpConfigDir = createTempDir();
-    tmpConfigDir.toFile().deleteOnExit();
     // Ensure ConfigSet is immutable
     PathUtils.copyDirectory(configDir, tmpConfigDir);
     Files.writeString(
@@ -1669,12 +1671,12 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
    * the real directory which matches what {@link ZkController} finds and uses to bootstrap ZK in
    * cloud based tests.
    *
-   * <p>This assumes the {@link SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE} system property
-   * has not been externally set in the environment where this test is being run -- which should
-   * <b>never</b> be the case, since it would prevent the test-framework from using {@link
+   * <p>This assumes the {@link SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE} system
+   * property has not been externally set in the environment where this test is being run -- which
+   * should <b>never</b> be the case, since it would prevent the test-framework from using {@link
    * ExternalPaths#DEFAULT_CONFIGSET}
    *
-   * @see SolrDispatchFilter#SOLR_DEFAULT_CONFDIR_ATTRIBUTE
+   * @see SolrDispatchFilter#SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE
    * @see #beforeSolrTestCase
    * @see ConfigSetService#getDefaultConfigDirPath
    */

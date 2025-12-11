@@ -19,6 +19,7 @@ indexconfig-in-solrconfig.html;index-segments-merging.html
 indexing-and-basic-data-operations.html;indexing-with-update-handlers.html
 initparams-in-solrconfig.html;initparams.html
 introduction-to-solr-indexing.html;solr-indexing.html
+lib-directives-in-solrconfig.html;libs.html
 local-parameters-in-queries.html;local-params.html
 major-changes-from-solr-5-to-solr-6.html;major-changes-in-solr-6.html
 making-and-restoring-backups.html;backup-restore.html
@@ -105,6 +106,21 @@ the-well-configured-solr-instance.adoc;configuration-files.html
 solrcloud.adoc;cluster-types.html#solrcloud-mode
 how-to-contribute.adoc;https://solr.apache.org/community.html#how-to-contribute
 deployment-and-operations.adoc;installing-solr.html
+vectorization.adoc;math-expressions.html
+time-routed-aliases.adoc;https://solr.apache.org/guide/solr/latest/deployment-guide/aliases.html#time-routed-aliases
+resource-and-plugin-loading.adoc;resource-loading.html
+getting-assistance.adoc;https://solr.apache.org/community.html
+statistical-programming.adoc;math-expressions.html
+lib-directives-in-solrconfig.adoc;libs.html
+uima-integration.adoc;https://solr.apache.org/guide/7_4/uima-integration.html
+upgrading-solr.adoc;upgrading-a-solr-cluster.html
+stream-decorators.adoc;stream-decorator-reference.html
+stream-sources.adoc;stream-source-reference.html
+stream-evaluators.adoc;stream-evaluator-reference.html
+a-step-closer.adoc;configuration-files.html
+read-and-write-side-fault-tolerance.adoc;solrcloud-recoveries-and-write-tolerance.html
+managing-solr.adoc;solr-control-script-reference.html
+running-solr.adoc;installing-solr.html
 
 # A bit uncertain of these
 parallel-sql-interface.html;sql-query.html

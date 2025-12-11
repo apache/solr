@@ -35,7 +35,7 @@
        that you fully re-index after changing this setting as it can
        affect both how text is indexed and queried.
   -->
-  <luceneMatchVersion>9.12</luceneMatchVersion>
+  <luceneMatchVersion>10.3</luceneMatchVersion>
 
   <!-- Data Directory
 
@@ -199,7 +199,7 @@
          Setting The value to true will instruct the underlying Lucene
          IndexWriter to write its debugging info the specified file
       -->
-    <!-- <infoStream file="INFOSTREAM.txt">false</infoStream> -->
+    <!-- <infoStream>false</infoStream> -->
   </indexConfig>
 
   <!-- The default high-performance update handler -->
@@ -526,16 +526,8 @@
          POST. You can use POST to pass request parameters not
          fitting into the URL.
 
-         addHttpRequestToContext - if set to true, it will instruct
-         the requestParsers to include the original HttpServletRequest
-         object in the context map of the SolrQueryRequest under the
-         key "httpRequest". It will not be used by any of the existing
-         Solr components, but may be useful when developing custom
-         plugins.
-
     <requestParsers multipartUploadLimitInKB="-1"
-                    formdataUploadLimitInKB="-1"
-                    addHttpRequestToContext="false"/>
+                    formdataUploadLimitInKB="-1"/>
       -->
 
     <!-- HTTP Caching

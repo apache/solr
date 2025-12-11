@@ -1,0 +1,176 @@
+= Solr Properties Reference
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+// In Solr 11 we should remove the Previous Property Name that are from the 9x versions of Solr.
+
+This page provides an alphabetical reference of Solr system properties that can be used to configure various aspects of Solr. Where applicable, previous property names are also listed.
+
+NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 and Solr 10 properties. For example, if the old property was `disable.config.edit=false`, the equivalent setting with the new property would be `solr.api.config.edit.enabled=true`.
+
+== System Properties
+
+[width="100%",options="header",cols="20,25,15,40"]
+|===
+|Property Name|Previous Property Name (if any)|Default Value|Description
+
+|solr.admin.handler.systeminfo.dns.reverse.lookup.enabled|!solr.dns.prevent.reverse.lookup|true|Controls whether reverse DNS lookups are enabled in the system info handler.
+
+|solr.api.config.edit.enabled|!disable.config.edit|true|Controls whether configuration editing via API is enabled. When set to `true`, configuration editing is enabled.
+
+|solr.api.v2.enabled|!disable.v2.api|true|Controls whether the V2 API is enabled. When set to `true`, the V2 API is enabled.
+
+|solr.auth.jwt.outbound.http.enabled|solr.auth.jwt.allowOutboundHttp|false|Controls whether JWT authentication for outbound HTTP connections is enabled.
+
+|solr.auth.superuser|solr.authorization.superuser|solr|Specifies the superuser for authorization. This user has all permissions when using SASL authentication.
+
+|solr.circuitbreaker.errorcode||503|Defines the HTTP error code returned when a circuit breaker is triggered.
+
+|solr.cloud.shardsplit.checkdiskspace.enabled|solr.shardSplit.checkDiskSpace.enabled|true|Controls whether to check for disk space before shard split
+
+|solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
+
+|solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
+
+|solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
+
+|solr.configset.bootstrap.confdir|bootstrap_confdir||Defines the directory of a configuration to be loaded as a configset when starting Solr. Often ends in `/conf`.
+
+|solr.configset.bootstrap.config.name|collection.configName||Specifies the configuration name for the bootstrapped configset. Use with "solr.configset.bootstrap.confdir".
+
+|solr.configset.default.confdir|solr.default.confdir|"_default"|Defines the default configuration directory for configsets.
+
+|solr.configset.forbidden.file.types|solrConfigSetForbiddenFileTypes|jar,jnilib,dll,so,dylib,exe|Specifies file types that are forbidden in configsets.
+
+|solr.configset.upload.enabled|configset.upload.enabled|true|Controls whether configset uploads are enabled.
+
+|solr.filestore.filesize.max|max.file.store.size|100MB|Defines the maximum file size allowed in Solr's filestore.
+
+|solr.host.advertise| host | | This is the host that is advertised by the Solr node in the ZK live nodes
+
+|solr.host.bind|solr.jetty.host| |This is the host that Solr's Jetty binds to, and only accepts requests to.
+
+|solr.index.replication.fingerprint.enabled|!solr.disableFingerprint|true|Controls whether index fingerprinting for replication is disabled.
+
+|solr.index.updatelog.enabled|enable.update.log|true (in default solrconfig.xml)|Controls whether the UpdateLog is enabled. The UpdateLog is required for atomic updates, real-time get, and transaction log replay. May be disabled in testing environments or with schemas that don't support versioning (older schemas) to improve performance at the cost of data durability.
+
+|solr.logs.dir|solr.log.dir|server/logs|Specifies the directory where Solr logs are stored.
+
+|SOLR_LOGS_REQUESTLOG_ENABLED |SOLR_REQUESTLOG_ENABLED|true|Specifies if Jetty's request logs should be created and retained.
+
+|solr.logs.requestlog.retain.days|solr.log.requestlog.retaindays|3|How many days of request logs to retain before rolling over.
+
+|solr.metrics.fieldcache.entries.enabled|!disableSolrFieldCacheMBeanEntryList|true|Controls whether Solr FieldCache MBean entry list is disabled for metrics reporting.
+
+|solr.metrics.fieldcache.entries.jmx.enabled|!disableSolrFieldCacheMBeanEntryListJmx|true|Controls whether Solr FieldCache MBean JMX entry list is disabled for metrics reporting.
+
+|solr.packages.enabled|enable.packages|false|Controls whether the package management system is enabled.
+
+|solr.port.advertise| | Default to `solr.port.listen` if not defined.  | This is the port that is advertised by the Solr node in the ZK live nodes.
+
+|solr.port.listen| jetty.port| 8983 or solr.jetty.https.port if defined and SSL | This is the port that Solr's Jetty binds to, and accepts requests to.
+
+|solr.requests.allow.urls|solr.disable.allowUrls||Specifies URLs that are allowed for streaming. See also solr.requests.streaming.remote.enabled.
+
+|solr.requests.streaming.body.enabled|solr.enableStreamBody|false|Controls whether streaming request bodies are enabled.
+
+|solr.requests.streaming.remote.enabled|solr.enableRemoteStreaming|false|Controls whether remote streaming is enabled for requests.
+
+|solr.resourceloading.restricted.enabled|!solr.allow.unsafe.resourceloading|true|Controls whether resource loading restrictions are enabled. When set to `true`, resource loading restrictions are enabled.
+
+|solr.responses.hidden.sys.props|solr.hiddenSysProps||Defines system properties that are hidden in responses.
+
+|solr.responses.stacktrace.enabled|!solr.hideStackTrace|false|Controls whether stack traces are included in responses. When set to `true`, stack traces are included in responses.
+
+|solr.security.auth.basicauth.credentials|basicauth||Defines basic authentication credentials.
+
+|solr.security.allow.paths|solr.allowPaths||A comma seperated list of paths for reading from.
+
+|solr.security.allow.urls|solr.allowUrls||A comma seperated list of urls for reading from.
+
+|solr.security.allow.urls.enabled|!solr.disable.allow.urls|false|If using an allow list of accessible urls is enabled.
+
+|solr.security.auth.plugin|authenticationPlugin||Specifies the authentication plugin to use.
+
+|solr.solrj.cloud.max.stale.retries|cloudSolrClientMaxStaleRetries|5|Sets the maximum number of retries for stale connection attempts in SolrJ cloud client.
+
+|solr.solrj.http.cookies.enabled|!solr.http.disableCookies| false |If Http2SolrClient should support cookies.
+
+|solr.solrj.http.jetty.customizer|solr.httpclient.builder.factory||A class loaded to customize HttpJettySolrClient upon creation.
+
+|solr.streamingexpressions.facet.tiered.enabled|solr.facet.stream.tiered|true|Controls whether tiered faceting is enabled for streaming expressions.
+
+|solr.streamingexpressions.macros.enabled|StreamingExpressionMacros|false|Controls whether to expand URL parameters inside of the `expr` parameter.
+
+|solr.tracing.always.on.enabled|solr.alwaysOnTraceId|true|Controls whether trace IDs are always generated, even when no request contains a trace ID.
+
+|solr.ui.enabled|!disableAdminUI|true|Controls whether the Solr Admin UI is enabled. When set to `true`, the Solr Admin UI is enabled.
+
+|solr.ui.experimental.enabled|!solr.admin.ui.experimental.disabled|true|Controls whether experimental features in the Solr Admin UI are enabled. When set to `true`, experimental features in the UI are enabled.
+
+|solr.zookeeper.client.connect.timeout|zkConnectTimeout|15 seconds.|How long before timing out opening connection to ZooKeeper.
+
+|solr.zookeeper.client.timeout|zkClientTimeout|30 seconds.|How long before timing out connection to ZooKeeper.
+
+|solr.zookeeper.chroot.create|createZkChroot|false|Controls whether a ZooKeeper chroot is created if it doesn't exist.
+
+|solr.zookeeper.embedded.host|solr.zk.embedded.host|127.0.0.1|Sets the network interface the Embedded ZooKeeper binds to.
+
+|solr.zookeeper.server.confdir|zkServerConfDir|Defaults to solr.home dir.|Where to store ZooKeeper configuration when running embedded ZooKeeper.
+
+|solr.zookeeper.server.datadir|zkServerDataDir|Defaults to solr.home/zoo_data dir.|Where to store ZooKeeper data when running embedded ZooKeeper.
+
+|solr.zookeeper.server.enabled|zk.run|false|Controls whether embedded ZooKeeper is started. Set by the start script.
+
+|===
+
+=== Jetty related properties
+
+There are many other Jetty specific properties that can be overridden.
+
+See the source files in `solr/server/etc/` for more information:
+
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty.xml[jetty.xml] - Main Jetty server configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-http.xml[jetty-http.xml] - HTTP connector configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-https.xml[jetty-https.xml] - HTTPS connector configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-ssl.xml[jetty-ssl.xml] - SSL configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-ssl-context-reload.xml[jetty-ssl-context-reload.xml] - SSL context reload configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-gzip.xml[jetty-gzip.xml] - GZIP compression configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-requestlog.xml[jetty-requestlog.xml] - Request logging configuration
+* https://github.com/apache/solr/blob/main/solr/server/etc/jetty-graceful.xml[jetty-graceful.xml] - Graceful shutdown configuration
+
+== Property Naming Conventions
+
+Many Solr properties follow a standard naming convention. Newer properties typically use dot-separated format prefixed with `solr.` (e.g., `solr.my.property`), while older properties might camelCase (e.g., `solr.myProperty`).
+
+== Setting System Properties
+
+System properties can be set in several ways:
+
+1. JVM command line arguments using `-D`: `-Dsolr.api.v2.enabled=true`
+2. In `solr.in.sh` (Unix) or `solr.in.cmd` (Windows) using environment variables
+3. Through environment variables (with appropriate naming conventions)
+
+Environment variables can also be used to set these properties.
+You may find this useful in environments such as Docker.
+Environment variables should be uppercase with dot notations equivalents, e.g. `SOLR_API_V2_ENABLED` for the property `solr.api.v2.enabled`.
+
+== See Also
+
+* xref:configuring-solr-xml.adoc[]
+* xref:configuring-solrconfig-xml.adoc[]
+* xref:property-substitution.adoc[]

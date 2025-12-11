@@ -66,16 +66,25 @@ dependencies {
   implementation libs.apache.log4j.api
   implementation libs.apache.log4j.core
   implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.jetty10
+  implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
   permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false
+  }
+  implementation libs.prometheus.metrics.model
+  implementation(libs.opentelemetry.sdk) {
+    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
+  }
+  permitUnusedDeclared libs.opentelemetry.sdk
 
-  implementation libs.eclipse.jetty.toolchain.servletapi
+  implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
-  api libs.eclipse.jetty.servlet
+  implementation libs.eclipse.jetty.session
+  api libs.eclipse.jetty.ee10.servlet
   implementation libs.eclipse.jetty.util
   implementation libs.eclipse.jetty.alpnserver
   runtimeOnly(libs.eclipse.jetty.alpnjavaserver, {
@@ -88,4 +97,18 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
+
+  implementation(libs.apache.httpcomponents.httpmime, {
+    exclude group: "commons-codec", module: "commons-codec"
+    exclude group: "commons-logging", module: "commons-logging"
+  })
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+
+  testImplementation libs.apache.commons.lang3
 }

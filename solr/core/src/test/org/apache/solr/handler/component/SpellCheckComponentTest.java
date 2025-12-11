@@ -644,4 +644,16 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertNull(suggestions.get("suggestion"));
     assertFalse((Boolean) spellCheck.get("correctlySpelled"));
   }
+
+  @Test
+  public void testFirstSearcherWarming() throws Exception {
+
+    final long preRestart = h.getCore().withSearcher(s -> s.getOpenNanoTime());
+
+    h.reload();
+
+    try (SolrCore current = h.getCoreInc()) {
+      assertNotEquals(preRestart, (long) current.withSearcher(s -> s.getOpenNanoTime()));
+    }
+  }
 }

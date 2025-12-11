@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.request;
 
 import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 
@@ -31,8 +32,8 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
@@ -41,10 +42,8 @@ import org.apache.solr.client.solrj.response.schema.FieldTypeRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaRepresentation;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.RestTestBase;
-import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,18 +63,8 @@ public class SchemaTest extends RestTestBase {
 
   private static void assertFailedSchemaResponse(
       ThrowingRunnable runnable, String expectedErrorMessage) {
-    BaseHttpSolrClient.RemoteExecutionException e =
-        expectThrows(BaseHttpSolrClient.RemoteExecutionException.class, runnable);
-    SimpleOrderedMap<?> errorMap = (SimpleOrderedMap<?>) e.getMetaData().get("error");
-    assertEquals(
-        "org.apache.solr.api.ApiBag$ExceptionWithErrObject",
-        ((NamedList) errorMap.get("metadata")).get("error-class"));
-    List<?> details = (List<?>) errorMap.get("details");
-    assertTrue(
-        ((List<?>) ((Map<?, ?>) details.get(0)).get("errorMessages"))
-            .get(0)
-            .toString()
-            .contains(expectedErrorMessage));
+    final var e = expectThrows(RemoteSolrException.class, runnable);
+    assertThat(e.getMessage(), containsString(expectedErrorMessage));
   }
 
   private static void createStoredStringField(String fieldName, SolrClient solrClient)
@@ -116,7 +105,7 @@ public class SchemaTest extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);

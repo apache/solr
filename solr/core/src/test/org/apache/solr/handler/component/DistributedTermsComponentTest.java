@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Random;
 import java.util.stream.Stream;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -228,8 +228,8 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
       // other way is to pass whole response to compare
       assertNull(
           compare(
-              rsp.findRecursive("terms"),
-              controlRsp.findRecursive("terms"),
+              rsp._get(List.of("terms"), null),
+              controlRsp._get(List.of("terms"), null),
               flags(handle, "terms"),
               handle));
     }

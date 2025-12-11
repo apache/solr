@@ -50,7 +50,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     executor = ExecutorUtil.newMDCAwareCachedThreadPool(getClassName());
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
     initCore(
         "solr/collection1/conf/solrconfig.xml",
         "solr/collection1/conf/schema-minimal-with-another-uniqkey.xml");
@@ -59,7 +59,7 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     ExecutorUtil.shutdownAndAwaitTermination(executor);
-    System.clearProperty("enable.update.log");
+    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   @Test

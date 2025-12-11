@@ -149,7 +149,7 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 In this example we've used `\*:* -\_nest_path_:*` as our xref:block-join-query-parser.adoc#block-mask[`of` parameter] to indicate we want to consider all documents which don't have a nest path -- i.e., all "root" level document -- as the set of possible parents.
 
 By changing the `of` parameter to match ancestors at specific `\_nest_path_` levels, we can narrow down the list of children we return.
-In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less then `50`:
+In the query below, we search for all descendants of `skus` (using an `of` parameter that identifies all documents that do _not_ have a `\_nest_path_` with the prefix `/skus/*`) with a `price_i` less than `50`:
 
 [source,text]
 ----
@@ -267,7 +267,7 @@ Note that in the above example, the `/` characters in the `\_nest_path_` were "d
 
 === Combining Block Join Query Parsers with Child Doc Transformer
 
-The combination of these two parsers with the `[child] transformer enables seamless creation of very powerful queries.
+The combination of these two parsers with the `[child]` transformer enables seamless creation of very powerful queries.
 
 Here for example is a query where:
 
@@ -295,4 +295,44 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
             "content_t":"...",
             "_version_":1676585794196733952}]}]
   }}
+----
+
+=== Nested Vectors search through Block Join Query Parsers and Child Doc Transformer
+
+
+
+When dealing with vector search a possible use case involves having multiple vectors for a single document.
+
+This in Solr can be implemented with the block join and nested documents.
+Each nested document has a vector field (among other metadata)
+
+This may happen, among other use cases, because you chunked the original text into paragraphs, each of them modeled as a nested document with the paragraph text and the vector representation.
+
+You can run knn vector search on children documents (with potential prefiltering on children and/or parents metadata) and retrieve top-K parents.
+
+N.B. Solr ensures that the knn search for children keeps track of parent metadata filtering, guaranteeing top-k parents retrieval
+
+An example:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}&
+children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]&
+allParents=*:* -_nest_path_:*&
+someParents=color_s:RED&
+fl=id,score,vectors,vector,[child fl=vector childFilter=$children.q]
+
+The search results retrieved are the top k=3 parents of the nearest children to the vector in input `[1.0, 2.0, 3.0, 4.0]`, ranked by the `similarityFunction` configured at indexing time.
+
+Let's decompose the query to better explain it:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}
+
+This query returns the parent solr documents using the block join parent query parser on a query that filters on the children documents ('children.q'). For each child retrieved, the parent is returned.
+
+[source,text]
+children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+
+This query is a knn vector search on the children documents.
+Specifically it retrieves the top k=3 children documents, filtered by 'someParent' metadata.
+This query ensures only one child per parent is retrieved.
+
 ----

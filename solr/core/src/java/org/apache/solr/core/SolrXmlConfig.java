@@ -27,7 +27,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -37,25 +36,23 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import javax.management.MBeanServer;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.cloud.ClusterSingleton;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
-import org.apache.solr.metrics.reporters.SolrJmxReporter;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
-import org.apache.solr.util.JmxUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -351,9 +348,6 @@ public class SolrXmlConfig {
               case "maxBooleanClauses":
                 builder.setBooleanQueryMaxClauseCount(it.intVal(-1));
                 break;
-              case "managementPath":
-                builder.setManagementPath(it.txt());
-                break;
               case "sharedLib":
                 builder.setSharedLibDirectory(it.txt());
                 break;
@@ -383,10 +377,6 @@ public class SolrXmlConfig {
                 break;
               case "indexSearcherExecutorThreads":
                 builder.setIndexSearcherExecutorThreads(it.intVal(-1));
-                break;
-              case "transientCacheSize":
-                log.warn("solr.xml transientCacheSize -- transient cores is deprecated");
-                builder.setTransientCacheSize(it.intVal(-1));
                 break;
               case "allowUrls":
                 builder.setAllowUrls(separateStrings(it.txt()));
@@ -435,10 +425,10 @@ public class SolrXmlConfig {
 
     boolean defined = false;
 
-    int maxUpdateConnections = HttpClientUtil.DEFAULT_MAXCONNECTIONS;
-    int maxUpdateConnectionsPerHost = HttpClientUtil.DEFAULT_MAXCONNECTIONSPERHOST;
-    int distributedSocketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
-    int distributedConnectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
+    int maxUpdateConnections = SolrHttpConstants.DEFAULT_MAXCONNECTIONS;
+    int maxUpdateConnectionsPerHost = SolrHttpConstants.DEFAULT_MAXCONNECTIONSPERHOST;
+    int distributedSocketTimeout = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+    int distributedConnectionTimeout = SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
     String metricNameStrategy = UpdateShardHandlerConfig.DEFAULT_METRICNAMESTRATEGY;
     int maxRecoveryThreads = UpdateShardHandlerConfig.DEFAULT_MAXRECOVERYTHREADS;
 
@@ -507,17 +497,10 @@ public class SolrXmlConfig {
     int hostPort =
         parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     if (hostPort <= 0) {
-      // Default to the port that jetty is listening on, or 8983 if that is not provided.
-      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+      // Default to the port that Solr is listening on, or 8983 if that is not provided.
+      hostPort = EnvUtils.getPropertyAsInteger("solr.port.listen", 8983);
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-
-    // We no longer require or support the hostContext property, but legacy users may have it, so
-    // remove it from the list.
-    String hostContext = removeValue(nl, "hostContext");
-    if (hostContext != null) {
-      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
-    }
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
@@ -540,9 +523,6 @@ public class SolrXmlConfig {
         case "zkHost":
           builder.setZkHost(value);
           break;
-        case "genericCoreNodeNames":
-          builder.setUseGenericCoreNames(Boolean.parseBoolean(value));
-          break;
         case "zkACLProvider":
           builder.setZkACLProviderClass(value);
           break;
@@ -564,18 +544,13 @@ public class SolrXmlConfig {
         case "pkiHandlerPublicKeyPath":
           builder.setPkiHandlerPublicKeyPath(value);
           break;
-        case "distributedClusterStateUpdates":
-          builder.setUseDistributedClusterStateUpdates(Boolean.parseBoolean(value));
-          break;
-        case "distributedCollectionConfigSetExecution":
-          builder.setUseDistributedCollectionConfigSetExecution(Boolean.parseBoolean(value));
-          break;
         case "minStateByteLenForCompression":
           builder.setMinStateByteLenForCompression(parseInt(name, value));
           break;
         case "stateCompressor":
           builder.setStateCompressorClass(value);
           break;
+
         default:
           throw new SolrException(
               SolrException.ErrorCode.SERVER_ERROR,
@@ -742,8 +717,7 @@ public class SolrXmlConfig {
                   : Integer.parseInt(threadsCachingIntervalSeconds.toString())));
     }
 
-    PluginInfo[] reporterPlugins = getMetricReporterPluginInfos(metrics);
-    return builder.setMetricReporterPlugins(reporterPlugins).build();
+    return builder.build();
   }
 
   private static Map<String, CacheConfig> getCachesConfig(
@@ -771,36 +745,6 @@ public class SolrXmlConfig {
       }
     }
     return o;
-  }
-
-  private static PluginInfo[] getMetricReporterPluginInfos(ConfigNode metrics) {
-    List<PluginInfo> configs = new ArrayList<>();
-    boolean hasJmxReporter = false;
-    for (ConfigNode node : metrics.getAll("reporter")) {
-      PluginInfo info = getPluginInfo(node);
-      if (info == null) {
-        continue;
-      }
-      String clazz = info.className;
-      if (clazz != null && clazz.equals(SolrJmxReporter.class.getName())) {
-        hasJmxReporter = true;
-      }
-      configs.add(info);
-    }
-
-    // if there's an MBean server running but there was no JMX reporter then add a default one
-    MBeanServer mBeanServer = JmxUtil.findFirstMBeanServer();
-    if (mBeanServer != null && !hasJmxReporter) {
-      log.debug(
-          "MBean server found: {}, but no JMX reporters were configured - adding default JMX reporter.",
-          mBeanServer);
-      Map<String, Object> attributes = new HashMap<>();
-      attributes.put("name", "default");
-      attributes.put("class", SolrJmxReporter.class.getName());
-      PluginInfo defaultPlugin = new PluginInfo("reporter", attributes);
-      configs.add(defaultPlugin);
-    }
-    return configs.toArray(new PluginInfo[0]);
   }
 
   /**

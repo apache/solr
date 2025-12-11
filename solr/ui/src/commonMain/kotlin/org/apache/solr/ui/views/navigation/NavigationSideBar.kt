@@ -17,7 +17,6 @@
 
 package org.apache.solr.ui.views.navigation
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -38,19 +37,21 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Security
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.logout
+import org.apache.solr.ui.generated.resources.action_logout
 import org.apache.solr.ui.generated.resources.nav_cluster
 import org.apache.solr.ui.generated.resources.nav_collections
 import org.apache.solr.ui.generated.resources.nav_configsets
@@ -69,14 +70,16 @@ import org.jetbrains.compose.resources.stringResource
  * sections.
  *
  * @param onNavigate Navigation handler function.
- * @param selectedItem The currently selected navigation item.
+ * @param onLogout Logout handler function.
  * @param modifier Modifier to apply to the root composable.
+ * @param selectedItem The currently selected navigation item.
  */
 @Composable
 fun NavigationSideBar(
     onNavigate: (MainMenu) -> Unit,
-    selectedItem: MainMenu? = null,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier,
+    selectedItem: MainMenu? = null,
 ) = Row(modifier = modifier) {
     val scrollState = rememberScrollState(48 * (selectedItem?.ordinal ?: 0))
 
@@ -102,10 +105,10 @@ fun NavigationSideBar(
 
             // TODO Add condition for displaying logout button if user identity / auth present
             MenuElement(
-                text = stringResource(Res.string.logout),
+                text = stringResource(Res.string.action_logout),
                 imageVector = Icons.AutoMirrored.Rounded.Logout,
                 modifier = Modifier.fillMaxWidth(),
-                onClick = {}, // TODO Call logout on auth component
+                onClick = onLogout,
             )
         }
     }
@@ -119,18 +122,25 @@ private fun MenuElement(
     modifier: Modifier = Modifier,
     selected: Boolean = false,
     enabled: Boolean = true,
-    onClick: () -> Unit,
+    onClick: () -> Unit = {},
 ) {
     val alpha = if (enabled) 1f else 0.38f
-    Tab(
-        modifier = modifier.background(
-            if (selected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha)
-            else Color.Unspecified,
-        ),
-        selected = selected,
+    Button(
+        colors = if (selected) {
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = alpha),
+                contentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha),
+                disabledContainerColor = Color.Transparent,
+            )
+        } else {
+            ButtonDefaults.buttonColors(
+                containerColor = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
+                disabledContainerColor = Color.Transparent,
+            )
+        },
+        shape = RectangleShape,
         enabled = enabled,
-        selectedContentColor = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = alpha),
-        unselectedContentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
         onClick = onClick,
     ) {
         Row(
@@ -185,6 +195,8 @@ private fun getMenuIcon(item: MainMenu) = when (item) {
  * TODO Remove once all sections are added
  */
 private fun isSectionAvailable(item: MainMenu): Boolean = when (item) {
+    MainMenu.Cluster -> true
+    MainMenu.Configsets -> true
     MainMenu.Environment -> true
     MainMenu.Logging -> true
     else -> false

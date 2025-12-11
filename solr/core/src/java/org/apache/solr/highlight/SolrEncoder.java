@@ -18,10 +18,9 @@ package org.apache.solr.highlight;
 
 import org.apache.lucene.search.highlight.Encoder;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public interface SolrEncoder extends SolrInfoBean, NamedListInitializedPlugin {
+public interface SolrEncoder extends NamedListInitializedPlugin {
   /**
    * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field.
    *

@@ -23,28 +23,27 @@ public class CSVFeatureLogger extends FeatureLogger {
   private final char keyValueSep;
   private final char featureSep;
 
-  public CSVFeatureLogger(String fvCacheName, FeatureFormat f, Boolean logAll) {
-    super(fvCacheName, f, logAll);
+  public CSVFeatureLogger(FeatureFormat f, Boolean logAll) {
+    super(f, logAll);
     this.keyValueSep = DEFAULT_KEY_VALUE_SEPARATOR;
     this.featureSep = DEFAULT_FEATURE_SEPARATOR;
   }
 
-  public CSVFeatureLogger(
-      String fvCacheName, FeatureFormat f, Boolean logAll, char keyValueSep, char featureSep) {
-    super(fvCacheName, f, logAll);
+  public CSVFeatureLogger(FeatureFormat f, Boolean logAll, char keyValueSep, char featureSep) {
+    super(f, logAll);
     this.keyValueSep = keyValueSep;
     this.featureSep = featureSep;
   }
 
   @Override
-  public String makeFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
+  public String printFeatureVector(LTRScoringQuery.FeatureInfo[] featuresInfo) {
     // Allocate the buffer to a size based on the number of features instead of the
     // default 16.  You need space for the name, value, and two separators per feature,
     // but not all the features are expected to fire, so this is just a naive estimate.
     StringBuilder sb = new StringBuilder(featuresInfo.length * 3);
     boolean isDense = featureFormat.equals(FeatureFormat.DENSE);
     for (LTRScoringQuery.FeatureInfo featInfo : featuresInfo) {
-      if (featInfo != null && (isDense || featInfo.isUsed())) {
+      if (featInfo != null && (isDense || !featInfo.isDefaultValue())) {
         sb.append(featInfo.getName())
             .append(keyValueSep)
             .append(featInfo.getValue())

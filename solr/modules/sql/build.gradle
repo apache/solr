@@ -21,6 +21,7 @@ description = 'SQL Module'
 
 dependencies {
   implementation platform(project(':platform'))
+  permitUnusedDeclared platform(project(":platform"))
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-streaming')

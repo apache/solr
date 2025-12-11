@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY;
 import static org.apache.solr.search.CpuAllowedLimit.hasCpuLimit;
+import static org.apache.solr.search.MemAllowedLimit.hasMemLimit;
 import static org.apache.solr.search.TimeAllowedLimit.hasTimeLimit;
 
 import java.util.ArrayList;
@@ -27,6 +28,9 @@ import java.util.function.Supplier;
 import org.apache.lucene.index.QueryTimeout;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -37,12 +41,12 @@ import org.apache.solr.util.TestInjection;
  * or other resource limits. Exceeding any specified limit will cause {@link #shouldExit()} to
  * return true the next time it is checked (it may be checked in either Lucene code or Solr code)
  */
-public class QueryLimits implements QueryTimeout {
+public final class QueryLimits implements QueryTimeout {
   public static final String UNLIMITED = "This request is unlimited.";
   private final List<QueryLimit> limits =
       new ArrayList<>(3); // timeAllowed, cpu, and memory anticipated
 
-  public static QueryLimits NONE = new QueryLimits();
+  public static final QueryLimits NONE = new QueryLimits();
 
   private final SolrQueryResponse rsp;
 
@@ -76,7 +80,7 @@ public class QueryLimits implements QueryTimeout {
       if (hasCpuLimit(req)) {
         limits.add(new CpuAllowedLimit(req));
       }
-      if (MemAllowedLimit.hasMemLimit(req)) {
+      if (hasMemLimit(req)) {
         limits.add(new MemAllowedLimit(req));
       }
     }
@@ -110,6 +114,18 @@ public class QueryLimits implements QueryTimeout {
         + limitStatusMessage();
   }
 
+  public String formatShardLimitExceptionMessage(String label, String shard, QueryLimit limit) {
+    return "Limit exceeded before sub-request!"
+        + (label != null ? " (" + label + ")" : "")
+        + ": ["
+        + limit.getClass().getSimpleName()
+        + ": "
+        + limit.currentValue()
+        + "] on shard "
+        + shard
+        + ". This shard request will be skipped.";
+  }
+
   /**
    * If limit is reached then depending on the request param {@link CommonParams#PARTIAL_RESULTS}
    * either mark it as partial result in the response and signal the caller to return, or throw an
@@ -123,21 +139,21 @@ public class QueryLimits implements QueryTimeout {
   public boolean maybeExitWithPartialResults(Supplier<String> label)
       throws QueryLimitsExceededException {
     if (isLimitsEnabled() && shouldExit()) {
-      if (allowPartialResults) {
-        if (rsp != null) {
-          SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
-          if (requestInfo == null) {
-            throw new SolrException(
-                SolrException.ErrorCode.SERVER_ERROR,
-                "No request active, but attempting to exit with partial results?");
-          }
-          rsp.setPartialResults(requestInfo.getReq());
-          if (rsp.getResponseHeader().get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
-            // don't want to add duplicate keys. Although technically legal, there's a strong risk
-            // that clients won't anticipate it and break.
-            rsp.addPartialResponseDetail(formatExceptionMessage(label.get()));
-          }
+      if (rsp != null) {
+        SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+        if (requestInfo == null) {
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "No request active, but attempting to exit with partial results?");
         }
+        rsp.setPartialResults(requestInfo.getReq());
+        if (rsp.getResponseHeader().get(RESPONSE_HEADER_PARTIAL_RESULTS_DETAILS_KEY) == null) {
+          // don't want to add duplicate keys. Although technically legal, there's a strong risk
+          // that clients won't anticipate it and break.
+          rsp.addPartialResponseDetail(formatExceptionMessage(label.get()));
+        }
+      }
+      if (allowPartialResults) {
         return true;
       } else {
         throw new QueryLimitsExceededException(formatExceptionMessage(label.get()));
@@ -188,6 +204,44 @@ public class QueryLimits implements QueryTimeout {
   /** Return true if there are any limits enabled for the current request. */
   public boolean isLimitsEnabled() {
     return !limits.isEmpty();
+  }
+
+  /**
+   * Allow each limit to adjust the shard request parameters if needed. This is useful for
+   * timeAllowed, cpu, or memory limits that need to be propagated to shards with potentially
+   * modified values.
+   *
+   * @return true if the shard request should be skipped because one or more limits would be tripped
+   *     after sending, during execution.
+   * @throws QueryLimitsExceededException if {@link #allowPartialResults} is false and limits would
+   *     have been tripped by the shard request.
+   */
+  public boolean adjustShardRequestLimits(
+      ShardRequest sreq, String shard, ModifiableSolrParams params, ResponseBuilder rb)
+      throws QueryLimitsExceededException {
+    boolean result = false;
+    for (QueryLimit limit : limits) {
+      boolean shouldSkip = limit.adjustShardRequestLimit(sreq, shard, params);
+      if (shouldSkip) {
+        String label = "stage: " + rb.getStageName();
+        if (rsp != null) {
+          SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
+          if (requestInfo == null) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "No request active, but attempting to exit with partial results?");
+          }
+          rsp.setPartialResults(requestInfo.getReq());
+          rsp.addPartialResponseDetail(formatShardLimitExceptionMessage(label, shard, limit));
+        }
+        if (!allowPartialResults) {
+          throw new QueryLimitsExceededException(
+              formatShardLimitExceptionMessage(label, shard, limit));
+        }
+      }
+      result = result || shouldSkip;
+    }
+    return result;
   }
 
   /**

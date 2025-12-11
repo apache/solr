@@ -24,8 +24,8 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import javax.net.ssl.SSLPeerUnverifiedException;
-import org.apache.http.auth.BasicUserPrincipal;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.security.SimplePrincipal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -138,7 +138,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
 
     String principal = extractPrincipal(basePrincipal);
     log.debug("Resolved principal: {}", principal);
-    return new BasicUserPrincipal(principal);
+    return new SimplePrincipal(principal);
   }
 
   private String extractPrincipal(String str) {

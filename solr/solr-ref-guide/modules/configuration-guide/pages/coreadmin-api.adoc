@@ -193,7 +193,7 @@ Same as `name` on the `<core>` element.
 The directory where files for this core should be stored.
 Same as `instanceDir` on the `<core>` element.
 The default is the value specified for the `name` parameter if not supplied.
-This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
+This directory must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.security.allow.paths`.
 
 `config`::
 +
@@ -223,7 +223,7 @@ See xref:schema-factory.adoc[] for details.
 |===
 +
 Name of the data directory relative to `instanceDir`.
-If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.allowPaths`.
+If absolute value is used, it must be inside `SOLR_HOME`, `SOLR_DATA_HOME` or one of the paths specified by system property `solr.security.allow.paths`.
 
 `configSet`::
 +

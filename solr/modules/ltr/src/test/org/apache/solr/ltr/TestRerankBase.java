@@ -120,6 +120,12 @@ public class TestRerankBase extends RestTestBase {
     if (bulkIndex) bulkIndex();
   }
 
+  protected static void setupFeatureVectorCacheTest(boolean bulkIndex) throws Exception {
+    chooseDefaultFeatureFormat();
+    setuptest("solrconfig-ltr-featurevectorcache.xml", "schema.xml");
+    if (bulkIndex) bulkIndex();
+  }
+
   public static ManagedFeatureStore getManagedFeatureStore() {
     try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedFeatureStore.getManagedFeatureStore(core);
@@ -136,7 +142,6 @@ public class TestRerankBase extends RestTestBase {
       throws Exception {
     tmpSolrHome = createTempDir();
     tmpConfDir = tmpSolrHome.resolve(CONF_DIR);
-    tmpConfDir.toFile().deleteOnExit();
     PathUtils.copyDirectory(TEST_PATH(), tmpSolrHome);
 
     final Path fstore = tmpConfDir.resolve(FEATURE_FILE_NAME);
@@ -176,7 +181,7 @@ public class TestRerankBase extends RestTestBase {
   public static void setuptest(String solrconfig, String schema) throws Exception {
 
     setupTestInit(solrconfig, schema, false);
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(tmpSolrHome, solrconfig, schema, "/solr", true, null);
   }
@@ -199,7 +204,7 @@ public class TestRerankBase extends RestTestBase {
       tmpSolrHome = null;
     }
     System.clearProperty("managed.schema.mutable");
-    // System.clearProperty("enable.update.log");
+    // System.clearProperty("solr.index.updatelog.enabled");
     unchooseDefaultFeatureFormat();
   }
 

@@ -23,16 +23,14 @@ import java.nio.file.Path;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.core.ConfigSetService;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooDefs;
@@ -102,6 +100,19 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       assertEquals("testconfig", configs.get(0));
       assertTrue(configSetService.checkConfigExists("testconfig"));
 
+      Path tempConfigForbidden = createTempDir("config");
+      Files.createFile(tempConfigForbidden.resolve("Test.java"));
+      Files.createFile(tempConfigForbidden.resolve("file1"));
+      Files.createDirectory(tempConfigForbidden.resolve("dir"));
+
+      Exception ex =
+          assertThrows(
+              SolrException.class,
+              () -> {
+                configSetService.uploadConfig("_testconf", tempConfigForbidden);
+              });
+      assertTrue(ex.getMessage().contains("is forbidden for use in uploading configsets."));
+
       // check downloading
       Path downloadPath = createTempDir("download");
       configSetService.downloadConfig("testconfig", downloadPath);
@@ -120,7 +131,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
       Files.write(tempConfig.resolve("file1"), overwritten);
       configSetService.uploadConfig("testconfig", tempConfig);
 
-      assertEquals(1, configSetService.listConfigs().size());
+      assertEquals(2, configSetService.listConfigs().size());
       Path download2 = createTempDir("download2");
       configSetService.downloadConfig("testconfig", download2);
       byte[] checkdata2 = Files.readAllBytes(download2.resolve("file1"));
@@ -128,7 +139,7 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
 
       // uploading same files to a new name creates a new config
       configSetService.uploadConfig("config2", tempConfig);
-      assertEquals(2, configSetService.listConfigs().size());
+      assertEquals(3, configSetService.listConfigs().size());
 
       // Test copying a config works in both flavors
       configSetService.copyConfig("config2", "config2copy");
@@ -212,28 +223,6 @@ public class TestZkConfigSetService extends SolrTestCaseJ4 {
           assertThrows(IOException.class, () -> new ZkConfigSetService(client).listConfigs());
       assertEquals(KeeperException.NoAuthException.class, ioException.getCause().getClass());
     }
-  }
-
-  @Test
-  public void testBootstrapConf() throws IOException, KeeperException, InterruptedException {
-
-    Path solrHome = legacyExampleCollection1SolrHome();
-
-    CoreContainer cc = new CoreContainer(solrHome, new Properties());
-    System.setProperty("zkHost", zkServer.getZkAddress());
-
-    SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkHost())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build();
-    zkClient.makePath("/solr", false, true);
-    cc.setCoreConfigService(new ZkConfigSetService(zkClient));
-    assertFalse(cc.getConfigSetService().checkConfigExists("collection1"));
-    ConfigSetService.bootstrapConf(cc);
-    assertTrue(cc.getConfigSetService().checkConfigExists("collection1"));
-
-    zkClient.close();
   }
 
   static SolrZkClient buildZkClient(

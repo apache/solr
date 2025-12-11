@@ -38,10 +38,10 @@ public class QueryCommand {
   private int supersetMaxDoc;
   private int flags;
   private boolean multiThreaded = false;
-  private long timeAllowed = -1;
   private int minExactCount = Integer.MAX_VALUE;
   private CursorMark cursorMark;
   private boolean distribStatsDisabled;
+  private int maxHitsAllowed = Integer.MAX_VALUE;
 
   public CursorMark getCursorMark() {
     return cursorMark;
@@ -163,15 +163,6 @@ public class QueryCommand {
     return this;
   }
 
-  public long getTimeAllowed() {
-    return timeAllowed;
-  }
-
-  public QueryCommand setTimeAllowed(long timeAllowed) {
-    this.timeAllowed = timeAllowed;
-    return this;
-  }
-
   public int getMinExactCount() {
     return minExactCount;
   }
@@ -195,6 +186,10 @@ public class QueryCommand {
 
   public boolean getTerminateEarly() {
     return (flags & SolrIndexSearcher.TERMINATE_EARLY) != 0;
+  }
+
+  public boolean shouldEarlyTerminateSearch() {
+    return getTerminateEarly() || getMaxHitsAllowed() < Integer.MAX_VALUE;
   }
 
   public QueryCommand setTerminateEarly(boolean segmentTerminateEarly) {
@@ -244,5 +239,13 @@ public class QueryCommand {
   /** Calls {@link SolrIndexSearcher#search(QueryCommand)}. */
   public QueryResult search(SolrIndexSearcher searcher) throws IOException {
     return searcher.search(this);
+  }
+
+  public int getMaxHitsAllowed() {
+    return maxHitsAllowed;
+  }
+
+  public void setMaxHitsAllowed(int maxHitsAllowed) {
+    this.maxHitsAllowed = maxHitsAllowed;
   }
 }

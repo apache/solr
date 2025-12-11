@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -64,7 +65,8 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     // as compared with testHealthCheckHandlerWithCloudClient
     // (Not sure if that's actually a good thing -- but it's how the existing test worked)
     final var genericHealthcheck =
-        new GenericSolrRequest(SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH);
+        new GenericSolrRequest(
+            SolrRequest.METHOD.GET, HEALTH_CHECK_HANDLER_PATH, SolrRequest.SolrRequestType.ADMIN);
     assertEquals(
         CommonParams.OK,
         genericHealthcheck.process(cluster.getSolrClient()).getResponse().get(CommonParams.STATUS));
@@ -101,9 +103,9 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      SolrClient.RemoteSolrException e =
+      RemoteSolrException e =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 runHealthcheckWithClient(solrClient);
               });
@@ -133,13 +135,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
     }
   }
 
-  @Test(expected = AssertionError.class)
-  public void testHealthCheckHandlerWithCloudClient() throws IOException, SolrServerException {
-    // negative check of a HealthCheckRequest using cloud solr client
-    HealthCheckRequest req = new HealthCheckRequest();
-    req.process(cluster.getSolrClient());
-  }
-
   @Test
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
@@ -163,9 +158,9 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      SolrClient.RemoteSolrException e =
+      RemoteSolrException e =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 new V2Request.Builder("/node/health").build().process(solrClient);
               });

@@ -57,7 +57,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 
@@ -410,7 +409,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   private void getCheckpoints() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
     this.checkpoints = new HashMap<>();
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
     for (Slice slice : slices) {
@@ -490,7 +489,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
 
   private void getPersistedCheckpoints() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-    Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(checkpointCollection, cloudSolrClient, false);
 
     Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
 
@@ -524,7 +523,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
   @Override
   protected void constructStreams() throws IOException {
     var cloudSolrClient = clientCache.getCloudSolrClient(zkHost);
-    Slice[] slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
+    List<Slice> slices = CloudSolrStream.getSlices(this.collection, cloudSolrClient, false);
 
     ModifiableSolrParams mParams = new ModifiableSolrParams(params);
     mParams.set(DISTRIB, "false"); // We are the aggregator.
@@ -551,8 +550,7 @@ public class TopicStream extends CloudSolrStream implements Expressible {
       }
 
       Replica rep = shuffler.get(random.nextInt(shuffler.size()));
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-      String url = zkProps.getCoreUrl();
+      String url = rep.getCoreUrl();
       SolrStream solrStream = new SolrStream(url, localParams);
       solrStream.setSlice(slice.getName());
       solrStream.setCheckpoint(checkpoint);

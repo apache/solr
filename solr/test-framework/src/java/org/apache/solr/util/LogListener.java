@@ -200,7 +200,7 @@ public final class LogListener implements Closeable, AutoCloseable {
       config.addLogger(loggerName, loggerConfig);
     }
 
-    // Regardless of wether loggerConfig exactly matches loggerName, or is an ancestor, if it's
+    // Regardless of whether loggerConfig exactly matches loggerName, or is an ancestor, if it's
     // level is (strictly) more specific
     // then our configured level, it will be impossible to listen for the events we want - so track
     // the original level and modify as needed...
@@ -262,6 +262,11 @@ public final class LogListener implements Closeable, AutoCloseable {
   public LogListener setQueue(BlockingQueue<LogEvent> queue) {
     loggerAppender.setQueue(queue);
     return this;
+  }
+
+  /** Clear the queue of any recorded events */
+  public void clearQueue() {
+    loggerAppender.getQueue().clear();
   }
 
   /**

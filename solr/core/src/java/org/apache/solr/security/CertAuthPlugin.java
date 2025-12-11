@@ -16,17 +16,17 @@
  */
 package org.apache.solr.security;
 
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.security.cert.X509Certificate;
 import java.util.Map;
-import javax.servlet.FilterChain;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.apache.http.HttpHeaders;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.security.cert.CertPrincipalResolver;
+import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +116,7 @@ public class CertAuthPlugin extends AuthenticationPlugin {
 
   private boolean sendError(HttpServletResponse response, String msg) throws IOException {
     numMissingCredentials.inc();
-    response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Certificate");
+    response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Certificate");
     response.sendError(HttpServletResponse.SC_UNAUTHORIZED, msg);
     return false;
   }
