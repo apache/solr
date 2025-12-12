@@ -106,14 +106,14 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   // String.format("reindexing_status_%dx.csv", Version.LATEST.major);
   private static final int SEGMENT_ERROR_RETRIES = 3;
   private static final long SLEEP_TIME_BEFORE_AFTER_COMMIT_MS = 10000;
-  private static SolrInputDocument lastDoc;
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
   private static final long SLEEP_TIME_SEGMENT_DELETION_MS = 60000;
   private static final LocalDateTime defaultDtm = LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC);
-  private static boolean fetchNumDocs = false;
 
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+
+  private SolrInputDocument lastDoc;
 
   public UpgradeCoreIndex(
       CoreContainer coreContainer,
@@ -159,7 +159,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
             setLastDoc(null);
 
-            UpdateRequestProcessorChain updateProcessorChain = getUpdateProcessorChain(core);
+            UpdateRequestProcessorChain updateProcessorChain =
+                getUpdateProcessorChain(core, requestBody.updateChain);
 
             try {
 
@@ -179,7 +180,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                 String currentSegmentName = segmentReader.getSegmentName();
 
                 if (segmentsToUpgrade.containsKey(currentSegmentName)) {
-                  boolean segmentError = false;
+                  boolean segmentError = true;
                   LocalDateTime segmentRxStartTime = LocalDateTime.now();
                   LocalDateTime segmentRxStopTime = LocalDateTime.MAX;
 
@@ -212,14 +213,16 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                         i,
                         segmentReader.getSegmentName(),
                         formatter.format(segmentRxStopTime));
-                    // segmentError = true
-                    if (segmentError) {
-                      coreRxStatus = CoreReindexingStatus.ERROR;
-                      log.error(
-                          "processSegment returned : {} for segment : {}",
-                          segmentError,
-                          segmentReader.getSegmentName());
+                    if (!segmentError) {
+                      break;
                     }
+                  }
+                  if (segmentError) {
+                    coreRxStatus = CoreReindexingStatus.ERROR;
+                    log.error(
+                        "processSegment returned : {} for segment : {}",
+                        segmentError,
+                        segmentReader.getSegmentName());
                   }
 
                   log.info(
@@ -346,7 +349,20 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   @SuppressWarnings({"rawtypes"})
-  private UpdateRequestProcessorChain getUpdateProcessorChain(SolrCore core) {
+  private UpdateRequestProcessorChain getUpdateProcessorChain(
+      SolrCore core, String requestedUpdateChain) {
+
+    if (requestedUpdateChain != null) {
+      UpdateRequestProcessorChain requestedChain =
+          core.getUpdateProcessingChain(requestedUpdateChain);
+      if (requestedChain != null) {
+        return requestedChain;
+      }
+      log.warn(
+          "Requested update chain {} not found for core {}, falling back to default",
+          requestedUpdateChain,
+          core.getName());
+    }
 
     SolrRequestHandler reqHandler = core.getRequestHandler("/update");
     NamedList initArgs = ((RequestHandlerBase) reqHandler).getInitArgs();
@@ -517,7 +533,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return dummyDoc;
   }
 
-  private static void setLastDoc(SolrInputDocument solrDoc) {
+  private void setLastDoc(SolrInputDocument solrDoc) {
     lastDoc = solrDoc;
   }
 
@@ -555,7 +571,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       SolrCore core,
       DocValuesIteratorCache dvICache) {
 
-    boolean segmentError = true;
+    boolean segmentError = false;
     int numDocsProcessed = 0;
     int numDocsAccum = 0;
     String coreName = core.getName();
@@ -563,12 +579,13 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     Bits bits = segmentReader.getLiveDocs();
     SolrInputDocument solrDoc = null;
     UpdateRequestProcessor processor = null;
+    LocalSolrQueryRequest solrRequest = null;
     RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
     SolrDocumentFetcher docFetcher = searcherRef.get().getDocFetcher();
     try {
+      // Exclude copy field targets to avoid duplicating values on reindex
       Set<String> fields = docFetcher.getNonStoredDVsWithoutCopyTargets();
-      LocalSolrQueryRequest solrRequest =
-          new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+      solrRequest = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
       SolrQueryResponse rsp = new SolrQueryResponse();
       processor = processorChain.createProcessor(solrRequest, rsp);
@@ -589,15 +606,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         processor.processAdd(currDocCmd);
         numDocsProcessed++;
         numDocsAccum++;
-        if (fetchNumDocs) {
-          numDocsAccum = 0;
-        }
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       log.error("Error in CvReindexingTask process() : {}", e.toString());
       segmentError = true;
     } finally {
-      searcherRef.decref();
       if (processor != null) {
         try {
           processor.finish();
@@ -613,12 +626,15 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           }
         }
       }
+      if (solrRequest != null) {
+        solrRequest.close();
+      }
+      searcherRef.decref();
     }
-    if (solrDoc != null) {
+    if (!segmentError && solrDoc != null) {
       setLastDoc(new SolrInputDocument(solrDoc));
       getLastDoc().removeField("_version_");
     }
-    segmentError = false;
     log.info(
         "End processing segment : {}, core: {} docs processed: {}",
         segmentReader.getSegmentName(),
