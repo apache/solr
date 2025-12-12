@@ -17,11 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.FutureTask;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.common.SolrException;
@@ -55,7 +56,7 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
    * requests are processed (despite the runnables created by this class still
    * waiting). Thus, we need to track that there are attempts still in flight.
    */
-  private final ConcurrentMap<ShardResponse, FutureTask<Void>> submitFutures;
+  private final ConcurrentMap<ShardResponse, CompletableFuture<Void>> submitFutures;
 
   public ParallelHttpShardHandler(ParallelHttpShardHandlerFactory httpShardHandlerFactory) {
     super(httpShardHandlerFactory);
@@ -79,22 +80,30 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
       SimpleSolrResponse ssr,
       ShardResponse srsp,
       long startTimeNS) {
-    FutureTask<Void> futureTask =
-        new FutureTask<>(
-            () -> super.makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS), null);
     CompletableFuture<Void> completableFuture =
-        CompletableFuture.runAsync(futureTask, commExecutor);
-    submitFutures.put(srsp, futureTask);
+        CompletableFuture.runAsync(
+            () -> super.makeShardRequest(sreq, shard, params, lbReq, ssr, srsp, startTimeNS),
+            commExecutor);
+    submitFutures.put(srsp, completableFuture);
     completableFuture.whenComplete(
         (r, t) -> {
           try {
             if (t != null) {
-              recordShardSubmitError(
-                  srsp,
-                  new SolrException(
-                      SolrException.ErrorCode.SERVER_ERROR,
-                      "Exception occurred while trying to send a request to shard: " + shard,
-                      t));
+              Throwable failure = t;
+              if (failure instanceof CompletionException) {
+                CompletionException completionException = (CompletionException) failure;
+                if (completionException.getCause() != null) {
+                  failure = completionException.getCause();
+                }
+              }
+              if (!(failure instanceof CancellationException)) {
+                recordShardSubmitError(
+                    srsp,
+                    new SolrException(
+                        SolrException.ErrorCode.SERVER_ERROR,
+                        "Exception occurred while trying to send a request to shard: " + shard,
+                        failure));
+              }
             }
           } finally {
             // Remove so that we keep track of in-flight submits only
