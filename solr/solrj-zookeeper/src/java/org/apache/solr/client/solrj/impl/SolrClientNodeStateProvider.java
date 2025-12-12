@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +34,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
@@ -58,12 +60,12 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
   @SuppressWarnings({"rawtypes"})
   private Map<String, Map> nodeVsTags = new HashMap<>();
 
-  public SolrClientNodeStateProvider(CloudHttp2SolrClient solrClient) {
-    if (!(solrClient.getHttpClient() instanceof Http2SolrClient)) {
+  public SolrClientNodeStateProvider(CloudSolrClient solrClient) {
+    if (!(solrClient instanceof CloudHttp2SolrClient)) {
       throw new IllegalArgumentException(
-          "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
+          "The passed-in CloudSolrClient must be a " + CloudHttp2SolrClient.class);
     }
-    this.solrClient = solrClient;
+    this.solrClient = (CloudHttp2SolrClient) solrClient;
     try {
       readReplicaDetails();
     } catch (IOException e) {
@@ -219,11 +221,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
 
     try (InputStream in =
-        (InputStream)
-            ctx.http2SolrClient()
-                .requestWithBaseUrl(baseUrl, req::process)
-                .getResponse()
-                .get(STREAM_KEY)) {
+        (InputStream) ctx.httpSolrClient().requestWithBaseUrl(baseUrl, req, null).get(STREAM_KEY)) {
 
       NodeValueFetcher.Metrics.prometheusMetricStream(in).forEach(lineProcessor);
     } catch (Exception e) {
@@ -260,18 +258,14 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     }
 
     public RemoteCallCtx(String node, CloudHttp2SolrClient cloudSolrClient) {
-      if (!(cloudSolrClient.getHttpClient() instanceof Http2SolrClient)) {
-        throw new IllegalArgumentException(
-            "The passed-in Cloud Solr Client must delegate to " + Http2SolrClient.class);
-      }
       this.node = node;
       this.cloudSolrClient = cloudSolrClient;
       this.zkClientClusterStateProvider =
           (ZkClientClusterStateProvider) cloudSolrClient.getClusterStateProvider();
     }
 
-    protected Http2SolrClient http2SolrClient() {
-      return (Http2SolrClient) cloudSolrClient.getHttpClient();
+    protected HttpSolrClientBase httpSolrClient() {
+      return cloudSolrClient.getHttpClient();
     }
 
     /**
@@ -322,8 +316,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       request.setResponseParser(new JavaBinResponseParser());
 
       try {
-        return ((Http2SolrClient) cloudSolrClient.getHttpClient())
-            .requestWithBaseUrl(url, request::process);
+        return request.processWithBaseUrl(cloudSolrClient.getHttpClient(), url, null);
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Fetching replica metrics failed", e);
       }

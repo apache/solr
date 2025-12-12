@@ -22,14 +22,11 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
@@ -95,11 +92,11 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
     InputStreamResponseParser parser = new InputStreamResponseParser("xml");
     try (final InputStream is = getResponse()) {
       assertNotNull(is);
-      NamedList<Object> response = parser.processResponse(is, "UTF-8");
-
-      assertNotNull(response.get("response"));
-      String expectedResponse = new String(getResponse().readAllBytes(), StandardCharsets.UTF_8);
-      assertEquals(expectedResponse, response.get("response"));
+      assertThrows(
+          UnsupportedOperationException.class,
+          () -> {
+            parser.processResponse(is, "UTF-8");
+          });
     }
   }
 }

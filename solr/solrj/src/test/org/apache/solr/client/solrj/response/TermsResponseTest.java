@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;

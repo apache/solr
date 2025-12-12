@@ -26,15 +26,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
@@ -171,9 +171,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail("Trying to unset an unknown property should have failed");
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         // expected
-        assertTrue(e.getMessage().contains("no supported values provided"));
+        assertTrue(e.toString().contains("no supported values provided"));
       }
     }
   }
@@ -193,7 +193,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(
             errorMessage.contains(
@@ -1149,7 +1149,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1172,7 +1172,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1193,7 +1193,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1226,7 +1226,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1298,9 +1298,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
-      SolrClient.RemoteSolrException rse =
+      RemoteSolrException rse =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
                     .process(client);

@@ -2381,7 +2381,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         base = leaf.docBase;
         end = base + leaf.reader().maxDoc();
         leafCollector = topCollector.getLeafCollector(leaf);
-        // we should never need to set the scorer given the settings for the collector
+        leafCollector.setScorer(CONSTANT_SCORABLE);
       }
       leafCollector.collect(doc - base);
     }
@@ -2703,4 +2703,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public long getWarmupTime() {
     return warmupTime;
   }
+
+  private static final Scorable CONSTANT_SCORABLE =
+      new Scorable() {
+        @Override
+        public float score() throws IOException {
+          return 1f;
+        }
+      };
 }
