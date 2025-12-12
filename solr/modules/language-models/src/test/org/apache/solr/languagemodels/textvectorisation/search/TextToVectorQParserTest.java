@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TextToVectorQParserTest extends TestLanguageModelBase {
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", true, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", true, false);
     loadModel("dummy-model.json");
   }
 

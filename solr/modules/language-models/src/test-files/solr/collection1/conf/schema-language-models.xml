@@ -18,8 +18,9 @@
 
 <!-- Test schema file for DenseVectorField -->
 
-<schema name="schema-densevector" version="1.7">
+<schema name="schema-language-models" version="1.7">
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" />
   <fieldType name="knn_vector_byte_encoding" class="solr.DenseVectorField" vectorDimension="4" similarityFunction="cosine" vectorEncoding="BYTE"/>
   <fieldType name="high_dimensional_float_knn_vector" class="solr.DenseVectorField" vectorDimension="2048" similarityFunction="cosine" vectorEncoding="FLOAT32"/>
@@ -39,6 +40,8 @@
   <field name="_version_" type="plong" indexed="true" stored="true" multiValued="false" />
   <field name="_text_" type="text_general" indexed="true" stored="false" multiValued="true"/>
   <copyField source="*" dest="_text_"/>
+  <field name="vectorised" type="boolean" indexed="true" stored="false" docValues="true" default="false"/>
+
   <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100" multiValued="true">
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>

@@ -31,7 +31,7 @@ public class TestModelManager extends TestLanguageModelBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", false, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", false, false);
   }
 
   @AfterClass

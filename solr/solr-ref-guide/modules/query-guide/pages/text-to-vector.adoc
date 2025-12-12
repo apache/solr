@@ -284,7 +284,7 @@ To vectorise textual fields of your documents at indexing time you need to confi
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 The `TextToVectorUpdateProcessor` update request processor vectorises the content of the 'inputField' for each document processed at indexing time.
@@ -311,25 +311,25 @@ This can be done in Solr defining two update request processors chains: one that
 [source,xml]
 ----
 <updateRequestProcessorChain name="no-vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 [source,xml]
 ----
 <updateRequestProcessorChain name="vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
 <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
@@ -338,7 +338,7 @@ This can be done in Solr defining two update request processors chains: one that
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 You would index your documents first using the 'no-vectorisation' and when finished, incrementally repeat the indexing targeting the 'vectorisation' chain.
@@ -356,28 +356,34 @@ You still define two chains, but this time the 'vectorisation' one only includes
 [source,xml]
 ----
 <updateRequestProcessorChain name="no-vectorisation">
-<processor class="solr.processor1">
+  <processor class="solr.processor1">
    ...
   </processor>
-...
-<processor class="solr.processorN">
+   ...
+  <processor class="solr.processorN">
    ...
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
 
 [source,xml]
 ----
 <updateRequestProcessorChain name="vectorisation">
-<processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+  <processor class="solr.DistributedUpdateProcessorFactory"/>
+  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
    <str name="inputField">_text_</str>
    <str name="outputField">vector</str>
    <str name="model">dummy-1</str>
   </processor>
   <processor class="solr.RunUpdateProcessorFactory"/>
- </updateRequestProcessorChain>
+</updateRequestProcessorChain>
 ----
+
+[NOTE]
+====
+Since partial updates are resolved by `DistributedUpdateProcessorFactory`, be sure to place `TextToVectorUpdateProcessorFactory` afterwards so that it sees normal/complete documents.
+====
 
 Add to your schema a simple field that will be useful to track the vectorisation and use atomic updates:
 
