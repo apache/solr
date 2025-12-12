@@ -1,0 +1,7 @@
+title: Update ktor to v3.3.3
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3218
+  url: https://github.com/apache/solr/pull/3218
