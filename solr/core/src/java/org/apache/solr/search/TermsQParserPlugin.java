@@ -53,6 +53,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 import org.slf4j.Logger;
@@ -170,8 +171,11 @@ public class TermsQParserPlugin extends QParserPlugin {
                     "Method '%s' not supported in TermsQParser when using PointFields",
                     localParams.get(METHOD)));
           }
-          return ((PointField) ft)
-              .getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+          if (ft instanceof PointField pointField) {
+            return pointField.getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+          } else if (ft instanceof NumericField numericField) {
+            return numericField.getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+          }
         }
 
         BytesRef[] bytesRefs = new BytesRef[splitVals.length];

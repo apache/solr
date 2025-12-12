@@ -24,7 +24,7 @@
     <fieldType name="pint" class="solr.IntPointField"  useDocValuesAsStored="false"/>
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
     <fieldType name="pdouble" class="solr.DoublePointField" useDocValuesAsStored="false"/>
-    <fieldType name="pfloat" class="solr.FloatPointField" useDocValuesAsStored="false"/>
+    <fieldType name="pfloat" class="solr.FloatField" useDocValuesAsStored="false"/>
     <fieldType name="pdate" class="solr.DatePointField" useDocValuesAsStored="false"/>
 
  </types>

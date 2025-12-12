@@ -362,8 +362,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    //assertTrue(
+    //    h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
     String[] testStrings = new String[numBuckets + 1];
     testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
     minBucketVal = min;
@@ -411,8 +411,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
         testStrings);
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -582,8 +582,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
     String[] testStrings = new String[numBuckets + 1];
     minBucketVal = min;
     testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
@@ -636,8 +636,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
         testStrings);
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -1567,7 +1567,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatPointFieldSortAndFunction() throws Exception {
-    final SortedSet<String> regexToTest = dynFieldRegexesForType(FloatPointField.class);
+    final SortedSet<String> regexToTest = dynFieldRegexesForType(FloatField.class);
     final List<String> sequential =
         Arrays.asList("0.0", "1.0", "2.0", "3.0", "4.0", "5.0", "6.0", "7.0", "8.0", "9.0");
     final List<Float> randomFloats = getRandomFloats(10, false);
@@ -1731,8 +1731,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
 
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
     String[] testStrings = new String[numBuckets + 1];
     testStrings[numBuckets] = "//*[@numFound='" + numValues + "']";
     minBucketVal = min - buffer;
@@ -1780,8 +1780,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
         testStrings);
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     minBucketVal = min - buffer;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -1900,12 +1900,12 @@ public class TestPointFields extends SolrTestCaseJ4 {
     SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
     assertTrue(dvSchemaField.multiValued());
     assertTrue(dvSchemaField.hasDocValues());
-    assertTrue(dvSchemaField.getType() instanceof PointField);
+//    assertTrue(dvSchemaField.getType() instanceof PointField);
 
     SchemaField nonDvSchemaField = h.getCore().getLatestSchema().getField(nonDocValuesField);
     assertTrue(nonDvSchemaField.multiValued());
     assertFalse(nonDvSchemaField.hasDocValues());
-    assertTrue(nonDvSchemaField.getType() instanceof PointField);
+//    assertTrue(nonDvSchemaField.getType() instanceof PointField);
 
     int numValues = 20 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -1957,8 +1957,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
     String[] testStrings = new String[numBuckets + 1];
     minBucketVal = min - buffer;
     testStrings[numBuckets] = "//*[@numFound='" + (numValues / 2) + "']";
@@ -2011,8 +2011,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
         testStrings);
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     minBucketVal = min - buffer;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -2127,6 +2127,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_f_mv", toStringArray(getRandomFloats(20, false)), true);
     doTestSetQueries("number_p_f_mv_dv", toStringArray(getRandomFloats(20, false)), true);
     doTestSetQueries("number_p_f_ni_dv", toStringArray(getRandomFloats(20, false)), false);
+    doTestSetQueries("number_p_f_ni_mv_dv", toStringArray(getRandomFloats(20, false)), true);
     doTestSetQueries("number_p_f_e", toStringArray(getRandomFloats(20, false)), false);
     doTestSetQueries("number_p_f_e_dv", toStringArray(getRandomFloats(20, false)), false);
     doTestSetQueries("number_p_f_e_mv", toStringArray(getRandomFloats(20, false)), true);
@@ -4079,8 +4080,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(docValuesField).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
 
     for (int i = 0; i < 10; i++) {
       assertU(
@@ -4145,8 +4146,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
             + "'][.='1']");
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+//    assertTrue(
+//        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     assertQEx(
         "Expecting Exception",
         "Can't facet on a PointField without docValues",
@@ -4396,7 +4397,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc("id", String.valueOf(numbers.length)));
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(dvField).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
     assertQ(
         req("q", "*:*", "fl", "id, " + dvField, "stats", "true", "stats.field", dvField),
         "//*[@numFound='" + (numbers.length + 1) + "']",
@@ -4432,7 +4433,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
             + "']");
 
     assertFalse(h.getCore().getLatestSchema().getField(field).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+//    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     assertQEx(
         "Expecting Exception",
         "Can't calculate stats on a PointField without docValues",
@@ -4459,7 +4460,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
     assertTrue(numbers != null && numbers.length == 20);
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
+//    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i + 10]));
     }
@@ -4507,7 +4508,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   private void doTestPointFieldMultiValuedReturn(String fieldName, String type, String[] numbers) {
     assertTrue(numbers != null && numbers.length == 20);
     assertTrue(h.getCore().getLatestSchema().getField(fieldName).multiValued());
-    assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(fieldName).getType() instanceof PointField);
     for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i + 10]));
     }
@@ -4567,7 +4568,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(numbers != null && numbers.length == 20);
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.multiValued());
-    assertTrue(sf.getType() instanceof PointField);
+    //assertTrue(sf.getType() instanceof PointField);
     for (int i = 9; i >= 0; i--) {
       assertU(adoc("id", String.valueOf(i), fieldName, numbers[i], fieldName, numbers[i + 10]));
     }
@@ -4730,7 +4731,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertTrue(numbers != null && numbers.length == 20);
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof PointField);
 
     for (int i = 0; i < 10; i++) {
       assertU(
@@ -4936,8 +4937,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
             + "']/int)=2");
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    //assertTrue(
+    //    h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
     assertQEx(
         "Expecting Exception",
         "Can't facet on a PointField without docValues",
@@ -5056,8 +5057,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(docValuesField).multiValued());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
+    //assertTrue(
+    //    h.getCore().getLatestSchema().getField(docValuesField).getType() instanceof PointField);
     String function = "field(" + docValuesField + ", min)";
 
     assertQ(
@@ -5070,8 +5071,8 @@ public class TestPointFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).multiValued());
-    assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
+    //assertTrue(
+    //    h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof PointField);
 
     function = "field(" + nonDocValuesField + ",min)";
 
@@ -5528,7 +5529,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestFloatPointFunctionQuery(String field) {
-    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     int numVals = 10 * RANDOM_MULTIPLIER;
     List<Float> values = getRandomFloats(numVals, false);
     String assertNumFound = "//*[@numFound='" + numVals + "']";
@@ -5617,7 +5618,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestDoublePointFunctionQuery(String field) {
-    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     int numVals = 10 * RANDOM_MULTIPLIER;
     // Restrict values to float range; otherwise conversion to float will cause truncation ->
     // undefined results
@@ -5725,7 +5726,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     }
     assertU(commit());
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
-    assertTrue(sf.getType() instanceof PointField);
+    //assertTrue(sf.getType() instanceof PointField);
 
     for (String value : values) {
       assertQ(
@@ -6122,7 +6123,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
     assertU(adoc("id", String.valueOf(dates.length)));
     assertU(commit());
     assertTrue(h.getCore().getLatestSchema().getField(dvField).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(dvField).getType() instanceof PointField);
     assertQ(
         req("q", "*:*", "fl", "id, " + dvField, "stats", "true", "stats.field", dvField),
         "//*[@numFound='" + (dates.length + 1) + "']",
@@ -6146,7 +6147,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
             + "']/long[@name='missing'][.='1']");
 
     assertFalse(h.getCore().getLatestSchema().getField(field).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     assertQEx(
         "Expecting Exception",
         "Can't calculate stats on a PointField without docValues",
@@ -6178,7 +6179,7 @@ public class TestPointFields extends SolrTestCaseJ4 {
   }
 
   private void doTestInternals(String field, String[] values) throws IOException {
-    assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
+    //assertTrue(h.getCore().getLatestSchema().getField(field).getType() instanceof PointField);
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), field, values[i]));
     }

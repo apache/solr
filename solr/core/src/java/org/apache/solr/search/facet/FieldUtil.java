@@ -38,59 +38,12 @@ import org.apache.solr.uninverting.FieldCacheImpl;
  */
 public class FieldUtil {
 
-  /** Simpler method that creates a request context and looks up the field for you */
-  public static SortedDocValues getSortedDocValues(SolrIndexSearcher searcher, String field)
-      throws IOException {
-    SchemaField sf = searcher.getSchema().getField(field);
-    QueryContext qContext = QueryContext.newContext(searcher);
-    return getSortedDocValues(qContext, sf, null);
+  public static SortedDocValues getSortedDocValues(QueryContext context, SchemaField field) throws IOException {
+    return DocValues.unwrapSingleton(DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName()));
   }
 
-  public static SortedDocValues getSortedDocValues(
-      QueryContext context, SchemaField field, QParser qparser) throws IOException {
-    var reader = context.searcher().getSlowAtomicReader();
-    var dv = reader.getSortedDocValues(field.getName());
-    checkDvType(dv, field, reader);
-    return dv == null ? DocValues.emptySorted() : dv;
-  }
-
-  public static SortedSetDocValues getSortedSetDocValues(
-      QueryContext context, SchemaField field, QParser qparser) throws IOException {
-    var reader = context.searcher().getSlowAtomicReader();
-    var dv = reader.getSortedSetDocValues(field.getName());
-    checkDvType(dv, field, reader);
-    return dv == null ? DocValues.emptySortedSet() : dv;
-  }
-
-  public static NumericDocValues getNumericDocValues(
-      QueryContext context, SchemaField field, QParser qparser) throws IOException {
-    var reader = context.searcher().getSlowAtomicReader();
-    var dv = reader.getNumericDocValues(field.getName());
-    checkDvType(dv, field, reader);
-    return dv == null ? DocValues.emptyNumeric() : dv;
-  }
-
-  private static void checkDvType(Object dv, SchemaField field, LeafReader reader) {
-    if (dv == null) {
-      return;
-    }
-    FieldInfo fieldInfo = reader.getFieldInfos().fieldInfo(field.getName());
-    if (fieldInfo == null) {
-      return;
-    }
-    var dvType = fieldInfo.getDocValuesType();
-    if (dvType == DocValuesType.NONE) {
-      return;
-    } else if (dvType == DocValuesType.SORTED) {
-      if (dv instanceof SortedDocValues) return;
-    } else if (dvType == DocValuesType.SORTED_SET) {
-      if (dv instanceof SortedSetDocValues) return;
-    } else if (dvType == DocValuesType.NUMERIC) {
-      if (dv instanceof NumericDocValues) return;
-    } else if (dvType == DocValuesType.SORTED_NUMERIC) {
-      if (dv instanceof SortedNumericDocValues) return;
-    }
-    throw new IllegalStateException("Unexpected DocValues type " + dvType + " for field " + field);
+  public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field) throws IOException {
+    return DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName());
   }
 
   /**

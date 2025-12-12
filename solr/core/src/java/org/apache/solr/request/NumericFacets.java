@@ -37,8 +37,10 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.IORunnable;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
@@ -46,6 +48,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
@@ -215,39 +218,24 @@ final class NumericFacets {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
-        switch (numericType) {
-          case LONG:
-          case DATE:
-          case INTEGER:
-            // Long, Date and Integer
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case FLOAT:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-                  @Override
-                  public long longValue() throws IOException {
-                    long bits = super.longValue();
-                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                    return bits;
-                  }
-                };
-            break;
-          case DOUBLE:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-                  @Override
-                  public long longValue() throws IOException {
-                    long bits = super.longValue();
-                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                    return bits;
-                  }
-                };
-            break;
-          default:
-            throw new AssertionError("Unexpected type: " + numericType);
+        longs = DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), fieldName));
+        if (!(sf.getType() instanceof NumericField)) {
+          if (sf.getType().getNumberType() == NumberType.FLOAT) {
+            longs = new FilterNumericDocValues(longs) {
+              @Override
+              public long longValue() throws IOException {
+                return NumericUtils.sortableFloatBits((int) super.longValue());
+              }
+            };
+          }
+          if (sf.getType().getNumberType() == NumberType.DOUBLE) {
+            longs = new FilterNumericDocValues(longs) {
+              @Override
+              public long longValue() throws IOException {
+                return NumericUtils.sortableDoubleBits(super.longValue());
+              }
+            };
+          }
         }
       }
       int valuesDocID = longs.docID();

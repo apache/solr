@@ -44,7 +44,7 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   @Override
   public void resetIterators() throws IOException {
     super.resetIterators();
-    topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field, null);
+    topLevel = FieldUtil.getSortedDocValues(fcontext.qcontext, field);
     nTerms = topLevel.getValueCount();
     if (topLevel instanceof MultiDocValues.MultiSortedDocValues) {
       ordMap = ((MultiDocValues.MultiSortedDocValues) topLevel).mapping;

@@ -21,7 +21,7 @@ import static java.util.Collections.emptyMap;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import org.apache.solr.common.Callable;
+import java.util.function.Consumer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
@@ -37,7 +37,7 @@ class SecurityNodeWatcher implements Watcher {
   private final ZkStateReader zkStateReader;
   private ZkStateReader.ConfigData securityData;
 
-  private final Callable<SolrZkClient.NodeData> callback;
+  private final Consumer<SolrZkClient.NodeData> callback;
 
   @SuppressWarnings("unchecked")
   public SecurityNodeWatcher(ZkStateReader zkStateReader, Runnable securityNodeListener) {
@@ -79,7 +79,7 @@ class SecurityNodeWatcher implements Watcher {
                   .getNode(ZkStateReader.SOLR_SECURITY_CONF_PATH, this, true);
         }
         try {
-          callback.call(data);
+          callback.accept(data);
         } catch (Exception e) {
           log.error("Error running collections node listener", e);
         }

@@ -24,7 +24,7 @@
       positionIncrementGap="0"/>
     <fieldType name="long" class="org.apache.solr.schema.LongPointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
-    <fieldType name="float" class="org.apache.solr.schema.FloatPointField" docValues="false" omitNorms="true"
+    <fieldType name="float" class="org.apache.solr.schema.FloatField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>
     <fieldType name="double" class="org.apache.solr.schema.DoublePointField" docValues="false" omitNorms="true"
                positionIncrementGap="0"/>

@@ -552,9 +552,13 @@ public abstract class FieldType extends FieldProperties {
                 return false;
               }
 
-              if (isPointField()) {
+              if (FieldType.this instanceof PointField) {
                 BytesRef b =
                     ((PointField) FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+                bytesAtt.setBytesRef(b);
+              } else if (FieldType.this instanceof NumericField) {
+                BytesRef b =
+                    ((NumericField) FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
                 bytesAtt.setBytesRef(b);
               } else {
                 String s = toInternal(new String(cbuf, 0, n));
@@ -862,7 +866,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getSortField
    */
   protected SortField getNumericSort(SchemaField field, NumberType type, boolean reverse) {
-    if (field.multiValued()) {
+    if (field.multiValued() || this instanceof NumericField) {
       MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
       if (null != selector) {
         return getSortedNumericSortField(

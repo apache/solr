@@ -193,7 +193,7 @@ public class HLLAgg extends StrAggValueSource {
     @Override
     public void setNextReader(LeafReaderContext readerContext) throws IOException {
       super.setNextReader(readerContext);
-      values = DocValues.getNumeric(readerContext.reader(), sf.getName());
+      values = DocValues.unwrapSingleton(DocValues.getSortedNumeric(readerContext.reader(), sf.getName()));
     }
 
     @Override

@@ -38,6 +38,7 @@ import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Collector;
@@ -63,6 +64,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
+import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.GroupParams;
@@ -73,8 +75,10 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
+import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -334,8 +338,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     } else {
       groupSet = new LongHashSet(docList.size());
-      NumericDocValues collapseValues =
-          contexts.get(currentContext).reader().getNumericDocValues(field);
+      NumericDocValues collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
       for (int i = 0; i < globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
         while (globalDoc >= nextDocBase) {
@@ -345,7 +348,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               currentContext + 1 < contexts.size()
                   ? contexts.get(currentContext + 1).docBase
                   : Integer.MAX_VALUE;
-          collapseValues = contexts.get(currentContext).reader().getNumericDocValues(field);
+          collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
         }
         collapsedSet.add(globalDoc);
         int contextDoc = globalDoc - currentDocBase;
@@ -666,39 +669,74 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
       final int docBase = context.docBase;
 
-      final NumericDocValues docValues = context.reader().getNumericDocValues(this.field);
       final LeafCollector leafNullGroupCollector =
           expandNullGroup ? nullGroupCollector.getLeafCollector(context) : null;
       final LongObjectHashMap<LeafCollector> leafCollectors = new LongObjectHashMap<>();
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
+      final SortedNumericDocValues sortedNumericDocValues = DocValues.getSortedNumeric(context.reader(), this.field);
+      final NumericDocValues numericDocValues = DocValues.unwrapSingleton(sortedNumericDocValues);
+      if (numericDocValues != null) {
+        return new LeafCollector() {
 
-      return new LeafCollector() {
-
-        @Override
-        public void setScorer(Scorable scorer) throws IOException {
-          for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
-            c.value.setScorer(scorer);
-          }
-          if (expandNullGroup) {
-            leafNullGroupCollector.setScorer(scorer);
-          }
-        }
-
-        @Override
-        public void collect(int docId) throws IOException {
-          if (docValues.advanceExact(docId)) {
-            final long value = docValues.longValue();
-            final int index = leafCollectors.indexOf(value);
-            if (index >= 0 && !collapsedSet.contains(docId + docBase)) {
-              leafCollectors.indexGet(index).collect(docId);
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {
+            for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+              c.value.setScorer(scorer);
             }
-          } else if (expandNullGroup && !collapsedSet.contains(docId + docBase)) {
-            leafNullGroupCollector.collect(docId);
+            if (expandNullGroup) {
+              leafNullGroupCollector.setScorer(scorer);
+            }
           }
-        }
-      };
+
+          @Override
+          public void collect(int docId) throws IOException {
+            if (numericDocValues.advanceExact(docId)) {
+              final long value = numericDocValues.longValue();
+              final int index = leafCollectors.indexOf(value);
+              if (index >= 0 && !collapsedSet.contains(docId + docBase)) {
+                leafCollectors.indexGet(index).collect(docId);
+              }
+            } else if (expandNullGroup && !collapsedSet.contains(docId + docBase)) {
+              leafNullGroupCollector.collect(docId);
+            }
+          }
+        };
+      } else {
+        return new LeafCollector() {
+
+          @Override
+          public void setScorer(Scorable scorer) throws IOException {
+            for (ObjectCursor<LeafCollector> c : leafCollectors.values()) {
+              c.value.setScorer(scorer);
+            }
+            if (expandNullGroup) {
+              leafNullGroupCollector.setScorer(scorer);
+            }
+          }
+
+          @Override
+          public void collect(int docId) throws IOException {
+            if (sortedNumericDocValues.advanceExact(docId)) {
+              long lastValue = Long.MIN_VALUE;
+              for (int i = 0, count = sortedNumericDocValues.docValueCount(); i < count; ++i) {
+                final long value = sortedNumericDocValues.nextValue();
+                if (value == lastValue) {
+                  // We don't want to collect the same value more than once
+                  continue;
+                }
+                final int index = leafCollectors.indexOf(value);
+                if (index >= 0 && !collapsedSet.contains(docId + docBase)) {
+                  leafCollectors.indexGet(index).collect(docId);
+                }
+              }
+            } else if (expandNullGroup && !collapsedSet.contains(docId + docBase)) {
+              leafNullGroupCollector.collect(docId);
+            }
+          }
+        };
+      }
     }
 
     @Override
@@ -869,9 +907,17 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         case LONG:
           return Long.toString(val);
         case FLOAT:
-          return Float.toString(Float.intBitsToFloat((int) val));
+          if (fieldType instanceof PointField || fieldType instanceof TrieField) {
+            return Float.toString(Float.intBitsToFloat((int) val));
+          } else {
+            return Float.toString(NumericUtils.sortableIntToFloat((int) val));
+          }
         case DOUBLE:
-          return Double.toString(Double.longBitsToDouble(val));
+          if (fieldType instanceof PointField || fieldType instanceof TrieField) {
+            return Double.toString(Double.longBitsToDouble(val));
+          } else {
+            return Double.toString(NumericUtils.sortableLongToDouble(val));
+          }
         case DATE:
           break;
       }

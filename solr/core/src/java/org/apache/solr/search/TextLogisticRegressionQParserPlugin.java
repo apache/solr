@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
@@ -147,7 +148,7 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
-      leafOutcomeValue = leafReader.getNumericDocValues(trainingParams.outcome);
+      leafOutcomeValue = DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, trainingParams.outcome));
     }
 
     @Override

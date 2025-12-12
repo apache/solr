@@ -71,6 +71,8 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.NumericField;
+import org.apache.solr.schema.NumericFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -662,8 +664,6 @@ public class SolrDocumentFetcher {
             if (value == null) {
               return null;
             }
-            // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single
-            // valued
             else if (e.schemaField.multiValued() == false) {
               return value;
             } else {
