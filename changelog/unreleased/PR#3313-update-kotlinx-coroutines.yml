@@ -1,0 +1,7 @@
+title: Update kotlinx.coroutines to v1.10.2
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3313
+  url: https://github.com/apache/solr/pull/3313
