@@ -3,7 +3,6 @@ package org.apache.solr.handler.admin.api;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -14,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import org.apache.commons.lang3.time.DurationFormatUtils;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
@@ -113,8 +111,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
-  private SolrInputDocument lastDoc;
-
   public UpgradeCoreIndex(
       CoreContainer coreContainer,
       CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
@@ -141,99 +137,42 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         () -> {
           try (SolrCore core = coreContainer.getCore(coreName)) {
 
-            log.warn("Processing core: {}", core.getName());
+            log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
             CoreReindexingStatus coreRxStatus = CoreReindexingStatus.REINDEXING_ACTIVE;
-
             String indexDir = core.getIndexDir();
-
-            log.info("Starting to process core: {}", coreName);
-
             RefCounted<SolrIndexSearcher> ssearcherRef = core.getSearcher();
             List<LeafReaderContext> leafContexts =
                 ssearcherRef.get().getTopReaderContext().leaves();
             DocValuesIteratorCache dvICache = new DocValuesIteratorCache(ssearcherRef.get());
-
-            Map<String, Long> segmentsToUpgrade = getSegmentsToUpgrade(indexDir);
-
-            log.info("Segments to upgrade: {}", segmentsToUpgrade.toString());
-
-            setLastDoc(null);
 
             UpdateRequestProcessorChain updateProcessorChain =
                 getUpdateProcessorChain(core, requestBody.updateChain);
 
             try {
 
-              for (int segmentIndex = 0, c = leafContexts.size();
-                  segmentIndex < c;
-                  segmentIndex++) {
-                LeafReaderContext lrc = leafContexts.get(segmentIndex);
-                LeafReader leafReader = lrc.reader();
-                leafReader = FilterLeafReader.unwrap(leafReader);
-                log.debug(
-                    "LeafReader hashcode: {}, getCreatedVersionMajor: {}, getMinVersion:{} ",
-                    leafReader.hashCode(),
-                    leafReader.getMetaData().createdVersionMajor(),
-                    leafReader.getMetaData().minVersion());
+              for (LeafReaderContext lrc : leafContexts) {
+                if (!shouldUpgradeSegment(lrc)) {
+                  continue;
+                }
 
-                SegmentReader segmentReader = (SegmentReader) leafReader;
-                String currentSegmentName = segmentReader.getSegmentName();
+                boolean segmentError = true;
 
-                if (segmentsToUpgrade.containsKey(currentSegmentName)) {
-                  boolean segmentError = true;
-                  LocalDateTime segmentRxStartTime = LocalDateTime.now();
-                  LocalDateTime segmentRxStopTime = LocalDateTime.MAX;
-
-                  for (int i = 0; i < SEGMENT_ERROR_RETRIES; i++) {
-                    // retrying segment; I anticipate throttling to be the main reason in most
-                    // cases
-                    // hence the sleep
-                    if (i > 0) {
-                      Thread.sleep(5 * 60 * 1000); // 5 minutes
-                    }
-
-                    log.info(
-                        "Start processSegment run: {}, segment: {} at {}",
-                        i,
-                        segmentReader.getSegmentName(),
-                        formatter.format(segmentRxStartTime));
-
-                    segmentError =
-                        processSegment(
-                            segmentReader,
-                            leafContexts,
-                            segmentIndex,
-                            updateProcessorChain,
-                            core,
-                            dvICache);
-
-                    segmentRxStopTime = LocalDateTime.now();
-                    log.info(
-                        "End processSegment run: {}, segment: {} at {}",
-                        i,
-                        segmentReader.getSegmentName(),
-                        formatter.format(segmentRxStopTime));
-                    if (!segmentError) {
-                      break;
-                    }
-                  }
-                  if (segmentError) {
-                    coreRxStatus = CoreReindexingStatus.ERROR;
-                    log.error(
-                        "processSegment returned : {} for segment : {}",
-                        segmentError,
-                        segmentReader.getSegmentName());
+                for (int i = 0; i < SEGMENT_ERROR_RETRIES; i++) {
+                  // retrying segment; I anticipate throttling to be the main reason in most
+                  // cases
+                  // hence the sleep
+                  if (i > 0) {
+                    Thread.sleep(5 * 60 * 1000); // 5 minutes
                   }
 
-                  log.info(
-                      "Segment: {} Elapsed time: {}, start time: {}, stop time: {}",
-                      segmentReader.getSegmentName(),
-                      DurationFormatUtils.formatDuration(
-                          Duration.between(segmentRxStartTime, segmentRxStopTime).toMillis(),
-                          "**H:mm:ss**",
-                          true),
-                      formatter.format(segmentRxStartTime),
-                      formatter.format(segmentRxStopTime));
+                  segmentError = processSegment(lrc, updateProcessorChain, core, dvICache);
+
+                  if (!segmentError) {
+                    break;
+                  }
+                }
+                if (segmentError) {
+                  coreRxStatus = CoreReindexingStatus.ERROR;
                 }
               }
             } catch (Exception e) {
@@ -331,6 +270,17 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           }
           return null;
         });
+  }
+
+  private boolean shouldUpgradeSegment(LeafReaderContext lrc) {
+    Version segmentMinVersion = null;
+    try (LeafReader leafReader = lrc.reader()) {
+      segmentMinVersion = leafReader.getMetaData().minVersion();
+    } catch (IOException ex) {
+      // TO-DO
+      // Wrap exception in CoreAdminAPIBaseException
+    }
+    return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
   }
 
   private int getIndexCreatedVersionMajor(SolrCore core) {
@@ -437,38 +387,15 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private void doCommit(SolrCore core) {
     try {
-      SolrInputDocument dummyDoc = null;
-      SolrInputDocument lastDoc = getLastDoc();
-      if (lastDoc == null) {
-        // set dummy doc for commit to take effect especially in case of 0-doc cores
-        dummyDoc = getDummyDoc(core);
-        lastDoc = dummyDoc;
-      }
-
       UpdateRequest updateReq = new UpdateRequest();
-      updateReq.add(lastDoc);
-      if (log.isDebugEnabled()) {
-        log.debug("Last solr Doc keySet: {}", lastDoc.keySet().toString());
-      }
+
       ModifiableSolrParams msp = new ModifiableSolrParams();
 
       msp.add("commit", "true");
       LocalSolrQueryRequest solrReq;
       solrReq = getLocalUpdateReq(updateReq, core, msp);
-      updateReq.getDocumentsMap().clear();
-      if (log.isDebugEnabled()) {
-        log.debug(
-            "Calling commit. Solr params: {}, CvReindexingTask.getLastDoc(): {}",
-            msp.toString(),
-            lastDoc.toString());
-      }
       doLocalUpdateReq(solrReq, core);
 
-      if (dummyDoc != null) {
-        deleteDummyDocAndCommit(
-            core,
-            (String) dummyDoc.getFieldValue(core.getLatestSchema().getUniqueKeyField().getName()));
-      }
     } catch (Exception e) {
       log.error(
           "Error while sending update request to advance index created version {}", e.toString());
@@ -533,10 +460,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return dummyDoc;
   }
 
-  private void setLastDoc(SolrInputDocument solrDoc) {
-    lastDoc = solrDoc;
-  }
-
   private static Map<String, Long> getSegmentsToUpgrade(String indexDir) {
     Map<String, Long> segmentsToUpgrade = new LinkedHashMap<>();
     try (Directory dir = FSDirectory.open(Paths.get(indexDir));
@@ -564,18 +487,19 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private boolean processSegment(
-      SegmentReader segmentReader,
-      List<LeafReaderContext> leafContexts,
-      int segmentIndex,
+      LeafReaderContext leafReaderContext,
       UpdateRequestProcessorChain processorChain,
       SolrCore core,
       DocValuesIteratorCache dvICache) {
 
     boolean segmentError = false;
     int numDocsProcessed = 0;
-    int numDocsAccum = 0;
+
     String coreName = core.getName();
     IndexSchema indexSchema = core.getLatestSchema();
+
+    LeafReader leafReader = FilterLeafReader.unwrap(leafReaderContext.reader());
+    SegmentReader segmentReader = (SegmentReader) leafReader;
     Bits bits = segmentReader.getLiveDocs();
     SolrInputDocument solrDoc = null;
     UpdateRequestProcessor processor = null;
@@ -599,13 +523,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         solrDoc = toSolrInputDocument(doc, indexSchema);
 
         docFetcher.decorateDocValueFields(
-            solrDoc, leafContexts.get(segmentIndex).docBase + luceneDocId, fields, dvICache);
+            solrDoc, leafReaderContext.docBase + luceneDocId, fields, dvICache);
         solrDoc.removeField("_version_");
         AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
         currDocCmd.solrDoc = solrDoc;
         processor.processAdd(currDocCmd);
         numDocsProcessed++;
-        numDocsAccum++;
       }
     } catch (Exception e) {
       log.error("Error in CvReindexingTask process() : {}", e.toString());
@@ -631,10 +554,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
       searcherRef.decref();
     }
-    if (!segmentError && solrDoc != null) {
-      setLastDoc(new SolrInputDocument(solrDoc));
-      getLastDoc().removeField("_version_");
-    }
+
     log.info(
         "End processing segment : {}, core: {} docs processed: {}",
         segmentReader.getSegmentName(),
@@ -642,10 +562,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         numDocsProcessed);
 
     return segmentError;
-  }
-
-  public SolrInputDocument getLastDoc() {
-    return lastDoc;
   }
 
   /*
