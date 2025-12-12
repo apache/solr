@@ -54,7 +54,7 @@ public class SolrKnnFloatVectorQuery extends KnnFloatVectorQuery {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof SolrKnnFloatVectorQuery)) return false;
     SolrKnnFloatVectorQuery other = (SolrKnnFloatVectorQuery) obj;
     return this.topK == other.topK;
   }
