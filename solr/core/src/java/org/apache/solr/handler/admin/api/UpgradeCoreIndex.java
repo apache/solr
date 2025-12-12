@@ -3,14 +3,10 @@ package org.apache.solr.handler.admin.api;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import org.apache.lucene.document.Document;
@@ -25,7 +21,6 @@ import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StoredFields;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -98,15 +93,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     WAITING;
   }
 
-  private static final long DEFAULT_EXECUTION_INTERVAL_MS = 60000;
-
-  // private static final String reindexingStatusFileName =
-  // String.format("reindexing_status_%dx.csv", Version.LATEST.major);
   private static final int SEGMENT_ERROR_RETRIES = 3;
   private static final long SLEEP_TIME_BEFORE_AFTER_COMMIT_MS = 10000;
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
   private static final long SLEEP_TIME_SEGMENT_DELETION_MS = 60000;
-  private static final LocalDateTime defaultDtm = LocalDateTime.ofEpochSecond(0, 0, ZoneOffset.UTC);
 
   private static final DateTimeFormatter formatter =
       DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
@@ -458,32 +448,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
     }
     return dummyDoc;
-  }
-
-  private static Map<String, Long> getSegmentsToUpgrade(String indexDir) {
-    Map<String, Long> segmentsToUpgrade = new LinkedHashMap<>();
-    try (Directory dir = FSDirectory.open(Paths.get(indexDir));
-        IndexReader reader = DirectoryReader.open(dir)) {
-      for (LeafReaderContext lrc : reader.leaves()) {
-        LeafReader leafReader = lrc.reader();
-        leafReader = FilterLeafReader.unwrap(leafReader);
-
-        SegmentReader segmentReader = (SegmentReader) leafReader;
-        Version segmentMinVersion = segmentReader.getSegmentInfo().info.getMinVersion();
-        if (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major) {
-          segmentsToUpgrade.put(
-              segmentReader.getSegmentName(), segmentReader.getSegmentInfo().sizeInBytes());
-        } else {
-          log.debug(
-              "Segment: {} shall be skipped since minVersion already at {}",
-              segmentReader.getSegmentName(),
-              segmentReader.getSegmentInfo().info.getMinVersion());
-        }
-      }
-    } catch (Exception e) {
-      log.error("Exception while gettting segments to be uploaded from indexDir: {}", e.toString());
-    }
-    return segmentsToUpgrade;
   }
 
   private boolean processSegment(
