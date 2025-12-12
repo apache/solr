@@ -34,7 +34,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", false, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", false, false);
   }
 
   @AfterClass
@@ -168,7 +168,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
       throws Exception {
     // Verifies that when using a processor chain configured for partial updates
     // (i.e., the UpdateRequestProcessor is placed before the TextToVector processor),
-    // the system correctly retrieves the stored value of the input field (_text_)
+    // the system correctly retrieves the stored value of the input field (string_field)
     // and generates the vector for the document.
     loadModel("dummy-model.json");
     assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince."));
@@ -192,12 +192,13 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='99'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
   }
 
   @Test
   public void processAtomicUpdate_shouldReplaceExistingVectorNotAppend() throws Exception {
-    // This test verifies that when a document already contains a vector, and the _text_ field is
+    // This test verifies that when a document already contains a vector, and the string_field field
+    // is
     // modified using an atomic update, the vector is recomputed and replaces the previous one. It
     // ensures that the system does not append or merge vector values.
     loadModel("dummy-model.json");
@@ -215,7 +216,6 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "string_field", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
     addWithChain(
         atomic_doc, "textToVectorForPartialUpdates"); // use the chain that supports partial updates
-    // updates
     assertU(commit());
 
     final SolrQuery query = getSolrQuery();
@@ -228,7 +228,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
 
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
   }
 
   void addWithChain(SolrInputDocument document, String updateChain)
