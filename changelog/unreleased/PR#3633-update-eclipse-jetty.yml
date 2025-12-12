@@ -1,0 +1,7 @@
+title: Update eclipse.jetty to v12.1.5
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3633
+  url: https://github.com/apache/solr/pull/3633
