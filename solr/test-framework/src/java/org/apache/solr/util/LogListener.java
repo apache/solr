@@ -52,7 +52,7 @@ import org.apache.solr.common.util.SuppressForbidden;
  *
  * <p><code>
  * // simplest possible usage...
- * // Listen for any erors from the SolrCore logger, and assert that there are none...
+ * // Listen for any errors from the SolrCore logger, and assert that there are none...
  * try (LogListener errLog = LogListener.error(SolrCore.class)) {
  *   // ... some test code ...
  *
@@ -64,7 +64,7 @@ import org.apache.solr.common.util.SuppressForbidden;
  * try (LogListener secWarnLog = LogListener.warn("org.apache.solr.security").substring("PKI")) {
  *   // ... some test code ...
  *
- *   // convinience method for only dealing with Message String of the LogEvent
+ *   // convenience method for only dealing with Message String of the LogEvent
  *   assertThat(secWarnLog.pollMessage(), containsString("hoss"));
  *   assertThat(secWarnLog.getQueue().isEmpty()); // no other WARNings matching PKI
  *
@@ -78,9 +78,9 @@ import org.apache.solr.common.util.SuppressForbidden;
  * </code>
  *
  * <p>Each <code>LogListener</code> captures &amp; queues matching Log events until it is {@link
- * #close()}ed. By default the Queue is bounded at a max capacity of 100. Regardless of what Queue
- * is used, if a Log event can't be queued (due to capacity limiting), or if events are still left
- * in the Queue when the listener is closed, then the {@link #close()} method will cause a test
+ * #close()}ed. The default Queue is bounded at a max capacity of 100. Regardless of what Queue is
+ * used, if a Log event can't be queued (due to capacity limiting), or if events are still left in
+ * the Queue when the listener is closed, then the {@link #close()} method will cause a test
  * failure.
  *
  * <p>Filtering methods such {@link #substring} and {@link #regex} can be used to restrict which Log
@@ -97,7 +97,8 @@ import org.apache.solr.common.util.SuppressForbidden;
 @SuppressForbidden(reason = "We need to use log4J2 classes directly")
 public final class LogListener implements Closeable, AutoCloseable {
 
-  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refe to log4j2
+  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refer to
+  // log4j2
   // Logger
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(
@@ -110,7 +111,7 @@ public final class LogListener implements Closeable, AutoCloseable {
    */
   private static final AtomicInteger ID_GEN = new AtomicInteger(0);
 
-  /** generate a unique name for each instance to use in it's own lifecycle logging */
+  /** generate a unique name for each instance to use in its own lifecycle logging */
   private static String createName(final Level level) {
     return MethodHandles.lookup().lookupClass().getSimpleName()
         + "-"
@@ -217,8 +218,9 @@ public final class LogListener implements Closeable, AutoCloseable {
     }
 
     // Note: we don't just pass our level to addAppender, because that would only require it be "as
-    // specifc"
-    // we use a wrapper that requres an exact level match (and other predicates can be added to this
+    // specific"
+    // we use a wrapper that requires an exact level match (and other predicates can be added to
+    // this
     // filter later)...
     this.filter = new MutablePredicateFilter(level);
     this.loggerAppender = new QueueAppender(name);
@@ -229,7 +231,7 @@ public final class LogListener implements Closeable, AutoCloseable {
 
   @Override
   public void close() {
-    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidently get a double close
+    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidentally get a double close
       final LoggerConfig loggerConfig = CTX.getConfiguration().getLoggerConfig(loggerName);
       loggerConfig.removeAppender(loggerAppender.getName());
       if (null != resetLevelWhenDone) {
@@ -243,7 +245,7 @@ public final class LogListener implements Closeable, AutoCloseable {
       }
       assertEquals(
           this.name
-              + " processed log events that it could not record beause queue capacity was exceeded",
+              + " processed log events that it could not record because queue capacity was exceeded",
           0,
           loggerAppender.getNumCapacityExceeded());
       assertEquals(
@@ -364,7 +366,7 @@ public final class LogListener implements Closeable, AutoCloseable {
    * Convenience method for tests that want to assert things about the (formated) message string at
    * the head of the queue, waiting up to the specified timeout for the message to arrive.
    *
-   * @param timeout the duation value
+   * @param timeout the duration value
    * @param unit the duration unit
    * @return the formatted message string of head of the queue, or null if the queue remained empty
    *     until the specified timeout.
@@ -381,7 +383,7 @@ public final class LogListener implements Closeable, AutoCloseable {
   }
 
   /**
-   * The total number of Log events so far processed by this instance, regardless of wether they
+   * The total number of Log events so far processed by this instance, regardless of whether they
    * have already been removed from the queue, or if they could not be added to the queue due to
    * capacity restrictions.
    */
@@ -589,7 +591,7 @@ public final class LogListener implements Closeable, AutoCloseable {
     public Result filter(LogEvent event) {
       // NOTE: For our usage, we're not worried about needing to filter LogEvents rom remote JVMs
       // with ThrowableProxy
-      // stand ins for Throwabls that don't exist in our classloader...
+      // stand ins for Throwables that don't exist in our classloader...
       return doFilter(
           event.getLevel(), event.getMessage().getFormattedMessage(), event.getThrown());
     }

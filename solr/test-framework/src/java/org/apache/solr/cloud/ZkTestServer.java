@@ -19,17 +19,11 @@ package org.apache.solr.cloud;
 import static org.apache.solr.cloud.SolrZkServer.ZK_WHITELIST_PROPERTY;
 import static org.junit.Assert.assertTrue;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -39,7 +33,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.management.JMException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -48,11 +41,9 @@ import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.jmx.ManagedUtil;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.Request;
 import org.apache.zookeeper.server.ServerCnxn;
@@ -62,7 +53,6 @@ import org.apache.zookeeper.server.ZKDatabase;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.command.FourLetterCommands;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig.ConfigException;
 import org.apache.zookeeper.test.ClientBase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -118,23 +108,6 @@ public class ZkTestServer {
     private volatile LimitViolationAction violationReportAction = LimitViolationAction.REPORT;
     private volatile WatchLimiter limiter = new WatchLimiter(1, LimitViolationAction.IGNORE);
 
-    protected void initializeAndRun(String[] args) throws ConfigException, IOException {
-      try {
-        ManagedUtil.registerLog4jMBeans();
-      } catch (JMException e) {
-        log.warn("Unable to register log4j JMX control", e);
-      }
-
-      ServerConfig config = new ServerConfig();
-      if (args.length == 1) {
-        config.parse(args[0]);
-      } else {
-        config.parse(args);
-      }
-
-      runFromConfig(config);
-    }
-
     private class WatchLimit {
       private long limit;
       private final String desc;
@@ -180,13 +153,6 @@ public class ZkTestServer {
             if (action == LimitViolationAction.FAIL) throw new AssertionError(msg);
           }
         }
-      }
-
-      public void updateForFire(WatchedEvent event) {
-        if (log.isDebugEnabled()) {
-          log.debug("Watch fired: {}: {}", desc, event.getPath());
-        }
-        counters.get(event.getPath()).decrementAndGet();
       }
 
       private String reportLimitViolations() {
@@ -244,29 +210,6 @@ public class ZkTestServer {
         return statLimit.reportLimitViolations()
             + dataLimit.reportLimitViolations()
             + childrenLimit.reportLimitViolations();
-      }
-
-      private void updateForFire(WatchedEvent event) {
-        switch (event.getType()) {
-          case None:
-            break;
-          case NodeCreated:
-          case NodeDeleted:
-            statLimit.updateForFire(event);
-            break;
-          case NodeDataChanged:
-            dataLimit.updateForFire(event);
-            break;
-          case NodeChildrenChanged:
-            childrenLimit.updateForFire(event);
-            break;
-          case ChildWatchRemoved:
-            break;
-          case DataWatchRemoved:
-            break;
-          case PersistentWatchRemoved:
-            break;
-        }
       }
     }
 
@@ -658,72 +601,6 @@ public class ZkTestServer {
     ObjectReleaseTracker.release(this);
   }
 
-  public static class HostPort {
-    String host;
-    int port;
-
-    HostPort(String host, int port) {
-      assert !host.contains(":") : host;
-      this.host = host;
-      this.port = port;
-    }
-  }
-
-  /**
-   * Send the 4letterword
-   *
-   * @param host the destination host
-   * @param port the destination port
-   * @param cmd the 4letterword
-   * @return server response
-   */
-  public static String send4LetterWord(String host, int port, String cmd) throws IOException {
-    log.info("connecting to {} {}", host, port);
-    BufferedReader reader = null;
-    try (Socket sock = new Socket(host, port)) {
-      OutputStream outstream = sock.getOutputStream();
-      outstream.write(cmd.getBytes(StandardCharsets.US_ASCII));
-      outstream.flush();
-      // this replicates NC - close the output stream before reading
-      sock.shutdownOutput();
-
-      reader =
-          new BufferedReader(
-              new InputStreamReader(sock.getInputStream(), StandardCharsets.US_ASCII));
-      StringBuilder sb = new StringBuilder();
-      String line;
-      while ((line = reader.readLine()) != null) {
-        sb.append(line).append("\n");
-      }
-      return sb.toString();
-    } finally {
-      if (reader != null) {
-        reader.close();
-      }
-    }
-  }
-
-  public static List<HostPort> parseHostPortList(String hplist) {
-    log.info("parse host and port list: {}", hplist);
-    ArrayList<HostPort> alist = new ArrayList<>();
-    for (String hp : hplist.split(",")) {
-      int idx = hp.lastIndexOf(':');
-      String host = hp.substring(0, idx);
-      int port;
-      try {
-        port = Integer.parseInt(hp.substring(idx + 1));
-      } catch (RuntimeException e) {
-        throw new RuntimeException("Problem parsing " + hp + e.toString());
-      }
-      alist.add(new HostPort(host, port));
-    }
-    return alist;
-  }
-
-  public int getTheTickTime() {
-    return theTickTime;
-  }
-
   public void setTheTickTime(int theTickTime) {
     this.theTickTime = theTickTime;
   }
@@ -738,22 +615,6 @@ public class ZkTestServer {
 
   public ZKServerMain.WatchLimiter getLimiter() {
     return zkServer.getLimiter();
-  }
-
-  public int getMaxSessionTimeout() {
-    return maxSessionTimeout;
-  }
-
-  public int getMinSessionTimeout() {
-    return minSessionTimeout;
-  }
-
-  public void setMaxSessionTimeout(int maxSessionTimeout) {
-    this.maxSessionTimeout = maxSessionTimeout;
-  }
-
-  public void setMinSessionTimeout(int minSessionTimeout) {
-    this.minSessionTimeout = minSessionTimeout;
   }
 
   void buildZooKeeper(String config, String schema) throws Exception {
@@ -854,6 +715,7 @@ public class ZkTestServer {
     }
   }
 
+  /** Used for debugging */
   protected void printLayout() throws Exception {
     rootClient.printLayoutToStream(System.out);
   }
@@ -873,7 +735,7 @@ public class ZkTestServer {
             "ZkTestServer requires the 'stat' command, temporarily manipulating your whitelist");
         System.setProperty(ZK_WHITELIST_PROPERTY, "*");
         FourLetterCommands.resetWhiteList();
-        // This call to isEnabled should force ZK to "re-read" the system property in it's static
+        // This call to isEnabled should force ZK to "re-read" the system property in its static
         // vrs
         assertTrue(
             "Temporary manipulation of ZK Whitelist didn't work?",

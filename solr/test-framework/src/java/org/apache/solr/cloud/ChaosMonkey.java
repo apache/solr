@@ -77,7 +77,7 @@ public class ChaosMonkey {
   // NOTE: CONN_LOSS and EXP are currently being set to "false" intentionally here. Remove the
   // default value once we know tests pass reliably under those conditions
   private static final String CONN_LOSS =
-      System.getProperty("solr.tests.cloud.cm.connloss", "false");
+      System.getProperty("solr.tests.cloud.cm.connloss.enabled", "false");
   private static final String EXP = System.getProperty("solr.tests.cloud.cm.exp", "false");
 
   private ZkTestServer zkServer;
@@ -101,7 +101,7 @@ public class ChaosMonkey {
 
   /**
    * Our own Random, seeded from LuceneTestCase on init, so that we can produce a consistent
-   * sequence of random chaos regardless of if/how othe threads access the test randomness in other
+   * sequence of random chaos regardless of if/how the threads access the test randomness in other
    * threads
    *
    * @see LuceneTestCase#random()
@@ -248,13 +248,6 @@ public class ChaosMonkey {
     }
   }
 
-  public void stopShard(String slice) throws Exception {
-    List<CloudJettyRunner> jetties = shardToJetty.get(slice);
-    for (CloudJettyRunner jetty : jetties) {
-      stopJetty(jetty);
-    }
-  }
-
   public void stopShardExcept(String slice, String shardName) throws Exception {
     List<CloudJettyRunner> jetties = shardToJetty.get(slice);
     for (CloudJettyRunner jetty : jetties) {
@@ -360,7 +353,7 @@ public class ChaosMonkey {
     }
 
     int chance = chaosRandom.nextInt(10);
-    CloudJettyRunner cjetty = null;
+    CloudJettyRunner cjetty;
     if (chance <= 5 && aggressivelyKillLeaders && canKillIndexer) {
       // if killLeader, really aggressively go after leaders
       cjetty = shardToLeaderJetty.get(slice);
@@ -381,7 +374,7 @@ public class ChaosMonkey {
         }
       }
 
-      ZkNodeProps leader = null;
+      ZkNodeProps leader;
       try {
         leader = zkStateReader.getLeaderRetry(collection, slice);
       } catch (Throwable t) {

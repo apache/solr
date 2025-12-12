@@ -55,7 +55,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       boolean doDeletes,
       int clientSoTimeout) {
     super(controlClient, cloudClient, id, doDeletes);
-    setName("FullThrottleStopableIndexingThread");
+    setName("FullThrottleStoppableIndexingThread");
     setDaemon(true);
     this.clients = clients;
     this.httpClient = httpClient;

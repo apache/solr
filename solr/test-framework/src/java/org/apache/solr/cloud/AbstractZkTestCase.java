@@ -65,7 +65,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void azt_afterClass() throws Exception {
+  public static void afterClass() throws Exception {
 
     try {
       deleteCore();
