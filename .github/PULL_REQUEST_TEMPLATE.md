@@ -26,6 +26,7 @@ Please provide a short description of the changes you're making with this pull r
 # Solution
 
 Please provide a short description of the approach taken to implement your solution.
+We appreciate transparent disclosure of significant [AI Coding assistants](https://github.com/apache/solr/blob/main/dev-docs/how-to-contribute.adoc#setup-for-contributing) usage.
 
 # Tests
 
