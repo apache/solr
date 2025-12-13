@@ -44,7 +44,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
@@ -52,6 +51,7 @@ import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -211,15 +211,15 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals(
           "Expecting 8 tlog replicas, 4 per shard",
           8,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).size());
+          getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).size());
       assertEquals(
           "Expecting no nrt replicas",
           0,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+          getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
       assertEquals(
           "Expecting no pull replicas",
           0,
-          docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+          getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
       for (Slice s : docCollection.getSlices()) {
         assertSame(s.getLeader().getType(), Replica.Type.TLOG);
         List<String> shardElectionNodes =
@@ -475,7 +475,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
 
     waitForNumDocsInAllReplicas(
-        1, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        1, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
 
     // Delete leader replica from shard1
     JettySolrRunner leaderJetty = null;
@@ -503,7 +503,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     // Queries should still work
     waitForNumDocsInAllReplicas(
-        2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        2, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
     // Start back the node
     if (removeReplica) {
       addReplicaWithRetries();
@@ -514,7 +514,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     // added replica should replicate from the leader
     waitForNumDocsInAllReplicas(
-        2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+        2, getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
   }
 
   private void addReplicaWithRetries() throws SolrServerException, IOException {
@@ -1069,19 +1069,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of nrt replicas: " + docCollection,
         numNrtReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPullReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of tlog replicas: " + docCollection,
         numTlogReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

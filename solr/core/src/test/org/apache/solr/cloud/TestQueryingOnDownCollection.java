@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -103,7 +103,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     // run same set of tests on v2 client which uses V2HttpCall
     try (SolrClient v2Client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       SolrException error =
