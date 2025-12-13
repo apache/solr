@@ -90,9 +90,11 @@ public class ParallelHttpShardHandler extends HttpShardHandler {
           try {
             if (t != null) {
               Throwable failure = t;
-              if (failure instanceof CompletionException completionException
-                  && completionException.getCause() != null) {
-                failure = completionException.getCause();
+              if (failure instanceof CompletionException) {
+                CompletionException completionException = (CompletionException) failure;
+                if (completionException.getCause() != null) {
+                  failure = completionException.getCause();
+                }
               }
               if (!(failure instanceof CancellationException)) {
                 recordShardSubmitError(
