@@ -21,55 +21,72 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Properties;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
-import org.junit.AfterClass;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class ResponseHeaderTest extends SolrJettyTestBase {
+public class ResponseHeaderTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
 
   private static Path solrHomeDirectory;
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir();
-    setupJettyTestHome(solrHomeDirectory, "collection1");
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
-    Files.copy(
-        Path.of(top, "solrconfig-headers.xml"),
-        Path.of(solrHomeDirectory + "/collection1/conf", "solrconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    createAndStartJetty(solrHomeDirectory);
-  }
+    Path collectionDirectory = solrHomeDirectory.resolve("collection1");
+    Path confDir = collectionDirectory.resolve("conf");
 
-  @AfterClass
-  public static void afterTest() throws Exception {
-    if (null != solrHomeDirectory) {
-      cleanUpJettyHome(solrHomeDirectory);
-    }
+    Files.createDirectories(collectionDirectory.resolve("data"));
+    Files.createDirectories(confDir);
+
+    Files.copy(
+        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
+        solrHomeDirectory.resolve("solr.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+
+    // Create minimal config then replace solrconfig with headers variant
+    SolrTestCaseJ4.copyMinConf(collectionDirectory);
+    Files.copy(
+        SolrTestCaseJ4.TEST_PATH()
+            .resolve("collection1")
+            .resolve("conf")
+            .resolve("solrconfig-headers.xml"),
+        confDir.resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    Files.writeString(collectionDirectory.resolve("core.properties"), "name=collection1\n");
+
+    solrJettyTestRule.startSolr(solrHomeDirectory, new Properties(), JettyConfig.builder().build());
   }
 
   @Test
   public void testHttpResponse() throws IOException {
-    URI uri = URI.create(getBaseUrl() + "/collection1/withHeaders?q=*:*");
+    URI uri = URI.create(solrJettyTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
-    HttpResponse response = getHttpClient().execute(httpGet);
-    Header[] headers = response.getAllHeaders();
-    boolean containsWarningHeader = false;
-    for (Header header : headers) {
-      if ("Warning".equals(header.getName())) {
-        containsWarningHeader = true;
-        assertEquals("This is a test warning", header.getValue());
-        break;
+    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+      HttpResponse response = httpClient.execute(httpGet);
+      Header[] headers = response.getAllHeaders();
+      boolean containsWarningHeader = false;
+      for (Header header : headers) {
+        if ("Warning".equals(header.getName())) {
+          containsWarningHeader = true;
+          assertEquals("This is a test warning", header.getValue());
+          break;
+        }
       }
+      assertTrue("Expected header not found", containsWarningHeader);
     }
-    assertTrue("Expected header not found", containsWarningHeader);
   }
 
   public static class ComponentThatAddsHeader extends SearchComponent {

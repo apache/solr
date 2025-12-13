@@ -23,9 +23,13 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.Properties;
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,27 +38,51 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** See SOLR-2854. */
 @SuppressSSL // does not yet work with ssl yet - uses raw java.net.URL API rather than HttpClient
-public class TestRemoteStreaming extends SolrJettyTestBase {
+public class TestRemoteStreaming extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     System.setProperty("solr.requests.streaming.remote.enabled", "true");
     System.setProperty("solr.requests.streaming.body.enabled", "true");
-    Path solrHomeDirectory = createTempDir(LuceneTestCase.getTestClass().getSimpleName());
-    setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory.toAbsolutePath());
+    System.setProperty("solr.test.sys.prop2", "test");
+    Path solrHomeDirectory =
+        createTempDir(LuceneTestCase.getTestClass().getSimpleName()).toRealPath();
+    Path collectionDirectory = solrHomeDirectory.resolve("collection1");
+    Path confDir = collectionDirectory.resolve("conf");
+    Files.createDirectories(collectionDirectory.resolve("data"));
+    Files.createDirectories(confDir);
+    Files.copy(
+        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
+        solrHomeDirectory.resolve("solr.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    Path sourceConf =
+        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf").toRealPath();
+    FileUtils.copyDirectory(sourceConf.toFile(), confDir.toFile());
+    Files.writeString(collectionDirectory.resolve("core.properties"), "name=collection1\n");
+    solrJettyTestRule.startSolr(solrHomeDirectory, new Properties(), JettyConfig.builder().build());
+  }
+
+  @AfterClass
+  public static void afterTestClass() throws Exception {
+    System.clearProperty("solr.test.sys.prop2");
   }
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
     // add document and commit, and ensure it's there
-    SolrClient client = getSolrClient();
+    SolrClient client = solrJettyTestRule.getSolrClient("collection1");
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
@@ -71,11 +99,11 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
 
   @Test
   public void testStreamUrl() throws Exception {
-    String streamUrl = getCoreUrl() + "/select?q=*:*&fl=id&wt=csv";
+    String streamUrl = solrJettyTestRule.getBaseUrl() + "/collection1/select?q=*:*&fl=id&wt=csv";
 
     String getUrl =
-        getCoreUrl()
-            + "/debug/dump?wt=xml&stream.url="
+        solrJettyTestRule.getBaseUrl()
+            + "/collection1/debug/dump?wt=xml&stream.url="
             + URLEncoder.encode(streamUrl, StandardCharsets.UTF_8);
     String content = attemptHttpGet(getUrl);
     assertTrue(content.contains("1234"));
@@ -99,22 +127,24 @@ public class TestRemoteStreaming extends SolrJettyTestBase {
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*"); // for anything
     query.add("stream.url", makeDeleteAllUrl());
-    SolrException se = expectThrows(SolrException.class, () -> getSolrClient().query(query));
+    SolrException se =
+        expectThrows(
+            SolrException.class, () -> solrJettyTestRule.getSolrClient("collection1").query(query));
     assertSame(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
   }
 
   /** Compose an HTTP GET url that will delete all the data. */
   private String makeDeleteAllUrl() {
     String deleteQuery = "<delete><query>*:*</query></delete>";
-    return getCoreUrl()
-        + "/update?commit=true&stream.body="
+    return solrJettyTestRule.getBaseUrl()
+        + "/collection1/update?commit=true&stream.body="
         + URLEncoder.encode(deleteQuery, StandardCharsets.UTF_8);
   }
 
   private boolean searchFindsIt() throws SolrServerException, IOException {
     SolrQuery query = new SolrQuery();
     query.setQuery("id:1234");
-    QueryResponse rsp = getSolrClient().query(query);
+    QueryResponse rsp = solrJettyTestRule.getSolrClient("collection1").query(query);
     return rsp.getResults().getNumFound() != 0;
   }
 }

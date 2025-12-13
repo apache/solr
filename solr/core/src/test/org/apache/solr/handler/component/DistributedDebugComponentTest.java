@@ -17,7 +17,9 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,24 +27,29 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
-import org.apache.commons.io.file.PathUtils;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class DistributedDebugComponentTest extends SolrJettyTestBase {
+public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
 
   private static SolrClient collection1;
   private static SolrClient collection2;
@@ -50,34 +57,41 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   private static String shard2;
 
   private static Path createSolrHome() throws Exception {
-    Path workDir = createTempDir();
-    setupJettyTestHome(workDir, "collection1");
-    PathUtils.copyDirectory(workDir.resolve("collection1"), workDir.resolve("collection2"));
+    Path workDir = createTempDir().toRealPath();
+
+    Path collection1Dir = workDir.resolve("collection1");
+    Path collection2Dir = workDir.resolve("collection2");
+
+    Files.createDirectories(collection1Dir.resolve("conf"));
+    Files.createDirectories(collection2Dir);
+
+    Files.copy(
+        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
+        workDir.resolve("solr.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+
+    Path sourceConf =
+        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf").toRealPath();
+    FileUtils.copyDirectory(sourceConf.toFile(), collection1Dir.resolve("conf").toFile());
+    Files.writeString(collection1Dir.resolve("core.properties"), "name=collection1\n");
+
+    FileUtils.copyDirectory(collection1Dir.toFile(), collection2Dir.toFile());
+    Files.writeString(collection2Dir.resolve("core.properties"), "name=collection2\n");
     return workDir;
   }
 
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
+    System.setProperty("solr.test.sys.prop2", "test");
     Path solrHome = createSolrHome();
-    createAndStartJetty(solrHome);
-    String url = getBaseUrl();
-
-    collection1 = getHttpSolrClient(url, "collection1");
-    collection2 = getHttpSolrClient(url, "collection2");
-
-    String urlCollection1 = getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = getBaseUrl() + "/" + "collection2";
+    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
+    String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = solrJettyTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
-
-    // create second core
-    try (SolrClient nodeClient = getHttpSolrClient(url)) {
-      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-      req.setCoreName("collection2");
-      req.setConfigSet("collection1");
-      nodeClient.request(req);
-    }
+    collection1 = solrJettyTestRule.getSolrClient("collection1");
+    collection2 = solrJettyTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
@@ -93,16 +107,11 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
 
   @AfterClass
   public static void destroyThings() throws Exception {
-    if (null != collection1) {
-      collection1.close();
-      collection1 = null;
-    }
-    if (null != collection2) {
-      collection2.close();
-      collection2 = null;
-    }
+    collection1 = null;
+    collection2 = null;
     resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
+    System.clearProperty("solr.test.sys.prop2");
   }
 
   @Test
