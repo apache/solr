@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
@@ -38,18 +38,22 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 /**
  * Extend SolrJettyTestBase because the SOLR-2535 bug only manifested itself when the {@link
  * org.apache.solr.servlet.SolrDispatchFilter} is used, which isn't for embedded Solr use.
  */
-public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
+public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   private GenericSolrRequest createShowFileRequest(SolrParams params) {
@@ -59,7 +63,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void test404ViaHttp() {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     var request = createShowFileRequest(params("file", "does-not-exist-404.txt"));
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
     assertEquals(404, e.code());
@@ -82,7 +86,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     // assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends
     // SolrTestCaseJ4
     var request = createShowFileRequest(new ModifiableSolrParams());
@@ -91,7 +95,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     // assertQ(req("qt", "/admin/file"));
     // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     var request = createShowFileRequest(params("file", "managed-schema.xml"));
@@ -146,7 +150,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testIllegalContentType() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     var request =
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
@@ -155,7 +159,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testAbsoluteFilename() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     final var request =
         createShowFileRequest(
             params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
@@ -165,7 +169,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testEscapeConfDir() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     final var request =
         createShowFileRequest(
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
@@ -175,7 +179,7 @@ public class ShowFileRequestHandlerTest extends SolrJettyTestBase {
   }
 
   public void testPathTraversalFilename() throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     final var request =
         createShowFileRequest(
             params(

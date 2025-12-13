@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -34,10 +33,14 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestBinaryField extends SolrJettyTestBase {
+public class TestBinaryField extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -69,11 +72,11 @@ public class TestBinaryField extends SolrJettyTestBase {
       coreProps.store(w, "");
     }
 
-    createAndStartJetty(homeDir);
+    solrClientTestRule.startSolr(homeDir);
   }
 
   public void testSimple() throws Exception {
-    try (SolrClient client = getSolrClient()) {
+    try (SolrClient client = solrClientTestRule.getSolrClient()) {
       byte[] buf = new byte[10];
       for (int i = 0; i < 10; i++) {
         buf[i] = (byte) i;

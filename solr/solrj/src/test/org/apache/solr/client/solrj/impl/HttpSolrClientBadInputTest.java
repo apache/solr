@@ -19,15 +19,18 @@ package org.apache.solr.client.solrj.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests {@link HttpSolrClient}'s response to a variety of bad inputs. */
-public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
+public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
@@ -35,12 +38,12 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(getBaseUrl(), ANY_COLLECTION)) {
+    try (SolrClient client = getHttpSolrClient(solrClientTestRule.getBaseUrl(), ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
@@ -67,7 +70,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
           });
     }
 
-    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

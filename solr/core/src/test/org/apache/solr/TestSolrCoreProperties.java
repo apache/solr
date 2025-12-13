@@ -25,14 +25,18 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 /**
  * Test for Loading core properties from a properties file
  *
  * @since solr 1.4
  */
-public class TestSolrCoreProperties extends SolrJettyTestBase {
+public class TestSolrCoreProperties extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   // TODO these properties files don't work with configsets
 
@@ -84,7 +88,7 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
         params(
             "q", "*:*",
             "echoParams", "all");
-    QueryResponse res = getSolrClient().query(params);
+    QueryResponse res = solrClientTestRule.getSolrClient().query(params);
     assertEquals(0, res.getResults().getNumFound());
 
     NamedList<?> echoedParams = (NamedList<?>) res.getHeader().get("params");

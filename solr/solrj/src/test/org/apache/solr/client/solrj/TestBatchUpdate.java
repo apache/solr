@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj;
 
 import java.io.IOException;
 import java.util.Iterator;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.beans.Field;
@@ -27,7 +27,9 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -36,11 +38,13 @@ import org.junit.Test;
  * @since solr 1.4
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestBatchUpdate extends SolrJettyTestBase {
+public class TestBatchUpdate extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   static final int numdocs = 1000;
@@ -48,7 +52,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
+        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
             .build()) {
@@ -60,7 +64,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
+        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
@@ -72,7 +76,7 @@ public class TestBatchUpdate extends SolrJettyTestBase {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
+        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
