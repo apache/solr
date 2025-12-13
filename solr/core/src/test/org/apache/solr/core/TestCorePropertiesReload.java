@@ -30,49 +30,91 @@ import org.junit.Test;
 public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
   private final Path solrHomeDirectory = createTempDir();
+  private CoreContainer coreContainer;
 
   public void setMeUp() throws Exception {
     PathUtils.copyDirectory(TEST_HOME(), solrHomeDirectory);
+
+    // Set system properties that the test config expects
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+
+    // Write custom properties to custom.properties
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
-    writeProperties(props);
-    initCore("solrconfig.xml", "schema.xml", solrHomeDirectory);
+    writeCustomProperties(props);
+
+    // Write core.properties that references the custom.properties file
+    writeCoreProperties();
+
+    // Create a minimal solr.xml
+    String solrXml =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
+            + "<solr></solr>";
+
+    // Create core container with CorePropertiesLocator
+    coreContainer = createCoreContainer(solrHomeDirectory, solrXml);
   }
 
   @Test
   public void testPropertiesReload() throws Exception {
     setMeUp();
-    SolrCore core = h.getCore();
-    CoreDescriptor coreDescriptor = core.getCoreDescriptor();
-    String testProp = coreDescriptor.getCoreProperty("test", null);
-    assertEquals("Before reload", testProp);
+    try (SolrCore core = coreContainer.getCore("collection1")) {
+      assertNotNull("Core collection1 should exist", core);
+      CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+      String testProp = coreDescriptor.getCoreProperty("test", null);
+      assertEquals("Before reload", testProp);
+    }
 
-    // Re-write the properties file
+    // Re-write the custom properties file
     Properties props = new Properties();
     props.setProperty("test", "After reload");
-    writeProperties(props);
+    writeCustomProperties(props);
 
-    h.reload();
-    core = h.getCore();
-    coreDescriptor = core.getCoreDescriptor();
+    // Reload the core
+    coreContainer.reload("collection1");
 
-    testProp = coreDescriptor.getCoreProperty("test", null);
-    assertEquals("After reload", testProp);
+    try (SolrCore core = coreContainer.getCore("collection1")) {
+      CoreDescriptor coreDescriptor = core.getCoreDescriptor();
+      String testProp = coreDescriptor.getCoreProperty("test", null);
+      assertEquals("After reload", testProp);
+    }
   }
 
-  private void writeProperties(Properties props) throws Exception {
-    Writer out = null;
-    try {
-      Path confDir = solrHomeDirectory.resolve("collection1").resolve("conf");
-      out =
-          new BufferedWriter(
-              new OutputStreamWriter(
-                  Files.newOutputStream(confDir.resolve("solrcore.properties")),
-                  StandardCharsets.UTF_8));
-      props.store(out, "Reload Test");
+  private void writeCoreProperties() throws Exception {
+    Path coreDir = solrHomeDirectory.resolve("collection1");
+    Path propFile = coreDir.resolve("core.properties");
 
-    } finally {
-      out.close();
+    // Ensure the directory exists
+    Files.createDirectories(coreDir);
+
+    // Write core.properties with required properties and reference to the custom properties file
+    Properties coreProps = new Properties();
+    coreProps.setProperty(CoreDescriptor.CORE_NAME, "collection1");
+    coreProps.setProperty(CoreDescriptor.CORE_CONFIG, "solrconfig.xml");
+    coreProps.setProperty(CoreDescriptor.CORE_SCHEMA, "schema.xml");
+    coreProps.setProperty(CoreDescriptor.CORE_PROPERTIES, "custom.properties");
+
+    try (Writer out =
+        new BufferedWriter(
+            new OutputStreamWriter(
+                Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
+      coreProps.store(out, "Core Properties");
+    }
+  }
+
+  private void writeCustomProperties(Properties props) throws Exception {
+    Path coreDir = solrHomeDirectory.resolve("collection1");
+    Path propFile = coreDir.resolve("custom.properties");
+
+    // Ensure the directory exists
+    Files.createDirectories(coreDir);
+
+    try (Writer out =
+        new BufferedWriter(
+            new OutputStreamWriter(
+                Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
+      props.store(out, "Custom Properties");
     }
   }
 }
