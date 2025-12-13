@@ -624,19 +624,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    if (p.get("distrib") != null) {
+      throw new IllegalArgumentException("don't pass distrib param");
+    }
 
-    final ModifiableSolrParams params = new ModifiableSolrParams(p);
-
-    // TODO: look into why passing true causes fails
-    params.set("distrib", "false");
-    final QueryResponse controlRsp = controlClient.query(params);
+    final QueryResponse controlRsp = controlClient.query(p);
     validateControlData(controlRsp);
 
     if (shardCount == 0) { // mostly for temp debugging
       return controlRsp;
     }
 
-    params.remove("distrib");
+    final ModifiableSolrParams params = new ModifiableSolrParams(p);
     if (setDistribParams) setDistributedParams(params);
 
     QueryResponse rsp = queryRandomShard(params);
