@@ -129,7 +129,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
             log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
             CoreReindexingStatus coreRxStatus = CoreReindexingStatus.REINDEXING_ACTIVE;
-            String indexDir = core.getIndexDir();
             RefCounted<SolrIndexSearcher> ssearcherRef = core.getSearcher();
             List<LeafReaderContext> leafContexts =
                 ssearcherRef.get().getTopReaderContext().leaves();
@@ -292,11 +291,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private UpdateRequestProcessorChain getUpdateProcessorChain(
       SolrCore core, String requestedUpdateChain) {
 
+    UpdateRequestProcessorChain resolvedChain = null;
     if (requestedUpdateChain != null) {
-      UpdateRequestProcessorChain requestedChain =
-          core.getUpdateProcessingChain(requestedUpdateChain);
-      if (requestedChain != null) {
-        return requestedChain;
+      resolvedChain = core.getUpdateProcessingChain(requestedUpdateChain);
+      if (resolvedChain != null) {
+        return resolvedChain;
       }
       log.warn(
           "Requested update chain {} not found for core {}, falling back to default",
@@ -319,7 +318,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
     }
 
-    return core.getUpdateProcessingChain(updateChainName);
+    resolvedChain = core.getUpdateProcessingChain(updateChainName);
+    if (resolvedChain == null) {
+      resolvedChain = core.getUpdateProcessingChain(null);
+    }
+    return resolvedChain;
   }
 
   /*
