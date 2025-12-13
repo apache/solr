@@ -34,7 +34,7 @@ import org.junit.Test;
 /**
  * Test for Loading a custom core properties file referenced from the standard core.properties file.
  */
-public class TestSolrCoreProperties extends SolrTestCaseJ4 {
+public class TestCustomCoreProperties extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
