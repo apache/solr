@@ -24,29 +24,29 @@ import java.util.Properties;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
- * Test for Loading core properties from a properties file
- *
- * @since solr 1.4
+ * Test for Loading a custom core properties file referenced from the standard core.properties file.
  */
-public class TestSolrCoreProperties extends SolrJettyTestBase {
+public class TestCustomCoreProperties extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   // TODO these properties files don't work with configsets
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeClass() throws Exception {
     Path homeDir = createTempDir();
 
     Path collDir = homeDir.resolve("collection1");
-    Path dataDir = collDir.resolve("data");
     Path confDir = collDir.resolve("conf");
 
-    Files.createDirectories(homeDir);
-    Files.createDirectories(collDir);
-    Files.createDirectories(dataDir);
     Files.createDirectories(confDir);
 
     Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
@@ -61,12 +61,17 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     Properties p = new Properties();
     p.setProperty("foo.foo1", "f1");
     p.setProperty("foo.foo2", "f2");
-    try (Writer fos =
-        Files.newBufferedWriter(confDir.resolve("solrcore.properties"), StandardCharsets.UTF_8)) {
+    var coreCustomProperties = confDir.resolve("core_custom_properties.properties");
+    try (Writer fos = Files.newBufferedWriter(coreCustomProperties, StandardCharsets.UTF_8)) {
       p.store(fos, null);
     }
 
-    Files.createFile(collDir.resolve("core.properties"));
+    Properties coreProperties = new Properties();
+    coreProperties.setProperty(CoreDescriptor.CORE_PROPERTIES, coreCustomProperties.toString());
+    try (Writer fos =
+        Files.newBufferedWriter(collDir.resolve("core.properties"), StandardCharsets.UTF_8)) {
+      coreProperties.store(fos, null);
+    }
 
     Properties nodeProperties = new Properties();
     // this sets the property for jetty starting SolrDispatchFilter
@@ -75,16 +80,15 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     }
 
     solrClientTestRule.startSolr(homeDir, nodeProperties, JettyConfig.builder().build());
-
-    // createJetty(homeDir.getAbsolutePath(), null, null);
   }
 
+  @Test
   public void testSimple() throws Exception {
     SolrParams params =
         params(
             "q", "*:*",
             "echoParams", "all");
-    QueryResponse res = getSolrClient().query(params);
+    QueryResponse res = solrClientTestRule.getSolrClient("collection1").query(params);
     assertEquals(0, res.getResults().getNumFound());
 
     NamedList<?> echoedParams = (NamedList<?>) res.getHeader().get("params");
