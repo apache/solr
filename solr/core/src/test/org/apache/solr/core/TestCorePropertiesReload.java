@@ -48,9 +48,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     writeCoreProperties();
 
     // Create a minimal solr.xml
-    String solrXml =
-        "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n"
-            + "<solr></solr>";
+    String solrXml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" + "<solr></solr>";
 
     // Create core container with CorePropertiesLocator
     coreContainer = createCoreContainer(solrHomeDirectory, solrXml);
@@ -97,8 +95,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
     try (Writer out =
         new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
+            new OutputStreamWriter(Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
       coreProps.store(out, "Core Properties");
     }
   }
@@ -112,8 +109,7 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
 
     try (Writer out =
         new BufferedWriter(
-            new OutputStreamWriter(
-                Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
+            new OutputStreamWriter(Files.newOutputStream(propFile), StandardCharsets.UTF_8))) {
       props.store(out, "Custom Properties");
     }
   }
