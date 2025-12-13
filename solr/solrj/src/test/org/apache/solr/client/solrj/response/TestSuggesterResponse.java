@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.response;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
@@ -27,21 +27,25 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test for SuggesterComponent's response in Solrj */
-public class TestSuggesterResponse extends SolrJettyTestBase {
+public class TestSuggesterResponse extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Before
   public void setUpClient() {
-    getSolrClient();
+    solrClientTestRule.getSolrClient();
   }
 
   static String field = "cat";
@@ -116,8 +120,8 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    getSolrClient().deleteByQuery("*:*");
-    getSolrClient().commit(true, true);
+    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
+    solrClientTestRule.getSolrClient().commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -127,10 +131,10 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    getSolrClient().add(doc);
-    getSolrClient().add(doc2);
-    getSolrClient().add(doc3);
-    getSolrClient().commit(true, true);
+    solrClientTestRule.getSolrClient().add(doc);
+    solrClientTestRule.getSolrClient().add(doc2);
+    solrClientTestRule.getSolrClient().add(doc3);
+    solrClientTestRule.getSolrClient().commit(true, true);
   }
 
   /*
@@ -140,7 +144,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
     final ResponseParser randomParser =
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
-        .withBaseSolrUrl(getBaseUrl())
+        .withBaseSolrUrl(solrClientTestRule.getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withResponseParser(randomParser)
         .build();

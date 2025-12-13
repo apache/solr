@@ -24,13 +24,15 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class JvmMetricsTest extends SolrJettyTestBase {
+public class JvmMetricsTest extends SolrTestCaseJ4 {
   static final String[] STRING_OS_METRICS = {"arch", "name", "version"};
   static final String[] NUMERIC_OS_METRICS = {"availableProcessors", "systemLoadAverage"};
 
@@ -43,10 +45,12 @@ public class JvmMetricsTest extends SolrJettyTestBase {
     "mapped.TotalCapacity"
   };
 
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     System.setProperty("solr.metrics.jvm.enabled", "true");
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Test
@@ -68,7 +72,11 @@ public class JvmMetricsTest extends SolrJettyTestBase {
   @Test
   public void testSetupJvmMetrics() throws InterruptedException {
     PrometheusMetricReader reader =
-        getJetty().getCoreContainer().getMetricManager().getPrometheusMetricReader("solr.jvm");
+        solrClientTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
     MetricSnapshots snapshots = reader.collect();
     assertTrue("Should have metric snapshots", snapshots.size() > 0);
 
