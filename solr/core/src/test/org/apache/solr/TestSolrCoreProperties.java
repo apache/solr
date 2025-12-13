@@ -26,28 +26,27 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import org.junit.Test;
 
 /**
  * Test for Loading a custom core properties file referenced from the standard core.properties file.
- *
- * @since solr 1.4
  */
-public class TestSolrCoreProperties extends SolrJettyTestBase {
+public class TestSolrCoreProperties extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   // TODO these properties files don't work with configsets
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeClass() throws Exception {
     Path homeDir = createTempDir();
 
     Path collDir = homeDir.resolve("collection1");
-    Path dataDir = collDir.resolve("data");
     Path confDir = collDir.resolve("conf");
 
-    Files.createDirectories(homeDir);
-    Files.createDirectories(collDir);
-    Files.createDirectories(dataDir);
     Files.createDirectories(confDir);
 
     Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
@@ -83,12 +82,13 @@ public class TestSolrCoreProperties extends SolrJettyTestBase {
     solrClientTestRule.startSolr(homeDir, nodeProperties, JettyConfig.builder().build());
   }
 
+  @Test
   public void testSimple() throws Exception {
     SolrParams params =
         params(
             "q", "*:*",
             "echoParams", "all");
-    QueryResponse res = getSolrClient().query(params);
+    QueryResponse res = solrClientTestRule.getSolrClient("collection1").query(params);
     assertEquals(0, res.getResults().getNumFound());
 
     NamedList<?> echoedParams = (NamedList<?>) res.getHeader().get("params");
