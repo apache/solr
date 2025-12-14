@@ -303,47 +303,45 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
-    try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient()) {
-      // Start logging AFTER collection creation to avoid counting collection creation admin calls
-      try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
-        solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
+    try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
+        CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient(); ) {
+      solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
-        assertEquals(1, adminLogs.getCount());
-        assertTrue(
-            adminLogs
-                .pollMessage()
-                .contains(
-                    "path=/admin/collections params={prs=true&liveNodes=true&action"
-                        + "=CLUSTERSTATUS&includeAll=false"));
+      assertEquals(1, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections params={prs=true&liveNodes=true&action"
+                      + "=CLUSTERSTATUS&includeAll=false"));
 
-        SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-        solrClient.add(collectionName, doc);
+      SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+      solrClient.add(collectionName, doc);
 
-        // getCount seems to return a cumulative count, but add() results in only 1 additional admin
-        // request to fetch CLUSTERSTATUS for the collection
-        assertEquals(2, adminLogs.getCount());
-        assertTrue(
-            adminLogs
-                .pollMessage()
-                .contains(
-                    "path=/admin/collections "
-                        + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
+      // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+      // request to fetch CLUSTERSTATUS for the collection
+      assertEquals(2, adminLogs.getCount());
+      assertTrue(
+          adminLogs
+              .pollMessage()
+              .contains(
+                  "path=/admin/collections "
+                      + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
 
-        solrClient.commit(collectionName);
+      solrClient.commit(collectionName);
+      // No additional admin requests sent
+      assertEquals(2, adminLogs.getCount());
+
+      for (int i = 0; i < 3; i++) {
+        assertEquals(
+            1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
         // No additional admin requests sent
         assertEquals(2, adminLogs.getCount());
-
-        for (int i = 0; i < 3; i++) {
-          assertEquals(
-              1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
-          // No additional admin requests sent
-          assertEquals(2, adminLogs.getCount());
-        }
       }
-
-      // Clean up the collection to allow test iterations to succeed
-      CollectionAdminRequest.deleteCollection(collectionName).process(solrClient);
     }
+
+    // Clean up the collection to allow test iterations to succeed
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
