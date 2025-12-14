@@ -109,7 +109,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
-    // Prevent background cluster state refresh jobs from polluting tests that count admin calls.
+    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
+    // on timed intervals.  This can pollute this test, so we set the interval very high to
+    // prevent it from running.
     System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
     configureCluster(NODE_COUNT)
         .addConfig(
