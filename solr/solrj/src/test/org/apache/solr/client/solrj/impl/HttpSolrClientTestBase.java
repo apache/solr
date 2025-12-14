@@ -30,13 +30,12 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,13 +58,10 @@ import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
 import org.apache.solr.util.ServletFixtures.SlowStreamServlet;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
-import org.junit.ClassRule;
 
-public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected static final String DEFAULT_CORE = "foo";
   protected static final String SLOW_SERVLET_PATH = "/slow";
@@ -90,31 +86,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule.getBaseUrl() directly
-   */
-  @Deprecated
-  protected static String getBaseUrl() {
-    return solrClientTestRule.getBaseUrl();
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule.getJetty() directly
-   */
-  @Deprecated
-  protected static org.apache.solr.embedded.JettySolrRunner getJetty() {
-    return solrClientTestRule.getJetty();
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule directly to get the core URL
-   */
-  @Deprecated
-  protected static String getCoreUrl() {
-    return solrClientTestRule.getBaseUrl() + "/" + DEFAULT_CORE;
+    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
   }
 
   @Override

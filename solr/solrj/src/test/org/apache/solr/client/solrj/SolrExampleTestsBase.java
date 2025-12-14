@@ -17,12 +17,11 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -33,16 +32,11 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.ClassRule;
 import org.junit.Test;
 
-public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-
+public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
   private SolrClient client;
 
   @After
@@ -57,6 +51,7 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
     client = null;
   }
 
+  @Override
   public SolrClient getSolrClient() {
     if (client == null) {
       client = createNewSolrClient();
@@ -65,52 +60,13 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Create a new solr client. If startSolr was called, a http implementation will be created,
+   * Create a new solr client. If createJetty was called, a http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */
+  @Override
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(solrClientTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule.getBaseUrl() directly
-   */
-  @Deprecated
-  protected static String getBaseUrl() {
-    return solrClientTestRule.getBaseUrl();
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule directly for jetty operations
-   */
-  @Deprecated
-  protected static void createAndStartJetty(Path solrHome) throws Exception {
-    solrClientTestRule.startSolr(solrHome);
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule directly to get the core URL
-   */
-  @Deprecated
-  protected static String getCoreUrl() {
-    return solrClientTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
-  }
-
-  /**
-   * @deprecated Use solrClientTestRule.getJetty() directly
-   */
-  @Deprecated
-  protected static JettySolrRunner getJetty() {
-    return solrClientTestRule.getJetty();
-  }
-
-  /**
-   * @deprecated Use getHttpClient(solrClientTestRule.getBaseUrl()) instead
-   */
-  @Deprecated
-  protected static org.apache.http.client.HttpClient getHttpClient() {
-    return getHttpClient(solrClientTestRule.getBaseUrl());
+    return getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_CORENAME);
   }
 
   /** query the example */
