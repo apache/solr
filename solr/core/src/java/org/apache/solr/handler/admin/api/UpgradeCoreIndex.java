@@ -287,60 +287,46 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private UpdateRequestProcessorChain getUpdateProcessorChain(
       SolrCore core, String requestedUpdateChain) {
 
-    // 1. Try explicitly requested chain first
+    // Try explicitly requested chain first
     if (requestedUpdateChain != null) {
       UpdateRequestProcessorChain resolvedChain =
           core.getUpdateProcessingChain(requestedUpdateChain);
       if (resolvedChain != null) {
         return resolvedChain;
+      } else {
+        log.error(
+            "UPGRADECOREINDEX:: Requested update chain {} not found for core {}",
+            requestedUpdateChain,
+            core.getName());
+        // TO-DO
+        // Throw exception wrapped in CoreAdminAPIBaseException
       }
-      log.warn(
-          "Requested update chain {} not found for core {}, falling back to default",
-          requestedUpdateChain,
-          core.getName());
     }
 
-    // 2. Try to find chain configured in /update handler
+    // Try to find chain configured in /update handler
     String updateChainName = null;
     SolrRequestHandler reqHandler = core.getRequestHandler("/update");
 
-    if (reqHandler instanceof RequestHandlerBase) {
-      NamedList initArgs = ((RequestHandlerBase) reqHandler).getInitArgs();
+    NamedList initArgs = ((RequestHandlerBase) reqHandler).getInitArgs();
 
-      if (initArgs != null) {
-        // Check defaults first
+    if (initArgs != null) {
+      // Check invariants first
+      Object invariants = initArgs.get("invariants");
+      if (invariants instanceof NamedList) {
+        updateChainName = (String) ((NamedList) invariants).get(UpdateParams.UPDATE_CHAIN);
+      }
+
+      // Check defaults if not found in invariants
+      if (updateChainName == null) {
         Object defaults = initArgs.get("defaults");
         if (defaults instanceof NamedList) {
           updateChainName = (String) ((NamedList) defaults).get(UpdateParams.UPDATE_CHAIN);
         }
-
-        // Check invariants if not found in defaults
-        if (updateChainName == null) {
-          Object invariants = initArgs.get("invariants");
-          if (invariants instanceof NamedList) {
-            updateChainName = (String) ((NamedList) invariants).get(UpdateParams.UPDATE_CHAIN);
-          }
-        }
       }
-    } else {
-      log.warn(
-          "Expected /update handler to be RequestHandlerBase, but got {}",
-          reqHandler == null ? "null" : reqHandler.getClass().getName());
     }
 
-    // 3. Try to get the chain by name (or default if name is null)
-    UpdateRequestProcessorChain resolvedChain = core.getUpdateProcessingChain(updateChainName);
-
-    if (resolvedChain == null && updateChainName != null) {
-      // Chain name was configured but doesn't exist, fall back to default
-      log.warn(
-          "Update chain {} configured in /update handler not found for core {}, using default",
-          updateChainName,
-          core.getName());
-      resolvedChain = core.getUpdateProcessingChain(null);
-    }
-
-    return resolvedChain;
+    // default chain is returned if updateChainName is null
+    return core.getUpdateProcessingChain(updateChainName);
   }
 
   /*
