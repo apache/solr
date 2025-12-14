@@ -26,8 +26,8 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -74,7 +74,7 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
   public void testHttpResponse() throws IOException {
     URI uri = URI.create(solrJettyTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
-    try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+    try (CloseableHttpClient httpClient = HttpClientUtil.createClient(null)) {
       HttpResponse response = httpClient.execute(httpGet);
       Header[] headers = response.getAllHeaders();
       boolean containsWarningHeader = false;
@@ -86,6 +86,7 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
         }
       }
       assertTrue("Expected header not found", containsWarningHeader);
+      HttpClientUtil.close(httpClient);
     }
   }
 
