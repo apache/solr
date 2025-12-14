@@ -291,9 +291,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private UpdateRequestProcessorChain getUpdateProcessorChain(
       SolrCore core, String requestedUpdateChain) {
 
-    UpdateRequestProcessorChain resolvedChain = null;
+    // 1. Try explicitly requested chain first
     if (requestedUpdateChain != null) {
-      resolvedChain = core.getUpdateProcessingChain(requestedUpdateChain);
+      UpdateRequestProcessorChain resolvedChain =
+          core.getUpdateProcessingChain(requestedUpdateChain);
       if (resolvedChain != null) {
         return resolvedChain;
       }
@@ -303,25 +304,46 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           core.getName());
     }
 
-    SolrRequestHandler reqHandler = core.getRequestHandler("/update");
-    NamedList initArgs = ((RequestHandlerBase) reqHandler).getInitArgs();
-
+    // 2. Try to find chain configured in /update handler
     String updateChainName = null;
-    Object defaults = initArgs.get("defaults");
-    if (defaults != null && defaults instanceof NamedList) {
-      updateChainName = (String) (((NamedList) defaults).get(UpdateParams.UPDATE_CHAIN));
-    }
-    if (updateChainName == null) {
-      Object invariants = initArgs.get("invariants");
-      if (invariants != null && invariants instanceof NamedList) {
-        updateChainName = (String) (((NamedList) invariants).get(UpdateParams.UPDATE_CHAIN));
+    SolrRequestHandler reqHandler = core.getRequestHandler("/update");
+
+    if (reqHandler instanceof RequestHandlerBase) {
+      NamedList initArgs = ((RequestHandlerBase) reqHandler).getInitArgs();
+
+      if (initArgs != null) {
+        // Check defaults first
+        Object defaults = initArgs.get("defaults");
+        if (defaults instanceof NamedList) {
+          updateChainName = (String) ((NamedList) defaults).get(UpdateParams.UPDATE_CHAIN);
+        }
+
+        // Check invariants if not found in defaults
+        if (updateChainName == null) {
+          Object invariants = initArgs.get("invariants");
+          if (invariants instanceof NamedList) {
+            updateChainName = (String) ((NamedList) invariants).get(UpdateParams.UPDATE_CHAIN);
+          }
+        }
       }
+    } else {
+      log.warn(
+          "Expected /update handler to be RequestHandlerBase, but got {}",
+          reqHandler == null ? "null" : reqHandler.getClass().getName());
     }
 
-    resolvedChain = core.getUpdateProcessingChain(updateChainName);
-    if (resolvedChain == null) {
+    // 3. Try to get the chain by name (or default if name is null)
+    UpdateRequestProcessorChain resolvedChain = core.getUpdateProcessingChain(updateChainName);
+
+    if (resolvedChain == null && updateChainName != null) {
+      // Chain name was configured but doesn't exist, fall back to default
+      log.warn(
+          "Update chain {} configured in /update handler not found for core {}, using default",
+          updateChainName,
+          core.getName());
       resolvedChain = core.getUpdateProcessingChain(null);
     }
+
     return resolvedChain;
   }
 
@@ -395,23 +417,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     }
   }
 
-  private void deleteDummyDocAndCommit(SolrCore core, String dummyContentId) throws Exception {
-    UpdateRequest updateReq = new UpdateRequest();
-    updateReq.deleteById(dummyContentId);
-    log.debug("Deleting dummy doc with id: {}", dummyContentId);
-    ModifiableSolrParams msp = new ModifiableSolrParams();
-
-    msp.add("commit", "true");
-    LocalSolrQueryRequest solrReq;
-    try {
-      solrReq = getLocalUpdateReq(updateReq, core, msp);
-      doLocalUpdateReq(solrReq, core);
-    } catch (Exception e) {
-      log.error("Error deleting dummy doc");
-      throw e;
-    }
-  }
-
   public LocalSolrQueryRequest getLocalUpdateReq(
       UpdateRequest updateReq, SolrCore core, ModifiableSolrParams msp) throws IOException {
     LocalSolrQueryRequest solrReq = new LocalSolrQueryRequest(core, msp);
@@ -431,26 +436,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     } finally {
       solrReq.close();
     }
-  }
-
-  private SolrInputDocument getDummyDoc(SolrCore core) {
-    SolrInputDocument dummyDoc = new SolrInputDocument();
-    String dummyContentId = "cvrx-dummydoc" + UUID.randomUUID().toString();
-    String uniqeKeyFieldName = core.getLatestSchema().getUniqueKeyField().getName();
-    dummyDoc.addField(uniqeKeyFieldName, dummyContentId);
-    Collection<SchemaField> requiredFields = core.getLatestSchema().getRequiredFields();
-
-    for (SchemaField sf : requiredFields) {
-      if (sf.getName().equals(uniqeKeyFieldName) || sf.getDefaultValue() != null) {
-        continue;
-      }
-      if (sf.getType() instanceof DateValueFieldType) {
-        dummyDoc.addField(sf.getName(), new Date());
-      } else {
-        dummyDoc.addField(sf.getName(), "1");
-      }
-    }
-    return dummyDoc;
   }
 
   private boolean processSegment(
