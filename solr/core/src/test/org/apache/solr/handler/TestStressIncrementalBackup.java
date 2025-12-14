@@ -52,7 +52,8 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     backupPath = createTempDir(getTestClass().getSimpleName() + "_backups");
     System.setProperty("solr.security.allow.paths", backupPath.toString());
 
-    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient.
+    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
+    // bring myself to deal with the nonsense that is SolrJettyTestBase.
 
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1).addConfig("conf1", configset("cloud-minimal")).configure();

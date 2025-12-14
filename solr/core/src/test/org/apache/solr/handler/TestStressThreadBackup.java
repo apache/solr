@@ -89,7 +89,8 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   public void beforeTest() throws Exception {
     backupDir = createTempDir(getTestClass().getSimpleName() + "_backups");
 
-    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient.
+    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
+    // bring myself to deal with the nonsense that is SolrJettyTestBase.
 
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1)

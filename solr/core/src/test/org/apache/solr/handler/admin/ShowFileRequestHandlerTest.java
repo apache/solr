@@ -42,6 +42,10 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
+/**
+ * Extend SolrJettyTestBase because the SOLR-2535 bug only manifested itself when the {@link
+ * org.apache.solr.servlet.SolrDispatchFilter} is used, which isn't for embedded Solr use.
+ */
 public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
@@ -83,7 +87,8 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
   public void testDirList() throws SolrServerException, IOException {
     SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
-    // assertQ(req("qt", "/admin/file"));
+    // assertQ(req("qt", "/admin/file")); TODO file bug that SolrJettyTestBase extends
+    // SolrTestCaseJ4
     var request = createShowFileRequest(new ModifiableSolrParams());
     var resp = request.process(client);
     assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0); // some files
@@ -92,6 +97,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   public void testGetRawFile() throws SolrServerException, IOException {
     SolrClient client = solrClientTestRule.getSolrClient(DEFAULT_TEST_CORENAME);
     // assertQ(req("qt", "/admin/file"));
+    // TODO file bug that SolrJettyTestBase extends SolrTestCaseJ4
     var request = createShowFileRequest(params("file", "managed-schema.xml"));
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(
