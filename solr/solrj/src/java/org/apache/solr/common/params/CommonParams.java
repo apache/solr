@@ -138,12 +138,6 @@ public interface CommonParams {
   /** another query to explain against */
   String EXPLAIN_OTHER = "explainOther";
 
-  /** If the content stream should come from a URL (using URLConnection) */
-  String STREAM_URL = "stream.url";
-
-  /** If the content stream should come from a File (using FileReader) */
-  String STREAM_FILE = "stream.file";
-
   /** If the content stream should come directly from a field */
   String STREAM_BODY = "stream.body";
 

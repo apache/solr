@@ -127,13 +127,7 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
-    if (solrCore != null && solrCore.getSolrConfig().getRequestParsers().isEnableRemoteStreams()) {
-      log.warn(
-          "Dump request handler requires config-read permission when remote streams are enabled");
-      return Name.CONFIG_READ_PERM;
-    } else {
-      return Name.ALL;
-    }
+    return Name.ALL;
   }
 
   @Override
