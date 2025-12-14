@@ -46,6 +46,8 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -248,13 +250,13 @@ public final class CLIUtils {
     }
 
     try (SolrClient solrClient = getSolrClient(cli)) {
-      // hit Solr to get system info
-      NamedList<Object> systemInfo =
-          solrClient.request(
-              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+//      // hit Solr to get system info
+//      NamedList<Object> systemInfo =
+//          solrClient.request(
+//              new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
 
       // convert raw JSON into user-friendly output
-      Map<String, Object> status = StatusTool.reportStatus(systemInfo, solrClient);
+      Map<String, Object> status = StatusTool.reportStatus(solrClient);
       @SuppressWarnings("unchecked")
       Map<String, Object> cloud = (Map<String, Object>) status.get("cloud");
       if (cloud != null) {
@@ -357,9 +359,10 @@ public final class CLIUtils {
   }
 
   public static boolean isCloudMode(SolrClient solrClient) throws SolrServerException, IOException {
-    NamedList<Object> systemInfo =
-        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
-    return "solrcloud".equals(systemInfo.get("mode"));
+//    NamedList<Object> systemInfo =
+//        solrClient.request(new GenericSolrRequest(SolrRequest.METHOD.GET, SYSTEM_INFO_PATH));
+    SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
+    return "solrcloud".equals(sysInfoResponse.mode);
   }
 
   public static Path getConfigSetsDir(Path solrInstallDir) {

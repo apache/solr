@@ -36,7 +36,9 @@ import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -157,14 +159,17 @@ public class CreateTool extends ToolBase {
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
-    String coreRootDirectory; // usually same as solr home, but not always
+    //String coreRootDirectory; // usually same as solr home, but not always
 
-    NamedList<?> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+//    NamedList<?> systemInfo =
+//        solrClient.request(
+//            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+    SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
 
     // convert raw JSON into user-friendly output
-    coreRootDirectory = (String) systemInfo.get("core_root");
+    //String coreRootDirectory = (String) systemInfo.get("core_root");
+    // usually same as solr home, but not always
+    String coreRootDirectory = sysInfoResponse.coreRoot != null ? sysInfoResponse.coreRoot : sysInfoResponse.solrHome;
 
     if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {

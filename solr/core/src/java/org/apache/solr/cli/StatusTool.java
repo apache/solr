@@ -34,6 +34,8 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
@@ -292,19 +294,40 @@ public class StatusTool extends ToolBase {
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-      return getStatus(solrClient);
+      return reportStatus(solrClient);
     }
   }
 
-  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
-    Map<String, Object> status;
-
-    NamedList<Object> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-    // convert raw JSON into user-friendly output
-    status = reportStatus(systemInfo, solrClient);
-
+//  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
+//    Map<String, Object> status;
+//
+//    NamedList<Object> systemInfo =
+//        solrClient.request(
+//            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
+//    // convert raw JSON into user-friendly output
+//    status = reportStatus(systemInfo, solrClient);
+//
+//    return status;
+//  }
+  
+  public static Map<String, Object> reportStatus(SolrClient solrClient)
+      throws Exception {
+    Map<String, Object> status = new LinkedHashMap<>();
+    SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
+    status.put("solr_home", sysInfoResponse.solrHome);
+    status.put("version", sysInfoResponse.lucene != null ? sysInfoResponse.lucene.solrImplVersion : null);
+    status.put("startTime", sysInfoResponse.jvm != null && sysInfoResponse.jvm.jmx != null ? sysInfoResponse.jvm.jmx.startTime: null);
+    status.put("uptime", sysInfoResponse.jvm != null && sysInfoResponse.jvm.jmx != null ? sysInfoResponse.jvm.jmx.upTimeMS: null);
+    
+    String memoryUsed = sysInfoResponse.jvm != null && sysInfoResponse.jvm.memory != null ? sysInfoResponse.jvm.memory.used : null;
+    String memoryTtl = sysInfoResponse.jvm != null && sysInfoResponse.jvm.memory != null ? sysInfoResponse.jvm.memory.total : null;
+    status.put("memory", memoryUsed + " of " + memoryTtl);
+    
+    // if this is a Solr in solrcloud mode, gather some basic cluster info
+    if ("solrcloud".equals(sysInfoResponse.mode)) {
+      status.put("cloud", getCloudStatus(solrClient, sysInfoResponse.zkHost));
+    }
+    
     return status;
   }
 

@@ -42,7 +42,7 @@ public class SystemInfoResponse extends SolrJerseyResponse {
   public String zkHost;
   
   @JsonProperty("solr_home")
-  public String solrHome;
+  public String solrHome = "?";
   
   @JsonProperty("core_root")
   public String coreRoot;
@@ -59,7 +59,7 @@ public class SystemInfoResponse extends SolrJerseyResponse {
   @JsonProperty("security")
   public Security security;
   
-  private Map<String,String> system = new HashMap<>();;
+  private Map<String,String> system = new HashMap<>();
   
   @JsonAnyGetter
   public Map<String, String> getSystem() {
@@ -106,6 +106,12 @@ public class SystemInfoResponse extends SolrJerseyResponse {
     
     @JsonProperty("vm")
     public Vendor vm;
+
+    @JsonProperty("jmx")
+    public JvmJmx jmx;
+
+    @JsonProperty("memory")
+    public JvmMemory memory;
   }
   
   public class JvmMemory {
