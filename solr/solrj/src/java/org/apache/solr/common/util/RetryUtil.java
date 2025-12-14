@@ -155,8 +155,7 @@ public class RetryUtil {
    * @param timeoutms maximum time to retry in milliseconds
    * @param intervalms wait interval between retries in milliseconds
    * @param cmd the command to execute
-   * @throws SolrException if the timeout is reached before the command succeeds, or if the thread
-   *     is interrupted while sleeping between retries
+   * @throws SolrException if no success within timeout
    */
   public static void retryOnBoolean(long timeoutms, long intervalms, BooleanRetryCmd cmd) {
     long timeout =
@@ -165,6 +164,7 @@ public class RetryUtil {
       boolean resp = cmd.execute();
       if (!resp && System.nanoTime() < timeout) {
         try {
+          //noinspection BusyWait
           Thread.sleep(intervalms);
         } catch (InterruptedException e) {
           Thread.currentThread().interrupt();

@@ -202,9 +202,14 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
           500,
           () -> {
             try {
-              QueryResponse resp1 = h.lbClient.query(solrQuery);
-              String name1 = resp1.getResults().get(0).getFieldValue("name").toString();
-              return ("solr/collection10".equals(name1));
+              return ("solr/collection10"
+                  .equals(
+                      h.lbClient
+                          .query(solrQuery)
+                          .getResults()
+                          .get(0)
+                          .getFieldValue("name")
+                          .toString()));
             } catch (Exception e) {
               return false;
             }
