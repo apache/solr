@@ -18,7 +18,9 @@ package org.apache.solr.servlet;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Properties;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
@@ -27,10 +29,60 @@ import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
+public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+
+  /**
+   * @deprecated Use solrClientTestRule.getBaseUrl() directly
+   */
+  @Deprecated
+  protected static String getBaseUrl() {
+    return solrClientTestRule.getBaseUrl();
+  }
+
+  /**
+   * @deprecated Use solrClientTestRule directly for jetty operations
+   */
+  @Deprecated
+  protected static void createAndStartJetty(Path solrHome) throws Exception {
+    solrClientTestRule.startSolr(solrHome);
+  }
+
+  /**
+   * @deprecated Use solrClientTestRule directly for jetty operations with custom config
+   */
+  @Deprecated
+  protected static void createAndStartJetty(Path solrHome, String configFile, String schemaFile)
+      throws Exception {
+    Properties props = new Properties();
+    if (configFile != null) props.setProperty("solrconfig", configFile);
+    if (schemaFile != null) props.setProperty("schema", schemaFile);
+    solrClientTestRule.startSolr(solrHome, props, JettyConfig.builder().build());
+  }
+
+  /**
+   * @deprecated Use getHttpClient(solrClientTestRule.getBaseUrl()) instead
+   */
+  @Deprecated
+  protected static org.apache.http.client.HttpClient getHttpClient() {
+    return getHttpClient(solrClientTestRule.getBaseUrl());
+  }
+
+  /**
+   * @deprecated This method exists for backward compatibility; use the rule directly
+   */
+  @Deprecated
+  protected static void setupJettyTestHome(Path solrHome, String collection) throws Exception {
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+    copySolrHomeToTemp(solrHome, collection);
+  }
 
   protected HttpRequestBase getSelectMethod(String method, String... params) {
     HttpRequestBase m = null;

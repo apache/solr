@@ -20,22 +20,29 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Properties;
 import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.JSONTestUtil;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
+import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-public abstract class RestTestBase extends SolrJettyTestBase {
+public abstract class RestTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static RestTestHarness restTestHarness;
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   @AfterClass
   public static void cleanUpHarness() throws IOException {
@@ -55,9 +62,62 @@ public abstract class RestTestBase extends SolrJettyTestBase {
       SortedMap<ServletHolder, String> extraServlets)
       throws Exception {
 
-    createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
+    JettyConfig jettyConfig =
+        JettyConfig.builder().stopAtShutdown(stopAtShutdown).withServlets(extraServlets).build();
 
-    restTestHarness = new RestTestHarness(() -> getCoreUrl());
+    Properties nodeProps = new Properties();
+    if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
+    if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
+
+    // Set up core properties if not already set
+    if (System.getProperty("solr.data.dir") == null) {
+      // This will be set up by the rule's startSolr method
+    }
+
+    // Create cores directory and core properties
+    Path coresDir = solrHome.resolve("cores");
+    java.nio.file.Files.createDirectories(coresDir);
+
+    Properties coreProps = new Properties();
+    coreProps.setProperty("name", DEFAULT_TEST_CORENAME);
+    coreProps.setProperty("configSet", "collection1");
+    coreProps.setProperty(
+        "config", configFile != null ? configFile : "${solrconfig:solrconfig.xml}");
+    coreProps.setProperty("schema", schemaFile != null ? schemaFile : "${schema:schema.xml}");
+
+    writeCoreProperties(coresDir.resolve("core"), coreProps, "RestTestBase");
+
+    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
+
+    solrClientTestRule.startSolr(solrHome, nodeProps, jettyConfig);
+
+    restTestHarness =
+        new RestTestHarness(() -> solrClientTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME);
+  }
+
+  /**
+   * @deprecated Use solrClientTestRule.getBaseUrl() directly
+   */
+  @Deprecated
+  protected static String getBaseUrl() {
+    return solrClientTestRule.getBaseUrl();
+  }
+
+  /**
+   * @deprecated Use solrClientTestRule.getSolrClient() directly
+   */
+  @Deprecated
+  protected static SolrClient getSolrClient() {
+    return solrClientTestRule.getSolrClient();
+  }
+
+  /**
+   * @deprecated Use solrClientTestRule.getJetty() directly
+   */
+  @Deprecated
+  protected static JettySolrRunner getJetty() {
+    return solrClientTestRule.getJetty();
   }
 
   /** Validates an update XML String is successful */
