@@ -33,7 +33,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
@@ -110,6 +109,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
+    // Prevent background cluster state refresh jobs from polluting tests that count admin calls.
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
     configureCluster(NODE_COUNT)
         .addConfig(
             "conf",
@@ -293,70 +294,55 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
-    try {
-      // This ensures CH2SC is caching cluster status by counting the number of logged calls to the
-      // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
-      // performance regressions!
+    // This ensures CH2SC is caching cluster status by counting the number of logged calls to the
+    // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
+    // performance regressions!
 
-      // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
-      // on timed intervals.  This can pollute this test, so we set the interval very high to
-      // prevent it from running.
-      System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
+    String collectionName = "HTTPCSPTEST";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
 
-      String collectionName = "HTTPCSPTEST";
+    try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient()) {
+      // Start logging AFTER collection creation to avoid counting collection creation admin calls
+      try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
+        solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
 
-      // Create collection using a dedicated client to avoid polluting the test client's cache.
-      // We avoid using cluster.getSolrClient() because it may have a background refresh job
-      // already running with the default cache timeout from before the system property was set.
-      try (CloudSolrClient setupClient = createHttpCSPBasedCloudSolrClient()) {
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1).process(setupClient);
-        cluster.waitForActiveCollection(collectionName, 2, 2);
-      }
+        assertEquals(1, adminLogs.getCount());
+        assertTrue(
+            adminLogs
+                .pollMessage()
+                .contains(
+                    "path=/admin/collections params={prs=true&liveNodes=true&action"
+                        + "=CLUSTERSTATUS&includeAll=false"));
 
-      // Now create a fresh CloudSolrClient for the actual test
-      try (CloudSolrClient solrClient = createHttpCSPBasedCloudSolrClient()) {
+        SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
+        solrClient.add(collectionName, doc);
 
-        // Start logging AFTER collection creation to avoid counting collection creation admin calls
-        try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]")) {
-          solrClient.getClusterStateProvider().getLiveNodes(); // talks to Solr
+        // getCount seems to return a cumulative count, but add() results in only 1 additional admin
+        // request to fetch CLUSTERSTATUS for the collection
+        assertEquals(2, adminLogs.getCount());
+        assertTrue(
+            adminLogs
+                .pollMessage()
+                .contains(
+                    "path=/admin/collections "
+                        + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
 
-          assertEquals(1, adminLogs.getCount());
-          assertTrue(
-              Objects.requireNonNull(adminLogs.pollMessage())
-                  .contains(
-                      "path=/admin/collections params={prs=true&liveNodes=true&action"
-                          + "=CLUSTERSTATUS&includeAll=false"));
+        solrClient.commit(collectionName);
+        // No additional admin requests sent
+        assertEquals(2, adminLogs.getCount());
 
-          SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
-          solrClient.add(collectionName, doc);
-
-          // getCount seems to return a cumulative count, but add() results in only 1 additional
-          // admin
-          // request to fetch CLUSTERSTATUS for the collection
-          assertEquals(2, adminLogs.getCount());
-          assertTrue(
-              Objects.requireNonNull(adminLogs.pollMessage())
-                  .contains(
-                      "path=/admin/collections "
-                          + "params={prs=true&action=CLUSTERSTATUS&includeAll=false"));
-
-          solrClient.commit(collectionName);
+        for (int i = 0; i < 3; i++) {
+          assertEquals(
+              1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
           // No additional admin requests sent
           assertEquals(2, adminLogs.getCount());
-
-          for (int i = 0; i < 3; i++) {
-            assertEquals(
-                1, solrClient.query(collectionName, params("q", "*:*")).getResults().getNumFound());
-            // No additional admin requests sent
-            assertEquals(2, adminLogs.getCount());
-          }
         }
-
-        // Clean up the collection to allow test iterations to succeed
-        CollectionAdminRequest.deleteCollection(collectionName).process(solrClient);
       }
-    } finally {
-      System.clearProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS);
+
+      // Clean up the collection to allow test iterations to succeed
+      CollectionAdminRequest.deleteCollection(collectionName).process(solrClient);
     }
   }
 
