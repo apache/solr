@@ -23,7 +23,7 @@ import org.apache.lucene.store.IndexInput;
 
 public class PropertiesInputStream extends InputStream {
 
-  private IndexInput is;
+  private final IndexInput is;
 
   public PropertiesInputStream(IndexInput is) {
     this.is = is;
@@ -38,6 +38,22 @@ public class PropertiesInputStream extends InputStream {
       return -1;
     }
     return next;
+  }
+
+  @Override
+  public int read(byte[] b, int off, int len) throws IOException {
+    long pos = is.getFilePointer();
+    long length = is.length();
+    int remaining = Math.min(len, (int) (length - pos));
+
+    if (remaining == 0) {
+      return -1;
+    }
+
+    is.readBytes(b, off, remaining);
+
+    // We're sure always read as much as asked from the index
+    return remaining;
   }
 
   @Override
