@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,8 +33,11 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DumpRequestHandler extends RequestHandlerBase {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings({"unchecked"})
