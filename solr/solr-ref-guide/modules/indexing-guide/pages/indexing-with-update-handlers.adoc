@@ -250,14 +250,6 @@ This alternative `curl` command performs equivalent operations but with minimal 
 curl http://localhost:8983/solr/my_collection/update -H "Content-Type: text/xml" -T "myfile.xml" -X POST
 ----
 
-Short requests can also be sent using a HTTP GET command, if enabled in xref:configuration-guide:requestdispatcher.adoc#requestparsers-element[`requestParsers`] element of `solrconfig.xml`, URL-encoding the request, as in the following.
-Note the escaping of "<" and ">":
-
-[source,bash]
-----
-curl http://localhost:8983/solr/my_collection/update?stream.body=%3Ccommit/%3E&wt=xml
-----
-
 Responses from Solr take the form shown here:
 
 [source,xml]
