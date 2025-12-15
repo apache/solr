@@ -19,7 +19,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,18 +28,12 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.util.plugin.SolrCoreAware;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAware {
-  private SolrCore solrCore;
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class DumpRequestHandler extends RequestHandlerBase {
 
   @Override
   @SuppressWarnings({"unchecked"})
@@ -128,10 +121,5 @@ public class DumpRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public Name getPermissionName(AuthorizationContext request) {
     return Name.ALL;
-  }
-
-  @Override
-  public void inform(SolrCore core) {
-    this.solrCore = core;
   }
 }
