@@ -213,7 +213,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
-* Use of `stream.file` abnd `stream.url` params has been removed.  `stream.body` remains.
+* Use of `stream.file`, `stream.url`, and `stream.body` params in http requests have been removed.
 
 === Upgrade to Jetty 12.x and Jakarta namespace
 
