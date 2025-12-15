@@ -22,7 +22,9 @@ import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -41,7 +43,26 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
       throws IOException {
 
+    // Check if we have pre-formatted Prometheus text (from single-node proxy)
+    if (response.getValues().get("stream") instanceof InputStream stream) {
+      try {
+        stream.transferTo(out);
+      } finally {
+        stream.close();
+      }
+      return;
+    }
+
+    if (response.getException() != null) {
+      out.write(response.getException().toString().getBytes(StandardCharsets.UTF_8));
+      return;
+    }
+
+    // Otherwise handle MetricSnapshots
     var metrics = response.getValues().get("metrics");
+    if (metrics == null) {
+      throw new IOException("No metrics found in response");
+    }
     MetricSnapshots snapshots = (MetricSnapshots) metrics;
     if (writeOpenMetricsFormat(request)) {
       new OpenMetricsTextFormatWriter(false, true).write(out, snapshots);
