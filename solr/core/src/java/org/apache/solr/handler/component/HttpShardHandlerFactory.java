@@ -211,6 +211,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
           return new RequestResponseListener() {
             @Override
             public void onBegin(Request request) {
+              log.info("HttpShardHandlerFactory sending the request {}", request);
               // There should be negligible delay between request submission and actually sending
               // the request. Here we add extra logging to notify us if this assumption is
               // violated. See: SOLR-16099, SOLR-16129,
