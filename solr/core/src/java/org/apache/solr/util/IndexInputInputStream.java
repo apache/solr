@@ -21,11 +21,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import org.apache.lucene.store.IndexInput;
 
-public class PropertiesInputStream extends InputStream {
+public class IndexInputInputStream extends InputStream {
 
   private final IndexInput is;
 
-  public PropertiesInputStream(IndexInput is) {
+  public IndexInputInputStream(IndexInput is) {
     this.is = is;
   }
 
