@@ -211,7 +211,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
           return new RequestResponseListener() {
             @Override
             public void onBegin(Request request) {
-              log.info("HttpShardHandlerFactory sending the request {}", request);
               // There should be negligible delay between request submission and actually sending
               // the request. Here we add extra logging to notify us if this assumption is
               // violated. See: SOLR-16099, SOLR-16129,
@@ -219,7 +218,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
               long delayNanos = System.nanoTime() - start;
               if (delayNanos > DELAY_WARN_THRESHOLD) {
                 long millis = TimeUnit.MILLISECONDS.convert(delayNanos, TimeUnit.NANOSECONDS);
-                log.info("Remote shard request delayed by {} milliseconds", millis);
+                log.info("Remote shard request {} delayed by {} milliseconds", request, millis);
                 if (delayedRequests != null) {
                   delayedRequests.update(millis);
                 }
