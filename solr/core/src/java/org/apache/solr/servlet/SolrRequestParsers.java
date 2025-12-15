@@ -45,7 +45,6 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -190,26 +189,6 @@ public class SolrRequestParsers {
       streams = new ArrayList<>();
     } else if (!(streams instanceof ArrayList)) {
       streams = new ArrayList<>(streams);
-    }
-
-    // The content type will be applied to all streaming content
-    String contentType = params.get(CommonParams.STREAM_CONTENTTYPE);
-
-    // Check for streams in the request parameters
-    String[] strs = params.getParams(CommonParams.STREAM_BODY);
-    if (strs != null) {
-      if (!enableStreamBody) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Stream Body is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
-      }
-      for (final String body : strs) {
-        ContentStreamBase stream = new ContentStreamBase.StringStream(body);
-        if (contentType != null) {
-          stream.setContentType(contentType);
-        }
-        streams.add(stream);
-      }
     }
 
     final HttpSolrCall httpSolrCall =
