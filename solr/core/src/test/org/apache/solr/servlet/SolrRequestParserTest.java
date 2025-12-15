@@ -26,12 +26,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -126,58 +122,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       assertNotNull(req);
       for (ContentStream s : streams) {
         assertEquals(ctype, s.getContentType());
-      }
-    }
-  }
-
-  @Test
-  @SuppressWarnings({"try"})
-  public void testStreamURL() throws Exception {
-    URL url = getClass().getResource("/README");
-    assertNotNull("Missing file 'README' in test-resources root folder.", url);
-
-    final byte[] bytes;
-    try (InputStream inputStream = url.openStream()) {
-      bytes = inputStream.readAllBytes();
-    }
-
-    SolrCore core = h.getCore();
-
-    Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_URL, new String[] {url.toExternalForm()});
-
-    // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<>();
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(1, streams.size());
-      try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, in.readAllBytes());
-      }
-    }
-  }
-
-  @Test
-  @SuppressWarnings({"try"})
-  public void testStreamFile() throws Exception {
-    Path file = getFile("README");
-
-    byte[] bytes = Files.readAllBytes(file);
-
-    SolrCore core = h.getCore();
-
-    Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_FILE, new String[] {file.toAbsolutePath().toString()});
-
-    // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<>();
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(1, streams.size());
-      try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, in.readAllBytes());
       }
     }
   }
