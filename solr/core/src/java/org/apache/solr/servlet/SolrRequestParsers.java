@@ -81,7 +81,6 @@ public class SolrRequestParsers {
   public static final String REQUEST_TIMER_SERVLET_ATTRIBUTE = "org.apache.solr.RequestTimer";
 
   private final HashMap<String, SolrRequestParser> parsers = new HashMap<>();
-  private final boolean enableStreamBody;
   private StandardRequestParser standard;
 
   /**
@@ -97,15 +96,10 @@ public class SolrRequestParsers {
     final int multipartUploadLimitKB, formUploadLimitKB;
     if (globalConfig == null) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE;
-      enableStreamBody = false;
-
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
-
-      // security risks; disabled by default
-      enableStreamBody = Boolean.getBoolean("solr.requests.streaming.body.enabled");
 
       // Let this filter take care of /select?xxx format
 
@@ -114,8 +108,6 @@ public class SolrRequestParsers {
   }
 
   private SolrRequestParsers() {
-    enableStreamBody = false;
-
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 

@@ -86,8 +86,6 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.requests.allow.urls|solr.disable.allowUrls||Specifies URLs that are allowed for streaming. See also solr.requests.streaming.remote.enabled.
 
-|solr.requests.streaming.body.enabled|solr.enableStreamBody|false|Controls whether streaming request bodies are enabled.
-
 |solr.resourceloading.restricted.enabled|!solr.allow.unsafe.resourceloading|true|Controls whether resource loading restrictions are enabled. When set to `true`, resource loading restrictions are enabled.
 
 |solr.responses.hidden.sys.props|solr.hiddenSysProps||Defines system properties that are hidden in responses.
