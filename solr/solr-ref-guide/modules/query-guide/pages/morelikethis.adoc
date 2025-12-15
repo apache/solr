@@ -651,4 +651,13 @@ The query parser response includes only the similar documents sorted by score:
 
 === Query Parser for External Content
 
-Use `{!mlt_content}lorem ipsum` or `{!mlt_content q='lorem ipsum'}` to find docs similar to an external content absent in index in SolrCloud mode like `/mlt` handler and content streams. Parameters and response are the same as above. It queries fields passed via `qf` parameter with the given content. When `qf` is omitted it queries all fields in the schema that usually fails on numerics and other specific formatted field types. If you need to query different fields with different content combine several `{!mlt_content qf=fieldA}lorem ipsum` with `{!bool}` query or other.
+The `mlt_content` query parser enables finding documents similar to external content that is not present in the index.
+This provides functionality similar to the <<Streaming External Content to MoreLikeThis,MoreLikeThis handler with content streams>>, but works in SolrCloud mode.
+
+Use the syntax `{!mlt_content}lorem ipsum` or `{!mlt_content q='lorem ipsum'}` to provide the content for similarity matching.
+The query parser supports the same parameters as the <<Query Parser Parameters,standard MLT query parser>>.
+
+By default, the parser queries the fields specified in the `qf` parameter with the given content.
+When `qf` is omitted, it queries all fields in the schema, which typically fails on numeric and other specifically formatted field types.
+
+To query different fields with different content, combine multiple `{!mlt_content qf=fieldA}lorem ipsum` queries using the `{!bool}` query parser or other suitable query parsers.
