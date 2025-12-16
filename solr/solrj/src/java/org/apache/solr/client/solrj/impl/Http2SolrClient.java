@@ -898,6 +898,10 @@ public class Http2SolrClient extends HttpSolrClientBase {
     }
   }
 
+  public int getAvailablePermits() {
+    return asyncTracker.available.availablePermits();
+  }
+
   public static class Builder
       extends HttpSolrClientBuilderBase<Http2SolrClient.Builder, Http2SolrClient> {
 

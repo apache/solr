@@ -956,6 +956,12 @@ public final class PrometheusMetricsServlet extends BaseSolrServlet {
         "fcache_docs_hot_local_bytes_used",
         "Bytes used from local fcache-docs-hot cache store (vs backing shared cache store)",
         "ramBytesUsed",
+        PrometheusMetricType.GAUGE),
+    HTTP_CLIENT_AVAILABLE_PERMITS(
+        "QUERY.httpShardHandler.httpClientAvailablePermits",
+        "http_client_available_permits",
+        "Available permits in the HTTP client used by the httpShardHandler",
+        null,
         PrometheusMetricType.GAUGE);
     final String key, metricName, desc, property;
     private final PrometheusMetricType metricType;

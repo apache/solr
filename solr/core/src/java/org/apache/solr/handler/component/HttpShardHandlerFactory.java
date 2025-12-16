@@ -454,5 +454,10 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             null,
             solrMetricsContext.getMetricRegistry(),
             SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
+    solrMetricsContext.gauge(
+        () -> defaultClient.getAvailablePermits(),
+        false,
+        "httpClientAvailablePermits",
+        expandedScope);
   }
 }
