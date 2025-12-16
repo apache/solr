@@ -53,7 +53,7 @@ public class SolrKnnByteVectorQuery extends KnnByteVectorQuery {
   public boolean equals(Object obj) {
     if (this == obj) return true;
     if (!super.equals(obj)) return false;
-    if (getClass() != obj.getClass()) return false;
+    if (!(obj instanceof SolrKnnByteVectorQuery)) return false;
     SolrKnnByteVectorQuery other = (SolrKnnByteVectorQuery) obj;
     return this.topK == other.topK;
   }
