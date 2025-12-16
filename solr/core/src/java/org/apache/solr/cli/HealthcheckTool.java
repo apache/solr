@@ -30,9 +30,7 @@ import java.util.Set;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -42,8 +40,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -170,16 +166,9 @@ public class HealthcheckTool extends ToolBase {
             try (var solrClient =
                 CLIUtils.getSolrClient(
                     r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
-              SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
-//              NamedList<Object> systemInfo =
-//                  solrClient.request(
-//                      new GenericSolrRequest(
-//                          SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-              uptime = SolrCLI.uptime(sysInfoResponse.jvm != null && sysInfoResponse.jvm.jmx != null ? sysInfoResponse.jvm.jmx.upTimeMS : -1L);
-                 // SolrCLI.uptime((Long) systemInfo._get(List.of("jvm", "jmx", "upTimeMS"), null));
-//              String usedMemory = systemInfo._getStr(List.of("jvm", "memory", "used"), null);
-//              String totalMemory = systemInfo._getStr(List.of("jvm", "memory", "total"), null);
-              memory = sysInfoResponse.jvm.memory.used + " of " + sysInfoResponse.jvm.memory.total;
+              SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
+              uptime = SolrCLI.uptime(sysResponse.getJVMUpTime());
+              memory = sysResponse.getJVMMemoryUsed() + " of " + sysResponse.getJVMMemoryTtl();
             }
 
             // if we get here, we can trust the state

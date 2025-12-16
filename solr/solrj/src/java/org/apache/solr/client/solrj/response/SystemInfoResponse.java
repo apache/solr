@@ -16,151 +16,105 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import java.lang.invoke.MethodHandles;
+import java.util.Date;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.OptBoolean;
+/** This class holds the response from V1 "/admin/info/system" or V2 "/node/system" */
+public class SystemInfoResponse extends SolrResponseBase {
 
-/**
- * This class represents a response from "/admin/info/system"
- */
-public class SystemInfoResponse extends SolrJerseyResponse {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long serialVersionUID = 1L;
 
-  @JsonProperty("mode")
-  public String mode;
+  private org.apache.solr.client.api.model.SystemInfoResponse fullResponse;
 
-  @JsonProperty("zkHost")
-  public String zkHost;
-  
-  @JsonProperty("solr_home")
-  public String solrHome = "?";
-  
-  @JsonProperty("core_root")
-  public String coreRoot;
-
-  @JsonProperty("node")
-  public String node;
-  
-  @JsonProperty("lucene")
-  public Lucene lucene;
-
-  @JsonProperty("jvm")
-  public JVM jvm;
-
-  @JsonProperty("security")
-  public Security security;
-  
-  private Map<String,String> system = new HashMap<>();
-  
-  @JsonAnyGetter
-  public Map<String, String> getSystem() {
-    return system;
-  }
-  
-  @JsonAnySetter
-  public void setSystemProperty(String key, String value) {
-    this.system.put(key, value);
-  }
-  
-  /** /admin/info/system/security */
-  public class Security {
-    @JsonProperty("tls")
-    public boolean tls;
+  public SystemInfoResponse(NamedList<Object> namedList) {
+    setResponse(namedList);
+    init();
   }
 
-  /** /admin/info/system/lucene */
-  public class Lucene {
-    @JsonProperty("solr-spec-version")
-    public String solrSpecVersion;
-    
-    @JsonProperty("solr-impl-version")
-    public String solrImplVersion;
-    
-    @JsonProperty("lucene-spec-version")
-    public String luceneSpecVersion;
-    
-    @JsonProperty("lucene-impl-version")
-    public String luceneImplVersion;
-    
-  }
-  
-  /** /admin/info/system/jvm */
-  public class JVM extends Vendor {
-    @JsonProperty("processors")
-    public int processors;
-
-    @JsonProperty("jre")
-    public Vendor jre;
-    
-    @JsonProperty("spec")
-    public Vendor spec;
-    
-    @JsonProperty("vm")
-    public Vendor vm;
-
-    @JsonProperty("jmx")
-    public JvmJmx jmx;
-
-    @JsonProperty("memory")
-    public JvmMemory memory;
-  }
-  
-  public class JvmMemory {
-
-    @JsonProperty("free")
-    public String free;
-    @JsonProperty("total")
-    public String total;
-    @JsonProperty("max")
-    public String max;
-    @JsonProperty("used")
-    public String used;
-
-    @JsonProperty("raw")
-    public JvmMemoryRaw raw;
+  private void init() {
+    try {
+      fullResponse =
+          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+              getResponse(), org.apache.solr.client.api.model.SystemInfoResponse.class);
+    } catch (Throwable t) {
+      log.error("Cannot convert NamedList response to API model SystemInfoResponse", t);
+    }
   }
 
-  public class JvmMemoryRaw {
-    @JsonProperty("free")
-    public long free;
-    @JsonProperty("total")
-    public long total;
-    @JsonProperty("max")
-    public long max;
-    @JsonProperty("used")
-    public long used;
-    @JsonProperty("used%")
-    public double usedPercent;
+  /* SolrRequest.process only needs to set 'elapsedTime' */
+  @Override
+  public void setResponse(NamedList<Object> response) {
+    if (getResponse() == null) super.setResponse(response);
   }
-  
-  
-  public class Vendor {
-    @JsonProperty(value="name", isRequired=OptBoolean.FALSE)
-    public String name;
-    @JsonProperty(value="vendor", isRequired=OptBoolean.FALSE)
-    public String vendor;
-    @JsonProperty(value="version")
-    public String version;
-  }
-  
-  public class JvmJmx {
-    @JsonProperty(value="classpath")
-    public String classpath;
-    @JsonProperty(value="startTime")
-    public String startTime;
-    @JsonProperty(value="upTimeMS")
-    public long upTimeMS;
 
-    @JsonProperty(value="commandLineArgs")
-    public List<String> commandLineArgs;
+  public String getMode() {
+    return getFullResponse().mode;
+  }
+
+  public String getZkHost() {
+    return getFullResponse().zkHost;
+  }
+
+  public String getSolrHome() {
+    return getFullResponse().solrHome;
+  }
+
+  public String getCoreRoot() {
+    return getFullResponse().coreRoot;
+  }
+
+  public String getNode() {
+    return getFullResponse().node;
+  }
+
+  public org.apache.solr.client.api.model.SystemInfoResponse getFullResponse() {
+    return fullResponse;
+  }
+
+  // *************************
+  // Shortcuts for StatusTool.reportStatus(SolrClient)
+  // ***********
+  public String getSolrImplVersion() {
+    return getFullResponse() != null && getFullResponse().lucene != null
+        ? getFullResponse().lucene.solrImplVersion
+        : null;
+  }
+
+  public Date getJVMStartTime() {
+    return getFullResponse() != null
+            && getFullResponse().jvm != null
+            && getFullResponse().jvm.jmx != null
+        ? getFullResponse().jvm.jmx.startTime
+        : null;
+  }
+
+  public Long getJVMUpTime() {
+    return getFullResponse() != null
+            && getFullResponse().jvm != null
+            && getFullResponse().jvm.jmx != null
+        ? getFullResponse().jvm.jmx.upTimeMS
+        : null;
+  }
+
+  public String getJVMMemoryUsed() {
+    return getFullResponse() != null
+            && getFullResponse().jvm != null
+            && getFullResponse().jvm.memory != null
+        ? getFullResponse().jvm.memory.used
+        : null;
+  }
+
+  public String getJVMMemoryTtl() {
+    return getFullResponse() != null
+            && getFullResponse().jvm != null
+            && getFullResponse().jvm.memory != null
+        ? getFullResponse().jvm.memory.total
+        : null;
   }
 }

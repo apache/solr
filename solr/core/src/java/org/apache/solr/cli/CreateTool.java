@@ -29,20 +29,17 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
@@ -159,17 +156,10 @@ public class CreateTool extends ToolBase {
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
-    //String coreRootDirectory; // usually same as solr home, but not always
-
-//    NamedList<?> systemInfo =
-//        solrClient.request(
-//            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-    SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
-
-    // convert raw JSON into user-friendly output
-    //String coreRootDirectory = (String) systemInfo.get("core_root");
+    SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
     // usually same as solr home, but not always
-    String coreRootDirectory = sysInfoResponse.coreRoot != null ? sysInfoResponse.coreRoot : sysInfoResponse.solrHome;
+    String coreRootDirectory =
+        sysResponse.getCoreRoot() != null ? sysResponse.getCoreRoot() : sysResponse.getSolrHome();
 
     if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {

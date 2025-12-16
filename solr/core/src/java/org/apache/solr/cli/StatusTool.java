@@ -31,12 +31,9 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
@@ -294,63 +291,26 @@ public class StatusTool extends ToolBase {
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-      return reportStatus(solrClient);
+      Map<String, Object> status = reportStatus(solrClient);
+      return status;
     }
   }
 
-//  public Map<String, Object> getStatus(SolrClient solrClient) throws Exception {
-//    Map<String, Object> status;
-//
-//    NamedList<Object> systemInfo =
-//        solrClient.request(
-//            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-//    // convert raw JSON into user-friendly output
-//    status = reportStatus(systemInfo, solrClient);
-//
-//    return status;
-//  }
-  
-  public static Map<String, Object> reportStatus(SolrClient solrClient)
-      throws Exception {
+  public static Map<String, Object> reportStatus(SolrClient solrClient) throws Exception {
     Map<String, Object> status = new LinkedHashMap<>();
-    SystemInfoResponse sysInfoResponse = (new SystemInfoRequest()).process(solrClient);
-    status.put("solr_home", sysInfoResponse.solrHome);
-    status.put("version", sysInfoResponse.lucene != null ? sysInfoResponse.lucene.solrImplVersion : null);
-    status.put("startTime", sysInfoResponse.jvm != null && sysInfoResponse.jvm.jmx != null ? sysInfoResponse.jvm.jmx.startTime: null);
-    status.put("uptime", sysInfoResponse.jvm != null && sysInfoResponse.jvm.jmx != null ? sysInfoResponse.jvm.jmx.upTimeMS: null);
-    
-    String memoryUsed = sysInfoResponse.jvm != null && sysInfoResponse.jvm.memory != null ? sysInfoResponse.jvm.memory.used : null;
-    String memoryTtl = sysInfoResponse.jvm != null && sysInfoResponse.jvm.memory != null ? sysInfoResponse.jvm.memory.total : null;
-    status.put("memory", memoryUsed + " of " + memoryTtl);
-    
-    // if this is a Solr in solrcloud mode, gather some basic cluster info
-    if ("solrcloud".equals(sysInfoResponse.mode)) {
-      status.put("cloud", getCloudStatus(solrClient, sysInfoResponse.zkHost));
-    }
-    
-    return status;
-  }
+    SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
+    status.put("solr_home", sysResponse.getSolrHome() != null ? sysResponse.getSolrHome() : "?");
+    status.put("version", sysResponse.getSolrImplVersion());
 
-  public static Map<String, Object> reportStatus(NamedList<Object> info, SolrClient solrClient)
-      throws Exception {
-    Map<String, Object> status = new LinkedHashMap<>();
+    status.put("startTime", sysResponse.getJVMStartTime());
+    status.put("uptime", sysResponse.getJVMUpTime());
 
-    String solrHome = (String) info.get("solr_home");
-    status.put("solr_home", solrHome != null ? solrHome : "?");
-    status.put("version", info._getStr(List.of("lucene", "solr-impl-version"), null));
-    status.put("startTime", info._getStr(List.of("jvm", "jmx", "startTime"), null));
-    status.put("uptime", SolrCLI.uptime((Long) info._get(List.of("jvm", "jmx", "upTimeMS"), null)));
-
-    String usedMemory = info._getStr(List.of("jvm", "memory", "used"), null);
-    String totalMemory = info._getStr(List.of("jvm", "memory", "total"), null);
-    status.put("memory", usedMemory + " of " + totalMemory);
+    status.put("memory", sysResponse.getJVMMemoryUsed() + " of " + sysResponse.getJVMMemoryTtl());
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
-    if ("solrcloud".equals(info.get("mode"))) {
-      String zkHost = (String) info.get("zkHost");
-      status.put("cloud", getCloudStatus(solrClient, zkHost));
+    if ("solrcloud".equals(sysResponse.getMode())) {
+      status.put("cloud", getCloudStatus(solrClient, sysResponse.getZkHost()));
     }
-
     return status;
   }
 
