@@ -69,7 +69,7 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
     }
 
     try (CloudSolrClient client =
-        new CloudHttp2SolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
+        new CloudSolrClient.Builder(new ArrayList<>(hosts), Optional.ofNullable(clientChroot))
             .build()) {
       try (ZkClientClusterStateProvider zkClientClusterStateProvider =
           ZkClientClusterStateProvider.from(client)) {
@@ -82,6 +82,6 @@ public class CloudHttp2SolrClientMultiConstructorTest extends SolrTestCase {
   public void testBadChroot() {
     final List<String> zkHosts = new ArrayList<>();
     zkHosts.add("host1:2181");
-    new CloudHttp2SolrClient.Builder(zkHosts, Optional.of("foo")).build();
+    new CloudSolrClient.Builder(zkHosts, Optional.of("foo")).build();
   }
 }

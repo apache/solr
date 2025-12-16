@@ -38,10 +38,11 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ContentProducer;
 import org.apache.http.entity.EntityTemplate;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.StallDetection;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
@@ -70,7 +71,7 @@ import org.slf4j.MDC;
  * to use ConcurrentUpdateSolrClient with /update requests. The class {@link HttpSolrClient} is
  * better suited for the query interface.
  *
- * @deprecated Please use {@link ConcurrentUpdateHttp2SolrClient}
+ * @deprecated Please use {@link ConcurrentUpdateBaseSolrClient}
  */
 @Deprecated(since = "9.0")
 public class ConcurrentUpdateSolrClient extends SolrClient {
@@ -219,7 +220,6 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     // Pull from the queue multiple times and streams over a single connection.
     // Exits on exception, interruption, or an empty queue to pull from.
     //
-    @SuppressWarnings({"unchecked"})
     void sendUpdateStream() throws Exception {
 
       while (!queue.isEmpty()) {
@@ -362,7 +362,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
             msg.append("request: ").append(method.getURI());
 
             SolrException solrExc;
-            NamedList<String> metadata = null;
+            Object remoteError = null;
             // parse out the metadata from the SolrException
             try {
               String encoding = "UTF-8"; // default
@@ -378,25 +378,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
                 }
               }
               NamedList<Object> resp = client.parser.processResponse(rspBody, encoding);
-              NamedList<Object> error = (NamedList<Object>) resp.get("error");
-              if (error != null) {
-                metadata = (NamedList<String>) error.get("metadata");
-                String remoteMsg = (String) error.get("msg");
-                if (remoteMsg != null) {
-                  msg.append("\nRemote error message: ");
-                  msg.append(remoteMsg);
-                }
-              }
+              remoteError = resp.get("error");
             } catch (Exception exc) {
               // don't want to fail to report error if parsing the response fails
               log.warn("Failed to parse error response from {} due to: ", client.getBaseURL(), exc);
             } finally {
-              solrExc =
-                  new SolrClient.RemoteSolrException(
-                      client.getBaseURL(), statusCode, msg.toString(), null);
-              if (metadata != null) {
-                solrExc.setMetadata(metadata);
-              }
+              solrExc = new RemoteSolrException(client.getBaseURL(), statusCode, remoteError);
             }
 
             handleError(solrExc);

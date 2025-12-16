@@ -31,12 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -101,7 +102,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(10);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards > 8");
-    } catch (SolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains("A shard can only be split into 2 to 8 subshards in one split request."));
@@ -114,7 +115,7 @@ public class SplitShardTest extends SolrCloudTestCase {
               .setNumSubShards(1);
       splitShard.process(cluster.getSolrClient());
       fail("SplitShard should throw an exception when numSubShards < 2");
-    } catch (SolrClient.RemoteSolrException ex) {
+    } catch (RemoteSolrException ex) {
       assertTrue(
           ex.getMessage()
               .contains(

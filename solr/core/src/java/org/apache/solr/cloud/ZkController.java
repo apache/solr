@@ -55,17 +55,18 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -206,7 +207,7 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
 
-  private CloudHttp2SolrClient cloudSolrClient;
+  private CloudSolrClient cloudSolrClient;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -241,8 +242,6 @@ public class ZkController implements Closeable {
 
   private int leaderVoteWait;
   private int leaderConflictResolveWait;
-
-  private boolean genericCoreNodeNames;
 
   private int clientTimeout;
 
@@ -297,8 +296,6 @@ public class ZkController implements Closeable {
     this.cc = cc;
 
     this.cloudConfig = cloudConfig;
-
-    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
@@ -962,7 +959,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudJettySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
@@ -1193,8 +1190,7 @@ public class ZkController implements Closeable {
           (collectionState) -> {
             if (collectionState == null) return false;
             boolean allStatesCorrect =
-                Optional.ofNullable(collectionState.getReplicasOnNode(nodeName)).stream()
-                    .flatMap(List::stream)
+                collectionState.getReplicasOnNode(nodeName).stream()
                     .allMatch(replica -> replica.getState() == Replica.State.DOWN);
 
             if (allStatesCorrect
@@ -2069,15 +2065,25 @@ public class ZkController implements Closeable {
     if (log.isDebugEnabled()) {
       log.debug("waiting to find shard id in clusterstate for {}", cd.getName());
     }
+
+    Predicate<Replica> replicaPredicate = (Replica r) -> cd.getName().equals(r.getCoreName());
     try {
       DocCollection collection =
           zkStateReader.waitForState(
               cd.getCollectionName(),
               320,
               TimeUnit.SECONDS,
-              c -> c != null && c.getShardId(getNodeName(), cd.getName()) != null);
+              c ->
+                  c != null
+                      && c.getReplicasOnNode(getNodeName()).stream().anyMatch(replicaPredicate));
       // Read outside the predicate to avoid multiple potential writes
-      cd.getCloudDescriptor().setShardId(collection.getShardId(getNodeName(), cd.getName()));
+      String shardId =
+          collection.getReplicasOnNode(getNodeName()).stream()
+              .filter(replicaPredicate)
+              .map(Replica::getShard)
+              .findFirst()
+              .orElseThrow();
+      cd.getCloudDescriptor().setShardId(shardId);
     } catch (TimeoutException | InterruptedException e) {
       SolrZkClient.checkInterrupted(e);
       throw new SolrException(
@@ -2087,8 +2093,8 @@ public class ZkController implements Closeable {
 
   public String getCoreNodeName(CoreDescriptor descriptor) {
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    if (coreNodeName == null && !genericCoreNodeNames) {
-      // it's the default
+    if (coreNodeName == null) {
+      // default core naming pattern
       return getNodeName() + "_" + descriptor.getName();
     }
 
@@ -2310,7 +2316,7 @@ public class ZkController implements Closeable {
         // TODO ideally want 8sec connection timeout but can't easily also share the client
         // listeners
         try (SolrClient client =
-            new Http2SolrClient.Builder(leaderBaseUrl)
+            new HttpJettySolrClient.Builder(leaderBaseUrl)
                 .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {

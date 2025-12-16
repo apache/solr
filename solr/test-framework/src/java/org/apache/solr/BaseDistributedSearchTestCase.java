@@ -133,10 +133,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     systemClearPropertySolrEnableUrlAllowList();
   }
 
-  private static String getHostContextSuitableForServletContext() {
-    return "/solr";
-  }
-
   protected BaseDistributedSearchTestCase() {
     String solrHostContext = "/solr";
     this.deadServers =
@@ -987,7 +983,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     if (System.getProperty("remove.version.field") != null) {
-      // we don't care if one has a version and the other doesnt -
+      // we don't care if one has a version and the other doesn't -
       // control vs distrib
       // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the
       // responses?

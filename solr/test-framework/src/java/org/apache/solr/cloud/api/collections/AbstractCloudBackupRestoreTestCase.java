@@ -29,24 +29,24 @@ import java.util.Properties;
 import java.util.Random;
 import java.util.TreeMap;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.ClusterProp;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -172,7 +172,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     }
 
     testBackupAndRestore(getCollectionName());
-    testConfigBackupOnly("conf1", getCollectionName());
     testInvalidPath(getCollectionName());
   }
 
@@ -227,22 +226,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
           CollectionAdminRequest.listCollections(solrClient),
           not(hasItem(restoreCollectionName)));
     }
-  }
-
-  /**
-   * This test validates the backup of collection configuration using {@linkplain
-   * CollectionAdminParams#NO_INDEX_BACKUP_STRATEGY}.
-   *
-   * @param configName The config name for the collection to be backed up.
-   * @param collectionName The name of the collection to be backed up.
-   * @throws Exception in case of errors.
-   */
-  protected void testConfigBackupOnly(String configName, String collectionName) throws Exception {
-    // This is deliberately no-op since we want to run this test only for one of the backup
-    // repository
-    // implementation (mainly to avoid redundant test execution). Currently HDFS backup repository
-    // test
-    // implements this.
   }
 
   // This test verifies the system behavior when the backup location cluster property is configured
@@ -404,7 +387,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
       assertNotNull(asyncId);
       CollectionAdminRequest.waitForAsyncRequest(asyncId, client, 60);
     }
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         restoreCollectionName, ZkStateReader.from(client), log.isDebugEnabled(), true, 30);
 
     // Check the number of results are the same
@@ -449,15 +432,15 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     assertEquals(
         restoreCollection.toString(),
         restoreReplcationFactor,
-        restoreCollection.getNumNrtReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.NRT));
     assertEquals(
         restoreCollection.toString(),
         restorePullReplicas,
-        restoreCollection.getNumPullReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.PULL));
     assertEquals(
         restoreCollection.toString(),
         restoreTlogReplicas,
-        restoreCollection.getNumTlogReplicas().intValue());
+        restoreCollection.getNumReplicas(Replica.Type.TLOG));
 
     // SOLR-12605: Add more docs after restore is complete to see if they are getting added fine
     // explicitly querying the leaders. If we use CloudSolrClient there is no guarantee that we'll
