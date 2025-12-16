@@ -18,6 +18,25 @@
 
 load bats_helper
 
+# Apply the ExtractingRequestHandler via Config API and print error body on failure
+apply_extract_handler() {
+  local collection="$1"
+  local json="{\"add-requesthandler\":{\"name\":\"/update/extract\",\"class\":\"org.apache.solr.handler.extraction.ExtractingRequestHandler\",\"tikaserver.url\":\"http://localhost:${TIKA_PORT}\",\"defaults\":{\"lowernames\":\"true\",\"captureAttr\":\"true\"}}}"
+  local url="http://localhost:${SOLR_PORT}/solr/${collection}/config"
+  # Capture body and status code
+  local resp code body
+  sleep 5
+  resp=$(curl -s -S -w "\n%{http_code}" -X POST -H 'Content-type:application/json' -d "$json" "$url")
+  code="${resp##*$'\n'}"
+  body="${resp%$'\n'*}"
+  if [ "$code" = "200" ]; then
+    return 0
+  else
+    echo "Config API error applying ExtractingRequestHandler to ${collection} (HTTP ${code}): ${body}" >&3
+    return 1
+  fi
+}
+
 setup_file() {
   if command -v docker >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
     export TIKA_PORT=$((SOLR_PORT+5))
@@ -61,7 +80,7 @@ teardown() {
   solr start -Dsolr.modules=extraction
 
   solr create -c gettingstarted -d _default
-  wait_for_collection gettingstarted 30
+  wait_for 30 3 curl -s -S -f "http://localhost:${SOLR_PORT}/solr/gettingstarted/select?q=*:*" -o /dev/null
   apply_extract_handler gettingstarted
 
   curl "http://localhost:${SOLR_PORT}/solr/gettingstarted/update/extract?literal.id=doc1&commit=true" -F "myfile=@${SOLR_TIP}/example/exampledocs/solr-word.pdf"
@@ -83,7 +102,7 @@ teardown() {
   solr start -Dsolr.modules=extraction
 
   solr create -c content_extraction -d _default
-  wait_for_collection content_extraction 30
+  wait_for 30 3 curl -s -S -f "http://localhost:${SOLR_PORT}/solr/content_extraction/select?q=*:*" -o /dev/null
   apply_extract_handler content_extraction
 
   # We filter to pdf to invoke the Extract handler.
@@ -109,7 +128,7 @@ teardown() {
   solr start -Dsolr.modules=extraction
 
   solr create -c website_extraction -d _default
-  wait_for_collection website_extraction 30
+  wait_for 30 3 curl -s -S -f "http://localhost:${SOLR_PORT}/solr/website_extraction/select?q=*:*" -o /dev/null
   apply_extract_handler website_extraction
 
   # Change to --recursive 1 to crawl multiple pages, but may be too slow.
