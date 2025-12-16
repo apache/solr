@@ -98,6 +98,7 @@ teardown() {
   docker run --name solr-node3 -d \
     --network solrcloud-test \
     --memory=400m \
+    --platform linux/amd64 \
     -v solr-data3:/var/solr \
     "$SOLR_BEGIN_IMAGE" solr start -f -c -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
 
@@ -117,6 +118,7 @@ teardown() {
   docker run --name solr-node3 -d \
     --network solrcloud-test \
     --memory=400m \
+    --platform linux/amd64 \
     -v solr-data3:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
@@ -128,6 +130,7 @@ teardown() {
   docker run --name solr-node2 -d \
     --network solrcloud-test \
     --memory=400m \
+    --platform linux/amd64 \
     -v solr-data2:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
@@ -138,6 +141,7 @@ teardown() {
   docker run --name solr-node1 -d \
     --network solrcloud-test \
     --memory=400m \
+    --platform linux/amd64 \
     -v solr-data1:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
