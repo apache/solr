@@ -153,10 +153,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
           tragedyTriggered = true;
         } catch (AlreadyClosedException e) {
           // If giving up leadership, might be already closed/closing
-          log.info(
-              "Core already closed on attempt {} (leadership likely given up): {}",
-              attempts,
-              e.getMessage());
+          log.info("Core already closed on attempt {} (leadership likely given up)", attempts);
           tragedyTriggered = true;
         }
 
