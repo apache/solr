@@ -26,7 +26,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -113,7 +113,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     updateResponse = new UpdateRequest().add("id", "2").commit(cluster.getSolrClient(), collection);
     assertEquals(0, updateResponse.getStatus());
     try (SolrClient followerClient =
-        new HttpSolrClient.Builder(oldLeader.getBaseUrl())
+        new HttpJettySolrClient.Builder(oldLeader.getBaseUrl())
             .withDefaultCollection(oldLeader.getCoreName())
             .build()) {
       QueryResponse queryResponse = new QueryRequest(new SolrQuery("*:*")).process(followerClient);
@@ -141,16 +141,15 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       while (attempts < maxAttempts && !tragedyTriggered) {
         attempts++;
         try (SolrClient solrClient =
-            new HttpSolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
+            new HttpJettySolrClient.Builder(leaderReplica.getBaseUrl()).build()) {
           new UpdateRequest()
               .add("id", "99_attempt_" + attempts)
               .commit(solrClient, leaderReplica.getCoreName());
-          fail("Should have injected tragedy on attempt " + attempts);
         } catch (RemoteSolrException e) {
           // solrClient.add would throw RemoteSolrException with code 500
           // or 404 if the bad replica has already been deleted
           assertThat(e.code(), anyOf(is(500), is(404)));
-          log.info("Tragic event triggered on attempt {}: {}", attempts, e.getMessage());
+          log.info("Tragic event triggered on attempt {}", attempts);
           tragedyTriggered = true;
         } catch (AlreadyClosedException e) {
           // If giving up leadership, might be already closed/closing
