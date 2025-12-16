@@ -23,6 +23,8 @@ dependencies {
   implementation(libs.cuvs.lucene) {
     changing = true
   }
+  implementation libs.cuvs.java
+  implementation libs.opentelemetry.api
   implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation libs.apache.lucene.core
