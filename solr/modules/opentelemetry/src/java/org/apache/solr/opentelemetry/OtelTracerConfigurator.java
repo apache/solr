@@ -17,6 +17,7 @@
 package org.apache.solr.opentelemetry;
 
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.autoconfigure.AutoConfiguredOpenTelemetrySdk;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
@@ -27,7 +28,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.TracerConfigurator;
+import org.apache.solr.core.OpenTelemetryConfigurator;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,10 +36,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Tracing TracerConfigurator implementation which exports spans to OpenTelemetry in OTLP format.
  */
-public class OtelTracerConfigurator extends TracerConfigurator {
+public class OtelTracerConfigurator extends OpenTelemetryConfigurator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, String> currentEnv;
+
+  private OpenTelemetrySdk openTelemetrySdk;
 
   public OtelTracerConfigurator() {
     this(System.getenv());
@@ -54,9 +57,14 @@ public class OtelTracerConfigurator extends TracerConfigurator {
   }
 
   @Override
+  public OpenTelemetrySdk getOpenTelemetrySdk() {
+    return this.openTelemetrySdk;
+  }
+
+  @Override
   public void init(NamedList<?> args) {
     prepareConfiguration(args);
-    AutoConfiguredOpenTelemetrySdk.initialize();
+    this.openTelemetrySdk = AutoConfiguredOpenTelemetrySdk.initialize().getOpenTelemetrySdk();
   }
 
   void prepareConfiguration(NamedList<?> args) {

@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,19 +34,17 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -63,7 +60,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
@@ -89,7 +85,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     System.setProperty("createCollectionWaitTimeTillActive", "5");
     TestInjection.randomDelayInCoreCreation = "true:5";
     System.setProperty("validateAfterInactivity", "200");
-    System.setProperty("solr.allowPaths", "*");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @Override
@@ -288,7 +284,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .isSuccess());
 
     expectThrows(
-        SolrClient.RemoteSolrException.class,
+        RemoteSolrException.class,
         () -> {
           CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
               .setCreateNodeSet(nn1 + "," + nn2)
@@ -347,7 +343,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     waitForState(
         "Collection creation after a bad delete failed",
         "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
   }
 
   @Test
@@ -483,7 +479,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           collectionName,
           (n, c) -> {
             CollectionAdminRequest.Create req = createRequests[j];
-            return DocCollection.isFullyActive(
+            return SolrCloudTestCase.replicasForCollectionAreFullyActive(
                 n, c, req.getNumShards(), req.getReplicationFactor());
           });
 
@@ -582,28 +578,17 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
   private void checkNoTwoShardsUseTheSameIndexDir() {
     Map<String, Set<String>> indexDirToShardNamesMap = new HashMap<>();
 
-    List<MBeanServer> servers = new ArrayList<>();
-    servers.add(ManagementFactory.getPlatformMBeanServer());
-    servers.addAll(MBeanServerFactory.findMBeanServer(null));
-    for (final MBeanServer server : servers) {
-      Set<ObjectName> mbeans = new HashSet<>(server.queryNames(null, null));
-      for (final ObjectName mbean : mbeans) {
-        try {
-          Map<String, String> props = mbean.getKeyPropertyList();
-          String category = props.get("category");
-          String name = props.get("name");
-          if ((category != null && category.equals(Category.CORE.toString()))
-              && (name != null && name.equals("indexDir"))) {
-            String indexDir = server.getAttribute(mbean, "Value").toString();
-            String key = props.get("dom2") + "." + props.get("dom3") + "." + props.get("dom4");
-            if (!indexDirToShardNamesMap.containsKey(indexDir)) {
-              indexDirToShardNamesMap.put(indexDir, new HashSet<>());
-            }
-            indexDirToShardNamesMap.get(indexDir).add(key);
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      CoreContainer coreContainer = jetty.getCoreContainer();
+      List<String> coreNames = coreContainer.getAllCoreNames();
+      for (String coreName : coreNames) {
+        try (SolrCore core = coreContainer.getCore(coreName)) {
+          String indexDir = core.getIndexDir();
+          String shardKey = jetty.getNodeName() + "." + coreName;
+          if (!indexDirToShardNamesMap.containsKey(indexDir)) {
+            indexDirToShardNamesMap.put(indexDir, new HashSet<>());
           }
-        } catch (Exception e) {
-          // ignore, just continue - probably a "Value" attribute
-          // not found
+          indexDirToShardNamesMap.get(indexDir).add(shardKey);
         }
       }
     }
@@ -614,7 +599,8 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             + " : "
             + indexDirToShardNamesMap,
         indexDirToShardNamesMap.size() > 0);
-    for (Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
+
+    for (Map.Entry<String, Set<String>> entry : indexDirToShardNamesMap.entrySet()) {
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "

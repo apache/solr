@@ -51,12 +51,7 @@ dependencies {
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
-  api libs.dropwizard.metrics.core
-  implementation (libs.dropwizard.metrics.graphite, {
-    exclude group: "com.rabbitmq", module: "amqp-client"
-  })
-  implementation libs.dropwizard.metrics.jmx
-  implementation libs.dropwizard.metrics.jvm
+  implementation libs.dropwizard.metrics.core
 
   implementation(libs.jersey.containers.jettyhttp, {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
@@ -72,11 +67,11 @@ dependencies {
   implementation libs.jersey.core.common
   implementation libs.jersey.core.server
   implementation libs.hk2.api
+
   implementation libs.jakarta.inject.api
   implementation libs.jakarta.ws.rsapi
   implementation libs.jakarta.annotation.api
-
-  // Non-API below; although there are exceptions
+  implementation libs.jakarta.servlet.api
 
   runtimeOnly libs.apache.lucene.analysis.kuromoji
   runtimeOnly libs.apache.lucene.analysis.nori
@@ -121,7 +116,6 @@ dependencies {
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
   implementation libs.eclipse.jetty.io
-  implementation libs.eclipse.jetty.toolchain.servletapi
   implementation libs.eclipse.jetty.util
 
   // ZooKeeper
@@ -153,9 +147,18 @@ dependencies {
   // StatsComponents percentiles
   implementation libs.tdunning.tdigest
 
-  // Distributed Tracing
-  api libs.opentelemetry.api // Tracer is exposed on some methods
+  // OpenTelemetry
+  api libs.opentelemetry.api
   implementation libs.opentelemetry.context
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false
+  }
+  implementation(libs.opentelemetry.sdk) {
+    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
+  }
+  implementation libs.opentelemetry.sdk.metrics
+  // JVM Runtime Telemetry metrics
+  implementation libs.opentelemetry.runtime.telemetry
 
   implementation libs.apache.commons.exec
 
@@ -210,4 +213,7 @@ dependencies {
   })
   testImplementation libs.apache.httpcomponents.httpclient
   testImplementation libs.apache.httpcomponents.httpcore
+
+  testImplementation libs.opentelemetry.sdk.testing
+  testImplementation libs.dropwizard.metrics.core
 }

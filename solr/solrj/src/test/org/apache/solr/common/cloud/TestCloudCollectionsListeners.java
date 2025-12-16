@@ -112,7 +112,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
             "testcollection1",
             MAX_WAIT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 4, 1));
 
     assertFalse(
         "CloudCollectionsListener has new collection in old set of collections",

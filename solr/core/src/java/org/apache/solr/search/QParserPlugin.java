@@ -20,8 +20,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
@@ -30,11 +28,11 @@ import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
-import org.apache.solr.search.neural.KnnQParserPlugin;
-import org.apache.solr.search.neural.VectorSimilarityQParserPlugin;
+import org.apache.solr.search.vector.KnnQParserPlugin;
+import org.apache.solr.search.vector.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
-public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrInfoBean {
+public abstract class QParserPlugin implements NamedListInitializedPlugin {
   /** internal use - name of the default parser */
   public static final String DEFAULT_QTYPE = LuceneQParserPlugin.NAME;
 
@@ -103,32 +101,4 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
    */
   public abstract QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req);
-
-  @Override
-  public String getName() {
-    // TODO: ideally use the NAME property that each qparser plugin has
-
-    return this.getClass().getName();
-  }
-
-  @Override
-  public String getDescription() {
-    return ""; // UI required non-null to work
-  }
-
-  @Override
-  public Category getCategory() {
-    return Category.QUERYPARSER;
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    // by default do nothing
-  }
-
-  // by default no metrics
-  @Override
-  public SolrMetricsContext getSolrMetricsContext() {
-    return null;
-  }
 }

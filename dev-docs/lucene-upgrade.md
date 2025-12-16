@@ -37,13 +37,13 @@ Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for 
 ### lockfiles update
 
 ```
-gradlew :resolveAndLockAll
+./gradlew resolveAndLockAll --write-locks
 ```
 
 ### `solr/licenses` update
 
 ```
-gradlew updateLicenses
+./gradlew updateLicenses
 
 git add solr/licenses
 ```
@@ -51,7 +51,7 @@ git add solr/licenses
 ## Code
 
 ```
-gradlew compileJava
+./gradlew compileJava
 ```
 
 * adjust for signature changes e.g.
@@ -65,15 +65,15 @@ gradlew compileJava
 ## Test
 
 ```
-gradlew compileTestJava
+./gradlew compileTestJava
 ```
 
 ```
-gradlew precommit
+./gradlew precommit
 ```
 
 ```
-gradlew test
+./gradlew test
 ```
 
 ## Finish
@@ -82,5 +82,5 @@ Push the local branch to github (fork) and open a pull request.
 
 ## Looking for something else?
 
-Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [help/dependencies.txt](../help/dependencies.txt) documentation.
+Thanks for reading these upgrade steps! But perhaps you were looking for information on trying out prerelease Lucene changes or joint local Solr and Lucene development? If so then please see the 'Update Lucene prerelease' and 'Lucene local dependency substitution' sections in the [dev-docs/gradle-help/dependencies.txt](gradle-help/dependencies.txt) documentation.
 

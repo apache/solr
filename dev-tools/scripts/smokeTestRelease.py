@@ -209,12 +209,6 @@ def checkAllJARs(topDir, gitRevision, version):
 
     for file in files:
       if file.lower().endswith('.jar'):
-        if ((normRoot.endswith('/modules/extraction/lib') and (file.startswith('jakarta.activation-') or file.startswith('jakarta.xml')))
-            or (normRoot.endswith('/modules/extraction/lib') and file.startswith('unit-api-'))
-            or (normRoot.endswith('/server/solr-webapp/webapp/WEB-INF/lib') and file.startswith('jakarta.'))
-            or (normRoot.endswith('/server/lib/ext') and file.startswith('jetty-servlet-api-'))):
-          print('      **WARNING**: skipping check of %s/%s: it has javax.* classes' % (root, file))
-          continue
         fullPath = '%s/%s' % (root, file)
         noJavaPackageClasses('JAR file "%s"' % fullPath, fullPath)
         if file.lower().find('solr') != -1:
@@ -380,15 +374,19 @@ def testOpenApi(version, openApiDirUrl):
     raise RuntimeError('Did not see %s in %s' % expectedSpecFileName, openApiDirUrl)
 
 
-def testChangesText(dir, version):
-  "Checks all CHANGES.txt under this dir."
-  for root, dirs, files in os.walk(dir): # pylint: disable=unused-variable
+def testChangelogMd(dir, version):
+  "Checks CHANGELOG.md file."
+  changelog_path = os.path.join(dir, 'CHANGELOG.md')
 
-    # NOTE: O(N) but N should be smallish:
-    if 'CHANGES.txt' in files:
-      fullPath = '%s/CHANGES.txt' % root
-      #print 'CHECK %s' % fullPath
-      checkChangesContent(open(fullPath, encoding='UTF-8').read(), version, fullPath, False)
+  if not os.path.exists(changelog_path):
+    raise RuntimeError('CHANGELOG.md not found at %s' % changelog_path)
+
+  with open(changelog_path, encoding='UTF-8') as f:
+    content = f.read()
+
+  # Verify that the changelog contains the current version
+  if 'v%s' % version not in content and version not in content:
+    raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
@@ -612,10 +610,10 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   in_solr_folder = []
   if isSrc:
     in_solr_folder.extend(os.listdir(os.path.join(unpackPath, 'solr')))
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md'])
-    is_in_list(in_solr_folder, ['CHANGES.txt', 'README.adoc'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.md', 'CONTRIBUTING.md', 'CHANGELOG.md'])
+    is_in_list(in_solr_folder, ['README.adoc'])
   else:
-    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGES.txt'])
+    is_in_list(in_root_folder, ['LICENSE.txt', 'NOTICE.txt', 'README.txt', 'CHANGELOG.md'])
 
   if SOLR_NOTICE is None:
     SOLR_NOTICE = open('%s/NOTICE.txt' % unpackPath, encoding='UTF-8').read()
@@ -633,10 +631,10 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   #     in_root_folder.remove(fileName)
 
   if isSrc:
-    expected_src_root_folders = ['build-tools', 'dev-docs', 'dev-tools', 'gradle', 'help', 'solr']
+    expected_src_root_folders = ['build-tools', 'changelog', 'dev-docs', 'dev-tools', 'gradle', 'solr']
     expected_src_root_files = ['build.gradle', 'gradlew', 'gradlew.bat', 'settings.gradle', 'settings-gradle.lockfile', 'versions.lock']
     expected_src_solr_files = ['build.gradle']
-    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'prometheus-exporter', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
+    expected_src_solr_folders = ['benchmark',  'bin', 'modules', 'api', 'core', 'cross-dc-manager', 'docker', 'documentation', 'example', 'licenses', 'packaging', 'distribution', 'server', 'solr-ref-guide', 'solrj', 'solrj-streaming', 'solrj-zookeeper', 'test-framework', 'webapp', '.gitignore', '.gitattributes']
     is_in_list(in_root_folder, expected_src_root_folders)
     is_in_list(in_root_folder, expected_src_root_files)
     is_in_list(in_solr_folder, expected_src_solr_folders)
@@ -646,7 +644,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   elif isSlim:
     is_in_list(in_root_folder, ['bin', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
   else:
-    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'prometheus-exporter', 'docs', 'example', 'licenses', 'server', 'lib'])
+    is_in_list(in_root_folder, ['bin', 'modules', 'cross-dc-manager', 'docker', 'docs', 'example', 'licenses', 'server', 'lib'])
 
   if len(in_root_folder) > 0:
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
@@ -715,7 +713,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
 
     os.chdir(unpackPath)
 
-  testChangesText('.', version)
+  testChangelogMd('.', version)
 
 
 def readSolrOutput(p, startupEvent, failureEvent, logFile):

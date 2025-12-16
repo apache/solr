@@ -23,31 +23,11 @@ import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpUpgradeHandler;
-import jakarta.servlet.http.Part;
-import java.io.BufferedReader;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.security.Principal;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -58,11 +38,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -72,6 +54,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 public class TestRequestRateLimiter extends SolrCloudTestCase {
   private static final String FIRST_COLLECTION = "c1";
@@ -79,6 +62,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     configureCluster(1).addConfig(FIRST_COLLECTION, configset("cloud-minimal")).configure();
   }
 
@@ -293,362 +277,15 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     assertTrue(mgr.getRequestRateLimiter(SolrRequest.SolrRequestType.UPDATE).isEmpty());
   }
 
-  private static final HttpServletRequest QUERY_REQ = new DummyRequest(null, "QUERY");
-  private static final HttpServletRequest UPDATE_REQ = new DummyRequest(null, "UPDATE");
-
-  private static class DummyRequest implements HttpServletRequest {
-    private final String ctx;
-    private final String type;
-
-    public DummyRequest(String ctx, String type) {
-      this.ctx = ctx;
-      this.type = type;
-    }
-
-    @Override
-    public String getAuthType() {
-      return "";
-    }
-
-    @Override
-    public Cookie[] getCookies() {
-      return new Cookie[0];
-    }
-
-    @Override
-    public long getDateHeader(String name) {
-      return 0;
-    }
-
-    @Override
-    public String getHeader(String name) {
-      switch (name) {
-        case SOLR_REQUEST_CONTEXT_PARAM:
-          return ctx;
-        case SOLR_REQUEST_TYPE_PARAM:
-          return type;
-        default:
-          throw new IllegalArgumentException();
-      }
-    }
-
-    @Override
-    public Enumeration<String> getHeaders(String name) {
-      return null;
-    }
-
-    @Override
-    public Enumeration<String> getHeaderNames() {
-      return null;
-    }
-
-    @Override
-    public int getIntHeader(String name) {
-      return 0;
-    }
-
-    @Override
-    public String getMethod() {
-      return "";
-    }
-
-    @Override
-    public String getPathInfo() {
-      return "";
-    }
-
-    @Override
-    public String getPathTranslated() {
-      return "";
-    }
-
-    @Override
-    public String getContextPath() {
-      return "";
-    }
-
-    @Override
-    public String getQueryString() {
-      return "";
-    }
-
-    @Override
-    public String getRemoteUser() {
-      return "";
-    }
-
-    @Override
-    public boolean isUserInRole(String role) {
-      return false;
-    }
-
-    @Override
-    public Principal getUserPrincipal() {
-      return null;
-    }
-
-    @Override
-    public String getRequestedSessionId() {
-      return "";
-    }
-
-    @Override
-    public String getRequestURI() {
-      return "";
-    }
-
-    @Override
-    public StringBuffer getRequestURL() {
-      return null;
-    }
-
-    @Override
-    public String getServletPath() {
-      return "";
-    }
-
-    @Override
-    public HttpSession getSession(boolean create) {
-      return null;
-    }
-
-    @Override
-    public HttpSession getSession() {
-      return null;
-    }
-
-    @Override
-    public String changeSessionId() {
-      return "";
-    }
-
-    @Override
-    public boolean isRequestedSessionIdValid() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromCookie() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromURL() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromUrl() {
-      return false;
-    }
-
-    @Override
-    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
-      return false;
-    }
-
-    @Override
-    public void login(String username, String password) throws ServletException {}
-
-    @Override
-    public void logout() throws ServletException {}
-
-    @Override
-    public Collection<Part> getParts() throws IOException, ServletException {
-      return List.of();
-    }
-
-    @Override
-    public Part getPart(String name) throws IOException, ServletException {
-      return null;
-    }
-
-    @Override
-    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
-        throws IOException, ServletException {
-      return null;
-    }
-
-    @Override
-    public Object getAttribute(String name) {
-      return null;
-    }
-
-    @Override
-    public Enumeration<String> getAttributeNames() {
-      return null;
-    }
-
-    @Override
-    public String getCharacterEncoding() {
-      return "";
-    }
-
-    @Override
-    public void setCharacterEncoding(String env) throws UnsupportedEncodingException {}
-
-    @Override
-    public int getContentLength() {
-      return 0;
-    }
-
-    @Override
-    public long getContentLengthLong() {
-      return 0;
-    }
-
-    @Override
-    public String getContentType() {
-      return "";
-    }
-
-    @Override
-    public ServletInputStream getInputStream() throws IOException {
-      return null;
-    }
-
-    @Override
-    public String getParameter(String name) {
-      return "";
-    }
-
-    @Override
-    public Enumeration<String> getParameterNames() {
-      return null;
-    }
-
-    @Override
-    public String[] getParameterValues(String name) {
-      return new String[0];
-    }
-
-    @Override
-    public Map<String, String[]> getParameterMap() {
-      return Map.of();
-    }
-
-    @Override
-    public String getProtocol() {
-      return "";
-    }
-
-    @Override
-    public String getScheme() {
-      return "";
-    }
-
-    @Override
-    public String getServerName() {
-      return "";
-    }
-
-    @Override
-    public int getServerPort() {
-      return 0;
-    }
-
-    @Override
-    public BufferedReader getReader() throws IOException {
-      return null;
-    }
-
-    @Override
-    public String getRemoteAddr() {
-      return "";
-    }
-
-    @Override
-    public String getRemoteHost() {
-      return "";
-    }
-
-    @Override
-    public void setAttribute(String name, Object o) {}
-
-    @Override
-    public void removeAttribute(String name) {}
-
-    @Override
-    public Locale getLocale() {
-      return null;
-    }
-
-    @Override
-    public Enumeration<Locale> getLocales() {
-      return null;
-    }
-
-    @Override
-    public boolean isSecure() {
-      return false;
-    }
-
-    @Override
-    public RequestDispatcher getRequestDispatcher(String path) {
-      return null;
-    }
-
-    @Override
-    public String getRealPath(String path) {
-      return "";
-    }
-
-    @Override
-    public int getRemotePort() {
-      return 0;
-    }
-
-    @Override
-    public String getLocalName() {
-      return "";
-    }
-
-    @Override
-    public String getLocalAddr() {
-      return "";
-    }
-
-    @Override
-    public int getLocalPort() {
-      return 0;
-    }
-
-    @Override
-    public ServletContext getServletContext() {
-      return null;
-    }
-
-    @Override
-    public AsyncContext startAsync() throws IllegalStateException {
-      return null;
-    }
-
-    @Override
-    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
-        throws IllegalStateException {
-      return null;
-    }
-
-    @Override
-    public boolean isAsyncStarted() {
-      return false;
-    }
-
-    @Override
-    public boolean isAsyncSupported() {
-      return false;
-    }
-
-    @Override
-    public AsyncContext getAsyncContext() {
-      return null;
-    }
-
-    @Override
-    public DispatcherType getDispatcherType() {
-      return null;
-    }
+  private static HttpServletRequest newRequest(String type, String ctx) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getHeader(SOLR_REQUEST_TYPE_PARAM)).thenReturn(type);
+    Mockito.when(req.getHeader(SOLR_REQUEST_CONTEXT_PARAM)).thenReturn(ctx);
+    return req;
   }
+
+  private static final HttpServletRequest QUERY_REQ = newRequest("QUERY", null);
+  private static final HttpServletRequest UPDATE_REQ = newRequest("UPDATE", null);
 
   @Nightly
   public void testSlotBorrowing() throws Exception {
@@ -740,9 +377,8 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
         try {
           assertNotNull(future.get());
         } catch (ExecutionException e) {
-          assertThat(e.getCause().getCause(), instanceOf(SolrClient.RemoteSolrException.class));
-          SolrClient.RemoteSolrException rse =
-              (SolrClient.RemoteSolrException) e.getCause().getCause();
+          assertThat(e.getCause().getCause(), instanceOf(RemoteSolrException.class));
+          RemoteSolrException rse = (RemoteSolrException) e.getCause().getCause();
           assertEquals(SolrException.ErrorCode.TOO_MANY_REQUESTS.code, rse.code());
           assertThat(
               rse.getMessage(), containsString("non ok status: 429, message:Too Many Requests"));

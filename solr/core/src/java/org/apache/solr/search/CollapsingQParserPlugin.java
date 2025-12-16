@@ -2183,7 +2183,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
-            // NOTE: for now we don't worry about wether this is a sortSpec of min/max
+            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
             // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
             // some (performance?) reason to specialize
             return new BlockOrdSortSpecCollector(
@@ -2212,7 +2212,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         } else if (isNumericCollapsible(collapseFieldType)) {
 
           if (blockCollapse) {
-            // NOTE: for now we don't worry about wether this is a sortSpec of min/max
+            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
             // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
             // some (performance?) reason to specialize
             return new BlockIntSortSpecCollector(
@@ -3407,7 +3407,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       boostedDocsIdsIter = getMergeBoost();
     }
 
-    /** True if there are any requested boosts (regardless of wether any have been collected) */
+    /** True if there are any requested boosts (regardless of whether any have been collected) */
     public boolean hasBoosts() {
       return hasBoosts;
     }
@@ -3567,8 +3567,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final Object[] nullGroupValues;
 
     /**
-     * Constructs an instance based on the the (raw, un-rewritten) SortFields to be used, and an
-     * initial number of expected groups (will grow as needed).
+     * Constructs an instance based on the (raw, un-rewritten) SortFields to be used, and an initial
+     * number of expected groups (will grow as needed).
      */
     @SuppressWarnings({"rawtypes"})
     public SortFieldsCompare(SortField[] sorts, int initNumGroups) {

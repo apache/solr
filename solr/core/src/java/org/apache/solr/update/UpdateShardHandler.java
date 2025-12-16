@@ -17,27 +17,26 @@
 package org.apache.solr.update;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.Attributes;
 import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,9 +64,9 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   private ExecutorService recoveryExecutor;
 
-  private final Http2SolrClient updateOnlyClient;
+  private final HttpJettySolrClient updateOnlyClient;
 
-  private final Http2SolrClient recoveryOnlyClient;
+  private final HttpJettySolrClient recoveryOnlyClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
@@ -100,14 +99,16 @@ public class UpdateShardHandler implements SolrInfoBean {
         Set.of(
             DistributedUpdateProcessor.DISTRIB_FROM,
             DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM);
-    Http2SolrClient.Builder updateOnlyClientBuilder = new Http2SolrClient.Builder();
-    Http2SolrClient.Builder recoveryOnlyClientBuilder = new Http2SolrClient.Builder();
+    var updateOnlyClientBuilder = new HttpJettySolrClient.Builder();
+    var recoveryOnlyClientBuilder = new HttpJettySolrClient.Builder();
     if (cfg != null) {
       updateOnlyClientBuilder
+          .addListenerFactory(trackHttpSolrMetrics)
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withMaxConnectionsPerHost(cfg.getMaxUpdateConnectionsPerHost());
       recoveryOnlyClientBuilder
+          .addListenerFactory(trackHttpSolrMetrics)
           .withConnectionTimeout(cfg.getDistributedConnectionTimeout(), TimeUnit.MILLISECONDS)
           .withIdleTimeout(cfg.getDistributedSocketTimeout(), TimeUnit.MILLISECONDS)
           .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
@@ -116,10 +117,8 @@ public class UpdateShardHandler implements SolrInfoBean {
 
     updateOnlyClientBuilder.withTheseParamNamesInTheUrl(urlParamNames);
     updateOnlyClient = updateOnlyClientBuilder.build();
-    updateOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     recoveryOnlyClient = recoveryOnlyClientBuilder.build();
-    recoveryOnlyClient.addListenerFactory(trackHttpSolrMetrics);
 
     ThreadFactory recoveryThreadFactory = new SolrNamedThreadFactory("recoveryExecutor");
     if (cfg != null && cfg.getMaxRecoveryThreads() > 0) {
@@ -163,22 +162,15 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, expandedScope);
+    trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
     updateExecutor =
-        MetricUtils.instrumentedExecutorService(
-            updateExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
+        solrMetricsContext.instrumentedExecutorService(
+            updateExecutor, "solr_core_executor", "updateOnlyExecutor", getCategory());
     recoveryExecutor =
-        MetricUtils.instrumentedExecutorService(
-            recoveryExecutor,
-            this,
-            solrMetricsContext.getMetricRegistry(),
-            SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
+        solrMetricsContext.instrumentedExecutorService(
+            recoveryExecutor, "solr_core_executor", "recoveryExecutor", getCategory());
   }
 
   @Override
@@ -197,12 +189,12 @@ public class UpdateShardHandler implements SolrInfoBean {
   }
 
   // don't introduce a bug, this client is for sending updates only!
-  public Http2SolrClient getUpdateOnlyHttpClient() {
+  public HttpJettySolrClient getUpdateOnlyHttpClient() {
     return updateOnlyClient;
   }
 
   // don't introduce a bug, this client is for recovery ops only!
-  public Http2SolrClient getRecoveryOnlyHttpClient() {
+  public HttpJettySolrClient getRecoveryOnlyHttpClient() {
     return recoveryOnlyClient;
   }
 

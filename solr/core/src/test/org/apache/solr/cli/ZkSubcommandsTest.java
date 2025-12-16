@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
@@ -501,8 +501,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
 
-    String[] args =
-        new String[] {"cp", "-z", zkServer.getZkAddress(), "zk:" + getNode, file.toString()};
+    // Not setting --zk-host, will fall back to sysProp 'zkHost'
+    String[] args = new String[] {"cp", "zk:" + getNode, file.toString()};
 
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
     assertArrayEquals(data, Files.readAllBytes(file));
@@ -605,7 +605,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         new SolrZkClient.Builder()
             .withUrl(zkServer.getZkAddress())
             .withTimeout(
-                AbstractDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
+                AbstractFullDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
       zkClient.getData("/", null, null, true);
     } catch (KeeperException.NoAuthException e) {

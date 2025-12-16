@@ -648,7 +648,7 @@ public class TransactionLog implements Closeable {
         try {
           Files.deleteIfExists(tlog);
         } catch (IOException e) {
-          // TODO: should this class care if a file couldnt be deleted?
+          // TODO: should this class care if a file couldn't be deleted?
           // this just emulates previous behavior, where only SecurityException would be handled.
         }
       }

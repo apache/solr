@@ -64,6 +64,10 @@ class CheckBrokenLinksTask extends DefaultTask {
     }
 
     if (result.getExitValue() != 0) {
+      println "Broken links check failed. First lines of the output:"
+      outputFile.get().asFile.readLines().take(20).each { line ->
+        println line
+      }
       throw new GradleException("Broken links check failed. Command output at: ${outputFile.get()}")
     }
   }

@@ -22,15 +22,14 @@ import static org.apache.solr.update.PeerSync.MissedUpdatesRequest;
 import static org.apache.solr.update.PeerSync.absComparator;
 import static org.apache.solr.update.PeerSync.percentile;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -42,6 +41,9 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +56,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   private UpdateHandler uhandler;
   private UpdateLog ulog;
-  private final Http2SolrClient clientToLeader;
+  private final HttpJettySolrClient clientToLeader;
   private final String coreName;
   private final String leaderBaseUrl;
 
@@ -66,9 +68,9 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private Set<Long> bufferedUpdates;
 
   // metrics
-  private Timer syncTime;
-  private Counter syncErrors;
-  private Counter syncSkipped;
+  private AttributedLongTimer syncTime;
+  private AttributedLongCounter syncErrors;
+  private AttributedLongCounter syncSkipped;
   private SolrMetricsContext solrMetricsContext;
 
   public PeerSyncWithLeader(SolrCore core, String leaderUrl, int nUpdates) {
@@ -87,8 +89,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
     this.updater = new PeerSync.Updater(msg(), core);
 
-    core.getCoreMetricManager()
-        .registerMetricProducer(SolrInfoBean.Category.REPLICATION.toString(), this);
+    core.getCoreMetricManager().registerMetricProducer(this, Attributes.empty());
   }
 
   public static final String METRIC_SCOPE = "peerSync";
@@ -99,11 +100,27 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
-    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
-    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
+    var baseAttributes =
+        attributes.toBuilder()
+            .put("category", SolrInfoBean.Category.REPLICATION.toString())
+            .build();
+    syncErrors =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_sync_with_leader_errors", "Total number of sync errors with leader"),
+            baseAttributes);
+    syncSkipped =
+        new AttributedLongCounter(
+            solrMetricsContext.longCounter(
+                "solr_core_sync_with_leader_skipped", "Total number of skipped syncs with leader"),
+            baseAttributes);
+    syncTime =
+        new AttributedLongTimer(
+            solrMetricsContext.longHistogram(
+                "solr_core_sync_with_leader_time", "leader sync times", OtelUnit.MILLISECONDS),
+            baseAttributes);
   }
 
   // start of peersync related debug messages.  includes the core name for correlation.
@@ -135,7 +152,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    Timer.Context timerContext = null;
+    AttributedLongTimer.MetricTimer timerContext = null;
     try {
       if (log.isInfoEnabled()) {
         log.info("{} START leader={} nUpdates={}", msg(), leaderUrl, nUpdates);
@@ -151,7 +168,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       }
 
       // measure only when actual sync is performed
-      timerContext = syncTime.time();
+      timerContext = syncTime.start();
 
       List<Long> ourUpdates;
       try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
@@ -195,7 +212,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
       return success ? PeerSync.PeerSyncResult.success() : PeerSync.PeerSyncResult.failure();
     } finally {
       if (timerContext != null) {
-        timerContext.close();
+        timerContext.stop();
       }
     }
   }
@@ -337,7 +354,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
           new GenericSolrRequest(
                   SolrRequest.METHOD.GET, "/get", SolrRequest.SolrRequestType.QUERY, params)
               .setRequiresCollection(true);
-      var rsp = clientToLeader.requestWithBaseUrl(leaderBaseUrl, coreName, request);
+      var rsp = request.processWithBaseUrl(clientToLeader, leaderBaseUrl, coreName);
       Exception exception = rsp.getException();
       if (exception != null) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, onFail);

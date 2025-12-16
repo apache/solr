@@ -36,12 +36,11 @@ dependencies {
 
   implementation libs.bc.jose4j
 
-  implementation libs.dropwizard.metrics.core
   implementation libs.eclipse.jetty.client
   implementation libs.eclipse.jetty.http
-  implementation libs.eclipse.jetty.toolchain.servletapi
   implementation libs.google.guava
   implementation libs.slf4j.api
+  implementation libs.jakarta.servlet.api
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
