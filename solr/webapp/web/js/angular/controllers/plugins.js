@@ -34,7 +34,7 @@ solrAdminApp.controller('PluginsController',
 
             var type = $location.search().type;
 
-            Metrics.prometheus(params, function (response) {
+            Metrics.raw(params, function (response) {
                 $scope.types = getPluginTypesFromMetrics(response.data, type);
                 $scope.type = getSelectedType($scope.types, type);
 
