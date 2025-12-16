@@ -33,8 +33,8 @@ setup() {
   TEST_STARTED_AT_ISO=$(date -Iseconds)
   export TEST_STARTED_AT_ISO
 
-  # Persist artifacts under Gradle’s test-output (fallback to Bats temp dir)
-  ARTIFACT_DIR="${TEST_OUTPUT_DIR:-$BATS_TEST_TMPDIR}/docker"
+  # Persist artifacts under Gradle’s test-output
+  ARTIFACT_DIR="${TEST_OUTPUT_DIR}/docker"
   mkdir -p "$ARTIFACT_DIR"
   export ARTIFACT_DIR
 }
