@@ -405,15 +405,15 @@ task buildLocalAntoraSite(type: NpxTask) {
         "--fetch"
     ] + extraArgs
 
-    // Configure undici HTTP timeout via preload script to prevent timeout errors
+    // Configure HTTP request timeout via preload script to prevent timeout errors
     // when downloading UI bundle from slow networks (especially in CI)
-    def nodeOptions = "--require ${projectDir}/increase-undici-timeout.js"
+    def nodeOptions = "--require ${projectDir}/increase-request-timeout.js"
 
     environment = [
         "SITE_SEARCH_ENABLED": "true",
         "MATOMO_ENABLED": "false",
         "NODE_OPTIONS": nodeOptions,
-        "UNDICI_TIMEOUT_MS": "60000"  // 60 seconds timeout
+        "HTTP_REQUEST_TIMEOUT_MS": "60000"  // 60 seconds timeout
     ]
 
     inputs.files(fileTree(project.ext.siteStagingDir))
@@ -509,15 +509,15 @@ task buildOfficialSite(type: NpxTask) {
         officialPlaybook,
     ] + extraArgs
 
-    // Configure undici HTTP timeout via preload script to prevent timeout errors
+    // Configure HTTP request timeout via preload script to prevent timeout errors
     // when downloading UI bundle from slow networks (especially in CI)
-    def nodeOptions = "--require ${projectDir}/increase-undici-timeout.js"
+    def nodeOptions = "--require ${projectDir}/increase-request-timeout.js"
 
     environment = [
         "SITE_SEARCH_ENABLED": "true",
         "MATOMO_ENABLED": "true",
         "NODE_OPTIONS": nodeOptions,
-        "UNDICI_TIMEOUT_MS": "60000"  // 60 seconds timeout
+        "HTTP_REQUEST_TIMEOUT_MS": "60000"  // 60 seconds timeout
     ]
 
     inputs.files(officialPlaybook)
