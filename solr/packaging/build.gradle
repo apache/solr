@@ -266,9 +266,6 @@ task integrationTests(type: BatsTask) {
   dependsOn installFullDist
   dependsOn downloadBats
 
-  // Force task execution every time
-  outputs.upToDateWhen { false }
-
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
