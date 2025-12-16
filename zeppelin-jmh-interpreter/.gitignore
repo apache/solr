@@ -1,0 +1,10 @@
+.idea
+.run
+.gradle
+build
+.classpath
+.project
+.settings/
+.DS_Store
+out
+logs
