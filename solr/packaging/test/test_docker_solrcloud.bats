@@ -17,7 +17,9 @@
 
 load bats_helper
 
-# Environment variables for Docker images
+# You can test alternative images via 
+# export SOLR_BEGIN_IMAGE="apache/solr-nightly:9.9.0-slim" and then running
+# ./gradlw iTest --tests test_docker_solrcloud.bats
 SOLR_BEGIN_IMAGE="${SOLR_BEGIN_IMAGE:-apache/solr-nightly:9.10.0-SNAPSHOT-slim}"
 SOLR_END_IMAGE="${SOLR_END_IMAGE:-apache/solr-nightly:10.0.0-SNAPSHOT-slim}"
 
