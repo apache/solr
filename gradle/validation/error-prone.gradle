@@ -35,18 +35,6 @@ if (skipReason) {
   }
 }
 
-configurations.all {
-  resolutionStrategy {
-    eachDependency { details ->
-      if (details.requested.group == "com.google.errorprone" &&
-          (details.requested.name == "error_prone_core" || details.requested.name == "error_prone_annotations")) {
-        details.useVersion("2.31.0")
-        details.because("Lock Error Prone dependencies to 2.31.0 to prevent accidental upgrades")
-      }
-    }
-  }
-}
-
 allprojects { prj ->
   plugins.withType(JavaPlugin) {
     // LUCENE-9650: Errorprone on master/gradle does not work when running as plugin
@@ -61,6 +49,17 @@ allprojects { prj ->
       }
       dependencies {
         errorprone("com.google.errorprone:error_prone_core")
+
+        constraints {
+          rootConfiguration("com.google.errorprone:error_prone_annotations") {
+            version { strictly "2.31.0" }
+            because "Lock Error Prone dependencies to 2.31.0 to prevent accidental upgrades"
+          }
+          rootConfiguration("com.google.errorprone:error_prone_core") {
+            version { strictly "2.31.0" }
+            because "Lock Error Prone dependencies to 2.31.0 to prevent accidental upgrades"
+          }
+        }
       }
     } else {
       prj.apply plugin: 'net.ltgt.errorprone'
