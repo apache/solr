@@ -36,6 +36,17 @@ def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SO
 def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:' + javaVersion + '-jre-noble') }"
 def dockerImagePlatforms = "${ -> propertyOrEnvOrDefault("solr.docker.platform", "SOLR_DOCKER_PLATFORM", '') }"
 def isMultiPlatform = { -> !dockerImagePlatforms.isEmpty() && dockerImagePlatforms.contains(',') }
+def validatePlatformFormat = { platformValue ->
+  if (!platformValue.isEmpty()) {
+    def platformPattern = ~/^linux\/[\w-]+(\/[\w-]+)?(,\s*linux\/[\w-]+(\/[\w-]+)?)*$/
+    if (!platformValue.matches(platformPattern)) {
+      throw new GradleException("Invalid platform format: ${platformValue}\n" +
+              "Platform must be in format 'linux/arch' or 'linux/arch/variant' (comma-separated for multiple).\n" +
+              "Examples: 'linux/amd64', 'linux/arm64', 'linux/arm/v7', 'linux/amd64,linux/arm64'")
+    }
+  }
+}
+def getSolrTgzConfiguration = { -> isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz }
 def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
@@ -189,14 +200,15 @@ task dockerBuild() {
           baseDockerImage: baseDockerImage,
           dockerImagePlatforms: dockerImagePlatforms
   ])
-  var solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
+  var solrTgzConfiguration = getSolrTgzConfiguration()
   inputs.files(solrTgzConfiguration)
   inputs.property("isSlimImage", isImageSlim())
   inputs.property("isMultiPlatform", isMultiPlatform())
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    def platformValue = inputs.properties.dockerImagePlatforms
+    def platformValue = inputs.properties.dockerImagePlatforms.trim()
+    validatePlatformFormat(platformValue)
     def useSinglePlatform = !platformValue.isEmpty() && !platformValue.contains(',')
 
     // Multi-platform builds are not supported by dockerBuild, only by dockerPush
@@ -302,7 +314,8 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   mustRunAfter tasks.testDocker
 
   doLast {
-    def platformValue = inputs.properties.dockerImagePlatforms
+    def platformValue = inputs.properties.dockerImagePlatforms.trim()
+    validatePlatformFormat(platformValue)
 
     if (isMultiPlatform()) {
       // Multi-platform push requires buildx and rebuilding with --push
@@ -324,7 +337,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
 
       if (!missingPlatforms.isEmpty()) {
         // Extract supported platforms from builder info using matcher
-        def supportedPlatforms = (builderInfo =~ /linux\/\w+(?:\/\w+)?/).collect().join(', ')
+        def supportedPlatforms = (builderInfo =~ /linux\/[\w-]+(?:\/[\w-]+)?/).collect().join(', ')
         throw new GradleException("Current builder does not support all requested platforms: ${missingPlatforms}\n" +
                 "Supported platforms: ${supportedPlatforms}\n" +
                 "To add platform support, create a builder with QEMU:\n" +
@@ -332,7 +345,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
                 "  docker buildx create --name solr-builder --use --platform ${platformValue}")
       }
 
-      def solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
+      def solrTgzConfiguration = getSolrTgzConfiguration()
       exec {
         standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
         commandLine "docker", "buildx", "build",
