@@ -87,14 +87,12 @@ Prerequisites:
    - Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine versions)
    - A buildx builder must be configured. If you don't have one, create it:
      docker buildx create --name solr-builder --use
-   - For cross-platform builds, QEMU may be required:
-     docker run --privileged --rm tonistiigi/binfmt --install all
 
 Build and push for multiple architectures:
-   SOLR_DOCKER_ARCH=linux/arm64,linux/amd64 gradlew dockerPush
+   SOLR_DOCKER_ARCH=linux/arm64,linux/amd64 ./gradlew dockerPush
 
 Using Gradle property:
-   gradlew dockerPush -Psolr.docker.arch=linux/arm64,linux/amd64
+   ./gradlew dockerPush -Psolr.docker.arch=linux/arm64,linux/amd64
 
 The dockerPush task will build and push the multi-architecture image in a single step using Docker Buildx.
 The task will validate that a suitable builder exists and that it supports all requested platforms before building.
