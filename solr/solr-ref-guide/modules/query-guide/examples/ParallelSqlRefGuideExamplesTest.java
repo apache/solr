@@ -18,7 +18,13 @@ package org.apache.solr.client.ref_guide_examples;
 
 import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.clear;
 import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.ensureNoLeftoverOutputExpectations;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.expectLine;
+import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.print;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
@@ -68,9 +74,9 @@ public class ParallelSqlRefGuideExamplesTest extends SolrCloudTestCase {
 
   @Test
   public void testQueryOnJdbcSqlInterface() throws Exception {
-    // expectLine("Item: 0; Price: 0.0");
-    // expectLine("Item: 1; Price: 2.0");
-    // expectLine("Item: 2; Price: 4.0");
+    expectLine("Item: 0; Price: 0.0");
+    expectLine("Item: 1; Price: 2.0");
+    expectLine("Item: 2; Price: 4.0");
 
     final String zkHost = cluster.getZkServer().getZkAddress();
     // tag::jdbc-query-interface[]
@@ -79,21 +85,20 @@ public class ParallelSqlRefGuideExamplesTest extends SolrCloudTestCase {
             + zkHost
             + "?collection=techproducts&aggregationMode=map_reduce&numWorkers=2";
 
-    // try (Connection con = DriverManager.getConnection(connString)) {
-    // GETTING A ObjectTracker error when I call this.
-    // try (final Statement stmt = con.createStatement()) {
-    // final String sqlQuery = "SELECT id, price_f FROM techproducts LIMIT 3";
+    try (Connection con = DriverManager.getConnection(connString)) {
+      // GETTING A ObjectTracker error when I call this.
+      try (final Statement stmt = con.createStatement()) {
+        final String sqlQuery = "SELECT id, price_f FROM techproducts LIMIT 3";
 
-    //        try (ResultSet rs = stmt.executeQuery(sqlQuery)) {
-    //          while (rs.next()) {
-    //            final String resultString =
-    //                String.format("Item: %s; Price: %s", rs.getString("id"),
-    // rs.getString("price_f"));
-    //            print(resultString);
-    //          }
-    //        }
-    // }
-    // }
+        try (ResultSet rs = stmt.executeQuery(sqlQuery)) {
+          while (rs.next()) {
+            final String resultString =
+                String.format("Item: %s; Price: %s", rs.getString("id"), rs.getString("price_f"));
+            print(resultString);
+          }
+        }
+      }
+    }
     // end::jdbc-query-interface[]
   }
 
