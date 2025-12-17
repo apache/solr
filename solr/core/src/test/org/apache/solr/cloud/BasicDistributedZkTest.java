@@ -43,14 +43,13 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
@@ -1286,12 +1285,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
-      var req =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/admin/metrics",
-              SolrRequest.SolrRequestType.ADMIN,
-              SolrParams.of("wt", "prometheus"));
+      var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);

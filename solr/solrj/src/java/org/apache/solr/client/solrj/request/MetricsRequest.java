@@ -17,57 +17,42 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-/** Class to get a system info response. */
-public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
+/** Request to "/admin/metrics" */
+public class MetricsRequest extends SolrRequest<SolrResponse> {
 
   private static final long serialVersionUID = 1L;
 
   private final SolrParams params;
 
-  /** Request to "/admin/info/system" by default, without params. */
-  public SystemInfoRequest() {
-    this(CommonParams.SYSTEM_INFO_PATH);
-  }
-
-  /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
-   */
-  public SystemInfoRequest(String path) {
-    this(METHOD.GET, path, SolrRequestType.ADMIN, new ModifiableSolrParams());
+  /** Request to "/admin/metrics" by default, without params */
+  public MetricsRequest() {
+    this(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN, new ModifiableSolrParams());
   }
 
   /**
    * @param params the Solr parameters to use for this request.
    */
-  public SystemInfoRequest(SolrParams params) {
-    this(METHOD.GET, CommonParams.SYSTEM_INFO_PATH, SolrRequestType.ADMIN, params);
-  }
-
-  /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
-   * @param params query parameter names and values for making this request.
-   */
-  public SystemInfoRequest(String path, SolrParams params) {
-    this(METHOD.GET, path, SolrRequestType.ADMIN, params);
+  public MetricsRequest(SolrParams params) {
+    this(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN, params);
   }
 
   /**
    * @param method the HTTP method to use for this request.
    * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
    *     or V2 "/node/system"
-   * @param type the type of this request
+   * @param requestType the type of this request
    * @param params query parameter names and values for making this request.
    */
-  public SystemInfoRequest(METHOD method, String path, SolrRequestType type, SolrParams params) {
-    super(method, path, type);
+  public MetricsRequest(
+      METHOD method, String path, SolrRequestType requestType, SolrParams params) {
+    super(method, path, requestType);
     this.params = params;
   }
 
@@ -77,17 +62,8 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   }
 
   @Override
-  protected SystemInfoResponse createResponse(NamedList<Object> namedList) {
-    return new SystemInfoResponse(namedList);
-  }
-
-  @Override
-  public ApiVersion getApiVersion() {
-    if (CommonParams.SYSTEM_INFO_PATH.equals(getPath())) {
-      // (/solr) /admin/info/system
-      return ApiVersion.V1;
-    }
-    // Ref. org.apache.solr.handler.admin.api.NodeSystemInfoAPI : /node/system
-    return ApiVersion.V2;
+  protected SolrResponse createResponse(NamedList<Object> namedList) {
+    SolrResponseBase resp = new SolrResponseBase();
+    return (SolrResponse) resp;
   }
 }

@@ -47,10 +47,10 @@ public class SystemInfoResponse extends SolrResponseBase {
     }
   }
 
-  /* SolrRequest.process only needs to set 'elapsedTime' */
   @Override
   public void setResponse(NamedList<Object> response) {
     if (getResponse() == null) super.setResponse(response);
+    if (fullResponse == null) init();
   }
 
   public String getMode() {
@@ -78,11 +78,17 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   // *************************
-  // Shortcuts for StatusTool.reportStatus(SolrClient)
+  // Shortcuts
   // ***********
   public String getSolrImplVersion() {
     return getFullResponse() != null && getFullResponse().lucene != null
         ? getFullResponse().lucene.solrImplVersion
+        : null;
+  }
+
+  public String getSolrSpecVersion() {
+    return getFullResponse() != null && getFullResponse().lucene != null
+        ? getFullResponse().lucene.solrSpecVersion
         : null;
   }
 
