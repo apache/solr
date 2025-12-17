@@ -81,7 +81,8 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
         child.setField("id", i + "" + j);
         child.setField("child_s", klm[i % klm.length]);
         child.setField("vector", outDistanceFloat(FLOAT_QUERY_VECTOR, totalNestedVectors));
-        child.setField("vector_byte_encoding", outDistanceByte(BYTE_QUERY_VECTOR, totalNestedVectors));
+        child.setField(
+            "vector_byte_encoding", outDistanceByte(BYTE_QUERY_VECTOR, totalNestedVectors));
         totalNestedVectors--; // the higher the id of the nested document, lower the distance with
         // the query vector
         children.add(child);
@@ -95,7 +96,8 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void parentRetrieval_knnChildrenDiversifyingWithNoAllParents_shouldThrowException() {
-    super.parentRetrieval_knnChildrenDiversifyingWithNoAllParents_shouldThrowException(VECTOR_FIELD);
+    super.parentRetrieval_knnChildrenDiversifyingWithNoAllParents_shouldThrowException(
+        VECTOR_FIELD);
   }
 
   @Test
@@ -105,7 +107,8 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren() {
-    super.childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren(VECTOR_BYTE_FIELD);
+    super.childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren(
+        VECTOR_BYTE_FIELD);
   }
 
   @Test
@@ -125,14 +128,14 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void
-  parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
-      ) {
-    super.parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(VECTOR_FIELD);
+      parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
+    super.parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
+        VECTOR_FIELD);
   }
 
   @Test
   public void parentRetrievalByte_knnChildren_shouldReturnKnnParents() {
-   super.parentRetrievalByte_knnChildren_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
+    super.parentRetrievalByte_knnChildren_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
   }
 
   @Test
@@ -142,19 +145,23 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void
-  parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
-    super.parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
+      parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
+    super.parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
+        VECTOR_BYTE_FIELD);
   }
 
   @Test
   public void
-  parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
-    super.parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter(VECTOR_FIELD);
+      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
+    super
+        .parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter(
+            VECTOR_FIELD);
   }
 
   @Test
   public void parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild() {
-    super.parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild(VECTOR_FIELD);
+    super.parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild(
+        VECTOR_FIELD);
   }
 
   @Test
@@ -164,6 +171,7 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild() {
-    super.parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild(VECTOR_BYTE_FIELD);
+    super.parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild(
+        VECTOR_BYTE_FIELD);
   }
 }

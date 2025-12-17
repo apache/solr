@@ -94,7 +94,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
         boolean firstLevelChildren = fullPath == null;
-        if (firstLevelChildren && sfield!= null && isMultiValuedVectorField(sfield)) {
+        if (firstLevelChildren && sfield != null && isMultiValuedVectorField(sfield)) {
           for (Object vectorValue : field.getValues()) {
             SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
             singleVectorNestedDoc.setField(field.getName(), vectorValue);
@@ -153,14 +153,15 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
         }
       }
       this.cleanOriginalVectorFields(doc, originalVectorFieldsToRemove);
-      if(vectors.size() > 0) {
+      if (vectors.size() > 0) {
         doc.setField("vectors", vectors);
       }
       return isNested;
     }
 
-    private void cleanOriginalVectorFields(SolrInputDocument doc, List<String> originalVectorFieldsToRemove) {
-      for(String fieldName : originalVectorFieldsToRemove) {
+    private void cleanOriginalVectorFields(
+        SolrInputDocument doc, List<String> originalVectorFieldsToRemove) {
+      for (String fieldName : originalVectorFieldsToRemove) {
         doc.removeField(fieldName);
       }
     }
