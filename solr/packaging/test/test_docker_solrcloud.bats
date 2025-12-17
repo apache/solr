@@ -110,10 +110,13 @@ teardown() {
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
 
   echo "Creating a Collection"
-  docker exec --user=solr solr-node1 solr create -c test-collection --shards 3
+  docker exec --user=solr solr-node1 solr create -c test-collection -n techproducts --shards 3
 
   echo "Checking collection health"
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
+
+  echo "Add some sample data"
+  docker exec --user=solr solr-node1 solr post -c test-collection example/exampledocs/mem.xml
 
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
   echo "Starting rolling upgrade - upgrading node 3"
