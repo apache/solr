@@ -24,22 +24,6 @@ ext {
   useSecurityManager = false
 }
 
-configurations.configureEach {
-  // Exclude SpotBugs Annotations, a `compileOnlyApi` dependency of Log4j.
-  //
-  // Why:
-  // - Log4j includes them only to silence harmless `-Xlint:classfile` warnings
-  //   when consumers reference classes annotated with `@SuppressFBWarnings`.
-  //   Without the jar, compilation may emit warnings (and fail under `-Werror`).
-  //   See: https://github.com/apache/logging-log4j2/issues/3110#issuecomment-2423586754
-  //
-  // - However, SpotBugs Annotations are LGPL-2.1 licensed. Including them,
-  //   even at compile time, breaks our license compatibility checks.
-  //
-  // Net result: unless compiling with `-Werror`, it is safe to exclude the jar.
-  exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
-}
-
 dependencies {
   implementation platform(project(':platform'))
   implementation project(':solr:core')
