@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CloudController',
-    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, ZookeeperStatus) {
+    function($scope, $location, Zookeeper, Constants, Collections, System, Metrics, MetricsExtractor, ZookeeperStatus) {
 
         $scope.showDebug = false;
 
@@ -37,7 +37,7 @@ solrAdminApp.controller('CloudController',
             graphSubController($scope, Zookeeper, false);
         } else if (view === "nodes") {
             $scope.resetMenu("cloud-nodes", Constants.IS_ROOT_PAGE);
-            nodesSubController($scope, Collections, System, Metrics);
+            nodesSubController($scope, Collections, System, Metrics, MetricsExtractor);
         } else if (view === "zkstatus") {
             $scope.resetMenu("cloud-zkstatus", Constants.IS_ROOT_PAGE);
             zkStatusSubController($scope, ZookeeperStatus, false);
@@ -107,7 +107,7 @@ function isNumeric(n) {
   return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
-var nodesSubController = function($scope, Collections, System, Metrics) {
+var nodesSubController = function($scope, Collections, System, Metrics, MetricsExtractor) {
   $scope.pageSize = 10;
   $scope.showNodes = true;
   $scope.showTree = false;
@@ -150,25 +150,25 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.from = Math.max(0, $scope.from - parseInt($scope.pageSize));
     $scope.reload();
   };
-  
+
   // Checks if this node is the first (alphabetically) for a given host. Used to decide rowspan in table
   $scope.isFirstNodeForHost = function(node) {
-    var hostName = node.split(":")[0]; 
+    var hostName = node.split(":")[0];
     var nodesInHost = $scope.filteredNodes.filter(function (node) {
       return node.split(":")[0] === hostName;
     });
     return nodesInHost[0] === node;
   };
-  
+
   // Returns the first live node for this host, to make sure we pick host-level metrics from a live node
   $scope.firstLiveNodeForHost = function(key) {
-    var hostName = key.split(":")[0]; 
+    var hostName = key.split(":")[0];
     var liveNodesInHost = $scope.filteredNodes.filter(function (key) {
       return key.split(":")[0] === hostName;
     }).filter(function (key) {
       return $scope.live_nodes.includes(key);
     });
-    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key; 
+    return liveNodesInHost.length > 0 ? liveNodesInHost[0] : key;
   };
 
   // Initializes the cluster state, list of nodes, collections etc
@@ -227,7 +227,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         ensureNodeInHosts(node, hosts);
       }
 
-      // Make sure nodes are sorted alphabetically to align with rowspan in table 
+      // Make sure nodes are sorted alphabetically to align with rowspan in table
       for (var host in hosts) {
         hosts[host].nodes.sort();
       }
@@ -249,7 +249,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
 
   /*
     Reload will fetch data for the current page of the table and thus refresh numbers.
-    It is also called whenever a filter or paging action is executed 
+    It is also called whenever a filter or paging action is executed
    */
   $scope.reload = function() {
     var nodes = $scope.nodes;
@@ -307,7 +307,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
       case "health":
 
     }
-    
+
     if (filteredNodes) {
       // If filtering is active, calculate what hosts contain the nodes that match the filters
       isFiltered = true;
@@ -322,7 +322,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     }
     filteredNodes.sort();
     filteredHosts.sort();
-    
+
     // Find what hosts & nodes (from the filtered set) that should be displayed on current page
     for (var id = $scope.from ; id < $scope.from + pageSize && filteredHosts[id] ; id++) {
       var hostName = filteredHosts[id];
@@ -335,9 +335,9 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
         nodesToShow = nodesToShow.concat(hosts[hostName]['nodes']);
       }
     }
-    nodesParam = nodesToShow.filter(function (node) {
-      return live_nodes.includes(node); 
-    }).join(',');
+    var liveNodesToShow = nodesToShow.filter(function (node) {
+      return live_nodes.includes(node);
+    });
     var deadNodes = nodesToShow.filter(function (node) {
       return !live_nodes.includes(node);
     });
@@ -353,7 +353,7 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
      Fetch system info for all selected nodes
      Pick the data we want to display and add it to the node-centric data structure
       */
-    System.get({"nodes": nodesParam}, function (systemResponse) {
+    System.get({"nodes": liveNodesToShow.join(',')}, function (systemResponse) {
       for (var node in systemResponse) {
         if (node in nodes) {
           var s = systemResponse[node];
@@ -391,121 +391,182 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     });
 
     /*
-     Fetch metrics for all selected nodes. Only pull the metrics that we'll show to save bandwidth
-     Pick the data we want to display and add it to the node-centric data structure
+     Fetch metrics for all selected nodes in parallel. Make one request per node.
+     Only pull the metrics that we'll show to save bandwidth.
       */
-    Metrics.get({
-          "nodes": nodesParam,
-          "prefix": "CONTAINER.fs,org.eclipse.jetty.server.handler.DefaultHandler.get-requests,INDEX.sizeInBytes,SEARCHER.searcher.numDocs,SEARCHER.searcher.deletedDocs,SEARCHER.searcher.warmupTime"
+    var metricsNameParam = "solr_disk_space_megabytes,solr_core_index_size_megabytes,solr_core_indexsearcher_index_num_docs,solr_core_indexsearcher_index_docs,solr_core_indexsearcher_open_time_milliseconds";
+
+    // Create array of promises (one per node)
+    var metricsPromises = [];
+    liveNodesToShow.forEach(function(node) {
+      var promise = Metrics.get({
+        node: node,
+        name: metricsNameParam
+      }).$promise.then(
+        function(response) {
+          // Success - return the parsed metrics with node identifier
+          return {
+            node: node,
+            metrics: response.metrics,
+            success: true
+          };
         },
-        function (metricsResponse) {
-          for (var node in metricsResponse) {
-            if (node in nodes) {
-              var m = metricsResponse[node];
-              nodes[node]['metrics'] = m;
-              var diskTotal = m.metrics['solr.node']['CONTAINER.fs.totalSpace'];
-              var diskFree = m.metrics['solr.node']['CONTAINER.fs.usableSpace'];
-              var diskPercentage = Math.floor((diskTotal - diskFree) / diskTotal * 100);
-              nodes[node]['diskUsedPct'] = diskPercentage;
-              nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
-              nodes[node]['diskTotal'] = bytesToSize(diskTotal);
-              nodes[node]['diskFree'] = bytesToSize(diskFree);
+        function(error) {
+          // Failure - log and return error marker
+          console.error('Failed to fetch metrics from node ' + node + ':', error);
+          return {
+            node: node,
+            success: false,
+            error: error
+          };
+        }
+      );
+      metricsPromises.push(promise);
+    });
 
-              var r = m.metrics['solr.jetty']['org.eclipse.jetty.server.handler.DefaultHandler.get-requests'];
-              nodes[node]['req'] = r.count;
-              nodes[node]['req1minRate'] = Math.floor(r['1minRate'] * 100) / 100;
-              nodes[node]['req5minRate'] = Math.floor(r['5minRate'] * 100) / 100;
-              nodes[node]['req15minRate'] = Math.floor(r['15minRate'] * 100) / 100;
-              nodes[node]['reqp75_ms'] = Math.floor(r['p75_ms']);
-              nodes[node]['reqp95_ms'] = Math.floor(r['p95_ms']);
-              nodes[node]['reqp99_ms'] = Math.floor(r['p99_ms']);
+    // Wait for all requests to complete (success or failure)
+    Promise.all(metricsPromises).then(function(results) {
+      // Separate successful and failed results
+      var successfulResults = results.filter(function(r) { return r.success; });
+      var failedResults = results.filter(function(r) { return !r.success; });
 
-              // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
-              var cores = nodes[node]['cores'];
-              var indexSizeTotal = 0;
-              var indexSizeMax = 0;
-              var docsTotal = 0;
-              var graphData = [];
-              for (let coreId in cores) {
-                var core = cores[coreId];
-                if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
-                  // If core state is not active, display the real state, or if shard is inactive, display that
-                  var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
-                  core['label'] += "_(" + labelState + ")";
-                }
-                var coreMetricName = "solr.core." + core['collection'] + "." + core['shard'] + "." + core['replica'];
-                var coreMetric = m.metrics[coreMetricName];
-                // we may not actually get metrics back for every expected core (the core may be down)
-                if (coreMetric) {
-                  var size = coreMetric['INDEX.sizeInBytes'];
-                  size = (typeof size !== 'undefined') ? size : 0;
-                  core['sizeInBytes'] = size;
-                  core['size'] = bytesToSize(size);
-                  indexSizeTotal = indexSizeTotal + size;
-                  indexSizeMax = size > indexSizeMax ? size : indexSizeMax;
-                  var numDocs = coreMetric['SEARCHER.searcher.numDocs'];
-                  numDocs = (typeof numDocs !== 'undefined') ? numDocs : 0;
-                  core['numDocs'] = numDocs;
-                  core['numDocsHuman'] = numDocsHuman(numDocs);
-                  core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
-                  var deletedDocs = coreMetric['SEARCHER.searcher.deletedDocs'];
-                  deletedDocs = (typeof deletedDocs !== 'undefined') ? deletedDocs : 0;
-                  core['deletedDocs'] = deletedDocs;
-                  core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
-                  var warmupTime = coreMetric['SEARCHER.searcher.warmupTime'];
-                  warmupTime = (typeof warmupTime !== 'undefined') ? warmupTime : 0;
-                  core['warmupTime'] = warmupTime;
-                  docsTotal += core['numDocs'];
-                }
-              }
-              for (let coreId in cores) {
-                var core = cores[coreId];
-                var graphObj = {};
-                graphObj['label'] = core['label'];
-                graphObj['size'] = core['sizeInBytes'];
-                graphObj['sizeHuman'] = core['size'];
-                graphObj['pct'] = (core['sizeInBytes'] / indexSizeMax) * 100;
-                graphData.push(graphObj);
-              }
-              if (cores) {
-                cores.sort(function (a, b) {
-                  return b.sizeInBytes - a.sizeInBytes
-                });
-              }
-              graphData.sort(function (a, b) {
-                return b.size - a.size
-              });
-              nodes[node]['graphData'] = graphData;
-              nodes[node]['numDocs'] = numDocsHuman(docsTotal);
-              nodes[node]['sizeInBytes'] = indexSizeTotal;
-              nodes[node]['size'] = bytesToSize(indexSizeTotal);
-              nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
+      // Log any failures
+      if (failedResults.length > 0) {
+        console.warn('Failed to fetch metrics from ' + failedResults.length + ' node(s):',
+                     failedResults.map(function(r) { return r.node; }));
+      }
 
-              // Build the d3 powered bar chart
-              $('#chart' + nodes[node]['id']).empty();
-              var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
+      // If all nodes failed, show error state
+      if (successfulResults.length === 0) {
+        console.error('Failed to fetch metrics from all nodes');
+        $scope.metricsError = true;
+        return;
+      }
 
-              // Add one div per bar which will group together both labels and bars
-              var g = chart.selectAll('div')
-                  .data(nodes[node]['graphData']).enter()
-                  .append('div');
+      // Merge all successful metrics responses, passing node info along
+      var parsedMetrics = mergePrometheusMetrics(successfulResults);
 
-              // Add the bars
-              var bars = g.append("div")
-                  .attr("class", "rect")
-                  .text(function (d) {
-                    return d.label + ':\u00A0\u00A0' + d.sizeHuman;
-                  });
+      if (!parsedMetrics) {
+        console.error('Failed to merge metrics');
+        $scope.metricsError = true;
+        return;
+      }
 
-              // Execute the transition to show the bars
-              bars.transition()
-                  .ease('elastic')
-                  .style('width', function (d) {
-                    return d.pct + '%';
-                  });
-            }
+      // Now process the merged metrics the same way as before
+      for (var i = 0; i < nodesToShow.length; i++) {
+          var node = nodesToShow[i];
+          if (!nodes[node]) continue;
+
+          nodes[node]['metrics'] = parsedMetrics;
+
+          // Extract disk metrics with node filter
+          var diskMetrics = MetricsExtractor.extractDiskMetrics(parsedMetrics, { node: node });
+          if (diskMetrics) {
+            var diskTotal = diskMetrics.totalSpace || 0;
+            var diskFree = diskMetrics.usableSpace || 0;
+            var diskPercentage = diskTotal > 0 ? Math.floor((diskTotal - diskFree) / diskTotal * 100) : 0;
+            nodes[node]['diskUsedPct'] = diskPercentage;
+            nodes[node]['diskUsedPctStyle'] = styleForPct(diskPercentage);
+            nodes[node]['diskTotal'] = bytesToSize(diskTotal);
+            nodes[node]['diskFree'] = bytesToSize(diskFree);
           }
-        });
+
+          // These are the cores we _expect_ to find on this node according to the CLUSTERSTATUS
+          var cores = nodes[node]['cores'];
+          if (!cores || typeof cores !== 'object') {
+            cores = {};
+            nodes[node]['cores'] = cores;
+          }
+          var indexSizeTotal = 0;
+          var indexSizeMax = 0;
+          var docsTotal = 0;
+          var graphData = [];
+
+          for (var coreId in cores) {
+            var core = cores[coreId];
+
+            if (core['shard_state'] !== 'active' || core['state'] !== 'active') {
+              // If core state is not active, display the real state, or if shard is inactive, display that
+              var labelState = (core['state'] !== 'active') ? core['state'] : core['shard_state'];
+              core['label'] += "_(" + labelState + ")";
+            }
+
+            // Build full core name for label matching
+            // Prometheus metrics use format: "collection_shard_replica"
+            var fullCoreName = core['collection'] + '_' + core['shard'] + '_' + core['replica'];
+            var coreLabels = { core: fullCoreName, node: node };
+
+            // Extract metrics using helpers (with node filter)
+            var size = MetricsExtractor.extractCoreIndexSize(parsedMetrics, coreLabels);
+            var searcherMetrics = MetricsExtractor.extractSearcherMetrics(parsedMetrics, coreLabels);
+
+            core['sizeInBytes'] = size;
+            core['size'] = bytesToSize(size);
+            indexSizeTotal = indexSizeTotal + size;
+            indexSizeMax = size > indexSizeMax ? size : indexSizeMax;
+
+            var numDocs = searcherMetrics.numDocs || 0;
+            core['numDocs'] = numDocs;
+            core['numDocsHuman'] = numDocsHuman(numDocs);
+            core['avgSizePerDoc'] = bytesToSize(numDocs === 0 ? 0 : size / numDocs);
+
+            var deletedDocs = searcherMetrics.deletedDocs || 0;
+            core['deletedDocs'] = deletedDocs;
+            core['deletedDocsHuman'] = numDocsHuman(deletedDocs);
+
+            var warmupTime = searcherMetrics.warmupTime || 0;
+            core['warmupTime'] = warmupTime;
+
+            docsTotal += core['numDocs'];
+          }
+
+          for (var coreId in cores) {
+            var core = cores[coreId];
+            var graphObj = {};
+            graphObj['label'] = core['label'];
+            graphObj['size'] = core['sizeInBytes'];
+            graphObj['sizeHuman'] = core['size'];
+            graphObj['pct'] = indexSizeMax > 0 ? (core['sizeInBytes'] / indexSizeMax) * 100 : 0;
+            graphData.push(graphObj);
+          }
+
+          // Note: cores is an object (key-value pairs), not an array, so we cannot sort it directly.
+          // The sorting is handled separately for graphData which is an array.
+
+          graphData.sort(function (a, b) {
+            return b.size - a.size
+          });
+
+          nodes[node]['graphData'] = graphData;
+          nodes[node]['numDocs'] = numDocsHuman(docsTotal);
+          nodes[node]['sizeInBytes'] = indexSizeTotal;
+          nodes[node]['size'] = bytesToSize(indexSizeTotal);
+          nodes[node]['sizePerDoc'] = docsTotal === 0 ? '0b' : bytesToSize(indexSizeTotal / docsTotal);
+
+          // Build the d3 powered bar chart
+          $('#chart' + nodes[node]['id']).empty();
+          var chart = d3.select('#chart' + nodes[node]['id']).append('div').attr('class', 'chart');
+
+          // Add one div per bar which will group together both labels and bars
+          var g = chart.selectAll('div')
+              .data(nodes[node]['graphData']).enter()
+              .append('div');
+
+          // Add the bars
+          var bars = g.append("div")
+              .attr("class", "rect")
+              .text(function (d) {
+                return d.label + ':\u00A0\u00A0' + d.sizeHuman;
+              });
+
+          // Execute the transition to show the bars
+          bars.transition()
+              .ease('elastic')
+              .style('width', function (d) {
+                return d.pct + '%';
+              });
+      }
+    });
     $scope.nodes = nodes;
     $scope.hosts = hosts;
     $scope.live_nodes = live_nodes;
@@ -514,6 +575,62 @@ var nodesSubController = function($scope, Collections, System, Metrics) {
     $scope.filteredNodes = filteredNodes;
     $scope.filteredHosts = filteredHosts;
   };
+
+  /**
+   * Merge multiple Prometheus metrics objects into a single object.
+   * Each result has {node: nodeName, metrics: {...}}
+   * Merging combines all samples from all sources under the same metric names,
+   * and adds a 'node' label to each sample to track which node it came from.
+   *
+   * @param {Array} resultsArray - Array of {node, metrics} objects
+   * @returns {Object} Merged metrics object
+   */
+  function mergePrometheusMetrics(resultsArray) {
+    var merged = {};
+
+    resultsArray.forEach(function(result) {
+      if (!result || !result.metrics) return;
+
+      var nodeName = result.node;
+      var metrics = result.metrics;
+
+      for (var metricName in metrics) {
+        if (!metrics.hasOwnProperty(metricName)) continue;
+
+        var metric = metrics[metricName];
+
+        if (!merged[metricName]) {
+          // First time seeing this metric - initialize
+          merged[metricName] = {
+            type: metric.type,
+            help: metric.help,
+            samples: []
+          };
+        }
+
+        // Add all samples from this metric, injecting the node label
+        if (metric.samples && Array.isArray(metric.samples)) {
+          metric.samples.forEach(function(sample) {
+            // Create a copy of the sample with the node label added
+            var sampleWithNode = {
+              metricName: sample.metricName,
+              labels: Object.assign({}, sample.labels || {}, {node: nodeName}),
+              value: sample.value,
+              metricSuffix: sample.metricSuffix
+            };
+            if (sample.timestamp !== undefined) {
+              sampleWithNode.timestamp = sample.timestamp;
+            }
+            merged[metricName].samples.push(sampleWithNode);
+          });
+        }
+      }
+    });
+
+    return merged;
+  }
+
+  // Initialize cluster state
   $scope.initClusterState();
 };
 
@@ -525,7 +642,7 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.tree = {};
     $scope.showData = false;
     $scope.showDetails = false;
-    
+
     $scope.toggleDetails = function() {
       $scope.showDetails = !$scope.showDetails === true;
     };
@@ -535,8 +652,8 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
         $scope.zkState = data.zkStatus;
         $scope.mainKeys = ["ok", "clientPort", "secureClientPort", "zk_server_state", "zk_version",
           "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
-        $scope.detailKeys = ["dataDir", "dataLogDir", 
-          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
+        $scope.detailKeys = ["dataDir", "dataLogDir",
+          "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count",
           "zk_packets_sent", "zk_packets_received",
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
         $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort", "role"];
@@ -597,7 +714,7 @@ var treeSubController = function($scope, Zookeeper) {
 
 /**
  * Translates seconds into human readable format of seconds, minutes, hours, days, and years
- * 
+ *
  * @param  {number} seconds The number of seconds to be processed
  * @return {string}         The phrase describing the amount of time
  */
