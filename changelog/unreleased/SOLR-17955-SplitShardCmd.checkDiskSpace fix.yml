@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: OTEL metrics: SplitShardCmd.checkDiskSpace needs conversion
+type: fixed
+authors:
+  - name: Matthew Biscocho
+  - name: David Smiley
+links:
+  - name: SOLR-17955
+    url: https://issues.apache.org/jira/browse/SOLR-17955
