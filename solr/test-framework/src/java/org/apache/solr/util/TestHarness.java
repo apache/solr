@@ -180,7 +180,7 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
+                    System.getProperty("solr.host.advertise"), Integer.getInteger("hostPort", 8983))
                 .setZkClientTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT)
                 .setZkHost(System.getProperty("zkHost"))
                 .build();

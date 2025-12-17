@@ -137,6 +137,10 @@ Solr now lets you access models encoded in ONNX format, commonly sourced from Hu
 The DocumentCategorizerUpdateProcessorFactorythat lets you perform sentiment and other classification tasks on fields.
 It is available as part of the `analysis-extras` module.
 
+=== Vector Search Enhancements
+
+* The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
+
 === Deprecation removals
 
 * The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
@@ -213,6 +217,8 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
+* Use of `stream.file`, `stream.url`, and `stream.body` params in http requests have been removed.
+
 === Upgrade to Jetty 12.x and Jakarta namespace
 
 Solr upgraded to Jetty 12.x from 10.x as Jetty 10 and 11 have reached end-of-life support. Jetty 12.x requires Java 17 or newer and is fully compatible with Solr's new minimum requirement of Java 21. This upgrade brings support for modern HTTP protocols and adopts the Jakarta EE 10 namespace. For more details, see https://webtide.com/jetty-12-has-arrived/.
@@ -271,3 +277,9 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
   </analyzer>
 </fieldType>
 ----
+
+=== Renaming in Vector Search
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.
