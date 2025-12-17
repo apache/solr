@@ -20,6 +20,7 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -86,12 +87,14 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
 
     private boolean processDocChildren(SolrInputDocument doc, String fullPath) {
       boolean isNested = false;
+      List<String> originalVectorFieldsToRemove = new ArrayList<>();
+      ArrayList<SolrInputDocument> vectors = new ArrayList<>();
       for (SolrInputField field : doc.values()) {
-        SchemaField sfield = schema.getField(field.getName());
+        SchemaField sfield = schema.getFieldOrNull(field.getName());
         int childNum = 0;
         boolean isSingleVal = !(field.getValue() instanceof Collection);
-        if (fullPath == null && isMultiValuedVectorField(sfield)) {
-          ArrayList<SolrInputDocument> vectors = new ArrayList<>(field.getValueCount());
+        boolean firstLevelChildren = fullPath == null;
+        if (firstLevelChildren && sfield!= null && isMultiValuedVectorField(sfield)) {
           for (Object vectorValue : field.getValues()) {
             SolrInputDocument singleVectorNestedDoc = new SolrInputDocument();
             singleVectorNestedDoc.setField(field.getName(), vectorValue);
@@ -104,7 +107,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
               isNested = true;
             }
             final String lastKeyPath = PATH_SEP_CHAR + field.getName() + NUM_SEP_CHAR + sChildNum;
-            final String childDocPath = fullPath == null ? lastKeyPath : fullPath + lastKeyPath;
+            final String childDocPath = firstLevelChildren ? lastKeyPath : fullPath + lastKeyPath;
             if (storePath) {
               setPathField(singleVectorNestedDoc, childDocPath);
             }
@@ -114,7 +117,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
             ++childNum;
             vectors.add(singleVectorNestedDoc);
           }
-          doc.setField(field.getName(), vectors);
+          originalVectorFieldsToRemove.add(field.getName());
         } else {
           for (Object val : field) {
             if (!(val instanceof SolrInputDocument cDoc)) {
@@ -143,13 +146,23 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
             }
             final String lastKeyPath = PATH_SEP_CHAR + fieldName + NUM_SEP_CHAR + sChildNum;
             // concat of all paths children.grandChild => /children#1/grandChild#
-            final String childDocPath = fullPath == null ? lastKeyPath : fullPath + lastKeyPath;
+            final String childDocPath = firstLevelChildren ? lastKeyPath : fullPath + lastKeyPath;
             processChildDoc(cDoc, doc, childDocPath);
             ++childNum;
           }
         }
       }
+      this.cleanOriginalVectorFields(doc, originalVectorFieldsToRemove);
+      if(vectors.size() > 0) {
+        doc.setField("vectors", vectors);
+      }
       return isNested;
+    }
+
+    private void cleanOriginalVectorFields(SolrInputDocument doc, List<String> originalVectorFieldsToRemove) {
+      for(String fieldName : originalVectorFieldsToRemove) {
+        doc.removeField(fieldName);
+      }
     }
 
     private static boolean isMultiValuedVectorField(SchemaField sfield) {
@@ -157,14 +170,14 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
     }
 
     private void processChildDoc(
-        SolrInputDocument sdoc, SolrInputDocument parent, String fullPath) {
+        SolrInputDocument child, SolrInputDocument parent, String fullPath) {
       if (storePath) {
-        setPathField(sdoc, fullPath);
+        setPathField(child, fullPath);
       }
       if (storeParent) {
-        setParentKey(sdoc, parent);
+        setParentKey(child, parent);
       }
-      processDocChildren(sdoc, fullPath);
+      processDocChildren(child, fullPath);
     }
 
     private String generateChildUniqueId(String parentId, String childKey, String childNum) {
@@ -172,12 +185,12 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       return parentId + PATH_SEP_CHAR + childKey + NUM_SEP_CHAR + childNum;
     }
 
-    private void setParentKey(SolrInputDocument sdoc, SolrInputDocument parent) {
-      sdoc.setField(IndexSchema.NEST_PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
+    private void setParentKey(SolrInputDocument child, SolrInputDocument parent) {
+      child.setField(IndexSchema.NEST_PARENT_FIELD_NAME, parent.getFieldValue(uniqueKeyFieldName));
     }
 
-    private void setPathField(SolrInputDocument sdoc, String fullPath) {
-      sdoc.setField(IndexSchema.NEST_PATH_FIELD_NAME, fullPath);
+    private void setPathField(SolrInputDocument child, String fullPath) {
+      child.setField(IndexSchema.NEST_PATH_FIELD_NAME, fullPath);
     }
   }
 }

@@ -52,7 +52,7 @@ import org.apache.solr.search.SolrReturnFields;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ChildDocTransformer extends DocTransformer {
+class ChildDocTransformer extends DocTransformer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String ANON_CHILD_KEY = "_childDocuments_";
