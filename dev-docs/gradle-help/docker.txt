@@ -26,6 +26,20 @@ Solr Distribution: (Either Full or Slim, the solr binary distribution to build t
    EnvVar: SOLR_DOCKER_DIST
    Gradle Property: -Psolr.docker.dist
 
+Docker Architectures: (Comma-separated list of target platforms)
+   Default: None (builds for current architecture only)
+   EnvVar: SOLR_DOCKER_ARCH
+   Gradle Property: -Psolr.docker.arch
+   Examples:
+     - "linux/amd64" (single architecture - can be used with dockerBuild)
+     - "linux/arm64,linux/amd64" (multi-architecture - only supported by dockerPush)
+
+   Note: Multi-architecture builds (multiple platforms) require Docker Buildx and are ONLY supported
+   by the dockerPush task. The dockerBuild task does not support multi-architecture builds because
+   Docker cannot load multi-platform images into the local daemon. Use dockerPush to build and push
+   multi-architecture images in a single step. You may need QEMU installed to run multi-architecture
+   builds.
+
 Tagging and Pushing
 -------
 
@@ -60,6 +74,40 @@ Docker Image Name: (Use this to explicitly set a whole image name. If given, the
    Default: {image_repo}/{image_tag}{image_tag_suffix} (all options provided above, with defaults)
    EnvVar: SOLR_DOCKER_IMAGE_NAME
    Gradle Property: -Psolr.docker.imageName
+
+Multi-Architecture Builds
+-------
+
+To build a multi-architecture Docker image, use the SOLR_DOCKER_ARCH environment variable or Gradle property.
+
+IMPORTANT: Multi-architecture builds (with multiple platforms) are ONLY supported by dockerPush, not dockerBuild.
+This is because Docker cannot load multi-platform images into the local daemon.
+
+Prerequisites:
+   - Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine versions)
+   - A buildx builder must be configured. If you don't have one, create it:
+     docker buildx create --name solr-builder --use
+   - For cross-platform builds, QEMU may be required:
+     docker run --privileged --rm tonistiigi/binfmt --install all
+
+Build and push for multiple architectures:
+   SOLR_DOCKER_ARCH=linux/arm64,linux/amd64 gradlew dockerPush
+
+Using Gradle property:
+   gradlew dockerPush -Psolr.docker.arch=linux/arm64,linux/amd64
+
+The dockerPush task will build and push the multi-architecture image in a single step using Docker Buildx.
+The task will validate that a suitable builder exists and that it supports all requested platforms before building.
+
+Single-Architecture Builds with Explicit Platform
+--------------------------------------------------
+
+You can build for a specific architecture and load it into your local Docker daemon:
+
+Build for a specific architecture:
+   SOLR_DOCKER_ARCH=linux/arm64 gradlew dockerBuild
+
+This uses Docker Buildx with --load to make the image available locally for testing.
 
 Testing
 -------
