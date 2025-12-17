@@ -213,7 +213,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
-* The deprecated 'solrcore.properties` configuration method has been removed.  The ability to configure a core via properties file via the `core.proprties` "property" setting remains.
+* The deprecated 'solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.proprties` "property" setting remains.
 
 === Security
 
