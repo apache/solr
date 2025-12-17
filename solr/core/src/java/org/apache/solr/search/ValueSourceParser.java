@@ -81,6 +81,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.CurrencyFieldType;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.LateInteractionVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.schema.TextField;
@@ -1359,6 +1360,34 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         });
 
     addParser("childfield", new ChildFieldValueSourceParser());
+
+    // nocommit: Better name?
+    addParser(
+        "lateVector",
+        new ValueSourceParser() {
+
+          @Override
+          public ValueSource parse(final FunctionQParser fp) throws SyntaxError {
+
+            final String fieldName = fp.parseArg();
+            final String vecStr = fp.parseArg();
+            if (null == fieldName || null == vecStr || fp.hasMoreArguments()) {
+              throw new SolrException(
+                  SolrException.ErrorCode.BAD_REQUEST,
+                  "Invalid number of arguments. Please provide both a field name, and a (String) multi-vector.");
+            }
+            final SchemaField sf = fp.getReq().getSchema().getField(fieldName);
+            if (sf.getType() instanceof LateInteractionVectorField) {
+              return ValueSource.fromDoubleValuesSource(
+                  ((LateInteractionVectorField) sf.getType())
+                      .getMultiVecSimilarityValueSource(sf, vecStr));
+            }
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Field name is not defined in schema as a LateInteractionVectorField: "
+                    + fieldName);
+          }
+        });
   }
 
   ///////////////////////////////////////////////////////////////////////////////
