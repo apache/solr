@@ -42,16 +42,16 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
@@ -579,7 +579,7 @@ public class TestPackages extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testAPI() throws Exception {
-    String errPath = "/error/details[0]/errorMessages[0]";
+    String errPath = "/details[0]/errorMessages[0]";
     String FILE1 = "/mypkg/v.0.12/jar_a.jar";
     String FILE2 = "/mypkg/v.0.12/jar_b.jar";
     String FILE3 = "/mypkg/v.0.13/jar_a.jar";
@@ -877,8 +877,11 @@ public class TestPackages extends SolrCloudTestCase {
     try {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
-    } catch (RemoteExecutionException e) {
-      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
+    } catch (RemoteSolrException e) {
+      String msg =
+          Objects.requireNonNullElse(
+                  Utils.getObjectByPath(e.getRemoteErrorObject(), false, errPath), "")
+              .toString();
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,
           msg.contains(expectErrorMsg));

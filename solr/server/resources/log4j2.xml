@@ -63,7 +63,7 @@
   </Appenders>
   <Loggers>
     <!-- Use <AsyncLogger/<AsyncRoot and <Logger/<Root for asynchronous logging or synchronous logging respectively -->
-    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
+    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="info"/>
     <AsyncLogger name="org.apache.zookeeper" level="warn"/>
     <!-- HttpSolrCall adds markers denoting the handler class to allow fine grained control, metrics are
          very noisy so by default the metrics handler is turned off to see metrics logging set DENY to ACCEPT -->

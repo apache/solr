@@ -181,13 +181,8 @@ public class SolrIndexConfig implements MapSerializable {
     }
 
     if (get("infoStream").boolVal(false)) {
-      if (get("infoStream").attr("file") == null) {
-        log.info("IndexWriter infoStream solr logging is enabled");
-        infoStream = new LoggingInfoStream();
-      } else {
-        throw new IllegalArgumentException(
-            "Remove @file from <infoStream> to output messages to solr's logfile");
-      }
+      log.info("IndexWriter infoStream solr logging is enabled");
+      infoStream = new LoggingInfoStream();
     }
     mergedSegmentWarmerInfo =
         getPluginInfo(get("mergedSegmentWarmer"), def.mergedSegmentWarmerInfo);

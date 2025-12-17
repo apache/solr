@@ -624,19 +624,18 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   /** Returns the distributed QueryResponse */
   protected QueryResponse query(boolean setDistribParams, SolrParams p) throws Exception {
+    if (p.get("distrib") != null) {
+      throw new IllegalArgumentException("don't pass distrib param");
+    }
 
-    final ModifiableSolrParams params = new ModifiableSolrParams(p);
-
-    // TODO: look into why passing true causes fails
-    params.set("distrib", "false");
-    final QueryResponse controlRsp = controlClient.query(params);
+    final QueryResponse controlRsp = controlClient.query(p);
     validateControlData(controlRsp);
 
     if (shardCount == 0) { // mostly for temp debugging
       return controlRsp;
     }
 
-    params.remove("distrib");
+    final ModifiableSolrParams params = new ModifiableSolrParams(p);
     if (setDistribParams) setDistributedParams(params);
 
     QueryResponse rsp = queryRandomShard(params);
@@ -983,7 +982,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
   protected void compareResponses(QueryResponse a, QueryResponse b) {
     if (System.getProperty("remove.version.field") != null) {
-      // we don't care if one has a version and the other doesnt -
+      // we don't care if one has a version and the other doesn't -
       // control vs distrib
       // TODO: this should prob be done by adding an ignore on _version_ rather than mutating the
       // responses?
