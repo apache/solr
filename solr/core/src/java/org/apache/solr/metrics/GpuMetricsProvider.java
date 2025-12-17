@@ -14,29 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.metrics;
 
-apply plugin: 'java-library'
+import java.util.Map;
 
-description = 'cuVS plugin'
+public interface GpuMetricsProvider extends SolrMetricProducer {
 
-dependencies {
-  implementation(libs.cuvs.lucene) {
-    changing = true
-  }
-  implementation libs.cuvs.java
-  implementation libs.opentelemetry.api
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation libs.apache.lucene.core
-  implementation libs.apache.lucene.backward.codecs
-  implementation libs.slf4j.api
+  long getGpuCount();
 
-  testImplementation project(':solr:test-framework')
-  testImplementation libs.apache.lucene.testframework
-  testImplementation libs.junit.junit
-  testImplementation libs.commonsio.commonsio
+  long getGpuMemoryTotal();
 
-  // lucene-backward-codecs is a transitive dependency from cuvs-lucene but required in lockfile
-  permitUnusedDeclared libs.apache.lucene.backward.codecs
+  long getGpuMemoryUsed();
+
+  long getGpuMemoryFree();
+
+  Map<String, Object> getGpuDevices();
 }
-

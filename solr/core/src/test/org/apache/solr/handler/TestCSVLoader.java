@@ -79,8 +79,6 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   void loadLocal(String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
 
-    // TODO: stop using locally defined streams once stream.file and
-    // stream.body work everywhere
     List<ContentStream> cs = new ArrayList<>(1);
     ContentStreamBase f = new ContentStreamBase.FileStream(Path.of(filename));
     f.setContentType("text/csv");

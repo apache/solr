@@ -26,25 +26,14 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.servlet.SolrRequestParsers.FormDataRequestParser;
 import org.apache.solr.servlet.SolrRequestParsers.MultipartRequestParser;
@@ -74,112 +63,6 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     parser = null;
-  }
-
-  @Test
-  public void testStreamBody() throws Exception {
-    String body1 = "AMANAPLANPANAMA";
-    String body2 = "qwertasdfgzxcvb";
-    String body3 = "1234567890";
-
-    SolrCore core = h.getCore();
-
-    Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_BODY, new String[] {body1});
-
-    // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<>();
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(1, streams.size());
-      assertEquals(body1, StrUtils.stringFromReader(streams.get(0).getReader()));
-    }
-
-    // Now add three and make sure they come out ok
-    streams = new ArrayList<>();
-    args.put(CommonParams.STREAM_BODY, new String[] {body1, body2, body3});
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(3, streams.size());
-      ArrayList<String> input = new ArrayList<>();
-      ArrayList<String> output = new ArrayList<>();
-      input.add(body1);
-      input.add(body2);
-      input.add(body3);
-      for (ContentStream cs : streams) {
-        output.add(StrUtils.stringFromReader(cs.getReader()));
-      }
-      // sort them so the output is consistent
-      Collections.sort(input);
-      Collections.sort(output);
-      assertEquals(input.toString(), output.toString());
-    }
-
-    // set the contentType and make sure that it gets set
-    String ctype = "text/xxx";
-    streams = new ArrayList<>();
-    args.put(CommonParams.STREAM_CONTENTTYPE, new String[] {ctype});
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      for (ContentStream s : streams) {
-        assertEquals(ctype, s.getContentType());
-      }
-    }
-  }
-
-  @Test
-  @SuppressWarnings({"try"})
-  public void testStreamURL() throws Exception {
-    URL url = getClass().getResource("/README");
-    assertNotNull("Missing file 'README' in test-resources root folder.", url);
-
-    final byte[] bytes;
-    try (InputStream inputStream = url.openStream()) {
-      bytes = inputStream.readAllBytes();
-    }
-
-    SolrCore core = h.getCore();
-
-    Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_URL, new String[] {url.toExternalForm()});
-
-    // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<>();
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(1, streams.size());
-      try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, in.readAllBytes());
-      }
-    }
-  }
-
-  @Test
-  @SuppressWarnings({"try"})
-  public void testStreamFile() throws Exception {
-    Path file = getFile("README");
-
-    byte[] bytes = Files.readAllBytes(file);
-
-    SolrCore core = h.getCore();
-
-    Map<String, String[]> args = new HashMap<>();
-    args.put(CommonParams.STREAM_FILE, new String[] {file.toAbsolutePath().toString()});
-
-    // Make sure it got a single stream in and out ok
-    List<ContentStream> streams = new ArrayList<>();
-    try (SolrQueryRequest req =
-        parser.buildRequestFrom(core, new MultiMapSolrParams(args), streams)) {
-      assertNotNull(req);
-      assertEquals(1, streams.size());
-      try (InputStream in = streams.get(0).getStream()) {
-        assertArrayEquals(bytes, in.readAllBytes());
-      }
-    }
   }
 
   @Test
