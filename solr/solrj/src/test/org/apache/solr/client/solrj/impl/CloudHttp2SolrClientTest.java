@@ -264,7 +264,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     String collectionName = "HTTPCSPTEST";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
-        .process(getRandomClient());
+        .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, 2, 2);
 
     try (LogListener adminLogs = LogListener.info(HttpSolrCall.class).substring("[admin]");
@@ -305,7 +305,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
 
     // Clean up the collection to allow test iterations to succeed
-    CollectionAdminRequest.deleteCollection(collectionName).process(getRandomClient());
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
