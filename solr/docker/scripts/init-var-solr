@@ -59,5 +59,8 @@ fi
 if [ ! -f "$DIR/log4j2.xml" ]; then
     #echo "Copying log4j2.xml"
     cp -a /opt/solr/server/resources/log4j2.xml "$DIR/log4j2.xml"
+else
+    # Making sure sysprop name is upgraded from solr.log.dir to solr.logs.dir
+    sed -i 's/solr\.log\.dir/solr.logs.dir/g' "$DIR/log4j2.xml"
 fi
 
