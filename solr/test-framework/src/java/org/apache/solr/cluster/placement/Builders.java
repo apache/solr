@@ -239,6 +239,15 @@ public class Builders {
       this.collectionName = collectionName;
     }
 
+    public CollectionBuilder addCustomProperty(String name, String value) {
+      customProperties.put(name, value);
+      return this;
+    }
+
+    public CollectionMetricsBuilder getCollectionMetricsBuilder() {
+      return collectionMetricsBuilder;
+    }
+
     /**
      * @return The internal shards data structure to allow test code to modify the replica
      *     distribution to nodes.
@@ -316,9 +325,8 @@ public class Builders {
           replicas.add(replicaBuilder);
 
           // No way to specify which replica is the leader. Could be done by adding a "*" to the
-          // replica definition for example in the passed in shardsReplicas but not implementing
-          // this
-          // until it is needed :)
+          // replica definition for example in the provided shardsReplicas, but not implementing
+          // this until it is needed :)
           if (leader == null && type != Replica.ReplicaType.PULL) {
             leader = replicaBuilder;
           }
@@ -493,6 +501,10 @@ public class Builders {
       return shardName;
     }
 
+    public List<ReplicaBuilder> getReplicaBuilders() {
+      return replicaBuilders;
+    }
+
     public ShardBuilder setReplicaBuilders(List<ReplicaBuilder> replicaBuilders) {
       this.replicaBuilders = replicaBuilders;
       return this;
@@ -561,6 +573,14 @@ public class Builders {
       return this;
     }
 
+    public ReplicaBuilder setReplicaMetric(ReplicaMetric<?> metric, Object value) {
+      if (metrics == null) {
+        metrics = new HashMap<>();
+      }
+      metrics.put(metric, metric.convert(value));
+      return this;
+    }
+
     public Replica build(Shard shard) {
       return new ClusterAbstractionsForTest.ReplicaImpl(
           replicaName, coreName, shard, replicaType, replicaState, replicaNode.build());
@@ -601,6 +621,14 @@ public class Builders {
       }
       String name = AttributeFetcherImpl.getSystemPropertySnitchTag(key);
       sysprops.put(name, value);
+      return this;
+    }
+
+    public NodeBuilder setMetric(NodeMetric<?> metric, Object value) {
+      if (metrics == null) {
+        metrics = new HashMap<>();
+      }
+      metrics.put(metric, metric.convert(value));
       return this;
     }
 

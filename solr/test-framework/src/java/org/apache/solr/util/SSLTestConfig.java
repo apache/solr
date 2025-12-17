@@ -61,6 +61,11 @@ public class SSLTestConfig {
   private final boolean useSsl;
   private final boolean clientAuth;
 
+  /** Creates an SSLTestConfig that does not use SSL or client authentication */
+  public SSLTestConfig() {
+    this(false, false);
+  }
+
   /**
    * Create an SSLTestConfig based on a few caller specified options, implicitly assuming <code>
    * checkPeerName=false</code>.

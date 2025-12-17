@@ -196,6 +196,17 @@ public final class SolrMetricTestUtils {
             .build());
   }
 
+  public static CounterSnapshot.CounterDataPointSnapshot newStandaloneUpdateRequestsDatapoint(
+      SolrCore core) {
+    return SolrMetricTestUtils.getCounterDatapoint(
+        core,
+        "solr_core_requests",
+        SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
+            .label("handler", "/update")
+            .label("category", "UPDATE")
+            .build());
+  }
+
   public static CounterSnapshot.CounterDataPointSnapshot newCloudUpdateRequestsDatapoint(
       SolrCore core) {
     return SolrMetricTestUtils.getCounterDatapoint(
