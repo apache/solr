@@ -80,9 +80,12 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
       expectLine("ID: " + i + "; Name: Fitbit Model " + i);
     }
 
+    // spotless:off
     // tag::cursormark-query[]
     SolrQuery q =
-        (new SolrQuery("*:*")).setRows(BATCH_SIZE).setSort(SolrQuery.SortClause.asc("id"));
+        new SolrQuery("*:*")
+            .setRows(BATCH_SIZE)
+            .setSort(SolrQuery.SortClause.asc("id"));
     String cursorMark = CursorMarkParams.CURSOR_MARK_START;
     boolean done = false;
 
@@ -104,6 +107,7 @@ public class PaginationRefGuideExamplesTest extends SolrCloudTestCase {
       cursorMark = nextCursorMark;
     }
     // end::cursormark-query[]
+    // spotless:on
   }
 
   private void indexSampleData() throws Exception {
