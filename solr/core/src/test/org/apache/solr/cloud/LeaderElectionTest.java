@@ -586,7 +586,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
       RetryUtil.retryOnException(
           Exception.class,
           60000, // 60 seconds total timeout
-          100,   // 100ms between retries
+          100, // 100ms between retries
           () -> {
             int seq = threads.get(getLeaderThread()).getSeq();
             log.info("Leader election stress test completed, leader seq: {}", seq);
