@@ -34,8 +34,8 @@ def dockerImageRepo = "${ -> propertyOrEnvOrDefault("solr.docker.imageRepo", "SO
 def dockerImageTag = "${ -> propertyOrEnvOrDefault("solr.docker.imageTag", "SOLR_DOCKER_IMAGE_TAG", project.version + dockerImageDistSuffix) }"
 def dockerImageName = "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}:${dockerImageTag}${dockerImageTagSuffix}") }"
 def baseDockerImage = "${ -> propertyOrEnvOrDefault("solr.docker.baseImage", "SOLR_DOCKER_BASE_IMAGE", 'eclipse-temurin:' + javaVersion + '-jre-noble') }"
-def dockerImageArch = "${ -> propertyOrEnvOrDefault("solr.docker.arch", "SOLR_DOCKER_ARCH", '') }"
-def isMultiArch = { -> !dockerImageArch.isEmpty() && dockerImageArch.contains(',') }
+def dockerImagePlatforms = "${ -> propertyOrEnvOrDefault("solr.docker.platform", "SOLR_DOCKER_PLATFORM", '') }"
+def isMultiPlatform = { -> !dockerImagePlatforms.isEmpty() && dockerImagePlatforms.contains(',') }
 def officialDockerImageName = {String dist -> "${ -> propertyOrEnvOrDefault("solr.docker.imageName", "SOLR_DOCKER_IMAGE_NAME", "${dockerImageRepo}-official:${dockerImageTag}${distToSuffix(dist)}${dockerImageTagSuffix}") }" }
 
 def releaseGpgFingerprint = "${ -> propertyOrDefault('signing.gnupg.keyName',propertyOrDefault('signing.keyId','')) }"
@@ -187,34 +187,34 @@ task dockerBuild() {
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
           baseDockerImage: baseDockerImage,
-          dockerImageArch: dockerImageArch
+          dockerImagePlatforms: dockerImagePlatforms
   ])
   var solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
   inputs.files(solrTgzConfiguration)
   inputs.property("isSlimImage", isImageSlim())
-  inputs.property("isMultiArch", isMultiArch())
+  inputs.property("isMultiPlatform", isMultiPlatform())
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    def archValue = inputs.properties.dockerImageArch
-    def useSingleArch = !archValue.isEmpty() && !archValue.contains(',')
+    def platformValue = inputs.properties.dockerImagePlatforms
+    def useSinglePlatform = !platformValue.isEmpty() && !platformValue.contains(',')
 
-    // Multi-arch builds are not supported by dockerBuild, only by dockerPush
-    if (!archValue.isEmpty() && archValue.contains(',')) {
-      throw new GradleException("Multi-architecture builds (SOLR_DOCKER_ARCH with multiple platforms) are not supported by dockerBuild.\n" +
-              "Please use 'dockerPush' instead, which will build and push the multi-architecture image in a single step.\n" +
-              "Example: SOLR_DOCKER_ARCH=linux/arm64,linux/amd64 gradlew dockerPush")
+    // Multi-platform builds are not supported by dockerBuild, only by dockerPush
+    if (isMultiPlatform()) {
+      throw new GradleException("Multi-platform builds (SOLR_DOCKER_PLATFORM with multiple platforms) are not supported by dockerBuild.\n" +
+              "Please use 'dockerPush' instead, which will build and push the multi-platform image in a single step.\n" +
+              "Example: SOLR_DOCKER_PLATFORM=linux/arm64,linux/amd64 ./gradlew dockerPush")
     }
 
-    if (useSingleArch) {
-      // Single-arch build with explicit platform using buildx
+    if (useSinglePlatform) {
+      // Single-platform build with explicit platform using buildx
       validateBuildxBuilder()
 
       exec {
         standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
         commandLine "docker", "buildx", "build",
                 "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
-                "--platform", archValue,
+                "--platform", platformValue,
                 "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
                 "--iidfile", imageIdFile,
                 "--load",
@@ -241,8 +241,8 @@ task dockerBuild() {
     project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
     project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
     project.logger.lifecycle("\tSolr Distribution: \t${isImageSlim() ? "Slim" : "Full"}")
-    if (!dockerImageArch.isEmpty()) {
-      project.logger.lifecycle("\tArchitectures: \t${ -> dockerImageArch }")
+    if (!dockerImagePlatforms.isEmpty()) {
+      project.logger.lifecycle("\tPlatforms: \t${ -> dockerImagePlatforms }")
     }
   }
 
@@ -294,7 +294,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   // Ensure that the docker image is re-pushed if the image ID or tag changes
   inputs.properties([
           dockerImageName: dockerImageName,
-          dockerImageArch: dockerImageArch
+          dockerImagePlatforms: dockerImagePlatforms
   ])
   inputs.file(imageIdFile)
 
@@ -302,32 +302,34 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   mustRunAfter tasks.testDocker
 
   doLast {
-    def archValue = inputs.properties.dockerImageArch
-    def useMultiArch = !archValue.isEmpty()
+    def platformValue = inputs.properties.dockerImagePlatforms
 
-    if (useMultiArch && isMultiArch()) {
-      // Multi-arch push requires buildx and rebuilding with --push
+    if (isMultiPlatform()) {
+      // Multi-platform push requires buildx and rebuilding with --push
 
       // Get builder info and validate it exists
       def builderInfo = getBuildxBuilderInfo()
 
       // Verify the builder supports the requested platforms (fail fast)
-      def requestedPlatforms = archValue.split(',').collect { it.trim() }
+      def requestedPlatforms = platformValue.split(',').collect { it.trim() }
       def missingPlatforms = []
       requestedPlatforms.each { platform ->
-        // Check for exact platform match in the builder info
-        // Match pattern like "linux/amd64" or "linux/amd64," or "linux/amd64 " to avoid partial matches
-        if (!builderInfo.matches("(?s).*\\b" + java.util.regex.Pattern.quote(platform) + "\\b.*")) {
+        // Check for exact platform match - use delimiters instead of word boundaries
+        // Match platform at start/end or surrounded by commas/spaces
+        def platformPattern = "(?:^|[,\\s])" + java.util.regex.Pattern.quote(platform) + "(?:[,\\s]|\$)"
+        if (!(builderInfo =~ platformPattern).find()) {
           missingPlatforms.add(platform)
         }
       }
 
       if (!missingPlatforms.isEmpty()) {
+        // Extract supported platforms from builder info using matcher
+        def supportedPlatforms = (builderInfo =~ /linux\/\w+(?:\/\w+)?/).collect().join(', ')
         throw new GradleException("Current builder does not support all requested platforms: ${missingPlatforms}\n" +
-                "Supported platforms: ${builderInfo.findAll(/linux\/\w+(?:\/\w+)?/).join(', ')}\n" +
+                "Supported platforms: ${supportedPlatforms}\n" +
                 "To add platform support, create a builder with QEMU:\n" +
                 "  docker run --privileged --rm tonistiigi/binfmt --install all\n" +
-                "  docker buildx create --name solr-builder --use --platform ${archValue}")
+                "  docker buildx create --name solr-builder --use --platform ${platformValue}")
       }
 
       def solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
@@ -335,16 +337,16 @@ task dockerPush(dependsOn: tasks.dockerTag) {
         standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
         commandLine "docker", "buildx", "build",
                 "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
-                "--platform", archValue,
+                "--platform", platformValue,
                 "--build-arg", "BASE_IMAGE=${ -> baseDockerImage}",
                 "--tag", dockerImageName,
                 "--push",
                 "-"
       }
-      project.logger.lifecycle("Solr Docker Multi-Arch Image Pushed: \t$dockerImageName")
-      project.logger.lifecycle("\tArchitectures: \t$archValue")
+      project.logger.lifecycle("Solr Docker Multi-Platform Image Pushed: \t$dockerImageName")
+      project.logger.lifecycle("\tPlatforms: \t$platformValue")
     } else {
-      // Standard push for single-arch images
+      // Standard push (works for both standard builds and single-platform buildx builds)
       exec {
         commandLine "docker", "push", dockerImageName
       }

@@ -26,18 +26,18 @@ Solr Distribution: (Either Full or Slim, the solr binary distribution to build t
    EnvVar: SOLR_DOCKER_DIST
    Gradle Property: -Psolr.docker.dist
 
-Docker Architectures: (Comma-separated list of target platforms)
+Docker Platforms: (Comma-separated list of target platforms)
    Default: None (builds for current architecture only)
-   EnvVar: SOLR_DOCKER_ARCH
-   Gradle Property: -Psolr.docker.arch
+   EnvVar: SOLR_DOCKER_PLATFORM
+   Gradle Property: -Psolr.docker.platform
    Examples:
-     - "linux/amd64" (single architecture - can be used with dockerBuild)
-     - "linux/arm64,linux/amd64" (multi-architecture - only supported by dockerPush)
+     - "linux/amd64" (single platform - can be used with dockerBuild)
+     - "linux/arm64,linux/amd64" (multi-platform - only supported by dockerPush)
 
-   Note: Multi-architecture builds (multiple platforms) require Docker Buildx and are ONLY supported
-   by the dockerPush task. The dockerBuild task does not support multi-architecture builds because
+   Note: Multi-platform builds require Docker Buildx and are ONLY supported
+   by the dockerPush task. The dockerBuild task does not support multi-platform builds because
    Docker cannot load multi-platform images into the local daemon. Use dockerPush to build and push
-   multi-architecture images in a single step. You may need QEMU installed to run multi-architecture
+   multi-platform images in a single step. You may need QEMU installed to run multi-platform
    builds.
 
 Tagging and Pushing
@@ -46,12 +46,12 @@ Tagging and Pushing
 To tag the docker image, run the following command.
 This will also ensure that the docker image has been built as per the inputs detailed above.
 
-gradlew dockerTag
+./gradlew dockerTag
 
 And to push the image with the given tag, run the following command.
 Gradle will ensure that the docker image is built and tagged as the inputs describe before being pushed.
 
-gradlew dockerPush
+./gradlew dockerPush
 
 The docker image tag can be customized via the following options, all accepted via both Environment Variables and Gradle Properties.
 
@@ -75,35 +75,36 @@ Docker Image Name: (Use this to explicitly set a whole image name. If given, the
    EnvVar: SOLR_DOCKER_IMAGE_NAME
    Gradle Property: -Psolr.docker.imageName
 
-Multi-Architecture Builds
+Multi-Platform Builds
 -------
 
-To build a multi-architecture Docker image, use the SOLR_DOCKER_ARCH environment variable or Gradle property.
+To build a multi-platform Docker image, use the SOLR_DOCKER_PLATFORM environment variable or Gradle property.
 
-IMPORTANT: Multi-architecture builds (with multiple platforms) are ONLY supported by dockerPush, not dockerBuild.
+IMPORTANT: Multi-platform builds (with multiple platforms) are ONLY supported by dockerPush, not dockerBuild.
 This is because Docker cannot load multi-platform images into the local daemon.
 
 Prerequisites:
    - Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine versions)
    - A buildx builder must be configured. If you don't have one, create it:
      docker buildx create --name solr-builder --use
+   - For cross-platform builds, QEMU may be required
 
-Build and push for multiple architectures:
-   SOLR_DOCKER_ARCH=linux/arm64,linux/amd64 ./gradlew dockerPush
+Build and push for multiple platforms:
+   SOLR_DOCKER_PLATFORM=linux/arm64,linux/amd64 ./gradlew dockerPush
 
 Using Gradle property:
-   ./gradlew dockerPush -Psolr.docker.arch=linux/arm64,linux/amd64
+   ./gradlew dockerPush -Psolr.docker.platform=linux/arm64,linux/amd64
 
-The dockerPush task will build and push the multi-architecture image in a single step using Docker Buildx.
+The dockerPush task will build and push the multi-platform image in a single step using Docker Buildx.
 The task will validate that a suitable builder exists and that it supports all requested platforms before building.
 
-Single-Architecture Builds with Explicit Platform
+Single-Platform Builds with Explicit Platform
 --------------------------------------------------
 
-You can build for a specific architecture and load it into your local Docker daemon:
+You can build for a specific platform and load it into your local Docker daemon:
 
-Build for a specific architecture:
-   SOLR_DOCKER_ARCH=linux/arm64 gradlew dockerBuild
+Build for a specific platform:
+   SOLR_DOCKER_PLATFORM=linux/arm64 ./gradlew dockerBuild
 
 This uses Docker Buildx with --load to make the image available locally for testing.
 
@@ -113,7 +114,7 @@ Testing
 To test the docker image, run the following command.
 This will also ensure that the docker image has been built as per the inputs detailed above in the "Building" section.
 
-gradlew testDocker
+./gradlew testDocker
 
 If a docker image build parameters were used during building, then the same inputs must be used while testing.
 Otherwise a new docker image will be built for the tests to run with.

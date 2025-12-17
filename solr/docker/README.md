@@ -50,10 +50,10 @@ When building the image, Solr accepts arguments for customization. Currently onl
 docker build --build-arg BASE_IMAGE=custom/jdk:21-slim -f solr-X.Y.Z/docker/Dockerfile https://www.apache.org/dyn/closer.lua/solr/X.Y.Z/solr-X.Y.Z.tgz
 ```
 
-Multi-Architecture Builds
+Multi-Platform Builds
 ----
 
-To build multi-architecture Docker images from the binary distribution, use Docker Buildx.
+To build multi-platform Docker images from the binary distribution, use Docker Buildx.
 
 **Prerequisites**:
 - Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine)
