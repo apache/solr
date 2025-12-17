@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Merge policy to upgrade index for compatibility with future Solr version
+type: added
+authors:
+  - name: Rahul Goswami
+links:
+  - name: SOLR-17725
+    url: https://issues.apache.org/jira/browse/SOLR-17725

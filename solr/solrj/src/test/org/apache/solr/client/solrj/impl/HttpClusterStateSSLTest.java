@@ -83,19 +83,17 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
 
     // verify the http derived cluster state (on the client side) agrees with what the server stored
     try (CloudSolrClient httpBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
-            .build()) {
+        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
-      assertTrue(csp instanceof Http2ClusterStateProvider);
+      assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // http2
     try (CloudSolrClient http2BasedClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
-            .build()) {
+        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
-      assertTrue(csp instanceof Http2ClusterStateProvider);
+      assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 

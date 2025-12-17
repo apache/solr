@@ -157,12 +157,12 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
   @Override
   public String getName() {
-    return "hdfsBlockCache";
+    return "blockCache";
   }
 
   @Override
   public String getDescription() {
-    return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
+    return "Provides metrics for the BlockCache.";
   }
 
   @Override

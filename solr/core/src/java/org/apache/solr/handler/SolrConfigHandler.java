@@ -53,15 +53,15 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -495,7 +495,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
       }
 
@@ -577,7 +577,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         log.error("ERROR:{}", Utils.toJSONString(errs));
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -844,10 +844,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    var http2SolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
+    var httpSolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
     for (Replica replica : getActiveReplicas(zkController, collection)) {
       PerReplicaCallable e =
-          new PerReplicaCallable(http2SolrClient, replica, prop, expectedVersion, maxWaitSecs);
+          new PerReplicaCallable(httpSolrClient, replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -963,7 +963,7 @@ public class SolrConfigHandler extends RequestHandlerBase
 
   private static class PerReplicaCallable extends CollectionRequiringSolrRequest<SolrResponse>
       implements Callable<Boolean> {
-    private final Http2SolrClient solrClient;
+    private final HttpJettySolrClient solrClient;
     Replica replica;
     String prop;
     int expectedZkVersion;
@@ -971,7 +971,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(
-        Http2SolrClient solrClient,
+        HttpJettySolrClient solrClient,
         Replica replica,
         String prop,
         int expectedZkVersion,
@@ -1006,9 +1006,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           Thread.sleep(100);
 
           NamedList<Object> resp =
-              solrClient
-                  .requestWithBaseUrl(replica.getBaseUrl(), replica.getCoreName(), this)
-                  .getResponse();
+              solrClient.requestWithBaseUrl(replica.getBaseUrl(), this, replica.getCoreName());
           if (resp != null) {
             @SuppressWarnings({"rawtypes"})
             Map m = (Map) resp.get(ZNODEVER);
