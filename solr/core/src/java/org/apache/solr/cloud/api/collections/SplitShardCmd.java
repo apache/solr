@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -47,11 +47,11 @@ import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.impl.NodeValueFetcher;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
@@ -880,12 +880,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     var cloudClient = (CloudHttp2SolrClient) cloudManager.getSolrClient();
-    var http2Client = (Http2SolrClient) cloudClient.getHttpClient();
+    var httpClient = (HttpJettySolrClient) cloudClient.getHttpClient();
 
-    SolrResponse resp =
-        http2Client.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req::process);
+    SolrResponse resp = httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req::process);
 
-    double[] sizes = new double[] {-1.0, -1.0}; // [indexSize, freeSize]
+    var indexSizeRef = new AtomicReference<Double>(-1.0);
+    var freeSizeRef = new AtomicReference<Double>(-1.0);
     try (InputStream prometheusStream = (InputStream) resp.getResponse().get(STREAM_KEY);
         var lines = NodeValueFetcher.Metrics.prometheusMetricStream(prometheusStream)) {
 
@@ -894,18 +894,17 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           .forEach(
               line -> {
                 if (line.contains(indexSizeMetric) && line.contains(coreLabel)) {
-                  sizes[0] = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+                  indexSizeRef.set(NodeValueFetcher.Metrics.extractPrometheusValue(line));
                 } else if (line.contains(freeDiskSpaceMetric) && line.contains("usable_space")) {
-                  sizes[1] = NodeValueFetcher.Metrics.extractPrometheusValue(line);
+                  freeSizeRef.set(NodeValueFetcher.Metrics.extractPrometheusValue(line));
                 }
               });
     }
 
-    double indexSize = sizes[0];
-    double freeSize = sizes[1];
+    double indexSize = indexSizeRef.get();
+    double freeSize = freeSizeRef.get();
 
     if (indexSize == -1.0) {
-      log.warn("cannot verify information for parent shard leader");
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "cannot verify index size information for parent shard leader on node "
@@ -913,7 +912,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     if (freeSize == -1.0) {
-      log.warn("missing node disk space information for parent shard leader");
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "missing node disk space information for parent shard leader on node "
