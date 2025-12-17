@@ -406,7 +406,7 @@ public class HttpShardHandler extends ShardHandler {
   public void prepDistributed(ResponseBuilder rb) {
     final SolrQueryRequest req = rb.req;
     final SolrParams params = req.getParams();
-    final String shards = params.get(ShardParams.SHARDS);
+    String shards = params.get(ShardParams.SHARDS);
 
     CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
     CloudDescriptor cloudDescriptor = req.getCloudDescriptor();
@@ -445,7 +445,7 @@ public class HttpShardHandler extends ShardHandler {
               .build();
       rb.slices = replicaSource.getSliceNames().toArray(new String[replicaSource.getSliceCount()]);
 
-      if (canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
+      if (!rb.isForcedDistrib() && canShortCircuit(rb.slices, onlyNrt, params, cloudDescriptor)) {
         rb.isDistrib = false;
         rb.shortCircuitedURL =
             ZkCoreNodeProps.getCoreUrl(zkController.getBaseUrl(), coreDescriptor.getName());
@@ -477,6 +477,9 @@ public class HttpShardHandler extends ShardHandler {
         }
       }
     } else {
+      if (shards == null) {
+        shards = req.getHttpSolrCall().getThisNodeUrl() + "/" + req.getCore().getName();
+      }
       replicaSource =
           new StandaloneReplicaSource.Builder()
               .allowListUrlChecker(urlChecker)
@@ -504,6 +507,7 @@ public class HttpShardHandler extends ShardHandler {
     return String.join("|", shardUrls);
   }
 
+  /** Can we avoid distributed search / coordinator? */
   private boolean canShortCircuit(
       String[] slices,
       boolean onlyNrtReplicas,

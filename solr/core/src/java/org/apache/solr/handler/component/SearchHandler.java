@@ -334,8 +334,8 @@ public class SearchHandler extends RequestHandlerBase
   }
 
   protected boolean isDistrib(SolrQueryRequest req, ResponseBuilder rb) {
-    boolean isZkAware = req.getCoreContainer().isZooKeeperAware();
-    boolean isDistrib = req.getParams().getBool(DISTRIB, isZkAware);
+    boolean theDefault = req.getCoreContainer().isZooKeeperAware() || rb.isForcedDistrib();
+    boolean isDistrib = req.getParams().getBool(DISTRIB, theDefault);
     if (!isDistrib) {
       // for back compat, a shards param with URLs like localhost:8983/solr will mean that this
       // search is distributed.
@@ -345,7 +345,7 @@ public class SearchHandler extends RequestHandlerBase
     return isDistrib;
   }
 
-  public ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
+  protected ShardHandler getAndPrepShardHandler(SolrQueryRequest req, ResponseBuilder rb) {
     ShardHandler shardHandler = null;
 
     CoreContainer cc = req.getCoreContainer();
