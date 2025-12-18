@@ -1372,10 +1372,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestHandler handler = core.getRequestHandler("/update/json");
-    if (handler == null) {
-      handler = new UpdateRequestHandler();
-      handler.init(null);
-    }
+    
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       handler.handleRequest(req, rsp);
