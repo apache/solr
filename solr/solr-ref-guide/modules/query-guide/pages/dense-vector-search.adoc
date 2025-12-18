@@ -350,7 +350,7 @@ Apache Solr provides three query parsers that work with dense vector fields, tha
 
 All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
-Common parameters for both query parsers are:
+Common parameters for all query parsers are:
 
 `f`::
 +
@@ -515,6 +515,46 @@ Here is an example of a `knn` search using a `filteredSearchThreshold`:
 
 [source,text]
 ?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
+
+`parents.preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+This parameter is meant to be a filter query on parent document metadata.
+The knn search returns the top-k nearest children documents that satify the filter on the parent.
++
+Only one child per distinct parent is returned.
+
+Here is an example of a `knn` search using a `parents.preFilter`:
+
+[source,text]
+?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
+
+`childrenOf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|Mandatory if using 'parents.preFilter' parameter|Default: none
+|===
++
+A query that matches the set of ALL possible parent documents.
+It's required to work with the 'parents.preFilter' parameter.
+
+
+Here is an example of a `knn` search using a `childrenOf`:
+
+[source,text]
+?q={!knn f=vector topK=3 childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'childrenOf' parameter must return all valid parents to guarantee the correct functioning of the query.
 
 === knn_text_to_vector Query Parser
 
