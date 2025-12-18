@@ -33,24 +33,22 @@ public class SystemInfoResponse extends SolrResponseBase {
   private org.apache.solr.client.api.model.SystemInfoResponse fullResponse;
 
   public SystemInfoResponse(NamedList<Object> namedList) {
+    if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
     setResponse(namedList);
-    init();
-  }
-
-  private void init() {
-    try {
-      fullResponse =
-          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              getResponse(), org.apache.solr.client.api.model.SystemInfoResponse.class);
-    } catch (Throwable t) {
-      log.error("Cannot convert NamedList response to API model SystemInfoResponse", t);
-    }
   }
 
   @Override
   public void setResponse(NamedList<Object> response) {
     if (getResponse() == null) super.setResponse(response);
-    if (fullResponse == null) init();
+    if (fullResponse == null) {
+      try {
+        fullResponse =
+            JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+                getResponse(), org.apache.solr.client.api.model.SystemInfoResponse.class);
+      } catch (Throwable t) {
+        log.error("Cannot convert NamedList response to API model SystemInfoResponse", t);
+      }
+    }
   }
 
   public String getMode() {

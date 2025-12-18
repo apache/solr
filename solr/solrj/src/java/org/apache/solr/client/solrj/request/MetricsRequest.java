@@ -33,26 +33,14 @@ public class MetricsRequest extends SolrRequest<SolrResponse> {
 
   /** Request to "/admin/metrics" by default, without params */
   public MetricsRequest() {
-    this(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN, new ModifiableSolrParams());
+    this(new ModifiableSolrParams());
   }
 
   /**
    * @param params the Solr parameters to use for this request.
    */
   public MetricsRequest(SolrParams params) {
-    this(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN, params);
-  }
-
-  /**
-   * @param method the HTTP method to use for this request.
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
-   * @param requestType the type of this request
-   * @param params query parameter names and values for making this request.
-   */
-  public MetricsRequest(
-      METHOD method, String path, SolrRequestType requestType, SolrParams params) {
-    super(method, path, requestType);
+    super(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN);
     this.params = params;
   }
 

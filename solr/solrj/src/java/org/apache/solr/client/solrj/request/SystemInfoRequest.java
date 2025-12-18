@@ -40,14 +40,14 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
    *     or V2 "/node/system"
    */
   public SystemInfoRequest(String path) {
-    this(METHOD.GET, path, SolrRequestType.ADMIN, new ModifiableSolrParams());
+    this(path, new ModifiableSolrParams());
   }
 
   /**
    * @param params the Solr parameters to use for this request.
    */
   public SystemInfoRequest(SolrParams params) {
-    this(METHOD.GET, CommonParams.SYSTEM_INFO_PATH, SolrRequestType.ADMIN, params);
+    this(CommonParams.SYSTEM_INFO_PATH, params);
   }
 
   /**
@@ -56,18 +56,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
    * @param params query parameter names and values for making this request.
    */
   public SystemInfoRequest(String path, SolrParams params) {
-    this(METHOD.GET, path, SolrRequestType.ADMIN, params);
-  }
-
-  /**
-   * @param method the HTTP method to use for this request.
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
-   * @param type the type of this request
-   * @param params query parameter names and values for making this request.
-   */
-  public SystemInfoRequest(METHOD method, String path, SolrRequestType type, SolrParams params) {
-    super(method, path, type);
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
     this.params = params;
   }
 
