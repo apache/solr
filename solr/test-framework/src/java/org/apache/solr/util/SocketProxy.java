@@ -78,14 +78,13 @@ public class SocketProxy {
   }
 
   public SocketProxy(int port, boolean useSSL) throws Exception {
-    int listenPort = port;
     this.usesSSL = useSSL;
     serverSocket = createServerSocket(useSSL);
     serverSocket.setReuseAddress(true);
     if (receiveBufferSize > 0) {
       serverSocket.setReceiveBufferSize(receiveBufferSize);
     }
-    serverSocket.bind(new InetSocketAddress(listenPort), acceptBacklog);
+    serverSocket.bind(new InetSocketAddress(port), acceptBacklog);
     this.listenPort = serverSocket.getLocalPort();
   }
 

@@ -16,10 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 
 @Deprecated
@@ -27,7 +24,6 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.requests.streaming.body.enabled", "true");
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
   }
 
@@ -64,23 +60,11 @@ public class DirectSolrConnectionTest extends SolrTestCaseJ4 {
         };
     String getIt = "/select?wt=xml&q=id:42";
 
-    // Test using the Stream body parameter
-    for (String cmd : cmds) {
-      direct.request(
-          "/update?"
-              + CommonParams.STREAM_BODY
-              + "="
-              + URLEncoder.encode(cmd, StandardCharsets.UTF_8),
-          null);
-    }
-    String got = direct.request(getIt, null);
-    assertTrue(got.indexOf(value) > 0);
-
-    // Same thing using the posted body
+    // Test using by posting in the body
     for (String cmd : cmds) {
       direct.request("/update", cmd);
     }
-    got = direct.request(getIt, null);
+    String got = direct.request(getIt, null);
     assertTrue(got.indexOf(value) > 0);
   }
 }
