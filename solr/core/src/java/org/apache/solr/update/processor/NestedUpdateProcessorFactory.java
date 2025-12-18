@@ -31,6 +31,8 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 
+import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
+
 /**
  * Adds fields to nested documents to support some nested search requirements. It can even generate
  * uniqueKey fields for nested docs.
@@ -154,7 +156,7 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
       }
       this.cleanOriginalVectorFields(doc, originalVectorFieldsToRemove);
       if (vectors.size() > 0) {
-        doc.setField("vectors", vectors);
+        doc.setField(NESTED_VECTORS_PSEUDO_FIELD_NAME, vectors);
       }
       return isNested;
     }

@@ -102,18 +102,18 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void childrenRetrievalFloat_filteringByParentMetadata_shouldReturnKnnChildren() {
-    super.childrenRetrievalFloat_filteringByParentMetadata_shouldReturnKnnChildren(VECTOR_FIELD);
+    super.childrenRetrieval_filteringByParentMetadata_shouldReturnKnnChildren(VECTOR_FIELD);
   }
 
   @Test
   public void childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren() {
-    super.childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren(
+    super.childrenRetrieval_filteringByParentMetadata_shouldReturnKnnChildren(
         VECTOR_BYTE_FIELD);
   }
 
   @Test
   public void parentRetrievalFloat_knnChildren_shouldReturnKnnParents() {
-    super.parentRetrievalFloat_knnChildren_shouldReturnKnnParents(VECTOR_FIELD);
+    super.parentRetrieval_knnChildren_shouldReturnKnnParents(VECTOR_FIELD);
   }
 
   @Test
@@ -123,45 +123,126 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents() {
-    super.parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents(VECTOR_FIELD);
+    super.parentRetrieval_knnChildrenWithParentFilter_shouldReturnKnnParents(VECTOR_FIELD);
   }
 
   @Test
   public void
       parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
-    super.parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
+    super.parentRetrieval_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
         VECTOR_FIELD);
   }
 
   @Test
   public void parentRetrievalByte_knnChildren_shouldReturnKnnParents() {
-    super.parentRetrievalByte_knnChildren_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
+    super.parentRetrieval_knnChildren_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
   }
 
   @Test
   public void parentRetrievalByte_knnChildrenWithParentFilter_shouldReturnKnnParents() {
-    super.parentRetrievalByte_knnChildrenWithParentFilter_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
+    super.parentRetrieval_knnChildrenWithParentFilter_shouldReturnKnnParents(VECTOR_BYTE_FIELD);
   }
 
   @Test
   public void
       parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents() {
-    super.parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
+    super.parentRetrieval_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
         VECTOR_BYTE_FIELD);
   }
 
   @Test
   public void
-      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter() {
+      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnAllChildren() {
     super
-        .parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter(
+        .parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(
             VECTOR_FIELD);
   }
 
   @Test
   public void parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild() {
-    super.parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild(
-        VECTOR_FIELD);
+    assertQ(
+        req(
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id,score,"
+                + VECTORS_PSEUDOFIELD
+                + ","
+                + VECTOR_FIELD
+                + ",[child fl=vector childFilter=$children.q]",
+            "children.q",
+            "{!knn f="
+                + VECTOR_FIELD
+                + " topK=3 childrenOf=$someParents allParents=$allParents}"
+                + FLOAT_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]",
+            "someParents",
+            "parent_s:(b c)"),
+        "//result[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='8']",
+        "//result/doc[1]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[1][.='8.0']",
+        "//result/doc[1]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='7']",
+        "//result/doc[2]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[1][.='11.0']",
+        "//result/doc[2]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='2']",
+        "//result/doc[3]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[1][.='26.0']",
+        "//result/doc[3]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='"
+            + VECTORS_PSEUDOFIELD
+            + "'][1]/doc[1]/arr[@name='"
+            + VECTOR_FIELD
+            + "']/float[4][.='1.0']");
   }
 
   @Test

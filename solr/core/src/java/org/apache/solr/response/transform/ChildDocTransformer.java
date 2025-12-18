@@ -19,14 +19,17 @@ package org.apache.solr.response.transform;
 
 import static org.apache.solr.response.transform.ChildDocTransformerFactory.NUM_SEP_CHAR;
 import static org.apache.solr.response.transform.ChildDocTransformerFactory.PATH_SEP_CHAR;
+import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -64,6 +67,8 @@ class ChildDocTransformer extends DocTransformer {
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
   private final String[] extraRequestedFields;
+  private final String multiValuedVectorField = "vector";
+
 
   ChildDocTransformer(
       String name,
@@ -219,8 +224,12 @@ class ChildDocTransformer extends DocTransformer {
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
-            addChildrenToParent(
-                doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
+            if(multiValuedVectorField != null) {
+              addFlatChildrenToParent(doc, pendingParentPathsToChildren.remove(fullDocPath));
+            } else {
+              addChildrenToParent(
+                  doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
+            }
           }
 
           // get parent path
@@ -248,7 +257,11 @@ class ChildDocTransformer extends DocTransformer {
       assert pendingParentPathsToChildren.keySet().size() == 1;
 
       // size == 1, so get the last remaining entry
-      addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      if(multiValuedVectorField != null) {
+        addFlatChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      } else {
+        addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      }
 
     } catch (IOException e) {
       // TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
@@ -283,6 +296,23 @@ class ChildDocTransformer extends DocTransformer {
     }
     // is single value
     parent.setField(trimmedPath, children.get(0));
+  }
+
+  private void addFlatChildrenToParent(
+      SolrDocument parent, Map<String, List<SolrDocument>> children) {
+    List<SolrDocument> solrDocuments = children.get(NESTED_VECTORS_PSEUDO_FIELD_NAME);
+    for(SolrDocument singleVector: solrDocuments){
+      parent.addField(multiValuedVectorField, this.extractVector(singleVector.getFieldValues(multiValuedVectorField)));
+    }
+  }
+
+  private Object extractVector(Collection<Object> fieldValues) {
+    List<Number> vector = new ArrayList<>(fieldValues.size());
+    for (Object fieldValue : fieldValues) {
+      StoredField storedVectorValue = (StoredField) fieldValue;
+      vector.add(storedVectorValue.numericValue());
+    }
+    return vector;
   }
 
   private static String getLastPath(String path) {

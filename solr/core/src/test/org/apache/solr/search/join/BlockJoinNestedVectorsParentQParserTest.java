@@ -85,12 +85,12 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         400);
   }
 
-  protected void childrenRetrievalFloat_filteringByParentMetadata_shouldReturnKnnChildren(
+  protected void childrenRetrieval_filteringByParentMetadata_shouldReturnKnnChildren(
       String vectorField) {
     assertQ(
         req(
             "fq", "{!child of=$allParents filters=$parent.fq}",
-            "q", "{!knn f=" + vectorField + " topK=5}" + FLOAT_QUERY_VECTOR,
+            "q", "{!knn f=" + vectorField + " topK=5}" + BYTE_QUERY_VECTOR,
             "fl", "id",
             "parent.fq", "parent_s:(a c)",
             "allParents", "parent_s:[* TO *]"),
@@ -100,37 +100,6 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='80']",
         "//result/doc[4]/str[@name='id'][.='62']",
         "//result/doc[5]/str[@name='id'][.='61']");
-  }
-
-  protected void childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren(
-      String vectorByteField) {
-    assertQ(
-        req(
-            "fq", "{!child of=$allParents filters=$parent.fq}",
-            "q", "{!knn f=" + vectorByteField + " topK=5}" + BYTE_QUERY_VECTOR,
-            "fl", "id",
-            "parent.fq", "parent_s:(a c)",
-            "allParents", "parent_s:[* TO *]"),
-        "//*[@numFound='5']",
-        "//result/doc[1]/str[@name='id'][.='82']",
-        "//result/doc[2]/str[@name='id'][.='81']",
-        "//result/doc[3]/str[@name='id'][.='80']",
-        "//result/doc[4]/str[@name='id'][.='62']",
-        "//result/doc[5]/str[@name='id'][.='61']");
-  }
-
-  protected void parentRetrievalFloat_knnChildren_shouldReturnKnnParents(String vectorField) {
-    assertQ(
-        req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score",
-            "children.q",
-                "{!knn f=" + vectorField + " topK=3 allParents=$allParents}" + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='10']",
-        "//result/doc[2]/str[@name='id'][.='9']",
-        "//result/doc[3]/str[@name='id'][.='8']");
   }
 
   protected void parentRetrievalFloat_knnChildrenWithNoDiversifying_shouldReturnOneParent(
@@ -145,45 +114,7 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[1]/str[@name='id'][.='10']");
   }
 
-  protected void parentRetrievalFloat_knnChildrenWithParentFilter_shouldReturnKnnParents(
-      String vectorField) {
-    assertQ(
-        req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score",
-            "children.q",
-                "{!knn f="
-                    + vectorField
-                    + " topK=3 childrenOf=$someParents allParents=$allParents}"
-                    + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]",
-            "someParents", "parent_s:(a c)"),
-        "//*[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='8']",
-        "//result/doc[2]/str[@name='id'][.='6']",
-        "//result/doc[3]/str[@name='id'][.='2']");
-  }
-
-  protected void
-      parentRetrievalFloat_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
-          String vectorField) {
-    assertQ(
-        req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,score",
-            "children.q",
-                "{!knn f="
-                    + vectorField
-                    + " topK=3 preFilter=child_s:m childrenOf=$someParents allParents=$allParents}"
-                    + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]",
-            "someParents", "parent_s:(a c)"),
-        "//*[@numFound='2']",
-        "//result/doc[1]/str[@name='id'][.='8']",
-        "//result/doc[2]/str[@name='id'][.='2']");
-  }
-
-  protected void parentRetrievalByte_knnChildren_shouldReturnKnnParents(String vectorByteField) {
+  protected void parentRetrieval_knnChildren_shouldReturnKnnParents(String vectorByteField) {
     assertQ(
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
@@ -200,7 +131,7 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/str[@name='id'][.='8']");
   }
 
-  protected void parentRetrievalByte_knnChildrenWithParentFilter_shouldReturnKnnParents(
+  protected void parentRetrieval_knnChildrenWithParentFilter_shouldReturnKnnParents(
       String vectorByteField) {
     assertQ(
         req(
@@ -220,7 +151,7 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
   }
 
   protected void
-      parentRetrievalByte_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
+      parentRetrieval_knnChildrenWithParentFilterAndChildrenFilter_shouldReturnKnnParents(
           String vectorByteField) {
     assertQ(
         req(
@@ -239,7 +170,7 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
   }
 
   protected void
-      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldUseOriginalChildTransformerFilter(
+  parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(
           String vectorField) {
     assertQ(
         req(
@@ -379,93 +310,6 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[3]/arr[@name='"
             + VECTORS_PSEUDOFIELD
             + "'][1]/doc[2]/arr[@name='"
-            + vectorField
-            + "']/float[4][.='1.0']");
-  }
-
-  protected void parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnBestChild(
-      String vectorField) {
-    assertQ(
-        req(
-            "q",
-            "{!parent which=$allParents score=max v=$children.q}",
-            "fl",
-            "id,score,"
-                + VECTORS_PSEUDOFIELD
-                + ","
-                + vectorField
-                + ",[child fl=vector childFilter=$children.q]",
-            "children.q",
-            "{!knn f="
-                + vectorField
-                + " topK=3 childrenOf=$someParents allParents=$allParents}"
-                + FLOAT_QUERY_VECTOR,
-            "allParents",
-            "parent_s:[* TO *]",
-            "someParents",
-            "parent_s:(b c)"),
-        "//result[@numFound='3']",
-        "//result/doc[1]/str[@name='id'][.='8']",
-        "//result/doc[1]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[1][.='8.0']",
-        "//result/doc[1]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[2][.='1.0']",
-        "//result/doc[1]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[3][.='1.0']",
-        "//result/doc[1]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[4][.='1.0']",
-        "//result/doc[2]/str[@name='id'][.='7']",
-        "//result/doc[2]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[1][.='11.0']",
-        "//result/doc[2]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[2][.='1.0']",
-        "//result/doc[2]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[3][.='1.0']",
-        "//result/doc[2]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[4][.='1.0']",
-        "//result/doc[3]/str[@name='id'][.='2']",
-        "//result/doc[3]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[1][.='26.0']",
-        "//result/doc[3]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[2][.='1.0']",
-        "//result/doc[3]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
-            + vectorField
-            + "']/float[3][.='1.0']",
-        "//result/doc[3]/arr[@name='"
-            + VECTORS_PSEUDOFIELD
-            + "'][1]/doc[1]/arr[@name='"
             + vectorField
             + "']/float[4][.='1.0']");
   }
