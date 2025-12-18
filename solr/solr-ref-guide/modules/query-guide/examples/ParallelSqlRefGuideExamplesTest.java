@@ -27,6 +27,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -86,14 +87,15 @@ public class ParallelSqlRefGuideExamplesTest extends SolrCloudTestCase {
             + "?collection=techproducts&aggregationMode=map_reduce&numWorkers=2";
 
     try (Connection con = DriverManager.getConnection(connString)) {
-      // GETTING A ObjectTracker error when I call this.
       try (final Statement stmt = con.createStatement()) {
         final String sqlQuery = "SELECT id, price_f FROM techproducts LIMIT 3";
 
         try (ResultSet rs = stmt.executeQuery(sqlQuery)) {
           while (rs.next()) {
+            final String id = rs.getString("id");
+            final String price = rs.getString("price_f");
             final String resultString =
-                String.format("Item: %s; Price: %s", rs.getString("id"), rs.getString("price_f"));
+                String.format(Locale.ROOT, "Item: %s; Price: %s", id, price);
             print(resultString);
           }
         }
