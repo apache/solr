@@ -17,7 +17,14 @@
 package org.apache.solr.search.vector;
 
 import java.util.Optional;
+import org.apache.lucene.index.VectorEncoding;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.join.BitSetProducer;
+import org.apache.lucene.search.join.DiversifyingChildrenByteKnnVectorQuery;
+import org.apache.lucene.search.join.DiversifyingChildrenFloatKnnVectorQuery;
+import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
@@ -25,6 +32,8 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.join.BlockJoinParentQParser;
+import org.apache.solr.util.vector.DenseVectorParser;
 
 public class KnnQParser extends AbstractVectorQParserBase {
 
@@ -40,6 +49,9 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final boolean DEFAULT_EARLY_TERMINATION = false;
   protected static final String SATURATION_THRESHOLD = "saturationThreshold";
   protected static final String PATIENCE = "patience";
+
+  public static final String PARENTS_PRE_FILTER = "parents.preFilter";
+  public static final String CHILDREN_OF = "childrenOf";
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -104,6 +116,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
   @Override
   public Query parse() throws SyntaxError {
+    final String vectorField = getFieldName();
     final SchemaField schemaField = req.getCore().getLatestSchema().getField(getFieldName());
     final DenseVectorField denseVectorType = getCheckedFieldType(schemaField);
     final String vectorToSearch = getVectorToSearch();
@@ -119,6 +132,46 @@ public class KnnQParser extends AbstractVectorQParserBase {
 
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
+    // check for parent diversification logic...
+    final String parentsFilterQuery = localParams.get(PARENTS_PRE_FILTER);
+    final String allParentsQuery = localParams.get(CHILDREN_OF);
+
+    boolean isDiversifyingChildrenKnnQuery = null != parentsFilterQuery || null != allParentsQuery;
+    if (isDiversifyingChildrenKnnQuery) {
+      if (null == allParentsQuery) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "When running a diversifying children KNN query, 'allParents' parameter is required");
+      }
+      final DenseVectorParser vectorBuilder =
+          denseVectorType.getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
+      final VectorEncoding vectorEncoding = denseVectorType.getVectorEncoding();
+
+      final BitSetProducer allParentsBitSet =
+          BlockJoinParentQParser.getCachedBitSetProducer(
+              req, subQuery(allParentsQuery, null).getQuery());
+      final BooleanQuery acceptedParents = getParentsFilter(parentsFilterQuery);
+
+      Query acceptedChildren =
+          getChildrenFilter(getFilterQuery(), acceptedParents, allParentsBitSet);
+      switch (vectorEncoding) {
+        case FLOAT32:
+          return new DiversifyingChildrenFloatKnnVectorQuery(
+              vectorField,
+              vectorBuilder.getFloatVector(),
+              acceptedChildren,
+              topK,
+              allParentsBitSet);
+        case BYTE:
+          return new DiversifyingChildrenByteKnnVectorQuery(
+              vectorField, vectorBuilder.getByteVector(), acceptedChildren, topK, allParentsBitSet);
+        default:
+          throw new SolrException(
+              SolrException.ErrorCode.SERVER_ERROR,
+              "Unexpected encoding. Vector Encoding: " + vectorEncoding);
+      }
+    }
+
     return denseVectorType.getKnnVectorQuery(
         schemaField.getName(),
         vectorToSearch,
@@ -128,5 +181,33 @@ public class KnnQParser extends AbstractVectorQParserBase {
         getSeedQuery(),
         getEarlyTerminationParams(),
         filteredSearchThreshold);
+  }
+
+  private BooleanQuery getParentsFilter(String parentsFilterQuery) throws SyntaxError {
+    BooleanQuery.Builder acceptedParentsBuilder = new BooleanQuery.Builder();
+    if (parentsFilterQuery != null) {
+      final Query parentsFilter = subQuery(parentsFilterQuery, null).getQuery();
+      acceptedParentsBuilder.add(parentsFilter, BooleanClause.Occur.FILTER);
+    }
+    BooleanQuery acceptedParents = acceptedParentsBuilder.build();
+    return acceptedParents;
+  }
+
+  private Query getChildrenFilter(
+      Query childrenKnnPreFilter, BooleanQuery parentsFilter, BitSetProducer allParentsBitSet) {
+    Query childrenFilter = childrenKnnPreFilter;
+
+    if (!parentsFilter.clauses().isEmpty()) {
+      Query acceptedChildrenBasedOnParentsFilter =
+          new ToChildBlockJoinQuery(parentsFilter, allParentsBitSet); // no scoring happens here
+      BooleanQuery.Builder acceptedChildrenBuilder = new BooleanQuery.Builder();
+      if (childrenFilter != null) {
+        acceptedChildrenBuilder.add(childrenFilter, BooleanClause.Occur.FILTER);
+      }
+      acceptedChildrenBuilder.add(acceptedChildrenBasedOnParentsFilter, BooleanClause.Occur.FILTER);
+
+      childrenFilter = acceptedChildrenBuilder.build();
+    }
+    return childrenFilter;
   }
 }
