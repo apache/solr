@@ -677,18 +677,21 @@ public class MiniSolrCloudCluster {
               });
       solrClientByCollection.clear();
 
-      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
-      for (final JettySolrRunner jetty : jettys) {
+      // Create a list of shutdown tasks paired with their jetty instances
+      // so we can force-stop any that fail to shut down cleanly
+      List<JettySolrRunner> jettyList = new ArrayList<>(jettys);
+      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettyList.size());
+      for (final JettySolrRunner jetty : jettyList) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
-      jettys.clear();
+
       final ExecutorService executorCloser =
           ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
 
       // Use a timeout to prevent indefinite hangs during shutdown, especially when cores
       // are in a bad state (e.g., after tragic events). The default timeout is 300 seconds,
       // but can be configured via the builder.
-      Collection<Future<JettySolrRunner>> futures;
+      List<Future<JettySolrRunner>> futures;
       try {
         futures = executorCloser.invokeAll(shutdowns, shutdownTimeout, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
@@ -699,6 +702,12 @@ public class MiniSolrCloudCluster {
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
+
+      // Force-stop any jettys that failed to shutdown cleanly
+      forceStopFailedJettys(jettyList, futures);
+
+      jettys.clear();
+
       Exception shutdownError =
           checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
       if (shutdownError != null) {
@@ -787,6 +796,50 @@ public class MiniSolrCloudCluster {
             Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
         .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
         .withConnectionTimeout(15000);
+  }
+
+  /**
+   * Attempts to forcefully stop any Jetty instances that failed to shut down cleanly. This method
+   * is called after the normal shutdown timeout to ensure resources are properly cleaned up.
+   *
+   * @param jettyList the list of jetty instances that we attempted to shut down
+   * @param futures the futures corresponding to the shutdown tasks
+   */
+  private void forceStopFailedJettys(
+      List<JettySolrRunner> jettyList, List<Future<JettySolrRunner>> futures) {
+    for (int i = 0; i < futures.size(); i++) {
+      Future<JettySolrRunner> future = futures.get(i);
+      JettySolrRunner jetty = jettyList.get(i);
+      try {
+        future.get();
+        // Successfully shut down, nothing to do
+      } catch (CancellationException e) {
+        // Task was cancelled due to timeout - try to force stop
+        log.warn(
+            "Jetty {} shutdown task was cancelled, attempting forceful stop", jetty.getNodeName());
+        try {
+          jetty.stop();
+          log.info("Successfully force-stopped jetty {}", jetty.getNodeName());
+        } catch (Exception stopEx) {
+          log.error("Failed to force-stop jetty " + jetty.getNodeName(), stopEx);
+        }
+      } catch (ExecutionException e) {
+        // Task threw an exception - jetty may still be running, try to force stop
+        log.warn(
+            "Jetty {} shutdown task failed with exception, attempting forceful stop",
+            jetty.getNodeName(),
+            e);
+        try {
+          jetty.stop();
+          log.info("Successfully force-stopped jetty {} after exception", jetty.getNodeName());
+        } catch (Exception stopEx) {
+          log.error("Failed to force-stop jetty " + jetty.getNodeName(), stopEx);
+        }
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while checking jetty shutdown status", e);
+        Thread.currentThread().interrupt();
+      }
+    }
   }
 
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
