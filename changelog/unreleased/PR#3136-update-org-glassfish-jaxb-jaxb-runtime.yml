@@ -1,0 +1,7 @@
+title: Update org.glassfish.jaxb:jaxb-runtime to v4
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3136
+  url: https://github.com/apache/solr/pull/3136
