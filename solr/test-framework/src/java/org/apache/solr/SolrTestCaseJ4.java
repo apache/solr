@@ -121,12 +121,12 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -1362,13 +1362,31 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       if (newArgs.get("indent") == null) newArgs.set("indent", "true");
       args = newArgs;
     }
-    DirectSolrConnection connection = new DirectSolrConnection(core);
+
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, args);
+    if (json != null && !json.isEmpty()) {
+      ArrayList<ContentStream> streams = new ArrayList<>();
+      streams.add(new ContentStreamBase.StringStream(json));
+      req.setContentStreams(streams);
+    }
+
+    SolrQueryResponse rsp = new SolrQueryResponse();
     SolrRequestHandler handler = core.getRequestHandler("/update/json");
     if (handler == null) {
       handler = new UpdateRequestHandler();
       handler.init(null);
     }
-    return connection.request(handler, args, json);
+    try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      handler.handleRequest(req, rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return req.getResponseWriter().writeToString(req, rsp);
+    } finally {
+      req.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
 
   public static SolrInputDocument sdoc(Object... fieldsAndValues) {
