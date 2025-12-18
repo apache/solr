@@ -25,10 +25,11 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
-import org.apache.solr.client.solrj.request.DirectXmlRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
@@ -267,7 +268,8 @@ public class TestHarness extends BaseTestHarness {
       assert null != mdcSnap; // prevent compiler warning of unused var
 
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
-      DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
+      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
+      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       NamedList<Object> response = server.request(xmlRequest);

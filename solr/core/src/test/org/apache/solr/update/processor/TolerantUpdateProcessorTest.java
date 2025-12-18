@@ -27,12 +27,13 @@ import java.util.List;
 import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.request.DirectXmlRequest;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -392,20 +393,20 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
 
   public String update(String chain, String xml) {
     try {
-      // Use DirectXmlRequest to send raw XML through EmbeddedSolrServer
-      DirectXmlRequest xmlRequest = new DirectXmlRequest("/update", xml);
+      // Use ContentStreamUpdateRequest to send raw XML through EmbeddedSolrServer
+      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
+      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
 
       // Set the update chain parameter
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.add("update.chain", chain);
-      params.add("wt", "xml");
-      xmlRequest.setParams(params);
+      xmlRequest.getParams().add("update.chain", chain);
+      xmlRequest.getParams().add("wt", "xml");
 
       // Process the request and get the response
       NamedList<Object> response = server.request(xmlRequest);
 
       // Convert response to XML string for validation
       // We need to recreate the XML response format
+      ModifiableSolrParams params = new ModifiableSolrParams();
       SolrCore core = h.getCore();
       try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
         SolrQueryResponse rsp = new SolrQueryResponse();
