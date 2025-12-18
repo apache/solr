@@ -78,14 +78,6 @@ public class TestHarness extends BaseTestHarness {
     }
   }
 
-  /**
-   * Creates a SolrConfig object for the default test core using {@link
-   * #createConfig(Path,String,String)}
-   */
-  public static SolrConfig createConfig(Path solrHome, String confFile) {
-    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
-  }
-
   public TestHarness(CoreContainer coreContainer) {
     this.container = coreContainer;
     this.coreName = SolrTestCaseJ4.DEFAULT_TEST_CORENAME;
@@ -125,7 +117,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   /**
-   * Helper method to let us do some home sys prop check in delegated construtor. in "real" code
+   * Helper method to let us do some home sys prop check in delegated constructor. in "real" code
    * SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
    */
   private static Path checkAndReturnSolrHomeSysProp() {
@@ -187,7 +179,7 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
+                    System.getProperty("solr.host.advertise"), Integer.getInteger("hostPort", 8983))
                 .setZkClientTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT)
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
@@ -434,7 +426,7 @@ public class TestHarness extends BaseTestHarness {
      *       the "qtype", "start", "limit", and "args" properties of this factory are ignored.</b>
      * </ul>
      *
-     * TODO: this isn't really safe in the presense of core reloads! Perhaps the best we could do is
+     * TODO: this isn't really safe in the presence of core reloads! Perhaps the best we could do is
      * increment the core reference count and decrement it in the request close() method?
      */
     @SuppressWarnings({"unchecked"})

@@ -27,16 +27,16 @@ apache-commons-collections4 = "4.5.0"
 apache-commons-compress = "1.28.0"
 apache-commons-configuration2 = "2.12.0"
 apache-commons-exec = "1.5.0"
-apache-commons-lang3 = "3.19.0"
+apache-commons-lang3 = "3.20.0"
 apache-commons-math3 = "3.6.1"
 # @keep for version alignment
-apache-commons-text = "1.14.0"
+apache-commons-text = "1.15.0"
 apache-curator = "5.9.0"
 apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.1"
-apache-log4j = "2.21.0"
+apache-log4j = "2.25.3"
 apache-lucene = "10.3.2"
 apache-opennlp = "2.5.6"
 apache-rat = "0.15"
@@ -45,7 +45,6 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
 apiguardian = "1.1.2"
-aqute-bnd = "6.4.1"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
@@ -74,6 +73,7 @@ commons-codec = "1.19.0"
 commons-io = "2.20.0"
 compose = "1.8.2"
 cutterslade-analyze = "1.10.0"
+cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
@@ -303,7 +303,6 @@ apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", versio
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
-aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -319,6 +318,7 @@ codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", versi
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
+cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
@@ -489,7 +489,6 @@ opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentel
 opentelemetry-sdk-metrics = { module = "io.opentelemetry:opentelemetry-sdk-metrics", version.ref = "opentelemetry" }
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdk-trace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
-osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
 oshai-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "oshai-logging" }
 # @keep transitive dependency for version alignment
 ow2-asm-asm = { module = "org.ow2.asm:asm", version.ref = "ow2-asm" }
