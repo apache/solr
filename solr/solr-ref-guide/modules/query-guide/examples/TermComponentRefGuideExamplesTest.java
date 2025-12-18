@@ -23,6 +23,7 @@ import static org.apache.solr.client.ref_guide_examples.ExpectedOutputVerifier.p
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -94,8 +95,14 @@ public class TermComponentRefGuideExamplesTest extends SolrCloudTestCase {
             .getTermsResponse()
             .getTerms("name");
 
-    final Term topTerm = terms.get(0);
-    print("Top term is " + topTerm.getTerm() + " with frequency " + topTerm.getFrequency());
+    final Term topTerm = terms.getFirst();
+    final String resultString =
+        String.format(
+            Locale.ROOT,
+            "Top term is %s with frequency %s",
+            topTerm.getTerm(),
+            topTerm.getFrequency());
+    print(resultString);
     // end::term-component-request[]
   }
 
