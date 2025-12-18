@@ -33,10 +33,20 @@ public class SystemInfoResponse extends SolrJerseyResponse {
   @JsonProperty("core_root")
   public String coreRoot;
 
+  @JsonProperty(isRequired = OptBoolean.FALSE)
+  public String environment;
+
+  @JsonProperty(value = "environment_label", isRequired = OptBoolean.FALSE)
+  public String environmentLabel;
+
+  @JsonProperty(value = "environment_color", isRequired = OptBoolean.FALSE)
+  public String environmentColor;
+
   @JsonProperty public String node;
   @JsonProperty public Lucene lucene;
   @JsonProperty public JVM jvm;
   @JsonProperty public Security security;
+  @JsonProperty public GPU gpu;
   @JsonProperty public Map<String, String> system;
 
   /** /admin/info/system/security */
@@ -82,14 +92,17 @@ public class SystemInfoResponse extends SolrJerseyResponse {
     @JsonProperty public JvmMemoryRaw raw;
   }
 
-  public static class JvmMemoryRaw {
-    @JsonProperty public long free;
-    @JsonProperty public long total;
+  public static class JvmMemoryRaw extends MemoryRaw {
     @JsonProperty public long max;
-    @JsonProperty public long used;
 
     @JsonProperty("used%")
     public double usedPercent;
+  }
+
+  public static class MemoryRaw {
+    @JsonProperty public long free;
+    @JsonProperty public long total;
+    @JsonProperty public long used;
   }
 
   public static class Vendor {
@@ -107,5 +120,12 @@ public class SystemInfoResponse extends SolrJerseyResponse {
     @JsonProperty public Date startTime;
     @JsonProperty public long upTimeMS;
     @JsonProperty public List<String> commandLineArgs;
+  }
+
+  public static class GPU {
+    @JsonProperty public boolean available;
+    @JsonProperty public long count;
+    @JsonProperty public MemoryRaw memory;
+    @JsonProperty Map<String, Object> devices;
   }
 }
