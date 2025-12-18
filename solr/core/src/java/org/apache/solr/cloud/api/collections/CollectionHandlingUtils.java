@@ -224,7 +224,6 @@ public class CollectionHandlingUtils {
       String slice,
       Replica parentShardLeader) {
     log.debug("Calling soft commit to make sub shard updates visible");
-    String coreUrl = parentShardLeader.getCoreUrl();
     // HttpShardHandler is hard coded to send a QueryRequest hence we go direct
     // and we force open a searcher so that we have documents to show upon switching states
     UpdateResponse updateResponse = null;
@@ -232,13 +231,25 @@ public class CollectionHandlingUtils {
       updateResponse =
           softCommit(solrClient, parentShardLeader.getBaseUrl(), parentShardLeader.getCoreName());
       CollectionHandlingUtils.processResponse(
-          results, null, coreUrl, updateResponse, slice, Collections.emptySet());
+          results,
+          null,
+          parentShardLeader.getNodeName(),
+          parentShardLeader.getCoreName(),
+          updateResponse,
+          slice,
+          Collections.emptySet());
     } catch (Exception e) {
       CollectionHandlingUtils.processResponse(
-          results, e, coreUrl, updateResponse, slice, Collections.emptySet());
+          results,
+          e,
+          parentShardLeader.getNodeName(),
+          parentShardLeader.getCoreName(),
+          updateResponse,
+          slice,
+          Collections.emptySet());
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
-          "Unable to call distrib softCommit on: " + coreUrl,
+          "Unable to call distrib softCommit on: " + parentShardLeader.getCoreUrl(),
           e);
     }
   }
@@ -313,7 +324,7 @@ public class CollectionHandlingUtils {
     Map<String, Object> props =
         Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);
+        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), null, results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -427,16 +438,19 @@ public class CollectionHandlingUtils {
       NamedList<Object> results, ShardResponse srsp, Set<String> okayExceptions) {
     Throwable e = srsp.getException();
     String nodeName = srsp.getNodeName();
+    // Use core or coreNodeName if given as a param, otherwise use nodeName
+    String coreName = srsp.getShardRequest().coreName;
     SolrResponse solrResponse = srsp.getSolrResponse();
     String shard = srsp.getShard();
 
-    processResponse(results, e, nodeName, solrResponse, shard, okayExceptions);
+    processResponse(results, e, nodeName, coreName, solrResponse, shard, okayExceptions);
   }
 
   static void processResponse(
       NamedList<Object> results,
       Throwable e,
       String nodeName,
+      String coreName,
       SolrResponse solrResponse,
       String shard,
       Set<String> okayExceptions) {
@@ -447,9 +461,9 @@ public class CollectionHandlingUtils {
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: {}", shard, e);
-      addFailure(results, nodeName, e.getClass().getName() + ":" + e.getMessage());
+      addFailure(results, nodeName, coreName, e);
     } else {
-      addSuccess(results, nodeName, solrResponse.getResponse());
+      addSuccess(results, nodeName, coreName, solrResponse.getResponse());
     }
   }
 
@@ -473,24 +487,38 @@ public class CollectionHandlingUtils {
     results.add("exception", nl);
   }
 
-  private static void addFailure(NamedList<Object> results, String key, Object value) {
+  public static String requestKey(Replica replica) {
+    return requestKey(replica.getNodeName(), replica.getCoreName());
+  }
+
+  public static String requestKey(String nodeName, String coreName) {
+    if (coreName == null) {
+      return nodeName;
+    } else {
+      return nodeName + "/" + coreName;
+    }
+  }
+
+  private static void addFailure(
+      NamedList<Object> results, String nodeName, String coreName, Object value) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> failure = (SimpleOrderedMap<Object>) results.get("failure");
     if (failure == null) {
       failure = new SimpleOrderedMap<>();
       results.add("failure", failure);
     }
-    failure.add(key, value);
+    failure.add(requestKey(nodeName, coreName), value);
   }
 
-  private static void addSuccess(NamedList<Object> results, String key, Object value) {
+  private static void addSuccess(
+      NamedList<Object> results, String nodeName, String coreName, Object value) {
     @SuppressWarnings("unchecked")
     SimpleOrderedMap<Object> success = (SimpleOrderedMap<Object>) results.get("success");
     if (success == null) {
       success = new SimpleOrderedMap<>();
       results.add("success", success);
     }
-    success.add(key, value);
+    success.add(requestKey(nodeName, coreName), value);
   }
 
   private static NamedList<Object> waitForCoreAdminAsyncCallToComplete(
@@ -498,6 +526,7 @@ public class CollectionHandlingUtils {
       String adminPath,
       ZkStateReader zkStateReader,
       String nodeName,
+      String coreName,
       String requestId) {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -513,6 +542,8 @@ public class CollectionHandlingUtils {
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;
       sreq.params = params;
+      sreq.nodeName = nodeName;
+      sreq.coreName = coreName;
 
       shardHandler.submit(sreq, replica, sreq.params);
 
@@ -529,8 +560,27 @@ public class CollectionHandlingUtils {
           }
 
           String r = (String) srsp.getSolrResponse().getResponse().get("STATUS");
+          if (r == null) {
+            // For Collections API Calls
+            r = (String) srsp.getSolrResponse().getResponse()._get("status/state");
+          }
+          if (r == null) {
+            throw new SolrException(
+                SolrException.ErrorCode.SERVER_ERROR,
+                "Could not find status of async command in response: "
+                    + srsp.getSolrResponse().getResponse().toString());
+          }
           if (r.equals("running")) {
             log.debug("The task is still RUNNING, continuing to wait.");
+            try {
+              Thread.sleep(1000);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+            }
+            continue;
+
+          } else if (r.equals("submitted")) {
+            log.debug("The task is still SUBMITTED, continuing to wait.");
             try {
               Thread.sleep(1000);
             } catch (InterruptedException e) {
@@ -587,12 +637,18 @@ public class CollectionHandlingUtils {
         ccc.newShardHandler().getShardHandlerFactory());
   }
 
+  public static ShardRequestTracker asyncRequestTracker(
+      String asyncId, String adminPath, CollectionCommandContext ccc) {
+    return new ShardRequestTracker(
+        asyncId, adminPath, ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
+  }
+
   public static class ShardRequestTracker {
     private final String asyncId;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
     private final ShardHandlerFactory shardHandlerFactory;
-    private final NamedList<String> shardAsyncIdByNode = new NamedList<String>();
+    private final List<AsyncCmdInfo> shardAsyncCmds = new ArrayList<>();
 
     public ShardRequestTracker(
         String asyncId,
@@ -627,7 +683,10 @@ public class CollectionHandlingUtils {
             cloneParams.set(CoreAdminParams.CORE, replica.getStr(ZkStateReader.CORE_NAME_PROP));
 
             sendShardRequest(
-                replica.getStr(ZkStateReader.NODE_NAME_PROP), cloneParams, shardHandler);
+                replica.getStr(ZkStateReader.NODE_NAME_PROP),
+                replica.getStr(ZkStateReader.CORE_NAME_PROP),
+                cloneParams,
+                shardHandler);
           } else {
             notLiveReplicas.add(replica);
           }
@@ -637,12 +696,24 @@ public class CollectionHandlingUtils {
     }
 
     public void sendShardRequest(
-        String nodeName, ModifiableSolrParams params, ShardHandler shardHandler) {
-      sendShardRequest(nodeName, params, shardHandler, adminPath, zkStateReader);
+        Replica replica, ModifiableSolrParams params, ShardHandler shardHandler) {
+      sendShardRequest(
+          replica.getNodeName(),
+          replica.getCoreName(),
+          params,
+          shardHandler,
+          adminPath,
+          zkStateReader);
+    }
+
+    public void sendShardRequest(
+        String nodeName, String coreName, ModifiableSolrParams params, ShardHandler shardHandler) {
+      sendShardRequest(nodeName, coreName, params, shardHandler, adminPath, zkStateReader);
     }
 
     public void sendShardRequest(
         String nodeName,
+        String coreName,
         ModifiableSolrParams params,
         ShardHandler shardHandler,
         String adminPath,
@@ -651,7 +722,7 @@ public class CollectionHandlingUtils {
         String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
         params.set(ASYNC, coreAdminAsyncId);
         // Track async requests
-        shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
+        shardAsyncCmds.add(AsyncCmdInfo.from(nodeName, coreName, coreAdminAsyncId));
       }
 
       ShardRequest sreq = new ShardRequest();
@@ -661,6 +732,7 @@ public class CollectionHandlingUtils {
       sreq.shards = new String[] {replica};
       sreq.actualShards = sreq.shards;
       sreq.nodeName = nodeName;
+      sreq.coreName = coreName;
       sreq.params = params;
 
       shardHandler.submit(sreq, replica, sreq.params);
@@ -683,7 +755,10 @@ public class CollectionHandlingUtils {
       // Processes all shard responses
       ShardResponse srsp;
       do {
-        srsp = shardHandler.takeCompletedOrError();
+        srsp =
+            abortOnError
+                ? shardHandler.takeCompletedOrError()
+                : shardHandler.takeCompletedIncludingErrors();
         if (srsp != null) {
           processResponse(results, srsp, okayExceptions);
           Throwable exception = srsp.getException();
@@ -701,25 +776,47 @@ public class CollectionHandlingUtils {
       if (asyncId != null) {
         // TODO: Shouldn't we abort with msgOnError exception when failure?
         waitForAsyncCallsToComplete(results);
-        shardAsyncIdByNode.clear();
+        shardAsyncCmds.clear();
       }
     }
 
     private void waitForAsyncCallsToComplete(NamedList<Object> results) {
-      for (Map.Entry<String, String> nodeToAsync : shardAsyncIdByNode) {
-        final String node = nodeToAsync.getKey();
-        final String shardAsyncId = nodeToAsync.getValue();
-        log.debug("I am Waiting for :{}/{}", node, shardAsyncId);
+      for (AsyncCmdInfo asyncCmdInfo : shardAsyncCmds) {
+        final String node = asyncCmdInfo.nodeName;
+        final String coreName = asyncCmdInfo.coreName;
+        final String shardAsyncId = asyncCmdInfo.asyncId;
+        log.info("I am Waiting for: {}/{}/{}", node, coreName, shardAsyncId);
         NamedList<Object> reqResult =
             waitForCoreAdminAsyncCallToComplete(
-                shardHandlerFactory, adminPath, zkStateReader, node, shardAsyncId);
-        if ("failed".equalsIgnoreCase(((String) reqResult.get("STATUS")))) {
+                shardHandlerFactory, adminPath, zkStateReader, node, coreName, shardAsyncId);
+        String status = (String) reqResult.get("STATUS");
+        if (status == null) {
+          // For Collections API Calls
+          status = (String) reqResult._get("status/state");
+        }
+        if ("failed".equalsIgnoreCase(status)) {
           log.error("Error from shard {}: {}", node, reqResult);
-          addFailure(results, node, reqResult);
+          addFailure(results, node, coreName, reqResult);
         } else {
-          addSuccess(results, node, reqResult);
+          addSuccess(results, node, coreName, reqResult);
         }
       }
+    }
+  }
+
+  private static class AsyncCmdInfo {
+    protected final String nodeName;
+    protected final String coreName;
+    protected final String asyncId;
+
+    public AsyncCmdInfo(String nodeName, String coreName, String asyncId) {
+      this.nodeName = nodeName;
+      this.coreName = coreName;
+      this.asyncId = asyncId;
+    }
+
+    public static AsyncCmdInfo from(String nodeName, String coreName, String asyncId) {
+      return new AsyncCmdInfo(nodeName, coreName, asyncId);
     }
   }
 }

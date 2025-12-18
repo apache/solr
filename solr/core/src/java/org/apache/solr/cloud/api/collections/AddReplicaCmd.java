@@ -76,7 +76,8 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     addReplica(state, message, results, null);
   }
@@ -174,7 +175,8 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
       ModifiableSolrParams params =
           getReplicaParams(
               message, collectionName, coll, skipCreateReplicaInClusterState, createReplica);
-      shardRequestTracker.sendShardRequest(createReplica.node, params, shardHandler);
+      shardRequestTracker.sendShardRequest(
+          createReplica.node, createReplica.coreName, params, shardHandler);
     }
 
     Runnable runnable =
