@@ -69,7 +69,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
       assertQ(
           req(
               "q",
-              "{!knn f=vector topK=$k allParents='type_s:PARENT'}"
+              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}"
                   + vecStr(randomFloatVector(random())),
               "indent",
               "true",
@@ -92,7 +92,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
       assertQ(
           req(
               "q",
-              "{!knn f=vector_byte_encoding topK=$k allParents='type_s:PARENT'}"
+              "{!knn f=vector_byte_encoding topK=$k childrenOf='type_s:PARENT'}"
                   + vecStr(randomByteVector(random())),
               "indent",
               "true",
@@ -126,7 +126,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
               "q",
               "{!parent which='type_s:PARENT' score=max v=$knn}",
               "knn",
-              "{!knn f=vector topK=$k allParents='type_s:PARENT'}"
+              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}"
                   + vecStr(randomFloatVector(random())),
               "indent",
               "true",
@@ -148,7 +148,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
               "q",
               "{!parent which='type_s:PARENT' score=max v=$knn}",
               "knn",
-              "{!knn f=vector_byte_encoding topK=$k allParents='type_s:PARENT'}"
+              "{!knn f=vector_byte_encoding topK=$k childrenOf='type_s:PARENT'}"
                   + vecStr(randomByteVector(random())),
               "indent",
               "true",

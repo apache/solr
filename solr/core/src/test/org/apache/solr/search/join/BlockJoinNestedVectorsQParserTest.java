@@ -137,14 +137,14 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
   @Test
   public void parentRetrieval_knnChildrenDiversifyingWithNoAllParents_shouldThrowException() {
     assertQEx(
-        "When running a diversifying children KNN query, 'allParents' parameter is required",
+        "When running a diversifying children KNN query, 'childrenOf' parameter is required",
         req(
             "q",
             "{!parent which=$allParents score=max v=$children.q}",
             "fl",
             "id,score",
             "children.q",
-            "{!knn f=vector topK=3 childrenOf=$someParents}" + FLOAT_QUERY_VECTOR,
+            "{!knn f=vector topK=3 parents.preFilter=$someParents}" + FLOAT_QUERY_VECTOR,
             "allParents",
             "parent_s:[* TO *]",
             "someParents",
@@ -192,7 +192,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector topK=3 allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "children.q", "{!knn f=vector topK=3 childrenOf=$allParents}" + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
@@ -219,7 +219,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
             "children.q",
-                "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
@@ -237,7 +237,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
             "children.q",
-                "{!knn f=vector topK=3 preFilter=child_s:m childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector topK=3 preFilter=child_s:m parents.preFilter=$someParents childrenOf=$allParents}"
                     + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
@@ -252,7 +252,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
-            "children.q", "{!knn f=vector_byte topK=3 allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "children.q", "{!knn f=vector_byte topK=3 childrenOf=$allParents}" + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
@@ -267,7 +267,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
             "children.q",
-                "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector_byte topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
@@ -285,7 +285,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score",
             "children.q",
-                "{!knn f=vector_byte topK=3 preFilter=child_s:m childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector_byte topK=3 preFilter=child_s:m parents.preFilter=$someParents childrenOf=$allParents}"
                     + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
@@ -302,7 +302,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score,vectors,vector,[child limit=2 fl=vector]",
             "children.q",
-                "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(a c)"),
@@ -343,7 +343,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score,vectors,vector,[child fl=vector childFilter=$children.q]",
             "children.q",
-                "{!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + FLOAT_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(b c)"),
@@ -372,7 +372,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score,vectors,vector_byte,[child limit=2 fl=vector_byte]",
             "children.q",
-                "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector_byte topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(b c)"),
@@ -413,7 +413,7 @@ public class BlockJoinNestedVectorsQParserTest extends SolrTestCaseJ4 {
             "q", "{!parent which=$allParents score=max v=$children.q}",
             "fl", "id,score,vectors,vector_byte,[child fl=vector_byte childFilter=$children.q]",
             "children.q",
-                "{!knn f=vector_byte topK=3 childrenOf=$someParents allParents=$allParents}"
+                "{!knn f=vector_byte topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                     + BYTE_QUERY_VECTOR,
             "allParents", "parent_s:[* TO *]",
             "someParents", "parent_s:(b c)"),

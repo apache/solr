@@ -502,7 +502,7 @@ Here is an example of a `knn` search using a `filteredSearchThreshold`:
 [source,text]
 ?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
 
-`childrenOf`::
+`parents.preFilter`::
 +
 [%autowidth,frame=none]
 |===
@@ -513,34 +513,34 @@ The knn search returns the top-k nearest children documents that satify the filt
 +
 Only one child per distinct parent is returned.
 
-Here is an example of a `knn` search using a `childrenOf`:
+Here is an example of a `knn` search using a `parents.preFilter`:
 
 [source,text]
-?q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
 &allParents=*:* -_nest_path_:*
 &someParents=color_s:RED
 
 The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
 
-`allParents`::
+`childrenOf`::
 +
 [%autowidth,frame=none]
 |===
 |Optional |Default: none
-|Mandatory if using 'childrenOf' parameter|Default: none
+|Mandatory if using 'parents.preFilter' parameter|Default: none
 |===
 +
-A query that matches ALL parents.
-It's required to work with the 'childrenOf' parameter.
+A query that matches the set of ALL possible parent documents.
+It's required to work with the 'parents.preFilter' parameter.
 
 
-Here is an example of a `knn` search using a `allParents`:
+Here is an example of a `knn` search using a `childrenOf`:
 
 [source,text]
-?q={!knn f=vector topK=3 allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=3 childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
 &allParents=*:* -_nest_path_:*
 
-The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'allParents' parameter must return all parents to guarantee the correct functioning of the query.
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'childrenOf' parameter must return all valid parents to guarantee the correct functioning of the query.
 
 === knn_text_to_vector Query Parser
 

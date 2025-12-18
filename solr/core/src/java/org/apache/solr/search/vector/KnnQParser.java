@@ -50,8 +50,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
   protected static final String SATURATION_THRESHOLD = "saturationThreshold";
   protected static final String PATIENCE = "patience";
 
+  public static final String PARENTS_PRE_FILTER = "parents.preFilter";
   public static final String CHILDREN_OF = "childrenOf";
-  public static final String ALL_PARENTS = "allParents";
 
   public KnnQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -124,8 +124,8 @@ public class KnnQParser extends AbstractVectorQParserBase {
     final Integer filteredSearchThreshold = localParams.getInt(FILTERED_SEARCH_THRESHOLD);
 
     // check for parent diversification logic...
-    final String parentsFilterQuery = localParams.get(CHILDREN_OF);
-    final String allParentsQuery = localParams.get(ALL_PARENTS);
+    final String parentsFilterQuery = localParams.get(PARENTS_PRE_FILTER);
+    final String allParentsQuery = localParams.get(CHILDREN_OF);
 
     boolean isDiversifyingChildrenKnnQuery = null != parentsFilterQuery || null != allParentsQuery;
     if (isDiversifyingChildrenKnnQuery) {
