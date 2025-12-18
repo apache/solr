@@ -246,7 +246,7 @@ public class MiniSolrCloudCluster {
         securityJson,
         false,
         formatZkServer,
-        300,
+        60,
         true);
   }
 
@@ -262,7 +262,7 @@ public class MiniSolrCloudCluster {
    * @param zkTestServer ZkTestServer to use. If null, one will be created
    * @param securityJson A string representation of security.json file (optional).
    * @param trackJettyMetrics supply jetties with metrics registry
-   * @param shutdownTimeout timeout in seconds for shutdown (default 300)
+   * @param shutdownTimeout timeout in seconds for shutdown (default 60)
    * @param shutdownTimeoutIsError whether timeout during shutdown is an error (default true)
    * @throws Exception if there was an error starting the cluster
    */
@@ -677,11 +677,8 @@ public class MiniSolrCloudCluster {
               });
       solrClientByCollection.clear();
 
-      // Create a list of shutdown tasks paired with their jetty instances
-      // so we can force-stop any that fail to shut down cleanly
-      List<JettySolrRunner> jettyList = new ArrayList<>(jettys);
-      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettyList.size());
-      for (final JettySolrRunner jetty : jettyList) {
+      List<Callable<JettySolrRunner>> shutdowns = new ArrayList<>(jettys.size());
+      for (final JettySolrRunner jetty : jettys) {
         shutdowns.add(() -> stopJettySolrRunner(jetty));
       }
 
@@ -689,7 +686,7 @@ public class MiniSolrCloudCluster {
           ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
 
       // Use a timeout to prevent indefinite hangs during shutdown, especially when cores
-      // are in a bad state (e.g., after tragic events). The default timeout is 300 seconds,
+      // are in a bad state (e.g., after tragic events). The default timeout is 60 seconds,
       // but can be configured via the builder.
       List<Future<JettySolrRunner>> futures;
       try {
@@ -702,9 +699,6 @@ public class MiniSolrCloudCluster {
       }
 
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
-
-      // Force-stop any jettys that failed to shutdown cleanly
-      forceStopFailedJettys(jettyList, futures);
 
       jettys.clear();
 
@@ -798,50 +792,6 @@ public class MiniSolrCloudCluster {
         .withConnectionTimeout(15000);
   }
 
-  /**
-   * Attempts to forcefully stop any Jetty instances that failed to shut down cleanly. This method
-   * is called after the normal shutdown timeout to ensure resources are properly cleaned up.
-   *
-   * @param jettyList the list of jetty instances that we attempted to shut down
-   * @param futures the futures corresponding to the shutdown tasks
-   */
-  private void forceStopFailedJettys(
-      List<JettySolrRunner> jettyList, List<Future<JettySolrRunner>> futures) {
-    for (int i = 0; i < futures.size(); i++) {
-      Future<JettySolrRunner> future = futures.get(i);
-      JettySolrRunner jetty = jettyList.get(i);
-      try {
-        future.get();
-        // Successfully shut down, nothing to do
-      } catch (CancellationException e) {
-        // Task was cancelled due to timeout - try to force stop
-        log.warn(
-            "Jetty {} shutdown task was cancelled, attempting forceful stop", jetty.getNodeName());
-        try {
-          jetty.stop();
-          log.info("Successfully force-stopped jetty {}", jetty.getNodeName());
-        } catch (Exception stopEx) {
-          log.error("Failed to force-stop jetty " + jetty.getNodeName(), stopEx);
-        }
-      } catch (ExecutionException e) {
-        // Task threw an exception - jetty may still be running, try to force stop
-        log.warn(
-            "Jetty {} shutdown task failed with exception, attempting forceful stop",
-            jetty.getNodeName(),
-            e);
-        try {
-          jetty.stop();
-          log.info("Successfully force-stopped jetty {} after exception", jetty.getNodeName());
-        } catch (Exception stopEx) {
-          log.error("Failed to force-stop jetty " + jetty.getNodeName(), stopEx);
-        }
-      } catch (InterruptedException e) {
-        log.warn("Interrupted while checking jetty shutdown status", e);
-        Thread.currentThread().interrupt();
-      }
-    }
-  }
-
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
       throws InterruptedException {
     Exception parsed = new Exception(message);
@@ -850,18 +800,15 @@ public class MiniSolrCloudCluster {
       try {
         future.get();
       } catch (ExecutionException e) {
-        log.error(message, e);
-        parsed.addSuppressed(e.getCause());
-        ok = false;
-      } catch (CancellationException e) {
-        if (shutdownTimeoutIsError) {
-          log.error(message, e);
-          parsed.addSuppressed(e);
-          ok = false;
-        } else {
+        // Check if this is a TimeoutException from Jetty's internal shutdown timeout
+        if (e.getCause() instanceof TimeoutException && !shutdownTimeoutIsError) {
           log.warn(
-              "Jetty shutdown task was cancelled (likely due to timeout), but configured to not treat as error",
+              "Jetty shutdown task timed out (likely from Jetty Server.doStop()), but configured to not treat as error",
               e);
+        } else {
+          log.error(message, e);
+          parsed.addSuppressed(e.getCause());
+          ok = false;
         }
       } catch (InterruptedException e) {
         log.error(message, e);
@@ -1119,7 +1066,7 @@ public class MiniSolrCloudCluster {
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
-    private int shutdownTimeout = 300;
+    private int shutdownTimeout = 60;
     private boolean shutdownTimeoutIsError = true;
 
     /**
@@ -1242,7 +1189,7 @@ public class MiniSolrCloudCluster {
     /**
      * Set the timeout for shutting down jetty instances
      *
-     * @param shutdownTimeout timeout in seconds (default 300)
+     * @param shutdownTimeout timeout in seconds (default 60)
      * @return the instance of {@linkplain Builder}
      */
     public Builder withShutdownTimeout(int shutdownTimeout) {
