@@ -43,7 +43,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -161,7 +160,6 @@ public class MiniSolrCloudCluster {
   private final JettyConfig jettyConfig;
   private final String solrXml;
   private final boolean trackJettyMetrics;
-  private final int shutdownTimeout;
   private final boolean shutdownTimeoutIsError;
 
   private final AtomicInteger nodeIds = new AtomicInteger();
@@ -246,7 +244,6 @@ public class MiniSolrCloudCluster {
         securityJson,
         false,
         formatZkServer,
-        60,
         true);
   }
 
@@ -262,7 +259,6 @@ public class MiniSolrCloudCluster {
    * @param zkTestServer ZkTestServer to use. If null, one will be created
    * @param securityJson A string representation of security.json file (optional).
    * @param trackJettyMetrics supply jetties with metrics registry
-   * @param shutdownTimeout timeout in seconds for shutdown (default 60)
    * @param shutdownTimeoutIsError whether timeout during shutdown is an error (default true)
    * @throws Exception if there was an error starting the cluster
    */
@@ -275,7 +271,6 @@ public class MiniSolrCloudCluster {
       Optional<String> securityJson,
       boolean trackJettyMetrics,
       boolean formatZkServer,
-      int shutdownTimeout,
       boolean shutdownTimeoutIsError)
       throws Exception {
 
@@ -284,7 +279,6 @@ public class MiniSolrCloudCluster {
     this.jettyConfig = Objects.requireNonNull(jettyConfig);
     this.solrXml = solrXml == null ? DEFAULT_CLOUD_SOLR_XML : solrXml;
     this.trackJettyMetrics = trackJettyMetrics;
-    this.shutdownTimeout = shutdownTimeout;
     this.shutdownTimeoutIsError = shutdownTimeoutIsError;
 
     log.info("Starting cluster of {} servers in {}", numServers, baseDir);
@@ -685,12 +679,11 @@ public class MiniSolrCloudCluster {
       final ExecutorService executorCloser =
           ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
 
-      // Use a timeout to prevent indefinite hangs during shutdown, especially when cores
-      // are in a bad state (e.g., after tragic events). The default timeout is 60 seconds,
-      // but can be configured via the builder.
+      // Use a 60 second timeout to prevent indefinite hangs during shutdown, especially when cores
+      // are in a bad state (e.g., after tragic events). This is 2x Jetty's internal timeout.
       List<Future<JettySolrRunner>> futures;
       try {
-        futures = executorCloser.invokeAll(shutdowns, shutdownTimeout, TimeUnit.SECONDS);
+        futures = executorCloser.invokeAll(shutdowns, 60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         log.warn("Interrupted while shutting down jettys", e);
         Thread.currentThread().interrupt();
@@ -1066,7 +1059,6 @@ public class MiniSolrCloudCluster {
         EnvUtils.getPropertyAsBool("solr.cloud.overseer.enabled", true);
     private boolean formatZkServer = true;
     private boolean disableTraceIdGeneration = false;
-    private int shutdownTimeout = 60;
     private boolean shutdownTimeoutIsError = true;
 
     /**
@@ -1187,17 +1179,6 @@ public class MiniSolrCloudCluster {
     }
 
     /**
-     * Set the timeout for shutting down jetty instances
-     *
-     * @param shutdownTimeout timeout in seconds (default 60)
-     * @return the instance of {@linkplain Builder}
-     */
-    public Builder withShutdownTimeout(int shutdownTimeout) {
-      this.shutdownTimeout = shutdownTimeout;
-      return this;
-    }
-
-    /**
      * Configure whether a timeout during shutdown is treated as an error
      *
      * @param shutdownTimeoutIsError if true, timeout causes test failure; if false, timeout is
@@ -1242,7 +1223,6 @@ public class MiniSolrCloudCluster {
               securityJson,
               trackJettyMetrics,
               formatZkServer,
-              shutdownTimeout,
               shutdownTimeoutIsError);
       for (Config config : configs) {
         cluster.uploadConfigSet(config.path, config.name);
