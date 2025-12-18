@@ -27,8 +27,10 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
@@ -45,7 +47,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.BitsFilteredPostingsEnum;
 import org.apache.solr.search.DocIterationInfo;
 import org.apache.solr.search.DocSet;
@@ -67,7 +71,6 @@ class ChildDocTransformer extends DocTransformer {
   private final boolean isNestedSchema;
   private final SolrReturnFields childReturnFields;
   private final String[] extraRequestedFields;
-  private final String multiValuedVectorField = "vector";
 
 
   ChildDocTransformer(
@@ -143,6 +146,8 @@ class ChildDocTransformer extends DocTransformer {
       final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
+      Set<String> multiValuedVectorFields =
+          this.getMultiValuedVectorFields(searcher.getSchema(), childReturnFields);
 
       // can return be -1 and that's okay  (happens for very first block)
       final int segPrevRootId;
@@ -224,8 +229,11 @@ class ChildDocTransformer extends DocTransformer {
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
-            if(multiValuedVectorField != null) {
-              addFlatChildrenToParent(doc, pendingParentPathsToChildren.remove(fullDocPath));
+            if (!multiValuedVectorFields.isEmpty()) {
+              addFlatChildrenToParent(
+                  doc,
+                  pendingParentPathsToChildren.remove(fullDocPath),
+                  multiValuedVectorFields);
             } else {
               addChildrenToParent(
                   doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
@@ -257,8 +265,11 @@ class ChildDocTransformer extends DocTransformer {
       assert pendingParentPathsToChildren.keySet().size() == 1;
 
       // size == 1, so get the last remaining entry
-      if(multiValuedVectorField != null) {
-        addFlatChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
+      if (!multiValuedVectorFields.isEmpty()) {
+        addFlatChildrenToParent(
+            rootDoc,
+            pendingParentPathsToChildren.values().iterator().next(),
+            multiValuedVectorFields);
       } else {
         addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
       }
@@ -267,6 +278,27 @@ class ChildDocTransformer extends DocTransformer {
       // TODO DWS: reconsider this unusual error handling approach; shouldn't we rethrow?
       log.warn("Could not fetch child documents", e);
       rootDoc.put(getName(), "Could not fetch child documents");
+    }
+  }
+
+  private Set<String> getMultiValuedVectorFields(
+      IndexSchema schema,
+      SolrReturnFields childReturnFields) {
+    Set<String> multiValuedVectorsFields = new HashSet<>();
+    for (String fieldName : childReturnFields.getExplicitlyRequestedFieldNames()) {
+      SchemaField sfield = schema.getFieldOrNull(fieldName);
+      if (sfield.getType() instanceof DenseVectorField && sfield.multiValued()) {
+        multiValuedVectorsFields.add(fieldName);
+      }
+    }
+    if (multiValuedVectorsFields.size() != childReturnFields.getExplicitlyRequestedFieldNames()
+        .size()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "When using the Child transformer to flatten nested vectors, all 'fl' must be "
+              + "multivalued vector fields");
+    } else {
+      return multiValuedVectorsFields;
     }
   }
 
@@ -299,14 +331,20 @@ class ChildDocTransformer extends DocTransformer {
   }
 
   private void addFlatChildrenToParent(
-      SolrDocument parent, Map<String, List<SolrDocument>> children) {
-    List<SolrDocument> solrDocuments = children.get(NESTED_VECTORS_PSEUDO_FIELD_NAME);
-    for(SolrDocument singleVector: solrDocuments){
-      parent.addField(multiValuedVectorField, this.extractVector(singleVector.getFieldValues(multiValuedVectorField)));
+      SolrDocument parent, Map<String, List<SolrDocument>> children,
+      Set<String> multiValuedVectorFields) {
+    for (String multiValuedVectorField : multiValuedVectorFields) {
+      List<SolrDocument> solrDocuments = children.get(multiValuedVectorField);
+      List<List<Number>> multiValuedVectors = new ArrayList<>(solrDocuments.size());
+      for (SolrDocument singleVector : solrDocuments) {
+        multiValuedVectors.add(this.extractVector(singleVector.getFieldValues(multiValuedVectorField)));
+      }
+      parent.setField(multiValuedVectorField, multiValuedVectors);
     }
   }
 
-  private Object extractVector(Collection<Object> fieldValues) {
+  private List<Number> extractVector(Collection<Object> fieldValues) {
+    //manage Byte
     List<Number> vector = new ArrayList<>(fieldValues.size());
     for (Object fieldValue : fieldValues) {
       StoredField storedVectorValue = (StoredField) fieldValue;

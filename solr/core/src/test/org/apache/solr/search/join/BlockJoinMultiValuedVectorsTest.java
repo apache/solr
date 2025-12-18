@@ -163,9 +163,51 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
 
   @Test
   public void
-      parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild() { // new
-    // trasnformer best vector
-    //super.parentRetrievalByte_topKWithChildTransformerWithFilter_shouldReturnBestChild(
-       // VECTOR_BYTE_FIELD);
+  parentRetrievalFloat_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,"+VECTOR_FIELD+", [child fl="+ VECTOR_FIELD + " childFilter=$children.q]",
+            "children.q",
+            "{!knn f="
+                + VECTOR_FIELD
+                + " topK=3 allParents=$allParents}"
+                + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr/float[1][.='2.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr/float[1][.='5.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr/float[1][.='8.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr/float[4][.='1.0']");
+  }
+
+  @Test
+  public void
+      parentRetrievalByte_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,[child fl="+ VECTOR_BYTE_FIELD + " childFilter=$children.q]",
+            "children.q",
+            "{!knn f="
+                + VECTOR_BYTE_FIELD
+                + " topK=3 allParents=$allParents}"
+                + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[3]/str[@name='id'][.='8']");
   }
 }
