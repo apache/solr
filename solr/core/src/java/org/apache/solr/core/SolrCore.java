@@ -84,7 +84,8 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.ResourceLoader;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -181,6 +182,7 @@ import org.apache.solr.util.circuitbreaker.CircuitBreakerRegistry;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -489,7 +491,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Recalculates the index size.
+   * Calculates the index size.
    *
    * <p>Should only be called from {@code getIndexSize}.
    *
@@ -515,6 +517,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     return size;
   }
 
+  /** The index size in bytes, of the index that the current searcher is pointed to. */
   public long getIndexSize() {
     SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
     if (requestInfo != null) {
@@ -1267,10 +1270,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
       // ZK pre-register would have already happened so we read slice properties now
       final ClusterState clusterState = coreContainer.getZkController().getClusterState();
+      final CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
       final DocCollection collection =
-          clusterState.getCollection(coreDescriptor.getCloudDescriptor().getCollectionName());
-      final Slice slice = collection.getSlice(coreDescriptor.getCloudDescriptor().getShardId());
-      if (slice.getState() == Slice.State.CONSTRUCTION) {
+          clusterState.getCollection(cloudDescriptor.getCollectionName());
+      final Slice slice = collection.getSlice(cloudDescriptor.getShardId());
+      if (slice.getState() == Slice.State.CONSTRUCTION
+          && getUpdateHandler().getUpdateLog() != null) {
         // set update log to buffer before publishing the core
         getUpdateHandler().getUpdateLog().bufferUpdates();
       }
@@ -1345,10 +1350,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
             .put(CATEGORY_ATTR, Category.CORE.toString())
             .build();
 
-    var baseSearcherTimerMetric =
-        parentContext.longHistogram(
-            "solr_searcher_timer", "Timer for opening new searchers", OtelUnit.MILLISECONDS);
-
     newSearcherCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
@@ -1370,13 +1371,19 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     newSearcherTimer =
         new AttributedLongTimer(
-            baseSearcherTimerMetric,
-            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "new").build());
+            parentContext.longHistogram(
+                "solr_core_indexsearcher_open_time",
+                "Time to open new searchers",
+                OtelUnit.MILLISECONDS),
+            baseSearcherAttributes);
 
     newSearcherWarmupTimer =
         new AttributedLongTimer(
-            baseSearcherTimerMetric,
-            Attributes.builder().putAll(baseSearcherAttributes).put(TYPE_ATTR, "warmup").build());
+            parentContext.longHistogram(
+                "solr_core_indexsearcher_open_warmup_time",
+                "Time to warmup new searchers",
+                OtelUnit.MILLISECONDS),
+            baseSearcherAttributes);
 
     observables.add(
         parentContext.observableLongGauge(
@@ -1387,10 +1394,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
             })));
 
     observables.add(
-        parentContext.observableLongGauge(
+        parentContext.observableDoubleGauge(
             "solr_core_disk_space",
             "Solr core disk space metrics",
-            (observableLongMeasurement -> {
+            (observableDoubleMeasurement -> {
 
               // initialize disk total / free metrics
               Path dataDirPath = Path.of(dataDir);
@@ -1405,29 +1412,32 @@ public class SolrCore implements SolrInfoBean, Closeable {
                       .put(TYPE_ATTR, "usable_space")
                       .build();
               try {
-                observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getTotalSpace(), totalSpaceAttributes);
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getTotalSpace()),
+                    totalSpaceAttributes);
               } catch (IOException e) {
-                observableLongMeasurement.record(0L, totalSpaceAttributes);
+                observableDoubleMeasurement.record(0.0, totalSpaceAttributes);
               }
               try {
-                observableLongMeasurement.record(
-                    Files.getFileStore(dataDirPath).getUsableSpace(), usableSpaceAttributes);
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(Files.getFileStore(dataDirPath).getUsableSpace()),
+                    usableSpaceAttributes);
               } catch (IOException e) {
-                observableLongMeasurement.record(0L, usableSpaceAttributes);
+                observableDoubleMeasurement.record(0.0, usableSpaceAttributes);
               }
             }),
-            OtelUnit.BYTES));
+            OtelUnit.MEGABYTES));
 
     observables.add(
-        parentContext.observableLongGauge(
+        parentContext.observableDoubleGauge(
             "solr_core_index_size",
             "Index size for a Solr core",
-            (observableLongMeasurement -> {
+            (observableDoubleMeasurement -> {
               if (!isClosed())
-                observableLongMeasurement.record(getIndexSize(), baseGaugeCoreAttributes);
+                observableDoubleMeasurement.record(
+                    MetricUtils.bytesToMegabytes(getIndexSize()), baseGaugeCoreAttributes);
             }),
-            OtelUnit.BYTES));
+            OtelUnit.MEGABYTES));
 
     parentContext.observableLongGauge(
         "solr_core_segments",

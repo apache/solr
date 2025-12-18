@@ -17,7 +17,7 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
+import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -156,8 +156,8 @@ public class CreateRoutedAliasTest extends SolrCloudTestCase {
             .sum());
     // assertEquals(1, coll.getNumNrtReplicas().intValue()); // TODO seems to be erroneous; I
     // figured 'null'
-    assertEquals(1, coll.getNumTlogReplicas().intValue()); // per-shard
-    assertEquals(1, coll.getNumPullReplicas().intValue()); // per-shard
+    assertEquals(1, coll.getNumReplicas(Replica.Type.TLOG)); // per-shard
+    assertEquals(1, coll.getNumReplicas(Replica.Type.PULL)); // per-shard
     assertTrue(
         "nodeSet didn't work?",
         coll.getSlices().stream()

@@ -36,15 +36,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.ResponseParser;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -52,6 +54,10 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ServletFixtures.DebugServlet;
+import org.apache.solr.util.ServletFixtures.RedirectServlet;
+import org.apache.solr.util.ServletFixtures.SlowServlet;
+import org.apache.solr.util.ServletFixtures.SlowStreamServlet;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
 
@@ -74,15 +80,10 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder()
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.RedirectServlet.class),
-                REDIRECT_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.SlowServlet.class), SLOW_SERVLET_REGEX)
+            .withServlet(new ServletHolder(RedirectServlet.class), REDIRECT_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowServlet.class), SLOW_SERVLET_REGEX)
             .withServlet(new ServletHolder(DebugServlet.class), DEBUG_SERVLET_REGEX)
-            .withServlet(
-                new ServletHolder(BasicHttpSolrClientTest.SlowStreamServlet.class),
-                SLOW_STREAM_SERVLET_REGEX)
+            .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
     createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
@@ -91,7 +92,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   @Override
   public void tearDown() throws Exception {
     System.clearProperty("solr.security.auth.basicauth.credentials");
-    System.clearProperty(HttpClientUtil.SYS_PROP_HTTP_CLIENT_BUILDER_FACTORY);
+    System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
     DebugServlet.clear();
     super.tearDown();
   }
@@ -230,22 +231,22 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     Collection<String> ids = Collections.singletonList("a");
     try {
       client.getById("a");
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById(ids, null);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", "a");
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     try {
       client.getById("foo", ids, null);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
   }
 
@@ -292,7 +293,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
     try {
       client.request(req);
-    } catch (SolrClient.RemoteSolrException ignored) {
+    } catch (RemoteSolrException ignored) {
     }
 
     assertEquals("post", DebugServlet.lastMethod);
@@ -389,7 +390,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -405,7 +406,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "requestOnly", "notRequest");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
 
@@ -421,7 +422,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       verifyServletState(client, req);
     }
@@ -438,7 +439,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
       setReqParamsOf(req, "serverOnly", "requestOnly", "both", "neither");
       try {
         client.request(req);
-      } catch (SolrClient.RemoteSolrException ignored) {
+      } catch (RemoteSolrException ignored) {
       }
       // NOTE: single stream requests send all the params
       // as part of the query string.  So add "neither" to the request,
@@ -650,7 +651,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         ee = ee1;
       }
       assertTrue(future.isCompletedExceptionally());
-      assertTrue(ee.getCause() instanceof SolrClient.RemoteSolrException);
+      assertTrue(ee.getCause() instanceof RemoteSolrException);
       assertTrue(ee.getMessage(), ee.getMessage().contains("mime type"));
     }
   }

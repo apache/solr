@@ -84,8 +84,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "permanent"));
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "unloaded"));
 
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "total_space"));
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "usable_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "total_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "usable_space"));
   }
 
   private static GaugeDataPointSnapshot getGaugeOpt(

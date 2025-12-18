@@ -17,7 +17,6 @@
 package org.apache.solr.servlet;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -26,7 +25,6 @@ import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.impl.cookie.DateUtils;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -42,24 +40,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     Path solrHomeDirectory = createTempDir();
     setupJettyTestHome(solrHomeDirectory, "collection1");
     createAndStartJetty(solrHomeDirectory);
-  }
-
-  protected static final String CONTENTS = "id\n100\n101\n102";
-
-  @Test
-  public void testCacheVetoHandler() throws Exception {
-    Path f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
-    HttpRequestBase m =
-        getUpdateMethod(
-            "GET",
-            CommonParams.STREAM_FILE,
-            f.toRealPath().toString(),
-            CommonParams.STREAM_CONTENTTYPE,
-            "text/csv");
-    HttpResponse response = getHttpClient().execute(m);
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    checkVetoHeaders(response, true);
-    Files.delete(f);
   }
 
   @Test

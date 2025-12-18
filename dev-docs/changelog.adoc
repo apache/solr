@@ -37,7 +37,7 @@ solr/
 
 == 3. The YAML format
 
-Below is an example of a changelog yaml fragment. The full yaml format is xref:https://logchange.dev/tools/logchange/reference/#tasks[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
+Below is an example of a changelog yaml fragment. The full yaml format is https://logchange.dev/tools/logchange/reference/#yaml-entry-format[documented here], but we normally only need `title`, `type`, `authors` and `links`. For a change without a JIRA, you can add the PR number in `issues`:
 
 [source, yaml]
 ----
@@ -120,7 +120,12 @@ The logchange gradle plugin offers some tasks, here are the two most important:
 
 | `logchangeRelease`
 | Creates a new changelog release by moving files from `changelog/unreleased/` directory to `changelog/vX.Y.Z` directory
+
+| `logchangeArchive`
+| Archives the list of released versions up to (and including) the specified version by transferring their summaries to the `archive.md` file, merging all existing archives, and deleting the corresponding version directories.
 |===
+
+The `logchangeRelease` and `logchangeGenerate` tasks are used by ReleaseWizard. The `logchangeArchive` task can be ran once for every major release or when the number of versioned changelog folders grow too large.
 
 These are integrated in the Release Wizard.
 
@@ -155,7 +160,92 @@ links:
   url: https://issues.apache.org/jira/browse/SOLR-17960
 ----
 
+=== 6.3 Changelog validation tool
+
+There is a tool `dev-tools/scripts/validateChangelogs.py` that will do a
+cross-branch validation of changelog folders. It takes no arguments and
+discovers the branch structure automatically, and checks that each branch
+(unstable, stable, release, previous-stable, previous-bugfix) are in sync
+with remote and "clean". Then it checks that the changelog folders are the
+same across branches and computes some statistics on how many unreleased
+features are from each branch.
+
+The tool can also output a consolidated `CHANGELOG.md` file which calculates
+what (unreleased) features are likely to be released in what version. This
+resembles what we used to have in our `CHANGES.txt` on main branch before.
+The tool is integrated in the releaseWizard.
+
+    usage: validateChangelogs.py -h
+
+Example report output (Json or Markdown):
+
+[source,json,title=Example json report]
+----
+{
+  "success": false,
+  "errors": [
+    "Folder v9.8.1 not found on branches: {'branch_9_9'}",
+    "Folder v9.9.0 not found on branches: {'branch_9_9'}"
+  ],
+  "warnings": [],
+  "branch_report": {
+    "branch_9_9": {
+      "version": "9.9.1",
+      "has_changelog_folder": false,
+      "id": "previous_major_bugfix"
+    },
+    "branch_9x": {
+      "version": "9.10.0",
+      "unreleased_count": 31,
+      "id": "previous_major_stable",
+      "new_count": 31,
+      "new": [
+        "SOLR-17541-deprecate -cloudhttp2solrclient-builder.yml",
+        "SOLR-17619 Use logchange for changelog management.yml"
+      ],
+      "not_in_newer_count": 1,
+      "not_in_newer": [
+        "SOLR-17541-deprecate -cloudhttp2solrclient-builder.yml"
+      ]
+    },
+    "branch_10_0": {
+      "version": "10.0.0",
+      "unreleased_count": 146,
+      "id": "release",
+      "new_count": 5,
+      "new": [
+        "GITHUB#3666-removing redundant check if field exists in.yml",
+        "SOLR-12089-remove deprecated -breaksugestiontiebreaker-.yml",
+        "SOLR-14070-deprecate cloudsolrclient-s zookeeper hosts.yml"
+      ],
+      "not_in_newer_count": 2,
+      "not_in_newer": [
+        "SOLR-16562-solr-16578- upgrade caffeine to 3-1-4 and.yml",
+        "SOLR-17012-update apache hadoop to 3-3-6 and apache curator.yml"
+      ]
+    },
+    "branch_10x": {
+      "version": "10.1.0",
+      "unreleased_count": 147,
+      "id": "stable",
+      "new_count": 2,
+      "new": [
+        "PR#3758-logs- removed webapp-solr and also removed from.yml",
+        "SOLR-17963-these solrcloud commands no longer aquire locks.yml"
+      ]
+    },
+    "main": {
+      "version": "11.0.0",
+      "unreleased_count": 147,
+      "id": "main",
+      "new_count": 0,
+      "new": []
+    }
+  }
+}
+----
+
 == 7. Further Reading
 
-* xref:https://github.com/logchange/logchange[Logchange web page]
-* xref:https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
+* https://github.com/logchange/logchange[Logchange web page]
+* https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]

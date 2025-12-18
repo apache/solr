@@ -41,10 +41,8 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
 
   <solrcloud>
 
-    <str name="host">${host:}</str>
+    <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-
-    <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
@@ -64,10 +62,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <int name="socketTimeout">${socketTimeout:600000}</int>
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
-
-  <metrics enabled="${metricsEnabled:true}">
-    <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
-  </metrics>
 
 </solr>
 ----
@@ -222,15 +216,6 @@ This attribute does not need to be set.
 If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 This service is used when Solr is starting to prioritize which cores should be loaded first.
 For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
-
-`managementPath`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Currently non-operational.
 
 `sharedLib`::
 +
@@ -399,7 +384,7 @@ For example, if the Solr node is running behind a proxy or in a cloud environmen
 `hostPort` is the port that the Solr instance wants other nodes to contact it at.
 +
 In the default `solr.xml` file, this is set to `${solr.port.advertise:0}`.
-If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${jetty.port}`.
+If no port is passed via the `solr.xml` (i.e., `0`), then Solr will default to the port that jetty is listening on, defined by `${solr.port.listen}`.
 
 `leaderVoteWait`::
 +
@@ -439,16 +424,6 @@ It is used with SolrCloud.
 |===
 +
 In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluster state information.
-
-`genericCoreNodeNames`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-If `true`, node names are not based on the address of the node, but on a generic name that identifies the core.
-When a different machine takes over serving that core things will be much easier to understand.
 
 `zkCredentialsProvider`, `zkACLProvider` & `zkCredentialsInjector`::
 +
@@ -695,13 +670,6 @@ The `name` attribute is required and must be unique for each `clusterSingleton`.
 
 The `class` attribute should be set to the FQN (fully qualified name) of a class that extends `ClusterSingleton`.
 Sub-elements are specific to the implementation, `value1` is provided as an example here.
-
-=== The <metrics> Element
-
-The `<metrics>` element in `solr.xml` allows you to customize the metrics reported by Solr.
-You can define system properties that should not be returned, or define custom suppliers and reporters.
-
-If you would like to customize the metrics for your installation, see the xref:deployment-guide:metrics-reporting.adoc#metrics-configuration[Metrics Configuration] section.
 
 === The <caches> Element
 

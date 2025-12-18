@@ -21,8 +21,6 @@
 -->
 <solr>
 
-  <metrics enabled="${metricsEnabled:true}"/>
-
   <str name="shareSchema">${shareSchema:false}</str>
   <str name="configSetBaseDir">${configSetBaseDir:configsets}</str>
   <str name="coreRootDirectory">${coreRootDirectory:.}</str>
@@ -39,7 +37,6 @@
     <str name="host">127.0.0.1</str>
     <int name="hostPort">${hostPort:8983}</int>
     <int name="zkClientTimeout">${solr.zookeeper.client.timeout:60000}</int> <!-- This should be high by default - dc's are expensive -->
-    <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
     <int name="leaderVoteWait">${leaderVoteWait:15000}</int>   <!-- We are running tests - the default should be low, not like production -->
     <int name="leaderConflictResolveWait">${leaderConflictResolveWait:45000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:5000}</int>

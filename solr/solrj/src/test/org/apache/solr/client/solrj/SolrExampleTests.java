@@ -44,25 +44,26 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.client.solrj.response.RangeFacet.Count;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -750,14 +751,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          SolrClient.RemoteSolrException.class,
+          RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
           concurrentClient
               .lastError
               .getMessage()
-              .contains("Remote error message: Document contains multiple values for uniqueKey"));
+              .contains(
+                  "org.apache.solr.common.SolrException: Document contains multiple values for uniqueKey"));
     } else {
       if (log.isInfoEnabled()) {
         log.info("Ignoring update test for client: {}", client.getClass().getName());
@@ -911,31 +913,26 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
-    SolrClient client = createNewSolrClient();
+    try (SolrClient client = createNewSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
 
-    client.deleteByQuery("*:*");
-    client.commit();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id1");
 
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "id1");
+      UpdateRequest req = new UpdateRequest();
+      req.setParam("overwrite", "false");
+      req.add(doc);
+      client.request(req);
+      client.request(req);
+      client.commit();
 
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("overwrite", "false");
-    req.add(doc);
-    client.request(req);
-    client.request(req);
-    client.commit();
+      SolrQuery query = new SolrQuery();
+      query.setQuery("*:*");
+      QueryResponse rsp = client.query(query);
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = client.query(query);
-
-    SolrDocumentList out = rsp.getResults();
-    assertEquals(2, out.getNumFound());
-    if (!(client instanceof EmbeddedSolrServer)) {
-      /* Do not close in case of using EmbeddedSolrServer,
-       * as that would close the CoreContainer */
-      client.close();
+      SolrDocumentList out = rsp.getResults();
+      assertEquals(2, out.getNumFound());
     }
   }
 
@@ -1473,7 +1470,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
           "{!key=pivot_key stats=s1}features,manu,cat,inStock"
         }) {
 
-      // for any of these pivot params, the assertions we check should be teh same
+      // for any of these pivot params, the assertions we check should be the same
       // (we stop asserting at the "manu" level)
 
       SolrQuery query = new SolrQuery("*:*");
@@ -2440,7 +2437,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("Conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
           SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
@@ -2450,7 +2447,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       }
     } catch (SolrException se) {
       assertTrue(

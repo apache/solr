@@ -40,10 +40,9 @@ import org.apache.commons.exec.OS;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
@@ -72,7 +71,8 @@ public final class CLIUtils {
     // note that ENV_VAR syntax (and the env vars too) are mapped to env.var sys props
     String scheme = EnvUtils.getProperty("solr.url.scheme", "http");
     String host = EnvUtils.getProperty("solr.host", "localhost");
-    String port = EnvUtils.getProperty("jetty.port", "8983"); // from SOLR_PORT env
+    String port = EnvUtils.getProperty("solr.port.listen", "8983");
+
     return String.format(Locale.ROOT, "%s://%s:%s", scheme.toLowerCase(Locale.ROOT), host, port);
   }
 
@@ -108,8 +108,8 @@ public final class CLIUtils {
     if (!barePath && !solrUrl.endsWith("/solr") && !solrUrl.contains("/solr/")) {
       solrUrl = solrUrl + "/solr";
     }
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder(solrUrl)
+    var builder =
+        new HttpJettySolrClient.Builder(solrUrl)
             .withMaxConnectionsPerHost(32)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
             .withOptionalBasicAuthCredentials(credentials);
@@ -199,7 +199,7 @@ public final class CLIUtils {
                 + solrUrl
                 + ".");
       } else {
-        try (CloudSolrClient cloudSolrClient = getCloudHttp2SolrClient(zkHost)) {
+        try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
           cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
@@ -282,13 +282,13 @@ public final class CLIUtils {
         .build();
   }
 
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(String zkHost) {
-    return getCloudHttp2SolrClient(zkHost, null);
+  public static CloudSolrClient getCloudSolrClient(String zkHost) {
+    return getCloudSolrClient(zkHost, null);
   }
 
-  public static CloudHttp2SolrClient getCloudHttp2SolrClient(
-      String zkHost, Http2SolrClient.Builder builder) {
-    return new CloudHttp2SolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
+  public static CloudSolrClient getCloudSolrClient(
+      String zkHost, HttpJettySolrClient.Builder builder) {
+    return new CloudSolrClient.Builder(Collections.singletonList(zkHost), Optional.empty())
         .withHttpClientBuilder(builder)
         .build();
   }

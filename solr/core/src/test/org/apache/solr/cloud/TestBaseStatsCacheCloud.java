@@ -26,10 +26,10 @@ import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -153,7 +153,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
           String output = new String(in.readAllBytes(), StandardCharsets.UTF_8);
 
           for (String line : output.lines().toList()) {
-            if (line.startsWith("solr_searcher_termstats_cache")) {
+            if (line.startsWith("solr_core_indexsearcher_termstats_cache")) {
               String type = extractTypeAttribute(line);
               long value = extractMetricValue(line);
               switch (type) {
@@ -242,7 +242,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
 
   /**
    * Extract type label value from Prometheus format line
-   * "solr_searcher_stats_cache{...type="lookups",...}" -> "lookups"
+   * "solr_core_indexsearcher_termstats_cache{...type="lookups",...}" -> "lookups"
    */
   private String extractTypeAttribute(String line) {
     java.util.regex.Pattern pattern = java.util.regex.Pattern.compile("\\btype=\"([^\"]+)\"");
@@ -254,8 +254,8 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
   }
 
   /**
-   * Extract numeric value from Prometheus format line. "solr_searcher_stats_cache{...} 123.0" ->
-   * 123
+   * Extract numeric value from Prometheus format line.
+   * "solr_core_indexsearcher_termstats_cache{...} 123.0" -> 123
    */
   private long extractMetricValue(String line) {
     String valueStr = line.substring(line.lastIndexOf(' ') + 1);

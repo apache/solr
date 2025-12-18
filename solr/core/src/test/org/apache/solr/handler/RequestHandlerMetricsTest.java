@@ -19,10 +19,10 @@ package org.apache.solr.handler;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.Labels;
 import java.io.IOException;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
@@ -121,30 +121,34 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_requests",
+                  "solr_core_requests",
                   Labels.builder()
                       .label("category", "QUERY")
                       .label("handler", "/select")
+                      .label("internal", "false")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
       CounterSnapshot.CounterDataPointSnapshot nodeUpdateRequests =
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_requests",
+                  "solr_core_requests",
                   Labels.builder()
                       .label("category", "UPDATE")
                       .label("handler", "/update")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
       CounterSnapshot.CounterDataPointSnapshot nodeSubmittedOps =
           (CounterSnapshot.CounterDataPointSnapshot)
               SolrMetricTestUtils.getDataPointSnapshot(
                   nodeReader,
-                  "solr_node_update_submitted_ops",
+                  "solr_core_update_submitted_ops",
                   Labels.builder()
                       .label("category", "UPDATE")
                       .label("ops", "adds")
+                      .label("replica_type", "NRT")
                       .label("otel_scope_name", "org.apache.solr")
                       .build());
 

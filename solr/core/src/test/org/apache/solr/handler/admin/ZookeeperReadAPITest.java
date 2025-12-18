@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.api.model.ZooKeeperStat;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.ZookeeperReadApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -117,7 +116,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
 
   @Test
   public void testRequestingDataFromNonexistentNodeReturnsAnError() throws Exception {
-    try (HttpSolrClient client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
+    try (var client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
       final var missingNodeReq = new ZookeeperReadApi.ReadNode("/configs/_default/nonexistentnode");
       final var missingNodeResponse = missingNodeReq.process(client);
       assertEquals(404, missingNodeResponse.getHttpStatus());
@@ -131,7 +130,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
 
   @Test
   public void testCanListChildNodes() throws Exception {
-    try (HttpSolrClient client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
+    try (var client = new HttpApacheSolrClient.Builder(baseUrl.toString()).build()) {
       final var listDefaultFilesReq = new ZookeeperReadApi.ListNodes("/configs/_default");
       final var listDefaultFilesResponse = listDefaultFilesReq.process(client);
 

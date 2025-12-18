@@ -26,9 +26,8 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
@@ -96,7 +95,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
  *
  * @since solr 1.4
- * @deprecated Please use {@link LBHttp2SolrClient}
+ * @deprecated Not supporting Apache HttpClient based implementations anymore
  */
 @Deprecated(since = "9.0")
 public class LBHttpSolrClient extends LBSolrClient {

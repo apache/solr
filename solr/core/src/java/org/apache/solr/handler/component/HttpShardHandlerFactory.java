@@ -31,10 +31,11 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.LBHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.LBAsyncSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
@@ -61,7 +62,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.stats.InstrumentedHttpListenerFactory;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,9 +81,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   // This executor is initialized in the init method
   protected ExecutorService commExecutor;
 
-  protected volatile Http2SolrClient defaultClient;
+  protected volatile HttpJettySolrClient defaultClient;
   protected InstrumentedHttpListenerFactory httpListenerFactory;
-  protected LBHttp2SolrClient<Http2SolrClient> loadbalancer;
+  protected LBAsyncSolrClient loadbalancer;
 
   int corePoolSize = 0;
   int maximumPoolSize = Integer.MAX_VALUE;
@@ -301,14 +301,14 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
             args, SolrHttpConstants.PROP_SO_TIMEOUT, SolrHttpConstants.DEFAULT_SO_TIMEOUT, sb);
 
     this.defaultClient =
-        new Http2SolrClient.Builder()
+        new HttpJettySolrClient.Builder()
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(soTimeout, TimeUnit.MILLISECONDS)
             .withExecutor(commExecutor)
             .withMaxConnectionsPerHost(maxConnectionsPerHost)
             .build();
     this.defaultClient.addListenerFactory(this.httpListenerFactory);
-    this.loadbalancer = new LBHttp2SolrClient.Builder<Http2SolrClient>(defaultClient).build();
+    this.loadbalancer = new LBJettySolrClient.Builder(defaultClient).build();
 
     initReplicaListTransformers(getParameter(args, "replicaRouting", null, sb));
 
@@ -436,7 +436,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     solrMetricsContext = parentContext.getChildContext(this);
     httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
-        MetricUtils.instrumentedExecutorService(
-            commExecutor, solrMetricsContext, SolrInfoBean.Category.QUERY, "httpShardExecutor");
+        solrMetricsContext.instrumentedExecutorService(
+            commExecutor, "solr_core_executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
   }
 }

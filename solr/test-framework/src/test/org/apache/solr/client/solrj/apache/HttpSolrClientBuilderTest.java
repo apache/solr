@@ -21,12 +21,11 @@ import java.io.IOException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.HttpSolrClient;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient.Builder;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
 
@@ -43,8 +42,7 @@ public class HttpSolrClientBuilderTest extends SolrTestCase {
 
   @Test
   public void testProvidesBaseSolrUrlToClient() throws IOException {
-    try (HttpSolrClient createdClient =
-        new HttpApacheSolrClient.Builder(ANY_BASE_SOLR_URL).build()) {
+    try (var createdClient = new HttpApacheSolrClient.Builder(ANY_BASE_SOLR_URL).build()) {
       assertEquals(ANY_BASE_SOLR_URL, createdClient.getBaseURL());
     }
   }
