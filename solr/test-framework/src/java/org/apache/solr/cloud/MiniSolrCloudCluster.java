@@ -673,7 +673,20 @@ public class MiniSolrCloudCluster {
       jettys.clear();
       final ExecutorService executorCloser =
           ExecutorUtil.newMDCAwareCachedThreadPool(new SolrNamedThreadFactory("jetty-closer"));
-      Collection<Future<JettySolrRunner>> futures = executorCloser.invokeAll(shutdowns);
+
+      // Use a timeout to prevent indefinite hangs during shutdown, especially when cores
+      // are in a bad state (e.g., after tragic events). 60 seconds should be enough for
+      // parallel shutdown of all jettys in most cases.
+      Collection<Future<JettySolrRunner>> futures;
+      try {
+        futures = executorCloser.invokeAll(shutdowns, 60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        log.warn("Interrupted while shutting down jettys", e);
+        Thread.currentThread().interrupt();
+        executorCloser.shutdownNow();
+        throw e;
+      }
+
       ExecutorUtil.shutdownAndAwaitTermination(executorCloser);
       Exception shutdownError =
           checkForExceptions("Error shutting down MiniSolrCloudCluster", futures);
@@ -775,6 +788,11 @@ public class MiniSolrCloudCluster {
       } catch (ExecutionException e) {
         log.error(message, e);
         parsed.addSuppressed(e.getCause());
+        ok = false;
+      } catch (java.util.concurrent.CancellationException e) {
+        // Future was cancelled due to timeout - log but don't fail the shutdown
+        log.warn("Jetty shutdown task was cancelled (likely due to timeout)", e);
+        parsed.addSuppressed(e);
         ok = false;
       } catch (InterruptedException e) {
         log.error(message, e);
