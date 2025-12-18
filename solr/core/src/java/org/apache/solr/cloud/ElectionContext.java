@@ -65,7 +65,7 @@ public abstract class ElectionContext implements Closeable {
     }
   }
 
-  abstract void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
+  abstract void runLeaderProcess(boolean weAreReplacement)
       throws KeeperException, InterruptedException;
 
   public void checkIfIamLeaderFired() {}

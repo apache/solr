@@ -166,7 +166,7 @@ public class LeaderElector {
 
   protected void runIamLeaderProcess(final ElectionContext context, boolean weAreReplacement)
       throws KeeperException, InterruptedException {
-    context.runLeaderProcess(weAreReplacement, 0);
+    context.runLeaderProcess(weAreReplacement);
   }
 
   /**
