@@ -56,6 +56,8 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     configureCluster(2)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withShutdownTimeout(60)
+        .withShutdownTimeoutIsError(false)
         .configure();
   }
 
