@@ -42,9 +42,6 @@ grant {
   permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
 
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
-  // DirectoryFactoryTest messes with these (wtf?)
-  permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
-  permission java.io.FilePermission "/path/to/myinst/conf/solrcore.properties", "read";
   // TestConfigSets messes with these (wtf?)
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
 

@@ -36,7 +36,7 @@ apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.1"
-apache-log4j = "2.21.0"
+apache-log4j = "2.25.3"
 apache-lucene = "10.3.2"
 apache-opennlp = "2.5.6"
 apache-rat = "0.15"
@@ -45,7 +45,6 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
 apiguardian = "1.1.2"
-aqute-bnd = "6.4.1"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
@@ -304,7 +303,6 @@ apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", versio
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
-aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -492,7 +490,6 @@ opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentel
 opentelemetry-sdk-metrics = { module = "io.opentelemetry:opentelemetry-sdk-metrics", version.ref = "opentelemetry" }
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdk-trace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
-osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
 oshai-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "oshai-logging" }
 # @keep transitive dependency for version alignment
 ow2-asm-asm = { module = "org.ow2.asm:asm", version.ref = "ow2-asm" }
