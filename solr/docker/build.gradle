@@ -207,7 +207,7 @@ task dockerBuild() {
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    def platformValue = inputs.properties.dockerImagePlatforms.trim()
+    def platformValue = inputs.properties.dockerImagePlatforms.toString().trim()
     validatePlatformFormat(platformValue)
     def useSinglePlatform = !platformValue.isEmpty() && !platformValue.contains(',')
 
@@ -314,7 +314,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
   mustRunAfter tasks.testDocker
 
   doLast {
-    def platformValue = inputs.properties.dockerImagePlatforms.trim()
+    def platformValue = inputs.properties.dockerImagePlatforms.toString().trim()
     validatePlatformFormat(platformValue)
 
     if (isMultiPlatform()) {
@@ -324,12 +324,12 @@ task dockerPush(dependsOn: tasks.dockerTag) {
       def builderInfo = getBuildxBuilderInfo()
 
       // Verify the builder supports the requested platforms (fail fast)
-      def requestedPlatforms = platformValue.split(',').collect { it.trim() }
+      def requestedPlatforms = platformValue.split(",").collect { it.trim() }
       def missingPlatforms = []
       requestedPlatforms.each { platform ->
         // Check for exact platform match - use delimiters instead of word boundaries
         // Match platform at start/end or surrounded by commas/spaces
-        def platformPattern = "(?:^|[,\\s])" + java.util.regex.Pattern.quote(platform) + "(?:[,\\s]|\$)"
+        def platformPattern = "(?:^|[,\\s])" + Pattern.quote(platform) + "(?:[,\\s]|\$)"
         if (!(builderInfo =~ platformPattern).find()) {
           missingPlatforms.add(platform)
         }
