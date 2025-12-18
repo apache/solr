@@ -85,8 +85,7 @@ public abstract class MultiSolrCloudTestCase extends SolrTestCaseJ4 {
   protected static void doSetupClusters(
       final String[] clusterIds,
       final Function<String, MiniSolrCloudCluster> createFunc,
-      final BiConsumer<String, MiniSolrCloudCluster> initFunc)
-      throws Exception {
+      final BiConsumer<String, MiniSolrCloudCluster> initFunc) {
 
     for (final String clusterId : clusterIds) {
       assertFalse("duplicate clusterId " + clusterId, clusterId2cluster.containsKey(clusterId));
