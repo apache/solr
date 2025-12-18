@@ -253,7 +253,7 @@ public class NodeConfig {
               .withConnTimeOut(startUpZkTimeOut, TimeUnit.MILLISECONDS)
               .withSolrClassLoader(loader)
               .build()) {
-        zkClient.exists("/configs", true);
+        zkClient.exists("/configs");
       } catch (Exception e) {
         throw new SolrException(
             ErrorCode.SERVER_ERROR, "Error occurred while testing zookeeper connection", e);

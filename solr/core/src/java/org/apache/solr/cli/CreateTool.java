@@ -254,9 +254,7 @@ public class CreateTool extends ToolBase {
     boolean configExistsInZk =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient)
-                .getZkClient()
-                .exists("/configs/" + confName, true);
+            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
 
     if (configExistsInZk) {
       echo("Re-using existing configuration directory " + confName);
