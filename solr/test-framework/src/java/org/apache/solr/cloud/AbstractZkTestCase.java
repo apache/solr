@@ -49,7 +49,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   protected static volatile Path zkDir;
 
   @BeforeClass
-  public static void azt_beforeClass() throws Exception {
+  public static void aztBeforeClass() throws Exception {
     zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
