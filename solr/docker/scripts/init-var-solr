@@ -59,6 +59,6 @@ fi
 if [ ! -f "$DIR/log4j2.xml" ]; then
     cp -a /opt/solr/server/resources/log4j2.xml "$DIR/log4j2.xml"
 elif grep -q 'solr\.log\.dir' "$DIR/log4j2.xml"; then
-    [ -w "$DIR/log4j2.xml" ] && sed -i 's/solr\.log\.dir/solr.logs.dir/g' "$DIR/log4j2.xml" 2>/dev/null || echo "Warning: Could not migrate solr.log.dir to solr.logs.dir in $DIR/log4j2.xml" >&2
+    sed -i 's/solr\.log\.dir/solr.logs.dir/g' "$DIR/log4j2.xml" 2>/dev/null || echo "Warning: Could not migrate solr.log.dir to solr.logs.dir in $DIR/log4j2.xml" >&2
 fi
 
