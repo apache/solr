@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Update langchain4j version to 1.9.1
+title: Update langchain4j version to 1.9.1 and fasterxml to 2.20.1
 type: dependency_update
 authors:
   - name: Ilaria Petreti
