@@ -1,7 +1,7 @@
 # Errorprone must stay on 2.31.0 on 9.x to play nice with JDK11
 # Please only add direct dependencies. Overrides of transitive versions should be called out in a comment.
 # The lines in this file needs to be lexicographically sorted.
-biz.aQute.bnd:biz.aQute.bnd.annotation=7.1.0
+biz.aQute.bnd:biz.aQute.bnd.annotation=6.4.1
 com.adobe.testing:s3mock-junit4=2.17.0
 com.carrotsearch.randomizedtesting:*=2.8.3
 com.carrotsearch:hppc=0.10.0
