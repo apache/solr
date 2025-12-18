@@ -855,7 +855,7 @@ public class MiniSolrCloudCluster {
         ok = false;
       } catch (CancellationException e) {
         if (shutdownTimeoutIsError) {
-          log.error("Jetty shutdown task was cancelled (likely due to timeout)", e);
+          log.error(message, e);
           parsed.addSuppressed(e);
           ok = false;
         } else {
