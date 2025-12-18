@@ -132,7 +132,7 @@ java-min = "21"
 java-solrj = "17"
 javacc = "7.0.13"
 # @keep for version alignment
-jaxb = "2.3.9"
+jaxb = "4.0.6"
 jayway-jsonpath = "2.9.0"
 jctools = "4.0.5"
 jersey = "3.1.11"
