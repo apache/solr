@@ -43,6 +43,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -789,9 +790,8 @@ public class MiniSolrCloudCluster {
         log.error(message, e);
         parsed.addSuppressed(e.getCause());
         ok = false;
-      } catch (java.util.concurrent.CancellationException e) {
-        // Future was cancelled due to timeout - log but don't fail the shutdown
-        log.warn("Jetty shutdown task was cancelled (likely due to timeout)", e);
+      } catch (CancellationException e) {
+        log.error("Jetty shutdown task was cancelled (likely due to timeout)", e);
         parsed.addSuppressed(e);
         ok = false;
       } catch (InterruptedException e) {
