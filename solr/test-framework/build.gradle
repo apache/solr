@@ -50,8 +50,14 @@ dependencies {
 
   implementation 'commons-io:commons-io'
   implementation 'org.slf4j:slf4j-api'
-  implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation('org.apache.logging.log4j:log4j-api', {
+    exclude group: 'biz.aQute.bnd', module:'biz.aQute.bnd.annotation'
+    because 'https://github.com/apache/logging-log4j2/issues/4007'
+  })
+  implementation('org.apache.logging.log4j:log4j-core', {
+    exclude group: 'biz.aQute.bnd', module:'biz.aQute.bnd.annotation'
+    because 'https://github.com/apache/logging-log4j2/issues/4007'
+  })
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   implementation 'io.opentracing:opentracing-api'

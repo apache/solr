@@ -151,8 +151,14 @@ dependencies {
 
   implementation 'org.apache.commons:commons-exec'
 
-  implementation 'org.apache.logging.log4j:log4j-api'
-  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation('org.apache.logging.log4j:log4j-api', {
+    exclude group: 'biz.aQute.bnd', module:'biz.aQute.bnd.annotation'
+    because 'https://github.com/apache/logging-log4j2/issues/4007'
+  })
+  implementation('org.apache.logging.log4j:log4j-core', {
+    exclude group: 'biz.aQute.bnd', module:'biz.aQute.bnd.annotation'
+    because 'https://github.com/apache/logging-log4j2/issues/4007'
+  })
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j2-impl'
 
   // For the PrometheusResponseWriter
@@ -166,8 +172,14 @@ dependencies {
   implementation 'org.codehaus.woodstox:stax2-api'
   implementation 'com.fasterxml.woodstox:woodstox-core'
   // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
-  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
   compileOnly 'org.osgi:osgi.annotation'
+  // Only needed to prevent an `-Xlint:classfile` warning during compilation:
+  //
+  // woodstox-core-7.0.0.jar(/com/ctc/wstx/stax/WstxInputFactory.class):
+  // warning: Cannot find annotation method 'value()' in type 'ServiceProvider': class file for aQute.bnd.annotation.spi.ServiceProvider not found
+  //
+  // Otherwise, the absence of these annotations at compile time has no effect.
+  compileOnly 'biz.aQute.bnd:biz.aQute.bnd.annotation'
 
   compileOnly 'com.github.stephenc.jcip:jcip-annotations'
 
