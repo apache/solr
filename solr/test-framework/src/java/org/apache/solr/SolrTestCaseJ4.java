@@ -1188,9 +1188,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(doc)));
     handler.handleRequestBody(req, new SolrQueryResponse());
     req.close();
   }
@@ -1365,9 +1363,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, args);
     if (json != null && !json.isEmpty()) {
-      ArrayList<ContentStream> streams = new ArrayList<>();
-      streams.add(new ContentStreamBase.StringStream(json));
-      req.setContentStreams(streams);
+      req.setContentStreams(List.of(new ContentStreamBase.StringStream(json)));
     }
 
     SolrQueryResponse rsp = new SolrQueryResponse();
