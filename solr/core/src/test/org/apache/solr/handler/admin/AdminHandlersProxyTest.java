@@ -82,16 +82,15 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
         node -> {
           MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
           SystemInfoRequest req = new SystemInfoRequest(params);
-          SystemInfoResponse rsp = null;
           try {
-            rsp = req.process(solrClient, null);
+            SystemInfoResponse rsp = req.process(solrClient, null);
+            NamedList<Object> nl = rsp.getResponse();
+            assertEquals(2, nl.size());
+            assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
+            assertEquals(nl.getName(1), ((NamedList) nl.get(nl.getName(1))).get("node"));
           } catch (Exception e) {
             fail("Exception while proxying request to node " + node);
           }
-          NamedList<Object> nl = rsp.getResponse();
-          assertEquals(2, nl.size());
-          assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
-          assertEquals(nl.getName(1), ((NamedList) nl.get(nl.getName(1))).get("node"));
         });
   }
 }

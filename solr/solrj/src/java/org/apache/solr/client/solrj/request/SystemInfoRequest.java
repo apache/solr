@@ -32,6 +32,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
 
   /** Request to "/admin/info/system" by default, without params. */
   public SystemInfoRequest() {
+    // TODO: support V2 by default.  Requires refactoring throughout the CLI tools, at least
     this(CommonParams.SYSTEM_INFO_PATH);
   }
 

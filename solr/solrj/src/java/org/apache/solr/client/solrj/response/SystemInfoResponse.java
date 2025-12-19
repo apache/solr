@@ -75,9 +75,6 @@ public class SystemInfoResponse extends SolrResponseBase {
     return fullResponse;
   }
 
-  // *************************
-  // Shortcuts
-  // ***********
   public String getSolrImplVersion() {
     return getFullResponse() != null && getFullResponse().lucene != null
         ? getFullResponse().lucene.solrImplVersion

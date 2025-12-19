@@ -158,8 +158,7 @@ public class CreateTool extends ToolBase {
 
     SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
     // usually same as solr home, but not always
-    String coreRootDirectory =
-        sysResponse.getCoreRoot() != null ? sysResponse.getCoreRoot() : sysResponse.getSolrHome();
+    String coreRootDirectory = sysResponse.getCoreRoot();
 
     if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
