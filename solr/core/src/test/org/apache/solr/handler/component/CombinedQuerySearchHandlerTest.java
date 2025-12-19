@@ -16,13 +16,11 @@
  */
 package org.apache.solr.handler.component;
 
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.util.ArrayList;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CombinerParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -31,9 +29,6 @@ import org.junit.Test;
 
 /** The type Combined query search handler test. */
 public class CombinedQuerySearchHandlerTest extends SolrTestCaseJ4 {
-
-  private CoreContainer mockCoreContainer;
-  private HttpServletRequest httpServletRequest;
 
   /**
    * Before tests.
