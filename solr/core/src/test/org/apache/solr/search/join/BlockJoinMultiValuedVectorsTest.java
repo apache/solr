@@ -193,12 +193,66 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
   }
 
   @Test
-  public void
-      parentRetrievalByte_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+  public void parentRetrievalFloat_ChildTransformer_shouldFlattenAndReturnAllChildren() {
     assertQ(
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,[child fl="+ VECTOR_BYTE_FIELD + " childFilter=$children.q]",
+            "fl", "id,"+VECTOR_FIELD+", [child fl="+ VECTOR_FIELD + " ]",
+            "children.q",
+            "{!knn f="
+                + VECTOR_FIELD
+                + " topK=3 allParents=$allParents}"
+                + FLOAT_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[1][.='4.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[4][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[1][.='3.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[4][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[1][.='2.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[2][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[3][.='1.0']",
+        "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[4][.='1.0']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[1][.='7.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[4][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[1][.='6.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[4][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[1][.='5.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[2][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[3][.='1.0']",
+        "//result/doc[2]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[4][.='1.0']",
+        "//result/doc[3]/str[@name='id'][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[1][.='10.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[4][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[1][.='9.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[2]/float[4][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[1][.='8.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[2][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[3][.='1.0']",
+        "//result/doc[3]/arr[@name='" + VECTOR_FIELD + "']/arr[3]/float[4][.='1.0']");
+  }
+
+  @Test
+  public void
+  parentRetrievalByte_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,"+VECTOR_BYTE_FIELD+", [child fl="+ VECTOR_BYTE_FIELD + " childFilter=$children.q]",
             "children.q",
             "{!knn f="
                 + VECTOR_BYTE_FIELD
@@ -207,7 +261,73 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
             "allParents", "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[1][.='2']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[2][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[3][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[4][.='1']",
         "//result/doc[2]/str[@name='id'][.='9']",
-        "//result/doc[3]/str[@name='id'][.='8']");
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[1][.='5']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[2][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[3][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[4][.='1']",
+        "//result/doc[3]/str[@name='id'][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[1][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[2][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[3][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[4][.='1']");
+  }
+
+  @Test
+  public void parentRetrievalByte_ChildTransformer_shouldFlattenAndReturnAllChildren() {
+    assertQ(
+        req(
+            "q", "{!parent which=$allParents score=max v=$children.q}",
+            "fl", "id,"+VECTOR_BYTE_FIELD+", [child fl="+ VECTOR_BYTE_FIELD + " ]",
+            "children.q",
+            "{!knn f="
+                + VECTOR_BYTE_FIELD
+                + " topK=3 allParents=$allParents}"
+                + BYTE_QUERY_VECTOR,
+            "allParents", "parent_s:[* TO *]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/str[@name='id'][.='10']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[1][.='4']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[2][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[3][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[4][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[1][.='3']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[2][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[3][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[4][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[1][.='2']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[2][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[3][.='1']",
+        "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[4][.='1']",
+        "//result/doc[2]/str[@name='id'][.='9']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[1][.='7']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[2][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[3][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[4][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[1][.='6']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[2][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[3][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[4][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[1][.='5']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[2][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[3][.='1']",
+        "//result/doc[2]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[4][.='1']",
+        "//result/doc[3]/str[@name='id'][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[1][.='10']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[2][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[3][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[4][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[1][.='9']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[2][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[3][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[2]/int[4][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[1][.='8']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[2][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[3][.='1']",
+        "//result/doc[3]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[3]/int[4][.='1']");
   }
 }

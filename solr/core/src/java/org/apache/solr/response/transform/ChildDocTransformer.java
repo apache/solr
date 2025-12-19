@@ -19,7 +19,6 @@ package org.apache.solr.response.transform;
 
 import static org.apache.solr.response.transform.ChildDocTransformerFactory.NUM_SEP_CHAR;
 import static org.apache.solr.response.transform.ChildDocTransformerFactory.PATH_SEP_CHAR;
-import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
 import static org.apache.solr.schema.IndexSchema.NEST_PATH_FIELD_NAME;
 
 import java.io.IOException;
@@ -40,6 +39,7 @@ import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.join.BitSetProducer;
 import org.apache.lucene.util.BitSet;
@@ -146,8 +146,16 @@ class ChildDocTransformer extends DocTransformer {
       final Bits liveDocs = leafReaderContext.reader().getLiveDocs();
       final int segBaseId = leafReaderContext.docBase;
       final int segRootId = rootDocId - segBaseId;
-      Set<String> multiValuedVectorFields =
-          this.getMultiValuedVectorFields(searcher.getSchema(), childReturnFields);
+      Set<String> multiValuedFLoatVectorFields =
+          this.getMultiValuedVectorFields(searcher.getSchema(), childReturnFields, VectorEncoding.FLOAT32);
+      Set<String> multiValuedByteVectorFields =
+          this.getMultiValuedVectorFields(searcher.getSchema(), childReturnFields, VectorEncoding.BYTE);
+      if ((multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size()) != childReturnFields.getExplicitlyRequestedFieldNames()
+          .size()) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "When using the Child transformer to flatten nested vectors, all 'fl' must be "
+                + "multivalued vector fields");}
 
       // can return be -1 and that's okay  (happens for very first block)
       final int segPrevRootId;
@@ -229,11 +237,15 @@ class ChildDocTransformer extends DocTransformer {
 
           if (isAncestor) {
             // if this path has pending child docs, add them.
-            if (!multiValuedVectorFields.isEmpty()) {
-              addFlatChildrenToParent(
-                  doc,
-                  pendingParentPathsToChildren.remove(fullDocPath),
-                  multiValuedVectorFields);
+            if (!multiValuedFLoatVectorFields.isEmpty() || !multiValuedByteVectorFields.isEmpty()) {
+              addFlatMultiValuedFloatVectorsToParent(
+                  rootDoc,
+                  pendingParentPathsToChildren.values().iterator().next(),
+                  multiValuedFLoatVectorFields);
+              addFlatMultiValuedByteVectorsToParent(
+                  rootDoc,
+                  pendingParentPathsToChildren.values().iterator().next(),
+                  multiValuedByteVectorFields);
             } else {
               addChildrenToParent(
                   doc, pendingParentPathsToChildren.remove(fullDocPath)); // no longer pending
@@ -265,11 +277,15 @@ class ChildDocTransformer extends DocTransformer {
       assert pendingParentPathsToChildren.keySet().size() == 1;
 
       // size == 1, so get the last remaining entry
-      if (!multiValuedVectorFields.isEmpty()) {
-        addFlatChildrenToParent(
+      if (!multiValuedFLoatVectorFields.isEmpty() || !multiValuedByteVectorFields.isEmpty()) {
+        addFlatMultiValuedFloatVectorsToParent(
             rootDoc,
             pendingParentPathsToChildren.values().iterator().next(),
-            multiValuedVectorFields);
+            multiValuedFLoatVectorFields);
+        addFlatMultiValuedByteVectorsToParent(
+            rootDoc,
+            pendingParentPathsToChildren.values().iterator().next(),
+            multiValuedByteVectorFields);
       } else {
         addChildrenToParent(rootDoc, pendingParentPathsToChildren.values().iterator().next());
       }
@@ -281,25 +297,16 @@ class ChildDocTransformer extends DocTransformer {
     }
   }
 
-  private Set<String> getMultiValuedVectorFields(
-      IndexSchema schema,
-      SolrReturnFields childReturnFields) {
+  private Set<String> getMultiValuedVectorFields(IndexSchema schema,
+      SolrReturnFields childReturnFields, VectorEncoding encoding) {
     Set<String> multiValuedVectorsFields = new HashSet<>();
     for (String fieldName : childReturnFields.getExplicitlyRequestedFieldNames()) {
       SchemaField sfield = schema.getFieldOrNull(fieldName);
-      if (sfield.getType() instanceof DenseVectorField && sfield.multiValued()) {
+      if (sfield.getType() instanceof DenseVectorField && sfield.multiValued() && ((DenseVectorField) sfield.getType()).getVectorEncoding() == encoding) {
         multiValuedVectorsFields.add(fieldName);
       }
     }
-    if (multiValuedVectorsFields.size() != childReturnFields.getExplicitlyRequestedFieldNames()
-        .size()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          "When using the Child transformer to flatten nested vectors, all 'fl' must be "
-              + "multivalued vector fields");
-    } else {
       return multiValuedVectorsFields;
-    }
   }
 
   private static void addChildrenToParent(
@@ -330,27 +337,49 @@ class ChildDocTransformer extends DocTransformer {
     parent.setField(trimmedPath, children.get(0));
   }
 
-  private void addFlatChildrenToParent(
+  private void addFlatMultiValuedFloatVectorsToParent(
       SolrDocument parent, Map<String, List<SolrDocument>> children,
       Set<String> multiValuedVectorFields) {
     for (String multiValuedVectorField : multiValuedVectorFields) {
       List<SolrDocument> solrDocuments = children.get(multiValuedVectorField);
       List<List<Number>> multiValuedVectors = new ArrayList<>(solrDocuments.size());
       for (SolrDocument singleVector : solrDocuments) {
-        multiValuedVectors.add(this.extractVector(singleVector.getFieldValues(multiValuedVectorField)));
+        multiValuedVectors.add(this.extractFloatVector(singleVector.getFieldValues(multiValuedVectorField)));
       }
       parent.setField(multiValuedVectorField, multiValuedVectors);
     }
   }
 
-  private List<Number> extractVector(Collection<Object> fieldValues) {
-    //manage Byte
+  private void addFlatMultiValuedByteVectorsToParent(
+      SolrDocument parent, Map<String, List<SolrDocument>> children,
+      Set<String> multiValuedVectorFields) {
+    for (String multiValuedVectorField : multiValuedVectorFields) {
+      List<SolrDocument> solrDocuments = children.get(multiValuedVectorField);
+      List<List<Number>> multiValuedVectors = new ArrayList<>(solrDocuments.size());
+      for (SolrDocument singleVector : solrDocuments) {
+        multiValuedVectors.add(this.extractByteVector(singleVector.getFieldValues(multiValuedVectorField)));
+      }
+      parent.setField(multiValuedVectorField, multiValuedVectors);
+    }
+  }
+
+  private List<Number> extractFloatVector(Collection<Object> fieldValues) {
     List<Number> vector = new ArrayList<>(fieldValues.size());
     for (Object fieldValue : fieldValues) {
       StoredField storedVectorValue = (StoredField) fieldValue;
       vector.add(storedVectorValue.numericValue());
     }
     return vector;
+  }
+
+  private List<Number> extractByteVector(Collection<Object> singleVector) {
+    StoredField vector = (StoredField) singleVector.iterator().next();
+    BytesRef byteVector = vector.binaryValue();
+    List<Number> extractedVector = new ArrayList<>(byteVector.length);
+    for (Byte element : byteVector.bytes) {
+      extractedVector.add(element.byteValue());
+    }
+    return extractedVector;
   }
 
   private static String getLastPath(String path) {
