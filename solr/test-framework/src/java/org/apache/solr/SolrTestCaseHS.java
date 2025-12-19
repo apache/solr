@@ -46,12 +46,16 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -190,9 +194,31 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
     p.remove("qt");
     p.set("indent", "true");
 
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    String raw = connection.request(path, p, null);
-    return raw;
+    SolrCore core = h.getCore();
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, p);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+
+    // Default to /select handler if no path specified
+    if (path == null) {
+      path = "/select";
+    }
+
+    SolrRequestHandler handler = core.getRequestHandler(path);
+    if (handler == null) {
+      throw new RuntimeException("No handler found for path: " + path);
+    }
+
+    try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      handler.handleRequest(req, rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return req.getResponseWriter().writeToString(req, rsp);
+    } finally {
+      req.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
 
   public static String getJSON(SolrClient client, SolrParams params) throws Exception {
