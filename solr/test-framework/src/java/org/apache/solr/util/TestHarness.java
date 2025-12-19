@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
@@ -26,9 +25,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
@@ -47,7 +46,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -263,31 +261,21 @@ public class TestHarness extends BaseTestHarness {
    */
   @Override
   public String update(String xml) {
-    try (var mdcSnap = MDCSnapshot.create();
-        SolrCore core = getCoreInc()) {
+    try (var mdcSnap = MDCSnapshot.create()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
 
       EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
       ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
       xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
 
-      ModifiableSolrParams params = new ModifiableSolrParams();
+      // Request XML response format and use InputStreamResponseParser
+      xmlRequest.getParams().add("wt", "xml");
+      xmlRequest.setResponseParser(new InputStreamResponseParser("xml"));
       NamedList<Object> response = server.request(xmlRequest);
       server.close();
-      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
-        SolrQueryResponse rsp = new SolrQueryResponse();
 
-        // Transfer the response data
-        if (response != null) {
-          rsp.setAllValues(response);
-        }
-
-        // Write as XML
-        StringWriter sw = new StringWriter();
-        XMLResponseWriter xmlWriter = new XMLResponseWriter();
-        xmlWriter.write(sw, req, rsp);
-        return sw.toString();
-      }
+      // Extract the XML string from the response
+      return InputStreamResponseParser.consumeResponseToString(response);
 
     } catch (SolrException e) {
       throw e;
