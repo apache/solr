@@ -64,7 +64,7 @@ allprojects {
       ]
 
       if (propertyOrDefault("javac.failOnWarnings", true).toBoolean()) {
-        //options.compilerArgs += "-Werror"
+        options.compilerArgs += "-Werror"
       }
     }
   }
@@ -73,7 +73,7 @@ allprojects {
 configure(project(":solr:benchmark")) {
   plugins.withType(JavaPlugin) {
     tasks.named('compileJava').configure {
-      //options.compilerArgs -= [ "-Werror", "-proc:none" ]
+      options.compilerArgs -= [ "-Werror", "-proc:none" ]
       options.compilerArgs += "-Xlint:none"
     }
   }
