@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Date;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -30,7 +31,7 @@ public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
-  private org.apache.solr.client.api.model.SystemInfoResponse fullResponse;
+  private NodeSystemResponse fullResponse;
 
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
@@ -44,9 +45,9 @@ public class SystemInfoResponse extends SolrResponseBase {
       try {
         fullResponse =
             JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                getResponse(), org.apache.solr.client.api.model.SystemInfoResponse.class);
+                getResponse(), NodeSystemResponse.class);
       } catch (Throwable t) {
-        log.error("Cannot convert NamedList response to API model SystemInfoResponse", t);
+        log.error("Cannot convert NamedList response to API model NodeSystemResponse", t);
       }
     }
   }
@@ -71,7 +72,7 @@ public class SystemInfoResponse extends SolrResponseBase {
     return getFullResponse().node;
   }
 
-  public org.apache.solr.client.api.model.SystemInfoResponse getFullResponse() {
+  public NodeSystemResponse getFullResponse() {
     return fullResponse;
   }
 

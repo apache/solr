@@ -22,7 +22,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
-public class SystemInfoResponse extends SolrJerseyResponse {
+/** Response from /node/system */
+public class NodeSystemResponse extends SolrJerseyResponse {
 
   @JsonProperty public String mode;
   @JsonProperty public String zkHost;
@@ -49,7 +50,7 @@ public class SystemInfoResponse extends SolrJerseyResponse {
   @JsonProperty public GPU gpu;
   @JsonProperty public Map<String, String> system;
 
-  /** /admin/info/system/security */
+  /** /node/system/security */
   public static class Security {
     @JsonProperty public boolean tls;
     @JsonProperty public String authenticationPlugin;
@@ -59,7 +60,7 @@ public class SystemInfoResponse extends SolrJerseyResponse {
     @JsonProperty public List<String> permissions;
   }
 
-  /** /admin/info/system/lucene */
+  /** /node/system/lucene */
   public static class Lucene {
     @JsonProperty("solr-spec-version")
     public String solrSpecVersion;
@@ -74,7 +75,7 @@ public class SystemInfoResponse extends SolrJerseyResponse {
     public String luceneImplVersion;
   }
 
-  /** /admin/info/system/jvm */
+  /** /node/system/jvm */
   public static class JVM extends Vendor {
     @JsonProperty public int processors;
     @JsonProperty public Vendor jre;
