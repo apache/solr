@@ -41,7 +41,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -57,13 +56,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
@@ -86,7 +83,6 @@ import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 /** Refer SOLR-281 */
 public class SearchHandler extends RequestHandlerBase
@@ -98,27 +94,6 @@ public class SearchHandler extends RequestHandlerBase
   static final String INIT_LAST_COMPONENTS = "last-components";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  /**
-   * A counter to ensure that no RID is equal, even if they fall in the same millisecond
-   *
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  private static final AtomicLong ridCounter = new AtomicLong();
-
-  /**
-   * An opt-out flag to prevent the addition of {@link CommonParams#REQUEST_ID} tracing on
-   * distributed queries
-   *
-   * <p>Defaults to 'false' if not specified.
-   *
-   * @see CommonParams#DISABLE_REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  private static final boolean DISABLE_REQUEST_ID_DEFAULT =
-      Boolean.getBoolean("solr.disableRequestId");
 
   private HandlerMetrics metricsShard = HandlerMetrics.NO_OP;
 
@@ -250,8 +225,7 @@ public class SearchHandler extends RequestHandlerBase
     }
 
     rb.isDistrib = isDistrib(req, rb); // can change later nonetheless
-    tagRequestWithRequestId(rb);
-
+    
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
     if (dbg == false) { // if it's true, we are doing everything anyway.
@@ -866,62 +840,6 @@ public class SearchHandler extends RequestHandlerBase
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, shardResponseException);
     }
-  }
-
-  private void tagRequestWithRequestId(ResponseBuilder rb) {
-    final boolean ridTaggingDisabled =
-        rb.req.getParams().getBool(CommonParams.DISABLE_REQUEST_ID, DISABLE_REQUEST_ID_DEFAULT);
-    if (!ridTaggingDisabled) {
-      String rid = getOrGenerateRequestId(rb.req);
-
-      // NOTE: SearchHandler explicitly never clears/removes this MDC value...
-      // We want it to live for the entire request, beyond the scope of SearchHandler's processing,
-      // and trust SolrDispatchFilter to clean it up at the end of the request.
-      //
-      // Examples:
-      // - ERROR logging of Exceptions propogated up to our base class
-      // - SolrCore.RequestLog
-      // - ERRORs that may be logged during response writing
-      MDC.put(CommonParams.REQUEST_ID, rid);
-
-      if (StrUtils.isBlank(rb.req.getParams().get(CommonParams.REQUEST_ID))) {
-        ModifiableSolrParams params = new ModifiableSolrParams(rb.req.getParams());
-        params.add(CommonParams.REQUEST_ID, rid); // add rid to the request so that shards see it
-        rb.req.setParams(params);
-      }
-      if (rb.isDistrib) {
-        rb.rsp.addToLog(CommonParams.REQUEST_ID, rid); // to see it in the logs of the landing core
-      }
-    }
-  }
-
-  /**
-   * Returns a String to use as an identifier for this request.
-   *
-   * <p>If the provided {@link SolrQueryRequest} contains a non-blank {@link
-   * CommonParams#REQUEST_ID} param value this is used. This is especially useful for users who
-   * deploy Solr as one component in a larger ecosystem, and want to use an external ID utilized by
-   * other components as well. If no {@link CommonParams#REQUEST_ID} value is present, one is
-   * generated from scratch for the request.
-   *
-   * <p>Callers are responsible for storing the returned value in the {@link SolrQueryRequest}
-   * object if they want to ensure that ID generation is not redone on subsequent calls.
-   */
-  public static String getOrGenerateRequestId(SolrQueryRequest req) {
-    String rid = req.getParams().get(CommonParams.REQUEST_ID);
-    if (StrUtils.isNotBlank(rid)) {
-      return rid;
-    }
-    String traceId = MDCLoggingContext.getTraceId();
-    if (StrUtils.isNotBlank(traceId)) {
-      return traceId;
-    }
-    return generateRid(req);
-  }
-
-  private static String generateRid(SolrQueryRequest req) {
-    String hostName = req.getCoreContainer().getHostName();
-    return hostName + "-" + ridCounter.getAndIncrement();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////

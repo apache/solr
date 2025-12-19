@@ -121,7 +121,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull(track.get("rid"));
     assertNotNull(track.get("EXECUTE_QUERY"));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard1));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard2));
