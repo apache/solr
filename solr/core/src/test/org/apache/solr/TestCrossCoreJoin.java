@@ -217,14 +217,6 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void nukeAll() {
-    if (fromServer != null) {
-      try {
-        fromServer.close();
-      } catch (Exception e) {
-        // ignore
-      }
-    }
     fromCore = null;
-    fromServer = null;
   }
 }

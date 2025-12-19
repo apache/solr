@@ -28,6 +28,7 @@ import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -41,7 +42,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
@@ -68,14 +68,7 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @AfterClass
   public static void afterClass() {
     docs = null;
-    if (server != null) {
-      try {
-        server.close();
-      } catch (Exception e) {
-        // ignore
-      }
-      server = null;
-    }
+    badIds = null;
   }
 
   @Override
@@ -397,31 +390,16 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
       ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
       xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
 
-      // Set the update chain parameter
+      // Set the update chain parameter and request XML response
       xmlRequest.getParams().add("update.chain", chain);
       xmlRequest.getParams().add("wt", "xml");
 
-      // Process the request and get the response
+      // Use InputStreamResponseParser to get the raw XML response directly
+      xmlRequest.setResponseParser(new InputStreamResponseParser("xml"));
       NamedList<Object> response = server.request(xmlRequest);
 
-      // Convert response to XML string for validation
-      // We need to recreate the XML response format
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      SolrCore core = h.getCore();
-      try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, params)) {
-        SolrQueryResponse rsp = new SolrQueryResponse();
-
-        // Transfer the response data
-        if (response != null) {
-          rsp.setAllValues(response);
-        }
-
-        // Write as XML
-        StringWriter sw = new StringWriter();
-        XMLResponseWriter xmlWriter = new XMLResponseWriter();
-        xmlWriter.write(sw, req, rsp);
-        return sw.toString();
-      }
+      // Extract the XML string from the response
+      return InputStreamResponseParser.consumeResponseToString(response);
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
