@@ -182,7 +182,6 @@ openjdk-jmh = "1.37"
 opentelemetry = "1.56.0"
 opentelemetry-prometheus = "1.56.0-alpha"
 opentelemetry-runtime-telemetry = "2.22.0-alpha"
-osgi-annotation = "8.1.0"
 oshai-logging = "7.0.13"
 # @keep for version alignment
 ow2-asm = "9.8"
@@ -449,11 +448,11 @@ ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
-langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere"}
-langchain4j-core = { module = "dev.langchain4j:langchain4j-core"}
-langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face"}
-langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai"}
-langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai"}
+langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
+langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }
+langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face" }
+langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai" }
+langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai" }
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
