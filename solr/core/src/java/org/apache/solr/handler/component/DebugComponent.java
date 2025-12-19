@@ -73,6 +73,8 @@ public class DebugComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.isDebugTrack() && rb.isDistrib) {
       rb.setNeedDocList(true);
+      // Initialize track section in debug info to prevent NPE in handleResponses
+      rb.addDebug(new SimpleOrderedMap<>(), "track");
     }
   }
 
