@@ -17,6 +17,7 @@
 package org.apache.solr.handler;
 
 import java.util.ArrayList;
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -157,10 +158,9 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
             () -> {
               try (MoreLikeThisHandler mlt = new MoreLikeThisHandler();
                   SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
-                ArrayList<ContentStream> streams = new ArrayList<>(2);
-                streams.add(new ContentStreamBase.StringStream("hello"));
-                streams.add(new ContentStreamBase.StringStream("there"));
-                req.setContentStreams(streams);
+                req.setContentStreams(List.of(
+                    new ContentStreamBase.StringStream("hello"),
+                    new ContentStreamBase.StringStream("there")));
                 mlt.handleRequestBody(req, new SolrQueryResponse());
               }
             });
@@ -277,9 +277,7 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
     params.set("indent", "true");
 
     try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
-      ArrayList<ContentStream> streams = new ArrayList<>(2);
-      streams.add(new ContentStreamBase.StringStream("bbb", "zzz"));
-      req.setContentStreams(streams);
+      req.setContentStreams(List.of(new ContentStreamBase.StringStream("bbb", "zzz")));
 
       // Make sure we have terms from both fields in the interestingTerms array and all documents
       // have been retrieved as matching.

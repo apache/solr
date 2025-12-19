@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MultiMapSolrParams;
@@ -122,9 +123,7 @@ public class UniqFieldsUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(doc)));
     handler.handleRequestBody(req, new SolrQueryResponse());
     req.close();
   }
