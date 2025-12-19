@@ -44,7 +44,7 @@ public abstract class SolrClientTestRule extends ExternalResource {
 
   /**
    * Starts the Solr server with the given solrHome. If solrHome contains a solr.xml file, it is
-   * used. Otherwise a default testing configuration is used.
+   * used. Otherwise, a default testing configuration is used.
    */
   public abstract void startSolr(Path solrHome);
 

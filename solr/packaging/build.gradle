@@ -215,6 +215,39 @@ artifacts {
   solrSlimTgz(slimDistTar)
 }
 
+tasks.register('runDev', JavaExec) {
+  group = 'application'
+  description = 'Starts Solr for local experimentation.  Does NOT use the bin/solr script.'
+  dependsOn 'devSlim'
+
+  workingDir = file("$slimDevDir/server")
+
+  // Intentionally not synchronizing the logic here with bin/solr; don't want the burden
+
+  doFirst {
+    println "To attach a debugger, at the CLI pass: --debug-jvm"
+    println "To pass JVM args, at the CLI pass: -PjvmArgs='--add-modules jdk.incubator.vector'"
+    println "To pass system properties, at the CLI pass: -Dsolr.port.listen=8983"
+  }
+
+  maxHeapSize = project.findProperty('maxHeapSize') ?: '1G'
+
+  jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
+  jvmArgs((project.findProperty('jvmArgs') ?: '').split())
+
+  systemProperty 'solr.port.listen', '8983'
+  systemProperty 'solr.install.dir', file("$workingDir/..")
+  systemProperty 'solr.logs.dir', file("$workingDir/logs")
+  systemProperty 'solr.zookeeper.server.enabled', 'true' // SolrCloud; embedded ZK
+
+  // Propagate CLI system properties (override defaults above)
+  systemProperties += gradle.startParameter.systemPropertiesArgs
+
+  classpath = files("$workingDir/start.jar")
+
+  args((project.findProperty('args') ?: '--module=http').split())
+}
+
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
@@ -263,6 +296,7 @@ task integrationTests(type: BatsTask) {
   environment SOLR_TIP: distDir.toString()
   environment SOLR_HOME: solrHome
   environment SOLR_PID_DIR: solrHome
+  environment SOLR_PORT_LISTEN: solrPort
   environment SOLR_PORT: solrPort
   environment SOLR2_PORT: solrPort + 1
   environment SOLR3_PORT: solrPort + 2

@@ -56,9 +56,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
@@ -106,7 +106,7 @@ public class MiniSolrCloudCluster {
       "<solr>\n"
           + "\n"
           + "  <str name=\"shareSchema\">${shareSchema:false}</str>\n"
-          + "  <str name=\"allowPaths\">${solr.allowPaths:}</str>\n"
+          + "  <str name=\"allowPaths\">${solr.security.allow.paths:}</str>\n"
           + "  <str name=\"configSetBaseDir\">${configSetBaseDir:configsets}</str>\n"
           + "  <str name=\"coreRootDirectory\">${coreRootDirectory:.}</str>\n"
           + "  <str name=\"collectionsHandler\">${collectionsHandler:solr.CollectionsHandler}</str>\n"
@@ -124,7 +124,6 @@ public class MiniSolrCloudCluster {
           + "    <str name=\"host\">127.0.0.1</str>\n"
           + "    <int name=\"hostPort\">${hostPort:8983}</int>\n"
           + "    <int name=\"zkClientTimeout\">${solr.zookeeper.client.timeout:30000}</int>\n"
-          + "    <bool name=\"genericCoreNodeNames\">${genericCoreNodeNames:true}</bool>\n"
           + "    <int name=\"leaderVoteWait\">${leaderVoteWait:10000}</int>\n"
           + "    <int name=\"distribUpdateConnTimeout\">${distribUpdateConnTimeout:45000}</int>\n"
           + "    <int name=\"distribUpdateSoTimeout\">${distribUpdateSoTimeout:340000}</int>\n"
@@ -153,7 +152,7 @@ public class MiniSolrCloudCluster {
           + "</solr>\n";
 
   private final Object startupWait = new Object();
-  private volatile ZkTestServer zkServer; // non-final due to injectChaos()
+  private volatile ZkTestServer zkServer;
   private final boolean externalZkServer;
   private final List<JettySolrRunner> jettys = new CopyOnWriteArrayList<>();
   private final Path baseDir;
@@ -215,7 +214,7 @@ public class MiniSolrCloudCluster {
 
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
+   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
    * SolrCloudTestCase} to configure any additional parameters.
    *
    * @param numServers number of Solr servers to start
@@ -248,7 +247,7 @@ public class MiniSolrCloudCluster {
 
   /**
    * Create a MiniSolrCloudCluster. Note - this constructor visibility is changed to package
-   * protected so as to discourage its usage. Ideally *new* functionality should use {@linkplain
+   * protected to discourage its usage. Ideally *new* functionality should use {@linkplain
    * SolrCloudTestCase} to configure any additional parameters.
    *
    * @param numServers number of Solr servers to start
@@ -543,7 +542,7 @@ public class MiniSolrCloudCluster {
    * Stop a Solr instance
    *
    * @param index the index of node in collection returned by {@link #getJettySolrRunners()}
-   * @return the shut down node
+   * @return the now shut down node
    */
   public JettySolrRunner stopJettySolrRunner(int index) throws Exception {
     JettySolrRunner jetty = jettys.get(index);
@@ -593,7 +592,7 @@ public class MiniSolrCloudCluster {
             }
           });
 
-      reader.createClusterStateWatchersAndUpdate(); // up to date aliases & collections
+      reader.createClusterStateWatchersAndUpdate(); // up-to-date aliases & collections
       reader.aliasesManager.applyModificationAndExportToZk(aliases -> Aliases.EMPTY);
       for (String collection : reader.getClusterState().getCollectionNames()) {
         CollectionAdminRequest.deleteCollection(collection).process(solrClient);
@@ -801,32 +800,6 @@ public class MiniSolrCloudCluster {
     ChaosMonkey.expireSession(jetty, zkServer);
   }
 
-  // Currently not used ;-(
-  public synchronized void injectChaos(Random random) throws Exception {
-
-    // sometimes we restart one of the jetty nodes
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      jetty.stop();
-      log.info("============ Restarting jetty");
-      jetty.start();
-    }
-
-    // sometimes we restart zookeeper
-    if (random.nextBoolean()) {
-      zkServer.shutdown();
-      log.info("============ Restarting zookeeper");
-      zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
-      zkServer.run(false);
-    }
-
-    // sometimes we cause a connection loss - sometimes it will hit the overseer
-    if (random.nextBoolean()) {
-      JettySolrRunner jetty = jettys.get(random.nextInt(jettys.size()));
-      ChaosMonkey.causeConnectionLoss(jetty);
-    }
-  }
-
   public Overseer getOpenOverseer() {
     List<Overseer> overseers = new ArrayList<>();
     for (int i = 0; i < jettys.size(); i++) {
@@ -996,13 +969,6 @@ public class MiniSolrCloudCluster {
       InstrumentedEE10Handler metrics = new InstrumentedEE10Handler(metricRegistry);
       metrics.setHandler(chain);
       return metrics;
-    }
-
-    /**
-     * @return optional subj. It may be null, if it's not yet created.
-     */
-    public MetricRegistry getMetricRegistry() {
-      return metricRegistry;
     }
   }
 

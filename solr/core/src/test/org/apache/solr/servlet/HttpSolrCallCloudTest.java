@@ -17,45 +17,25 @@
 
 package org.apache.solr.servlet;
 
-import jakarta.servlet.AsyncContext;
-import jakarta.servlet.DispatcherType;
-import jakarta.servlet.ReadListener;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.ServletContext;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.ServletInputStream;
-import jakarta.servlet.ServletOutputStream;
-import jakarta.servlet.ServletRequest;
-import jakarta.servlet.ServletResponse;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.WriteListener;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import jakarta.servlet.http.HttpUpgradeHandler;
-import jakarta.servlet.http.Part;
-import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.security.Principal;
-import java.util.Collection;
-import java.util.Enumeration;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @SolrTestCaseJ4.SuppressSSL
 public class HttpSolrCallCloudTest extends SolrCloudTestCase {
@@ -65,6 +45,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
+    SolrTestCaseJ4.assumeWorkingMockito();
     configureCluster(1)
         .addConfig(
             "config", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
@@ -72,15 +53,15 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection(COLLECTION, "config", NUM_SHARD, REPLICA_FACTOR)
         .process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         COLLECTION, cluster.getZkStateReader(), false, true, 30);
   }
 
   @Test
   public void testCoreChosen() throws Exception {
-    assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update"));
-    assertCoreChosen(NUM_SHARD, new TestRequest("/collection1/update/json"));
-    assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, new TestRequest("/collection1/select"));
+    assertCoreChosen(NUM_SHARD, newRequest("/collection1/update"));
+    assertCoreChosen(NUM_SHARD, newRequest("/collection1/update/json"));
+    assertCoreChosen(NUM_SHARD * REPLICA_FACTOR, newRequest("/collection1/select"));
   }
 
   // https://issues.apache.org/jira/browse/SOLR-16019
@@ -94,7 +75,8 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     assertEquals(400, connection.getResponseCode());
   }
 
-  private void assertCoreChosen(int numCores, TestRequest testRequest) throws UnavailableException {
+  private void assertCoreChosen(int numCores, HttpServletRequest testRequest)
+      throws UnavailableException {
     JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(0);
     Set<String> coreNames = new HashSet<>();
     SolrDispatchFilter dispatchFilter = jettySolrRunner.getSolrDispatchFilter();
@@ -102,7 +84,7 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
       if (coreNames.size() == numCores) return;
       HttpSolrCall httpSolrCall =
           new HttpSolrCall(
-              dispatchFilter, dispatchFilter.getCores(), testRequest, new TestResponse(), false);
+              dispatchFilter, dispatchFilter.getCores(), testRequest, newResponse(), false);
       try {
         httpSolrCall.init();
       } catch (Exception e) {
@@ -114,523 +96,34 @@ public class HttpSolrCallCloudTest extends SolrCloudTestCase {
     assertEquals(numCores, coreNames.size());
   }
 
-  public static class TestRequest implements HttpServletRequest {
-    private final String path;
-
-    public TestRequest(String path) {
-      this.path = path;
-    }
-
-    @Override
-    public String getAuthType() {
-      return "";
-    }
-
-    @Override
-    public Cookie[] getCookies() {
-      return new Cookie[0];
-    }
-
-    @Override
-    public long getDateHeader(String name) {
-      return 0;
-    }
-
-    @Override
-    public String getHeader(String name) {
-      return "";
-    }
-
-    @Override
-    public Enumeration<String> getHeaders(String name) {
-      return null;
-    }
-
-    @Override
-    public Enumeration<String> getHeaderNames() {
-      return null;
-    }
-
-    @Override
-    public int getIntHeader(String name) {
-      return 0;
-    }
-
-    @Override
-    public String getMethod() {
-      return "";
-    }
-
-    @Override
-    public String getPathInfo() {
-      return "";
-    }
-
-    @Override
-    public String getPathTranslated() {
-      return "";
-    }
-
-    @Override
-    public String getContextPath() {
-      return "";
-    }
-
-    @Override
-    public String getQueryString() {
-      return "version=2";
-    }
-
-    @Override
-    public String getRemoteUser() {
-      return "";
-    }
-
-    @Override
-    public boolean isUserInRole(String role) {
-      return false;
-    }
-
-    @Override
-    public Principal getUserPrincipal() {
-      return null;
-    }
-
-    @Override
-    public String getRequestedSessionId() {
-      return "";
-    }
-
-    @Override
-    public String getRequestURI() {
-      return path;
-    }
-
-    @Override
-    public StringBuffer getRequestURL() {
-      return null;
-    }
-
-    @Override
-    public String getServletPath() {
-      return path;
-    }
-
-    @Override
-    public HttpSession getSession(boolean create) {
-      return null;
-    }
-
-    @Override
-    public HttpSession getSession() {
-      return null;
-    }
-
-    @Override
-    public String changeSessionId() {
-      return "";
-    }
-
-    @Override
-    public boolean isRequestedSessionIdValid() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromCookie() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromURL() {
-      return false;
-    }
-
-    @Override
-    public boolean isRequestedSessionIdFromUrl() {
-      return false;
-    }
-
-    @Override
-    public boolean authenticate(HttpServletResponse response) throws IOException, ServletException {
-      return false;
-    }
-
-    @Override
-    public void login(String username, String password) throws ServletException {}
-
-    @Override
-    public void logout() throws ServletException {}
-
-    @Override
-    public Collection<Part> getParts() throws IOException, ServletException {
-      return List.of();
-    }
-
-    @Override
-    public Part getPart(String name) throws IOException, ServletException {
-      return null;
-    }
-
-    @Override
-    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass)
-        throws IOException, ServletException {
-      return null;
-    }
-
-    @Override
-    public Object getAttribute(String name) {
-      return null;
-    }
-
-    @Override
-    public Enumeration<String> getAttributeNames() {
-      return null;
-    }
-
-    @Override
-    public String getCharacterEncoding() {
-      return "";
-    }
-
-    @Override
-    public void setCharacterEncoding(String env) throws UnsupportedEncodingException {}
-
-    @Override
-    public int getContentLength() {
-      return 0;
-    }
-
-    @Override
-    public long getContentLengthLong() {
-      return 0;
-    }
-
-    @Override
-    public String getContentType() {
-      return "application/json";
-    }
-
-    @Override
-    public ServletInputStream getInputStream() throws IOException {
-      return new ServletInputStream() {
-        @Override
-        public boolean isFinished() {
-          return true;
-        }
-
-        @Override
-        public boolean isReady() {
-          return true;
-        }
-
-        @Override
-        public void setReadListener(ReadListener readListener) {}
-
-        @Override
-        public int read() {
-          return 0;
-        }
-      };
-    }
-
-    @Override
-    public String getParameter(String name) {
-      return "";
-    }
-
-    @Override
-    public Enumeration<String> getParameterNames() {
-      return null;
-    }
-
-    @Override
-    public String[] getParameterValues(String name) {
-      return new String[0];
-    }
-
-    @Override
-    public Map<String, String[]> getParameterMap() {
-      return Map.of();
-    }
-
-    @Override
-    public String getProtocol() {
-      return "";
-    }
-
-    @Override
-    public String getScheme() {
-      return "";
-    }
-
-    @Override
-    public String getServerName() {
-      return "";
-    }
-
-    @Override
-    public int getServerPort() {
-      return 0;
-    }
-
-    @Override
-    public BufferedReader getReader() throws IOException {
-      return null;
-    }
-
-    @Override
-    public String getRemoteAddr() {
-      return "";
-    }
-
-    @Override
-    public String getRemoteHost() {
-      return "";
-    }
-
-    @Override
-    public void setAttribute(String name, Object o) {}
-
-    @Override
-    public void removeAttribute(String name) {}
-
-    @Override
-    public Locale getLocale() {
-      return null;
-    }
-
-    @Override
-    public Enumeration<Locale> getLocales() {
-      return null;
-    }
-
-    @Override
-    public boolean isSecure() {
-      return false;
-    }
-
-    @Override
-    public RequestDispatcher getRequestDispatcher(String path) {
-      return null;
-    }
-
-    @Override
-    public String getRealPath(String path) {
-      return "";
-    }
-
-    @Override
-    public int getRemotePort() {
-      return 0;
-    }
-
-    @Override
-    public String getLocalName() {
-      return "";
-    }
-
-    @Override
-    public String getLocalAddr() {
-      return "";
-    }
-
-    @Override
-    public int getLocalPort() {
-      return 0;
-    }
-
-    @Override
-    public ServletContext getServletContext() {
-      return null;
-    }
-
-    @Override
-    public AsyncContext startAsync() throws IllegalStateException {
-      return null;
-    }
-
-    @Override
-    public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
-        throws IllegalStateException {
-      return null;
-    }
-
-    @Override
-    public boolean isAsyncStarted() {
-      return false;
-    }
-
-    @Override
-    public boolean isAsyncSupported() {
-      return false;
-    }
-
-    @Override
-    public AsyncContext getAsyncContext() {
-      return null;
-    }
-
-    @Override
-    public DispatcherType getDispatcherType() {
-      return null;
-    }
+  private static HttpServletRequest newRequest(String path) {
+    HttpServletRequest req = Mockito.mock(HttpServletRequest.class);
+    Mockito.when(req.getMethod()).thenReturn("GET");
+    Mockito.when(req.getRequestURI()).thenReturn(path);
+    Mockito.when(req.getServletPath()).thenReturn(path);
+    Mockito.when(req.getQueryString()).thenReturn("version=2");
+    Mockito.when(req.getContentType()).thenReturn("application/json");
+    Mockito.when(req.getHeader("Content-Type")).thenReturn("application/json");
+    try {
+      Mockito.when(req.getInputStream())
+          .thenReturn(ServletUtils.ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM);
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
+      throw new RuntimeException(e);
+    }
+    return req;
   }
 
-  public static class TestResponse implements HttpServletResponse {
-
-    @Override
-    public void addCookie(Cookie cookie) {}
-
-    @Override
-    public boolean containsHeader(String name) {
-      return false;
+  @SuppressForbidden(reason = "tests needn't comply")
+  private static HttpServletResponse newResponse() {
+    HttpServletResponse resp = Mockito.mock(HttpServletResponse.class);
+    try {
+      Mockito.when(resp.getOutputStream())
+          .thenReturn(ServletUtils.ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM);
+      Mockito.when(resp.getWriter())
+          .thenReturn(new PrintWriter(System.out, false, StandardCharsets.UTF_8));
+    } catch (IOException e) { // impossible; only required because we mock methods that throw
+      throw new RuntimeException(e);
     }
-
-    @Override
-    public String encodeURL(String url) {
-      return "";
-    }
-
-    @Override
-    public String encodeRedirectURL(String url) {
-      return "";
-    }
-
-    @Override
-    public String encodeUrl(String url) {
-      return "";
-    }
-
-    @Override
-    public String encodeRedirectUrl(String url) {
-      return "";
-    }
-
-    @Override
-    public void sendError(int sc, String msg) throws IOException {}
-
-    @Override
-    public void sendError(int sc) throws IOException {}
-
-    @Override
-    public void sendRedirect(String location) throws IOException {}
-
-    @Override
-    public void setDateHeader(String name, long date) {}
-
-    @Override
-    public void addDateHeader(String name, long date) {}
-
-    @Override
-    public void setHeader(String name, String value) {}
-
-    @Override
-    public void addHeader(String name, String value) {}
-
-    @Override
-    public void setIntHeader(String name, int value) {}
-
-    @Override
-    public void addIntHeader(String name, int value) {}
-
-    @Override
-    public void setStatus(int sc) {}
-
-    @Override
-    public void setStatus(int sc, String sm) {}
-
-    @Override
-    public int getStatus() {
-      return 0;
-    }
-
-    @Override
-    public String getHeader(String name) {
-      return "";
-    }
-
-    @Override
-    public Collection<String> getHeaders(String name) {
-      return List.of();
-    }
-
-    @Override
-    public Collection<String> getHeaderNames() {
-      return List.of();
-    }
-
-    @Override
-    public String getCharacterEncoding() {
-      return "";
-    }
-
-    @Override
-    public String getContentType() {
-      return "";
-    }
-
-    @Override
-    public ServletOutputStream getOutputStream() throws IOException {
-      return new ServletOutputStream() {
-        @Override
-        public boolean isReady() {
-          return true;
-        }
-
-        @Override
-        public void setWriteListener(WriteListener writeListener) {}
-
-        @Override
-        public void write(int b) {}
-      };
-    }
-
-    @Override
-    public PrintWriter getWriter() throws IOException {
-      return null;
-    }
-
-    @Override
-    public void setCharacterEncoding(String charset) {}
-
-    @Override
-    public void setContentLength(int len) {}
-
-    @Override
-    public void setContentLengthLong(long len) {}
-
-    @Override
-    public void setContentType(String type) {}
-
-    @Override
-    public void setBufferSize(int size) {}
-
-    @Override
-    public int getBufferSize() {
-      return 0;
-    }
-
-    @Override
-    public void flushBuffer() throws IOException {}
-
-    @Override
-    public void resetBuffer() {}
-
-    @Override
-    public boolean isCommitted() {
-      return true;
-    }
-
-    @Override
-    public void reset() {}
-
-    @Override
-    public void setLocale(Locale loc) {}
-
-    @Override
-    public Locale getLocale() {
-      return null;
-    }
+    return resp;
   }
 }

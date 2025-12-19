@@ -14,40 +14,47 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.List;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrClient;
 
-/**
- * Retrieves cluster state via Solr HTTP APIs
- *
- * @deprecated Please use {@link Http2ClusterStateProvider}
- */
-@Deprecated(since = "9.0")
-public class HttpClusterStateProvider extends BaseHttpClusterStateProvider {
+/** A CSP that uses Solr HTTP APIs. */
+public class HttpClusterStateProvider<C extends HttpSolrClientBase>
+    extends BaseHttpClusterStateProvider {
+  // formerly known as Http2ClusterStateProvider
 
-  private final HttpClient httpClient;
-  private final boolean clientIsInternal;
+  final C httpClient;
 
-  public HttpClusterStateProvider(List<String> solrUrls, HttpClient httpClient) throws Exception {
-    this.httpClient = httpClient == null ? HttpClientUtil.createClient(null) : httpClient;
-    this.clientIsInternal = httpClient == null;
+  /**
+   * Provide the solr urls and a solr http client for this cluster state provider to use. It is the
+   * caller's responsibility to close the client.
+   *
+   * @param solrUrls root path solr urls
+   * @param httpClient an instance of HttpSolrClientBase
+   * @throws Exception if a problem with initialization occurs
+   */
+  public HttpClusterStateProvider(List<String> solrUrls, C httpClient) throws Exception {
+    if (httpClient == null) {
+      throw new IllegalArgumentException("You must provide an Http client.");
+    }
+    this.httpClient = httpClient;
     initConfiguredNodes(solrUrls);
   }
 
   @Override
-  protected SolrClient getSolrClient(String baseUrl) {
-    return new HttpSolrClient.Builder().withBaseSolrUrl(baseUrl).withHttpClient(httpClient).build();
+  public void close() throws IOException {
+    super.close();
   }
 
   @Override
-  public void close() throws IOException {
-    if (this.clientIsInternal && this.httpClient != null) {
-      HttpClientUtil.close(httpClient);
-    }
-    super.close();
+  @SuppressWarnings("unchecked")
+  protected C getSolrClient(String baseUrl) {
+    return (C) httpClient.builder().withBaseSolrUrl(baseUrl).build();
+  }
+
+  public C getHttpClient() {
+    return httpClient;
   }
 }

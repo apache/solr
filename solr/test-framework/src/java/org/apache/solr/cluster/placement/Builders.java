@@ -325,8 +325,8 @@ public class Builders {
           replicas.add(replicaBuilder);
 
           // No way to specify which replica is the leader. Could be done by adding a "*" to the
-          // replica definition for example in the passed shardsReplicas but not implementing this
-          // until it is needed :)
+          // replica definition for example in the provided shardsReplicas, but not implementing
+          // this until it is needed :)
           if (leader == null && type != Replica.ReplicaType.PULL) {
             leader = replicaBuilder;
           }
@@ -344,7 +344,7 @@ public class Builders {
      * Initializes shard and replica builders for the collection based on passed parameters.
      * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
-     * afterwards, the returned builder hierarchy is a convenient starting point.
+     * afterward, the returned builder hierarchy is a convenient starting point.
      *
      * @param countShards number of shards to create
      * @param countNrtReplicas number of NRT replicas per shard
@@ -366,7 +366,7 @@ public class Builders {
      * Initializes shard and replica builders for the collection based on passed parameters.
      * Replicas are assigned round-robin to the nodes. The shard leader is the first NRT replica of
      * each shard (or first TLOG is no NRT). Shard and replica configuration can be modified
-     * afterwards, the returned builder hierarchy is a convenient starting point.
+     * afterward, the returned builder hierarchy is a convenient starting point.
      *
      * @param countShards number of shards to create
      * @param countNrtReplicas number of NRT replicas per shard
@@ -435,7 +435,7 @@ public class Builders {
             if (initialSizeGBPerShard != null) {
               replicaMetricsBuilder.addMetric(
                   ReplicaMetricImpl.INDEX_SIZE_GB,
-                  initialSizeGBPerShard.get(shardNumber - 1) * ReplicaMetricImpl.GB);
+                  initialSizeGBPerShard.get(shardNumber - 1) * 1024); // GB to MB
             }
             if (leader == null && type != Replica.ReplicaType.PULL) {
               leader = replicaBuilder;

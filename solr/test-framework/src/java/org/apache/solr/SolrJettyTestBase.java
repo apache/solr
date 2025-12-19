@@ -23,7 +23,7 @@ import java.util.SortedMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -114,7 +114,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * Create a new solr client. If createJetty was called, an http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */

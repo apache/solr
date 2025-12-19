@@ -32,7 +32,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 /** Facilitates testing Solr's REST API via a provided embedded Jetty */
@@ -58,36 +58,6 @@ public class RestTestHarness extends BaseTestHarness implements Closeable {
 
   public String getAdminURL() {
     return getBaseURL().replace("/collection1", "");
-  }
-
-  /**
-   * Validates an XML "query" response against an array of XPath test strings
-   *
-   * @param request the Query to process
-   * @return null if all good, otherwise the first test that fails.
-   * @exception Exception any exception in the response.
-   * @exception java.io.IOException if there is a problem writing the XML
-   */
-  public String validateQuery(String request, String... tests) throws Exception {
-
-    String res = query(request);
-    return validateXPath(res, tests);
-  }
-
-  /**
-   * Validates an XML PUT response against an array of XPath test strings
-   *
-   * @param request the PUT request to process
-   * @param content the content to send with the PUT request
-   * @param tests the validating XPath tests
-   * @return null if all good, otherwise the first test that fails.
-   * @exception Exception any exception in the response.
-   * @exception java.io.IOException if there is a problem writing the XML
-   */
-  public String validatePut(String request, String content, String... tests) throws Exception {
-
-    String res = put(request, content);
-    return validateXPath(res, tests);
   }
 
   /**

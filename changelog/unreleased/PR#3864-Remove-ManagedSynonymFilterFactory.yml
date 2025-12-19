@@ -1,0 +1,9 @@
+title: Remove deprecated ManagedSynonymFilterFactory, use ManagedSynonymGraphFilterFactory instead
+type: removed
+authors:
+- name: Jan Høydahl
+links:
+- name: PR#3864
+  url: https://github.com/apache/solr/pull/3864
+- name: SOLR-10379
+  url: https://issues.apache.org/jira/browse/SOLR-10379

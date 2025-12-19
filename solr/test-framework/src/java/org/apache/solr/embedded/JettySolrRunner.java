@@ -53,9 +53,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
-import org.apache.solr.client.solrj.embedded.SSLConfig;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
@@ -63,6 +62,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
@@ -112,7 +112,6 @@ public class JettySolrRunner {
   volatile FilterHolder dispatchFilter;
   volatile FilterHolder debugFilter;
 
-  private boolean waitOnSolr = false;
   private int jettyPort = -1;
 
   private final JettyConfig config;
@@ -370,7 +369,7 @@ public class JettySolrRunner {
           new CoreContainerProvider() {
             @Override
             public void contextInitialized(ServletContextEvent event) {
-              // awkwardly, parts of Solr want to know the port but we don't know that until now
+              // awkwardly, parts of Solr want to know the port, but we don't know that until now
               jettyPort = getFirstConnectorPort();
               int port = jettyPort;
               if (proxyPort != -1) port = proxyPort;
@@ -514,7 +513,6 @@ public class JettySolrRunner {
 
       // if started before, make a new server
       if (startedBefore) {
-        waitOnSolr = false;
         init(port);
       } else {
         startedBefore = true;
@@ -701,7 +699,7 @@ public class JettySolrRunner {
     }
   }
 
-  public void dumpCoresInfo(PrintStream pw) throws IOException {
+  public void dumpCoresInfo(PrintStream pw) {
     if (getCoreContainer() != null) {
       final var coreStatusReq = new CoresApi.GetAllCoreStatus();
       coreStatusReq.setIndexInfo(true);
@@ -755,7 +753,7 @@ public class JettySolrRunner {
   }
 
   /**
-   * Sets the port of a local socket proxy that sits infront of this server; if set then all client
+   * Sets the port of a local socket proxy that sits in front of this server; if set then all client
    * traffic will flow through the proxy, giving us the ability to simulate network partitions very
    * easily.
    */
@@ -767,9 +765,7 @@ public class JettySolrRunner {
   public URL getBaseUrl() {
     try {
       return new URI(protocol, null, host, jettyPort, "/solr", null, null).toURL();
-    } catch (URISyntaxException e) {
-      throw new RuntimeException(e);
-    } catch (MalformedURLException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new RuntimeException(e);
     }
   }
@@ -777,9 +773,7 @@ public class JettySolrRunner {
   public URL getBaseURLV2() {
     try {
       return new URI(protocol, null, host, jettyPort, "/api", null, null).toURL();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
@@ -791,9 +785,7 @@ public class JettySolrRunner {
   public URL getProxyBaseUrl() {
     try {
       return new URI(protocol, null, host, getLocalPort(), "/solr", null, null).toURL();
-    } catch (MalformedURLException e) {
-      throw new RuntimeException(e);
-    } catch (URISyntaxException e) {
+    } catch (MalformedURLException | URISyntaxException e) {
       throw new RuntimeException(e);
     }
   }
