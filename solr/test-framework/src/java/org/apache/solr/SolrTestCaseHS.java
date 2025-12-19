@@ -186,26 +186,15 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   public static String getQueryResponse(String wt, SolrParams params) throws Exception {
     ModifiableSolrParams p = new ModifiableSolrParams(params);
     p.set("wt", wt);
-    String path = p.get("qt");
-    p.remove("qt");
     p.set("indent", "true");
 
     try (EmbeddedSolrServer server =
         new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName())) {
       QueryRequest query = new QueryRequest(p);
-      if (path != null) {
-        query.setPath(path);
-      }
 
-      if ("json".equals(wt)) {
-        query.setResponseParser(new JsonMapResponseParser());
-        NamedList<Object> rsp = server.request(query);
-        return Utils.toJSONString(rsp);
-      } else {
-        query.setResponseParser(new InputStreamResponseParser(wt));
-        NamedList<Object> rsp = server.request(query);
-        return InputStreamResponseParser.consumeResponseToString(rsp);
-      }
+      query.setResponseParser(new InputStreamResponseParser(wt));
+      NamedList<Object> rsp = server.request(query);
+      return InputStreamResponseParser.consumeResponseToString(rsp);
     }
   }
 
