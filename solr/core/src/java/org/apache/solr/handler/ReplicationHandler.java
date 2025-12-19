@@ -107,8 +107,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.util.IndexInputInputStream;
 import org.apache.solr.util.NumberUtils;
-import org.apache.solr.util.PropertiesInputStream;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -1192,7 +1192,7 @@ public class ReplicationHandler extends RequestHandlerBase
         }
 
         try {
-          final InputStream is = new PropertiesInputStream(input);
+          final InputStream is = new IndexInputInputStream(input);
           Properties props = new Properties();
           props.load(new InputStreamReader(is, StandardCharsets.UTF_8));
           return props;
