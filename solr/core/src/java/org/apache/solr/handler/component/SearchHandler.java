@@ -225,7 +225,7 @@ public class SearchHandler extends RequestHandlerBase
     }
 
     rb.isDistrib = isDistrib(req, rb); // can change later nonetheless
-    
+
     boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
     rb.setDebug(dbg);
     if (dbg == false) { // if it's true, we are doing everything anyway.

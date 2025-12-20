@@ -16,14 +16,12 @@
  */
 package org.apache.solr.handler;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.FacetComponent;
@@ -158,9 +156,10 @@ public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
             () -> {
               try (MoreLikeThisHandler mlt = new MoreLikeThisHandler();
                   SolrQueryRequestBase req = new SolrQueryRequestBase(core, params) {}) {
-                req.setContentStreams(List.of(
-                    new ContentStreamBase.StringStream("hello"),
-                    new ContentStreamBase.StringStream("there")));
+                req.setContentStreams(
+                    List.of(
+                        new ContentStreamBase.StringStream("hello"),
+                        new ContentStreamBase.StringStream("there")));
                 mlt.handleRequestBody(req, new SolrQueryResponse());
               }
             });
