@@ -41,7 +41,8 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
- * An {@code NumericField} implementation of a field for {@code Int} values using {@code IntPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Int} values using {@code IntPoint},
+ * {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
  *
  * @see PointField
  * @see IntPoint
@@ -67,7 +68,8 @@ public class IntField extends NumericField implements IntValueFieldType {
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), parseIntFromUser(field.getName(), value));
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(), parseIntFromUser(field.getName(), value));
   }
 
   @Override
@@ -131,7 +133,8 @@ public class IntField extends NumericField implements IntValueFieldType {
   }
 
   @Override
-  public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     int[] values = new int[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -141,7 +144,8 @@ public class IntField extends NumericField implements IntValueFieldType {
   }
 
   @Override
-  public Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -212,7 +216,14 @@ public class IntField extends NumericField implements IntValueFieldType {
         (value instanceof Number)
             ? ((Number) value).intValue()
             : Integer.parseInt(value.toString());
-    return Collections.singletonList(new SolrIntField(sf.getName(), intValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+    return Collections.singletonList(
+        new SolrIntField(
+            sf.getName(),
+            intValue,
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
@@ -251,7 +262,8 @@ public class IntField extends NumericField implements IntValueFieldType {
 
   static final class SolrIntField extends Field {
 
-    static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    static org.apache.lucene.document.FieldType getType(
+        boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
       if (rangeIndex) {
         type.setDimensions(1, Integer.BYTES);
@@ -271,14 +283,20 @@ public class IntField extends NumericField implements IntValueFieldType {
     private final StoredValue storedValue;
 
     /**
-     * Creates a new IntField, indexing the provided point and term, storing it as a DocValue, and optionally
-     * storing it as a stored field.
+     * Creates a new IntField, indexing the provided point and term, storing it as a DocValue, and
+     * optionally storing it as a stored field.
      *
      * @param name field name
      * @param value the int value
      * @throws IllegalArgumentException if the field name or value is null.
      */
-    public SolrIntField(String name, int value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    public SolrIntField(
+        String name,
+        int value,
+        boolean rangeIndex,
+        boolean termIndex,
+        boolean docValues,
+        boolean stored) {
       super(name, getType(rangeIndex, termIndex, docValues, stored));
       fieldsData = (long) value;
       if (stored) {

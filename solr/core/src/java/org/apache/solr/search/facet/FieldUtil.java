@@ -18,19 +18,12 @@ package org.apache.solr.search.facet;
 
 import java.io.IOException;
 import org.apache.lucene.index.DocValues;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
-import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryContext;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.uninverting.FieldCacheImpl;
 
 /**
@@ -38,11 +31,14 @@ import org.apache.solr.uninverting.FieldCacheImpl;
  */
 public class FieldUtil {
 
-  public static SortedDocValues getSortedDocValues(QueryContext context, SchemaField field) throws IOException {
-    return DocValues.unwrapSingleton(DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName()));
+  public static SortedDocValues getSortedDocValues(QueryContext context, SchemaField field)
+      throws IOException {
+    return DocValues.unwrapSingleton(
+        DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName()));
   }
 
-  public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field) throws IOException {
+  public static SortedSetDocValues getSortedSetDocValues(QueryContext context, SchemaField field)
+      throws IOException {
     return DocValues.getSortedSet(context.searcher().getSlowAtomicReader(), field.getName());
   }
 

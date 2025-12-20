@@ -65,7 +65,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -188,10 +187,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testIntFieldNonSearchableRangeQuery() throws Exception {
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_i_ni", toStringArray(getRandomInts(1, false)));
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_i_ni_ns", toStringArray(getRandomInts(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_i_ni", toStringArray(getRandomInts(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_i_ni_ns", toStringArray(getRandomInts(1, false)));
     int numValues = 2 * RANDOM_MULTIPLIER;
     doTestFieldNonSearchableRangeQuery(
         "number_p_i_ni_ns_mv", toStringArray(getRandomInts(numValues, false)));
@@ -245,8 +242,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
       doTestFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
-      doTestFieldFunctionQueryError(
-          field, "w/o docValues", toStringArray(getRandomInts(1, false)));
+      doTestFieldFunctionQueryError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
     }
 
     // multivalued, no docvalues
@@ -265,10 +261,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       String field = r.replace("*", "number");
       doTestFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(1, false)));
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestFieldSortError(
-          field, "w/o docValues", toStringArray(getRandomInts(numValues, false)));
-      doTestFieldFunctionQueryError(
-          field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestFieldSortError(field, "w/o docValues", toStringArray(getRandomInts(numValues, false)));
+      doTestFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
       doTestFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
@@ -297,8 +291,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
       // value source (w/o field(...,min|max)) usage should still error...
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestFieldFunctionQueryError(
-          field, "multivalued", toStringArray(getRandomInts(1, false)));
+      doTestFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomInts(1, false)));
       doTestFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomInts(numValues, false)));
     }
@@ -311,12 +304,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_i", "number_p_i_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
+    doTestFieldFacetField("number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_i", "number_p_i_dv", toStringArray(getRandomInts(10, false)));
+    doTestFieldFacetField("number_p_i", "number_p_i_dv", toStringArray(getRandomInts(10, false)));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
@@ -413,7 +404,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -534,8 +526,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] randomSortedInts =
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedFacetField("number_p_i_mv", "number_p_i_mv_dv", randomSortedInts);
-    doTestFieldMultiValuedFacetField(
-        "number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
+    doTestFieldMultiValuedFacetField("number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
   }
 
   @Test
@@ -638,7 +629,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -876,8 +868,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDoubleFieldNonSearchableRangeQuery() throws Exception {
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_d_ni", toStringArray(getRandomDoubles(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_d_ni", toStringArray(getRandomDoubles(1, false)));
     doTestFieldNonSearchableRangeQuery(
         "number_p_d_ni_ns", toStringArray(getRandomDoubles(1, false)));
     int numValues = 2 * RANDOM_MULTIPLIER;
@@ -987,8 +978,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDoubleFieldFacetField() throws Exception {
-    doTestFieldFacetField(
-        "number_p_d", "number_p_d_dv", getSequentialStringArrayWithDoubles(10));
+    doTestFieldFacetField("number_p_d", "number_p_d_dv", getSequentialStringArrayWithDoubles(10));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
@@ -1557,8 +1547,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatFieldNonSearchableRangeQuery() throws Exception {
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_f_ni", toStringArray(getRandomFloats(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_f_ni", toStringArray(getRandomFloats(1, false)));
     doTestFieldNonSearchableRangeQuery(
         "number_p_f_ni_ns", toStringArray(getRandomFloats(1, false)));
     int numValues = 2 * RANDOM_MULTIPLIER;
@@ -1668,16 +1657,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testFloatFieldFacetField() throws Exception {
-    doTestFieldFacetField(
-        "number_p_f", "number_p_f_dv", getSequentialStringArrayWithDoubles(10));
+    doTestFieldFacetField("number_p_f", "number_p_f_dv", getSequentialStringArrayWithDoubles(10));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
         "number_p_f_e", "number_p_f_e_dv", getSequentialStringArrayWithDoubles(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_f", "number_p_f_dv", toStringArray(getRandomFloats(10, false)));
+    doTestFieldFacetField("number_p_f", "number_p_f_dv", toStringArray(getRandomFloats(10, false)));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
@@ -1782,7 +1769,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min - buffer;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -2013,7 +2001,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min - buffer;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -2186,10 +2175,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testLongFieldNonSearchableRangeQuery() throws Exception {
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_l_ni", toStringArray(getRandomLongs(1, false)));
-    doTestFieldNonSearchableRangeQuery(
-        "number_p_l_ni_ns", toStringArray(getRandomLongs(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_l_ni", toStringArray(getRandomLongs(1, false)));
+    doTestFieldNonSearchableRangeQuery("number_p_l_ni_ns", toStringArray(getRandomLongs(1, false)));
     int numValues = 2 * RANDOM_MULTIPLIER;
     doTestFieldNonSearchableRangeQuery(
         "number_p_l_ni_ns_mv", toStringArray(getRandomLongs(numValues, false)));
@@ -2274,10 +2261,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       String field = r.replace("*", "number");
       doTestFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(1, false)));
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestFieldSortError(
-          field, "w/o docValues", toStringArray(getRandomLongs(numValues, false)));
-      doTestFieldFunctionQueryError(
-          field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestFieldSortError(field, "w/o docValues", toStringArray(getRandomLongs(numValues, false)));
+      doTestFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
       doTestFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
@@ -2306,8 +2291,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
       // value source (w/o field(...,min|max)) usage should still error...
       int numValues = 2 * RANDOM_MULTIPLIER;
-      doTestFieldFunctionQueryError(
-          field, "multivalued", toStringArray(getRandomLongs(1, false)));
+      doTestFieldFunctionQueryError(field, "multivalued", toStringArray(getRandomLongs(1, false)));
       doTestFieldFunctionQueryError(
           field, "multivalued", toStringArray(getRandomLongs(numValues, false)));
     }
@@ -2319,12 +2303,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_l", "number_p_l_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
+    doTestFieldFacetField("number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_l", "number_p_l_dv", toStringArray(getRandomLongs(10, false)));
+    doTestFieldFacetField("number_p_l", "number_p_l_dv", toStringArray(getRandomLongs(10, false)));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
@@ -2432,7 +2414,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -2653,7 +2636,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; minBucketVal += gap, ++i) {
       testStrings[i] =
@@ -2903,8 +2887,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
       doTestFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z");
-      doTestFieldSortError(
-          field, "w/o docValues", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
+      doTestFieldSortError(field, "w/o docValues", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
       doTestFieldFunctionQueryError(field, "multivalued", "1995-12-31T23:59:59Z");
       doTestFieldFunctionQueryError(
           field, "multivalued", "1995-12-31T23:59:59Z", "2000-12-31T23:59:59Z");
@@ -2942,8 +2925,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDateFieldFacetField() throws Exception {
-    doTestFieldFacetField(
-        "number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
+    doTestFieldFacetField("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
     clearIndex();
     assertU(commit());
     doTestFieldFacetField(
@@ -3121,7 +3103,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     minBucketVal = min;
     for (int i = 0; i < numBuckets; ++i) {
       testStrings[i] =
@@ -3474,11 +3457,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] fieldTypeNames = new String[] {"_p_i", "_p_l", "_p_d", "_p_f", "_p_dt"};
     FieldType[] fieldTypes =
         new FieldType[] {
-          new IntField(),
-          new LongField(),
-          new DoubleField(),
-          new FloatField(),
-          new DateField()
+          new IntField(), new LongField(), new DoubleField(), new FloatField(), new DateField()
         };
     String[] ints =
         toStringArray(getRandomInts(2, false).stream().sorted().collect(Collectors.toList()));
@@ -4136,7 +4115,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     assertQEx(
         "Expecting Exception",
         "Can't facet on a NumericField without docValues",
@@ -4339,8 +4319,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
    * @param values one or more values to put into the doc(s) in the index - may be more than one for
    *     multivalued fields
    */
-  private void doTestFieldFunctionQueryError(
-      String field, String errSubStr, String... values) {
+  private void doTestFieldFunctionQueryError(String field, String errSubStr, String... values) {
     final int numDocs = atLeast(random(), 10);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = sdoc("id", String.valueOf(i));
@@ -4552,8 +4531,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     assertQ(req("q", "*:*", "fl", "id, " + fieldName, "sort", "id asc"), expected);
   }
 
-  private void doTestFieldMultiValuedRangeQuery(
-      String fieldName, String type, String[] numbers) {
+  private void doTestFieldMultiValuedRangeQuery(String fieldName, String type, String[] numbers) {
     assertTrue(numbers != null && numbers.length == 20);
     SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     assertTrue(sf.multiValued());
@@ -4720,7 +4698,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     assertTrue(numbers != null && numbers.length == 20);
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).multiValued());
     assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).hasDocValues());
-    assertTrue(h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof NumericField);
+    assertTrue(
+        h.getCore().getLatestSchema().getField(dvFieldName).getType() instanceof NumericField);
 
     for (int i = 0; i < 10; i++) {
       assertU(
@@ -4927,7 +4906,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
     assertQEx(
         "Expecting Exception",
         "Can't facet on a NumericField without docValues",
@@ -5061,7 +5041,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     assertFalse(h.getCore().getLatestSchema().getField(nonDocValuesField).hasDocValues());
     assertTrue(h.getCore().getLatestSchema().getField(nonDocValuesField).multiValued());
     assertTrue(
-        h.getCore().getLatestSchema().getField(nonDocValuesField).getType() instanceof NumericField);
+        h.getCore().getLatestSchema().getField(nonDocValuesField).getType()
+            instanceof NumericField);
 
     function = "field(" + nonDocValuesField + ",min)";
 
@@ -5087,8 +5068,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
-  private void doTestMultiValuedFieldsAtomicUpdates(
-      String field, String type, String[] values) {
+  private void doTestMultiValuedFieldsAtomicUpdates(String field, String type, String[] values) {
     assertEquals(3, values.length);
     assertU(adoc(sdoc("id", "1", field, String.valueOf(values[0]))));
     assertU(commit());
@@ -5183,8 +5163,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     assertQ(req("q", "id:1"), "//result/doc[1]/long[@name='" + field + "'][.='" + number3 + "']");
   }
 
-  private void doTestFloatFieldExactQuery(final String field, boolean testDouble)
-      throws Exception {
+  private void doTestFloatFieldExactQuery(final String field, boolean testDouble) throws Exception {
     doTestFloatFieldExactQuery(field, true, testDouble);
   }
 

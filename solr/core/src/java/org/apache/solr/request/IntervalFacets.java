@@ -215,25 +215,28 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
-        final SortedNumericDocValues sortedNumeric = DocValues.getSortedNumeric(ctx.reader(), fieldName);
+        final SortedNumericDocValues sortedNumeric =
+            DocValues.getSortedNumeric(ctx.reader(), fieldName);
         NumericDocValues numeric = DocValues.unwrapSingleton(sortedNumeric);
         if (numeric != null) {
           if (!schemaField.multiValued() && !(schemaField.getType() instanceof NumericField)) {
             if (schemaField.getType().getNumberType() == NumberType.FLOAT) {
-              numeric = new FilterNumericDocValues(numeric) {
-                @Override
-                public long longValue() throws IOException {
-                  return NumericUtils.sortableFloatBits((int) super.longValue());
-                }
-              };
+              numeric =
+                  new FilterNumericDocValues(numeric) {
+                    @Override
+                    public long longValue() throws IOException {
+                      return NumericUtils.sortableFloatBits((int) super.longValue());
+                    }
+                  };
             }
             if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
-              numeric = new FilterNumericDocValues(numeric) {
-                @Override
-                public long longValue() throws IOException {
-                  return NumericUtils.sortableDoubleBits(super.longValue());
-                }
-              };
+              numeric =
+                  new FilterNumericDocValues(numeric) {
+                    @Override
+                    public long longValue() throws IOException {
+                      return NumericUtils.sortableDoubleBits(super.longValue());
+                    }
+                  };
             }
           }
           longs = numeric;

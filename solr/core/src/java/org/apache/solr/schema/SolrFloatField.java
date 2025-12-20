@@ -11,7 +11,8 @@ import org.apache.lucene.util.NumericUtils;
 
 public final class SolrFloatField extends Field {
 
-  static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+  static org.apache.lucene.document.FieldType getType(
+      boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
     org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
     if (rangeIndex) {
       type.setDimensions(1, Float.BYTES);
@@ -38,7 +39,13 @@ public final class SolrFloatField extends Field {
    * @param value the float value
    * @throws IllegalArgumentException if the field name or value is null.
    */
-  public SolrFloatField(String name, float value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+  public SolrFloatField(
+      String name,
+      float value,
+      boolean rangeIndex,
+      boolean termIndex,
+      boolean docValues,
+      boolean stored) {
     super(name, getType(rangeIndex, termIndex, docValues, stored));
     fieldsData = (long) NumericUtils.floatToSortableInt(value);
     if (stored) {

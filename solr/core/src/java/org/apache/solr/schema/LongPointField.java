@@ -108,9 +108,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
     assert externalVals.size() > 0;
     Query indexQuery = null;
     long[] values = null;
-    if (hasIndexedTerms(field)) {
-      indexQuery = super.getSetQuery(parser, field, externalVals);
-    } else if (field.indexed()) {
+    if (field.indexed()) {
       values = new long[externalVals.size()];
       int i = 0;
       for (String val : externalVals) {

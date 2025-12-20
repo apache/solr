@@ -114,9 +114,7 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
     assert externalVals.size() > 0;
     Query indexQuery = null;
     double[] values = null;
-    if (hasIndexedTerms(field)) {
-      indexQuery = super.getSetQuery(parser, field, externalVals);
-    } else if (field.indexed()) {
+    if (field.indexed()) {
       values = new double[externalVals.size()];
       int i = 0;
       for (String val : externalVals) {

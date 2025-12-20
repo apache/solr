@@ -17,6 +17,9 @@
 
 package org.apache.solr.schema;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.InvertableType;
@@ -37,12 +40,10 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * An {@code NumericField} implementation of a field for {@code Double} values using {@code DoublePoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Double} values using {@code
+ * DoublePoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
  *
  * @see PointField
  * @see DoublePoint
@@ -68,7 +69,9 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), NumericUtils.doubleToSortableLong(parseDoubleFromUser(field.getName(), value)));
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(),
+        NumericUtils.doubleToSortableLong(parseDoubleFromUser(field.getName(), value)));
   }
 
   @Override
@@ -128,11 +131,15 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
         actualMax = DoublePoint.nextDown(actualMax);
       }
     }
-    return SortedNumericDocValuesField.newSlowRangeQuery(field.getName(), NumericUtils.doubleToSortableLong(actualMin), NumericUtils.doubleToSortableLong(actualMax));
+    return SortedNumericDocValuesField.newSlowRangeQuery(
+        field.getName(),
+        NumericUtils.doubleToSortableLong(actualMin),
+        NumericUtils.doubleToSortableLong(actualMax));
   }
 
   @Override
-  public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     double[] values = new double[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -142,7 +149,8 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
   }
 
   @Override
-  public Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -213,7 +221,14 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
         (value instanceof Number)
             ? ((Number) value).doubleValue()
             : Double.parseDouble(value.toString());
-    return Collections.singletonList(new SolrDoubleField(sf.getName(), doubleValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+    return Collections.singletonList(
+        new SolrDoubleField(
+            sf.getName(),
+            doubleValue,
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
@@ -257,7 +272,8 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
 
   static final class SolrDoubleField extends Field {
 
-    static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    static org.apache.lucene.document.FieldType getType(
+        boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
       if (rangeIndex) {
         type.setDimensions(1, Double.BYTES);
@@ -277,14 +293,20 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
     private final StoredValue storedValue;
 
     /**
-     * Creates a new DoubleField, indexing the provided point and term, storing it as a DocValue, and optionally
-     * storing it as a stored field.
+     * Creates a new DoubleField, indexing the provided point and term, storing it as a DocValue,
+     * and optionally storing it as a stored field.
      *
      * @param name field name
      * @param value the double value
      * @throws IllegalArgumentException if the field name or value is null.
      */
-    public SolrDoubleField(String name, double value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    public SolrDoubleField(
+        String name,
+        double value,
+        boolean rangeIndex,
+        boolean termIndex,
+        boolean docValues,
+        boolean stored) {
       super(name, getType(rangeIndex, termIndex, docValues, stored));
       fieldsData = NumericUtils.doubleToSortableLong(value);
       if (stored) {

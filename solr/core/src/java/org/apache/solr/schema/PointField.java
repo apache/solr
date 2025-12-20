@@ -24,19 +24,15 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
@@ -93,7 +89,7 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   protected boolean hasIndexedTerms(SchemaField field) {
-    return field.enhancedIndex();
+    return false;
   }
 
   @Override
@@ -167,19 +163,9 @@ public abstract class PointField extends NumericFieldType {
       // currently implemented as singleton range
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else if (field.indexed() && field.hasDocValues()) {
-      Query indexQuery = getExactQuery(parser, field, externalVal);
+      Query indexQuery = getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
       Query dvQuery = getDocValuesRangeQuery(parser, field, externalVal, externalVal, true, true);
       return new IndexOrDocValuesQuery(indexQuery, dvQuery);
-    } else {
-      return getExactQuery(parser, field, externalVal);
-    }
-  }
-
-  final Query getExactQuery(QParser parser, SchemaField field, String externalVal) {
-    if (hasIndexedTerms(field)) {
-      BytesRefBuilder br = new BytesRefBuilder();
-      readableToIndexed(externalVal, br);
-      return new TermQuery(new Term(field.getName(), br));
     } else {
       return getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
     }
@@ -286,9 +272,6 @@ public abstract class PointField extends NumericFieldType {
     if (sf.indexed()) {
       field = createField(sf, value);
       fields.add(field);
-      if (sf.enhancedIndex()) {
-        fields.add(new StringField(sf.getName(), field.binaryValue(), Field.Store.NO));
-      }
     }
 
     if (sf.hasDocValues()) {

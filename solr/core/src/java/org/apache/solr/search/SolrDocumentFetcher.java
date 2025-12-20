@@ -71,8 +71,6 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.LatLonPointSpatialField;
 import org.apache.solr.schema.NumberType;
-import org.apache.solr.schema.NumericField;
-import org.apache.solr.schema.NumericFieldType;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -663,8 +661,7 @@ public class SolrDocumentFetcher {
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) {
               return null;
-            }
-            else if (e.schemaField.multiValued() == false) {
+            } else if (e.schemaField.multiValued() == false) {
               return value;
             } else {
               outValues.add(value);

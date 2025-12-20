@@ -17,10 +17,12 @@
 
 package org.apache.solr.schema;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.InvertableType;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
@@ -28,29 +30,20 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Selector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * An {@code NumericField} implementation of a field for {@code Float} values using {@code FloatPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Float} values using {@code
+ * FloatPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
  *
  * @see PointField
  * @see FloatPoint
@@ -76,7 +69,9 @@ public class FloatField extends NumericField implements FloatValueFieldType {
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), NumericUtils.floatToSortableInt(parseFloatFromUser(field.getName(), value)));
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(),
+        NumericUtils.floatToSortableInt(parseFloatFromUser(field.getName(), value)));
   }
 
   @Override
@@ -136,11 +131,15 @@ public class FloatField extends NumericField implements FloatValueFieldType {
         actualMax = FloatPoint.nextDown(actualMax);
       }
     }
-    return SortedNumericDocValuesField.newSlowRangeQuery(field.getName(), NumericUtils.floatToSortableInt(actualMin), NumericUtils.floatToSortableInt(actualMax));
+    return SortedNumericDocValuesField.newSlowRangeQuery(
+        field.getName(),
+        NumericUtils.floatToSortableInt(actualMin),
+        NumericUtils.floatToSortableInt(actualMax));
   }
 
   @Override
-  public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     float[] values = new float[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -150,7 +149,8 @@ public class FloatField extends NumericField implements FloatValueFieldType {
   }
 
   @Override
-  public Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -221,7 +221,14 @@ public class FloatField extends NumericField implements FloatValueFieldType {
         (value instanceof Number)
             ? ((Number) value).floatValue()
             : Float.parseFloat(value.toString());
-    return Collections.singletonList(new SolrFloatField(sf.getName(), floatValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+    return Collections.singletonList(
+        new SolrFloatField(
+            sf.getName(),
+            floatValue,
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
@@ -265,7 +272,8 @@ public class FloatField extends NumericField implements FloatValueFieldType {
 
   static final class SolrFloatField extends Field {
 
-    static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    static org.apache.lucene.document.FieldType getType(
+        boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
       if (rangeIndex) {
         type.setDimensions(1, Float.BYTES);
@@ -285,14 +293,20 @@ public class FloatField extends NumericField implements FloatValueFieldType {
     private final StoredValue storedValue;
 
     /**
-     * Creates a new FloatField, indexing the provided point and term, storing it as a DocValue, and optionally
-     * storing it as a stored field.
+     * Creates a new FloatField, indexing the provided point and term, storing it as a DocValue, and
+     * optionally storing it as a stored field.
      *
      * @param name field name
      * @param value the float value
      * @throws IllegalArgumentException if the field name or value is null.
      */
-    public SolrFloatField(String name, float value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    public SolrFloatField(
+        String name,
+        float value,
+        boolean rangeIndex,
+        boolean termIndex,
+        boolean docValues,
+        boolean stored) {
       super(name, getType(rangeIndex, termIndex, docValues, stored));
       fieldsData = (long) NumericUtils.floatToSortableInt(value);
       if (stored) {

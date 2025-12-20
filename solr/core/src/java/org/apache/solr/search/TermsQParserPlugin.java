@@ -172,9 +172,11 @@ public class TermsQParserPlugin extends QParserPlugin {
                     localParams.get(METHOD)));
           }
           if (ft instanceof PointField pointField) {
-            return pointField.getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+            return pointField.getSetQuery(
+                this, req.getSchema().getField(fname), Arrays.asList(splitVals));
           } else if (ft instanceof NumericField numericField) {
-            return numericField.getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
+            return numericField.getSetQuery(
+                this, req.getSchema().getField(fname), Arrays.asList(splitVals));
           }
         }
 

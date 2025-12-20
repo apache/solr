@@ -148,7 +148,8 @@ public class TextLogisticRegressionQParserPlugin extends QParserPlugin {
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       leafReader = context.reader();
-      leafOutcomeValue = DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, trainingParams.outcome));
+      leafOutcomeValue =
+          DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, trainingParams.outcome));
     }
 
     @Override

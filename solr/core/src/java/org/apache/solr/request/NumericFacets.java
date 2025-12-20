@@ -37,10 +37,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.IORunnable;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.StringHelper;
@@ -221,20 +219,22 @@ final class NumericFacets {
         longs = DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), fieldName));
         if (!(sf.getType() instanceof NumericField)) {
           if (sf.getType().getNumberType() == NumberType.FLOAT) {
-            longs = new FilterNumericDocValues(longs) {
-              @Override
-              public long longValue() throws IOException {
-                return NumericUtils.sortableFloatBits((int) super.longValue());
-              }
-            };
+            longs =
+                new FilterNumericDocValues(longs) {
+                  @Override
+                  public long longValue() throws IOException {
+                    return NumericUtils.sortableFloatBits((int) super.longValue());
+                  }
+                };
           }
           if (sf.getType().getNumberType() == NumberType.DOUBLE) {
-            longs = new FilterNumericDocValues(longs) {
-              @Override
-              public long longValue() throws IOException {
-                return NumericUtils.sortableDoubleBits(super.longValue());
-              }
-            };
+            longs =
+                new FilterNumericDocValues(longs) {
+                  @Override
+                  public long longValue() throws IOException {
+                    return NumericUtils.sortableDoubleBits(super.longValue());
+                  }
+                };
           }
         }
       }

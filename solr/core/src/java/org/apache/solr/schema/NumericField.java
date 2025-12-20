@@ -25,8 +25,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatPoint;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
@@ -37,7 +35,6 @@ import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
-import org.apache.lucene.search.SortedNumericSortField;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
@@ -195,7 +192,8 @@ public abstract class NumericField extends PrimitiveFieldType {
 
   public abstract Query getPointFieldQuery(QParser parser, SchemaField field, String externalVal);
 
-  public abstract Query getDocValuesFieldQuery(QParser parser, SchemaField field, String externalVal);
+  public abstract Query getDocValuesFieldQuery(
+      QParser parser, SchemaField field, String externalVal);
 
   @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
@@ -206,7 +204,7 @@ public abstract class NumericField extends PrimitiveFieldType {
       return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
     } else if (field.hasDocValues()) {
       return getDocValuesSetQuery(parser, field, externalVals);
-    } else if (field.indexed()){
+    } else if (field.indexed()) {
       return getIndexSetQuery(parser, field, externalVals);
     } else {
       return super.getSetQuery(parser, field, externalVals);
@@ -228,9 +226,11 @@ public abstract class NumericField extends PrimitiveFieldType {
     return null;
   }
 
-  public abstract Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals);
+  public abstract Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals);
 
-  public abstract Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals);
+  public abstract Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals);
 
   @Override
   protected Query getSpecializedRangeQuery(

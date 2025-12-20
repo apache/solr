@@ -17,9 +17,12 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.LongPoint;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.InvertableType;
+import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
@@ -36,12 +39,10 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 
 /**
- * An {@code NumericField} implementation of a field for {@code Long} values using {@code LongPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Long} values using {@code
+ * LongPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
  *
  * @see PointField
  * @see LongPoint
@@ -67,7 +68,8 @@ public class LongField extends NumericField implements LongValueFieldType {
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), parseLongFromUser(field.getName(), value));
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(), parseLongFromUser(field.getName(), value));
   }
 
   @Override
@@ -131,7 +133,8 @@ public class LongField extends NumericField implements LongValueFieldType {
   }
 
   @Override
-  public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] values = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -141,7 +144,8 @@ public class LongField extends NumericField implements LongValueFieldType {
   }
 
   @Override
-  public Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -209,18 +213,21 @@ public class LongField extends NumericField implements LongValueFieldType {
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
     long longValue =
-        (value instanceof Number)
-            ? ((Number) value).longValue()
-            : Long.parseLong(value.toString());
-    return Collections.singletonList(new SolrLongField(sf.getName(), longValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+        (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
+    return Collections.singletonList(
+        new SolrLongField(
+            sf.getName(),
+            longValue,
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
     long longValue =
-        (value instanceof Number)
-            ? ((Number) value).longValue()
-            : Long.parseLong(value.toString());
+        (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
     return new LongPoint(field.getName(), longValue);
   }
 
@@ -230,8 +237,8 @@ public class LongField extends NumericField implements LongValueFieldType {
   }
 
   /**
-   * Wrapper for {@link Long#parseLong(String)} that throws a BAD_REQUEST error if the input is
-   * not valid
+   * Wrapper for {@link Long#parseLong(String)} that throws a BAD_REQUEST error if the input is not
+   * valid
    *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
@@ -251,7 +258,8 @@ public class LongField extends NumericField implements LongValueFieldType {
 
   static final class SolrLongField extends Field {
 
-    static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    static org.apache.lucene.document.FieldType getType(
+        boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
       if (rangeIndex) {
         type.setDimensions(1, Long.BYTES);
@@ -271,14 +279,20 @@ public class LongField extends NumericField implements LongValueFieldType {
     private final StoredValue storedValue;
 
     /**
-     * Creates a new LongField, indexing the provided point and term, storing it as a DocValue, and optionally
-     * storing it as a stored field.
+     * Creates a new LongField, indexing the provided point and term, storing it as a DocValue, and
+     * optionally storing it as a stored field.
      *
      * @param name field name
      * @param value the long value
      * @throws IllegalArgumentException if the field name or value is null.
      */
-    public SolrLongField(String name, long value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    public SolrLongField(
+        String name,
+        long value,
+        boolean rangeIndex,
+        boolean termIndex,
+        boolean docValues,
+        boolean stored) {
       super(name, getType(rangeIndex, termIndex, docValues, stored));
       fieldsData = value;
       if (stored) {

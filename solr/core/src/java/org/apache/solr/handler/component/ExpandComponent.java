@@ -338,7 +338,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
     } else {
       groupSet = new LongHashSet(docList.size());
-      NumericDocValues collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
+      NumericDocValues collapseValues =
+          DocValues.unwrapSingleton(
+              DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
       for (int i = 0; i < globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
         while (globalDoc >= nextDocBase) {
@@ -348,7 +350,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
               currentContext + 1 < contexts.size()
                   ? contexts.get(currentContext + 1).docBase
                   : Integer.MAX_VALUE;
-          collapseValues = DocValues.unwrapSingleton(DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
+          collapseValues =
+              DocValues.unwrapSingleton(
+                  DocValues.getSortedNumeric(contexts.get(currentContext).reader(), field));
         }
         collapsedSet.add(globalDoc);
         int contextDoc = globalDoc - currentDocBase;
@@ -675,7 +679,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       for (LongObjectCursor<Collector> entry : groups) {
         leafCollectors.put(entry.key, entry.value.getLeafCollector(context));
       }
-      final SortedNumericDocValues sortedNumericDocValues = DocValues.getSortedNumeric(context.reader(), this.field);
+      final SortedNumericDocValues sortedNumericDocValues =
+          DocValues.getSortedNumeric(context.reader(), this.field);
       final NumericDocValues numericDocValues = DocValues.unwrapSingleton(sortedNumericDocValues);
       if (numericDocValues != null) {
         return new LeafCollector() {

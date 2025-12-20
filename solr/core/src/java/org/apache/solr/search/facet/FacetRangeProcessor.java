@@ -741,7 +741,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @SuppressWarnings("rawtypes")
     @Override
     public Comparable bitsToValue(long bits) {
-      if ((field.getType().isPointField() && field.multiValued()) || field.getType() instanceof NumericField) {
+      if ((field.getType().isPointField() && field.multiValued())
+          || field.getType() instanceof NumericField) {
         return NumericUtils.sortableIntToFloat((int) bits);
       } else {
         return Float.intBitsToFloat((int) bits);
@@ -772,7 +773,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @Override
     @SuppressWarnings({"rawtypes"})
     public Comparable bitsToValue(long bits) {
-      if ((field.getType().isPointField() && field.multiValued()) || field.getType() instanceof NumericField) {
+      if ((field.getType().isPointField() && field.multiValued())
+          || field.getType() instanceof NumericField) {
         return NumericUtils.sortableLongToDouble(bits);
       } else {
         return Double.longBitsToDouble(bits);

@@ -17,14 +17,15 @@
 
 package org.apache.solr.schema;
 
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.InvertableType;
+import java.time.Instant;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
-import org.apache.lucene.index.DocValuesType;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
@@ -33,19 +34,15 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
 import org.apache.solr.util.DateMathParser;
-import java.time.Instant;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 
 /**
- * An {@code NumericField} implementation of a field for {@code Date} values with millisecond precision using {@code LongPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Date} values with millisecond
+ * precision using {@code LongPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and
+ * {@code StoredField}.
  *
  * <p>Date Format for the XML, incoming and outgoing:
  *
@@ -78,10 +75,10 @@ import java.util.List;
  * above) or the literal string "NOW", ie: "NOW+1YEAR", "NOW/DAY",
  * "1995-12-31T23:59:59.999Z+5MINUTES", etc... -- see {@link DateMathParser} for more examples.
  *
- * <p><b>NOTE:</b> Although it is possible to configure a <code>DateField</code> instance with
- * a default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed,
- * this is not advisable when using SolrCloud since each replica of the document may compute a
- * slightly different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
+ * <p><b>NOTE:</b> Although it is possible to configure a <code>DateField</code> instance with a
+ * default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed, this
+ * is not advisable when using SolrCloud since each replica of the document may compute a slightly
+ * different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
  *
  * <p>Explanation of "UTC"...
  *
@@ -94,6 +91,7 @@ import java.util.List;
  * the French word order, TUC, the acronym UTC was chosen as a compromise."
  *
  * </blockquote>
+ *
  * @see PointField
  * @see LongPoint
  */
@@ -113,12 +111,14 @@ public class DateField extends NumericField implements DateValueFieldType {
 
   @Override
   public Query getPointFieldQuery(QParser parser, SchemaField field, String value) {
-    return LongPoint.newExactQuery(field.getName(),  DateMathParser.parseMath(null, value).getTime());
+    return LongPoint.newExactQuery(
+        field.getName(), DateMathParser.parseMath(null, value).getTime());
   }
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(),  DateMathParser.parseMath(null, value).getTime());
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(), DateMathParser.parseMath(null, value).getTime());
   }
 
   @Override
@@ -182,7 +182,8 @@ public class DateField extends NumericField implements DateValueFieldType {
   }
 
   @Override
-  public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] values = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -192,7 +193,8 @@ public class DateField extends NumericField implements DateValueFieldType {
   }
 
   @Override
-  public Query getDocValuesSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
@@ -227,7 +229,8 @@ public class DateField extends NumericField implements DateValueFieldType {
 
   @Override
   protected String indexedToReadable(BytesRef indexedForm) {
-    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset)).toString();
+    return Instant.ofEpochMilli(LongPoint.decodeDimension(indexedForm.bytes, indexedForm.offset))
+        .toString();
   }
 
   @Override
@@ -262,7 +265,14 @@ public class DateField extends NumericField implements DateValueFieldType {
   public List<IndexableField> createFields(SchemaField sf, Object value) {
     Date date =
         (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
-    return Collections.singletonList(new LongField.SolrLongField(sf.getName(), date.getTime(), sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+    return Collections.singletonList(
+        new LongField.SolrLongField(
+            sf.getName(),
+            date.getTime(),
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
@@ -276,5 +286,4 @@ public class DateField extends NumericField implements DateValueFieldType {
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), ((Date) this.toNativeType(value)).getTime());
   }
-
 }

@@ -114,9 +114,7 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
     assert externalVals.size() > 0;
     Query indexQuery = null;
     float[] values = null;
-    if (hasIndexedTerms(field)) {
-      indexQuery = super.getSetQuery(parser, field, externalVals);
-    } else if (field.indexed()) {
+    if (field.indexed()) {
       values = new float[externalVals.size()];
       int i = 0;
       for (String val : externalVals) {

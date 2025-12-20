@@ -77,7 +77,9 @@ public class StatsValuesFactory {
         return new SortedDateStatsValues(statsValues, statsField);
       }
       return statsValues;
-    } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType) || NumericField.class.isInstance(fieldType)) {
+    } else if (TrieField.class.isInstance(fieldType)
+        || PointField.class.isInstance(fieldType)
+        || NumericField.class.isInstance(fieldType)) {
 
       NumericStatsValues statsValue = new NumericStatsValues(statsField);
       if (sf.multiValued()) {
