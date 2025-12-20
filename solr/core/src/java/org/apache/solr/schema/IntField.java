@@ -17,10 +17,12 @@
 
 package org.apache.solr.schema;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.InvertableType;
-import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
@@ -28,55 +30,44 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
+import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Selector;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 /**
- * An {@code NumericField} implementation of a field for {@code Float} values using {@code FloatPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
+ * An {@code NumericField} implementation of a field for {@code Int} values using {@code IntPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and {@code StoredField}.
  *
  * @see PointField
- * @see FloatPoint
+ * @see IntPoint
  */
-public class FloatField extends NumericField implements FloatValueFieldType {
+public class IntField extends NumericField implements IntValueFieldType {
 
-  public FloatField() {
-    type = NumberType.FLOAT;
+  public IntField() {
+    type = NumberType.INTEGER;
   }
 
   @Override
   public Object toNativeType(Object val) {
     if (val == null) return null;
-    if (val instanceof Number) return ((Number) val).floatValue();
-    if (val instanceof CharSequence) return Float.parseFloat(val.toString());
+    if (val instanceof Number) return ((Number) val).intValue();
+    if (val instanceof CharSequence) return Integer.parseInt(val.toString());
     return super.toNativeType(val);
   }
 
   @Override
   public Query getPointFieldQuery(QParser parser, SchemaField field, String value) {
-    return FloatPoint.newExactQuery(field.getName(), parseFloatFromUser(field.getName(), value));
+    return IntPoint.newExactQuery(field.getName(), parseIntFromUser(field.getName(), value));
   }
 
   @Override
   public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
-    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), NumericUtils.floatToSortableInt(parseFloatFromUser(field.getName(), value)));
+    return SortedNumericDocValuesField.newSlowExactQuery(field.getName(), parseIntFromUser(field.getName(), value));
   }
 
   @Override
@@ -87,26 +78,26 @@ public class FloatField extends NumericField implements FloatValueFieldType {
       String max,
       boolean minInclusive,
       boolean maxInclusive) {
-    float actualMin, actualMax;
+    int actualMin, actualMax;
     if (min == null) {
-      actualMin = Float.NEGATIVE_INFINITY;
+      actualMin = Integer.MIN_VALUE;
     } else {
-      actualMin = parseFloatFromUser(field.getName(), min);
+      actualMin = parseIntFromUser(field.getName(), min);
       if (!minInclusive) {
-        if (actualMin == Float.POSITIVE_INFINITY) return new MatchNoDocsQuery();
-        actualMin = FloatPoint.nextUp(actualMin);
+        if (actualMin == Integer.MAX_VALUE) return new MatchNoDocsQuery();
+        ++actualMin;
       }
     }
     if (max == null) {
-      actualMax = Float.POSITIVE_INFINITY;
+      actualMax = Integer.MAX_VALUE;
     } else {
-      actualMax = parseFloatFromUser(field.getName(), max);
+      actualMax = parseIntFromUser(field.getName(), max);
       if (!maxInclusive) {
-        if (actualMax == Float.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
-        actualMax = FloatPoint.nextDown(actualMax);
+        if (actualMax == Integer.MIN_VALUE) return new MatchNoDocsQuery();
+        --actualMax;
       }
     }
-    return FloatPoint.newRangeQuery(field.getName(), actualMin, actualMax);
+    return IntPoint.newRangeQuery(field.getName(), actualMin, actualMax);
   }
 
   @Override
@@ -117,36 +108,36 @@ public class FloatField extends NumericField implements FloatValueFieldType {
       String max,
       boolean minInclusive,
       boolean maxInclusive) {
-    float actualMin, actualMax;
+    int actualMin, actualMax;
     if (min == null) {
-      actualMin = Float.NEGATIVE_INFINITY;
+      actualMin = Integer.MIN_VALUE;
     } else {
-      actualMin = parseFloatFromUser(field.getName(), min);
+      actualMin = parseIntFromUser(field.getName(), min);
       if (!minInclusive) {
-        if (actualMin == Float.POSITIVE_INFINITY) return new MatchNoDocsQuery();
-        actualMin = FloatPoint.nextUp(actualMin);
+        if (actualMin == Integer.MAX_VALUE) return new MatchNoDocsQuery();
+        ++actualMin;
       }
     }
     if (max == null) {
-      actualMax = Float.POSITIVE_INFINITY;
+      actualMax = Integer.MAX_VALUE;
     } else {
-      actualMax = parseFloatFromUser(field.getName(), max);
+      actualMax = parseIntFromUser(field.getName(), max);
       if (!maxInclusive) {
-        if (actualMax == Float.NEGATIVE_INFINITY) return new MatchNoDocsQuery();
-        actualMax = FloatPoint.nextDown(actualMax);
+        if (actualMax == Integer.MIN_VALUE) return new MatchNoDocsQuery();
+        --actualMax;
       }
     }
-    return SortedNumericDocValuesField.newSlowRangeQuery(field.getName(), NumericUtils.floatToSortableInt(actualMin), NumericUtils.floatToSortableInt(actualMax));
+    return SortedNumericDocValuesField.newSlowRangeQuery(field.getName(), actualMin, actualMax);
   }
 
   @Override
   public Query getPointSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    float[] values = new float[externalVals.size()];
+    int[] values = new int[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
-      values[i++] = parseFloatFromUser(field.getName(), val);
+      values[i++] = parseIntFromUser(field.getName(), val);
     }
-    return FloatPoint.newSetQuery(field.getName(), values);
+    return IntPoint.newSetQuery(field.getName(), values);
   }
 
   @Override
@@ -154,25 +145,25 @@ public class FloatField extends NumericField implements FloatValueFieldType {
     long[] points = new long[externalVals.size()];
     int i = 0;
     for (String val : externalVals) {
-      points[i++] = NumericUtils.floatToSortableInt(parseFloatFromUser(field.getName(), val));
+      points[i++] = parseIntFromUser(field.getName(), val);
     }
     return SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
   }
 
   @Override
   public Object toObject(SchemaField sf, BytesRef term) {
-    return FloatPoint.decodeDimension(term.bytes, term.offset);
+    return IntPoint.decodeDimension(term.bytes, term.offset);
   }
 
   @Override
   public Object toObject(IndexableField f) {
     final StoredValue storedValue = f.storedValue();
     if (storedValue != null) {
-      return storedValue.getFloatValue();
+      return storedValue.getIntValue();
     }
     final Number val = f.numericValue();
     if (val != null) {
-      return NumericUtils.sortableIntToFloat(val.intValue());
+      return val.intValue();
     } else {
       throw new AssertionError("Unexpected state. Field: '" + f + "'");
     }
@@ -180,19 +171,19 @@ public class FloatField extends NumericField implements FloatValueFieldType {
 
   @Override
   public String storedToReadable(IndexableField f) {
-    return Float.toString(f.storedValue().getFloatValue());
+    return Integer.toString(f.storedValue().getIntValue());
   }
 
   @Override
   protected String indexedToReadable(BytesRef indexedForm) {
-    return Float.toString(FloatPoint.decodeDimension(indexedForm.bytes, indexedForm.offset));
+    return Integer.toString(IntPoint.decodeDimension(indexedForm.bytes, indexedForm.offset));
   }
 
   @Override
   public void readableToIndexed(CharSequence val, BytesRefBuilder result) {
-    result.grow(Float.BYTES);
-    result.setLength(Float.BYTES);
-    FloatPoint.encodeDimension(parseFloatFromUser(null, val.toString()), result.bytes(), 0);
+    result.grow(Integer.BYTES);
+    result.setLength(Integer.BYTES);
+    IntPoint.encodeDimension(parseIntFromUser(null, val.toString()), result.bytes(), 0);
   }
 
   @Override
@@ -207,68 +198,63 @@ public class FloatField extends NumericField implements FloatValueFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new MultiValuedFloatFieldSource(field.getName(), SortedNumericSelector.Type.MIN);
+    return new MultiValuedIntFieldSource(field.getName(), SortedNumericSelector.Type.MIN);
   }
 
   @Override
   protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
-    return new MultiValuedFloatFieldSource(f.getName(), choice);
+    return new MultiValuedIntFieldSource(f.getName(), choice);
   }
 
   @Override
   public List<IndexableField> createFields(SchemaField sf, Object value) {
-    float floatValue =
+    int intValue =
         (value instanceof Number)
-            ? ((Number) value).floatValue()
-            : Float.parseFloat(value.toString());
-    return Collections.singletonList(new SolrFloatField(sf.getName(), floatValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
+            ? ((Number) value).intValue()
+            : Integer.parseInt(value.toString());
+    return Collections.singletonList(new SolrIntField(sf.getName(), intValue, sf.indexed(), sf.enhancedIndex(), sf.hasDocValues(), sf.stored()));
   }
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
-    float floatValue =
+    int intValue =
         (value instanceof Number)
-            ? ((Number) value).floatValue()
-            : Float.parseFloat(value.toString());
-    return new FloatPoint(field.getName(), floatValue);
+            ? ((Number) value).intValue()
+            : Integer.parseInt(value.toString());
+    return new IntPoint(field.getName(), intValue);
   }
 
   @Override
   protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), (Float) this.toNativeType(value));
-  }
-
-  @Override
-  public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
-    return FloatPoint.newRangeQuery(field.getName(), Float.NEGATIVE_INFINITY, Float.NaN);
+    return new StoredField(sf.getName(), (Integer) this.toNativeType(value));
   }
 
   /**
-   * Wrapper for {@link Float#parseFloat(String)} that throws a BAD_REQUEST error if the input is
+   * Wrapper for {@link Integer#parseInt(String)} that throws a BAD_REQUEST error if the input is
    * not valid
    *
    * @param fieldName used in any exception, may be null
    * @param val string to parse, NPE if null
    */
-  static float parseFloatFromUser(String fieldName, String val) {
+  static int parseIntFromUser(String fieldName, String val) {
     if (val == null) {
       throw new NullPointerException(
           "Invalid input" + (null == fieldName ? "" : " for field " + fieldName));
     }
     try {
-      return Float.parseFloat(val);
+      return Integer.parseInt(val);
     } catch (NumberFormatException e) {
       String msg = "Invalid Number: " + val + (null == fieldName ? "" : " for field " + fieldName);
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
     }
   }
 
-  static final class SolrFloatField extends Field {
+  static final class SolrIntField extends Field {
 
     static org.apache.lucene.document.FieldType getType(boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       org.apache.lucene.document.FieldType type = new org.apache.lucene.document.FieldType();
       if (rangeIndex) {
-        type.setDimensions(1, Float.BYTES);
+        type.setDimensions(1, Integer.BYTES);
       }
       if (termIndex) {
         type.setIndexOptions(IndexOptions.DOCS);
@@ -285,16 +271,16 @@ public class FloatField extends NumericField implements FloatValueFieldType {
     private final StoredValue storedValue;
 
     /**
-     * Creates a new FloatField, indexing the provided point and term, storing it as a DocValue, and optionally
+     * Creates a new IntField, indexing the provided point and term, storing it as a DocValue, and optionally
      * storing it as a stored field.
      *
      * @param name field name
-     * @param value the float value
+     * @param value the int value
      * @throws IllegalArgumentException if the field name or value is null.
      */
-    public SolrFloatField(String name, float value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
+    public SolrIntField(String name, int value, boolean rangeIndex, boolean termIndex, boolean docValues, boolean stored) {
       super(name, getType(rangeIndex, termIndex, docValues, stored));
-      fieldsData = (long) NumericUtils.floatToSortableInt(value);
+      fieldsData = (long) value;
       if (stored) {
         storedValue = new StoredValue(value);
       } else {
@@ -309,14 +295,14 @@ public class FloatField extends NumericField implements FloatValueFieldType {
 
     @Override
     public BytesRef binaryValue() {
-      byte[] encodedPoint = new byte[Float.BYTES];
-      float value = getValueAsFloat();
-      FloatPoint.encodeDimension(value, encodedPoint, 0);
+      byte[] encodedPoint = new byte[Integer.BYTES];
+      int value = getValueAsInt();
+      IntPoint.encodeDimension(value, encodedPoint, 0);
       return new BytesRef(encodedPoint);
     }
 
-    private float getValueAsFloat() {
-      return NumericUtils.sortableIntToFloat(numericValue().intValue());
+    private int getValueAsInt() {
+      return numericValue().intValue();
     }
 
     @Override
@@ -326,20 +312,20 @@ public class FloatField extends NumericField implements FloatValueFieldType {
 
     @Override
     public String toString() {
-      return getClass().getSimpleName() + " <" + name + ':' + getValueAsFloat() + '>';
+      return getClass().getSimpleName() + " <" + name + ':' + getValueAsInt() + '>';
     }
 
     @Override
-    public void setFloatValue(float value) {
-      super.setLongValue(NumericUtils.floatToSortableInt(value));
+    public void setIntValue(int value) {
+      super.setLongValue(value);
       if (storedValue != null) {
-        storedValue.setFloatValue(value);
+        storedValue.setIntValue(value);
       }
     }
 
     @Override
     public void setLongValue(long value) {
-      throw new IllegalArgumentException("cannot change value type from Float to Long");
+      throw new IllegalArgumentException("cannot change value type from Int to Long");
     }
   }
 }

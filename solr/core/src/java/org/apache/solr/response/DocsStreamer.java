@@ -30,14 +30,18 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.schema.BinaryField;
 import org.apache.solr.schema.BoolField;
+import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.DenseVectorField;
+import org.apache.solr.schema.DoubleField;
 import org.apache.solr.schema.DoublePointField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.FloatField;
 import org.apache.solr.schema.FloatPointField;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.IntField;
 import org.apache.solr.schema.IntPointField;
+import org.apache.solr.schema.LongField;
 import org.apache.solr.schema.LongPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
@@ -224,7 +228,11 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     KNOWN_TYPES.add(LongPointField.class);
     KNOWN_TYPES.add(DoublePointField.class);
     KNOWN_TYPES.add(FloatPointField.class);
+    KNOWN_TYPES.add(IntField.class);
+    KNOWN_TYPES.add(LongField.class);
+    KNOWN_TYPES.add(DoubleField.class);
     KNOWN_TYPES.add(FloatField.class);
+    KNOWN_TYPES.add(DateField.class);
     // DenseVectorField extends FloatPointField but here we list DenseVectorField
     // explicitly due to KNOWN_TYPES.contains use of the KNOWN_TYPES set
     KNOWN_TYPES.add(DenseVectorField.class);

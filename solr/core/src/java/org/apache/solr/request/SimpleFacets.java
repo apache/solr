@@ -79,6 +79,7 @@ import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
@@ -468,8 +469,13 @@ public class SimpleFacets {
     NamedList<Integer> counts;
     SchemaField sf = searcher.getSchema().getField(field);
     if (sf.getType().isPointField() && !sf.hasDocValues()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a PointField without docValues");
+      if (sf.getType() instanceof PointField) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a PointField without docValues");
+      } else {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a NumericFIeld without docValues");
+      }
     }
     FieldType ft = sf.getType();
 
