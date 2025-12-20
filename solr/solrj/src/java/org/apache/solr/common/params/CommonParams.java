@@ -279,26 +279,6 @@ public interface CommonParams {
   String COST = "cost";
 
   /**
-   * Request ID parameter added to all distributed queries (that do not opt out)
-   *
-   * @see #DISABLE_REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  String REQUEST_ID = "rid";
-
-  /**
-   * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
-   *
-   * <p>Defaults to 'false' if not specified.
-   *
-   * @see #REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  String DISABLE_REQUEST_ID = "disableRequestId";
-
-  /**
    * Parameter to control the distributed term statistics request for current query when distributed
    * IDF is enabled in solrconfig
    *
