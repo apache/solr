@@ -140,30 +140,22 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                   continue;
                 }
 
-                boolean segmentError = true;
+                boolean success = false;
 
-                for (int i = 0; i < SEGMENT_ERROR_RETRIES; i++) {
-                  // retrying segment; I anticipate throttling to be the main reason in most
-                  // cases
-                  // hence the sleep
-                  if (i > 0) {
-                    Thread.sleep(5 * 60 * 1000); // 5 minutes
-                  }
+                success = processSegment(lrc, updateProcessorChain, core, dvICache);
 
-                  segmentError = processSegment(lrc, updateProcessorChain, core, dvICache);
-
-                  if (!segmentError) {
-                    break;
-                  }
-                }
-                if (segmentError) {
+                if (!success) {
                   coreRxStatus = CoreReindexingStatus.ERROR;
+                  break;
                 }
               }
             } catch (Exception e) {
               log.error("Error while processing core: {}, exception: {}", coreName, e.toString());
               coreRxStatus = CoreReindexingStatus.ERROR;
             }
+
+            // TO-DO
+            // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
 
             try {
               RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
@@ -189,68 +181,32 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
             // SolrCore.getSearcher() method
             ssearcherRef.decref();
 
-            // IF coreRxStatus == CoreReindexingStatus.REINDEXING_PAUSED at this point then most
-            // likely it
-            // reached here
-            // by breaking out of segment processing. So we are going straight to setting the state
-            // and
-            // publishing to reindexing_status.csv
-            if (coreRxStatus != CoreReindexingStatus.REINDEXING_PAUSED) {
+            Boolean validationResult = false;
+            for (int i = 0;
+                (i < RETRY_COUNT_FOR_SEGMENT_DELETION)
+                    && (validationResult != null && !validationResult);
+                i++) {
               try {
-                if (coreRxStatus == CoreReindexingStatus.ERROR) {
-                  log.error("Core CoreReindexingStatus returned error, not calling commit");
-                } else {
-                  Boolean validationResult = false;
-                  for (int i = 0;
-                      (i < RETRY_COUNT_FOR_SEGMENT_DELETION)
-                          && (validationResult != null && !validationResult);
-                      i++) {
+                doCommit(core);
+                Thread.sleep(SLEEP_TIME_BEFORE_AFTER_COMMIT_MS);
 
-                    doCommit(core);
-                    Thread.sleep(SLEEP_TIME_BEFORE_AFTER_COMMIT_MS);
-
-                    validationResult = validateSegmentsUpdated(core);
-                    log.warn(
-                        "validateSegmentsUpdated() returned: {} for core: {}, sleeping for {}ms before calling commit...",
-                        validationResult,
-                        coreName,
-                        SLEEP_TIME_SEGMENT_DELETION_MS);
-                    Thread.sleep(SLEEP_TIME_SEGMENT_DELETION_MS);
-                  }
-                  if ((validationResult == null)
-                      || (validationResult != null && !validationResult)) {
-                    log.error(
-                        "Validation failed for core: {}, not increasing indexCreatedVersionMajor",
-                        validationResult,
-                        coreName);
-                    coreRxStatus = CoreReindexingStatus.ERROR;
-                  } else {
-
-                    doCommit(core);
-                    Thread.sleep(SLEEP_TIME_BEFORE_AFTER_COMMIT_MS);
-
-                    int indexCreatedVersionMajorAfterCommit = getIndexCreatedVersionMajor(core);
-                    log.info(
-                        "Post processing coreName: {}, indexCreatedVersionMajorAfterCommit: {}",
-                        coreName,
-                        indexCreatedVersionMajorAfterCommit);
-                    if (indexCreatedVersionMajorAfterCommit == Version.LATEST.major) {
-                      log.info(
-                          "Core: {} index version updated successfully to {}",
-                          coreName,
-                          Version.LATEST);
-                      coreRxStatus = CoreReindexingStatus.PROCESSED;
-                    } else {
-                      log.error(
-                          "indexCreatedVersionMajorAfterCommit is {}",
-                          indexCreatedVersionMajorAfterCommit);
-                      coreRxStatus = CoreReindexingStatus.ERROR;
-                    }
-                  }
-                }
-              } catch (Exception e) {
-                log.error("Exception in processCore: {}", e.toString());
+                validationResult = validateSegmentsUpdated(core);
+                log.warn(
+                    "validateSegmentsUpdated() returned: {} for core: {}, sleeping for {}ms before calling commit...",
+                    validationResult,
+                    coreName,
+                    SLEEP_TIME_SEGMENT_DELETION_MS);
+                Thread.sleep(SLEEP_TIME_SEGMENT_DELETION_MS);
+              } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
               }
+            }
+
+            if ((validationResult == null) || (validationResult != null && !validationResult)) {
+              log.error(
+                  "Validation failed for core: {}, Some older segments still present despite 100% deleted docs",
+                  validationResult, coreName);
+              coreRxStatus = CoreReindexingStatus.ERROR;
             }
           }
           return null;
@@ -259,12 +215,13 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private boolean shouldUpgradeSegment(LeafReaderContext lrc) {
     Version segmentMinVersion = null;
-    try (LeafReader leafReader = lrc.reader()) {
-      segmentMinVersion = leafReader.getMetaData().minVersion();
-    } catch (IOException ex) {
-      // TO-DO
-      // Wrap exception in CoreAdminAPIBaseException
-    }
+
+    LeafReader leafReader = lrc.reader();
+    leafReader = FilterLeafReader.unwrap(leafReader);
+
+    SegmentCommitInfo si = ((SegmentReader) leafReader).getSegmentInfo();
+    segmentMinVersion = si.info.getMinVersion();
+
     return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
   }
 
