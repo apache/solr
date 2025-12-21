@@ -89,8 +89,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     WAITING;
   }
 
-  private static final int SEGMENT_ERROR_RETRIES = 3;
-  private static final long SLEEP_TIME_BEFORE_AFTER_COMMIT_MS = 10000;
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
   private static final long SLEEP_TIME_SEGMENT_DELETION_MS = 60000;
 
@@ -153,59 +151,39 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
               log.error("Error while processing core: {}, exception: {}", coreName, e.toString());
               coreRxStatus = CoreReindexingStatus.ERROR;
             }
-
-            // TO-DO
-            // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
-
-            try {
-              RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(null);
-              if (iwRef != null) {
-                IndexWriter iw = iwRef.get();
-                try {
-                  if (iw != null) {
-                    iw.commit();
-                  } else {
-                    log.warn("IndexWriter for core {} is null", core.getName());
-                  }
-                } finally {
-                  iwRef.decref();
-                }
-              } else {
-                log.warn("IWRef for core {} is null", core.getName());
-              }
-            } catch (IOException ioEx) {
-
-            }
-
             // important to decrement searcher ref count after use since we obtained it via the
             // SolrCore.getSearcher() method
             ssearcherRef.decref();
 
-            Boolean validationResult = false;
-            for (int i = 0;
-                (i < RETRY_COUNT_FOR_SEGMENT_DELETION)
-                    && (validationResult != null && !validationResult);
-                i++) {
+            // TO-DO
+            // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
+
+            doCommit(core);
+            try {
+              Thread.sleep(10000);
+            } catch (InterruptedException ie) {
+              // we don't have to preserve the interrupt here
+            }
+            /*
+            There is a delay observed sometimes between when a commit happens and
+            when the segment (with zero live docs) gets cleared. So adding a validation check with retries.
+            */
+            Boolean indexUpgraded = validateSegmentsUpdated(core);
+
+            for (int i = 0; i < RETRY_COUNT_FOR_SEGMENT_DELETION && !indexUpgraded; i++) {
               try {
                 doCommit(core);
-                Thread.sleep(SLEEP_TIME_BEFORE_AFTER_COMMIT_MS);
-
-                validationResult = validateSegmentsUpdated(core);
-                log.warn(
-                    "validateSegmentsUpdated() returned: {} for core: {}, sleeping for {}ms before calling commit...",
-                    validationResult,
-                    coreName,
-                    SLEEP_TIME_SEGMENT_DELETION_MS);
                 Thread.sleep(SLEEP_TIME_SEGMENT_DELETION_MS);
+                indexUpgraded = validateSegmentsUpdated(core);
               } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
+                // we don't have to preserve the interrupt here
               }
             }
 
-            if ((validationResult == null) || (validationResult != null && !validationResult)) {
+            if (indexUpgraded == null || !indexUpgraded) {
               log.error(
-                  "Validation failed for core: {}, Some older segments still present despite 100% deleted docs",
-                  validationResult, coreName);
+                  "Validation failed for core '{}'. Some older version segments still remain (likely despite 100% deleted docs).",
+                  coreName);
               coreRxStatus = CoreReindexingStatus.ERROR;
             }
           }
@@ -340,40 +318,25 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private void doCommit(SolrCore core) {
+    RefCounted<IndexWriter> iwRef = null;
     try {
-      UpdateRequest updateReq = new UpdateRequest();
+      iwRef = core.getSolrCoreState().getIndexWriter(null);
+      if (iwRef != null) {
+        IndexWriter iw = iwRef.get();
 
-      ModifiableSolrParams msp = new ModifiableSolrParams();
-
-      msp.add("commit", "true");
-      LocalSolrQueryRequest solrReq;
-      solrReq = getLocalUpdateReq(updateReq, core, msp);
-      doLocalUpdateReq(solrReq, core);
-
-    } catch (Exception e) {
-      log.error(
-          "Error while sending update request to advance index created version {}", e.toString());
-    }
-  }
-
-  public LocalSolrQueryRequest getLocalUpdateReq(
-      UpdateRequest updateReq, SolrCore core, ModifiableSolrParams msp) throws IOException {
-    LocalSolrQueryRequest solrReq = new LocalSolrQueryRequest(core, msp);
-    solrReq.setContentStreams(updateReq.getContentStreams());
-    return solrReq;
-  }
-
-  public static void doLocalUpdateReq(LocalSolrQueryRequest solrReq, SolrCore core) {
-    try {
-      SolrQueryResponse resp = new SolrQueryResponse();
-      core.getRequestHandler("/update").handleRequest(solrReq, resp);
-      if (resp.getException() != null) {
-        log.error("doLocalUpdateReq error: {}", resp.getException().toString());
+        if (iw != null) {
+          iw.commit();
+        } else {
+          log.warn("IndexWriter for core {} is null", core.getName());
+        }
+      } else {
+        log.warn("IWRef for core {} is null", core.getName());
       }
-    } catch (Exception e) {
-      log.error("Exception in doLocalUpdateReq: {}", e.toString());
+    } catch (IOException ioEx) {
+      log.warn(
+          String.format("Error commiting on core {} during index upgrade", core.getName()), ioEx);
     } finally {
-      solrReq.close();
+      iwRef.decref();
     }
   }
 
