@@ -1,4 +1,4 @@
-title: Update com.google.cloud:google-cloud-bom to v0.253.0
+title: Update com.google.cloud:google-cloud-bom to v0.254.0
 type: dependency_update
 authors:
 - name: solrbot
