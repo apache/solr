@@ -74,7 +74,7 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
     solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
-    String url = solrJettyTestRule.getBaseUrl();
+
     collection1 = solrJettyTestRule.getSolrClient("collection1");
 
     String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
