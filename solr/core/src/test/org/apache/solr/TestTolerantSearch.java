@@ -25,6 +25,7 @@ import java.util.Properties;
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -51,19 +52,18 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
 
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir().toRealPath();
-
-    Path collection1Dir = workDir.resolve("collection1");
-    Path collection2Dir = workDir.resolve("collection2");
-    Files.createDirectories(collection1Dir.resolve("conf"));
-    Files.createDirectories(collection2Dir);
-
+    Path testPath = SolrTestCaseJ4.TEST_PATH();
+    
+    // Copy solr.xml to root
     Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
+        testPath.resolve("solr.xml"),
         workDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    Path sourceConf =
-        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf").toRealPath();
+    // Set up collection1 with custom solrconfig
+    Path collection1Dir = workDir.resolve("collection1");
+    Path sourceConf = testPath.resolve("collection1").resolve("conf");
+    Files.createDirectories(collection1Dir.resolve("conf"));
     FileUtils.copyDirectory(sourceConf.toFile(), collection1Dir.resolve("conf").toFile());
     Files.copy(
         sourceConf.resolve("solrconfig-tolerant-search.xml"),
@@ -71,8 +71,24 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
         StandardCopyOption.REPLACE_EXISTING);
     Files.writeString(collection1Dir.resolve("core.properties"), "name=collection1\n");
 
-    FileUtils.copyDirectory(collection1Dir.toFile(), collection2Dir.toFile());
-    Files.writeString(collection2Dir.resolve("core.properties"), "name=collection2\n");
+    // Set up configsets directory for CoreAdminRequest.Create
+    Path configSetsDir = workDir.resolve("configsets").resolve("collection1");
+    Path minimalConfigSet = testPath.resolve("configsets").resolve("minimal").resolve("conf");
+    Files.createDirectories(configSetsDir.resolve("conf"));
+    FileUtils.copyDirectory(minimalConfigSet.toFile(), configSetsDir.resolve("conf").toFile());
+    
+    // Override with our custom solrconfig
+    Files.copy(
+        sourceConf.resolve("solrconfig-tolerant-search.xml"),
+        configSetsDir.resolve("conf").resolve("solrconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+        
+    // Copy the snippet file that solrconfig-tolerant-search.xml includes
+    Files.copy(
+        sourceConf.resolve("solrconfig.snippet.randomindexconfig.xml"),
+        configSetsDir.resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
+    
     return workDir;
   }
 
@@ -83,12 +99,22 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
     String url = solrJettyTestRule.getBaseUrl();
     collection1 = solrJettyTestRule.getSolrClient("collection1");
-    collection2 = solrJettyTestRule.getSolrClient("collection2");
 
     String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
     String urlCollection2 = solrJettyTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
+
+    // create second core
+    try (SolrClient nodeClient = solrJettyTestRule.getSolrClient()) {
+      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+      req.setCoreName("collection2");
+      req.setConfigSet("collection1");
+      nodeClient.request(req);
+    }
+    
+    // Now get the client for collection2 after it's been created
+    collection2 = solrJettyTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
