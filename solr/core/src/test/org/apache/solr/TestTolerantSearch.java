@@ -22,7 +22,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -52,43 +51,21 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
 
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir().toRealPath();
-    Path testPath = SolrTestCaseJ4.TEST_PATH();
-    
-    // Copy solr.xml to root
+
+    // Copy solr.xml
     Files.copy(
-        testPath.resolve("solr.xml"),
+        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
         workDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    // Set up collection1 with custom solrconfig
+    // Set up collection1 with minimal config + tolerant search solrconfig
     Path collection1Dir = workDir.resolve("collection1");
-    Path sourceConf = testPath.resolve("collection1").resolve("conf");
-    Files.createDirectories(collection1Dir.resolve("conf"));
-    FileUtils.copyDirectory(sourceConf.toFile(), collection1Dir.resolve("conf").toFile());
-    Files.copy(
-        sourceConf.resolve("solrconfig-tolerant-search.xml"),
-        collection1Dir.resolve("conf").resolve("solrconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    Files.writeString(collection1Dir.resolve("core.properties"), "name=collection1\n");
+    copyMinConf(collection1Dir, "name=collection1\n", "solrconfig-tolerant-search.xml");
 
-    // Set up configsets directory for CoreAdminRequest.Create
-    Path configSetsDir = workDir.resolve("configsets").resolve("collection1");
-    Path minimalConfigSet = testPath.resolve("configsets").resolve("minimal").resolve("conf");
-    Files.createDirectories(configSetsDir.resolve("conf"));
-    FileUtils.copyDirectory(minimalConfigSet.toFile(), configSetsDir.resolve("conf").toFile());
-    
-    // Override with our custom solrconfig
-    Files.copy(
-        sourceConf.resolve("solrconfig-tolerant-search.xml"),
-        configSetsDir.resolve("conf").resolve("solrconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-        
-    // Copy the snippet file that solrconfig-tolerant-search.xml includes
-    Files.copy(
-        sourceConf.resolve("solrconfig.snippet.randomindexconfig.xml"),
-        configSetsDir.resolve("conf").resolve("solrconfig.snippet.randomindexconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    
+    // Set up configset for CoreAdminRequest.Create (reuse the same config)
+    Path configSetDir = workDir.resolve("configsets").resolve("collection1");
+    copyMinConf(configSetDir, null, "solrconfig-tolerant-search.xml");
+
     return workDir;
   }
 
@@ -106,13 +83,12 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (SolrClient nodeClient = solrJettyTestRule.getSolrClient()) {
-      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-      req.setCoreName("collection2");
-      req.setConfigSet("collection1");
-      nodeClient.request(req);
-    }
-    
+    SolrClient nodeClient = solrJettyTestRule.getSolrClient();
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName("collection2");
+    req.setConfigSet("collection1");
+    nodeClient.request(req);
+
     // Now get the client for collection2 after it's been created
     collection2 = solrJettyTestRule.getSolrClient("collection2");
 
