@@ -16,44 +16,32 @@
  */
 
 /**
- * Preload script to increase HTTP request timeout for Antora UI bundle downloads.
+ * Preload script to increase HTTP socket timeout for Antora UI bundle downloads.
  *
- * This script intercepts HTTP/HTTPS requests to set longer timeout values, preventing
- * timeout errors when downloading the UI bundle from slow or high-latency networks,
+ * This script intercepts Socket.prototype.setTimeout to enforce a minimum timeout value,
+ * preventing timeout errors when downloading the UI bundle from slow or high-latency networks,
  * particularly in CI environments.
- *
- * Issue: Antora's UI bundle downloads (925KB from Apache's nightlies server) can timeout
- * on slow networks. The simple-get library used by Antora doesn't set request timeouts
- * by default, so we intercept http.request() and https.request() to add them.
  *
  * Usage: This script is preloaded via NODE_OPTIONS in the buildLocalAntoraSite task.
  */
 
-// Configuration via environment variable
 const timeoutMs = parseInt(process.env.HTTP_REQUEST_TIMEOUT_MS || '60000', 10);
 
-// Configure HTTP request timeouts by intercepting request methods
 try {
-  const http = require('node:http');
-  const https = require('node:https');
+  const net = require('node:net');
 
-  // Intercept http.request to add timeout to each request
-  const originalHttpRequest = http.request;
-  http.request = function(...args) {
-    const req = originalHttpRequest.apply(this, args);
-    req.setTimeout(timeoutMs);
-    console.log(`[http-timeout] Modified http request to set timeout ${timeoutMs}ms`);
-    return req;
+  // Intercept Socket.prototype.setTimeout to ensure minimum timeout
+  const originalSetTimeout = net.Socket.prototype.setTimeout;
+  net.Socket.prototype.setTimeout = function(msecs, callback) {
+    // If the requested timeout is less than our minimum, use our minimum
+    const actualTimeout = Math.max(msecs || 0, timeoutMs);
+    if (msecs > 0 && msecs < timeoutMs) {
+      console.log(`[http-timeout] Increased socket timeout from ${msecs}ms to ${actualTimeout}ms`);
+    }
+    return originalSetTimeout.call(this, actualTimeout, callback);
   };
 
-  // Intercept https.request to add timeout to each request
-  const originalHttpsRequest = https.request;
-  https.request = function(...args) {
-    const req = originalHttpsRequest.apply(this, args);
-    req.setTimeout(timeoutMs);
-    console.log(`[http-timeout] Modified https request to set timeout ${timeoutMs}ms`);
-    return req;
-  };
+  console.log(`[http-timeout] Socket timeout interceptor initialized with minimum timeout ${timeoutMs}ms`);
 } catch (error) {
-  console.warn('[http-timeout] Could not configure HTTP request timeouts:', error.message);
+  console.warn('[http-timeout] Could not configure socket timeouts:', error.message);
 }
