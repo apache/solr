@@ -213,12 +213,7 @@ public class IntField extends NumericField implements IntValueFieldType {
         (value instanceof Number)
             ? ((Number) value).intValue()
             : Integer.parseInt(value.toString());
-    return new SolrIntField(
-        sf.getName(),
-        intValue,
-        sf.indexed(),
-        sf.hasDocValues(),
-        sf.stored());
+    return new SolrIntField(sf.getName(), intValue, sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
   /**
@@ -272,11 +267,7 @@ public class IntField extends NumericField implements IntValueFieldType {
      * @throws IllegalArgumentException if the field name or value is null.
      */
     public SolrIntField(
-        String name,
-        int value,
-        boolean indexed,
-        boolean docValues,
-        boolean stored) {
+        String name, int value, boolean indexed, boolean docValues, boolean stored) {
       super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = (long) value;
       if (stored) {

@@ -18,13 +18,10 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -214,12 +211,7 @@ public class LongField extends NumericField implements LongValueFieldType {
   public IndexableField createField(SchemaField sf, Object value) {
     long longValue =
         (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
-    return new SolrLongField(
-        sf.getName(),
-        longValue,
-        sf.indexed(),
-        sf.hasDocValues(),
-        sf.stored());
+    return new SolrLongField(sf.getName(), longValue, sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
   /**
@@ -273,11 +265,7 @@ public class LongField extends NumericField implements LongValueFieldType {
      * @throws IllegalArgumentException if the field name or value is null.
      */
     public SolrLongField(
-        String name,
-        long value,
-        boolean indexed,
-        boolean docValues,
-        boolean stored) {
+        String name, long value, boolean indexed, boolean docValues, boolean stored) {
       super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = value;
       if (stored) {

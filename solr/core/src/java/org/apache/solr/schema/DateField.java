@@ -20,22 +20,17 @@ package org.apache.solr.schema;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
-import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -276,11 +271,7 @@ public class DateField extends NumericField implements DateValueFieldType {
     Date date =
         (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
     return new LongField.SolrLongField(
-        sf.getName(),
-        date.getTime(),
-        sf.indexed(),
-        sf.hasDocValues(),
-        sf.stored());
+        sf.getName(), date.getTime(), sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
   private static class MultiValueDateFieldSource extends MultiValuedLongFieldSource {

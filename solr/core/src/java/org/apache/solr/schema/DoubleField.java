@@ -18,13 +18,10 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -222,11 +219,7 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
             ? ((Number) value).doubleValue()
             : Double.parseDouble(value.toString());
     return new SolrDoubleField(
-        sf.getName(),
-        doubleValue,
-        sf.indexed(),
-        sf.hasDocValues(),
-        sf.stored());
+        sf.getName(), doubleValue, sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
   @Override
@@ -285,11 +278,7 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
      * @throws IllegalArgumentException if the field name or value is null.
      */
     public SolrDoubleField(
-        String name,
-        double value,
-        boolean indexed,
-        boolean docValues,
-        boolean stored) {
+        String name, double value, boolean indexed, boolean docValues, boolean stored) {
       super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = NumericUtils.doubleToSortableLong(value);
       if (stored) {

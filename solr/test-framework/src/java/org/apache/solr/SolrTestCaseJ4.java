@@ -2809,7 +2809,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * <ul>
    *   <li>If unset, then a random variable will be used to decide the type of numerics.
    *   <li>If set to <code>true</code> then Term+Point based numerics will be used.
-   *   <li>If set to <code>false</code> (or any other string) then Trie or Point based numerics will be used.
+   *   <li>If set to <code>false</code> (or any other string) then Trie or Point based numerics will
+   *       be used.
    * </ul>
    */
   public static final String USE_FULL_NUMERIC_FIELDS_SYSPROP = "solr.tests.use.numeric.full";
@@ -2873,18 +2874,22 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // 0-4: Trie (33%), 5-9: Point (33%), 10-14: NumericField (33%)
 
     final String useFullNumericsStr = System.getProperty(USE_FULL_NUMERIC_FIELDS_SYSPROP);
-    final boolean useNumericField = (null == useFullNumericsStr) ? (randNumericType >= 10) : Boolean.parseBoolean(useFullNumericsStr);
+    final boolean useNumericField =
+        (null == useFullNumericsStr)
+            ? (randNumericType >= 10)
+            : Boolean.parseBoolean(useFullNumericsStr);
     final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
     final boolean usePoints =
-        !useNumericField &&
-        ((null == usePointsStr) ? (randNumericType >= 5 && randNumericType < 10) : Boolean.parseBoolean(usePointsStr))
-        && !RandomizedContext.current()
-            .getTargetClass()
-            .isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class);
+        !useNumericField
+            && ((null == usePointsStr)
+                ? (randNumericType >= 5 && randNumericType < 10)
+                : Boolean.parseBoolean(usePointsStr))
+            && !RandomizedContext.current()
+                .getTargetClass()
+                .isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class);
 
     if (useNumericField) {
-      log.info(
-          "Using NumericFields w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
+      log.info("Using NumericFields w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
       NumericField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;

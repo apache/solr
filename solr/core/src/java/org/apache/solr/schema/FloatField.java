@@ -18,13 +18,10 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -222,11 +219,7 @@ public class FloatField extends NumericField implements FloatValueFieldType {
             ? ((Number) value).floatValue()
             : Float.parseFloat(value.toString());
     return new SolrFloatField(
-        sf.getName(),
-        floatValue,
-        sf.indexed(),
-        sf.hasDocValues(),
-        sf.stored());
+        sf.getName(), floatValue, sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
   @Override
@@ -285,11 +278,7 @@ public class FloatField extends NumericField implements FloatValueFieldType {
      * @throws IllegalArgumentException if the field name or value is null.
      */
     public SolrFloatField(
-        String name,
-        float value,
-        boolean indexed,
-        boolean docValues,
-        boolean stored) {
+        String name, float value, boolean indexed, boolean docValues, boolean stored) {
       super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = (long) NumericUtils.floatToSortableInt(value);
       if (stored) {
