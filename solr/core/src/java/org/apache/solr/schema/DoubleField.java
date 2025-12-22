@@ -216,33 +216,17 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public IndexableField createField(SchemaField sf, Object value) {
     double doubleValue =
         (value instanceof Number)
             ? ((Number) value).doubleValue()
             : Double.parseDouble(value.toString());
-    return Collections.singletonList(
-        new SolrDoubleField(
-            sf.getName(),
-            doubleValue,
-            sf.indexed(),
-            sf.enhancedIndex(),
-            sf.hasDocValues(),
-            sf.stored()));
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    double doubleValue =
-        (value instanceof Number)
-            ? ((Number) value).doubleValue()
-            : Double.parseDouble(value.toString());
-    return new DoublePoint(field.getName(), doubleValue);
-  }
-
-  @Override
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), (Double) this.toNativeType(value));
+    return new SolrDoubleField(
+        sf.getName(),
+        doubleValue,
+        sf.indexed(),
+        sf.hasDocValues(),
+        sf.stored());
   }
 
   @Override
@@ -303,11 +287,10 @@ public class DoubleField extends NumericField implements DoubleValueFieldType {
     public SolrDoubleField(
         String name,
         double value,
-        boolean rangeIndex,
-        boolean termIndex,
+        boolean indexed,
         boolean docValues,
         boolean stored) {
-      super(name, getType(rangeIndex, termIndex, docValues, stored));
+      super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = NumericUtils.doubleToSortableLong(value);
       if (stored) {
         storedValue = new StoredValue(value);

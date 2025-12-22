@@ -262,28 +262,14 @@ public class DateField extends NumericField implements DateValueFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public IndexableField createField(SchemaField sf, Object value) {
     Date date =
         (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
-    return Collections.singletonList(
-        new LongField.SolrLongField(
-            sf.getName(),
-            date.getTime(),
-            sf.indexed(),
-            sf.enhancedIndex(),
-            sf.hasDocValues(),
-            sf.stored()));
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    Date date =
-        (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
-    return new LongPoint(field.getName(), date.getTime());
-  }
-
-  @Override
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), ((Date) this.toNativeType(value)).getTime());
+    return new LongField.SolrLongField(
+        sf.getName(),
+        date.getTime(),
+        sf.indexed(),
+        sf.hasDocValues(),
+        sf.stored());
   }
 }

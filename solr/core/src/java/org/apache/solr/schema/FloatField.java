@@ -216,33 +216,17 @@ public class FloatField extends NumericField implements FloatValueFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public IndexableField createField(SchemaField sf, Object value) {
     float floatValue =
         (value instanceof Number)
             ? ((Number) value).floatValue()
             : Float.parseFloat(value.toString());
-    return Collections.singletonList(
-        new SolrFloatField(
-            sf.getName(),
-            floatValue,
-            sf.indexed(),
-            sf.enhancedIndex(),
-            sf.hasDocValues(),
-            sf.stored()));
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    float floatValue =
-        (value instanceof Number)
-            ? ((Number) value).floatValue()
-            : Float.parseFloat(value.toString());
-    return new FloatPoint(field.getName(), floatValue);
-  }
-
-  @Override
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), (Float) this.toNativeType(value));
+    return new SolrFloatField(
+        sf.getName(),
+        floatValue,
+        sf.indexed(),
+        sf.hasDocValues(),
+        sf.stored());
   }
 
   @Override
@@ -303,11 +287,10 @@ public class FloatField extends NumericField implements FloatValueFieldType {
     public SolrFloatField(
         String name,
         float value,
-        boolean rangeIndex,
-        boolean termIndex,
+        boolean indexed,
         boolean docValues,
         boolean stored) {
-      super(name, getType(rangeIndex, termIndex, docValues, stored));
+      super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = (long) NumericUtils.floatToSortableInt(value);
       if (stored) {
         storedValue = new StoredValue(value);

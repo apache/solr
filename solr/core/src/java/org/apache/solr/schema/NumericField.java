@@ -21,13 +21,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
-import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
@@ -41,7 +36,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -97,13 +91,23 @@ public abstract class NumericField extends PrimitiveFieldType {
   }
 
   @Override
+  public void setArgs(IndexSchema schema, Map<String, String> args) {
+    // NumericFields do not support norms
+    args.put("omitNorms", "true");
+    // DocValues always default to true, no matter the schema version
+    args.putIfAbsent("docValues", "true");
+    super.setArgs(schema, args);
+  }
+
+  @Override
   public boolean isPointField() {
     return true;
   }
 
   @Override
-  protected boolean hasIndexedTerms(SchemaField field) {
-    return field.enhancedIndex();
+  protected boolean hasTermIndex(SchemaField field) {
+    // Currently all indexed NumericFields will index terms
+    return field.indexed();
   }
 
   @Override
@@ -181,7 +185,7 @@ public abstract class NumericField extends PrimitiveFieldType {
   }
 
   final Query getIndexFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (hasIndexedTerms(field)) {
+    if (this.hasTermIndex(field)) {
       BytesRefBuilder br = new BytesRefBuilder();
       readableToIndexed(externalVal, br);
       return new TermQuery(new Term(field.getName(), br));
@@ -212,7 +216,7 @@ public abstract class NumericField extends PrimitiveFieldType {
   }
 
   final Query getIndexSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    if (hasIndexedTerms(field)) {
+    if (this.hasTermIndex(field)) {
       List<BytesRef> lst = new ArrayList<>(externalVals.size());
       BytesRefBuilder br = new BytesRefBuilder();
       for (String externalVal : externalVals) {
@@ -331,51 +335,12 @@ public abstract class NumericField extends PrimitiveFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public final List<IndexableField> createFields(SchemaField sf, Object value) {
     if (!isFieldUsed(sf)) {
       return Collections.emptyList();
     }
-    List<IndexableField> fields = new ArrayList<>(3);
-    IndexableField field = null;
-    if (sf.indexed()) {
-      field = createField(sf, value);
-      fields.add(field);
-      if (sf.enhancedIndex()) {
-        fields.add(new StringField(sf.getName(), field.binaryValue(), Field.Store.NO));
-      }
-    }
-
-    if (sf.hasDocValues()) {
-      final Number numericValue;
-      if (field == null) {
-        final Object nativeTypeObject = toNativeType(value);
-        if (getNumberType() == NumberType.DATE) {
-          numericValue = ((Date) nativeTypeObject).getTime();
-        } else {
-          numericValue = (Number) nativeTypeObject;
-        }
-      } else {
-        numericValue = field.numericValue();
-      }
-      final long bits;
-      // MultiValued
-      if (numericValue instanceof Integer || numericValue instanceof Long) {
-        bits = numericValue.longValue();
-      } else if (numericValue instanceof Float) {
-        bits = NumericUtils.floatToSortableInt(numericValue.floatValue());
-      } else {
-        assert numericValue instanceof Double;
-        bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
-      }
-      fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
-    }
-    if (sf.stored()) {
-      fields.add(getStoredField(sf, value));
-    }
-    return fields;
+    return Collections.singletonList(createField(sf, value));
   }
-
-  protected abstract StoredField getStoredField(SchemaField sf, Object value);
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {

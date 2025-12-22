@@ -211,29 +211,15 @@ public class LongField extends NumericField implements LongValueFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public IndexableField createField(SchemaField sf, Object value) {
     long longValue =
         (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
-    return Collections.singletonList(
-        new SolrLongField(
-            sf.getName(),
-            longValue,
-            sf.indexed(),
-            sf.enhancedIndex(),
-            sf.hasDocValues(),
-            sf.stored()));
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    long longValue =
-        (value instanceof Number) ? ((Number) value).longValue() : Long.parseLong(value.toString());
-    return new LongPoint(field.getName(), longValue);
-  }
-
-  @Override
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), (Long) this.toNativeType(value));
+    return new SolrLongField(
+        sf.getName(),
+        longValue,
+        sf.indexed(),
+        sf.hasDocValues(),
+        sf.stored());
   }
 
   /**
@@ -289,11 +275,10 @@ public class LongField extends NumericField implements LongValueFieldType {
     public SolrLongField(
         String name,
         long value,
-        boolean rangeIndex,
-        boolean termIndex,
+        boolean indexed,
         boolean docValues,
         boolean stored) {
-      super(name, getType(rangeIndex, termIndex, docValues, stored));
+      super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = value;
       if (stored) {
         storedValue = new StoredValue(value);

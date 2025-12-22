@@ -18,13 +18,10 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.InvertableType;
 import org.apache.lucene.document.SortedNumericDocValuesField;
-import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
@@ -211,33 +208,17 @@ public class IntField extends NumericField implements IntValueFieldType {
   }
 
   @Override
-  public List<IndexableField> createFields(SchemaField sf, Object value) {
+  public IndexableField createField(SchemaField sf, Object value) {
     int intValue =
         (value instanceof Number)
             ? ((Number) value).intValue()
             : Integer.parseInt(value.toString());
-    return Collections.singletonList(
-        new SolrIntField(
-            sf.getName(),
-            intValue,
-            sf.indexed(),
-            sf.enhancedIndex(),
-            sf.hasDocValues(),
-            sf.stored()));
-  }
-
-  @Override
-  public IndexableField createField(SchemaField field, Object value) {
-    int intValue =
-        (value instanceof Number)
-            ? ((Number) value).intValue()
-            : Integer.parseInt(value.toString());
-    return new IntPoint(field.getName(), intValue);
-  }
-
-  @Override
-  protected StoredField getStoredField(SchemaField sf, Object value) {
-    return new StoredField(sf.getName(), (Integer) this.toNativeType(value));
+    return new SolrIntField(
+        sf.getName(),
+        intValue,
+        sf.indexed(),
+        sf.hasDocValues(),
+        sf.stored());
   }
 
   /**
@@ -293,11 +274,10 @@ public class IntField extends NumericField implements IntValueFieldType {
     public SolrIntField(
         String name,
         int value,
-        boolean rangeIndex,
-        boolean termIndex,
+        boolean indexed,
         boolean docValues,
         boolean stored) {
-      super(name, getType(rangeIndex, termIndex, docValues, stored));
+      super(name, getType(indexed, indexed, docValues, stored));
       fieldsData = (long) value;
       if (stored) {
         storedValue = new StoredValue(value);

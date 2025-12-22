@@ -398,7 +398,7 @@ public abstract class FieldType extends FieldProperties {
   }
 
   /** Return whether the given field can use Term queries */
-  protected boolean hasIndexedTerms(SchemaField field) {
+  protected boolean hasTermIndex(SchemaField field) {
     return field.indexed();
   }
 
@@ -1075,7 +1075,7 @@ public abstract class FieldType extends FieldProperties {
    *     {@link org.apache.lucene.search.TermQuery} but overriding queries may not
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (field.hasDocValues() && !hasIndexedTerms(field)) {
+    if (field.hasDocValues() && !hasTermIndex(field)) {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
@@ -1102,7 +1102,7 @@ public abstract class FieldType extends FieldProperties {
    * @lucene.experimental
    */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    if (!hasIndexedTerms(field)) {
+    if (!hasTermIndex(field)) {
       // TODO: if the field doesn't have terms indexed, this feels like the wrong query type to use?
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (String externalVal : externalVals) {
@@ -1129,7 +1129,7 @@ public abstract class FieldType extends FieldProperties {
    * @return A suitable rewrite method for rewriting multi-term queries to primitive queries.
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
-    if (!hasIndexedTerms(field) && field.hasDocValues()) {
+    if (!hasTermIndex(field) && field.hasDocValues()) {
       return new DocValuesRewriteMethod();
     } else {
       return MultiTermQuery.CONSTANT_SCORE_REWRITE;

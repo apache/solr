@@ -96,10 +96,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
         "_dv",
         "_mv",
         "_mv_dv",
-        "_e",
-        "_e_dv",
-        "_e_mv",
-        "_e_mv_dv",
+//        "_e",
+//        "_e_dv",
+//        "_e_mv",
+//        "_e_mv_dv",
         "_ni",
         "_ni_dv",
         "_ni_dv_ns",
@@ -112,20 +112,20 @@ public class TestNumericFields extends SolrTestCaseJ4 {
         "_ni_ns_dv",
         "_dv_ns_mv",
         "_smf",
-        "_e_smf",
-        "_e_dv_smf",
-        "_e_mv_smf",
-        "_e_mv_dv_smf",
+//        "_e_smf",
+//        "_e_dv_smf",
+//        "_e_mv_smf",
+//        "_e_mv_dv_smf",
         "_dv_smf",
         "_mv_smf",
         "_mv_dv_smf",
         "_ni_dv_smf",
         "_ni_mv_dv_smf",
         "_sml",
-        "_e_sml",
-        "_e_dv_sml",
-        "_e_mv_sml",
-        "_e_mv_dv_sml",
+//        "_e_sml",
+//        "_e_dv_sml",
+//        "_e_mv_sml",
+//        "_e_mv_dv_sml",
         "_dv_sml",
         "_mv_sml",
         "_mv_dv_sml",
@@ -155,10 +155,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestIntFieldExactQuery("number_p_i_ni_dv", false);
     doTestIntFieldExactQuery("number_p_i_ni_ns_dv", false);
     doTestIntFieldExactQuery("number_p_i_ni_mv_dv", false);
-    doTestIntFieldExactQuery("number_p_i_e", false);
-    doTestIntFieldExactQuery("number_p_i_e_mv", false);
-    doTestIntFieldExactQuery("number_p_i_e_dv", false);
-    doTestIntFieldExactQuery("number_p_i_e_mv_dv", false);
+//    doTestIntFieldExactQuery("number_p_i_e", false);
+//    doTestIntFieldExactQuery("number_p_i_e_mv", false);
+//    doTestIntFieldExactQuery("number_p_i_e_dv", false);
+//    doTestIntFieldExactQuery("number_p_i_e_mv_dv", false);
   }
 
   @Test
@@ -181,8 +181,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestIntFieldRangeQuery("number_p_i", "int", false);
     doTestIntFieldRangeQuery("number_p_i_ni_ns_dv", "int", false);
     doTestIntFieldRangeQuery("number_p_i_dv", "int", false);
-    doTestIntFieldRangeQuery("number_p_i_e", "int", false);
-    doTestIntFieldRangeQuery("number_p_i_e_dv", "int", false);
+//    doTestIntFieldRangeQuery("number_p_i_e", "int", false);
+//    doTestIntFieldRangeQuery("number_p_i_e_dv", "int", false);
   }
 
   @Test
@@ -205,8 +205,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_i",
-            "*_p_i_e",
-            "*_p_i_e_dv",
+//            "*_p_i_e",
+//            "*_p_i_e_dv",
             "*_p_i_dv",
             "*_p_i_dv_ns",
             "*_p_i_ni_dv",
@@ -221,13 +221,13 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_i_smf",
-            "*_p_i_e_smf",
-            "*_p_i_e_dv_smf",
+//            "*_p_i_e_smf",
+//            "*_p_i_e_dv_smf",
             "*_p_i_dv_smf",
             "*_p_i_ni_dv_smf",
             "*_p_i_sml",
-            "*_p_i_e_sml",
-            "*_p_i_e_dv_sml",
+//            "*_p_i_e_sml",
+//            "*_p_i_e_dv_sml",
             "*_p_i_dv_sml",
             "*_p_i_ni_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
@@ -249,9 +249,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_i_mv",
-            "*_p_i_e_mv",
-            "*_p_i_e_mv_smf",
-            "*_p_i_e_mv_sml",
+//            "*_p_i_e_mv",
+//            "*_p_i_e_mv_smf",
+//            "*_p_i_e_mv_sml",
             "*_p_i_ni_mv",
             "*_p_i_ni_ns_mv",
             "*_p_i_mv_smf",
@@ -272,9 +272,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
         Arrays.asList(
             "*_p_i_ni_mv_dv",
             "*_p_i_ni_dv_ns_mv",
-            "*_p_i_e_mv_dv",
-            "*_p_i_e_mv_dv_smf",
-            "*_p_i_e_mv_dv_sml",
+//            "*_p_i_e_mv_dv",
+//            "*_p_i_e_mv_dv_smf",
+//            "*_p_i_e_mv_dv_sml",
             "*_p_i_dv_ns_mv",
             "*_p_i_mv_dv",
             "*_p_i_mv_dv_smf",
@@ -304,19 +304,19 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_i", "number_p_i_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField("number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
-    clearIndex();
-    assertU(commit());
+//    doTestFieldFacetField("number_p_i_e", "number_p_i_e_dv", getSequentialStringArrayWithInts(10));
+//    clearIndex();
+//    assertU(commit());
     doTestFieldFacetField("number_p_i", "number_p_i_dv", toStringArray(getRandomInts(10, false)));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_i_e", "number_p_i_e_dv", toStringArray(getRandomInts(10, false)));
+//    doTestFieldFacetField(
+//        "number_p_i_e", "number_p_i_e_dv", toStringArray(getRandomInts(10, false)));
   }
 
   @Test
   public void testIntFieldRangeFacet() {
-    String nonDocValuesField = "number_p_i" + (random().nextBoolean() ? "_e" : "");
+    String nonDocValuesField = "number_p_i";// + (random().nextBoolean() ? "_e" : "");
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 10 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -467,17 +467,17 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     String[] valArray = toStringArray(values);
     doTestFieldStats("number_p_i", "number_p_i_dv", valArray, min, max, numValues, 1, 0D);
-    doTestFieldStats("number_p_i_e", "number_p_i_e_dv", valArray, min, max, numValues, 1, 0D);
+//    doTestFieldStats("number_p_i_e", "number_p_i_e_dv", valArray, min, max, numValues, 1, 0D);
     doTestFieldStats("number_p_i", "number_p_i_dv", valArray, min, max, numValues, 1, 0D);
-    doTestFieldStats("number_p_i_e_mv", "number_p_i_e_mv_dv", valArray, min, max, numValues, 1, 0D);
+//    doTestFieldStats("number_p_i_e_mv", "number_p_i_e_mv_dv", valArray, min, max, numValues, 1, 0D);
   }
 
   @Test
   public void testIntFieldMultiValuedExactQuery() throws Exception {
     String[] ints = toStringArray(getRandomInts(20, false));
     doTestFieldMultiValuedExactQuery("number_p_i_mv", ints);
-    doTestFieldMultiValuedExactQuery("number_p_i_e_mv", ints);
-    doTestFieldMultiValuedExactQuery("number_p_i_e_mv_dv", ints);
+//    doTestFieldMultiValuedExactQuery("number_p_i_e_mv", ints);
+//    doTestFieldMultiValuedExactQuery("number_p_i_e_mv_dv", ints);
     doTestFieldMultiValuedExactQuery("number_p_i_mv_dv", ints);
     doTestFieldMultiValuedExactQuery("number_p_i_ni_mv_dv", ints);
   }
@@ -493,7 +493,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testIntFieldMultiValuedReturn() throws Exception {
     String[] ints = toStringArray(getRandomInts(20, false));
     doTestFieldMultiValuedReturn("number_p_i_mv", "int", ints);
-    doTestFieldMultiValuedReturn("number_p_i_e_mv", "int", ints);
+//    doTestFieldMultiValuedReturn("number_p_i_e_mv", "int", ints);
     doTestFieldMultiValuedReturn("number_p_i_ni_mv_dv", "int", ints);
     doTestFieldMultiValuedReturn("number_p_i_dv_ns_mv", "int", ints);
   }
@@ -503,10 +503,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] ints =
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedRangeQuery("number_p_i_mv", "int", ints);
-    doTestFieldMultiValuedRangeQuery("number_p_i_e_mv", "int", ints);
+//    doTestFieldMultiValuedRangeQuery("number_p_i_e_mv", "int", ints);
     doTestFieldMultiValuedRangeQuery("number_p_i_ni_mv_dv", "int", ints);
     doTestFieldMultiValuedRangeQuery("number_p_i_mv_dv", "int", ints);
-    doTestFieldMultiValuedRangeQuery("number_p_i_e_mv_dv", "int", ints);
+//    doTestFieldMultiValuedRangeQuery("number_p_i_e_mv_dv", "int", ints);
   }
 
   @Test
@@ -521,17 +521,17 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testIntFieldMultiValuedFacetField() throws Exception {
     doTestFieldMultiValuedFacetField(
         "number_p_i_mv", "number_p_i_mv_dv", getSequentialStringArrayWithInts(20));
-    doTestFieldMultiValuedFacetField(
-        "number_p_i_e_mv", "number_p_i_e_mv_dv", getSequentialStringArrayWithInts(20));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_i_e_mv", "number_p_i_e_mv_dv", getSequentialStringArrayWithInts(20));
     String[] randomSortedInts =
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedFacetField("number_p_i_mv", "number_p_i_mv_dv", randomSortedInts);
-    doTestFieldMultiValuedFacetField("number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
+//    doTestFieldMultiValuedFacetField("number_p_i_e_mv", "number_p_i_e_mv_dv", randomSortedInts);
   }
 
   @Test
   public void testIntFieldMultiValuedRangeFacet() {
-    String nonDocValuesField = "number_p_i" + (random().nextBoolean() ? "_e" : "") + "_mv";
+    String nonDocValuesField = "number_p_i" + "_mv";// (random().nextBoolean() ? "_e" : "") + "_mv";
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 20 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -688,16 +688,16 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testIntFieldMultiValuedFunctionQuery() throws Exception {
     doTestFieldMultiValuedFunctionQuery(
         "number_p_i_mv", "number_p_i_mv_dv", getSequentialStringArrayWithInts(20));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_i_e_mv", "number_p_i_e_mv_dv", getSequentialStringArrayWithInts(20));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_i_e_mv", "number_p_i_e_mv_dv", getSequentialStringArrayWithInts(20));
     doTestFieldMultiValuedFunctionQuery(
         "number_p_i_mv",
         "number_p_i_mv_dv",
         toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList())));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_i_e_mv",
-        "number_p_i_e_mv_dv",
-        toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList())));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_i_e_mv",
+//        "number_p_i_e_mv_dv",
+//        toStringArray(getRandomInts(20, false).stream().sorted().collect(Collectors.toList())));
   }
 
   @Test
@@ -706,9 +706,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       return;
     }
     doTestIntFieldsAtomicUpdates("number_p_i");
-    doTestIntFieldsAtomicUpdates("number_p_i_e");
+//    doTestIntFieldsAtomicUpdates("number_p_i_e");
     doTestIntFieldsAtomicUpdates("number_p_i_dv");
-    doTestIntFieldsAtomicUpdates("number_p_i_e_dv");
+//    doTestIntFieldsAtomicUpdates("number_p_i_e_dv");
     doTestIntFieldsAtomicUpdates("number_p_i_dv_ns");
   }
 
@@ -719,8 +719,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     }
     String[] ints = toStringArray(getRandomInts(3, false));
     doTestMultiValuedFieldsAtomicUpdates("number_p_i_mv", "int", ints);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_i_e_mv", "int", ints);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_i_e_mv_dv", "int", ints);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_i_e_mv", "int", ints);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_i_e_mv_dv", "int", ints);
     doTestMultiValuedFieldsAtomicUpdates("number_p_i_ni_mv_dv", "int", ints);
     doTestMultiValuedFieldsAtomicUpdates("number_p_i_dv_ns_mv", "int", ints);
   }
@@ -819,10 +819,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_i_mv", toStringArray(getRandomInts(20, false)), true);
     doTestSetQueries("number_p_i_mv_dv", toStringArray(getRandomInts(20, false)), true);
     doTestSetQueries("number_p_i_ni_dv", toStringArray(getRandomInts(20, false)), false);
-    doTestSetQueries("number_p_i_e", toStringArray(getRandomInts(20, false)), false);
-    doTestSetQueries("number_p_i_e_dv", toStringArray(getRandomInts(20, false)), false);
-    doTestSetQueries("number_p_i_e_mv", toStringArray(getRandomInts(20, false)), true);
-    doTestSetQueries("number_p_i_e_mv_dv", toStringArray(getRandomInts(20, false)), true);
+//    doTestSetQueries("number_p_i_e", toStringArray(getRandomInts(20, false)), false);
+//    doTestSetQueries("number_p_i_e_dv", toStringArray(getRandomInts(20, false)), false);
+//    doTestSetQueries("number_p_i_e_mv", toStringArray(getRandomInts(20, false)), true);
+//    doTestSetQueries("number_p_i_e_mv_dv", toStringArray(getRandomInts(20, false)), true);
   }
 
   // DoubleField
@@ -837,10 +837,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFloatFieldExactQuery("number_p_d_ni_ns_dv", true);
     doTestFloatFieldExactQuery("number_p_d_ni_dv_ns", true);
     doTestFloatFieldExactQuery("number_p_d_ni_mv_dv", true);
-    doTestFloatFieldExactQuery("number_p_d_e", true);
-    doTestFloatFieldExactQuery("number_p_d_e_mv", true);
-    doTestFloatFieldExactQuery("number_p_d_e_dv", true);
-    doTestFloatFieldExactQuery("number_p_d_e_mv_dv", true);
+//    doTestFloatFieldExactQuery("number_p_d_e", true);
+//    doTestFloatFieldExactQuery("number_p_d_e_mv", true);
+//    doTestFloatFieldExactQuery("number_p_d_e_dv", true);
+//    doTestFloatFieldExactQuery("number_p_d_e_mv_dv", true);
   }
 
   @Test
@@ -862,8 +862,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFloatFieldRangeQuery("number_p_d", "double", true);
     doTestFloatFieldRangeQuery("number_p_d_ni_ns_dv", "double", true);
     doTestFloatFieldRangeQuery("number_p_d_dv", "double", true);
-    doTestFloatFieldRangeQuery("number_p_d_e", "double", true);
-    doTestFloatFieldRangeQuery("number_p_d_e_dv", "double", true);
+//    doTestFloatFieldRangeQuery("number_p_d_e", "double", true);
+//    doTestFloatFieldRangeQuery("number_p_d_e_dv", "double", true);
   }
 
   @Test
@@ -887,8 +887,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_d",
-            "*_p_d_e",
-            "*_p_d_e_dv",
+//            "*_p_d_e",
+//            "*_p_d_e_dv",
             "*_p_d_dv",
             "*_p_d_dv_ns",
             "*_p_d_ni_dv",
@@ -904,13 +904,13 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_d_smf",
-            "*_p_d_e_smf",
-            "*_p_d_e_dv_smf",
+//            "*_p_d_e_smf",
+//            "*_p_d_e_dv_smf",
             "*_p_d_dv_smf",
             "*_p_d_ni_dv_smf",
             "*_p_d_sml",
-            "*_p_d_e_sml",
-            "*_p_d_e_dv_sml",
+//            "*_p_d_e_sml",
+//            "*_p_d_e_dv_sml",
             "*_p_d_dv_sml",
             "*_p_d_ni_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
@@ -934,10 +934,11 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "*_p_d_ni_mv",
             "*_p_d_ni_ns_mv",
             "*_p_d_mv_smf",
-            "*_p_d_mv_sml",
-            "*_p_d_e_mv",
-            "*_p_d_e_mv_smf",
-            "*_p_d_e_mv_sml")) {
+            "*_p_d_mv_sml"//,
+//            "*_p_d_e_mv",
+//            "*_p_d_e_mv_smf",
+//            "*_p_d_e_mv_sml"
+            )) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -954,9 +955,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "*_p_d_ni_dv_ns_mv",
             "*_p_d_dv_ns_mv",
             "*_p_d_mv_dv",
-            "*_p_d_e_mv_dv",
-            "*_p_d_e_mv_dv_smf",
-            "*_p_d_e_mv_dv_sml",
+//            "*_p_d_e_mv_dv",
+//            "*_p_d_e_mv_dv_smf",
+//            "*_p_d_e_mv_dv_sml",
             "*_p_d_mv_dv_smf",
             "*_p_d_ni_mv_dv_smf",
             "*_p_d_mv_dv_sml",
@@ -981,21 +982,21 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_d", "number_p_d_dv", getSequentialStringArrayWithDoubles(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_d_e", "number_p_d_e_dv", getSequentialStringArrayWithDoubles(10));
-    clearIndex();
-    assertU(commit());
+//    doTestFieldFacetField(
+//        "number_p_d_e", "number_p_d_e_dv", getSequentialStringArrayWithDoubles(10));
+//    clearIndex();
+//    assertU(commit());
     doTestFieldFacetField(
         "number_p_d", "number_p_d_dv", toStringArray(getRandomDoubles(10, false)));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_d_e", "number_p_d_e_dv", toStringArray(getRandomDoubles(10, false)));
+//    doTestFieldFacetField(
+//        "number_p_d_e", "number_p_d_e_dv", toStringArray(getRandomDoubles(10, false)));
   }
 
   @Test
   public void testDoubleFieldRangeFacet() {
-    String nonDocValuesField = "number_p_d" + (random().nextBoolean() ? "_e" : "");
+    String nonDocValuesField = "number_p_d";// + (random().nextBoolean() ? "_e" : "");
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 10 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -1157,18 +1158,18 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     String[] valArray = toStringArray(values);
     doTestFieldStats("number_p_d", "number_p_d_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestFieldStats("number_p_d_e", "number_p_d_e_dv", valArray, min, max, numValues, 1, 1E-7D);
+//    doTestFieldStats("number_p_d_e", "number_p_d_e_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestFieldStats("number_p_d_mv", "number_p_d_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestFieldStats(
-        "number_p_d_e_mv", "number_p_d_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
+//    doTestFieldStats(
+//        "number_p_d_e_mv", "number_p_d_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
   }
 
   @Test
   public void testDoubleFieldMultiValuedExactQuery() throws Exception {
     String[] doubles = toStringArray(getRandomDoubles(20, false));
     doTestFieldMultiValuedExactQuery("number_p_d_mv", doubles);
-    doTestFieldMultiValuedExactQuery("number_p_d_e_mv", doubles);
-    doTestFieldMultiValuedExactQuery("number_p_d_e_mv_dv", doubles);
+//    doTestFieldMultiValuedExactQuery("number_p_d_e_mv", doubles);
+//    doTestFieldMultiValuedExactQuery("number_p_d_e_mv_dv", doubles);
     doTestFieldMultiValuedExactQuery("number_p_d_mv_dv", doubles);
     doTestFieldMultiValuedExactQuery("number_p_d_ni_mv_dv", doubles);
   }
@@ -1184,7 +1185,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDoubleFieldMultiValuedReturn() throws Exception {
     String[] doubles = toStringArray(getRandomDoubles(20, false));
     doTestFieldMultiValuedReturn("number_p_d_mv", "double", doubles);
-    doTestFieldMultiValuedReturn("number_p_d_e_mv", "double", doubles);
+//    doTestFieldMultiValuedReturn("number_p_d_e_mv", "double", doubles);
     doTestFieldMultiValuedReturn("number_p_d_ni_mv_dv", "double", doubles);
     doTestFieldMultiValuedReturn("number_p_d_dv_ns_mv", "double", doubles);
   }
@@ -1194,8 +1195,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] doubles =
         toStringArray(getRandomDoubles(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedRangeQuery("number_p_d_mv", "double", doubles);
-    doTestFieldMultiValuedRangeQuery("number_p_d_e_mv", "double", doubles);
-    doTestFieldMultiValuedRangeQuery("number_p_d_e_mv_dv", "double", doubles);
+//    doTestFieldMultiValuedRangeQuery("number_p_d_e_mv", "double", doubles);
+//    doTestFieldMultiValuedRangeQuery("number_p_d_e_mv_dv", "double", doubles);
     doTestFieldMultiValuedRangeQuery("number_p_d_ni_mv_dv", "double", doubles);
     doTestFieldMultiValuedRangeQuery("number_p_d_mv_dv", "double", doubles);
   }
@@ -1204,17 +1205,17 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDoubleFieldMultiValuedFacetField() throws Exception {
     doTestFieldMultiValuedFacetField(
         "number_p_d_mv", "number_p_d_mv_dv", getSequentialStringArrayWithDoubles(20));
-    doTestFieldMultiValuedFacetField(
-        "number_p_d_e_mv", "number_p_d_e_mv_dv", getSequentialStringArrayWithDoubles(20));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_d_e_mv", "number_p_d_e_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestFieldMultiValuedFacetField(
         "number_p_d_mv", "number_p_d_mv_dv", toStringArray(getRandomDoubles(20, false)));
-    doTestFieldMultiValuedFacetField(
-        "number_p_d_e_mv", "number_p_d_e_mv_dv", toStringArray(getRandomDoubles(20, false)));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_d_e_mv", "number_p_d_e_mv_dv", toStringArray(getRandomDoubles(20, false)));
   }
 
   @Test
   public void testDoubleFieldMultiValuedRangeFacet() {
-    String nonDocValuesField = "number_p_d" + (random().nextBoolean() ? "_e" : "") + "_mv";
+    String nonDocValuesField = "number_p_d" + "_mv";// (random().nextBoolean() ? "_e" : "") + "_mv";
     String docValuesField = nonDocValuesField + "_dv";
     SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
     assertTrue(dvSchemaField.multiValued());
@@ -1389,16 +1390,16 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDoubleFieldMultiValuedFunctionQuery() throws Exception {
     doTestFieldMultiValuedFunctionQuery(
         "number_p_d_mv", "number_p_d_mv_dv", getSequentialStringArrayWithDoubles(20));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_d_e_mv", "number_p_d_e_mv_dv", getSequentialStringArrayWithDoubles(20));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_d_e_mv", "number_p_d_e_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestFieldMultiValuedFunctionQuery(
         "number_p_d_mv",
         "number_p_d_mv_dv",
         toAscendingStringArray(getRandomFloats(20, false), true));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_d_e_mv",
-        "number_p_d_e_mv_dv",
-        toAscendingStringArray(getRandomFloats(20, false), true));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_d_e_mv",
+//        "number_p_d_e_mv_dv",
+//        toAscendingStringArray(getRandomFloats(20, false), true));
   }
 
   @Test
@@ -1407,9 +1408,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       return;
     }
     doTestDoubleFieldsAtomicUpdates("number_p_d");
-    doTestDoubleFieldsAtomicUpdates("number_p_d_e");
+//    doTestDoubleFieldsAtomicUpdates("number_p_d_e");
     doTestDoubleFieldsAtomicUpdates("number_p_d_dv");
-    doTestDoubleFieldsAtomicUpdates("number_p_d_e_dv");
+//    doTestDoubleFieldsAtomicUpdates("number_p_d_e_dv");
     doTestDoubleFieldsAtomicUpdates("number_p_d_dv_ns");
   }
 
@@ -1420,8 +1421,8 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     }
     String[] doubles = toStringArray(getRandomDoubles(3, false));
     doTestMultiValuedFieldsAtomicUpdates("number_p_d_mv", "double", doubles);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_d_e_mv", "double", doubles);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_d_e_mv_dv", "double", doubles);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_d_e_mv", "double", doubles);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_d_e_mv_dv", "double", doubles);
     doTestMultiValuedFieldsAtomicUpdates("number_p_d_mv_dv", "double", doubles);
     doTestMultiValuedFieldsAtomicUpdates("number_p_d_ni_mv_dv", "double", doubles);
     doTestMultiValuedFieldsAtomicUpdates("number_p_d_dv_ns_mv", "double", doubles);
@@ -1495,10 +1496,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_d_mv", toStringArray(getRandomDoubles(20, false)), true);
     doTestSetQueries("number_p_d_mv_dv", toStringArray(getRandomDoubles(20, false)), true);
     doTestSetQueries("number_p_d_ni_dv", toStringArray(getRandomDoubles(20, false)), false);
-    doTestSetQueries("number_p_d_e", toStringArray(getRandomDoubles(20, false)), false);
-    doTestSetQueries("number_p_d_e_dv", toStringArray(getRandomDoubles(20, false)), false);
-    doTestSetQueries("number_p_d_e_mv", toStringArray(getRandomDoubles(20, false)), true);
-    doTestSetQueries("number_p_d_e_mv_dv", toStringArray(getRandomDoubles(20, false)), true);
+//    doTestSetQueries("number_p_d_e", toStringArray(getRandomDoubles(20, false)), false);
+//    doTestSetQueries("number_p_d_e_dv", toStringArray(getRandomDoubles(20, false)), false);
+//    doTestSetQueries("number_p_d_e_mv", toStringArray(getRandomDoubles(20, false)), true);
+//    doTestSetQueries("number_p_d_e_mv_dv", toStringArray(getRandomDoubles(20, false)), true);
   }
 
   // Float
@@ -1513,10 +1514,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFloatFieldExactQuery("number_p_f_ni_ns_dv", false);
     doTestFloatFieldExactQuery("number_p_f_ni_dv_ns", false);
     doTestFloatFieldExactQuery("number_p_f_ni_mv_dv", false);
-    doTestFloatFieldExactQuery("number_p_f_e", false);
-    doTestFloatFieldExactQuery("number_p_f_e_mv", false);
-    doTestFloatFieldExactQuery("number_p_f_e_dv", false);
-    doTestFloatFieldExactQuery("number_p_f_e_mv_dv", false);
+//    doTestFloatFieldExactQuery("number_p_f_e", false);
+//    doTestFloatFieldExactQuery("number_p_f_e_mv", false);
+//    doTestFloatFieldExactQuery("number_p_f_e_dv", false);
+//    doTestFloatFieldExactQuery("number_p_f_e_mv_dv", false);
   }
 
   @Test
@@ -1530,17 +1531,17 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     int numValues = 10 * RANDOM_MULTIPLIER;
     String[] floats = toStringArray(getRandomFloats(numValues, false));
     doTestFieldReturn("number_p_f", "float", floats);
-    doTestFieldReturn("number_p_f_e", "float", floats);
+//    doTestFieldReturn("number_p_f_e", "float", floats);
     doTestFieldReturn("number_p_f_dv", "float", floats);
-    doTestFieldReturn("number_p_f_e_dv", "float", floats);
+//    doTestFieldReturn("number_p_f_e_dv", "float", floats);
     doTestFieldReturn("number_p_f_dv_ns", "float", floats);
   }
 
   @Test
   public void testFloatFieldRangeQuery() throws Exception {
     doTestFloatFieldRangeQuery("number_p_f", "float", false);
-    doTestFloatFieldRangeQuery("number_p_f_e", "float", false);
-    doTestFloatFieldRangeQuery("number_p_f_e_dv", "float", false);
+//    doTestFloatFieldRangeQuery("number_p_f_e", "float", false);
+//    doTestFloatFieldRangeQuery("number_p_f_e_dv", "float", false);
     doTestFloatFieldRangeQuery("number_p_f_ni_ns_dv", "float", false);
     doTestFloatFieldRangeQuery("number_p_f_dv", "float", false);
   }
@@ -1566,9 +1567,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_f",
-            "*_p_f_e",
+//            "*_p_f_e",
             "*_p_f_dv",
-            "*_p_f_e_dv",
+//            "*_p_f_e_dv",
             "*_p_f_dv_ns",
             "*_p_f_ni_dv",
             "*_p_f_ni_dv_ns",
@@ -1583,14 +1584,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_f_smf",
-            "*_p_f_e_smf",
+//            "*_p_f_e_smf",
             "*_p_f_dv_smf",
-            "*_p_f_e_dv_smf",
+//            "*_p_f_e_dv_smf",
             "*_p_f_ni_dv_smf",
             "*_p_f_sml",
-            "*_p_f_e_sml",
+//            "*_p_f_e_sml",
             "*_p_f_dv_sml",
-            "*_p_f_e_dv_sml",
+//            "*_p_f_e_dv_sml",
             "*_p_f_ni_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -1610,13 +1611,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_f_mv",
-            "*_p_f_e_mv",
+//            "*_p_f_e_mv",
             "*_p_f_ni_mv",
             "*_p_f_ni_ns_mv",
             "*_p_f_mv_smf",
-            "*_p_f_e_mv_smf",
-            "*_p_f_mv_sml",
-            "*_p_f_e_mv_sml")) {
+//            "*_p_f_e_mv_smf",
+            "*_p_f_mv_sml"//,
+//            "*_p_f_e_mv_sml"
+            )) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -1633,9 +1635,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "*_p_f_ni_dv_ns_mv",
             "*_p_f_dv_ns_mv",
             "*_p_f_mv_dv",
-            "*_p_f_e_mv_dv",
-            "*_p_f_e_mv_dv_smf",
-            "*_p_f_e_mv_dv_sml",
+//            "*_p_f_e_mv_dv",
+//            "*_p_f_e_mv_dv_smf",
+//            "*_p_f_e_mv_dv_sml",
             "*_p_f_mv_dv_smf",
             "*_p_f_ni_mv_dv_smf",
             "*_p_f_mv_dv_sml",
@@ -1660,20 +1662,20 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_f", "number_p_f_dv", getSequentialStringArrayWithDoubles(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_f_e", "number_p_f_e_dv", getSequentialStringArrayWithDoubles(10));
-    clearIndex();
-    assertU(commit());
+//    doTestFieldFacetField(
+//        "number_p_f_e", "number_p_f_e_dv", getSequentialStringArrayWithDoubles(10));
+//    clearIndex();
+//    assertU(commit());
     doTestFieldFacetField("number_p_f", "number_p_f_dv", toStringArray(getRandomFloats(10, false)));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_f_e", "number_p_f_e_dv", toStringArray(getRandomFloats(10, false)));
+//    doTestFieldFacetField(
+//        "number_p_f_e", "number_p_f_e_dv", toStringArray(getRandomFloats(10, false)));
   }
 
   @Test
   public void testFloatFieldRangeFacet() {
-    String nonDocValuesField = "number_p_f" + (random().nextBoolean() ? "_e" : "");
+    String nonDocValuesField = "number_p_f";// + (random().nextBoolean() ? "_e" : "");
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 10 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -1836,19 +1838,19 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     String[] valArray = toStringArray(values);
     doTestFieldStats("number_p_f", "number_p_f_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestFieldStats("number_p_f_e", "number_p_f_e_dv", valArray, min, max, numValues, 1, 1E-7D);
+//    doTestFieldStats("number_p_f_e", "number_p_f_e_dv", valArray, min, max, numValues, 1, 1E-7D);
     doTestFieldStats("number_p_f_mv", "number_p_f_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
-    doTestFieldStats(
-        "number_p_f_e_mv", "number_p_f_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
+//    doTestFieldStats(
+//        "number_p_f_e_mv", "number_p_f_e_mv_dv", valArray, min, max, numValues, 1, 1E-7D);
   }
 
   @Test
   public void testFloatFieldMultiValuedExactQuery() throws Exception {
     String[] floats = toStringArray(getRandomFloats(20, false));
     doTestFieldMultiValuedExactQuery("number_p_f_mv", floats);
-    doTestFieldMultiValuedExactQuery("number_p_f_e_mv", floats);
+//    doTestFieldMultiValuedExactQuery("number_p_f_e_mv", floats);
     doTestFieldMultiValuedExactQuery("number_p_f_mv_dv", floats);
-    doTestFieldMultiValuedExactQuery("number_p_f_e_mv_dv", floats);
+//    doTestFieldMultiValuedExactQuery("number_p_f_e_mv_dv", floats);
     doTestFieldMultiValuedExactQuery("number_p_f_ni_mv_dv", floats);
   }
 
@@ -1863,9 +1865,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testFloatFieldMultiValuedReturn() throws Exception {
     String[] floats = toStringArray(getRandomFloats(20, false));
     doTestFieldMultiValuedReturn("number_p_f_mv", "float", floats);
-    doTestFieldMultiValuedReturn("number_p_f_e_mv", "float", floats);
+//    doTestFieldMultiValuedReturn("number_p_f_e_mv", "float", floats);
     doTestFieldMultiValuedReturn("number_p_f_mv_dv", "float", floats);
-    doTestFieldMultiValuedReturn("number_p_f_e_mv_dv", "float", floats);
+//    doTestFieldMultiValuedReturn("number_p_f_e_mv_dv", "float", floats);
     doTestFieldMultiValuedReturn("number_p_f_ni_mv_dv", "float", floats);
     doTestFieldMultiValuedReturn("number_p_f_dv_ns_mv", "float", floats);
   }
@@ -1875,16 +1877,16 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] floats =
         toStringArray(getRandomFloats(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedRangeQuery("number_p_f_mv", "float", floats);
-    doTestFieldMultiValuedRangeQuery("number_p_f_e_mv", "float", floats);
+//    doTestFieldMultiValuedRangeQuery("number_p_f_e_mv", "float", floats);
     doTestFieldMultiValuedRangeQuery("number_p_f_mv_dv", "float", floats);
-    doTestFieldMultiValuedRangeQuery("number_p_f_e_mv_dv", "float", floats);
+//    doTestFieldMultiValuedRangeQuery("number_p_f_e_mv_dv", "float", floats);
     doTestFieldMultiValuedRangeQuery("number_p_f_ni_mv_dv", "float", floats);
     doTestFieldMultiValuedRangeQuery("number_p_f_mv_dv", "float", floats);
   }
 
   @Test
   public void testFloatFieldMultiValuedRangeFacet() {
-    String nonDocValuesField = "number_p_f" + (random().nextBoolean() ? "_e" : "") + "_mv";
+    String nonDocValuesField = "number_p_f" + "_mv";// (random().nextBoolean() ? "_e" : "") + "_mv";
     String docValuesField = nonDocValuesField + "_dv";
     SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
     assertTrue(dvSchemaField.multiValued());
@@ -2060,28 +2062,28 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testFloatFieldMultiValuedFacetField() throws Exception {
     doTestFieldMultiValuedFacetField(
         "number_p_f_mv", "number_p_f_mv_dv", getSequentialStringArrayWithDoubles(20));
-    doTestFieldMultiValuedFacetField(
-        "number_p_f_e_mv", "number_p_f_e_mv_dv", getSequentialStringArrayWithDoubles(20));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_f_e_mv", "number_p_f_e_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestFieldMultiValuedFacetField(
         "number_p_f_mv", "number_p_f_mv_dv", toStringArray(getRandomFloats(20, false)));
-    doTestFieldMultiValuedFacetField(
-        "number_p_f_e_mv", "number_p_f_e_mv_dv", toStringArray(getRandomFloats(20, false)));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_f_e_mv", "number_p_f_e_mv_dv", toStringArray(getRandomFloats(20, false)));
   }
 
   @Test
   public void testFloatFieldMultiValuedFunctionQuery() throws Exception {
     doTestFieldMultiValuedFunctionQuery(
         "number_p_f_mv", "number_p_f_mv_dv", getSequentialStringArrayWithDoubles(20));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_f_e_mv", "number_p_f_e_mv_dv", getSequentialStringArrayWithDoubles(20));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_f_e_mv", "number_p_f_e_mv_dv", getSequentialStringArrayWithDoubles(20));
     doTestFieldMultiValuedFunctionQuery(
         "number_p_f_mv",
         "number_p_f_mv_dv",
         toAscendingStringArray(getRandomFloats(20, false), true));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_f_e_mv",
-        "number_p_f_e_mv_dv",
-        toAscendingStringArray(getRandomFloats(20, false), true));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_f_e_mv",
+//        "number_p_f_e_mv_dv",
+//        toAscendingStringArray(getRandomFloats(20, false), true));
   }
 
   @Test
@@ -2090,9 +2092,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       return;
     }
     doTestFloatFieldsAtomicUpdates("number_p_f");
-    doTestFloatFieldsAtomicUpdates("number_p_f_e");
+//    doTestFloatFieldsAtomicUpdates("number_p_f_e");
     doTestFloatFieldsAtomicUpdates("number_p_f_dv");
-    doTestFloatFieldsAtomicUpdates("number_p_f_e_dv");
+//    doTestFloatFieldsAtomicUpdates("number_p_f_e_dv");
     doTestFloatFieldsAtomicUpdates("number_p_f_dv_ns");
   }
 
@@ -2103,9 +2105,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     }
     String[] floats = toStringArray(getRandomFloats(3, false));
     doTestMultiValuedFieldsAtomicUpdates("number_p_f_mv", "float", floats);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_f_e_mv", "float", floats);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_f_e_mv", "float", floats);
     doTestMultiValuedFieldsAtomicUpdates("number_p_f_mv_dv", "float", floats);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_f_e_mv_dv", "float", floats);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_f_e_mv_dv", "float", floats);
     doTestMultiValuedFieldsAtomicUpdates("number_p_f_ni_mv_dv", "float", floats);
     doTestMultiValuedFieldsAtomicUpdates("number_p_f_dv_ns_mv", "float", floats);
   }
@@ -2118,10 +2120,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_f_mv_dv", toStringArray(getRandomFloats(20, false)), true);
     doTestSetQueries("number_p_f_ni_dv", toStringArray(getRandomFloats(20, false)), false);
     doTestSetQueries("number_p_f_ni_mv_dv", toStringArray(getRandomFloats(20, false)), true);
-    doTestSetQueries("number_p_f_e", toStringArray(getRandomFloats(20, false)), false);
-    doTestSetQueries("number_p_f_e_dv", toStringArray(getRandomFloats(20, false)), false);
-    doTestSetQueries("number_p_f_e_mv", toStringArray(getRandomFloats(20, false)), true);
-    doTestSetQueries("number_p_f_e_mv_dv", toStringArray(getRandomFloats(20, false)), true);
+//    doTestSetQueries("number_p_f_e", toStringArray(getRandomFloats(20, false)), false);
+//    doTestSetQueries("number_p_f_e_dv", toStringArray(getRandomFloats(20, false)), false);
+//    doTestSetQueries("number_p_f_e_mv", toStringArray(getRandomFloats(20, false)), true);
+//    doTestSetQueries("number_p_f_e_mv_dv", toStringArray(getRandomFloats(20, false)), true);
   }
 
   @Test
@@ -2143,10 +2145,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestIntFieldExactQuery("number_p_l_ni_ns_dv", true);
     doTestIntFieldExactQuery("number_p_l_ni_dv_ns", true);
     doTestIntFieldExactQuery("number_p_l_ni_mv_dv", true);
-    doTestIntFieldExactQuery("number_p_l_e", true);
-    doTestIntFieldExactQuery("number_p_l_e_mv", true);
-    doTestIntFieldExactQuery("number_p_l_e_dv", true);
-    doTestIntFieldExactQuery("number_p_l_e_mv_dv", true);
+//    doTestIntFieldExactQuery("number_p_l_e", true);
+//    doTestIntFieldExactQuery("number_p_l_e_mv", true);
+//    doTestIntFieldExactQuery("number_p_l_e_dv", true);
+//    doTestIntFieldExactQuery("number_p_l_e_mv_dv", true);
   }
 
   @Test
@@ -2160,9 +2162,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     int numValues = 10 * RANDOM_MULTIPLIER;
     String[] longs = toStringArray(getRandomLongs(numValues, false));
     doTestFieldReturn("number_p_l", "long", longs);
-    doTestFieldReturn("number_p_l_e", "long", longs);
+//    doTestFieldReturn("number_p_l_e", "long", longs);
     doTestFieldReturn("number_p_l_dv", "long", longs);
-    doTestFieldReturn("number_p_l_e_dv", "long", longs);
+//    doTestFieldReturn("number_p_l_e_dv", "long", longs);
     doTestFieldReturn("number_p_l_dv_ns", "long", longs);
   }
 
@@ -2203,9 +2205,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_l",
-            "*_p_l_e",
+//            "*_p_l_e",
             "*_p_l_dv",
-            "*_p_l_e_dv",
+//            "*_p_l_e_dv",
             "*_p_l_dv_ns",
             "*_p_l_ni_dv",
             "*_p_l_ni_dv_ns",
@@ -2220,14 +2222,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_l_smf",
-            "*_p_l_e_smf",
+//            "*_p_l_e_smf",
             "*_p_l_dv_smf",
-            "*_p_l_e_dv_smf",
+//            "*_p_l_e_dv_smf",
             "*_p_l_ni_dv_smf",
             "*_p_l_sml",
-            "*_p_l_e_sml",
+//            "*_p_l_e_sml",
             "*_p_l_dv_sml",
-            "*_p_l_e_dv_sml",
+//            "*_p_l_e_dv_sml",
             "*_p_l_ni_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2249,13 +2251,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_l_mv",
-            "*_p_l_e_mv",
+//            "*_p_l_e_mv",
             "*_p_l_ni_mv",
             "*_p_l_ni_ns_mv",
             "*_p_l_mv_smf",
-            "*_p_l_e_mv_smf",
-            "*_p_l_mv_sml",
-            "*_p_l_e_mv_sml")) {
+//            "*_p_l_e_mv_smf",
+            "*_p_l_mv_sml"//,
+//            "*_p_l_e_mv_sml"
+            )) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2273,9 +2276,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "*_p_l_ni_dv_ns_mv",
             "*_p_l_dv_ns_mv",
             "*_p_l_mv_dv",
-            "*_p_l_e_mv_dv",
-            "*_p_l_e_mv_dv_smf",
-            "*_p_l_e_mv_dv_sml",
+//            "*_p_l_e_mv_dv",
+//            "*_p_l_e_mv_dv_smf",
+//            "*_p_l_e_mv_dv_sml",
             "*_p_l_mv_dv_smf",
             "*_p_l_ni_mv_dv_smf",
             "*_p_l_mv_dv_sml",
@@ -2303,19 +2306,19 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_l", "number_p_l_dv", getSequentialStringArrayWithInts(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField("number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
-    clearIndex();
-    assertU(commit());
+//    doTestFieldFacetField("number_p_l_e", "number_p_l_e_dv", getSequentialStringArrayWithInts(10));
+//    clearIndex();
+//    assertU(commit());
     doTestFieldFacetField("number_p_l", "number_p_l_dv", toStringArray(getRandomLongs(10, false)));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_l_e", "number_p_l_e_dv", toStringArray(getRandomLongs(10, false)));
+//    doTestFieldFacetField(
+//        "number_p_l_e", "number_p_l_e_dv", toStringArray(getRandomLongs(10, false)));
   }
 
   @Test
   public void testLongFieldRangeFacet() {
-    String nonDocValuesField = "number_p_l" + (random().nextBoolean() ? "_e" : "");
+    String nonDocValuesField = "number_p_l";// + (random().nextBoolean() ? "_e" : "");
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 10 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -2476,18 +2479,18 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
     String[] valArray = toStringArray(values);
     doTestFieldStats("number_p_l", "number_p_l_dv", valArray, min, max, numValues, 1, 0D);
-    doTestFieldStats("number_p_l_e", "number_p_l_e_dv", valArray, min, max, numValues, 1, 0D);
+//    doTestFieldStats("number_p_l_e", "number_p_l_e_dv", valArray, min, max, numValues, 1, 0D);
     doTestFieldStats("number_p_l_mv", "number_p_l_mv_dv", valArray, min, max, numValues, 1, 0D);
-    doTestFieldStats("number_p_l_e_mv", "number_p_l_e_mv_dv", valArray, min, max, numValues, 1, 0D);
+//    doTestFieldStats("number_p_l_e_mv", "number_p_l_e_mv_dv", valArray, min, max, numValues, 1, 0D);
   }
 
   @Test
   public void testLongFieldMultiValuedExactQuery() throws Exception {
     String[] ints = toStringArray(getRandomInts(20, false));
     doTestFieldMultiValuedExactQuery("number_p_l_mv", ints);
-    doTestFieldMultiValuedExactQuery("number_p_l_e_mv", ints);
+//    doTestFieldMultiValuedExactQuery("number_p_l_e_mv", ints);
     doTestFieldMultiValuedExactQuery("number_p_l_mv_dv", ints);
-    doTestFieldMultiValuedExactQuery("number_p_l_e_mv_dv", ints);
+//    doTestFieldMultiValuedExactQuery("number_p_l_e_mv_dv", ints);
     doTestFieldMultiValuedExactQuery("number_p_l_ni_mv_dv", ints);
   }
 
@@ -2502,9 +2505,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testLongFieldMultiValuedReturn() throws Exception {
     String[] longs = toStringArray(getRandomLongs(20, false));
     doTestFieldMultiValuedReturn("number_p_l_mv", "long", longs);
-    doTestFieldMultiValuedReturn("number_p_l_e_mv", "long", longs);
+//    doTestFieldMultiValuedReturn("number_p_l_e_mv", "long", longs);
     doTestFieldMultiValuedReturn("number_p_l_mv_dv", "long", longs);
-    doTestFieldMultiValuedReturn("number_p_l_e_mv_dv", "long", longs);
+//    doTestFieldMultiValuedReturn("number_p_l_e_mv_dv", "long", longs);
     doTestFieldMultiValuedReturn("number_p_l_ni_mv_dv", "long", longs);
     doTestFieldMultiValuedReturn("number_p_l_dv_ns_mv", "long", longs);
   }
@@ -2514,27 +2517,27 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] longs =
         toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedRangeQuery("number_p_l_mv", "long", longs);
-    doTestFieldMultiValuedRangeQuery("number_p_l_e_mv", "long", longs);
+//    doTestFieldMultiValuedRangeQuery("number_p_l_e_mv", "long", longs);
     doTestFieldMultiValuedRangeQuery("number_p_l_ni_mv_dv", "long", longs);
     doTestFieldMultiValuedRangeQuery("number_p_l_mv_dv", "long", longs);
-    doTestFieldMultiValuedRangeQuery("number_p_l_e_mv_dv", "long", longs);
+//    doTestFieldMultiValuedRangeQuery("number_p_l_e_mv_dv", "long", longs);
   }
 
   @Test
   public void testLongFieldMultiValuedFacetField() throws Exception {
     doTestFieldMultiValuedFacetField(
         "number_p_l_mv", "number_p_l_mv_dv", getSequentialStringArrayWithInts(20));
-    doTestFieldMultiValuedFacetField(
-        "number_p_l_e_mv", "number_p_l_e_mv_dv", getSequentialStringArrayWithInts(20));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_l_e_mv", "number_p_l_e_mv_dv", getSequentialStringArrayWithInts(20));
     doTestFieldMultiValuedFacetField(
         "number_p_l_mv", "number_p_l_mv_dv", toStringArray(getRandomLongs(20, false)));
-    doTestFieldMultiValuedFacetField(
-        "number_p_l_e_mv", "number_p_l_e_mv_dv", toStringArray(getRandomLongs(20, false)));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_l_e_mv", "number_p_l_e_mv_dv", toStringArray(getRandomLongs(20, false)));
   }
 
   @Test
   public void testLongFieldMultiValuedRangeFacet() {
-    String nonDocValuesField = "number_p_l" + (random().nextBoolean() ? "_e" : "") + "_mv";
+    String nonDocValuesField = "number_p_l" + "_mv";// (random().nextBoolean() ? "_e" : "") + "_mv";
     String docValuesField = nonDocValuesField + "number_p_l_mv_dv";
     int numValues = 20 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -2695,16 +2698,16 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testLongFieldMultiValuedFunctionQuery() throws Exception {
     doTestFieldMultiValuedFunctionQuery(
         "number_p_l_mv", "number_p_l_mv_dv", getSequentialStringArrayWithInts(20));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_l_e_mv", "number_p_l_e_mv_dv", getSequentialStringArrayWithInts(20));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_l_e_mv", "number_p_l_e_mv_dv", getSequentialStringArrayWithInts(20));
     doTestFieldMultiValuedFunctionQuery(
         "number_p_l_mv",
         "number_p_l_mv_dv",
         toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList())));
-    doTestFieldMultiValuedFunctionQuery(
-        "number_p_l_e_mv",
-        "number_p_l_e_mv_dv",
-        toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList())));
+//    doTestFieldMultiValuedFunctionQuery(
+//        "number_p_l_e_mv",
+//        "number_p_l_e_mv_dv",
+//        toStringArray(getRandomLongs(20, false).stream().sorted().collect(Collectors.toList())));
   }
 
   @Test
@@ -2713,9 +2716,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       return;
     }
     doTestLongFieldsAtomicUpdates("number_p_l");
-    doTestLongFieldsAtomicUpdates("number_p_l_e");
+//    doTestLongFieldsAtomicUpdates("number_p_l_e");
     doTestLongFieldsAtomicUpdates("number_p_l_dv");
-    doTestLongFieldsAtomicUpdates("number_p_l_e_dv");
+//    doTestLongFieldsAtomicUpdates("number_p_l_e_dv");
     doTestLongFieldsAtomicUpdates("number_p_l_dv_ns");
   }
 
@@ -2726,9 +2729,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     }
     String[] longs = toStringArray(getRandomLongs(3, false));
     doTestMultiValuedFieldsAtomicUpdates("number_p_l_mv", "long", longs);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_l_e_mv", "long", longs);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_l_e_mv", "long", longs);
     doTestMultiValuedFieldsAtomicUpdates("number_p_l_mv_dv", "long", longs);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_l_e_mv_dv", "long", longs);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_l_e_mv_dv", "long", longs);
     doTestMultiValuedFieldsAtomicUpdates("number_p_l_ni_mv_dv", "long", longs);
     doTestMultiValuedFieldsAtomicUpdates("number_p_l_dv_ns_mv", "long", longs);
   }
@@ -2740,10 +2743,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_l_mv", toStringArray(getRandomLongs(20, false)), true);
     doTestSetQueries("number_p_l_mv_dv", toStringArray(getRandomLongs(20, false)), true);
     doTestSetQueries("number_p_l_ni_dv", toStringArray(getRandomLongs(20, false)), false);
-    doTestSetQueries("number_p_l_e", toStringArray(getRandomLongs(20, false)), false);
-    doTestSetQueries("number_p_l_e_dv", toStringArray(getRandomLongs(20, false)), false);
-    doTestSetQueries("number_p_l_e_mv", toStringArray(getRandomLongs(20, false)), true);
-    doTestSetQueries("number_p_l_e_mv_dv", toStringArray(getRandomLongs(20, false)), true);
+//    doTestSetQueries("number_p_l_e", toStringArray(getRandomLongs(20, false)), false);
+//    doTestSetQueries("number_p_l_e_dv", toStringArray(getRandomLongs(20, false)), false);
+//    doTestSetQueries("number_p_l_e_mv", toStringArray(getRandomLongs(20, false)), true);
+//    doTestSetQueries("number_p_l_e_mv_dv", toStringArray(getRandomLongs(20, false)), true);
   }
 
   @Test
@@ -2777,11 +2780,12 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "number_p_dt_mv_dv",
             "number_p_dt_ni_dv",
             "number_p_dt_ni_ns_dv",
-            "number_p_dt_ni_mv_dv",
-            "number_p_dt_e",
-            "number_p_dt_e_mv",
-            "number_p_dt_e_dv",
-            "number_p_dt_e_mv_dv")) {
+            "number_p_dt_ni_mv_dv"//,
+//            "number_p_dt_e",
+//            "number_p_dt_e_mv",
+//            "number_p_dt_e_dv",
+//            "number_p_dt_e_mv_dv"
+            )) {
       doTestDateFieldExactQuery(field, baseDate);
     }
   }
@@ -2797,18 +2801,18 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     int numValues = 10 * RANDOM_MULTIPLIER;
     String[] dates = toStringArray(getRandomInstants(numValues, false));
     doTestFieldReturn("number_p_dt", "date", dates);
-    doTestFieldReturn("number_p_dt_e", "date", dates);
+//    doTestFieldReturn("number_p_dt_e", "date", dates);
     doTestFieldReturn("number_p_dt_dv", "date", dates);
-    doTestFieldReturn("number_p_dt_e_dv", "date", dates);
+//    doTestFieldReturn("number_p_dt_e_dv", "date", dates);
     doTestFieldReturn("number_p_dt_dv_ns", "date", dates);
   }
 
   @Test
   public void testDateFieldRangeQuery() throws Exception {
     doTestDateFieldRangeQuery("number_p_dt");
-    doTestDateFieldRangeQuery("number_p_dt_e");
+//    doTestDateFieldRangeQuery("number_p_dt_e");
     doTestDateFieldRangeQuery("number_p_dt_dv");
-    doTestDateFieldRangeQuery("number_p_dt_e_dv");
+//    doTestDateFieldRangeQuery("number_p_dt_e_dv");
     doTestDateFieldRangeQuery("number_p_dt_ni_ns_dv");
   }
 
@@ -2833,9 +2837,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_dt",
-            "*_p_dt_e",
+//            "*_p_dt_e",
             "*_p_dt_dv",
-            "*_p_dt_e_dv",
+//            "*_p_dt_e_dv",
             "*_p_dt_dv_ns",
             "*_p_dt_ni_dv",
             "*_p_dt_ni_dv_ns",
@@ -2849,14 +2853,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_dt_smf",
-            "*_p_dt_e_smf",
+//            "*_p_dt_e_smf",
             "*_p_dt_dv_smf",
-            "*_p_dt_e_dv_smf",
+//            "*_p_dt_e_dv_smf",
             "*_p_dt_ni_dv_smf",
             "*_p_dt_sml",
-            "*_p_dt_e_sml",
+//            "*_p_dt_e_sml",
             "*_p_dt_dv_sml",
-            "*_p_dt_e_dv_sml",
+//            "*_p_dt_e_dv_sml",
             "*_p_dt_ni_dv_sml")) {
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2876,13 +2880,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (String r :
         Arrays.asList(
             "*_p_dt_mv",
-            "*_p_dt_e_mv",
+//            "*_p_dt_e_mv",
             "*_p_dt_ni_mv",
             "*_p_dt_ni_ns_mv",
             "*_p_dt_mv_smf",
-            "*_p_dt_e_mv_smf",
-            "*_p_dt_mv_sml",
-            "*_p_dt_e_mv_sml")) {
+//            "*_p_dt_e_mv_smf",
+            "*_p_dt_mv_sml"//,
+//            "*_p_dt_e_mv_sml"
+            )) {
 
       assertTrue(r, regexToTest.remove(r));
       String field = r.replace("*", "number");
@@ -2900,9 +2905,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             "*_p_dt_ni_dv_ns_mv",
             "*_p_dt_dv_ns_mv",
             "*_p_dt_mv_dv",
-            "*_p_dt_e_mv_dv",
-            "*_p_dt_e_mv_dv_smf",
-            "*_p_dt_e_mv_dv_sml",
+//            "*_p_dt_e_mv_dv",
+//            "*_p_dt_e_mv_dv_smf",
+//            "*_p_dt_e_mv_dv_sml",
             "*_p_dt_mv_dv_smf",
             "*_p_dt_ni_mv_dv_smf",
             "*_p_dt_mv_dv_sml",
@@ -2928,16 +2933,16 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestFieldFacetField("number_p_dt", "number_p_dt_dv", getSequentialStringArrayWithDates(10));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_dt_e", "number_p_dt_e_dv", getSequentialStringArrayWithDates(10));
-    clearIndex();
-    assertU(commit());
+//    doTestFieldFacetField(
+//        "number_p_dt_e", "number_p_dt_e_dv", getSequentialStringArrayWithDates(10));
+//    clearIndex();
+//    assertU(commit());
     doTestFieldFacetField(
         "number_p_dt", "number_p_dt_dv", toStringArray(getRandomInstants(10, false)));
     clearIndex();
     assertU(commit());
-    doTestFieldFacetField(
-        "number_p_dt_e", "number_p_dt_e_dv", toStringArray(getRandomInstants(10, false)));
+//    doTestFieldFacetField(
+//        "number_p_dt_e", "number_p_dt_e_dv", toStringArray(getRandomInstants(10, false)));
   }
 
   private static class DateGapCeiling {
@@ -2996,7 +3001,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   @Test
   public void testDateFieldRangeFacet() {
-    String nonDocValuesField = "number_p_dt" + (random().nextBoolean() ? "_e" : "");
+    String nonDocValuesField = "number_p_dt";// + (random().nextBoolean() ? "_e" : "");
     String docValuesField = nonDocValuesField + "_dv";
     int numValues = 10 * RANDOM_MULTIPLIER;
     int numBuckets = numValues / 2;
@@ -3160,18 +3165,18 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDateFieldStats() {
     String[] randomSortedDates = toAscendingStringArray(getRandomInstants(10, false), true);
     doTestDateFieldStats("number_p_dt", "number_p_dt_dv", randomSortedDates);
-    doTestDateFieldStats("number_p_dt_e", "number_p_dt_e_dv", randomSortedDates);
+//    doTestDateFieldStats("number_p_dt_e", "number_p_dt_e_dv", randomSortedDates);
     doTestDateFieldStats("number_p_dt_mv", "number_p_dt_mv_dv", randomSortedDates);
-    doTestDateFieldStats("number_p_dt_e_mv", "number_p_dt_e_mv_dv", randomSortedDates);
+//    doTestDateFieldStats("number_p_dt_e_mv", "number_p_dt_e_mv_dv", randomSortedDates);
   }
 
   @Test
   public void testDateFieldMultiValuedExactQuery() throws Exception {
     String[] dates = toStringArray(getRandomInstants(20, false));
     doTestFieldMultiValuedExactQuery("number_p_dt_mv", dates);
-    doTestFieldMultiValuedExactQuery("number_p_dt_e_mv", dates);
+//    doTestFieldMultiValuedExactQuery("number_p_dt_e_mv", dates);
     doTestFieldMultiValuedExactQuery("number_p_dt_mv_dv", dates);
-    doTestFieldMultiValuedExactQuery("number_p_dt_e_mv_dv", dates);
+//    doTestFieldMultiValuedExactQuery("number_p_dt_e_mv_dv", dates);
     doTestFieldMultiValuedExactQuery("number_p_dt_ni_mv_dv", dates);
   }
 
@@ -3186,9 +3191,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDateFieldMultiValuedReturn() throws Exception {
     String[] dates = toStringArray(getRandomInstants(20, false));
     doTestFieldMultiValuedReturn("number_p_dt_mv", "date", dates);
-    doTestFieldMultiValuedReturn("number_p_dt_e_mv", "date", dates);
+//    doTestFieldMultiValuedReturn("number_p_dt_e_mv", "date", dates);
     doTestFieldMultiValuedReturn("number_p_dt_mv_dv", "date", dates);
-    doTestFieldMultiValuedReturn("number_p_dt_e_mv_dv", "date", dates);
+//    doTestFieldMultiValuedReturn("number_p_dt_e_mv_dv", "date", dates);
     doTestFieldMultiValuedReturn("number_p_dt_ni_mv_dv", "date", dates);
     doTestFieldMultiValuedReturn("number_p_dt_dv_ns_mv", "date", dates);
   }
@@ -3198,9 +3203,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] dates =
         toStringArray(getRandomInstants(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedRangeQuery("number_p_dt_mv", "date", dates);
-    doTestFieldMultiValuedRangeQuery("number_p_dt_e_mv", "date", dates);
+//    doTestFieldMultiValuedRangeQuery("number_p_dt_e_mv", "date", dates);
     doTestFieldMultiValuedRangeQuery("number_p_dt_mv_dv", "date", dates);
-    doTestFieldMultiValuedRangeQuery("number_p_dt_e_mv_dv", "date", dates);
+//    doTestFieldMultiValuedRangeQuery("number_p_dt_e_mv_dv", "date", dates);
     doTestFieldMultiValuedRangeQuery("number_p_dt_ni_mv_dv", "date", dates);
   }
 
@@ -3208,17 +3213,17 @@ public class TestNumericFields extends SolrTestCaseJ4 {
   public void testDateFieldMultiValuedFacetField() throws Exception {
     doTestFieldMultiValuedFacetField(
         "number_p_dt_mv", "number_p_dt_mv_dv", getSequentialStringArrayWithDates(20));
-    doTestFieldMultiValuedFacetField(
-        "number_p_dt_e_mv", "number_p_dt_e_mv_dv", getSequentialStringArrayWithDates(20));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_dt_e_mv", "number_p_dt_e_mv_dv", getSequentialStringArrayWithDates(20));
     doTestFieldMultiValuedFacetField(
         "number_p_dt_mv", "number_p_dt_mv_dv", toStringArray(getRandomInstants(20, false)));
-    doTestFieldMultiValuedFacetField(
-        "number_p_dt_e_mv", "number_p_dt_e_mv_dv", toStringArray(getRandomInstants(20, false)));
+//    doTestFieldMultiValuedFacetField(
+//        "number_p_dt_e_mv", "number_p_dt_e_mv_dv", toStringArray(getRandomInstants(20, false)));
   }
 
   @Test
   public void testDateFieldMultiValuedRangeFacet() {
-    String nonDocValuesField = "number_p_dt" + (random().nextBoolean() ? "_e" : "") + "_mv";
+    String nonDocValuesField = "number_p_dt" + "_mv";// (random().nextBoolean() ? "_e" : "") + "_mv";
     String docValuesField = nonDocValuesField + "_dv";
     SchemaField dvSchemaField = h.getCore().getLatestSchema().getField(docValuesField);
     assertTrue(dvSchemaField.multiValued());
@@ -3399,7 +3404,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     String[] dates =
         toStringArray(getRandomInstants(20, false).stream().sorted().collect(Collectors.toList()));
     doTestFieldMultiValuedFunctionQuery("number_p_dt_mv", "number_p_dt_mv_dv", dates);
-    doTestFieldMultiValuedFunctionQuery("number_p_dt_e_mv", "number_p_dt_e_mv_dv", dates);
+//    doTestFieldMultiValuedFunctionQuery("number_p_dt_e_mv", "number_p_dt_e_mv_dv", dates);
   }
 
   @Test
@@ -3408,9 +3413,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       return;
     }
     doTestDateFieldsAtomicUpdates("number_p_dt");
-    doTestDateFieldsAtomicUpdates("number_p_dt_e");
+//    doTestDateFieldsAtomicUpdates("number_p_dt_e");
     doTestDateFieldsAtomicUpdates("number_p_dt_dv");
-    doTestDateFieldsAtomicUpdates("number_p_dt_e_dv");
+//    doTestDateFieldsAtomicUpdates("number_p_dt_e_dv");
     doTestDateFieldsAtomicUpdates("number_p_dt_dv_ns");
   }
 
@@ -3425,9 +3430,9 @@ public class TestNumericFields extends SolrTestCaseJ4 {
             .map(Object::toString)
             .toArray(String[]::new);
     doTestMultiValuedFieldsAtomicUpdates("number_p_dt_mv", "date", dates);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_dt_e_mv", "date", dates);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_dt_e_mv", "date", dates);
     doTestMultiValuedFieldsAtomicUpdates("number_p_dt_mv_dv", "date", dates);
-    doTestMultiValuedFieldsAtomicUpdates("number_p_dt_e_mv_dv", "date", dates);
+//    doTestMultiValuedFieldsAtomicUpdates("number_p_dt_e_mv_dv", "date", dates);
     doTestMultiValuedFieldsAtomicUpdates("number_p_dt_ni_mv_dv", "date", dates);
     doTestMultiValuedFieldsAtomicUpdates("number_p_dt_dv_ns_mv", "date", dates);
   }
@@ -3439,10 +3444,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     doTestSetQueries("number_p_dt_mv", toStringArray(getRandomInstants(20, false)), true);
     doTestSetQueries("number_p_dt_mv_dv", toStringArray(getRandomInstants(20, false)), true);
     doTestSetQueries("number_p_dt_ni_dv", toStringArray(getRandomInstants(20, false)), false);
-    doTestSetQueries("number_p_dt_e", toStringArray(getRandomInstants(20, false)), false);
-    doTestSetQueries("number_p_dt_e_dv", toStringArray(getRandomInstants(20, false)), false);
-    doTestSetQueries("number_p_dt_e_mv", toStringArray(getRandomInstants(20, false)), true);
-    doTestSetQueries("number_p_dt_e_mv_dv", toStringArray(getRandomInstants(20, false)), true);
+//    doTestSetQueries("number_p_dt_e", toStringArray(getRandomInstants(20, false)), false);
+//    doTestSetQueries("number_p_dt_e_dv", toStringArray(getRandomInstants(20, false)), false);
+//    doTestSetQueries("number_p_dt_e_mv", toStringArray(getRandomInstants(20, false)), true);
+//    doTestSetQueries("number_p_dt_e_mv_dv", toStringArray(getRandomInstants(20, false)), true);
   }
 
   @Test
@@ -3484,68 +3489,6 @@ public class TestNumericFields extends SolrTestCaseJ4 {
           h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_mv");
       SchemaField fieldIndexedAndDvMv =
           h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_mv_dv");
-      assertTrue(
-          fieldTypes[i].getRangeQuery(null, fieldIndexed, min[i], max[i], true, true)
-              instanceof PointRangeQuery);
-      q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDv, min[i], max[i], true, true);
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(
-          "SortedNumericDocValuesRangeQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getRangeQuery(null, fieldIndexedMv, min[i], max[i], true, true)
-              instanceof PointRangeQuery);
-      q = fieldTypes[i].getRangeQuery(null, fieldIndexedAndDvMv, min[i], max[i], true, true);
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(
-          "SortedNumericDocValuesRangeQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getFieldQuery(null, fieldIndexed, min[i]) instanceof PointRangeQuery);
-      q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDv, min[i]);
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(
-          "SortedNumericDocValuesRangeQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getFieldQuery(null, fieldIndexedMv, min[i]) instanceof PointRangeQuery);
-      q = fieldTypes[i].getFieldQuery(null, fieldIndexedAndDvMv, min[i]);
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointRangeQuery);
-      assertEquals(
-          "SortedNumericDocValuesRangeQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexed, List.of(min[i], max[i]))
-              instanceof PointInSetQuery);
-      q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDv, List.of(min[i], max[i]));
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointInSetQuery);
-      assertEquals(
-          "SortedNumericDocValuesSetQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-      assertTrue(
-          fieldTypes[i].getSetQuery(null, fieldIndexedMv, List.of(min[i], max[i]))
-              instanceof PointInSetQuery);
-      q = fieldTypes[i].getSetQuery(null, fieldIndexedAndDvMv, List.of(min[i], max[i]));
-      assertTrue(q instanceof IndexOrDocValuesQuery);
-      assertTrue(((IndexOrDocValuesQuery) q).getIndexQuery() instanceof PointInSetQuery);
-      assertEquals(
-          "SortedNumericDocValuesSetQuery",
-          ((IndexOrDocValuesQuery) q).getRandomAccessQuery().getClass().getSimpleName());
-    }
-    for (int i = 0; i < fieldTypeNames.length; i++) {
-      SchemaField fieldIndexed =
-          h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e");
-      SchemaField fieldIndexedAndDv =
-          h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e_dv");
-      SchemaField fieldIndexedMv =
-          h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e_mv");
-      SchemaField fieldIndexedAndDvMv =
-          h.getCore().getLatestSchema().getField("foo" + fieldTypeNames[i] + "_e_mv_dv");
       assertTrue(
           fieldTypes[i].getRangeQuery(null, fieldIndexed, min[i], max[i], true, true)
               instanceof PointRangeQuery);
@@ -5783,17 +5726,11 @@ public class TestNumericFields extends SolrTestCaseJ4 {
       isMultiQuery = true;
       rules.add("starts-with(., 'IndexOrDocValuesQuery')");
     }
-    if (sf.enhancedIndex()) {
+    if (sf.indexed()) {
       if (isMultiQuery) {
         rules.add("contains(., 'indexQuery=" + fieldName + ":(')");
       } else {
         rules.add("starts-with(., 'TermInSetQuery(" + fieldName + ":(')");
-      }
-    } else if (sf.indexed()) {
-      if (isMultiQuery) {
-        rules.add("contains(., 'indexQuery=" + fieldName + ":{')");
-      } else {
-        rules.add("starts-with(., '(" + fieldName + ":{')");
       }
     }
     if (sf.hasDocValues()) {

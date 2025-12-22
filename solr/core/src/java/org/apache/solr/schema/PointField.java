@@ -88,7 +88,7 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
-  protected boolean hasIndexedTerms(SchemaField field) {
+  protected boolean hasTermIndex(SchemaField field) {
     return false;
   }
 

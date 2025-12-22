@@ -474,7 +474,7 @@ public class SimpleFacets {
             SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a PointField without docValues");
       } else {
         throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a NumericFIeld without docValues");
+            SolrException.ErrorCode.BAD_REQUEST, "Can't facet on a NumericField without docValues");
       }
     }
     FieldType ft = sf.getType();
