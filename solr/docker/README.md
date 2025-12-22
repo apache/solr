@@ -61,10 +61,7 @@ To build multi-platform Docker images from the binary distribution, use Docker B
   ```bash
   docker buildx create --name solr-builder --use
   ```
-- For cross-platform builds, QEMU may be required:
-  ```bash
-  docker run --privileged --rm tonistiigi/binfmt --install all
-  ```
+- For cross-platform builds, QEMU is be required
 
 **Important**: When building for multiple platforms, you cannot use `--load` to load the image into your local Docker daemon. You must use `--push` to push directly to a registry.
 

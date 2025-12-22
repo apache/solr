@@ -340,9 +340,7 @@ task dockerPush(dependsOn: tasks.dockerTag) {
         def supportedPlatforms = (builderInfo =~ /linux\/[\w-]+(?:\/[\w-]+)?/).collect().join(', ')
         throw new GradleException("Current builder does not support all requested platforms: ${missingPlatforms}\n" +
                 "Supported platforms: ${supportedPlatforms}\n" +
-                "To add platform support, create a builder with QEMU:\n" +
-                "  docker run --privileged --rm tonistiigi/binfmt --install all\n" +
-                "  docker buildx create --name solr-builder --use --platform ${platformValue}")
+                "To add platform support, Install QEMU with proper binfmt support.")
       }
 
       def solrTgzConfiguration = getSolrTgzConfiguration()
