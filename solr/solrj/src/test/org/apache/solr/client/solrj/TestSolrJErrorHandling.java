@@ -281,7 +281,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    String urlString = solrClientTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME + "/update";
+    String urlString = solrClientTestRule.getBaseUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = URI.create(urlString).toURL();

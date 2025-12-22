@@ -30,7 +30,6 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
 @LogLevel("org.eclipse.jetty.client=DEBUG;org.eclipse.jetty.util=DEBUG")
@@ -38,11 +37,6 @@ import org.junit.ClassRule;
 public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    // Jetty will be started by tests that need it
-  }
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");

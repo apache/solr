@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -41,11 +40,6 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-
-  @Before
-  public void setUpClient() {
-    solrClientTestRule.getSolrClient();
   }
 
   static String field = "cat";

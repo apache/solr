@@ -44,11 +44,9 @@ public class TestBinaryField extends SolrTestCaseJ4 {
     Path homeDir = createTempDir();
     Path collDir = homeDir.resolve("collection1");
 
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
-
     copyMinConf(collDir, "name=collection1\n", "solrconfig-basic.xml");
 
-    // Copy the custom schema for binary field testing
+    // Copy the custom schema for binary field tests
     String sourceConfDir = TEST_HOME() + "/collection1/conf";
     Files.copy(
         Path.of(sourceConfDir, "schema-binaryfield.xml"),
