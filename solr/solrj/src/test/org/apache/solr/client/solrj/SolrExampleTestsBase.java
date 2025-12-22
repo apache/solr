@@ -17,11 +17,15 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.http.client.HttpClient;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -32,15 +36,41 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
-import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
+public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+
   private SolrClient client;
 
-  @After
-  public void after() {
+  @BeforeClass
+  public static void beforeTestClass() throws Exception {
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
+
+    // System properties set - subclasses can start Jetty as needed
+    // Tests that don't have custom @BeforeClass setup will use the default via getSolrClient()
+  }
+
+  private static void ensureJettyStarted() {
+    try {
+      solrJettyTestRule.getJetty();
+      // Jetty already started
+    } catch (IllegalStateException e) {
+      // Start with default configuration
+      solrJettyTestRule.startSolr(legacyExampleCollection1SolrHome());
+    }
+  }
+
+  @Override
+  public void tearDown() throws Exception {
     if (client != null) {
       try {
         client.close();
@@ -49,24 +79,67 @@ public abstract class SolrExampleTestsBase extends SolrJettyTestBase {
       }
     }
     client = null;
+    System.clearProperty("solr.test.sys.prop1");
+    System.clearProperty("solr.test.sys.prop2");
+    super.tearDown();
   }
 
-  @Override
-  public SolrClient getSolrClient() {
+  protected SolrClient getSolrClient() {
     if (client == null) {
+      ensureJettyStarted();
       client = createNewSolrClient();
     }
     return client;
   }
 
   /**
-   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * Create a new solr client. If createJetty was called, an http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */
-  @Override
   public SolrClient createNewSolrClient() {
     return getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_CORENAME);
+  }
+
+  public static HttpSolrClient getHttpSolrClient(String baseUrl, String coreName) {
+    return new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build();
+  }
+
+  protected static String getBaseUrl() {
+    return solrJettyTestRule.getBaseUrl();
+  }
+
+  protected static String getCoreUrl() {
+    return getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
+  }
+
+  protected static JettySolrRunner getJetty() {
+    return solrJettyTestRule.getJetty();
+  }
+
+  protected HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
+  }
+
+  // Backward compatibility methods for existing subclasses
+  @Deprecated
+  protected static JettySolrRunner createAndStartJetty(Path solrHome) throws Exception {
+    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().build());
+  }
+
+  @Deprecated
+  protected static JettySolrRunner createAndStartJetty(Path solrHome, JettyConfig jettyConfig)
+      throws Exception {
+    return createAndStartJetty(solrHome, new Properties(), jettyConfig);
+  }
+
+  @Deprecated
+  protected static JettySolrRunner createAndStartJetty(
+      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+
+    solrJettyTestRule.startSolr(solrHome, nodeProperties, jettyConfig);
+    return getJetty();
   }
 
   /** query the example */
