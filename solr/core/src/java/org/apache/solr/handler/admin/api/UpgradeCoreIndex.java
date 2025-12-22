@@ -15,7 +15,6 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SegmentCommitInfo;
-import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.store.FSDirectory;
@@ -23,7 +22,6 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
-import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -160,27 +158,36 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
             doCommit(core);
             try {
+              // giving some time for 0 doc segments to clear up
               Thread.sleep(10000);
             } catch (InterruptedException ie) {
-              // we don't have to preserve the interrupt here
+              /* We don't need to preserve the interrupt here.
+              Otherwise, we may get immediately interrupted when we try to call sleep() during validation in the next steps.
+              And we are almost done anyway.
+               */
             }
+
+            boolean indexUpgraded = isIndexUpgraded(core);
+
             /*
             There is a delay observed sometimes between when a commit happens and
             when the segment (with zero live docs) gets cleared. So adding a validation check with retries.
             */
-            Boolean indexUpgraded = validateSegmentsUpdated(core);
-
             for (int i = 0; i < RETRY_COUNT_FOR_SEGMENT_DELETION && !indexUpgraded; i++) {
               try {
                 doCommit(core);
-                Thread.sleep(SLEEP_TIME_SEGMENT_DELETION_MS);
-                indexUpgraded = validateSegmentsUpdated(core);
+                Thread.sleep(10000);
+                indexUpgraded = isIndexUpgraded(core);
+
               } catch (InterruptedException ie) {
-                // we don't have to preserve the interrupt here
+                Thread.currentThread().interrupt();
+              }
+              if (Thread.currentThread().isInterrupted()) {
+                break;
               }
             }
 
-            if (indexUpgraded == null || !indexUpgraded) {
+            if (!indexUpgraded) {
               log.error(
                   "Validation failed for core '{}'. Some older version segments still remain (likely despite 100% deleted docs).",
                   coreName);
@@ -201,21 +208,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     segmentMinVersion = si.info.getMinVersion();
 
     return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
-  }
-
-  private int getIndexCreatedVersionMajor(SolrCore core) {
-    int indexCreatedVersionMajor = 0;
-    try (FSDirectory dir = FSDirectory.open(Paths.get(core.getIndexDir()))) {
-      SegmentInfos sis = SegmentInfos.readLatestCommit(dir);
-      indexCreatedVersionMajor = sis.getIndexCreatedVersionMajor();
-    } catch (Exception e) {
-      log.error(
-          "Error while opening segmentInfos for core: {}, exception: {}",
-          core.getName(),
-          e.toString());
-    }
-
-    return indexCreatedVersionMajor;
   }
 
   @SuppressWarnings({"rawtypes"})
@@ -264,16 +256,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return core.getUpdateProcessingChain(updateChainName);
   }
 
-  /*
-   * returns:
-   *
-   * null: For any error or if there is at least one older version segment present in the index
-   * false: For any 0 older version segment present in the index having 0 numDocs
-   * true: If all segments are LATEST version
-   *
-   */
-  private Boolean validateSegmentsUpdated(SolrCore core) {
-    Boolean segmentsUpdated = null;
+  private boolean isIndexUpgraded(SolrCore core) {
+
     try (FSDirectory dir = FSDirectory.open(Paths.get(core.getIndexDir()));
         IndexReader reader = DirectoryReader.open(dir)) {
 
@@ -282,7 +266,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         // no segments to process/validate
         return true;
       }
-      segmentsUpdated = true;
+
       for (LeafReaderContext lrc : leaves) {
         LeafReader leafReader = lrc.reader();
         leafReader = FilterLeafReader.unwrap(leafReader);
@@ -292,29 +276,24 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           Version segMinVersion = si.info.getMinVersion();
           if (segMinVersion == null || segMinVersion.major != Version.LATEST.major) {
             log.warn(
-                "validateSegmentsUpdated(): Core: {}, Segment {} is still at minVersion: {} and is not updated to the latest version {}",
+                "isIndexUpgraded(): Core: {}, Segment [{}] is still at minVersion [{}] and is not updated to the latest version [{}]; numLiveDocs: [{}]",
                 core.getName(),
                 si.info.name,
                 (segMinVersion == null ? 6 : segMinVersion.major),
-                Version.LATEST.major);
-            segmentsUpdated = null;
-            // Since we could have 1 0-numDoc segment and multiple non-zero numDoc
-            // older version segments, we break only if a 0-numDoc segment is found
-            if (segmentReader.numDocs() == 0) {
-              segmentsUpdated = false;
-              break;
-            }
+                Version.LATEST.major,
+                segmentReader.numDocs());
+            return false;
           }
         }
       }
+      return true;
     } catch (Exception e) {
       log.error(
           "Error while opening segmentInfos for core: {}, exception: {}",
           core.getName(),
           e.toString());
-      segmentsUpdated = null;
     }
-    return segmentsUpdated;
+    return false;
   }
 
   private void doCommit(SolrCore core) {
