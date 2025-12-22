@@ -109,6 +109,10 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
+    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
+    // on timed intervals.  This can pollute this test, so we set the interval very high to
+    // prevent it from running.
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
     configureCluster(NODE_COUNT)
         .addConfig(
             "conf",
@@ -296,11 +300,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
     // performance regressions!
 
-    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
-    // on timed intervals.  This can pollute this test, so we set the interval very high to
-    // prevent it from running.
-    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
-
     String collectionName = "HTTPCSPTEST";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
         .process(cluster.getSolrClient());
@@ -342,6 +341,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         assertEquals(2, adminLogs.getCount());
       }
     }
+
+    // Clean up the collection to allow test iterations to succeed
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
