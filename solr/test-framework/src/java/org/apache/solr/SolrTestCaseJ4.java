@@ -2236,9 +2236,9 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   /**
-   * Creates a minimal Solr configuration directory with default solrconfig.
-   * Adds in a core.properties if propertiesContent is provided.
-   * 
+   * Creates a minimal Solr configuration directory with default solrconfig. Adds in a
+   * core.properties if propertiesContent is provided.
+   *
    * @param dstRoot the destination directory where conf/ will be created
    * @param propertiesContent content for core.properties file, or null to skip creating it
    */
