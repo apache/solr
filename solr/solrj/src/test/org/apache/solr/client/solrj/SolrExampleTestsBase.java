@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
@@ -51,7 +50,7 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   private SolrClient client;
 
   @BeforeClass
-  public static void beforeTestClass() throws Exception {
+  public static void beforeTestClass() {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
@@ -117,29 +116,12 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
     return solrJettyTestRule.getJetty();
   }
 
-  protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
-    return client.getHttpClient();
-  }
+
 
   // Backward compatibility methods for existing subclasses
   @Deprecated
-  protected static JettySolrRunner createAndStartJetty(Path solrHome) throws Exception {
-    return createAndStartJetty(solrHome, new Properties(), JettyConfig.builder().build());
-  }
-
-  @Deprecated
-  protected static JettySolrRunner createAndStartJetty(Path solrHome, JettyConfig jettyConfig)
-      throws Exception {
-    return createAndStartJetty(solrHome, new Properties(), jettyConfig);
-  }
-
-  @Deprecated
-  protected static JettySolrRunner createAndStartJetty(
-      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
-
-    solrJettyTestRule.startSolr(solrHome, nodeProperties, jettyConfig);
-    return getJetty();
+  protected static void createAndStartJetty(Path solrHome) throws Exception {
+    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
   }
 
   /** query the example */

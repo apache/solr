@@ -42,6 +42,11 @@ import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
+  protected HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path tempSolrHome = createTempDir();
