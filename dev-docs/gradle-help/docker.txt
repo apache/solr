@@ -92,9 +92,6 @@ Using Gradle property:
 The dockerPush task will build and push the multi-platform image in a single step using Docker Buildx.
 The task will validate that a suitable builder exists and that it supports all requested platforms before building.
 
-Build and push for a single specific platform:
-   SOLR_DOCKER_PLATFORM=linux/arm64 ./gradlew dockerPush
-
 Testing
 -------
 
