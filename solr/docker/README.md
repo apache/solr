@@ -73,6 +73,11 @@ docker buildx build --platform linux/amd64,linux/arm64 -f solr-X.Y.Z/docker/Dock
 docker buildx build --platform linux/arm64 -f solr-X.Y.Z/docker/Dockerfile --tag myrepo/solr:X.Y.Z-arm64 --load - < solr-X.Y.Z.tgz
 ```
 
+**Note**: When building Docker images using Gradle tasks (`./gradlew dockerBuild`, `./gradlew dockerPush`),
+the `dockerBuild` task always builds for your current local architecture only. Multi-platform and
+single-platform targeting is only supported by the `dockerPush` task via the `SOLR_DOCKER_PLATFORM`
+environment variable or property `-Psolr.docker.platform`. See `./gradlew helpDocker` for details.
+
 Official Image Management
 ----
 

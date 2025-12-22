@@ -26,19 +26,15 @@ Solr Distribution: (Either Full or Slim, the solr binary distribution to build t
    EnvVar: SOLR_DOCKER_DIST
    Gradle Property: -Psolr.docker.dist
 
-Docker Platforms: (Comma-separated list of target platforms)
-   Default: None (builds for current architecture only)
+Docker Platforms: (Comma-separated list of target platforms for dockerPush)
+   Default: None (pushes image built for current architecture)
    EnvVar: SOLR_DOCKER_PLATFORM
    Gradle Property: -Psolr.docker.platform
    Examples:
-     - "linux/amd64" (single platform - can be used with dockerBuild)
-     - "linux/arm64,linux/amd64" (multi-platform - only supported by dockerPush)
+     - "linux/amd64" (single platform)
+     - "linux/arm64,linux/amd64" (multi-platform)
 
-   Note: Multi-platform builds require Docker Buildx and are ONLY supported
-   by the dockerPush task. The dockerBuild task does not support multi-platform builds because
-   Docker cannot load multi-platform images into the local daemon. Use dockerPush to build and push
-   multi-platform images in a single step. You may need QEMU installed to run multi-platform
-   builds.
+   Note: This setting ONLY affects the dockerPush task
 
 Tagging and Pushing
 -------
@@ -78,10 +74,8 @@ Docker Image Name: (Use this to explicitly set a whole image name. If given, the
 Multi-Platform Builds
 -------
 
-To build a multi-platform Docker image, use the SOLR_DOCKER_PLATFORM environment variable or Gradle property.
-
-IMPORTANT: Multi-platform builds (with multiple platforms) are ONLY supported by dockerPush, not dockerBuild.
-This is because Docker cannot load multi-platform images into the local daemon.
+Multi-platform Docker builds are ONLY supported by the dockerPush task.
+The dockerBuild task always builds for your current local architecture.
 
 Prerequisites:
    - Docker Buildx must be installed (included with Docker Desktop and recent Docker Engine versions)
@@ -97,16 +91,6 @@ Using Gradle property:
 
 The dockerPush task will build and push the multi-platform image in a single step using Docker Buildx.
 The task will validate that a suitable builder exists and that it supports all requested platforms before building.
-
-Single-Platform Builds with Explicit Platform
---------------------------------------------------
-
-You can build for a specific platform and load it into your local Docker daemon:
-
-Build for a specific platform:
-   SOLR_DOCKER_PLATFORM=linux/arm64 ./gradlew dockerBuild
-
-This uses Docker Buildx with --load to make the image available locally for testing.
 
 Testing
 -------
