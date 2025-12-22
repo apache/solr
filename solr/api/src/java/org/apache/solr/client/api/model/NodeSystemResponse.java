@@ -17,7 +17,6 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.OptBoolean;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -34,13 +33,12 @@ public class NodeSystemResponse extends SolrJerseyResponse {
   @JsonProperty("core_root")
   public String coreRoot;
 
-  @JsonProperty(isRequired = OptBoolean.FALSE)
-  public String environment;
+  @JsonProperty public String environment;
 
-  @JsonProperty(value = "environment_label", isRequired = OptBoolean.FALSE)
+  @JsonProperty(value = "environment_label")
   public String environmentLabel;
 
-  @JsonProperty(value = "environment_color", isRequired = OptBoolean.FALSE)
+  @JsonProperty(value = "environment_color")
   public String environmentColor;
 
   @JsonProperty public String node;
@@ -107,12 +105,8 @@ public class NodeSystemResponse extends SolrJerseyResponse {
   }
 
   public static class Vendor {
-    @JsonProperty(isRequired = OptBoolean.FALSE)
-    public String name;
-
-    @JsonProperty(isRequired = OptBoolean.FALSE)
-    public String vendor;
-
+    @JsonProperty public String name;
+    @JsonProperty public String vendor;
     @JsonProperty public String version;
   }
 

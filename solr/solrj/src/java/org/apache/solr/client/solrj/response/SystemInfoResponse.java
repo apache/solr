@@ -96,7 +96,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         : null;
   }
 
-  public Long getJVMUpTime() {
+  public Long getJVMUpTimeMillis() {
     return getFullResponse() != null
             && getFullResponse().jvm != null
             && getFullResponse().jvm.jmx != null
@@ -104,7 +104,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         : null;
   }
 
-  public String getJVMMemoryUsed() {
+  public String getHumanReadableJVMMemoryUsed() {
     return getFullResponse() != null
             && getFullResponse().jvm != null
             && getFullResponse().jvm.memory != null
@@ -112,7 +112,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         : null;
   }
 
-  public String getJVMMemoryTtl() {
+  public String getHumanReadableJVMMemoryTotal() {
     return getFullResponse() != null
             && getFullResponse().jvm != null
             && getFullResponse().jvm.memory != null

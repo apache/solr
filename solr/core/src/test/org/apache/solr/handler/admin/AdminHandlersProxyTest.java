@@ -86,8 +86,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
             SystemInfoResponse rsp = req.process(solrClient, null);
             NamedList<Object> nl = rsp.getResponse();
             assertEquals(2, nl.size());
-            assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
-            assertEquals(nl.getName(1), ((NamedList) nl.get(nl.getName(1))).get("node"));
+            assertEquals("solrcloud", rsp.getMode());
+            assertEquals(nl.getName(1), rsp.getNode());
           } catch (Exception e) {
             fail("Exception while proxying request to node " + node);
           }

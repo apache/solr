@@ -167,8 +167,11 @@ public class HealthcheckTool extends ToolBase {
                 CLIUtils.getSolrClient(
                     r.getBaseUrl(), cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
               SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
-              uptime = SolrCLI.uptime(sysResponse.getJVMUpTime());
-              memory = sysResponse.getJVMMemoryUsed() + " of " + sysResponse.getJVMMemoryTtl();
+              uptime = SolrCLI.uptime(sysResponse.getJVMUpTimeMillis());
+              memory =
+                  sysResponse.getHumanReadableJVMMemoryUsed()
+                      + " of "
+                      + sysResponse.getHumanReadableJVMMemoryTotal();
             }
 
             // if we get here, we can trust the state

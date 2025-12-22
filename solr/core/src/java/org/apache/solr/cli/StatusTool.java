@@ -303,9 +303,13 @@ public class StatusTool extends ToolBase {
     status.put("version", sysResponse.getSolrImplVersion());
 
     status.put("startTime", sysResponse.getJVMStartTime());
-    status.put("uptime", sysResponse.getJVMUpTime());
+    status.put("uptime", sysResponse.getJVMUpTimeMillis());
 
-    status.put("memory", sysResponse.getJVMMemoryUsed() + " of " + sysResponse.getJVMMemoryTtl());
+    status.put(
+        "memory",
+        sysResponse.getHumanReadableJVMMemoryUsed()
+            + " of "
+            + sysResponse.getHumanReadableJVMMemoryTotal());
 
     // if this is a Solr in solrcloud mode, gather some basic cluster info
     if ("solrcloud".equals(sysResponse.getMode())) {
