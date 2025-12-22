@@ -17,9 +17,7 @@
 package org.apache.solr.handler.sql;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
@@ -32,7 +30,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -45,11 +42,6 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
     Path workDir = createTempDir().toRealPath();
     Path collectionDirectory = workDir.resolve(DEFAULT_TEST_COLLECTION_NAME);
 
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
-        workDir.resolve("solr.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-
     copyMinConf(collectionDirectory, "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n");
 
     return workDir;
@@ -57,14 +49,8 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("solr.test.sys.prop2", "test");
     Path solrHome = createSolrHome();
     solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
-  }
-
-  @AfterClass
-  public static void afterTestClass() throws Exception {
-    System.clearProperty("solr.test.sys.prop2");
   }
 
   @Test

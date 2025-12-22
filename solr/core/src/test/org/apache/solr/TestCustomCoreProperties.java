@@ -49,7 +49,6 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
 
     Files.createDirectories(confDir);
 
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
     Files.copy(
