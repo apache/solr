@@ -46,26 +46,14 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     solrHomeDirectory = createTempDir();
     Path collectionDirectory = solrHomeDirectory.resolve("collection1");
-    Path confDir = collectionDirectory.resolve("conf");
-
-    Files.createDirectories(collectionDirectory.resolve("data"));
-    Files.createDirectories(confDir);
 
     Files.copy(
         SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
         solrHomeDirectory.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    // Create minimal config then replace solrconfig with headers variant
-    SolrTestCaseJ4.copyMinConf(collectionDirectory);
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH()
-            .resolve("collection1")
-            .resolve("conf")
-            .resolve("solrconfig-headers.xml"),
-        confDir.resolve("solrconfig.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    Files.writeString(collectionDirectory.resolve("core.properties"), "name=collection1\n");
+    // Create minimal config with custom solrconfig for headers testing
+    SolrTestCaseJ4.copyMinConf(collectionDirectory, "name=collection1\n", "solrconfig-headers.xml");
 
     solrJettyTestRule.startSolr(solrHomeDirectory, new Properties(), JettyConfig.builder().build());
   }

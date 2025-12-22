@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -59,24 +58,17 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir().toRealPath();
 
-    Path collection1Dir = workDir.resolve("collection1");
-    Path collection2Dir = workDir.resolve("collection2");
-
-    Files.createDirectories(collection1Dir.resolve("conf"));
-    Files.createDirectories(collection2Dir);
-
     Files.copy(
         SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
         workDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    Path sourceConf =
-        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf").toRealPath();
-    FileUtils.copyDirectory(sourceConf.toFile(), collection1Dir.resolve("conf").toFile());
-    Files.writeString(collection1Dir.resolve("core.properties"), "name=collection1\n");
+    Path collection1Dir = workDir.resolve("collection1");
+    Path collection2Dir = workDir.resolve("collection2");
 
-    FileUtils.copyDirectory(collection1Dir.toFile(), collection2Dir.toFile());
-    Files.writeString(collection2Dir.resolve("core.properties"), "name=collection2\n");
+    copyMinConf(collection1Dir, "name=collection1\n");
+    copyMinConf(collection2Dir, "name=collection2\n");
+
     return workDir;
   }
 

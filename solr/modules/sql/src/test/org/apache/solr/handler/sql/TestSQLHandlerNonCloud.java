@@ -23,7 +23,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -45,19 +44,14 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir().toRealPath();
     Path collectionDirectory = workDir.resolve(DEFAULT_TEST_COLLECTION_NAME);
-    Path confDir = collectionDirectory.resolve("conf");
-    Files.createDirectories(collectionDirectory.resolve("data"));
-    Files.createDirectories(confDir);
+
     Files.copy(
         SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
         workDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
-    Path sourceConf =
-        SolrTestCaseJ4.TEST_PATH().resolve("collection1").resolve("conf").toRealPath();
-    FileUtils.copyDirectory(sourceConf.toFile(), confDir.toFile());
-    Files.writeString(
-        collectionDirectory.resolve("core.properties"),
-        "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n");
+
+    copyMinConf(collectionDirectory, "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n");
+
     return workDir;
   }
 

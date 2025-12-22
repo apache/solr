@@ -16,14 +16,11 @@
  */
 package org.apache.solr.schema;
 
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -45,32 +42,18 @@ public class TestBinaryField extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTest() throws Exception {
     Path homeDir = createTempDir();
-
     Path collDir = homeDir.resolve("collection1");
-    Path dataDir = collDir.resolve("data");
-    Path confDir = collDir.resolve("conf");
-
-    Files.createDirectories(homeDir);
-    Files.createDirectories(collDir);
-    Files.createDirectories(dataDir);
-    Files.createDirectories(confDir);
 
     Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
 
-    String src_dir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
-    Files.copy(Path.of(src_dir, "solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
-    Files.copy(
-        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
-        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
+    copyMinConf(collDir, "name=collection1\n", "solrconfig-basic.xml");
 
-    try (Writer w =
-        new OutputStreamWriter(
-            Files.newOutputStream(collDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
-      Properties coreProps = new Properties();
-      coreProps.put("name", "collection1");
-      coreProps.store(w, "");
-    }
+    // Copy the custom schema for binary field testing
+    String sourceConfDir = TEST_HOME() + "/collection1/conf";
+    Files.copy(
+        Path.of(sourceConfDir, "schema-binaryfield.xml"),
+        collDir.resolve("conf/schema.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
 
     solrClientTestRule.startSolr(homeDir);
   }
