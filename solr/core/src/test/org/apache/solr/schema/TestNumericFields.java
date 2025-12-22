@@ -51,6 +51,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
@@ -6131,17 +6133,10 @@ public class TestNumericFields extends SolrTestCaseJ4 {
                     DocValues.getBinary(leafReaderForCheckingDVs, field).nextDoc());
               } else {
                 if (sf.hasDocValues()) {
-                  if (sf.multiValued()) {
-                    assertNotEquals(
-                        "Field " + field + " should have docValues",
-                        DocIdSetIterator.NO_MORE_DOCS,
-                        DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
-                  } else {
-                    assertNotEquals(
-                        "Field " + field + " should have docValues",
-                        DocIdSetIterator.NO_MORE_DOCS,
-                        DocValues.getNumeric(leafReaderForCheckingDVs, field).nextDoc());
-                  }
+                  assertNotEquals(
+                      "Field " + field + " should have docValues",
+                      DocIdSetIterator.NO_MORE_DOCS,
+                      DocValues.getSortedNumeric(leafReaderForCheckingDVs, field).nextDoc());
                 } else {
                   expectThrows(
                       IllegalStateException.class,
@@ -6245,10 +6240,6 @@ public class TestNumericFields extends SolrTestCaseJ4 {
 
   public void testWhiteboxCreateFields() throws Exception {
     String[] typeNames = new String[] {"i", "l", "f", "d", "dt"};
-    Class<?>[] expectedClasses =
-        new Class<?>[] {
-          IntPoint.class, LongPoint.class, FloatPoint.class, DoublePoint.class, LongPoint.class
-        };
 
     Date dateToTest = new Date();
     Object[][] values =
@@ -6268,7 +6259,7 @@ public class TestNumericFields extends SolrTestCaseJ4 {
     for (int i = 0; i < typeNames.length; i++) {
       for (String suffix : FIELD_SUFFIXES) {
         doWhiteboxCreateFields(
-            "whitebox_p_" + typeNames[i] + suffix, expectedClasses[i], values[i]);
+            "whitebox_p_" + typeNames[i] + suffix, values[i]);
         typesTested.add("*_p_" + typeNames[i] + suffix);
       }
     }
@@ -6288,14 +6279,14 @@ public class TestNumericFields extends SolrTestCaseJ4 {
    * @see #callAndCheckCreateFields
    */
   private void doWhiteboxCreateFields(
-      final String fieldName, final Class<?> pointType, final Object... values) throws Exception {
+      final String fieldName, final Object... values) throws Exception {
 
     for (Object value : values) {
       // ideally we should require that all input values be diff forms of the same logical value (ie
       // '"42"' vs 'new Integer(42)') and assert that each produces an equivalent list of
       // IndexableField objects but that doesn't seem to work -- appears not all IndexableField
       // classes override Object.equals?
-      final List<IndexableField> result = callAndCheckCreateFields(fieldName, pointType, value);
+      final List<IndexableField> result = callAndCheckCreateFields(fieldName, value);
       assertNotNull(value + " => null", result);
     }
   }
@@ -6306,40 +6297,31 @@ public class TestNumericFields extends SolrTestCaseJ4 {
    * <code>pointType</code> is included if and only if the SchemaField is "indexed"
    */
   private List<IndexableField> callAndCheckCreateFields(
-      final String fieldName, final Class<?> pointType, final Object value) {
+      final String fieldName, final Object value) {
     final SchemaField sf = h.getCore().getLatestSchema().getField(fieldName);
     final List<IndexableField> results = sf.createFields(value);
-    final Set<IndexableField> resultSet = new LinkedHashSet<>(results);
-    assertEquals("duplicates found in results? " + results, results.size(), resultSet.size());
+    if (sf.indexed() || sf.stored() || sf.hasDocValues()) {
+      assertEquals("NumericField " + fieldName + " should only have 1 indexableField " + results, 1, results.size());
 
-    final Set<Class<?>> resultClasses = new HashSet<>();
-    for (IndexableField f : results) {
-      resultClasses.add(f.getClass());
-
-      if (!sf.hasDocValues()) {
-        assertFalse(
-            f.toString(),
-            (f instanceof NumericDocValuesField) || (f instanceof SortedNumericDocValuesField));
-      }
-    }
-    assertEquals(
-        fieldName + " stored? Result Fields: " + Arrays.toString(results.toArray()),
-        sf.stored(),
-        resultClasses.contains(StoredField.class));
-    assertEquals(
-        fieldName + " indexed? Result Fields: " + Arrays.toString(results.toArray()),
-        sf.indexed(),
-        resultClasses.contains(pointType));
-    if (sf.multiValued()) {
+      IndexableField result = results.getFirst();
       assertEquals(
-          fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
-          sf.hasDocValues(),
-          resultClasses.contains(SortedNumericDocValuesField.class));
+          fieldName + " stored? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.stored(),
+          result.storedValue() != null);
+      assertEquals(
+          fieldName + " indexed? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.indexed(),
+          result.fieldType().pointDimensionCount() > 0);
+      assertEquals(
+          fieldName + " indexed? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.indexed() ? IndexOptions.DOCS : IndexOptions.NONE,
+          result.fieldType().indexOptions());
+      assertEquals(
+          fieldName + " docValues? Result Fields: " + Arrays.toString(results.toArray()),
+          sf.hasDocValues() ? DocValuesType.SORTED_NUMERIC : DocValuesType.NONE,
+          result.fieldType().docValuesType());
     } else {
-      assertEquals(
-          fieldName + " docvalues? Result Fields: " + Arrays.toString(results.toArray()),
-          sf.hasDocValues(),
-          resultClasses.contains(NumericDocValuesField.class));
+      assertEquals("NumericField " + fieldName + " should have no indexableFields " + results, 0, results.size());
     }
 
     return results;

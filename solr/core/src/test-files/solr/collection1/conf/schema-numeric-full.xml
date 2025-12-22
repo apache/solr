@@ -21,11 +21,11 @@
     <fieldType name="string" class="solr.StrField" sortMissingLast="true" omitNorms="true"/>
 
     <!-- Override useDocValuesAsStored="true" default for schema version=1.6 -->
-    <fieldType name="int" class="solr.IntField"  useDocValuesAsStored="false"/>
-    <fieldType name="long" class="solr.LongField" useDocValuesAsStored="false"/>
-    <fieldType name="double" class="solr.DoubleField" useDocValuesAsStored="false"/>
-    <fieldType name="float" class="solr.FloatField" useDocValuesAsStored="false"/>
-    <fieldType name="date" class="solr.DateField" useDocValuesAsStored="false"/>
+    <fieldType name="int" class="solr.IntField" docValues="false" useDocValuesAsStored="false"/>
+    <fieldType name="long" class="solr.LongField" docValues="false" useDocValuesAsStored="false"/>
+    <fieldType name="double" class="solr.DoubleField" docValues="false" useDocValuesAsStored="false"/>
+    <fieldType name="float" class="solr.FloatField" docValues="false" useDocValuesAsStored="false"/>
+    <fieldType name="date" class="solr.DateField" docValues="false" useDocValuesAsStored="false"/>
 
  </types>
 
