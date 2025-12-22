@@ -75,7 +75,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    System.setProperty("solr.test.sys.prop2", "test");
     Path solrHome = createSolrHome();
     solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
     String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
@@ -103,7 +102,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
     collection2 = null;
     resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
-    System.clearProperty("solr.test.sys.prop2");
   }
 
   @Test
