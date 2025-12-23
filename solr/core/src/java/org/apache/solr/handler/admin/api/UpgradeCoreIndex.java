@@ -222,7 +222,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
               }
             }
           }
-          return null;
+          return response;
         });
   }
 
