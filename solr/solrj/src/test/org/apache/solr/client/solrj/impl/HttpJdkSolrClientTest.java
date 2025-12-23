@@ -320,11 +320,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
 
     // 64k+ post body, just to be sure we are using the [in|out]put streams correctly.
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < 65536; i++) {
-      sb.append("A");
-    }
-    String value = sb.toString();
+    String value = "A".repeat(65536);
 
     try (HttpJdkSolrClient client =
         builder(url)
@@ -362,7 +358,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
   public void testCollectionParameters() throws IOException, SolrServerException {
     HttpJdkSolrClient baseUrlClient = builder(solrClientTestRule.getBaseUrl()).withDefaultCollection(null).build();
     HttpJdkSolrClient collection1UrlClient =
-        builder(solrClientTestRule.getBaseUrl() + "/" + DEFAULT_CORE).withDefaultCollection(null).build();
+        builder(solrClientTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION).withDefaultCollection(null).build();
     testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
@@ -390,7 +386,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client =
         builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withBasicAuthCredentials("foo", "explicit")
-            .build(); ) {
+            .build() ) {
       super.testSetCredentialsExplicitly(client);
     }
   }
@@ -400,14 +396,14 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client =
         builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withBasicAuthCredentials("foo2", "explicit")
-            .build(); ) {
+            .build() ) {
       super.testPerRequestCredentials(client);
     }
   }
 
   @Test
   public void testNoCredentials() throws Exception {
-    try (HttpJdkSolrClient client = builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH).build(); ) {
+    try (HttpJdkSolrClient client = builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH).build() ) {
       super.testNoCredentials(client);
     }
   }
@@ -418,7 +414,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client =
         builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
-            .build(); ) {
+            .build() ) {
       super.testUseOptionalCredentials(client);
     }
   }
@@ -428,7 +424,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     try (HttpJdkSolrClient client =
         builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withOptionalBasicAuthCredentials(null)
-            .build(); ) {
+            .build() ) {
       super.testUseOptionalCredentialsWithNull(client);
     }
   }
@@ -558,7 +554,7 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
         new HttpJdkSolrClient.Builder(url)
             .withConnectionTimeout(connectionTimeout, TimeUnit.MILLISECONDS)
             .withIdleTimeout(socketTimeout, TimeUnit.MILLISECONDS)
-            .withDefaultCollection(DEFAULT_CORE)
+            .withDefaultCollection(DEFAULT_COLLECTION)
             .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
     return (B) b;
   }
@@ -571,7 +567,6 @@ public class HttpJdkSolrClientTest extends HttpSolrClientTestBase {
     String[] str = JAVABIN_STR.split(" ");
     byte[] bytes = new byte[str.length];
     for (int i = 0; i < str.length; i++) {
-      int asInt = 0;
       bytes[i] = (byte) Integer.decode("#" + str[i]).intValue();
     }
     return bytes;
