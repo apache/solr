@@ -74,7 +74,6 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
         }
       }
       assertTrue("Expected header not found", containsWarningHeader);
-      HttpClientUtil.close(httpClient);
     }
   }
 
