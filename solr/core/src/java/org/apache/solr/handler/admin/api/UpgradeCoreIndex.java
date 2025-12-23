@@ -3,7 +3,6 @@ package org.apache.solr.handler.admin.api;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Paths;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -14,6 +13,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StoredFields;
@@ -30,6 +30,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.index.LatestVersionFilterMergePolicy;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -88,10 +89,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
-  private static final long SLEEP_TIME_SEGMENT_DELETION_MS = 60000;
-
-  private static final DateTimeFormatter formatter =
-      DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
 
   public UpgradeCoreIndex(
       CoreContainer coreContainer,
@@ -121,77 +118,108 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
             log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
             CoreReindexingStatus coreRxStatus = CoreReindexingStatus.REINDEXING_ACTIVE;
-            RefCounted<SolrIndexSearcher> ssearcherRef = core.getSearcher();
-            List<LeafReaderContext> leafContexts =
-                ssearcherRef.get().getTopReaderContext().leaves();
-            DocValuesIteratorCache dvICache = new DocValuesIteratorCache(ssearcherRef.get());
 
-            UpdateRequestProcessorChain updateProcessorChain =
-                getUpdateProcessorChain(core, requestBody.updateChain);
-
+            // Set LatestVersionFilterMergePolicy to prevent older segments from
+            // participating in merges while we reindex.
+            // This must be done inside the async lambda to ensure it stays in effect
+            // for the duration of the reindexing operation.
+            RefCounted<IndexWriter> iwRef = null;
+            MergePolicy originalMergePolicy = null;
             try {
-
-              for (LeafReaderContext lrc : leafContexts) {
-                if (!shouldUpgradeSegment(lrc)) {
-                  continue;
+              iwRef = core.getSolrCoreState().getIndexWriter(core);
+              if (iwRef != null) {
+                IndexWriter iw = iwRef.get();
+                if (iw != null) {
+                  originalMergePolicy = iw.getConfig().getMergePolicy();
+                  iw.getConfig()
+                      .setMergePolicy(
+                          new LatestVersionFilterMergePolicy(iw.getConfig().getMergePolicy()));
                 }
+              }
 
-                boolean success = false;
+              RefCounted<SolrIndexSearcher> ssearcherRef = core.getSearcher();
+              try {
+                List<LeafReaderContext> leafContexts =
+                    ssearcherRef.get().getTopReaderContext().leaves();
+                DocValuesIteratorCache dvICache = new DocValuesIteratorCache(ssearcherRef.get());
 
-                success = processSegment(lrc, updateProcessorChain, core, dvICache);
+                UpdateRequestProcessorChain updateProcessorChain =
+                    getUpdateProcessorChain(core, requestBody.updateChain);
 
-                if (!success) {
-                  coreRxStatus = CoreReindexingStatus.ERROR;
+                for (LeafReaderContext lrc : leafContexts) {
+                  if (!shouldUpgradeSegment(lrc)) {
+                    continue;
+                  }
+
+                  boolean success =
+                      processSegment(lrc, updateProcessorChain, core, ssearcherRef.get(), dvICache);
+
+                  if (!success) {
+                    coreRxStatus = CoreReindexingStatus.ERROR;
+                    break;
+                  }
+                }
+              } catch (Exception e) {
+                log.error("Error while processing core: {}", coreName, e);
+                coreRxStatus = CoreReindexingStatus.ERROR;
+              } finally {
+                // important to decrement searcher ref count after use since we obtained it via the
+                // SolrCore.getSearcher() method
+                ssearcherRef.decref();
+              }
+
+              // TO-DO
+              // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
+
+              doCommit(core);
+              try {
+                // giving some time for 0 doc segments to clear up
+                Thread.sleep(10000);
+              } catch (InterruptedException ie) {
+                /* We don't need to preserve the interrupt here.
+                Otherwise, we may get immediately interrupted when we try to call sleep() during validation in the next steps.
+                And we are almost done anyway.
+                 */
+              }
+
+              boolean indexUpgraded = isIndexUpgraded(core);
+
+              /*
+              There is a delay observed sometimes between when a commit happens and
+              when the segment (with zero live docs) gets cleared. So adding a validation check with retries.
+              */
+              for (int i = 0; i < RETRY_COUNT_FOR_SEGMENT_DELETION && !indexUpgraded; i++) {
+                try {
+                  doCommit(core);
+                  Thread.sleep(10000);
+                  indexUpgraded = isIndexUpgraded(core);
+
+                } catch (InterruptedException ie) {
+                  Thread.currentThread().interrupt();
+                }
+                if (Thread.currentThread().isInterrupted()) {
                   break;
                 }
               }
-            } catch (Exception e) {
-              log.error("Error while processing core: {}, exception: {}", coreName, e.toString());
-              coreRxStatus = CoreReindexingStatus.ERROR;
-            }
-            // important to decrement searcher ref count after use since we obtained it via the
-            // SolrCore.getSearcher() method
-            ssearcherRef.decref();
 
-            // TO-DO
-            // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
-
-            doCommit(core);
-            try {
-              // giving some time for 0 doc segments to clear up
-              Thread.sleep(10000);
-            } catch (InterruptedException ie) {
-              /* We don't need to preserve the interrupt here.
-              Otherwise, we may get immediately interrupted when we try to call sleep() during validation in the next steps.
-              And we are almost done anyway.
-               */
-            }
-
-            boolean indexUpgraded = isIndexUpgraded(core);
-
-            /*
-            There is a delay observed sometimes between when a commit happens and
-            when the segment (with zero live docs) gets cleared. So adding a validation check with retries.
-            */
-            for (int i = 0; i < RETRY_COUNT_FOR_SEGMENT_DELETION && !indexUpgraded; i++) {
-              try {
-                doCommit(core);
-                Thread.sleep(10000);
-                indexUpgraded = isIndexUpgraded(core);
-
-              } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
+              if (!indexUpgraded) {
+                log.error(
+                    "Validation failed for core '{}'. Some older version segments still remain (likely despite 100% deleted docs).",
+                    coreName);
+                coreRxStatus = CoreReindexingStatus.ERROR;
               }
-              if (Thread.currentThread().isInterrupted()) {
-                break;
+            } catch (IOException ioEx) {
+              // TO-DO
+              // Throw exception wrapped in CoreAdminAPIBaseException
+            } finally {
+              // Restore original merge policy
+              if (iwRef != null) {
+                IndexWriter iw = iwRef.get();
+                if (iw != null && originalMergePolicy != null) {
+                  iw.getConfig().setMergePolicy(originalMergePolicy);
+                }
+                iwRef.decref();
               }
-            }
-
-            if (!indexUpgraded) {
-              log.error(
-                  "Validation failed for core '{}'. Some older version segments still remain (likely despite 100% deleted docs).",
-                  coreName);
-              coreRxStatus = CoreReindexingStatus.ERROR;
             }
           }
           return null;
@@ -315,7 +343,9 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       log.warn(
           String.format("Error commiting on core {} during index upgrade", core.getName()), ioEx);
     } finally {
-      iwRef.decref();
+      if (iwRef != null) {
+        iwRef.decref();
+      }
     }
   }
 
@@ -323,9 +353,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       LeafReaderContext leafReaderContext,
       UpdateRequestProcessorChain processorChain,
       SolrCore core,
+      SolrIndexSearcher solrIndexSearcher,
       DocValuesIteratorCache dvICache) {
 
-    boolean segmentError = false;
+    boolean success = false;
     int numDocsProcessed = 0;
 
     String coreName = core.getName();
@@ -337,11 +368,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     SolrInputDocument solrDoc = null;
     UpdateRequestProcessor processor = null;
     LocalSolrQueryRequest solrRequest = null;
-    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
-    SolrDocumentFetcher docFetcher = searcherRef.get().getDocFetcher();
+    SolrDocumentFetcher docFetcher = solrIndexSearcher.getDocFetcher();
     try {
       // Exclude copy field targets to avoid duplicating values on reindex
-      Set<String> fields = docFetcher.getNonStoredDVsWithoutCopyTargets();
+      Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
       solrRequest = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
       SolrQueryResponse rsp = new SolrQueryResponse();
@@ -356,36 +386,35 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         solrDoc = toSolrInputDocument(doc, indexSchema);
 
         docFetcher.decorateDocValueFields(
-            solrDoc, leafReaderContext.docBase + luceneDocId, fields, dvICache);
+            solrDoc, leafReaderContext.docBase + luceneDocId, nonStoredDVFields, dvICache);
         solrDoc.removeField("_version_");
         AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
         currDocCmd.solrDoc = solrDoc;
         processor.processAdd(currDocCmd);
         numDocsProcessed++;
       }
+      success = true;
     } catch (Exception e) {
       log.error("Error in CvReindexingTask process() : {}", e.toString());
-      segmentError = true;
+
     } finally {
       if (processor != null) {
         try {
           processor.finish();
         } catch (Exception e) {
           log.error("Exception while doing finish processor.finish() : {}", e.toString());
-          segmentError = true;
+
         } finally {
           try {
             processor.close();
           } catch (IOException e) {
             log.error("Exception while closing processor: {}", e.toString());
-            segmentError = true;
           }
         }
       }
       if (solrRequest != null) {
         solrRequest.close();
       }
-      searcherRef.decref();
     }
 
     log.info(
@@ -394,7 +423,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         coreName,
         numDocsProcessed);
 
-    return segmentError;
+    return success;
   }
 
   /*
