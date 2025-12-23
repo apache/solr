@@ -33,6 +33,10 @@ dependencies {
 
   // Tika core - needed for common interfaces and utilities
   implementation 'org.apache.tika:tika-core'
+  
+  // Apache POI for XLSX response writer
+  implementation 'org.apache.poi:poi'
+  implementation 'org.apache.poi:poi-ooxml'
 
   // For 'tikaserver' backend
   implementation 'org.eclipse.jetty:jetty-client'

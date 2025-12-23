@@ -58,6 +58,7 @@ org.apache.kafka:*=3.9.1
 org.apache.kerby:*=2.1.0
 org.apache.logging.log4j:*=2.25.3
 org.apache.lucene:*=9.12.3
+org.apache.poi:*=5.5.1
 org.apache.tika:*=3.2.3
 org.apache.tomcat:annotations-api=6.0.53
 org.apache.zookeeper:*=3.9.4
