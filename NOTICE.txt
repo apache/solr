@@ -417,6 +417,9 @@ This product includes Apache Tika Core.
 Apache Tika
 Copyright 2007-2024 The Apache Software Foundation
 
+Apache POI
+Copyright 2003-2025 The Apache Software Foundation
+
 =========================================================================
 ==  Language Detection Notices                                         ==
 =========================================================================
