@@ -56,11 +56,11 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       if (initArgs.get("tika.config") != null || initArgs.get("parseContext.config") != null) {
         if (log.isErrorEnabled()) {
           log.error(
-              "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+              "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 9.11.");
         }
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
-            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 10.");
+            "The 'tika.config' and 'parseContext.config' parameters are no longer supported since Solr 9.11.");
       }
 
       // Handle backend selection
@@ -85,14 +85,14 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase
       if (tikaServerUrl == null || tikaServerUrl.trim().isEmpty()) {
         if (log.isErrorEnabled()) {
           log.error(
-              "Tika Server URL must be configured via '{}' parameter",
+              "Tika Server URL must be configured via '{}' parameter. In-process Tika removed since Solr 9.11. See Reference Guide for more information.",
               ExtractingParams.TIKASERVER_URL);
         }
         throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Tika Server URL must be configured via '"
                 + ExtractingParams.TIKASERVER_URL
-                + "' parameter");
+                + "' parameter. In-process Tika removed since Solr 9.11. See Reference Guide for more information.");
       }
 
       int timeoutSecs = 0;
