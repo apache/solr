@@ -30,12 +30,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -58,10 +59,14 @@ import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
 import org.apache.solr.util.ServletFixtures.SlowStreamServlet;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
-public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
+public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
   protected static final String DEFAULT_CORE = "foo";
   protected static final String SLOW_SERVLET_PATH = "/slow";
@@ -86,7 +91,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Override
@@ -376,7 +381,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testQueryString() throws Exception {
-    final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
+    final String clientUrl = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (HttpSolrClientBase client =
@@ -556,7 +561,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected void testUpdateAsync() throws Exception {
     ResponseParser rp = new XMLResponseParser();
-    String url = getBaseUrl();
+    String url = solrClientTestRule.getBaseUrl();
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
@@ -636,7 +641,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
