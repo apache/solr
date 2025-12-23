@@ -49,7 +49,7 @@ jobs:
             gradle-jdk: 21
             dist: full
             base-image: eclipse-temurin:25-jre-jammy
-            tag-suffix: '-jre25'
+            tag-suffix: '-java25'
 
           # branch_10_0 - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
           - branch: branch_10_0
