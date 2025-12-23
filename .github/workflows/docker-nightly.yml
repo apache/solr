@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # main branch - Gradle on JDK21, Docker images with JDK25
+          # main branch - Gradle on JDK21, Docker images with JRE25
           - branch: main
             version: 11.0.0-SNAPSHOT
             gradle-jdk: 21
@@ -31,7 +31,7 @@ jobs:
             base-image: eclipse-temurin:25-jre-jammy
             tag-suffix: ''
 
-          # branch_10x - Gradle on JDK21, Docker images with JDK21 (default) and JDK25
+          # branch_10x - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
           - branch: branch_10x
             version: 10.1.0-SNAPSHOT
             gradle-jdk: 21
@@ -49,9 +49,9 @@ jobs:
             gradle-jdk: 21
             dist: full
             base-image: eclipse-temurin:25-jre-jammy
-            tag-suffix: '-jdk25'
+            tag-suffix: '-jre25'
 
-          # branch_10_0 - Gradle on JDK21, Docker images with JDK21 (default) and JDK25
+          # branch_10_0 - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
           - branch: branch_10_0
             version: 10.0.0-SNAPSHOT
             gradle-jdk: 21
@@ -69,9 +69,9 @@ jobs:
             gradle-jdk: 21
             dist: full
             base-image: eclipse-temurin:25-jre-jammy
-            tag-suffix: '-jdk25'
+            tag-suffix: '-java25'
 
-          # branch_9x - Gradle on JDK17, Docker images with JDK17 (default) and JDK21
+          # branch_9x - Gradle on JDK17, Docker images with JRE17 (default) and JRE21
           - branch: branch_9x
             version: 9.11.0-SNAPSHOT
             gradle-jdk: 17
@@ -89,7 +89,7 @@ jobs:
             gradle-jdk: 17
             dist: full
             base-image: eclipse-temurin:21-jre-jammy
-            tag-suffix: '-jdk21'
+            tag-suffix: '-java21'
 
     env:
       DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
