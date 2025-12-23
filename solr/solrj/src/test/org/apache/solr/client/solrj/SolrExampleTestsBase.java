@@ -36,10 +36,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettyConfig;
-import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
-import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -48,25 +46,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
 
   private SolrClient client;
-
-  @BeforeClass
-  public static void beforeTestClass() {
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
-    // System properties set - subclasses can start Jetty as needed
-    // Tests that don't have custom @BeforeClass setup will use the default via getSolrClient()
-  }
-
-  private static void ensureJettyStarted() {
-    try {
-      solrJettyTestRule.getJetty();
-      // Jetty already started
-    } catch (IllegalStateException e) {
-      // Start with default configuration
-      solrJettyTestRule.startSolr(legacyExampleCollection1SolrHome());
-    }
-  }
 
   @Override
   public void tearDown() throws Exception {
@@ -78,14 +57,11 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
       }
     }
     client = null;
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
     super.tearDown();
   }
 
   protected SolrClient getSolrClient() {
     if (client == null) {
-      ensureJettyStarted();
       client = createNewSolrClient();
     }
     return client;
@@ -97,25 +73,20 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return getHttpSolrClient(getBaseUrl(), DEFAULT_TEST_CORENAME);
+    return getHttpSolrClient(solrJettyTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
   }
 
   public static HttpSolrClient getHttpSolrClient(String baseUrl, String coreName) {
     return new HttpSolrClient.Builder(baseUrl).withDefaultCollection(coreName).build();
   }
 
+  protected static String getCoreUrl() {
+    return solrJettyTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
+  }
+
   protected static String getBaseUrl() {
     return solrJettyTestRule.getBaseUrl();
   }
-
-  protected static String getCoreUrl() {
-    return getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
-  }
-
-  protected static JettySolrRunner getJetty() {
-    return solrJettyTestRule.getJetty();
-  }
-
 
 
   // Backward compatibility methods for existing subclasses
