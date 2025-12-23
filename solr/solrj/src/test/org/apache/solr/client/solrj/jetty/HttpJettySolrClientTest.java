@@ -79,7 +79,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000)
+            builder(
+                    solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH,
+                    DEFAULT_CONNECTION_TIMEOUT,
+                    2000)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -94,7 +97,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+            builder(
+                    solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
+                    DEFAULT_CONNECTION_TIMEOUT,
+                    0)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .build()) {
       try {
@@ -109,7 +115,10 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
+            builder(
+                    solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH,
+                    DEFAULT_CONNECTION_TIMEOUT,
+                    0)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .withRequestTimeout(500, TimeUnit.MILLISECONDS)
                 .build()) {
@@ -145,7 +154,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     try (var client = new HttpJettySolrClient.Builder(null).build()) {
       try {
         // if client base url is null, request url will be used in exception message
-        client.requestWithBaseUrl(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, new SolrPing(),
+        client.requestWithBaseUrl(
+            solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
+            new SolrPing(),
             DEFAULT_COLLECTION);
 
         fail("Didn't get excepted exception from oversided request");
@@ -225,7 +236,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
     // Ensure the correct URL is used by the lambda-based requestWithBaseUrl method
     try (var client =
-        new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_COLLECTION).build()) {
+        new HttpJettySolrClient.Builder(defaultUrl)
+            .withDefaultCollection(DEFAULT_COLLECTION)
+            .build()) {
       try {
         client.requestWithBaseUrl(urlToUse, (c) -> c.query(queryParams));
       } catch (RemoteSolrException rse) {
@@ -236,7 +249,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
     // Ensure the correct URL is used by the SolrRequest-based requestWithBaseUrl method
     try (var client =
-        new HttpJettySolrClient.Builder(defaultUrl).withDefaultCollection(DEFAULT_COLLECTION).build()) {
+        new HttpJettySolrClient.Builder(defaultUrl)
+            .withDefaultCollection(DEFAULT_COLLECTION)
+            .build()) {
       try {
         client.requestWithBaseUrl(urlToUse, new QueryRequest(queryParams), null);
       } catch (RemoteSolrException rse) {
@@ -394,7 +409,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
     // default for follow redirects is false
     try (var client =
-        new HttpJettySolrClient.Builder(clientUrl).withDefaultCollection(DEFAULT_COLLECTION).build()) {
+        new HttpJettySolrClient.Builder(clientUrl)
+            .withDefaultCollection(DEFAULT_COLLECTION)
+            .build()) {
 
       SolrServerException e = expectThrows(SolrServerException.class, () -> client.query(q));
       assertTrue(e.getMessage().contains("redirect"));
@@ -424,7 +441,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
     var baseUrlClient = new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl()).build();
-    var collection1UrlClient = new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION).build();
+    var collection1UrlClient =
+        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION)
+            .build();
     testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
 
@@ -488,7 +507,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withBasicAuthCredentials("foo", "explicit")
-            .build() ) {
+            .build()) {
       super.testSetCredentialsExplicitly(client);
     }
   }
@@ -537,7 +556,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withBasicAuthCredentials("foo2", "explicit")
-            .build() ) {
+            .build()) {
       super.testPerRequestCredentials(client);
     }
   }
@@ -547,7 +566,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     try (var client =
         new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
-            .build() ) {
+            .build()) {
       super.testNoCredentials(client);
     }
   }
@@ -559,7 +578,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
-            .build() ) {
+            .build()) {
       super.testUseOptionalCredentials(client);
     }
   }
@@ -570,7 +589,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
         new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withOptionalBasicAuthCredentials(null)
-            .build() ) {
+            .build()) {
       super.testUseOptionalCredentialsWithNull(client);
     }
   }
