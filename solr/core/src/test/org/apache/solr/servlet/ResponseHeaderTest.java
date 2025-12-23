@@ -62,7 +62,8 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
   public void testHttpResponse() throws IOException {
     URI uri = URI.create(solrJettyTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
-    try (CloseableHttpClient httpClient = HttpClientUtil.createClient(null)) {
+    CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
+    try {
       HttpResponse response = httpClient.execute(httpGet);
       Header[] headers = response.getAllHeaders();
       boolean containsWarningHeader = false;
@@ -74,6 +75,9 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
         }
       }
       assertTrue("Expected header not found", containsWarningHeader);
+
+    } finally {
+      HttpClientUtil.close(httpClient);
     }
   }
 
