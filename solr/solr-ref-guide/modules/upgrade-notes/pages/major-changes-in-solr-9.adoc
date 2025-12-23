@@ -75,6 +75,16 @@ It is always strongly recommended that you fully reindex your documents after a 
 In Solr 8, it was possible to add docValues to a schema without re-indexing via `UninvertDocValuesMergePolicy`, an advanced/expert utility.
 Due to changes in Lucene 9, that isn't possible any more.
 
+== Solr 9.11
+
+=== Removing 'local' Tika
+
+The project normally doesn't remove functionality in a minor release, but we made an exception to avoid shipping Tika 1.x with known vulnerabilities.
+
+* LocalTikaExtractionBackend, which was deprecated in 9.10, has been removed. The `tikaserver` extraction backend is now the only supported backend for the ExtractingRequestHandler, and the default. Users must configure a Tika Server URL via the `tikaserver.url` parameter. (SOLR-17961, SOLR-18037)
+
++NOTE: The previous parse-context-based configuration (`parseContext.config`) is no longer supported. Tika parser-specific properties must now be configured directly on the Tika Server itself, rather than through Solr configuration. Please refer to the Tika Server documentation for details on how to set these properties.
+
 == Solr 9.10
 
 === SolrJ

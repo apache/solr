@@ -83,6 +83,10 @@ docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
 
+=== Local in-process
+
+IMPORTANT: The `local` backend using an in-process Tika 1.x library to extract content, used to be the default until and including Solr 9.10. It was removed in Solr 9.11 for security reasons. See release notes for more information.
+
 == Trying out Solr Cell
 
 You can try out the Tika framework using the `schemaless` example included in Solr.
