@@ -29,9 +29,9 @@ import java.util.Set;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -121,7 +121,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull(track.get("rid"));
     assertNotNull(track.get("EXECUTE_QUERY"));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard1));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard2));

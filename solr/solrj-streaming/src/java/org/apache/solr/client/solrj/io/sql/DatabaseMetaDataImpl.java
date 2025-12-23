@@ -25,10 +25,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -124,7 +124,7 @@ class DatabaseMetaDataImpl implements DatabaseMetaData {
     for (String node : liveNodes) {
       try {
         String nodeURL = Utils.getBaseUrlForNodeName(node, urlScheme);
-        solrClient = new Http2SolrClient.Builder(nodeURL).build();
+        solrClient = new HttpJettySolrClient.Builder(nodeURL).build();
 
         QueryResponse rsp = solrClient.query(sysQuery);
         return String.valueOf(

@@ -27,9 +27,9 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
@@ -184,7 +184,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
-                    new String[] {"xml"})));
+                    new String[] {"xml"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
     String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -209,7 +211,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author,content_type"},
                     "wt",
-                    new String[] {"xml"})));
+                    new String[] {"xml"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(XML_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -232,7 +236,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"author:[xml],content_type:[xml]"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -257,7 +263,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"subject:[json],links:[json]"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     NamedList<Object> rsp = CLIENT.request(req, "collection1");
     String strResponse = InputStreamResponseParser.consumeResponseToString(rsp);
@@ -280,7 +288,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
                     "fl",
                     new String[] {"id", "subject,links"},
                     "wt",
-                    new String[] {"json"})));
+                    new String[] {"json"},
+                    "indent",
+                    new String[] {"false"})));
     req.setResponseParser(JSON_STREAM_RESPONSE_PARSER);
     rsp = CLIENT.request(req, "collection1");
     strResponse = InputStreamResponseParser.consumeResponseToString(rsp);

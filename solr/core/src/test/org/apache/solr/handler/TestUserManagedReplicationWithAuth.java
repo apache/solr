@@ -29,13 +29,13 @@ import java.nio.file.Path;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -49,7 +49,7 @@ import org.junit.Test;
 @SuppressSSL
 public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
   JettySolrRunner leaderJetty, followerJetty, followerJettyWithAuth;
-  Http2SolrClient leaderClient, followerClient, followerClientWithAuth;
+  HttpJettySolrClient leaderClient, followerClient, followerClientWithAuth;
   ReplicationTestHelper.SolrInstance leader = null, follower = null, followerWithAuth = null;
 
   private static String user = "solr";
@@ -226,7 +226,7 @@ public class TestUserManagedReplicationWithAuth extends SolrTestCaseJ4 {
     return withBasicAuth(new QueryRequest(q)).process(client);
   }
 
-  private void disablePoll(JettySolrRunner Jetty, Http2SolrClient solrClient)
+  private void disablePoll(JettySolrRunner Jetty, HttpJettySolrClient solrClient)
       throws SolrServerException, IOException {
     ModifiableSolrParams disablePollParams = new ModifiableSolrParams();
     disablePollParams.set(COMMAND, CMD_DISABLE_POLL);

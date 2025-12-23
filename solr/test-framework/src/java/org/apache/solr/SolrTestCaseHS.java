@@ -34,11 +34,12 @@ import javax.xml.xpath.XPathExpressionException;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -51,7 +52,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.util.TestHarness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -186,13 +186,16 @@ public class SolrTestCaseHS extends SolrTestCaseJ4 {
   public static String getQueryResponse(String wt, SolrParams params) throws Exception {
     ModifiableSolrParams p = new ModifiableSolrParams(params);
     p.set("wt", wt);
-    String path = p.get("qt");
-    p.remove("qt");
     p.set("indent", "true");
 
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    String raw = connection.request(path, p, null);
-    return raw;
+    try (EmbeddedSolrServer server =
+        new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName())) {
+      QueryRequest query = new QueryRequest(p);
+
+      query.setResponseParser(new InputStreamResponseParser(wt));
+      NamedList<Object> rsp = server.request(query);
+      return InputStreamResponseParser.consumeResponseToString(rsp);
+    }
   }
 
   public static String getJSON(SolrClient client, SolrParams params) throws Exception {

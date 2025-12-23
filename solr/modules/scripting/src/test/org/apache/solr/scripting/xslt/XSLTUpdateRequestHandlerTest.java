@@ -16,12 +16,11 @@
  */
 package org.apache.solr.scripting.xslt;
 
-import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -69,9 +68,7 @@ public class XSLTUpdateRequestHandlerTest extends SolrTestCaseJ4 {
 
     SolrCore core = h.getCore();
     LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
-    ArrayList<ContentStream> streams = new ArrayList<>();
-    streams.add(new ContentStreamBase.StringStream(xml));
-    req.setContentStreams(streams);
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(xml)));
     SolrQueryResponse rsp = new SolrQueryResponse();
     // try (UpdateRequestHandler handler = new UpdateRequestHandler()) {
     try (XSLTUpdateRequestHandler handler = new XSLTUpdateRequestHandler()) {
