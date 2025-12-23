@@ -19,8 +19,6 @@ package org.apache.solr.client.solrj.embedded;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -32,7 +30,6 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -41,8 +38,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * TODO? perhaps use: http://docs.codehaus.org/display/JETTY/ServletTester rather then open a real
@@ -50,7 +45,6 @@ import org.slf4j.LoggerFactory;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -124,14 +118,5 @@ public class SolrExampleJettyTest extends SolrExampleTests {
       System.out.println("time taken : " + ((System.nanoTime() - start)) / (1000 * 1000));
       assertEquals(1, rsp.getResults().getNumFound());
     }
-  }
-
-  private void runQueries(SolrClient client, int count, boolean warmup)
-      throws SolrServerException, IOException {
-    long start = System.nanoTime();
-    for (int i = 0; i < count; i++) {
-      client.query(new SolrQuery("*:*"));
-    }
-    if (warmup) return;
   }
 }

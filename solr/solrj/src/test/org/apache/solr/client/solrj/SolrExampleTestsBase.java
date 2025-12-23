@@ -88,7 +88,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
     return solrJettyTestRule.getBaseUrl();
   }
 
-
   // Backward compatibility methods for existing subclasses
   @Deprecated
   protected static void createAndStartJetty(Path solrHome) throws Exception {

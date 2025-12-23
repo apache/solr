@@ -87,17 +87,13 @@ import org.slf4j.LoggerFactory;
 /**
  * This should include tests against the example solr config
  *
- * <p>This lets us try various SolrServer implementations with the same tests.
+ * <p>This lets us try various SolrClient implementations with the same tests.
  *
  * @since solr 1.3
  */
 @SuppressSSL
 public abstract class SolrExampleTests extends SolrExampleTestsBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static {
-    ignoreException("uniqueKey");
-  }
 
   @Before
   public void emptyCollection() throws Exception {
@@ -436,7 +432,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("price:[* TO 2]", values.get(0));
     assertEquals("price:[2 TO 4]", values.get(1));
 
-    if (getJetty() != null) {
+    if (solrJettyTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
       String url = getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
@@ -649,7 +645,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private String randomTestString(int maxLength) {
-    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
+    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc.
     // (considered invalid by XML)
 
     int size = random().nextInt(maxLength);
@@ -1012,11 +1008,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     List<Pair<NamedList<String>, Object>> docs = new ArrayList<>();
     NamedList<String> params = new NamedList<>();
-    docs.add(new Pair<>(params, getFileContent(params, "solrj/docs1.xml")));
+    docs.add(new Pair<>(params, getFileContent("solrj/docs1.xml")));
 
     params = new NamedList<>();
     params.add(ASSUME_CONTENT_TYPE, "application/csv");
-    docs.add(new Pair<>(params, getFileContent(params, "solrj/books.csv")));
+    docs.add(new Pair<>(params, getFileContent("solrj/books.csv")));
 
     MultiContentWriterRequest up =
         new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
@@ -1027,7 +1023,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(12, rsp.getResults().getNumFound());
   }
 
-  private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
+  private ByteBuffer getFileContent(String name) throws IOException {
     try (InputStream is = new FileInputStream(getFile(name).toFile())) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
@@ -2375,12 +2371,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit(); // Since the transaction log is disabled in the example, we need to commit
 
     SolrQuery q = new SolrQuery();
-    q.setRequestHandler("/get");
     q.set("id", "DOCID");
     q.set("fl", "id,name,aaa:[value v=aaa]");
 
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest(q);
+    req.setPath("/get");
     req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
@@ -2669,7 +2665,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     // between
     {
       q = new SolrQuery("q", "level_i:0", "indent", "true");
-      // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
+      // NOTE: should be impossible to have more than 7 direct kids, or more than 49 grandkids
       q.setFields(
           "id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
           "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
@@ -3015,12 +3011,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testAddChildToChildFreeDoc()
-      throws IOException,
-          SolrServerException,
-          IllegalArgumentException,
-          IllegalAccessException,
-          SecurityException,
-          NoSuchFieldException {
+      throws IOException, SolrServerException, IllegalArgumentException, SecurityException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
@@ -3062,12 +3053,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testDeleteParentDoc()
-      throws IOException,
-          SolrServerException,
-          IllegalArgumentException,
-          IllegalAccessException,
-          SecurityException,
-          NoSuchFieldException {
+      throws IOException, SolrServerException, IllegalArgumentException, SecurityException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
