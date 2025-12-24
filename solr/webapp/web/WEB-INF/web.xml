@@ -29,8 +29,8 @@
     <filter-name>PathExclusionsFilter</filter-name>
     <filter-class>org.apache.solr.servlet.PathExclusionFilter</filter-class>
     <!--
-    Exclude patterns is a list of directories that would be short circuited by the
-    SolrDispatchFilter. It includes all Admin UI related static content.
+    Exclude patterns is a list of directories that would be short-circuited by this
+    Filter. It includes all Admin UI related static content.
     NOTE: It is NOT a pattern but only matches the start of the HTTP ServletPath.
     -->
     <init-param>
