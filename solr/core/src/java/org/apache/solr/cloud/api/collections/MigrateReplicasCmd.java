@@ -48,7 +48,8 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     Set<String> sourceNodes = getNodesFromParam(message, CollectionParams.SOURCE_NODES);
