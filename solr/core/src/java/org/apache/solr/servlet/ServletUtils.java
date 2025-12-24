@@ -143,9 +143,6 @@ public abstract class ServletUtils {
       for (Pattern p : excludePatterns) {
         Matcher matcher = p.matcher(requestPath);
         if (matcher.lookingAt()) {
-          if (chain != null) {
-            chain.doFilter(request, response);
-          }
           return true;
         }
       }
