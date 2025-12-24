@@ -28,6 +28,13 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Filter to identify paths that should be processed by Jetty's DefaultServlet. Typically, these
+ * paths contain static resources that need to be returned verbatim, with appropriate content type,
+ * which Jetty will determine via
+ *
+ * <p>{@code org.eclipse.jetty.http.MimeTypes#getMimeByExtension(java.lang.String)}
+ */
 public class PathExclusionFilter extends HttpFilter {
 
   private List<Pattern> excludePatterns;
