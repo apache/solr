@@ -16,9 +16,6 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.servlet.ServletUtils.configExcludes;
-import static org.apache.solr.servlet.ServletUtils.excludedPath;
-
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -26,31 +23,40 @@ import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class PathExclusionFilter extends HttpFilter implements PathExcluder {
+public class PathExclusionFilter extends HttpFilter {
 
   private List<Pattern> excludePatterns;
 
+  boolean shouldBeExcluded(HttpServletRequest request) {
+    String requestPath = ServletUtils.getPathAfterContext(request);
+    if (excludePatterns != null) {
+      return excludePatterns.stream().map(p -> p.matcher(requestPath)).anyMatch(Matcher::lookingAt);
+    }
+    return false;
+  }
+
   @Override
   public void init(FilterConfig config) throws ServletException {
-    configExcludes(this, config.getInitParameter("excludePatterns"));
+    String patternConfig = config.getInitParameter("excludePatterns");
+    if (patternConfig != null) {
+      String[] excludeArray = patternConfig.split(",");
+      this.excludePatterns = Arrays.stream(excludeArray).map(Pattern::compile).toList();
+    }
     super.init(config);
   }
 
   @Override
   protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
       throws IOException, ServletException {
-    if (!excludedPath(excludePatterns, req, res, chain)) {
+    if (!shouldBeExcluded(req)) {
       chain.doFilter(req, res);
     } else {
       req.getServletContext().getNamedDispatcher("default").forward(req, res);
     }
-  }
-
-  @Override
-  public void setExcludePatterns(List<Pattern> excludePatterns) {
-    this.excludePatterns = excludePatterns;
   }
 }
