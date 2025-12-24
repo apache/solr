@@ -56,6 +56,8 @@ public class PathExclusionFilter extends HttpFilter {
     if (!shouldBeExcluded(req)) {
       chain.doFilter(req, res);
     } else {
+      // N.B. "default" is the name for org.eclipse.jetty.ee10.servlet.DefaultServlet
+      // configured in solr/server/etc/webdefault.xml
       req.getServletContext().getNamedDispatcher("default").forward(req, res);
     }
   }
