@@ -16,22 +16,31 @@
  */
 package org.apache.solr.servlet;
 
+import java.nio.file.Path;
 import java.util.Date;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.cookie.DateUtils;
+import org.apache.http.client.utils.DateUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** A test case for the several HTTP cache headers emitted by Solr */
 public class NoCacheHeaderTest extends CacheHeaderTestBase {
-  // TODO: fix this test not to directly use the test-files copied to build/
-  // as its home. it could interfere with other tests!
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(TEST_HOME(), "solr/collection1/conf/solrconfig-nocache.xml", null);
+    Path solrHome = createTempDir();
+    Path collectionDirectory = solrHome.resolve(DEFAULT_TEST_COLLECTION_NAME);
+
+    // Create minimal config with custom nocache solrconfig
+    copyMinConf(
+        collectionDirectory,
+        "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n",
+        "solrconfig-nocache.xml");
+
+    solrJettyTestRule.startSolr(solrHome);
   }
 
   // The tests
