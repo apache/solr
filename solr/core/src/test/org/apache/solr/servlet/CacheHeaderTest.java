@@ -64,7 +64,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     checkVetoHeaders(response);
   }
 
-
   @SuppressForbidden(reason = "Needs currentTimeMillis to check against expiry headers from Solr")
   protected void checkVetoHeaders(HttpResponse response) {
     Header head = response.getFirstHeader("Cache-Control");
@@ -250,5 +249,4 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
       assertNotNull("We got no Expires header in response", head);
     }
   }
-
 }
