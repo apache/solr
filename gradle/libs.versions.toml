@@ -36,7 +36,7 @@ apache-httpcomponents-httpclient = "4.5.14"
 apache-httpcomponents-httpcore = "4.4.16"
 apache-httpcomponents-httpmime = "4.5.14"
 apache-kafka = "3.9.1"
-apache-log4j = "2.21.0"
+apache-log4j = "2.25.3"
 apache-lucene = "10.3.2"
 apache-opennlp = "2.5.6"
 apache-rat = "0.15"
@@ -45,7 +45,6 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
 apiguardian = "1.1.2"
-aqute-bnd = "6.4.1"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide
@@ -74,6 +73,7 @@ commons-codec = "1.19.0"
 commons-io = "2.20.0"
 compose = "1.8.2"
 cutterslade-analyze = "1.10.0"
+cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
@@ -86,7 +86,7 @@ eclipse-jetty = "12.0.27"
 # @keep jgit version used by git-status.gradle
 eclipse-jgit = "7.3.0.202506031305-r"
 essenty = "2.5.0"
-fasterxml = "2.20.0"
+fasterxml = "2.20.1"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
@@ -157,7 +157,7 @@ kotlinx-serialization = "1.9.0"
 # @keep used by spotless
 ktlint = "1.7.1"
 ktor = "3.2.2"
-langchain4j = "0.35.0"
+langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
 littlerobots-versioncatalogupdate = "0.8.5"
@@ -182,7 +182,6 @@ openjdk-jmh = "1.37"
 opentelemetry = "1.56.0"
 opentelemetry-prometheus = "1.56.0-alpha"
 opentelemetry-runtime-telemetry = "2.22.0-alpha"
-osgi-annotation = "8.1.0"
 oshai-logging = "7.0.13"
 # @keep for version alignment
 ow2-asm = "9.8"
@@ -303,7 +302,6 @@ apache-zookeeper-jute = { module = "org.apache.zookeeper:zookeeper-jute", versio
 apache-zookeeper-zookeeper = { module = "org.apache.zookeeper:zookeeper", version.ref = "apache-zookeeper" }
 # @keep transitive dependency for version alignment
 apiguardian-api = { module = "org.apiguardian:apiguardian-api", version.ref = "apiguardian" }
-aqute-bnd-annotation = { module = "biz.aQute.bnd:biz.aQute.bnd.annotation", version.ref = "aqute-bnd" }
 bc-jose4j = { module = "org.bitbucket.b_c:jose4j", version.ref = "bc-jose4j" }
 benmanes-caffeine = { module = "com.github.ben-manes.caffeine:caffeine", version.ref = "benmanes-caffeine" }
 bouncycastle-bcpkix = { module = "org.bouncycastle:bcpkix-jdk18on", version.ref = "bouncycastle" }
@@ -319,6 +317,7 @@ codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", versi
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
+cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
 decompose-decompose = { module = "com.arkivanov.decompose:decompose", version.ref = "decompose" }
@@ -448,11 +447,12 @@ ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotia
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
 ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
 ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere", version.ref = "langchain4j" }
-langchain4j-core = { module = "dev.langchain4j:langchain4j-core", version.ref = "langchain4j" }
-langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face", version.ref = "langchain4j" }
-langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai", version.ref = "langchain4j" }
-langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai", version.ref = "langchain4j" }
+langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
+langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
+langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }
+langchain4j-hugging-face = { module = "dev.langchain4j:langchain4j-hugging-face" }
+langchain4j-mistral-ai = { module = "dev.langchain4j:langchain4j-mistral-ai" }
+langchain4j-open-ai = { module = "dev.langchain4j:langchain4j-open-ai" }
 lmax-disruptor = { module = "com.lmax:disruptor", version.ref = "lmax-disruptor" }
 locationtech-spatial4j = { module = "org.locationtech.spatial4j:spatial4j", version.ref = "spatial4j" }
 mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
@@ -489,7 +489,6 @@ opentelemetry-sdk-extension-autoconfigure = { module = "io.opentelemetry:opentel
 opentelemetry-sdk-metrics = { module = "io.opentelemetry:opentelemetry-sdk-metrics", version.ref = "opentelemetry" }
 opentelemetry-sdk-testing = { module = "io.opentelemetry:opentelemetry-sdk-testing", version.ref = "opentelemetry" }
 opentelemetry-sdk-trace = { module = "io.opentelemetry:opentelemetry-sdk-trace", version.ref = "opentelemetry" }
-osgi-annotation = { module = "org.osgi:osgi.annotation", version.ref = "osgi-annotation" }
 oshai-logging = { module = "io.github.oshai:kotlin-logging", version.ref = "oshai-logging" }
 # @keep transitive dependency for version alignment
 ow2-asm-asm = { module = "org.ow2.asm:asm", version.ref = "ow2-asm" }
