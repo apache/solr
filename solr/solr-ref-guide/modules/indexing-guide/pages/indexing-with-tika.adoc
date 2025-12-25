@@ -252,7 +252,7 @@ Example: `defaultField=\_text_`
 |Optional |Default: `tikaserver`
 |===
 +
-Specifies the backend to use for extraction. As of Solr 10, only `tikaserver` is supported.
+Specifies the backend to use for extraction. As of Solr 9.11, only `tikaserver` is supported.
 This parameter is optional since `tikaserver` is the only available backend.
 +
 Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
