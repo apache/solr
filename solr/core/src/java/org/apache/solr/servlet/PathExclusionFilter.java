@@ -18,6 +18,7 @@ package org.apache.solr.servlet;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
+import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -60,12 +61,20 @@ public class PathExclusionFilter extends HttpFilter {
   @Override
   protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
       throws IOException, ServletException {
-    if (!shouldBeExcluded(req)) {
-      chain.doFilter(req, res);
-    } else {
+    if (shouldBeExcluded(req)) {
       // N.B. "default" is the name for org.eclipse.jetty.ee10.servlet.DefaultServlet
-      // configured in solr/server/etc/webdefault.xml
-      req.getServletContext().getNamedDispatcher("default").forward(req, res);
+      // configured in solr/server/etc/webdefault.xml if it doesn't exist something is
+      // very wrong.
+      RequestDispatcher defaultServlet = req.getServletContext().getNamedDispatcher("default");
+      if (defaultServlet == null) {
+        res.sendError(
+            500,
+            "Server Misconfiguration: cannot find default servlet (normally defined as org.eclipse.jetty.ee10.servlet.DefaultServlet in webdefault.xml)");
+      } else {
+        defaultServlet.forward(req, res);
+      }
+    } else {
+      chain.doFilter(req, res);
     }
   }
 }
