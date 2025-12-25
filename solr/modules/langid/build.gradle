@@ -23,7 +23,9 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')
 
-  implementation ('org.apache.tika:tika-core') { transitive = false }
+  implementation ('org.apache.tika:tika-langdetect-tika') {
+    exclude group: 'com.optimaize.languagedetector', module: 'language-detector'
+  }
   implementation 'commons-io:commons-io'
   implementation 'com.cybozu.labs:langdetect'
   // NOTE: Currently not defined in versions.props since we need to stay on same version as Lucene due to opennlp

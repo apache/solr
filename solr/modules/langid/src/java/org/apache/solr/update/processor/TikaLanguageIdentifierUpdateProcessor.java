@@ -22,16 +22,17 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.tika.language.LanguageIdentifier;
+import org.apache.tika.langdetect.tika.LanguageIdentifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Identifies the language of a set of input fields using Tika's LanguageIdentifier. The
- * tika-core-x.y.jar must be on the classpath
+ * Identifies the language of a set of input fields using Tika's LanguageIdentifier. Requires
+ * tika-langdetect-tika-3.x.jar on the classpath.
  *
  * <p>See <a
- * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection</a>
+ * href="https://solr.apache.org/guide/solr/latest/indexing-guide/language-detection.html#configuring-tika-language-detection">
+ * Language Detection Documentation</a>
  *
  * @since 3.5
  * @deprecated Since 9.10, use {@link OpenNLPLangDetectUpdateProcessor} instead.
