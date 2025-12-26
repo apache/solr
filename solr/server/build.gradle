@@ -133,6 +133,12 @@ task assemblePackaging(type: Sync) {
     rename { file -> 'start.jar' }
   }
 
+  // SIP-6: Copy solr-start.jar from bootstrap module (to server root, like start.jar)
+  dependsOn ':solr:bootstrap:jar'
+  from({ project(':solr:bootstrap').tasks.jar.archiveFile }) {
+    rename { file -> 'solr-start.jar' }
+  }
+
   dependsOn configurations.webapp
   from( { zipTree(configurations.webapp.asPath) }, {
     into "solr-webapp/webapp"
