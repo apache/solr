@@ -125,6 +125,13 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
+  // Add BouncyCastle from bootstrap module (needed for SSL certificate generation)
+  dependsOn ':solr:bootstrap:exportBouncyCastle'
+  from(file("${rootDir}/solr/bootstrap/build/bouncycastle")) {
+    include "*.jar"
+    into "lib/ext"
+  }
+
   from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
     into "lib/"
   })

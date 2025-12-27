@@ -112,6 +112,9 @@ public class ConnectorFactory {
     ServerConnector connector = new ServerConnector(server, ssl, alpn, http2, http1);
     configureConnectorBasics(connector, config.getHttpsPort());
 
+    // Setup SSL keystore reload if enabled
+    SslReloadHandler.setupSslReload(server, sslContextFactory);
+
     return connector;
   }
 

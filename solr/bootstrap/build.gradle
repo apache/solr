@@ -53,6 +53,16 @@ dependencies {
   implementation libs.slf4j.api
   implementation libs.slf4j.jultoslf4j  // For SLF4J bridge
   implementation libs.apache.log4j.api
+
+  // BouncyCastle for SSL certificate generation
+  implementation libs.bouncycastle.bcprov
+  implementation libs.bouncycastle.bcpkix
+
+  // Test dependencies
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
+  testImplementation libs.carrotsearch.randomizedtesting.runner
 }
 
 // Create executable JAR
@@ -69,3 +79,17 @@ jar {
     )
   }
 }
+
+// Export BouncyCastle JARs for server module packaging
+// This avoids adding BouncyCastle to server module's dependency graph
+task exportBouncyCastle(type: Copy) {
+  from {
+    configurations.runtimeClasspath.files.findAll {
+      it.name.startsWith('bc') && it.name.contains('jdk18on') && it.name.endsWith('.jar')
+    }
+  }
+  into "${buildDir}/bouncycastle"
+}
+
+// Make jar task depend on exportBouncyCastle so it's available when server module needs it
+jar.finalizedBy exportBouncyCastle

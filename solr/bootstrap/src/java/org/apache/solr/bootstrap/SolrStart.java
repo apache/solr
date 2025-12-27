@@ -17,7 +17,9 @@
 package org.apache.solr.bootstrap;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Paths;
 import java.util.Random;
+import org.apache.solr.common.util.EnvUtils;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -28,9 +30,9 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 /**
- * Main entry point for Solr bootstrap (SIP-6 Phase 1). Replaces Jetty's start.jar with native
- * Solr code that programmatically configures and starts Jetty. This gives Solr full control over
- * the bootstrap process.
+ * Main entry point for Solr bootstrap (SIP-6 Phase 1). Replaces Jetty's start.jar with native Solr
+ * code that programmatically configures and starts Jetty. This gives Solr full control over the
+ * bootstrap process.
  *
  * <p>Usage: java -jar solr-start.jar [with system properties]
  *
@@ -68,19 +70,45 @@ public class SolrStart {
     log.info("║  SIP-6 Phase 1: Solr owns the bootstrap process              ║");
     log.info("╚══════════════════════════════════════════════════════════════╝");
 
+    // 2.5. Configure SSL (auto-generation or user-provided keystores)
+    SslCertificateGenerator.SslConfiguration sslConfig = SslCertificateGenerator.configureSsl();
+
+    if (sslConfig != null) {
+      // Set server-side SSL properties
+      if (sslConfig.isGenerated()) {
+        // Auto-generated certificate
+        System.setProperty("solr.jetty.https.port", System.getProperty("solr.port.listen", "8983"));
+        System.setProperty("solr.ssl.key.store", sslConfig.getGeneratedKeystorePath().toString());
+        System.setProperty("solr.ssl.key.store.password", sslConfig.getGeneratedPassword());
+        System.setProperty("solr.ssl.key.store.type", "PKCS12");
+        System.setProperty(
+            "solr.ssl.trust.store", sslConfig.getGeneratedKeystorePath().toString());
+        System.setProperty("solr.ssl.trust.store.password", sslConfig.getGeneratedPassword());
+        System.setProperty("solr.ssl.trust.store.type", "PKCS12");
+      } else {
+        // User provided keystores - enable HTTPS
+        System.setProperty("solr.jetty.https.port", System.getProperty("solr.port.listen", "8983"));
+      }
+
+      // Set client-side SSL properties (for outbound HTTP connections)
+      configureClientSsl();
+    }
+
     // 3. Load configuration from system properties
     ServerConfiguration config = ServerConfiguration.fromSystemProperties();
-    log.info(
-        "Solr bootstrap configuration: port={}, host={}, solrHome={}, jettyHome={}",
-        config.getPort(),
-        config.getHost(),
-        config.getSolrHome(),
-        config.getJettyHome());
-    log.info(
-        "Thread pool: minThreads={}, maxThreads={}, idleTimeout={}ms",
-        config.getMinThreads(),
-        config.getMaxThreads(),
-        config.getThreadIdleTimeout());
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Solr bootstrap configuration: port={}, host={}, solrHome={}, jettyHome={}",
+          config.getPort(),
+          config.getHost(),
+          config.getSolrHome(),
+          config.getJettyHome());
+      log.info(
+          "Thread pool: minThreads={}, maxThreads={}, idleTimeout={}ms",
+          config.getMinThreads(),
+          config.getMaxThreads(),
+          config.getThreadIdleTimeout());
+    }
 
     // 4. Create thread pool
     QueuedThreadPool threadPool = new QueuedThreadPool();
@@ -102,10 +130,15 @@ public class SolrStart {
     ServerConnector[] connectors = connectorFactory.createConnectors(server);
     server.setConnectors(connectors);
 
-    if (config.isHttpsEnabled()) {
-      log.info("Created HTTPS connector on {}:{}", config.getHost(), config.getHttpsPort());
-    } else {
-      log.info("Created HTTP connector on {}:{}", config.getHost(), config.getPort());
+    if (log.isInfoEnabled()) {
+      String host = config.getHost();
+      if (config.isHttpsEnabled()) {
+        int httpsPort = config.getHttpsPort();
+        log.info("Created HTTPS connector on {}:{}", host, httpsPort);
+      } else {
+        int port = config.getPort();
+        log.info("Created HTTP connector on {}:{}", host, port);
+      }
     }
 
     // 7. Add session management
@@ -136,19 +169,22 @@ public class SolrStart {
     // Log actual bound port (may differ if port was 0)
     int actualPort = ((ServerConnector) server.getConnectors()[0]).getLocalPort();
     log.info("╔══════════════════════════════════════════════════════════════╗");
-    log.info(
-        "║  Solr bootstrap started successfully on {}:{}{}║",
-        config.getHost(),
-        actualPort,
-        actualPort < 10000 ? "                  " : "                 ");
+    if (log.isInfoEnabled()) {
+      log.info(
+          "║  Solr bootstrap started successfully on {}:{}{}║",
+          config.getHost(),
+          actualPort,
+          actualPort < 10000 ? "                  " : "                 ");
+    }
     log.info("╚══════════════════════════════════════════════════════════════╝");
 
-    // 11. Jetty's ShutdownMonitor automatically initializes based on STOP.PORT/STOP.KEY system properties
+    // 11. Jetty's ShutdownMonitor automatically initializes based on STOP.PORT/STOP.KEY system
+    // properties
     // No manual configuration needed - Jetty handles this internally when those properties are set
-    if (config.getStopPort() > 0) {
+    int stopPort = config.getStopPort();
+    if (stopPort > 0 && log.isInfoEnabled()) {
       log.info(
-          "Shutdown monitor configured via STOP.PORT={} (Jetty auto-initialization)",
-          config.getStopPort());
+          "Shutdown monitor configured via STOP.PORT={} (Jetty auto-initialization)", stopPort);
     }
 
     // 12. Wait for server to finish
@@ -157,5 +193,55 @@ public class SolrStart {
     log.info("╔══════════════════════════════════════════════════════════════╗");
     log.info("║  Solr bootstrap shutdown complete                            ║");
     log.info("╚══════════════════════════════════════════════════════════════╝");
+  }
+
+  /**
+   * Configure client SSL properties (javax.net.ssl.*) for outbound HTTPS connections. This is
+   * required for SolrCloud node-to-node communication when SSL is enabled.
+   *
+   * <p>Implements fallback pattern from old bin/solr: use client-specific keystores if provided,
+   * otherwise fallback to server keystores.
+   */
+  private static void configureClientSsl() {
+    // Client keystore (fallback to server keystore if not specified)
+    String clientKeyStore = EnvUtils.getProperty("solr.ssl.client.key.store");
+    if (clientKeyStore == null) {
+      clientKeyStore = EnvUtils.getProperty("solr.ssl.key.store");
+    }
+    if (clientKeyStore != null) {
+      System.setProperty("javax.net.ssl.keyStore", clientKeyStore);
+
+      String clientKeyStoreType = EnvUtils.getProperty("solr.ssl.client.key.store.type");
+      if (clientKeyStoreType == null) {
+        clientKeyStoreType = EnvUtils.getProperty("solr.ssl.key.store.type", "PKCS12");
+      }
+      System.setProperty("javax.net.ssl.keyStoreType", clientKeyStoreType);
+    }
+
+    // Client truststore (fallback to server truststore if not specified)
+    String clientTrustStore = EnvUtils.getProperty("solr.ssl.client.trust.store");
+    if (clientTrustStore == null) {
+      clientTrustStore = EnvUtils.getProperty("solr.ssl.trust.store");
+    }
+    if (clientTrustStore != null) {
+      System.setProperty("javax.net.ssl.trustStore", clientTrustStore);
+
+      String clientTrustStoreType = EnvUtils.getProperty("solr.ssl.client.trust.store.type");
+      if (clientTrustStoreType == null) {
+        clientTrustStoreType = EnvUtils.getProperty("solr.ssl.trust.store.type", "PKCS12");
+      }
+      System.setProperty("javax.net.ssl.trustStoreType", clientTrustStoreType);
+    }
+
+    // Set parent paths for security manager when SSL reload is enabled
+    if (EnvUtils.getPropertyAsBool("solr.keystore.reload.enabled", true)
+        && EnvUtils.getPropertyAsBool("solr.security.manager.enabled", false)) {
+      if (clientKeyStore != null) {
+        System.setProperty(
+            "javax.net.ssl.keyStoreParentPath", Paths.get(clientKeyStore).getParent().toString());
+      }
+    }
+
+    log.info("Client SSL configured: keyStore={}, trustStore={}", clientKeyStore, clientTrustStore);
   }
 }

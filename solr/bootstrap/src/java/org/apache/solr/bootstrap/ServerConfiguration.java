@@ -66,6 +66,7 @@ public class ServerConfiguration {
   private final int stsMaxAge;
   private final boolean stsIncludeSubdomains;
   private final String sslProvider;
+  private final boolean sslCheckPeerName;
 
   // GZIP
   private final boolean gzipEnabled;
@@ -122,6 +123,7 @@ public class ServerConfiguration {
     this.stsMaxAge = builder.stsMaxAge;
     this.stsIncludeSubdomains = builder.stsIncludeSubdomains;
     this.sslProvider = builder.sslProvider;
+    this.sslCheckPeerName = builder.sslCheckPeerName;
     this.gzipEnabled = builder.gzipEnabled;
     this.gzipMinSize = builder.gzipMinSize;
     this.gzipIncludedMethods = builder.gzipIncludedMethods;
@@ -144,7 +146,7 @@ public class ServerConfiguration {
         .setSolrHome(EnvUtils.getProperty("solr.solr.home"))
         .setInstallDir(EnvUtils.getProperty("solr.install.dir"))
         .setLogsDir(EnvUtils.getProperty("solr.logs.dir"))
-        .setJettyHome(EnvUtils.getProperty("jetty.home"))
+        .setJettyHome(EnvUtils.getProperty("solr.jetty.home"))
         // Thread pool
         .setMinThreads(EnvUtils.getPropertyAsInteger("solr.jetty.threads.min", 10))
         .setMaxThreads(EnvUtils.getPropertyAsInteger("solr.jetty.threads.max", 10000))
@@ -154,16 +156,13 @@ public class ServerConfiguration {
             EnvUtils.getPropertyAsInteger("solr.jetty.threads.stop.timeout", 60000))
         // HTTP configuration
         .setSecurePort(EnvUtils.getPropertyAsInteger("solr.jetty.secure.port", 8443))
-        .setOutputBufferSize(
-            EnvUtils.getPropertyAsInteger("solr.jetty.output.buffer.size", 32768))
+        .setOutputBufferSize(EnvUtils.getPropertyAsInteger("solr.jetty.output.buffer.size", 32768))
         .setOutputAggregationSize(
             EnvUtils.getPropertyAsInteger("solr.jetty.output.aggregation.size", 8192))
-        .setRequestHeaderSize(
-            EnvUtils.getPropertyAsInteger("solr.jetty.request.header.size", 8192))
+        .setRequestHeaderSize(EnvUtils.getPropertyAsInteger("solr.jetty.request.header.size", 8192))
         .setResponseHeaderSize(
             EnvUtils.getPropertyAsInteger("solr.jetty.response.header.size", 8192))
-        .setSendServerVersion(
-            EnvUtils.getPropertyAsBool("solr.jetty.send.server.version", false))
+        .setSendServerVersion(EnvUtils.getPropertyAsBool("solr.jetty.send.server.version", false))
         .setSendDateHeader(EnvUtils.getPropertyAsBool("solr.jetty.send.date.header", false))
         .setHeaderCacheSize(EnvUtils.getPropertyAsInteger("solr.jetty.header.cache.size", 512))
         .setDelayDispatchUntilContent(
@@ -172,39 +171,40 @@ public class ServerConfiguration {
         // HTTPS/SSL - enabled if https port is specified
         .setHttpsEnabled(EnvUtils.getProperty("solr.jetty.https.port") != null)
         .setHttpsPort(EnvUtils.getPropertyAsInteger("solr.jetty.https.port", 8443))
-        .setKeyStorePath(
-            EnvUtils.getProperty("solr.jetty.keystore", "./etc/solr-ssl.keystore.jks"))
-        .setKeyStorePassword(EnvUtils.getProperty("solr.jetty.keystore.password"))
+        .setKeyStorePath(EnvUtils.getProperty("solr.ssl.key.store", "./etc/solr-ssl.keystore.jks"))
+        .setKeyStorePassword(EnvUtils.getProperty("solr.ssl.key.store.password"))
         .setTrustStorePath(
-            EnvUtils.getProperty("solr.jetty.truststore", "./etc/solr-ssl.keystore.jks"))
-        .setTrustStorePassword(EnvUtils.getProperty("solr.jetty.truststore.password"))
+            EnvUtils.getProperty("solr.ssl.trust.store", "./etc/solr-ssl.keystore.jks"))
+        .setTrustStorePassword(EnvUtils.getProperty("solr.ssl.trust.store.password"))
         .setNeedClientAuth(
             EnvUtils.getPropertyAsBool("solr.jetty.ssl.need.client.auth.enabled", false))
         .setWantClientAuth(
             EnvUtils.getPropertyAsBool("solr.jetty.ssl.want.client.auth.enabled", false))
-        .setKeyStoreType(EnvUtils.getProperty("solr.jetty.keystore.type", "PKCS12"))
-        .setTrustStoreType(EnvUtils.getProperty("solr.jetty.truststore.type", "PKCS12"))
+        .setKeyStoreType(EnvUtils.getProperty("solr.ssl.key.store.type", "PKCS12"))
+        .setTrustStoreType(EnvUtils.getProperty("solr.ssl.trust.store.type", "PKCS12"))
         .setSniRequired(EnvUtils.getPropertyAsBool("solr.jetty.ssl.sniRequired", false))
-        .setSniHostCheck(
-            EnvUtils.getPropertyAsBool("solr.jetty.ssl.sni.host.check.enabled", true))
+        .setSniHostCheck(EnvUtils.getPropertyAsBool("solr.jetty.ssl.sni.host.check.enabled", true))
         .setStsMaxAge(EnvUtils.getPropertyAsInteger("solr.jetty.ssl.sts.max.age.secs", -1))
         .setStsIncludeSubdomains(
             EnvUtils.getPropertyAsBool("solr.jetty.ssl.sts.include.subdomains.enabled", false))
         .setSslProvider(EnvUtils.getProperty("solr.jetty.ssl.provider"))
+        .setSslCheckPeerName(EnvUtils.getPropertyAsBool("solr.ssl.check.peer.name.enabled", true))
         // GZIP
         .setGzipEnabled(true) // Always enabled in Phase 1
-        .setGzipMinSize(EnvUtils.getPropertyAsInteger("jetty.gzip.minGzipSize", 2048))
-        .setGzipIncludedMethods(EnvUtils.getProperty("jetty.gzip.includedMethodList", "GET,POST"))
+        .setGzipMinSize(EnvUtils.getPropertyAsInteger("solr.jetty.gzip.minGzipSize", 2048))
+        .setGzipIncludedMethods(
+            EnvUtils.getProperty("solr.jetty.gzip.includedMethodList", "GET,POST"))
         .setGzipDeflaterPoolCapacity(
-            EnvUtils.getPropertyAsInteger("jetty.gzip.deflaterPoolCapacity", 1024))
-        .setGzipCompressionLevel(EnvUtils.getPropertyAsInteger("jetty.gzip.compressionLevel", -1))
+            EnvUtils.getPropertyAsInteger("solr.jetty.gzip.deflaterPoolCapacity", 1024))
+        .setGzipCompressionLevel(
+            EnvUtils.getPropertyAsInteger("solr.jetty.gzip.compressionLevel", -1))
         // IP Access Control
         .setIpAccessIncludes(EnvUtils.getProperty("solr.jetty.inetaccess.includes", ""))
         .setIpAccessExcludes(EnvUtils.getProperty("solr.jetty.inetaccess.excludes", ""))
-        // Shutdown
+        // Shutdown (using Jetty's default property names for auto-initialization)
         .setStopPort(EnvUtils.getPropertyAsInteger("STOP.PORT", 0))
         .setStopKey(EnvUtils.getProperty("STOP.KEY", ""))
-        .setStopTimeout(15000) // 15 seconds for graceful shutdown
+        .setStopTimeout(EnvUtils.getPropertyAsInteger("solr.jetty.stop.timeout", 15000))
         // Request logging
         .setRequestLoggingEnabled(
             EnvUtils.getPropertyAsBool("solr.jetty.requestlog.enabled", false))
@@ -352,6 +352,10 @@ public class ServerConfiguration {
     return sslProvider;
   }
 
+  public boolean isSslCheckPeerName() {
+    return sslCheckPeerName;
+  }
+
   public boolean isGzipEnabled() {
     return gzipEnabled;
   }
@@ -437,6 +441,7 @@ public class ServerConfiguration {
     private int stsMaxAge = -1;
     private boolean stsIncludeSubdomains = false;
     private String sslProvider;
+    private boolean sslCheckPeerName = true;
     private boolean gzipEnabled = true;
     private int gzipMinSize = 2048;
     private String gzipIncludedMethods = "GET,POST";
@@ -621,6 +626,11 @@ public class ServerConfiguration {
 
     public Builder setSslProvider(String sslProvider) {
       this.sslProvider = sslProvider;
+      return this;
+    }
+
+    public Builder setSslCheckPeerName(boolean sslCheckPeerName) {
+      this.sslCheckPeerName = sslCheckPeerName;
       return this;
     }
 

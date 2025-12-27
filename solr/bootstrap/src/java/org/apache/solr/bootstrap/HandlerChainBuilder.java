@@ -19,7 +19,6 @@ package org.apache.solr.bootstrap;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
-import jakarta.servlet.ServletContextListener;
 import java.lang.invoke.MethodHandles;
 import java.util.EnumSet;
 import java.util.Properties;
@@ -30,7 +29,6 @@ import org.eclipse.jetty.ee10.servlet.FilterHolder;
 import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
-import org.eclipse.jetty.http.UriCompliance;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
 import org.eclipse.jetty.rewrite.handler.RedirectRegexRule;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -40,7 +38,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.InetAccessHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
-import org.eclipse.jetty.util.ClassMatcher;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 import org.slf4j.Logger;
@@ -89,7 +86,8 @@ public class HandlerChainBuilder {
 
   /**
    * Create ServletContextHandler for Solr webapp, configured programmatically without web.xml. Adds
-   * CoreContainerProvider and SolrDispatchFilter directly via Java code, following JettySolrRunner pattern.
+   * CoreContainerProvider and SolrDispatchFilter directly via Java code, following JettySolrRunner
+   * pattern.
    *
    * @param server the Jetty server
    * @return the ServletContextHandler
@@ -171,8 +169,8 @@ public class HandlerChainBuilder {
   }
 
   /**
-   * Wrap handler with RewriteHandler for security headers and URL rewrites. Mirrors
-   * jetty.xml RewriteHandler configuration.
+   * Wrap handler with RewriteHandler for security headers and URL rewrites. Mirrors jetty.xml
+   * RewriteHandler configuration.
    *
    * @param handler the handler to wrap
    * @return RewriteHandler
@@ -276,8 +274,7 @@ public class HandlerChainBuilder {
       }
     }
 
-    log.info(
-        "Created InetAccessHandler with includes='{}' and excludes='{}'", includes, excludes);
+    log.info("Created InetAccessHandler with includes='{}' and excludes='{}'", includes, excludes);
 
     return ipHandler;
   }
@@ -300,10 +297,12 @@ public class HandlerChainBuilder {
     }
     gzip.setIncludedMethods(methods);
 
-    log.info(
-        "Created GzipHandler with minSize={} and methods={}",
-        config.getGzipMinSize(),
-        config.getGzipIncludedMethods());
+    if (log.isInfoEnabled()) {
+      log.info(
+          "Created GzipHandler with minSize={} and methods={}",
+          config.getGzipMinSize(),
+          config.getGzipIncludedMethods());
+    }
 
     return gzip;
   }
