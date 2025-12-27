@@ -65,7 +65,6 @@ public abstract class HttpSolrClient extends SolrClient {
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
   protected final String baseUrl;
-  protected final String defaultCollection;
   protected final long requestTimeoutMillis;
 
   protected final Set<String> urlParamNames;
