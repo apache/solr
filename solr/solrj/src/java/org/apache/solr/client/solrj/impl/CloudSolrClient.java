@@ -142,15 +142,15 @@ public abstract class CloudSolrClient extends SolrClient {
 
     // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
     // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
-    private static final Constructor<? extends HttpSolrClientBuilderBase<?, ?>>
+    private static final Constructor<? extends HttpSolrClient.BuilderBase<?, ?>>
         HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
 
     static {
-      Constructor<? extends HttpSolrClientBuilderBase<?, ?>> ctor = null;
+      Constructor<? extends HttpSolrClient.BuilderBase<?, ?>> ctor = null;
       try {
         @SuppressWarnings("unchecked")
-        Class<? extends HttpSolrClientBuilderBase<?, ?>> builderClass =
-            (Class<? extends HttpSolrClientBuilderBase<?, ?>>)
+        Class<? extends HttpSolrClient.BuilderBase<?, ?>> builderClass =
+            (Class<? extends HttpSolrClient.BuilderBase<?, ?>>)
                 Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
         ctor = builderClass.getDeclaredConstructor();
         ctor.newInstance(); // perhaps fails because Jetty libs aren't on the classpath
@@ -168,12 +168,12 @@ public abstract class CloudSolrClient extends SolrClient {
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
     protected String zkChroot;
-    protected HttpSolrClientBase httpClient;
+    protected HttpSolrClient httpClient;
     protected boolean shardLeadersOnly = true;
     protected boolean directUpdatesToLeadersOnly = false;
     protected boolean parallelUpdates = true;
     protected ClusterStateProvider stateProvider;
-    protected HttpSolrClientBuilderBase<?, ?> internalClientBuilder;
+    protected HttpSolrClient.BuilderBase<?, ?> internalClientBuilder;
     protected RequestWriter requestWriter;
     protected ResponseParser responseParser;
     protected long retryExpiryTimeNano =
@@ -371,7 +371,7 @@ public abstract class CloudSolrClient extends SolrClient {
      *
      * @return this
      */
-    public Builder withHttpClient(HttpSolrClientBase httpSolrClient) {
+    public Builder withHttpClient(HttpSolrClient httpSolrClient) {
       if (this.internalClientBuilder != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -388,7 +388,7 @@ public abstract class CloudSolrClient extends SolrClient {
      * @param internalClientBuilder the builder to use for creating the internal http client.
      * @return this
      */
-    public Builder withHttpClientBuilder(HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
+    public Builder withHttpClientBuilder(HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
       if (this.httpClient != null) {
         throw new IllegalStateException(
             "The builder can't accept an httpClient AND an internalClientBuilder, only one of those can be provided");
@@ -399,7 +399,7 @@ public abstract class CloudSolrClient extends SolrClient {
 
     @Deprecated(since = "9.10")
     public Builder withInternalClientBuilder(
-        HttpSolrClientBuilderBase<?, ?> internalClientBuilder) {
+        HttpSolrClient.BuilderBase<?, ?> internalClientBuilder) {
       return withHttpClientBuilder(internalClientBuilder);
     }
 
@@ -443,14 +443,14 @@ public abstract class CloudSolrClient extends SolrClient {
       return new CloudHttp2SolrClient(this);
     }
 
-    protected HttpSolrClientBase createOrGetHttpClient() {
+    protected HttpSolrClient createOrGetHttpClient() {
       if (httpClient != null) {
         return httpClient;
       } else if (internalClientBuilder != null) {
         return internalClientBuilder.build();
       }
 
-      HttpSolrClientBuilderBase<?, ?> builder;
+      HttpSolrClient.BuilderBase<?, ?> builder;
       if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
         try {
           log.debug("Using HttpJettySolrClient as the delegate http client");
@@ -467,7 +467,7 @@ public abstract class CloudSolrClient extends SolrClient {
       return builder.build();
     }
 
-    protected LBSolrClient createOrGetLbClient(HttpSolrClientBase myClient) {
+    protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
       return myClient.createLBSolrClient();
     }
 
@@ -481,7 +481,7 @@ public abstract class CloudSolrClient extends SolrClient {
       return stateProvider;
     }
 
-    protected ClusterStateProvider createHttpClusterStateProvider(HttpSolrClientBase httpClient) {
+    protected ClusterStateProvider createHttpClusterStateProvider(HttpSolrClient httpClient) {
       try {
         return new HttpClusterStateProvider<>(solrUrls, httpClient);
       } catch (Exception e) {

@@ -182,7 +182,6 @@ openjdk-jmh = "1.37"
 opentelemetry = "1.56.0"
 opentelemetry-prometheus = "1.56.0-alpha"
 opentelemetry-runtime-telemetry = "2.22.0-alpha"
-osgi-annotation = "8.1.0"
 oshai-logging = "7.0.13"
 # @keep for version alignment
 ow2-asm = "9.8"

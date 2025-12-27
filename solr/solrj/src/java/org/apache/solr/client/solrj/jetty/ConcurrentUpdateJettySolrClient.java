@@ -26,7 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -46,7 +46,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
-     *     HttpSolrClientBase)
+     *     HttpSolrClient)
      */
     public Builder(String baseUrl, HttpJettySolrClient client) {
       this(baseUrl, client, false);
@@ -54,7 +54,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
 
     /**
      * @see org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient.Builder#Builder(String,
-     *     HttpSolrClientBase, boolean)
+     *     HttpSolrClient, boolean)
      */
     public Builder(String baseSolrUrl, HttpJettySolrClient client, boolean closeHttpClient) {
       super(baseSolrUrl, client, closeHttpClient);

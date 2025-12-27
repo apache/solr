@@ -71,7 +71,7 @@ import org.slf4j.LoggerFactory;
  * This client will connect to solr using Http/2 but can seamlessly downgrade to Http/1.1 when
  * connecting to Solr hosts running on older versions.
  */
-public class HttpJdkSolrClient extends HttpSolrClientBase {
+public class HttpJdkSolrClient extends HttpSolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String USER_AGENT =
@@ -551,7 +551,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   @Override
-  public HttpSolrClientBuilderBase<?, ?> builder() {
+  public BuilderBase<?, ?> builder() {
     return new HttpJdkSolrClient.Builder().withHttpClient(this);
   }
 
@@ -560,8 +560,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     return new LBSolrClient.Builder<>(this).build();
   }
 
-  public static class Builder
-      extends HttpSolrClientBuilderBase<HttpJdkSolrClient.Builder, HttpJdkSolrClient> {
+  public static class Builder extends BuilderBase<Builder, HttpJdkSolrClient> {
 
     private SSLContext sslContext;
 

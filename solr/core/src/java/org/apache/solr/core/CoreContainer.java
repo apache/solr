@@ -69,7 +69,7 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -705,7 +705,7 @@ public class CoreContainer {
    *
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
@@ -2440,7 +2440,7 @@ public class CoreContainer {
    * <p>The caller does not need to close the client.
    *
    * @return the existing {@link HttpJettySolrClient}
-   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
+   * @see HttpSolrClient#requestWithBaseUrl(String, SolrRequest, String)
    */
   public HttpJettySolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();

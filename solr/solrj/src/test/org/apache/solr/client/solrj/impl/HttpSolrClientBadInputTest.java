@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.impl;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
