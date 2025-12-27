@@ -114,7 +114,7 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
   }
 
   /**
-   * Create a new solr client. If createJetty was called, a http implementation will be created,
+   * Create a new solr client. If createJetty was called, an http implementation will be created,
    * otherwise an embedded implementation will be created. Subclasses should override for other
    * options.
    */

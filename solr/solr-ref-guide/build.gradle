@@ -546,8 +546,10 @@ dependencies {
     // For the SolrJ examples
     testImplementation project(":solr:core")
     testImplementation project(":solr:solrj")
+    testRuntimeOnly project(":solr:modules:sql")
     testImplementation project(":solr:test-framework")
     testImplementation libs.junit.junit
+    testImplementation libs.apache.lucene.testframework
 }
 
 // Copy all the test resource files from SolrJ to the build/resources/test directory

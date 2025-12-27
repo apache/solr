@@ -115,7 +115,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * @param nodeCount the number of nodes
    */
   protected static MiniSolrCloudCluster.Builder configureCluster(int nodeCount) {
-    // By default the MiniSolrCloudCluster being built will randomly (seed based) decide which
+    // Default behavior is the MiniSolrCloudCluster being built will randomly (seed based) decide
+    // which
     // collection API strategy to use (distributed or Overseer based) and whether to use PRS
 
     configurePrsDefault();
@@ -370,9 +371,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Slice getRandomShard(DocCollection collection) {
     List<Slice> shards = new ArrayList<>(collection.getActiveSlices());
     if (shards.size() == 0)
-      fail(
-          "Couldn't get random shard for collection as it has no shards!\n"
-              + collection.toString());
+      fail("Couldn't get random shard for collection as it has no shards!\n" + collection);
     Collections.shuffle(shards, random());
     return shards.get(0);
   }
@@ -381,7 +380,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Replica getRandomReplica(Slice slice) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
-      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice);
     Collections.shuffle(replicas, random());
     return replicas.get(0);
   }
@@ -390,12 +389,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   protected static Replica getRandomReplica(Slice slice, Predicate<Replica> matchPredicate) {
     List<Replica> replicas = new ArrayList<>(slice.getReplicas());
     if (replicas.size() == 0)
-      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice.toString());
+      fail("Couldn't get random replica from shard as it has no replicas!\n" + slice);
     Collections.shuffle(replicas, random());
     for (Replica replica : replicas) {
       if (matchPredicate.test(replica)) return replica;
     }
-    fail("Couldn't get random replica that matched conditions\n" + slice.toString());
+    fail("Couldn't get random replica that matched conditions\n" + slice);
     return null; // just to keep the compiler happy - fail will always throw an Exception
   }
 
@@ -476,7 +475,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       for (Replica replica : slice.getReplicas()) {
         String coreUrl = replica.getCoreUrl();
         // It seems replica reports its core URL with a trailing slash while shard
-        // info returned from the query doesn't. Oh well. We will include both, just in case
+        // info returned from the query doesn't. Oh, well. We will include both, just in case
         replicaTypeMap.put(coreUrl, replica.getType().toString());
         if (coreUrl.endsWith("/")) {
           replicaTypeMap.put(

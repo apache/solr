@@ -207,10 +207,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     int foo_i_counter = 0;
     for (SolrClient client : clients) {
       foo_i_counter++;
-      indexDoc(
-          client,
-          params("commit", "true"), // SOLR-4923
-          sdoc(id, 1, i1, 100, tlong, 100, "foo_i", foo_i_counter));
+      indexDoc(client, sdoc(id, 1, i1, 100, tlong, 100, "foo_i", foo_i_counter));
       // after every update+commit, check all the shards consistency
       queryAndCompareShards(
           params("q", "id:1", "distrib", "false", "sanity_check", "non_distrib_id_1_lookup"));
