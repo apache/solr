@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -82,7 +82,7 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     for (Replica replica : clusterState.getCollection(COLL).getReplicas()) {
       clients.add(
-          new HttpSolrClient.Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .build());
     }

@@ -42,7 +42,7 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -243,7 +243,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
                   .get(0)
                   .getBaseUrl();
           try (var control =
-              new HttpSolrClient.Builder(control_collection)
+              new HttpApacheSolrClient.Builder(control_collection)
                   .withHttpClient(((CloudLegacySolrClient) client).getHttpClient())
                   .build()) {
             state = addReplica.processAndWait(control, 30);
@@ -308,7 +308,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
       var client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();
@@ -1287,7 +1287,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
     String baseUrl = shardToJetty.get(SHARD1).get(0).jetty.getBaseUrl().toString();
 
     try (SolrClient baseServer =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withConnectionTimeout(30, TimeUnit.SECONDS)
             .withSocketTimeout(5, TimeUnit.MINUTES)
             .build()) {

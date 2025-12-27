@@ -36,7 +36,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -522,7 +522,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
   protected int sendDoc(String collectionName, int docId, JettySolrRunner leaderJetty)
       throws IOException, SolrServerException {
     try (SolrClient solrClient =
-        new HttpSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
+        new HttpApacheSolrClient.Builder(leaderJetty.getBaseUrl().toString()).build()) {
       return sendDoc(docId, solrClient, collectionName);
     }
   }

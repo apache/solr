@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
@@ -96,7 +96,7 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
         (client1, client2) -> {
           try {
             if (client2 instanceof HttpJettySolrClient httpClient2
-                && client1 instanceof HttpSolrClient httpClient1)
+                && client1 instanceof HttpApacheSolrClient httpClient1)
               return new URI(httpClient1.getBaseURL()).getPort()
                   - new URI(httpClient2.getBaseURL()).getPort();
           } catch (URISyntaxException e) {

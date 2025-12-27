@@ -24,7 +24,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
@@ -106,7 +106,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
   }
 
   /** Set up a simple http proxy and verify a request works */
-  public void testProxy(HttpSolrClientBase client) throws Exception {
+  public void testProxy(HttpSolrClient client) throws Exception {
     String id = "1234";
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", id);

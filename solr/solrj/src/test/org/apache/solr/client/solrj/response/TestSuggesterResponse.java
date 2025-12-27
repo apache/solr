@@ -22,7 +22,7 @@ import java.util.Map;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
@@ -139,7 +139,7 @@ public class TestSuggesterResponse extends SolrJettyTestBase {
   private SolrClient createSuggestSolrClient() {
     final ResponseParser randomParser =
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
-    return new HttpSolrClient.Builder()
+    return new HttpApacheSolrClient.Builder()
         .withBaseSolrUrl(getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withResponseParser(randomParser)

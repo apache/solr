@@ -30,7 +30,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -234,7 +234,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
     SolrClient[] clients = new SolrClient[cluster.getJettySolrRunners().size()];
     int j = 0;
     for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-      clients[j++] = new HttpSolrClient.Builder(r.getBaseUrl().toString()).build();
+      clients[j++] = new HttpApacheSolrClient.Builder(r.getBaseUrl().toString()).build();
     }
     RequestStatusState state =
         CollectionAdminRequest.createCollection("testAsyncIdRaceCondition", "conf1", 1, 1)

@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -117,7 +117,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     int count = 0;
     for (Replica replica : shard.getReplicas()) {
       SolrClient client =
-          new Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .withHttpClient(((CloudLegacySolrClient) cloudClient).getHttpClient())
               .build();

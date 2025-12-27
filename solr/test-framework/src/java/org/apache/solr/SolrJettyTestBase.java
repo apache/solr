@@ -23,7 +23,7 @@ import java.util.SortedMap;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -119,13 +119,13 @@ public abstract class SolrJettyTestBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getBaseUrl())
+    return new HttpApacheSolrClient.Builder(getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .build();
   }
 
   protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    var client = (HttpApacheSolrClient) getSolrClient();
     return client.getHttpClient();
   }
 

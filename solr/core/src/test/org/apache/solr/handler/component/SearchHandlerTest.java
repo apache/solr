@@ -23,7 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -159,7 +159,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       JettySolrRunner jetty = miniCluster.getReplicaJetty(replica);
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient client =
-          new HttpSolrClient.Builder(replica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(replica.getBaseUrl())
               .withDefaultCollection(replica.getCoreName())
               .build()) {
         jetty.getCoreContainer().getZkController().getZkClient().close();
@@ -210,7 +210,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       req = new QueryRequest(params); // TODO Can be removed when SOLR-17314 fixed
       // Use the replica's core URL to avoid ZK communication
       try (SolrClient solrClient =
-          new HttpSolrClient.Builder(disconnectedReplica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(disconnectedReplica.getBaseUrl())
               .withDefaultCollection(disconnectedReplica.getCoreName())
               .build()) {
         ignoreException("ZooKeeper is not connected");
@@ -269,7 +269,7 @@ public class SearchHandlerTest extends SolrTestCaseJ4 {
       }
       Replica connectedReplica = connectedSlice.getReplicas().iterator().next();
       try (SolrClient solrClient =
-          new HttpSolrClient.Builder(connectedReplica.getBaseUrl())
+          new HttpApacheSolrClient.Builder(connectedReplica.getBaseUrl())
               .withDefaultCollection(connectedReplica.getCoreName())
               .build()) {
         ignoreException("ZooKeeper is not connected");

@@ -27,7 +27,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.slf4j.Logger;
@@ -62,7 +62,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
 
     cusc =
         new ErrorLoggingConcurrentUpdateSolrClient.Builder(
-                ((HttpSolrClient) clients.get(0)).getBaseURL())
+                ((HttpApacheSolrClient) clients.get(0)).getBaseURL())
             .withDefaultCollection(clients.get(0).getDefaultCollection())
             .withHttpClient(httpClient)
             .withQueueSize(8)
@@ -127,7 +127,7 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
       cusc.shutdownNow();
       cusc =
           new ErrorLoggingConcurrentUpdateSolrClient.Builder(
-                  ((HttpSolrClient) clients.get(clientIndex)).getBaseURL())
+                  ((HttpApacheSolrClient) clients.get(clientIndex)).getBaseURL())
               .withDefaultCollection(clients.get(clientIndex).getDefaultCollection())
               .withHttpClient(httpClient)
               .withQueueSize(30)

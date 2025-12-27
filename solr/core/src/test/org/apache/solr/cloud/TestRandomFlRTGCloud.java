@@ -38,7 +38,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -421,7 +421,9 @@ public class TestRandomFlRTGCloud extends SolrCloudTestCase {
   }
 
   private static SolrClient getSolrClient(final String jettyBaseUrl) {
-    return new HttpSolrClient.Builder(jettyBaseUrl).withDefaultCollection(COLLECTION_NAME).build();
+    return new HttpApacheSolrClient.Builder(jettyBaseUrl)
+        .withDefaultCollection(COLLECTION_NAME)
+        .build();
   }
 
   /**

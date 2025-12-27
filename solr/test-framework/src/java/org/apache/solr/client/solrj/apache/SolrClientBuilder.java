@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.Configurable;
-import org.apache.solr.client.solrj.apache.HttpSolrClient.Builder;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient.Builder;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 

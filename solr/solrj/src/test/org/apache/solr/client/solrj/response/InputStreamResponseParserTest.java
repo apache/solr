@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
@@ -61,7 +61,7 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
   public void testQueryParse() throws Exception {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(getBaseUrl())
+        new HttpApacheSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withResponseParser(new InputStreamResponseParser("xml"))
             .build()) {
