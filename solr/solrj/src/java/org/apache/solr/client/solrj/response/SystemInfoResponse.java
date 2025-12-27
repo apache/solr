@@ -18,6 +18,10 @@ package org.apache.solr.client.solrj.response;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
@@ -31,7 +35,7 @@ public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
-  private NodeSystemResponse fullResponse;
+  private final Map<String, NodeSystemResponse> nodesInfo = new HashMap<>();
 
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
@@ -41,82 +45,207 @@ public class SystemInfoResponse extends SolrResponseBase {
   @Override
   public void setResponse(NamedList<Object> response) {
     if (getResponse() == null) super.setResponse(response);
-    if (fullResponse == null) {
-      try {
-        fullResponse =
-            JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                getResponse(), NodeSystemResponse.class);
-      } catch (Throwable t) {
-        log.error("Cannot convert NamedList response to API model NodeSystemResponse", t);
+    if (getResponse().get("node") == null) {
+      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
+      for (Entry<String, Object> node : getResponse()) {
+        if (node.getKey().endsWith("_solr")) {
+          nodesInfo.put(
+              node.getKey(),
+              JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+                  node.getValue(), NodeSystemResponse.class));
+        }
       }
+    } else {
+      // single-node response
+      nodesInfo.put(
+          getResponse().get("node").toString(),
+          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+              getResponse(), NodeSystemResponse.class));
     }
   }
 
+  /** Get the mode from a single node system info */
   public String getMode() {
-    return getFullResponse().mode;
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().mode;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllModes', or 'getModeForNode(String)'.");
+    }
   }
 
+  /** Get all modes, per node */
+  public Map<String, String> getAllModes() {
+    Map<String, String> allModes = new HashMap<>();
+    nodesInfo.entrySet().stream().forEach(e -> allModes.put(e.getKey(), e.getValue().mode));
+    return allModes;
+  }
+
+  /** Get the mode for the given node name */
+  public String getModeForNode(String node) {
+    return nodesInfo.get(node).mode;
+  }
+
+  /** Get the ZK host from a single node system info */
   public String getZkHost() {
-    return getFullResponse().zkHost;
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().zkHost;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllZkHosts', or 'getZkHostForNode(String)'.");
+    }
   }
 
+  /** Get all ZK hosts, per node */
+  public Map<String, String> getAllZkHosts() {
+    Map<String, String> allModes = new HashMap<>();
+    nodesInfo.entrySet().stream().forEach(e -> allModes.put(e.getKey(), e.getValue().zkHost));
+    return allModes;
+  }
+
+  /** Get the ZK host for the given node name */
+  public String getZkHostForNode(String node) {
+    return nodesInfo.get(node).zkHost;
+  }
+
+  /** Get the Solr home from a single node system info */
   public String getSolrHome() {
-    return getFullResponse().solrHome;
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().solrHome;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllSolrHomes', or 'getSolrHomeForNode(String)'.");
+    }
   }
 
+  /** Get all Solr homes, per node */
+  public Map<String, String> getAllSolrHomes() {
+    Map<String, String> allModes = new HashMap<>();
+    nodesInfo.entrySet().stream().forEach(e -> allModes.put(e.getKey(), e.getValue().solrHome));
+    return allModes;
+  }
+
+  /** Get the Solr home for the given node name */
+  public String getSolrHomeForNode(String node) {
+    return nodesInfo.get(node).solrHome;
+  }
+
+  /** Get the core root from a single node system info */
   public String getCoreRoot() {
-    return getFullResponse().coreRoot;
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().coreRoot;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllCoreRoots', or 'getCoreRootForNode(String)'.");
+    }
   }
 
+  /** Get all core roots, per node */
+  public Map<String, String> getAllCoreRoots() {
+    Map<String, String> allModes = new HashMap<>();
+    nodesInfo.entrySet().stream().forEach(e -> allModes.put(e.getKey(), e.getValue().coreRoot));
+    return allModes;
+  }
+
+  /** Get the core root for the given node name */
+  public String getCoreRootForNode(String node) {
+    return nodesInfo.get(node).coreRoot;
+  }
+
+  /** Get the node name from a single node system info */
   public String getNode() {
-    return getFullResponse().node;
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().node;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllNodes', or 'getNodeForSolrHome(String)', or 'getNodeForCoreRoot(String)'.");
+    }
   }
 
-  public NodeSystemResponse getFullResponse() {
-    return fullResponse;
+  /** Get all nodes names */
+  public Set<String> getAllNodes() {
+    return nodesInfo.keySet();
+  }
+
+  /** Get the node name for the given Solr home */
+  public String getNodeForSolrHome(String solrHome) {
+    return nodesInfo.values().stream()
+        .filter(v -> solrHome.equals(v.solrHome))
+        .map(v -> v.node)
+        .findFirst()
+        .get();
+  }
+
+  /** Get the node name for the given core root */
+  public String getNodeForCoreRoot(String coreRoot) {
+    return nodesInfo.values().stream()
+        .filter(v -> coreRoot.equals(v.coreRoot))
+        .map(v -> v.node)
+        .findFirst()
+        .get();
+  }
+
+  /** Get the {@code NodeSystemResponse} for a single node */
+  public NodeSystemResponse getNodeResponse() {
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().get();
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllNodeResponses', or 'getNodeResponseForNode(String)'.");
+    }
+  }
+
+  /** Get all {@code NodeSystemResponse}s */
+  public Map<String, NodeSystemResponse> getAllNodeResponses() {
+    return nodesInfo;
+  }
+
+  /** Get the {@code NodeSystemResponse} for the given node name */
+  public NodeSystemResponse getNodeResponseForNode(String node) {
+    return nodesInfo.get(node);
   }
 
   public String getSolrImplVersion() {
-    return getFullResponse() != null && getFullResponse().lucene != null
-        ? getFullResponse().lucene.solrImplVersion
+    return getNodeResponse() != null && getNodeResponse().lucene != null
+        ? getNodeResponse().lucene.solrImplVersion
         : null;
   }
 
   public String getSolrSpecVersion() {
-    return getFullResponse() != null && getFullResponse().lucene != null
-        ? getFullResponse().lucene.solrSpecVersion
+    return getNodeResponse() != null && getNodeResponse().lucene != null
+        ? getNodeResponse().lucene.solrSpecVersion
         : null;
   }
 
   public Date getJVMStartTime() {
-    return getFullResponse() != null
-            && getFullResponse().jvm != null
-            && getFullResponse().jvm.jmx != null
-        ? getFullResponse().jvm.jmx.startTime
+    return getNodeResponse() != null
+            && getNodeResponse().jvm != null
+            && getNodeResponse().jvm.jmx != null
+        ? getNodeResponse().jvm.jmx.startTime
         : null;
   }
 
   public Long getJVMUpTimeMillis() {
-    return getFullResponse() != null
-            && getFullResponse().jvm != null
-            && getFullResponse().jvm.jmx != null
-        ? getFullResponse().jvm.jmx.upTimeMS
+    return getNodeResponse() != null
+            && getNodeResponse().jvm != null
+            && getNodeResponse().jvm.jmx != null
+        ? getNodeResponse().jvm.jmx.upTimeMS
         : null;
   }
 
   public String getHumanReadableJVMMemoryUsed() {
-    return getFullResponse() != null
-            && getFullResponse().jvm != null
-            && getFullResponse().jvm.memory != null
-        ? getFullResponse().jvm.memory.used
+    return getNodeResponse() != null
+            && getNodeResponse().jvm != null
+            && getNodeResponse().jvm.memory != null
+        ? getNodeResponse().jvm.memory.used
         : null;
   }
 
   public String getHumanReadableJVMMemoryTotal() {
-    return getFullResponse() != null
-            && getFullResponse().jvm != null
-            && getFullResponse().jvm.memory != null
-        ? getFullResponse().jvm.memory.total
+    return getNodeResponse() != null
+            && getNodeResponse().jvm != null
+            && getNodeResponse().jvm.memory != null
+        ? getNodeResponse().jvm.memory.total
         : null;
   }
 }
