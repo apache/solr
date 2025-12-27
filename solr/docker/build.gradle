@@ -168,11 +168,6 @@ def getBuildxBuilderInfo = {
   return builderCheckOutput.toString()
 }
 
-// Helper method to validate Docker Buildx builder is available
-def validateBuildxBuilder = {
-  getBuildxBuilderInfo()
-}
-
 
 task assemblePackaging(type: Sync) {
   description = 'Assemble docker scripts and Dockerfile for Solr Packaging'
@@ -197,51 +192,21 @@ task dockerBuild() {
 
   // Ensure that the docker image is rebuilt on build-arg changes or changes in the docker context
   inputs.properties([
-          baseDockerImage: baseDockerImage,
-          dockerImagePlatforms: dockerImagePlatforms
+          baseDockerImage: baseDockerImage
   ])
-  var solrTgzConfiguration = getSolrTgzConfiguration()
+  var solrTgzConfiguration = isImageSlim() ? configurations.solrSlimTgz : configurations.solrFullTgz
   inputs.files(solrTgzConfiguration)
   inputs.property("isSlimImage", isImageSlim())
-  inputs.property("isMultiPlatform", isMultiPlatform())
   dependsOn(solrTgzConfiguration)
 
   doLast {
-    def platformValue = inputs.properties.dockerImagePlatforms.toString().trim()
-    validatePlatformFormat(platformValue)
-    def useSinglePlatform = !platformValue.isEmpty() && !platformValue.contains(',')
-
-    // Multi-platform builds are not supported by dockerBuild, only by dockerPush
-    if (isMultiPlatform()) {
-      throw new GradleException("Multi-platform builds (SOLR_DOCKER_PLATFORM with multiple platforms) are not supported by dockerBuild.\n" +
-              "Please use 'dockerPush' instead, which will build and push the multi-platform image in a single step.\n" +
-              "Example: SOLR_DOCKER_PLATFORM=linux/arm64,linux/amd64 ./gradlew dockerPush")
-    }
-
-    if (useSinglePlatform) {
-      // Single-platform build with explicit platform using buildx
-      validateBuildxBuilder()
-
-      exec {
-        standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
-        commandLine "docker", "buildx", "build",
-                "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
-                "--platform", platformValue,
-                "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
-                "--iidfile", imageIdFile,
-                "--load",
-                "-"
-      }
-    } else {
-      // Standard build for current architecture
-      exec {
-        standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
-        commandLine "docker", "build",
-                "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
-                "--iidfile", imageIdFile,
-                "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
-                "-"
-      }
+    exec {
+      standardInput = solrTgzConfiguration.singleFile.newDataInputStream()
+      commandLine "docker", "build",
+              "-f", "solr-${ -> project.version }${dockerImageDistSuffix}/docker/Dockerfile",
+              "--iidfile", imageIdFile,
+              "--build-arg", "BASE_IMAGE=${ -> inputs.properties.baseDockerImage}",
+              "-"
     }
   }
 
@@ -249,13 +214,10 @@ task dockerBuild() {
   doLast {
     def dockerImageId = file(imageIdFile).text
     project.logger.lifecycle("Solr Docker Image Created")
-    project.logger.lifecycle("\tID/Ref: \t${ -> dockerImageId }")
+    project.logger.lifecycle("\tID: \t${ -> dockerImageId }")
     project.logger.lifecycle("\tBase Image: \t${ -> baseDockerImage }")
     project.logger.lifecycle("\tSolr Version: \t${ -> project.version }")
     project.logger.lifecycle("\tSolr Distribution: \t${isImageSlim() ? "Slim" : "Full"}")
-    if (!dockerImagePlatforms.isEmpty()) {
-      project.logger.lifecycle("\tPlatforms: \t${ -> dockerImagePlatforms }")
-    }
   }
 
   outputs.files(imageIdFile)
