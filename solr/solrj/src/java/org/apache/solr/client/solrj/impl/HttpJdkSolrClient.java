@@ -551,8 +551,8 @@ public class HttpJdkSolrClient extends HttpSolrClient {
   }
 
   @Override
-  public BuilderBase<?, ?> builder() {
-    return new HttpJdkSolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJdkSolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   @Override

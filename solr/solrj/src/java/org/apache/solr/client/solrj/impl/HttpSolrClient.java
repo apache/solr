@@ -20,6 +20,8 @@ package org.apache.solr.client.solrj.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -46,14 +48,20 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A simple/direct {@link SolrClient} using HTTP.
  *
+ * <p>The protected methods can be considered as internal / unstable APIs.
+ *
+ * @see #builder(String)
  * @see org.apache.solr.client.solrj.jetty.HttpJettySolrClient
  * @see org.apache.solr.client.solrj.impl.HttpJdkSolrClient
  */
 public abstract class HttpSolrClient extends SolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
   protected final String baseUrl;
@@ -107,11 +115,6 @@ public abstract class HttpSolrClient extends SolrClient {
   public String getBaseURL() {
     return baseUrl;
   }
-
-  /**
-   * @lucene.internal
-   */
-  public abstract BuilderBase<?, ?> builder();
 
   /**
    * @lucene.internal
@@ -377,6 +380,60 @@ public abstract class HttpSolrClient extends SolrClient {
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
+  }
+
+  /**
+   * @lucene.internal
+   */
+  protected abstract BuilderBase<?, ?> toBuilder(String baseUrl);
+
+  // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
+  // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
+  private static final Constructor<? extends BuilderBase<?, ?>> HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
+
+  static {
+    Constructor<? extends HttpSolrClient.BuilderBase<?, ?>> ctor = null;
+    try {
+      @SuppressWarnings("unchecked")
+      Class<? extends HttpSolrClient.BuilderBase<?, ?>> builderClass =
+          (Class<? extends HttpSolrClient.BuilderBase<?, ?>>)
+              Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
+      ctor = builderClass.getDeclaredConstructor();
+      ctor.newInstance(); // perhaps fails because Jetty libs aren't on the classpath
+    } catch (Throwable t) {
+      // Class not present or incompatible; leave ctor as null to indicate unavailability
+      if (log.isTraceEnabled()) {
+        log.trace(
+            "HttpJettySolrClient$Builder not available on classpath; will use HttpJdkSolrClient",
+            t);
+      }
+    }
+    HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;
+  }
+
+  /**
+   * Provides a new builder of an {@link HttpSolrClient}. The implementation will try to create a
+   * {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient} if available, otherwise will
+   * fall back on {@link HttpJdkSolrClient}.
+   *
+   * @param baseUrl for {@link BuilderBase#withBaseSolrUrl(String)}.
+   */
+  public static BuilderBase<?, ?> builder(String baseUrl) {
+    HttpSolrClient.BuilderBase<?, ?> builder;
+    if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
+      try {
+        log.debug("Using HttpJettySolrClient as the delegate http client");
+        builder = HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR.newInstance();
+      } catch (RuntimeException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      log.debug("Using HttpJdkSolrClient as the delegate http client");
+      builder = new HttpJdkSolrClient.Builder();
+    }
+    return builder.withBaseSolrUrl(baseUrl);
   }
 
   public abstract static class BuilderBase<B extends BuilderBase<?, ?>, C extends HttpSolrClient> {

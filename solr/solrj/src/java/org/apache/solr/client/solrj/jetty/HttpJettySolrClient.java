@@ -539,8 +539,8 @@ public class HttpJettySolrClient extends HttpSolrClient {
   }
 
   @Override
-  public BuilderBase<?, ?> builder() {
-    return new HttpJettySolrClient.Builder().withHttpClient(this);
+  protected BuilderBase<?, ?> toBuilder(String baseUrl) {
+    return new HttpJettySolrClient.Builder(baseUrl).withHttpClient(this);
   }
 
   // merely exposing for superclass's method visibility to this package

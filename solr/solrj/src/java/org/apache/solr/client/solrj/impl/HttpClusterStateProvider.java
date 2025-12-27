@@ -51,7 +51,7 @@ public class HttpClusterStateProvider<C extends HttpSolrClient>
   @Override
   @SuppressWarnings("unchecked")
   protected C getSolrClient(String baseUrl) {
-    return (C) httpClient.builder().withBaseSolrUrl(baseUrl).build();
+    return (C) httpClient.toBuilder(baseUrl).build();
   }
 
   public C getHttpClient() {

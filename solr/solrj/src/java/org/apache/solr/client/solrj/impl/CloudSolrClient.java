@@ -21,7 +21,6 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -138,32 +137,6 @@ public abstract class CloudSolrClient extends SolrClient {
    * based {@code HttpClient} if available, or will otherwise use the JDK.
    */
   public static class Builder {
-    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-    // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
-    // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
-    private static final Constructor<? extends HttpSolrClient.BuilderBase<?, ?>>
-        HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
-
-    static {
-      Constructor<? extends HttpSolrClient.BuilderBase<?, ?>> ctor = null;
-      try {
-        @SuppressWarnings("unchecked")
-        Class<? extends HttpSolrClient.BuilderBase<?, ?>> builderClass =
-            (Class<? extends HttpSolrClient.BuilderBase<?, ?>>)
-                Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
-        ctor = builderClass.getDeclaredConstructor();
-        ctor.newInstance(); // perhaps fails because Jetty libs aren't on the classpath
-      } catch (Throwable t) {
-        // Class not present or incompatible; leave ctor as null to indicate unavailability
-        if (log.isTraceEnabled()) {
-          log.trace(
-              "HttpJettySolrClient$Builder not available on classpath; will use HttpJdkSolrClient",
-              t);
-        }
-      }
-      HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;
-    }
 
     protected Collection<String> zkHosts = new ArrayList<>();
     protected List<String> solrUrls = new ArrayList<>();
@@ -448,23 +421,9 @@ public abstract class CloudSolrClient extends SolrClient {
         return httpClient;
       } else if (internalClientBuilder != null) {
         return internalClientBuilder.build();
-      }
-
-      HttpSolrClient.BuilderBase<?, ?> builder;
-      if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
-        try {
-          log.debug("Using HttpJettySolrClient as the delegate http client");
-          builder = HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR.newInstance();
-        } catch (RuntimeException e) {
-          throw e;
-        } catch (Exception e) {
-          throw new RuntimeException(e);
-        }
       } else {
-        log.debug("Using HttpJdkSolrClient as the delegate http client");
-        builder = new HttpJdkSolrClient.Builder();
+        return HttpSolrClient.builder(null).build();
       }
-      return builder.build();
     }
 
     protected LBSolrClient createOrGetLbClient(HttpSolrClient myClient) {
