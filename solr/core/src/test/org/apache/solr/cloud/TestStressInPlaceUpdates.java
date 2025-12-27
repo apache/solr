@@ -29,8 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.commons.math3.primes.Primes;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -681,7 +681,7 @@ public class TestStressInPlaceUpdates extends AbstractFullDistribZkTestBase {
 
     for (SolrClient client : clients) {
       String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
-      if (((HttpSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) {
+      if (((HttpApacheSolrClient) client).getBaseURL().startsWith(leaderBaseUrl)) {
         return client;
       }
     }

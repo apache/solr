@@ -48,7 +48,6 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -144,7 +143,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     q.setParam("a", "\u1234");
     final var queryRequest = new QueryRequest(q);
     queryRequest.setPath(debugPath);
-    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
+    try (var client = getHttpSolrClient(getBaseUrl())) {
 
       expectThrows(RemoteSolrException.class, () -> queryRequest.process(client));
 
@@ -283,7 +282,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     final String debugPath = "/debug/foo";
 
-    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
+    try (var client = getHttpSolrClient(getBaseUrl())) {
       final UpdateRequest deleteById = new UpdateRequest();
       deleteById.deleteById("id");
       deleteById.setPath(debugPath + deleteById.getPath());
@@ -347,7 +346,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     DebugServlet.clear();
     final String debugPath = "/debug/foo";
 
-    try (HttpSolrClient client = getHttpSolrClient(getBaseUrl())) {
+    try (var client = getHttpSolrClient(getBaseUrl())) {
       UpdateRequest req = new UpdateRequest();
       req.add(new SolrInputDocument());
       req.setPath(debugPath + req.getPath());
@@ -652,7 +651,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
     }
   }
 
-  private void verifyServletState(HttpSolrClient client, SolrRequest<?> request) {
+  private void verifyServletState(HttpApacheSolrClient client, SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -661,7 +660,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       if (values != null) {
         for (String value : values) {
           boolean shouldBeInQueryString =
-              ((HttpApacheSolrClient) client).getUrlParamNames().contains(name)
+              client.getUrlParamNames().contains(name)
                   || (request.getQueryParams() != null && request.getQueryParams().contains(name));
           assertEquals(
               shouldBeInQueryString, DebugServlet.queryString.contains(name + "=" + value));
@@ -678,8 +677,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
   public void testQueryString() throws Exception {
     final String debugPath = "/debug/foo";
     HttpApacheSolrClient.Builder builder = new HttpApacheSolrClient.Builder(getBaseUrl());
-    try (HttpSolrClient client =
-        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
+    try (var client = builder.withTheseParamNamesInTheUrl(Set.of("serverOnly")).build()) {
       // test without request query params
       DebugServlet.clear();
       UpdateRequest req = new UpdateRequest();
@@ -688,7 +686,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(RemoteSolrException.class, () -> client.request(req));
       verifyServletState(client, req);
     }
-    try (HttpSolrClient client = builder.withTheseParamNamesInTheUrl(Set.of()).build()) {
+    try (var client = builder.withTheseParamNamesInTheUrl(Set.of()).build()) {
       // test without server query params
       DebugServlet.clear();
       UpdateRequest req2 = new UpdateRequest();
@@ -698,8 +696,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(RemoteSolrException.class, () -> client.request(req2));
       verifyServletState(client, req2);
     }
-    try (HttpSolrClient client =
-        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
+    try (var client = builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params
       DebugServlet.clear();
       UpdateRequest req3 = new UpdateRequest();
@@ -709,8 +706,7 @@ public class BasicHttpSolrClientTest extends SolrJettyTestBase {
       expectThrows(RemoteSolrException.class, () -> client.request(req3));
       verifyServletState(client, req3);
     }
-    try (HttpSolrClient client =
-        builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
+    try (var client = builder.withTheseParamNamesInTheUrl(Set.of("serverOnly", "both")).build()) {
       // test with both request and server query params with single stream
       DebugServlet.clear();
       UpdateRequest req4 = new UpdateRequest();

@@ -81,7 +81,6 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
@@ -2634,12 +2633,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
-  public static HttpSolrClient getHttpSolrClient(String url) {
+  public static HttpApacheSolrClient getHttpSolrClient(String url) {
     return new HttpApacheSolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
-  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+  public static HttpApacheSolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
   }
 
@@ -2652,7 +2651,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
    */
-  public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
+  public static HttpApacheSolrClient getHttpSolrClient(String url, String defaultCoreName) {
     return new HttpApacheSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 

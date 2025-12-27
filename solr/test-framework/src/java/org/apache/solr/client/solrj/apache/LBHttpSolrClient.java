@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
@@ -102,7 +101,8 @@ public class LBHttpSolrClient extends LBSolrClient {
 
   private final HttpClient httpClient;
   private final boolean clientIsInternal;
-  private final ConcurrentHashMap<String, HttpSolrClient> urlToClient = new ConcurrentHashMap<>();
+  private final ConcurrentHashMap<String, HttpApacheSolrClient> urlToClient =
+      new ConcurrentHashMap<>();
   private final HttpApacheSolrClient.Builder httpSolrClientBuilder;
   private volatile Set<String> urlParamNames = new HashSet<>();
 

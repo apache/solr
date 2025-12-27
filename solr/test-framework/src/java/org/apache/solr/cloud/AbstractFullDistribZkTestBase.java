@@ -52,7 +52,6 @@ import org.apache.solr.cli.ConfigSetUploadTool;
 import org.apache.solr.cli.DefaultToolRuntime;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.cli.ToolRuntime;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
@@ -977,7 +976,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       // we find out state by simply matching ports...
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
-          int port = new URI(((HttpSolrClient) client).getBaseURL()).getPort();
+          int port = new URI(((HttpApacheSolrClient) client).getBaseURL()).getPort();
 
           if (replica.getBaseUrl().contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
@@ -2060,7 +2059,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         Map<String, Replica> theShards = slice.getValue().getReplicasMap();
         for (Map.Entry<String, Replica> shard : theShards.entrySet()) {
           String shardName =
-              new URI(((HttpSolrClient) client.solrClient).getBaseURL()).getPort() + "_solr_";
+              new URI(((HttpApacheSolrClient) client.solrClient).getBaseURL()).getPort() + "_solr_";
           if (verbose && shard.getKey().endsWith(shardName)) {
             System.err.println("shard:" + slice.getKey());
             System.err.println(shard.getValue());

@@ -41,6 +41,7 @@ import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
@@ -739,7 +740,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("id", "DOCID2");
     doc.addField("name", "hello");
 
-    if (client instanceof HttpSolrClient) {
+    if (client instanceof HttpApacheSolrClient) {
       ex = expectThrows(SolrException.class, () -> client.add(doc));
       assertEquals(400, ex.code());
       assertTrue(ex.getMessage().indexOf("contains multiple values for uniqueKey") > 0);
@@ -2428,7 +2429,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField(field, oper);
     try {
       client.add(doc);
-      if (client instanceof HttpSolrClient) {
+      if (client instanceof HttpApacheSolrClient) {
         // XXX concurrent client reports exceptions differently
         fail("Operation should throw an exception!");
       } else if (client instanceof ErrorTrackingConcurrentUpdateSolrClient concurrentClient) {

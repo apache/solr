@@ -27,9 +27,9 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.client.solrj.HttpSolrClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -159,7 +159,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     List<SolrError> errors;
     CommitUpdateCommand ccmd = new CommitUpdateCommand(null, false);
     long numFound;
-    HttpSolrClient client;
+    HttpApacheSolrClient client;
     ZkNodeProps nodeProps;
 
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
@@ -167,7 +167,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
-              ((HttpSolrClient) controlClient).getBaseURL(),
+              ((HttpApacheSolrClient) controlClient).getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
               controlClient.getDefaultCollection());
       nodes.add(new StdNode(new ZkCoreNodeProps(nodeProps)));
@@ -190,7 +190,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       numFound = controlClient.query(new SolrQuery("*:*")).getResults().getNumFound();
       assertEquals(1, numFound);
 
-      client = (HttpSolrClient) clients.get(0);
+      client = (HttpApacheSolrClient) clients.get(0);
       nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
@@ -281,7 +281,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           if (random().nextBoolean()) {
             continue;
           }
-          HttpSolrClient httpClient = (HttpSolrClient) c;
+          var httpClient = (HttpApacheSolrClient) c;
           nodeProps =
               new ZkNodeProps(
                   ZkStateReader.BASE_URL_PROP,
@@ -301,7 +301,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       nodes.clear();
 
       for (SolrClient c : clients) {
-        HttpSolrClient httpClient = (HttpSolrClient) c;
+        var httpClient = (HttpApacheSolrClient) c;
         nodeProps =
             new ZkNodeProps(
                 ZkStateReader.BASE_URL_PROP,
@@ -377,7 +377,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testDeletes(boolean dbq, boolean withFailures) throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     solrclient.commit(true, true);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
@@ -445,7 +445,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testMinRfOnRetries(NodeType nodeType) throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
@@ -507,7 +507,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
       streamingClients.setExp(Exp.CONNECT_EXCEPTION);
       ArrayList<Node> nodes = new ArrayList<>();
-      final HttpSolrClient solrClient1 = (HttpSolrClient) clients.get(0);
+      final var solrClient1 = (HttpApacheSolrClient) clients.get(0);
 
       final AtomicInteger retries = new AtomicInteger();
       ZkNodeProps nodeProps =
@@ -625,7 +625,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testOneRetry(NodeType nodeType) throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
@@ -686,7 +686,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
   private void testNodeWontRetryBadRequest(NodeType nodeType) throws Exception {
     ignoreException("Bad Request");
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
@@ -747,7 +747,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testForwardNodeWontRetrySocketError() throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
@@ -796,7 +796,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testStdNodeRetriesSocketError() throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+    final var solrclient = (HttpApacheSolrClient) clients.get(0);
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
@@ -836,7 +836,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   private void testRetryNodeAgainstBadAddress() throws SolrServerException, IOException {
     // Test RetryNode
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
-      final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
+      final var solrclient = (HttpApacheSolrClient) clients.get(0);
       long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
       ArrayList<Node> nodes = new ArrayList<>();
@@ -926,7 +926,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
           if (random().nextBoolean()) {
             continue;
           }
-          HttpSolrClient httpClient = (HttpSolrClient) c;
+          var httpClient = (HttpApacheSolrClient) c;
           ZkNodeProps nodeProps =
               new ZkNodeProps(
                   ZkStateReader.BASE_URL_PROP,
