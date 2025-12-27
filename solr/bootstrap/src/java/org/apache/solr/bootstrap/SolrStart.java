@@ -17,7 +17,7 @@
 package org.apache.solr.bootstrap;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.Random;
 import org.apache.solr.common.util.EnvUtils;
 import org.eclipse.jetty.server.Handler;
@@ -81,8 +81,7 @@ public class SolrStart {
         System.setProperty("solr.ssl.key.store", sslConfig.getGeneratedKeystorePath().toString());
         System.setProperty("solr.ssl.key.store.password", sslConfig.getGeneratedPassword());
         System.setProperty("solr.ssl.key.store.type", "PKCS12");
-        System.setProperty(
-            "solr.ssl.trust.store", sslConfig.getGeneratedKeystorePath().toString());
+        System.setProperty("solr.ssl.trust.store", sslConfig.getGeneratedKeystorePath().toString());
         System.setProperty("solr.ssl.trust.store.password", sslConfig.getGeneratedPassword());
         System.setProperty("solr.ssl.trust.store.type", "PKCS12");
       } else {
@@ -238,7 +237,7 @@ public class SolrStart {
         && EnvUtils.getPropertyAsBool("solr.security.manager.enabled", false)) {
       if (clientKeyStore != null) {
         System.setProperty(
-            "javax.net.ssl.keyStoreParentPath", Paths.get(clientKeyStore).getParent().toString());
+            "javax.net.ssl.keyStoreParentPath", Path.of(clientKeyStore).getParent().toString());
       }
     }
 

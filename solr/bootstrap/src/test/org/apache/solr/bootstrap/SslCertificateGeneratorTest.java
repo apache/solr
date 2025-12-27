@@ -16,14 +16,14 @@
  */
 package org.apache.solr.bootstrap;
 
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 
-import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.Before;
@@ -48,23 +48,23 @@ public class SslCertificateGeneratorTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     // Clean up temp directory
-    deleteDirectory(tempDir.toFile());
+    deleteDirectory(tempDir);
     super.tearDown();
   }
 
-  private void deleteDirectory(File dir) {
-    if (dir.exists()) {
-      File[] files = dir.listFiles();
-      if (files != null) {
-        for (File file : files) {
-          if (file.isDirectory()) {
-            deleteDirectory(file);
-          } else {
-            file.delete();
-          }
-        }
+  private void deleteDirectory(Path dir) throws Exception {
+    if (Files.exists(dir)) {
+      try (Stream<Path> walk = Files.walk(dir)) {
+        walk.sorted(Comparator.reverseOrder())
+            .forEach(
+                path -> {
+                  try {
+                    Files.delete(path);
+                  } catch (Exception e) {
+                    // Ignore deletion errors during cleanup
+                  }
+                });
       }
-      dir.delete();
     }
   }
 

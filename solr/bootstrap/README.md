@@ -1,3 +1,20 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
 # Solr Bootstrap Module
 
 ## Overview
@@ -52,28 +69,28 @@ The Bootstrap module provides a complete Jetty server bootstrap implementation:
 | **Security Headers** | Manual configuration | Built-in via `HandlerChainBuilder` |
 | **Entry Point** | `java -jar start.jar` | `org.apache.solr.bootstrap.SolrStart` |
 
-## Testing with bin/solr-bootstrap
+## Testing with bin/solr
 
-The `bin/solr-bootstrap` script is a **temporary testing wrapper** for the bootstrap module. It will eventually be integrated into the main `bin/solr` script.
+The `bin/solr` script now starts Solr through the bootstrap module. The old script is found at `bin/solr-classic`.
 
 ### Basic Testing Examples
 
 ```bash
 # Start Solr in HTTP mode (default)
-bin/solr-bootstrap start
+bin/solr start
 
 # Check that Solr is running
-bin/solr-bootstrap status
+bin/solr status
 
 # Stop Solr
-bin/solr-bootstrap stop
+bin/solr stop
 ```
 
 ### Testing SSL Auto-Generation
 
 ```bash
 # Enable SSL with auto-generated certificate
-SOLR_SSL_ENABLED=true bin/solr-bootstrap start
+SOLR_SSL_ENABLED=true bin/solr start
 
 # Verify HTTPS endpoint (will show certificate details)
 curl -vk https://localhost:8983/solr/admin/info/system
@@ -83,7 +100,7 @@ ls -l $SOLR_PID_DIR/solr-ssl.keystore.p12
 # Example: ls -l solr/packaging/build/dev-slim/server/logs/solr-ssl.keystore.p12
 
 # Stop
-bin/solr-bootstrap stop
+bin/solr stop
 ```
 
 ## Module Architecture
@@ -329,18 +346,18 @@ For a complete list of configurable properties, see `ServerConfiguration.java`.
 ### Implementation Status
 
 - **Phase 1: Complete** - Bootstrap module fully implemented
-- **Testing**: Using temporary `bin/solr-bootstrap` script
+- **Testing**: Using temporary `bin/solr` script
 - **Integration**: Pending integration into main `bin/solr` script
 
 ### Testing and Validation
 
-Committers are encouraged to test the bootstrap module using `bin/solr-bootstrap` and report any issues. The module includes comprehensive unit tests in:
+Committers are encouraged to test the bootstrap module using `bin/solr` and report any issues. The module includes comprehensive unit tests in:
 - `src/test/org/apache/solr/bootstrap/SslCertificateGeneratorTest.java`
 - `src/test/org/apache/solr/bootstrap/ServerConfigurationTest.java`
 
 ### Future Integration
 
-Once validated, the bootstrap module will be integrated into the main `bin/solr` startup script, and `bin/solr-bootstrap` will be removed. The transition will be seamless for users, maintaining backward compatibility with existing configurations.
+Once validated, the bootstrap module will be integrated into the main `bin/solr` startup script, and `bin/solr` will be removed. The transition will be seamless for users, maintaining backward compatibility with existing configurations.
 
 ### SIP-6 Next Phases
 

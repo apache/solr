@@ -24,35 +24,25 @@ dependencies {
   implementation project(':solr:core')
   implementation project(':solr:solrj')  // For EnvUtils
 
-  // Jetty Server dependencies (matching server/build.gradle)
+  // Jetty Server dependencies
   implementation platform(project(":platform"))
   implementation libs.eclipse.jetty.server
-  implementation libs.eclipse.jetty.http
-  implementation libs.eclipse.jetty.io
+  implementation libs.eclipse.jetty.session
   implementation libs.eclipse.jetty.util
-  implementation libs.eclipse.jetty.xml
-  implementation libs.eclipse.jetty.deploy
   implementation libs.eclipse.jetty.rewrite
-  implementation libs.eclipse.jetty.security
-  implementation libs.eclipse.jetty.jmx
 
-  // Servlet and webapp support
+  // Servlet support
   implementation libs.eclipse.jetty.ee10.servlet
-  implementation libs.eclipse.jetty.ee10.servlets
-  implementation libs.eclipse.jetty.ee10.webapp
   implementation libs.jakarta.servlet.api
 
   // HTTP/2 and ALPN support
   implementation libs.eclipse.jetty.http2.server
   implementation libs.eclipse.jetty.http2.common
-  implementation libs.eclipse.jetty.http2.hpack
   implementation libs.eclipse.jetty.alpnserver
-  implementation libs.eclipse.jetty.alpnjavaserver
 
   // Logging
   implementation libs.slf4j.api
   implementation libs.slf4j.jultoslf4j  // For SLF4J bridge
-  implementation libs.apache.log4j.api
 
   // BouncyCastle for SSL certificate generation
   implementation libs.bouncycastle.bcprov
@@ -62,7 +52,6 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
-  testImplementation libs.carrotsearch.randomizedtesting.runner
 }
 
 // Create executable JAR

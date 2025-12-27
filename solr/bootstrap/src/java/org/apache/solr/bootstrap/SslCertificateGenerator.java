@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.math.BigInteger;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -170,7 +169,7 @@ public class SslCertificateGenerator {
     if (Files.exists(keystorePath)) {
       log.info("Keystore already exists at {}, reusing", keystorePath);
       // Load password from file and return existing cert info
-      Path passwordPath = Paths.get(keystorePath.toString() + ".password");
+      Path passwordPath = Path.of(keystorePath.toString() + ".password");
       if (Files.exists(passwordPath)) {
         String password = Files.readString(passwordPath).trim();
         return new SslConfiguration(true, true, keystorePath, password);
@@ -207,16 +206,16 @@ public class SslCertificateGenerator {
     // SOLR_SSL_KEY_STORE env var → solr.ssl.key.store system property
     String envPath = EnvUtils.getProperty("solr.ssl.key.store");
     if (envPath != null && !envPath.isEmpty()) {
-      return Paths.get(envPath);
+      return Path.of(envPath);
     }
-    // solr.pid.dir is set by bin/solr-bootstrap script
+    // solr.pid.dir is set by bin/solr script
     // If not set, default to ${solr.install.dir}/bin
     String solrPidDir = EnvUtils.getProperty("solr.pid.dir");
     if (solrPidDir == null || solrPidDir.isEmpty()) {
       String installDir = EnvUtils.getProperty("solr.install.dir", ".");
       solrPidDir = installDir + "/bin";
     }
-    return Paths.get(solrPidDir, "solr-ssl.keystore.p12");
+    return Path.of(solrPidDir, "solr-ssl.keystore.p12");
   }
 
   /**
@@ -313,7 +312,7 @@ public class SslCertificateGenerator {
    * read/write) on POSIX systems.
    */
   private static void savePassword(Path keystorePath, String password) throws Exception {
-    Path passwordPath = Paths.get(keystorePath.toString() + ".password");
+    Path passwordPath = Path.of(keystorePath.toString() + ".password");
     Files.writeString(passwordPath, password);
 
     // Set 600 permissions (owner read/write only)
