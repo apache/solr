@@ -20,9 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
@@ -35,7 +33,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
-  private HttpClient httpClient;
   private CloudSolrClient solrClient;
 
   @BeforeClass
@@ -49,7 +46,6 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     solrClient = cluster.getSolrClient();
-    httpClient = ((CloudLegacySolrClient) solrClient).getHttpClient();
   }
 
   @Test
