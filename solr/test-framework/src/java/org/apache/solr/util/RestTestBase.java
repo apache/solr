@@ -134,7 +134,6 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
     return solrClientTestRule.getSolrClient();
   }
 
-
   protected static HttpClient getHttpClient() {
     HttpSolrClient client = (HttpSolrClient) getSolrClient();
     return client.getHttpClient();
