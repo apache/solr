@@ -23,7 +23,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -80,7 +79,6 @@ public class TestRawTransformer extends SolrCloudTestCase {
     final Path collDir = homeDir.resolve("collection1");
     final Path confDir = collDir.resolve("conf");
     Files.createDirectories(confDir);
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema_latest.xml"), confDir.resolve("schema.xml"));
     Files.copy(Path.of(src_dir, "solrconfig-minimal.xml"), confDir.resolve("solrconfig.xml"));
