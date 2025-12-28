@@ -18,7 +18,6 @@
 package org.apache.solr.packagemanager;
 
 import static org.apache.solr.cli.SolrCLI.printGreen;
-import static org.apache.solr.common.params.CommonParams.SYSTEM_INFO_PATH;
 import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 
 import java.io.IOException;
@@ -47,10 +46,13 @@ import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
@@ -142,14 +144,17 @@ public class RepositoryManager {
 
   public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
-    NamedList<Object> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, "/solr" + SYSTEM_INFO_PATH));
-    String solrHome = (String) systemInfo.get("solr_home");
+    // This method is only called from PackageTool ("add-repo", or "add-key"), where the Solr URL is
+    // normalized to remove the /solr path part
+    // So might as well ping the V2 API "/node/system" instead.
+    // Otherwise, this SystemInfoRequest constructor would need to set the full
+    // /solr/admin/info/system path
+    SystemInfoResponse sysResponse =
+        new SystemInfoRequest(CommonParams.V2_SYSTEM_INFO_PATH).process(solrClient);
 
     // put the public key into package store's trusted key store and request a sync.
     String path = ClusterFileStore.KEYS_DIR + "/" + destinationKeyFilename;
-    PackageUtils.uploadKey(key, path, Path.of(solrHome));
+    PackageUtils.uploadKey(key, path, Path.of(sysResponse.getSolrHome()));
     final var syncRequest = new FileStoreApi.SyncFile(path);
     final var syncResponse = syncRequest.process(solrClient);
     final var status = syncResponse.responseHeader.status;
