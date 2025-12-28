@@ -1,5 +1,5 @@
-title: Replace most uses of GenericSolrRequest in Solr code
-type: changed
+title: Introduce new SolrJ SolrRequest classes for metrics and "system info" requests.
+type: added
 authors:
 - name: Isabelle Giguère
 links:
