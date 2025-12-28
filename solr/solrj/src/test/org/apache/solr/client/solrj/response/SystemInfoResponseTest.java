@@ -34,9 +34,7 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("config", getFile("solrj/solr/collection1/conf"))
-        .configure();
+    configureCluster(2).addConfig("config", getFile("solrj/solr/collection1/conf")).configure();
   }
 
   @Before
