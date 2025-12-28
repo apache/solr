@@ -706,8 +706,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     ignoreException("ignore_exception");
 
     // other  methods like starting a jetty instance need these too
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
+    // Note: solr.test.sys.prop1 and solr.test.sys.prop2 are now set only in 
+    // TestConfigPropertySubstitution for isolated property substitution testing
 
     String configFile = getSolrConfigFile();
     if (configFile != null) {

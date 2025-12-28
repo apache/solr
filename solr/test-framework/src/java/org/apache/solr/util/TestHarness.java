@@ -67,9 +67,8 @@ public class TestHarness extends BaseTestHarness {
    * ${solrHome}/${coreName}/conf/${confFile}</code>
    */
   public static SolrConfig createConfig(Path solrHome, String coreName, String confFile) {
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
+    // Note: solr.test.sys.prop1 and solr.test.sys.prop2 are now set only in 
+    // TestConfigPropertySubstitution for isolated property substitution testing
     try {
       return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {

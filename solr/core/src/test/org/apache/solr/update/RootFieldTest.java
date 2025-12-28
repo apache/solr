@@ -56,8 +56,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
-    System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
-    System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
+    // System properties are no longer needed - propTest elements removed from configs
 
     solrClientTestRule
         .newCollection()
