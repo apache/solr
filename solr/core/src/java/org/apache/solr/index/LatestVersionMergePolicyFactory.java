@@ -22,7 +22,7 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.IndexSchema;
 
 /**
- * A {@link MergePolicyFactory} for {@link LatestVersionFilterMergePolicy} objects. The returned
+ * A {@link MergePolicyFactory} for {@link LatestVersionMergePolicy} objects. The returned
  * LatestVersionFilterMergePolicy instance blocks older version segments (&lt; current version of
  * Lucene) from participating in merges and delegates the merging to a TieredMergePolicy instance by
  * default. This can be used to reindex the data and ensure all segments are the latest version
@@ -38,6 +38,6 @@ public class LatestVersionMergePolicyFactory extends SimpleMergePolicyFactory {
 
   @Override
   protected MergePolicy getMergePolicyInstance() {
-    return new LatestVersionFilterMergePolicy(new TieredMergePolicy());
+    return new LatestVersionMergePolicy(new TieredMergePolicy());
   }
 }

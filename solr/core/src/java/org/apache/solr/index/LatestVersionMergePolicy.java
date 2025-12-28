@@ -33,9 +33,9 @@ import org.apache.lucene.util.Version;
  * upgrading to a future Lucene major version if existing documents are reindexed in the current
  * version with this merge policy in place.
  */
-public class LatestVersionFilterMergePolicy extends FilterMergePolicy {
+public class LatestVersionMergePolicy extends FilterMergePolicy {
 
-  public LatestVersionFilterMergePolicy(MergePolicy in) {
+  public LatestVersionMergePolicy(MergePolicy in) {
     super(in);
   }
 
