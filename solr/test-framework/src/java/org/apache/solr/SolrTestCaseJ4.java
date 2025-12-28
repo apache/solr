@@ -704,8 +704,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ignoreException("ignore_exception");
 
-    // other  methods like starting a jetty instance need these too
-
     String configFile = getSolrConfigFile();
     if (configFile != null) {
       createCore();
