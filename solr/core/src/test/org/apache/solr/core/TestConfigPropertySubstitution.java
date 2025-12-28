@@ -34,9 +34,9 @@ public class TestConfigPropertySubstitution extends SolrTestCaseJ4 {
     // Set the test properties specifically for property substitution testing
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
-    
+
     // Use a minimal configuration file that only contains the propTest element
-    initCore("solrconfig-test-properties.xml", "schema-reversed.xml");
+    initCore("solrconfig-test-properties.xml", "schema.xml");
   }
 
   @Test
