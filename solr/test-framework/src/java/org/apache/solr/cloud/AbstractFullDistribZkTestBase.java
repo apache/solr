@@ -2207,8 +2207,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
           System.clearProperty(ENABLE_UPDATE_LOG);
           System.clearProperty(REMOVE_VERSION_FIELD);
           System.clearProperty("solr.directoryFactory");
-          System.clearProperty("solr.test.sys.prop1");
-          System.clearProperty("solr.test.sys.prop2");
           System.clearProperty(ZOOKEEPER_FORCE_SYNC);
           System.clearProperty(
               MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);

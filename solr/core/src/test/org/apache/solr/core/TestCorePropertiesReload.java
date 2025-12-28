@@ -37,8 +37,6 @@ public class TestCorePropertiesReload extends SolrTestCaseJ4 {
     solrHomeDirectory = createTempDir();
     PathUtils.copyDirectory(TEST_HOME(), solrHomeDirectory);
 
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     Properties props = new Properties();
     props.setProperty("test", "Before reload");
     writeCustomProperties(props);

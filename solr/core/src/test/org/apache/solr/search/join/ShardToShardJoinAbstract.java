@@ -52,7 +52,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -67,12 +66,6 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
   //    resetExceptionIgnores();
   protected static String toColl = "parent";
   protected static String fromColl = "children";
-
-  @BeforeClass
-  public static void setPropos() {
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-  }
 
   public static void setupCluster(
       Consumer<CollectionAdminRequest.Create> fromDecorator,
@@ -151,8 +144,6 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
 
   @AfterClass
   public static void shutdown() {
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
     log.info("logic complete ... deleting the {} and {} collections", toColl, fromColl);
 
     // try to clean up
