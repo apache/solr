@@ -48,7 +48,7 @@ public class TestHttpRequestId extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(createTempDir());
   }
 
   @Test

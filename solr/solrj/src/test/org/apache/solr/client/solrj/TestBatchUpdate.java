@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -44,7 +45,11 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(createTempDir());
+    solrClientTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
   }
 
   static final int numdocs = 1000;

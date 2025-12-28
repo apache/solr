@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -36,7 +35,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
-
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
@@ -56,10 +54,16 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    solrJettyTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrJettyTestRule.startSolr(createTempDir());
 
-    solrJettyTestRule.newCollection("collection1").withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString()).create();
-    solrJettyTestRule.newCollection("collection2").withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString()).create();
+    solrJettyTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
+    solrJettyTestRule
+        .newCollection("collection2")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .create();
     var cc = solrJettyTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 

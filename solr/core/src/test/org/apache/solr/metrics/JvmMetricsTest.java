@@ -50,7 +50,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeTest() throws Exception {
     System.setProperty("solr.metrics.jvm.enabled", "true");
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrClientTestRule.startSolr(createTempDir());
   }
 
   @Test
