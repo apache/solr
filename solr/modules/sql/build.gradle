@@ -49,7 +49,6 @@ dependencies {
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
 
-
   testRuntimeOnly project(':solr:modules:analysis-extras')
 }
 
