@@ -64,13 +64,19 @@ public class SolrStart {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
 
-    // 2. Log bootstrap start
+    // 2. Force EnvUtils initialization to convert SOLR_* environment variables
+    // to system properties BEFORE SSL configuration runs. This is critical because
+    // SslCertificateGenerator.configureSsl() reads solr.ssl.* properties.
+    // The call to getProperty() triggers the static initializer if not already loaded.
+    EnvUtils.getProperty("solr.install.dir");
+
+    // 3. Log bootstrap start
     log.info("╔══════════════════════════════════════════════════════════════╗");
     log.info("║  Starting Solr via Solr bootstrap (not Jetty start.jar)     ║");
     log.info("║  SIP-6 Phase 1: Solr owns the bootstrap process              ║");
     log.info("╚══════════════════════════════════════════════════════════════╝");
 
-    // 2.5. Configure SSL (auto-generation or user-provided keystores)
+    // 4. Configure SSL (auto-generation or user-provided keystores)
     SslCertificateGenerator.SslConfiguration sslConfig = SslCertificateGenerator.configureSsl();
 
     if (sslConfig != null) {
@@ -88,6 +94,9 @@ public class SolrStart {
         // User provided keystores - enable HTTPS
         System.setProperty("solr.jetty.https.port", System.getProperty("solr.port.listen", "8983"));
       }
+
+      // Mirror ssl props to solr.jetty.* equivalents
+      mirrorSslProps();
 
       // Set client-side SSL properties (for outbound HTTP connections)
       configureClientSsl();
@@ -192,6 +201,23 @@ public class SolrStart {
     log.info("╔══════════════════════════════════════════════════════════════╗");
     log.info("║  Solr bootstrap shutdown complete                            ║");
     log.info("╚══════════════════════════════════════════════════════════════╝");
+  }
+
+  /**
+   * Temporary method to mirror some solr ssl properties to the legacy property keys used by Jetty
+   * config
+   */
+  private static void mirrorSslProps() {
+    System.setProperty("solr.jetty.keystore", EnvUtils.getProperty("solr.ssl.key.store"));
+    System.setProperty(
+        "solr.jetty.keystore.password", EnvUtils.getProperty("solr.ssl.key.store.password"));
+    System.setProperty(
+        "solr.jetty.keystore.type", EnvUtils.getProperty("solr.ssl.key.store.type", "PKCS12"));
+    System.setProperty("solr.jetty.truststore", EnvUtils.getProperty("solr.ssl.trust.store"));
+    System.setProperty(
+        "solr.jetty.truststore.password", EnvUtils.getProperty("solr.ssl.trust.store.password"));
+    System.setProperty(
+        "solr.jetty.truststore.type", EnvUtils.getProperty("solr.ssl.trust.store.type", "PKCS12"));
   }
 
   /**

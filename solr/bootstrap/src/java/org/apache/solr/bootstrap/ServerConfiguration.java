@@ -67,6 +67,7 @@ public class ServerConfiguration {
   private final boolean stsIncludeSubdomains;
   private final String sslProvider;
   private final boolean sslCheckPeerName;
+  private final String endpointIdentificationAlgorithm;
 
   // GZIP
   private final boolean gzipEnabled;
@@ -124,6 +125,7 @@ public class ServerConfiguration {
     this.stsIncludeSubdomains = builder.stsIncludeSubdomains;
     this.sslProvider = builder.sslProvider;
     this.sslCheckPeerName = builder.sslCheckPeerName;
+    this.endpointIdentificationAlgorithm = builder.endpointIdentificationAlgorithm;
     this.gzipEnabled = builder.gzipEnabled;
     this.gzipMinSize = builder.gzipMinSize;
     this.gzipIncludedMethods = builder.gzipIncludedMethods;
@@ -189,6 +191,8 @@ public class ServerConfiguration {
             EnvUtils.getPropertyAsBool("solr.jetty.ssl.sts.include.subdomains.enabled", false))
         .setSslProvider(EnvUtils.getProperty("solr.jetty.ssl.provider"))
         .setSslCheckPeerName(EnvUtils.getPropertyAsBool("solr.ssl.check.peer.name.enabled", true))
+        .setEndpointIdentificationAlgorithm(
+            EnvUtils.getProperty("solr.jetty.ssl.verifyClientHostName"))
         // GZIP
         .setGzipEnabled(true) // Always enabled in Phase 1
         .setGzipMinSize(EnvUtils.getPropertyAsInteger("solr.jetty.gzip.minGzipSize", 2048))
@@ -356,6 +360,10 @@ public class ServerConfiguration {
     return sslCheckPeerName;
   }
 
+  public String getEndpointIdentificationAlgorithm() {
+    return endpointIdentificationAlgorithm;
+  }
+
   public boolean isGzipEnabled() {
     return gzipEnabled;
   }
@@ -442,6 +450,7 @@ public class ServerConfiguration {
     private boolean stsIncludeSubdomains = false;
     private String sslProvider;
     private boolean sslCheckPeerName = true;
+    private String endpointIdentificationAlgorithm;
     private boolean gzipEnabled = true;
     private int gzipMinSize = 2048;
     private String gzipIncludedMethods = "GET,POST";
@@ -631,6 +640,11 @@ public class ServerConfiguration {
 
     public Builder setSslCheckPeerName(boolean sslCheckPeerName) {
       this.sslCheckPeerName = sslCheckPeerName;
+      return this;
+    }
+
+    public Builder setEndpointIdentificationAlgorithm(String endpointIdentificationAlgorithm) {
+      this.endpointIdentificationAlgorithm = endpointIdentificationAlgorithm;
       return this;
     }
 

@@ -197,20 +197,96 @@ else
 fi
 
 
-# SIP-6: SSL configuration is now handled in Java (SslCertificateGenerator, ConnectorFactory)
-# Just determine the URL scheme for scripts
+# Select HTTP OR HTTPS related configurations
 SOLR_URL_SCHEME=http
+SOLR_SSL_OPTS=""
 
-# Auto-enable SSL if keystores are configured (backward compatibility)
-if [ -n "${SOLR_SSL_KEY_STORE:-}" ] || [ -n "${SOLR_SSL_TRUST_STORE:-}" ]; then
-  SOLR_SSL_ENABLED="${SOLR_SSL_ENABLED:-true}"
+if [ -z "${SOLR_SSL_ENABLED:-}" ]; then
+  if [ -n "${SOLR_SSL_KEY_STORE:-}" ]; then
+    SOLR_SSL_ENABLED="true" # implicitly from earlier behaviour
+  else
+    SOLR_SSL_ENABLED="false"
+  fi
 fi
-
-# Set URL scheme if SSL explicitly enabled
-if [ "${SOLR_SSL_ENABLED:-false}" == "true" ]; then
+if [ "$SOLR_SSL_ENABLED" == "true" ]; then
+  # SIP-6: Server-side SSL is configured in Java (SslCertificateGenerator, ServerConfiguration)
+  # No longer using: --module=https, --module=ssl-reload, -Dsolr.jetty.keystore, etc.
+  if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.keystore.reload.enabled=true"
+    # Also set for server process (for HttpShardHandlerFactory client SSL reload)
+    SOLR_OPTS_INTERNAL="${SOLR_OPTS_INTERNAL:-} -Dsolr.keystore.reload.enabled=true"
+  fi
   SOLR_URL_SCHEME=https
-fi
+  # Note: SOLR_SSL_KEY_STORE and SOLR_SSL_TRUST_STORE are now read as env vars by Java,
+  # not passed as -Dsolr.jetty.* system properties
+  if [ -n "$SOLR_SSL_KEY_STORE_PASSWORD" ]; then
+    export SOLR_SSL_KEY_STORE_PASSWORD=$SOLR_SSL_KEY_STORE_PASSWORD
+  fi
 
+  if [ -n "$SOLR_SSL_TRUST_STORE_PASSWORD" ]; then
+    export SOLR_SSL_TRUST_STORE_PASSWORD=$SOLR_SSL_TRUST_STORE_PASSWORD
+  fi
+
+  if [ "${SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION:true}" == "true" ] ; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+    SOLR_OPTS_INTERNAL="${SOLR_OPTS_INTERNAL:-} -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  fi
+
+  if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.need.client.auth.enabled=$SOLR_SSL_NEED_CLIENT_AUTH"
+    SOLR_OPTS_INTERNAL="${SOLR_OPTS_INTERNAL:-} -Dsolr.jetty.ssl.need.client.auth.enabled=$SOLR_SSL_NEED_CLIENT_AUTH"
+  fi
+  if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.want.client.auth.enabled=$SOLR_SSL_WANT_CLIENT_AUTH"
+    SOLR_OPTS_INTERNAL="${SOLR_OPTS_INTERNAL:-} -Dsolr.jetty.ssl.want.client.auth.enabled=$SOLR_SSL_WANT_CLIENT_AUTH"
+  fi
+
+  if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_CLIENT_KEY_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_KEY_STORE_PASSWORD=$SOLR_SSL_CLIENT_KEY_STORE_PASSWORD
+    fi
+    if [ -n "$SOLR_SSL_CLIENT_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_CLIENT_KEY_STORE_TYPE"
+    fi
+    if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ] && [ "${SOLR_SECURITY_MANAGER_ENABLED:-true}" == "true"  ]; then
+      # In this case we need to allow reads from the parent directory of the keystore
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreParentPath=$SOLR_SSL_CLIENT_KEY_STORE/.."
+    fi
+  else
+    if [ -n "$SOLR_SSL_KEY_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStore=$SOLR_SSL_KEY_STORE"
+    fi
+    if [ -n "$SOLR_SSL_KEY_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.keyStoreType=$SOLR_SSL_KEY_STORE_TYPE"
+    fi
+  fi
+
+  if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.check.peer.name.enabled=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_OPTS_INTERNAL="${SOLR_OPTS_INTERNAL:-} -Dsolr.ssl.check.peer.name.enabled=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
+  fi
+
+  if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
+    SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_CLIENT_TRUST_STORE"
+
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD" ]; then
+      export SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD=$SOLR_SSL_CLIENT_TRUST_STORE_PASSWORD
+    fi
+    if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_CLIENT_TRUST_STORE_TYPE"
+    fi
+  else
+    if [ -n "$SOLR_SSL_TRUST_STORE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStore=$SOLR_SSL_TRUST_STORE"
+    fi
+
+    if [ -n "$SOLR_SSL_TRUST_STORE_TYPE" ]; then
+      SOLR_SSL_OPTS+=" -Djavax.net.ssl.trustStoreType=$SOLR_SSL_TRUST_STORE_TYPE"
+    fi
+  fi
+fi
 export SOLR_URL_SCHEME
 
 # Authentication options

@@ -178,6 +178,12 @@ public class ConnectorFactory {
     // SNI
     sslContextFactory.setSniRequired(config.isSniRequired());
 
+    // Endpoint identification algorithm (for client certificate hostname verification)
+    if (config.getEndpointIdentificationAlgorithm() != null) {
+      sslContextFactory.setEndpointIdentificationAlgorithm(
+          config.getEndpointIdentificationAlgorithm());
+    }
+
     // SSL provider
     if (config.getSslProvider() != null) {
       sslContextFactory.setProvider(config.getSslProvider());

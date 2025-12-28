@@ -118,6 +118,18 @@ public class SslCertificateGenerator {
    * @throws Exception if certificate generation fails
    */
   public static SslConfiguration configureSsl() throws Exception {
+    // Debug: Log environment variables and system properties for SSL troubleshooting
+    if (log.isDebugEnabled()) {
+      log.debug("SSL Environment Variables:");
+      log.debug("  SOLR_SSL_ENABLED = {}", System.getenv("SOLR_SSL_ENABLED"));
+      log.debug("  SOLR_SSL_KEY_STORE = {}", System.getenv("SOLR_SSL_KEY_STORE"));
+      log.debug("  SOLR_SSL_TRUST_STORE = {}", System.getenv("SOLR_SSL_TRUST_STORE"));
+      log.debug("SSL System Properties:");
+      log.debug("  solr.ssl.enabled = {}", System.getProperty("solr.ssl.enabled"));
+      log.debug("  solr.ssl.key.store = {}", System.getProperty("solr.ssl.key.store"));
+      log.debug("  solr.ssl.trust.store = {}", System.getProperty("solr.ssl.trust.store"));
+    }
+
     // 1. Check if user provided keystores
     boolean hasKeyStore = EnvUtils.getProperty("solr.ssl.key.store") != null;
     boolean hasTrustStore = EnvUtils.getProperty("solr.ssl.trust.store") != null;

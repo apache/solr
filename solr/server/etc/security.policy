@@ -35,6 +35,8 @@ grant {
   permission java.io.FilePermission "/tmp/-", "read,write,delete";
   permission java.io.FilePermission "/private/tmp", "read,write";
   permission java.io.FilePermission "/private/tmp/-", "read,write,delete";
+  // macOS temp directory (TMPDIR resolves to /var/folders/... on macOS)
+  permission java.io.FilePermission "/var/folders/-", "read,write,delete";
 
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";

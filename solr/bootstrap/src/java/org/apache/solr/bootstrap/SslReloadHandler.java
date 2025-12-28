@@ -58,8 +58,14 @@ public class SslReloadHandler {
 
     // Create KeyStoreScanner
     KeyStoreScanner scanner = new KeyStoreScanner(sslContextFactory);
-    // Default scan interval: 60 seconds (can be overridden via SOLR_KEYSTORE_RELOAD_INTERVAL)
-    scanner.setScanInterval(EnvUtils.getPropertyAsInteger("solr.keystore.reload.interval", 60));
+    // Default scan interval: 60 seconds
+    // Try old Jetty XML property name first (backward compatibility), then new property name
+    Integer scanInterval =
+        EnvUtils.getPropertyAsInteger("solr.jetty.ssl.context.reload.scan.interval.secs", null);
+    if (scanInterval == null) {
+      scanInterval = EnvUtils.getPropertyAsInteger("solr.keystore.reload.interval", 60);
+    }
+    scanner.setScanInterval(scanInterval);
 
     // Add as server bean for lifecycle management
     server.addBean(scanner);
