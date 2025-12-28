@@ -17,9 +17,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -27,8 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.Set;
+import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -38,8 +35,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.response.SolrQueryResponse;
+
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -55,28 +53,16 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   private static String shard1;
   private static String shard2;
 
-  private static Path createSolrHome() throws Exception {
-    Path workDir = createTempDir().toRealPath();
-
-    Files.copy(
-        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
-        workDir.resolve("solr.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-
-    Path collection1Dir = workDir.resolve("collection1");
-    Path collection2Dir = workDir.resolve("collection2");
-
-    copyMinConf(collection1Dir, "name=collection1\n");
-    copyMinConf(collection2Dir, "name=collection2\n");
-
-    return workDir;
-  }
-
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    Path solrHome = createSolrHome();
-    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
+    solrJettyTestRule.startSolr(LuceneTestCase.createTempDir());
+
+    solrJettyTestRule.newCollection("collection1").withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString()).create();
+    solrJettyTestRule.newCollection("collection2").withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString()).create();
+    var cc = solrJettyTestRule.getCoreContainer();
+    cc.waitForLoadingCoresToFinish(30000);
+
     String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
     String urlCollection2 = solrJettyTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
@@ -97,7 +83,7 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void destroyThings() throws Exception {
+  public static void destroyThings() {
     collection1 = null;
     collection2 = null;
     resetExceptionIgnores();
@@ -169,7 +155,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @SuppressWarnings("resource") // Cannot close client in this loop!
   public void testRandom() throws Exception {
     final int NUM_ITERS = atLeast(50);
 
