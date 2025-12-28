@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
-
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
@@ -62,8 +60,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertNull(h.getCore().getRequestHandler("/disabled"));
     assertNotNull(h.getCore().getRequestHandler("/enabled"));
   }
-
-
 
   @Test
   public void testCacheEnablingDisabling() throws Exception {

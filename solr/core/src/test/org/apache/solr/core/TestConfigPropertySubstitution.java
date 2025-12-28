@@ -24,8 +24,8 @@ import org.junit.Test;
 
 /**
  * Test class specifically for testing system property substitution in Solr configuration files.
- * This class is isolated from other tests to minimize the global impact of setting
- * test-specific system properties.
+ * This class is isolated from other tests to minimize the global impact of setting test-specific
+ * system properties.
  */
 public class TestConfigPropertySubstitution extends SolrTestCaseJ4 {
 
