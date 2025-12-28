@@ -430,8 +430,6 @@
     </httpCaching>
   </requestDispatcher>
 
-
-
   <queryParser name="rank" class="org.apache.solr.search.RankQueryTestPlugin"/>
 
   <updateRequestProcessorChain name="uniq-fields">
