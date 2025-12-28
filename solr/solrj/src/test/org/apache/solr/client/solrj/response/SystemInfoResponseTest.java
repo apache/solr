@@ -35,7 +35,6 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(2)
-        //.withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
         .addConfig("config", getFile("solrj/solr/collection1/conf"))
         .configure();
   }
