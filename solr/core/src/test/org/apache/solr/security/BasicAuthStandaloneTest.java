@@ -23,7 +23,6 @@ import static org.apache.solr.security.BasicAuthIntegrationTest.verifySecuritySt
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Collections;
@@ -54,8 +53,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Path ROOT_DIR = TEST_HOME();
-  private static final Path CONF_DIR =
-      ROOT_DIR.resolve("configsets").resolve("configset-2").resolve("conf");
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
@@ -211,7 +208,6 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
     String name;
     Integer port;
     Path homeDir;
-    Path confDir;
     Path dataDir;
 
     /**
@@ -227,36 +223,13 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
       return homeDir;
     }
 
-    public Path getSchemaFile() {
-      return CONF_DIR.resolve("schema.xml");
-    }
-
     public Path getDataDir() {
       return dataDir;
-    }
-
-    public Path getSolrConfigFile() {
-      return CONF_DIR.resolve("solrconfig.xml");
-    }
-
-    public Path getSolrXmlFile() {
-      return ROOT_DIR.resolve("solr.xml");
     }
 
     public void setUp() throws Exception {
       homeDir = createTempDir(name).toAbsolutePath();
       dataDir = homeDir.resolve("collection1").resolve("data");
-      confDir = homeDir.resolve("collection1").resolve("conf");
-
-      Files.createDirectories(homeDir);
-      Files.createDirectories(dataDir);
-      Files.createDirectories(confDir);
-
-      Files.copy(getSolrXmlFile(), homeDir.resolve("solr.xml"));
-      Files.copy(getSolrConfigFile(), confDir.resolve("solrconfig.xml"));
-      Files.copy(getSchemaFile(), confDir.resolve("schema.xml"));
-
-      Files.createFile(homeDir.resolve("collection1").resolve("core.properties"));
     }
   }
 }
