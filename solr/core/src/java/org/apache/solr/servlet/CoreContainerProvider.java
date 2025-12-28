@@ -54,7 +54,6 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
@@ -67,9 +66,8 @@ import org.slf4j.LoggerFactory;
  */
 public class CoreContainerProvider implements ServletContextListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
-  private Properties extraProperties;
+  // TODO: this probably should not live here...
   private RateLimitManager rateLimitManager;
 
   /**
@@ -151,7 +149,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // "extra" properties must be initialized first, so we know things like "do we have a zkHost"
       // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our
       // caller
-      this.extraProperties =
+      Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
               (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
 
@@ -160,7 +158,7 @@ public class CoreContainerProvider implements ServletContextListener {
         log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
       }
 
-      logWelcomeBanner();
+      logWelcomeBanner(extraProperties);
 
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null
@@ -219,7 +217,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
 
-  private void logWelcomeBanner() {
+  private void logWelcomeBanner(Properties props) {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is
     // the only one that's so ugly so far.
     if (log.isInfoEnabled()) {
@@ -228,7 +226,7 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info(
           "/ __| ___| |_ _   Starting in {} mode on port {}",
-          isCloudMode() ? "cloud" : "standalone",
+          isCloudMode(props) ? "cloud" : "standalone",
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
@@ -290,12 +288,12 @@ public class CoreContainerProvider implements ServletContextListener {
    * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
-   * @see #extraProperties
    * @see #init
+   * @param props the "extra properties" which will indicate cloud mode before startup.
    */
-  private boolean isCloudMode() {
-    assert null != extraProperties; // we should never be called w/o this being initialized
-    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
+  private boolean isCloudMode(Properties props) {
+    assert null != props; // we should never be called w/o this being initialized
+    return (null != props.getProperty(SolrXmlConfig.ZK_HOST))
         || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
