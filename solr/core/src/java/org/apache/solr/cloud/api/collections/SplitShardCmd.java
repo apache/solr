@@ -39,13 +39,12 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
@@ -869,10 +868,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         new ModifiableSolrParams()
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
-    SolrResponse rsp =
-        new GenericSolrRequest(
-                SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params)
-            .process(cloudManager.getSolrClient());
+    SolrResponse rsp = new MetricsRequest(params).process(cloudManager.getSolrClient());
 
     Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
     if (size == null) {
