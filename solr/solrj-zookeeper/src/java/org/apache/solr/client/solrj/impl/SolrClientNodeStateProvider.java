@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -212,9 +213,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     params.add("wt", "prometheus");
     params.add("name", String.join(",", metricNames));
 
-    var req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     String baseUrl =

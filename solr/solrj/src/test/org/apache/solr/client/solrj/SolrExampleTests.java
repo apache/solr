@@ -437,7 +437,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       String url = getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
-        q.set("qt", "/admin/info/system");
+        q.set("qt", CommonParams.SYSTEM_INFO_PATH);
 
         QueryResponse rsp = adminClient.query(q);
         assertNotNull(rsp.getResponse().get("mode"));

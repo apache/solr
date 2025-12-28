@@ -205,6 +205,7 @@ public interface CommonParams {
   String ZK_STATUS_PATH = "/admin/zookeeper/status";
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
+  String V2_SYSTEM_INFO_PATH = "/node/system";
 
   String STATUS = "status";
 

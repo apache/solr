@@ -29,9 +29,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -74,7 +72,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   public void testPrometheusStructureOutput() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
@@ -122,8 +120,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testAcceptHeaderOpenMetricsFormat() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest();
 
     req.setResponseParser(new InputStreamResponseParser(null));
 
@@ -143,8 +140,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testWtParameterOpenMetricsFormat() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest();
 
     req.setResponseParser(new InputStreamResponseParser("openmetrics"));
 
@@ -162,8 +158,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultPrometheusFormat() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest();
 
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
@@ -181,8 +176,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultPrometheusFormatNoWtParam() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest();
 
     req.setResponseParser(new InputStreamResponseParser(null));
 
@@ -200,8 +194,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testUnsupportedMetricsFormat() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest();
 
     req.setResponseParser(new InputStreamResponseParser("unknownFormat"));
 
