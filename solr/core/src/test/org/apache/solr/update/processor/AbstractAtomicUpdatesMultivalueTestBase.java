@@ -49,7 +49,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
-    // System properties are no longer needed - propTest elements removed from configs
 
     solrClientTestRule.newCollection().withConfigSet("../collection1").create();
   }

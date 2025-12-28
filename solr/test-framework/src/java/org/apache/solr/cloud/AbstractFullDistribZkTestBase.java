@@ -276,9 +276,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     if (schema == null) schema = "schema.xml";
     zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
 
-    // Note: solr.test.sys.prop1 and solr.test.sys.prop2 are now set only in 
-    // TestConfigPropertySubstitution for isolated property substitution testing
-
     // ignoreException(".*");
 
     cloudInit = false;
