@@ -94,11 +94,9 @@ public class TestRawTransformer extends SolrCloudTestCase {
       Files.copy(Path.of(src_dir, file), confDir.resolve(file));
     }
     Files.createFile(collDir.resolve("core.properties"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", h.getCore().getDataDir());
     JSR =
         new JettySolrRunner(
-            homeDir.toAbsolutePath().toString(), nodeProperties, JettyConfig.builder().build());
+            homeDir.toAbsolutePath().toString(), new Properties(), JettyConfig.builder().build());
   }
 
   private static void initCloud() throws Exception {

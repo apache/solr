@@ -49,13 +49,11 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
 
     Files.createDirectories(confDir);
 
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
-    String src_dir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(src_dir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
+    String srcDir = TEST_HOME() + "/collection1/conf";
+    Files.copy(Path.of(srcDir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
+    Files.copy(Path.of(srcDir, "solrconfig-coreproperties.xml"), confDir.resolve("solrconfig.xml"));
     Files.copy(
-        Path.of(src_dir, "solrconfig-coreproperties.xml"), confDir.resolve("solrconfig.xml"));
-    Files.copy(
-        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
+        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
         confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     Properties p = new Properties();
@@ -73,13 +71,7 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
       coreProperties.store(fos, null);
     }
 
-    Properties nodeProperties = new Properties();
-    // this sets the property for jetty starting SolrDispatchFilter
-    if (System.getProperty("solr.data.dir") == null) {
-      nodeProperties.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
-    }
-
-    solrClientTestRule.startSolr(homeDir, nodeProperties, JettyConfig.builder().build());
+    solrClientTestRule.startSolr(homeDir, new Properties(), JettyConfig.builder().build());
   }
 
   @Test

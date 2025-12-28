@@ -25,7 +25,6 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Properties;
 import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.beans.Field;
@@ -51,8 +50,6 @@ public class TestBinaryField extends SolrJettyTestBase {
     Files.createDirectories(collDir);
     Files.createDirectories(dataDir);
     Files.createDirectories(confDir);
-
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
 
     String src_dir = TEST_HOME() + "/collection1/conf";
     Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));

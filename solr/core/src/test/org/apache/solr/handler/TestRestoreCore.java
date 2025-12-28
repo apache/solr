@@ -53,12 +53,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
-    Files.copy(
-        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), Path.of(instance.getHomeDir(), "solr.xml"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -180,7 +177,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     }
   }
 
-  public void testBackupFailsMissingAllowPaths() throws Exception {
+  public void testBackupFailsMissingAllowPaths() {
     final String params =
         "&location=" + URLEncoder.encode(createTempDir().toString(), StandardCharsets.UTF_8);
     Throwable t =
