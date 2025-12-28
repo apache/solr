@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Rename LatestVersionFilterMergePolicy to LatestVersionMergePolicy
+type: changed
+authors:
+  - name: Rahul Goswami
+links:
+  - name: PR#3986
+    url: https://github.com/apache/solr/pull/3986
