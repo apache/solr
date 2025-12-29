@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
@@ -28,7 +27,6 @@ import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -50,7 +48,7 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path solrHome = createSolrHome();
-    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
+    solrJettyTestRule.startSolr(solrHome);
   }
 
   @Test

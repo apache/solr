@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Properties;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -31,7 +30,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -73,7 +71,7 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
-    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
+    solrJettyTestRule.startSolr(solrHome);
 
     collection1 = solrJettyTestRule.getSolrClient("collection1");
 

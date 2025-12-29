@@ -19,7 +19,6 @@ package org.apache.solr.client.solrj.jetty;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
@@ -27,7 +26,6 @@ import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -47,7 +45,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
     solrClientTestRule.enableProxy();
-    solrClientTestRule.startSolr(createTempDir(), new Properties(), JettyConfig.builder().build());
+    solrClientTestRule.startSolr(createTempDir());
     // Actually only need extremely minimal configSet but just use the default
     solrClientTestRule
         .newCollection()

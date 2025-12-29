@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
@@ -34,7 +33,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
 import org.junit.ClassRule;
@@ -86,7 +84,7 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   // Backward compatibility methods for existing subclasses
   @Deprecated
   protected static void createAndStartJetty(Path solrHome) throws Exception {
-    solrJettyTestRule.startSolr(solrHome, new Properties(), JettyConfig.builder().build());
+    solrJettyTestRule.startSolr(solrHome);
   }
 
   /** query the example */

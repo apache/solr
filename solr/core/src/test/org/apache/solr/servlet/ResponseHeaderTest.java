@@ -21,14 +21,12 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.util.Properties;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -55,7 +53,7 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
     // Create minimal config with custom solrconfig for headers testing
     SolrTestCaseJ4.copyMinConf(collectionDirectory, "name=collection1\n", "solrconfig-headers.xml");
 
-    solrJettyTestRule.startSolr(solrHomeDirectory, new Properties(), JettyConfig.builder().build());
+    solrJettyTestRule.startSolr(solrHomeDirectory);
   }
 
   @Test
