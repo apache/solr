@@ -55,6 +55,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
