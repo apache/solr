@@ -43,10 +43,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
   public static void beforeClass() throws Exception {
     solrTestRule.startSolr();
 
-    solrTestRule
-        .newCollection()
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     client = getSolrClient();
   }

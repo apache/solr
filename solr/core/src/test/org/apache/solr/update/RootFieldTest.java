@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
+import java.nio.file.Path;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -57,7 +58,11 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
 
-    solrTestRule.newCollection().withConfigSet("../collection1").withSchemaFile(schema).create();
+    solrTestRule
+        .newCollection()
+        .withConfigSet(Path.of("../collection1"))
+        .withSchemaFile(schema)
+        .create();
   }
 
   @Test

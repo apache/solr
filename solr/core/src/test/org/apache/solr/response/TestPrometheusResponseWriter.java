@@ -49,14 +49,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
-    solrTestRule
-        .newCollection("core1")
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
-        .create();
-    solrTestRule
-        .newCollection("core2")
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     var cc = solrTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 

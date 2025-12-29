@@ -89,7 +89,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     // check that this config is unsuccessful
     expectThrows(
         Exception.class,
-        () -> solrTestRule.newCollection("illegal").withConfigSet(configSet.toString()).create());
+        () -> solrTestRule.newCollection("illegal").withConfigSet(configSet).create());
   }
 
   public void testAbsoluteSubdir() throws Exception {
@@ -149,7 +149,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     String collectionName = instanceDir.getFileName().toString();
 
-    solrTestRule.newCollection(collectionName).withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection(collectionName).withConfigSet(configSet).create();
 
     // resolvedTlogDir = instanceDir.resolve("data/tlog"); // legacy impl _always_ resulted in this
 

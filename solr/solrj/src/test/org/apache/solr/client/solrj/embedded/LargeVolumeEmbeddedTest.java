@@ -25,9 +25,6 @@ public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   public static void beforeTest() throws Exception {
     solrTestRule.startSolr();
 
-    solrTestRule
-        .newCollection()
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 }

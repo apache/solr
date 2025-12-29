@@ -58,11 +58,11 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
 
     solrTestRule
         .newCollection("collection1")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
     solrTestRule
         .newCollection("collection2")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
     var cc = solrTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);

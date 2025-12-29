@@ -42,7 +42,7 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
     solrTestRule.startSolr(createTempDir());
     solrTestRule
         .newCollection("collection1")
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
   }
 

@@ -83,7 +83,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
                     + "      initialSize=\"5\"/>\n"
                     + "</query></config>"));
 
-    solrTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
     // legacy; get rid of this someday!
     h = new TestHarness(solrTestRule.getCoreContainer());

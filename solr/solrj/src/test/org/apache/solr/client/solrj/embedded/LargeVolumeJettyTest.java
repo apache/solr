@@ -26,9 +26,6 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
     // TODO
     solrTestRule.startSolr();
 
-    solrTestRule
-        .newCollection()
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 }

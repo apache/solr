@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 
 import java.io.IOException;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
     System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
 
-    solrTestRule.newCollection().withConfigSet("../collection1").create();
+    solrTestRule.newCollection().withConfigSet(Path.of("../collection1")).create();
   }
 
   @Before

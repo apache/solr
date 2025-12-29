@@ -63,7 +63,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
                     + "</config>"));
 
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
-    solrTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 
   @AfterClass

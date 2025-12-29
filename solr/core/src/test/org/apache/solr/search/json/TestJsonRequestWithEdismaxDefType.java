@@ -37,7 +37,7 @@ public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseJ4 {
     Path configSet = LuceneTestCase.createTempDir();
     SolrTestCaseJ4.copyMinConf(configSet);
 
-    solrTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
     SolrClient client = solrTestRule.getSolrClient();
 

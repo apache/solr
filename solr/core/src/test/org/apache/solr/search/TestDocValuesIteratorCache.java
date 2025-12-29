@@ -82,7 +82,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
             .replace(
                 "</schema>", fieldConfig(SINGLE, false) + fieldConfig(MULTI, true) + "</schema>"));
 
-    solrTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
     SolrClient client = solrTestRule.getSolrClient();
 

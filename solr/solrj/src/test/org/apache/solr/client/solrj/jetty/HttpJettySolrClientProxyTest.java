@@ -49,8 +49,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
     // Actually only need extremely minimal configSet but just use the default
     solrTestRule
         .newCollection()
-        .withConfigSet(
-            ExternalPaths.DEFAULT_CONFIGSET.toString()) // TODO should be default for empty home
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET) // TODO should be default for empty home
         .create();
   }
 
