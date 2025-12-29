@@ -275,7 +275,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
     int oldLiveNodes =
         ZkStateReader.from(cloudClient)
             .getZkClient()
-            .getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true)
+            .getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null)
             .size();
 
     assertEquals(5, oldLiveNodes);
