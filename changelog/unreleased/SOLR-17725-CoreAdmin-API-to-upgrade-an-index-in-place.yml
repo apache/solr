@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: CoreAdmin API (/admin/cores?action=UPGRADECOREINDEX) to upgrade an index in-place
+type: added
+authors:
+  - name: Rahul Goswami
+links:
+  - name: SOLR-17725
+    url: https://issues.apache.org/jira/browse/SOLR-17725
+
