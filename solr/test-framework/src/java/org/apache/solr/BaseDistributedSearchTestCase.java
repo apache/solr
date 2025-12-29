@@ -257,8 +257,6 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public void distribSetUp() throws Exception {
     distribSetUpCalled = true;
     SolrTestCaseJ4.resetExceptionIgnores(); // ignore anything with ignore_exception in it
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     testDir = createTempDir();
   }
 

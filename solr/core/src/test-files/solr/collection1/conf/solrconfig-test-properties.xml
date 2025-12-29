@@ -17,19 +17,21 @@
  limitations under the License.
 -->
 
-<!-- used by TestConfig to tests a few misc things relating to:
-     * lib dirs
-     * property substitution
-     * "gettableFiles" option
+<!-- 
+  A minimal solrconfig specifically for testing property substitution functionality.
+  This config is used by TestConfigPropertySubstitution.testJavaPropertySubstitution() to test
+  that system property substitution works correctly in Solr configuration files.
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
+  <dataDir>${solr.data.dir:}</dataDir>
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
   <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}"/>
   <schemaFactory class="ClassicIndexSchemaFactory"/>
+  
+  <!-- This element is specifically for testing property substitution -->
+  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
+            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
-  <!-- see TestConfig.testDisableRequetsHandler -->
-  <requestHandler name="/disabled" class="solr.SearchHandler" enable="false"/>
-  <requestHandler name="/enabled" class="solr.SearchHandler" enable="true"/>
-
+  <requestHandler name="/select" class="solr.SearchHandler" />
 </config>
