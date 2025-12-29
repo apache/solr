@@ -508,7 +508,7 @@ public class ZkTestServer {
             .withUrl(getZkHost())
             .withTimeout(10000, TimeUnit.MILLISECONDS)
             .build()) {
-      client.makePath(path, null, CreateMode.PERSISTENT, null, false, true, 0);
+      client.makePath(path, null, CreateMode.PERSISTENT, null, false, 0);
     } catch (InterruptedException | KeeperException e) {
       log.error("Error checking path {}", path, e);
       throw new IOException("Error checking path " + path, SolrZkClient.checkInterrupted(e));
@@ -794,7 +794,7 @@ public class ZkTestServer {
     if (log.isInfoEnabled()) {
       log.info("put {} to {}", file.toAbsolutePath(), destPath);
     }
-    zkClient.makePath(destPath, Files.readAllBytes(file), false, true);
+    zkClient.makePath(destPath, Files.readAllBytes(file), false);
   }
 
   // static to share with distrib test
@@ -841,7 +841,7 @@ public class ZkTestServer {
   }
 
   public void makeSolrZkNode() throws Exception {
-    rootClient.makePath("/solr", false, true);
+    rootClient.makePath("/solr", false);
   }
 
   public void tryCleanSolrZkNode() throws Exception {
@@ -849,7 +849,7 @@ public class ZkTestServer {
   }
 
   void tryCleanPath(String path) throws Exception {
-    if (rootClient.exists(path, true)) {
+    if (rootClient.exists(path)) {
       rootClient.clean(path);
     }
   }

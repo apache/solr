@@ -89,7 +89,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                 "readonlyACLUsername",
                 "readonlyACLPassword")
             .getSolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      zkClient.makePath("/solr", false, true);
+      zkClient.makePath("/solr", false);
     }
 
     try (SolrZkClient zkClient =
@@ -100,17 +100,13 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                 "readonlyACLPassword")
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       zkClient.create(
-          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/protectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.create(
           SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT);
     }
 
     try (SolrZkClient zkClient =
@@ -123,15 +119,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                     ("connectAndAllACLUsername:connectAndAllACLPassword")
                         .getBytes(DATA_ENCODING)))) {
       zkClient.create(
-          "/unprotectedCreateNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/unprotectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     }
 
     if (log.isInfoEnabled()) {
