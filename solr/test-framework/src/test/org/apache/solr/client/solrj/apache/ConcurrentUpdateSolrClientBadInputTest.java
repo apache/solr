@@ -29,7 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 public class ConcurrentUpdateSolrClientBadInputTest extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -40,14 +40,14 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(
+    solrTestRule.startSolr(
         legacyExampleCollection1SolrHome(), new Properties(), JettyConfig.builder().build());
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
-        new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(ANY_COLLECTION)
             .withQueueSize(ANY_QUEUE_SIZE)
             .withThreadCount(ANY_MAX_NUM_THREADS)
@@ -79,7 +79,7 @@ public class ConcurrentUpdateSolrClientBadInputTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl())
             .withQueueSize(ANY_QUEUE_SIZE)
             .withThreadCount(ANY_MAX_NUM_THREADS)
             .build()) {

@@ -51,14 +51,14 @@ public class DirectJsonQueryRequestFacetingEmbeddedTest extends EmbeddedSolrServ
   @BeforeClass
   public static void beforeClass() throws Exception {
 
-    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
 
-    solrClientTestRule
+    solrTestRule
         .newCollection(COLLECTION_NAME)
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
 
-    SolrClient client = solrClientTestRule.getSolrClient(COLLECTION_NAME);
+    SolrClient client = solrTestRule.getSolrClient(COLLECTION_NAME);
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
     up.setParam("collection", COLLECTION_NAME);

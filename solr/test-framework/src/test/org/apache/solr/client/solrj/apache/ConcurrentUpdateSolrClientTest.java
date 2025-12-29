@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -135,14 +135,14 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Test
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = solrClientTestRule.getBaseUrl() + "/cuss/foo";
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -210,7 +210,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
     int cussQueueSize = 10;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -229,7 +229,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
@@ -250,7 +250,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
     int expected = numDocs * numRunnables;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .withPollQueueTime(0)
@@ -286,7 +286,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(solrClientTestRule.getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)

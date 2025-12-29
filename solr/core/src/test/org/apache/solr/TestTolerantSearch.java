@@ -40,7 +40,7 @@ import org.junit.ClassRule;
 
 public class TestTolerantSearch extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static SolrClient collection1;
   private static SolrClient collection2;
@@ -71,24 +71,24 @@ public class TestTolerantSearch extends SolrTestCaseJ4 {
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
-    solrJettyTestRule.startSolr(solrHome);
+    solrTestRule.startSolr(solrHome);
 
-    collection1 = solrJettyTestRule.getSolrClient("collection1");
+    collection1 = solrTestRule.getSolrClient("collection1");
 
-    String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = solrJettyTestRule.getBaseUrl() + "/" + "collection2";
+    String urlCollection1 = solrTestRule.getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = solrTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    SolrClient nodeClient = solrJettyTestRule.getSolrClient();
+    SolrClient nodeClient = solrTestRule.getSolrClient();
     CoreAdminRequest.Create req = new CoreAdminRequest.Create();
     req.setCoreName("collection2");
     req.setConfigSet("collection1");
     nodeClient.request(req);
 
     // Now get the client for collection2 after it's been created
-    collection2 = solrJettyTestRule.getSolrClient("collection2");
+    collection2 = solrTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");

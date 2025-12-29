@@ -40,7 +40,7 @@ public class NoCacheHeaderTest extends CacheHeaderTestBase {
         "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n",
         "solrconfig-nocache.xml");
 
-    solrJettyTestRule.startSolr(solrHome);
+    solrTestRule.startSolr(solrHome);
   }
 
   // The tests

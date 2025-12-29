@@ -36,7 +36,7 @@ import org.junit.ClassRule;
 @SolrTestCaseJ4.SuppressSSL
 public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   public void testSystemPropertyFlag() {
     System.setProperty("solr.http1", "true");
@@ -56,10 +56,10 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(true)
             .build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
 
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/debug/foo")
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
             .useHttp1_1(true)
             .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
@@ -68,7 +68,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
       } catch (RemoteSolrException ignored) {
       }
     } finally {
-      solrClientTestRule.reset();
+      solrTestRule.reset();
     }
   }
 
@@ -79,10 +79,10 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(false)
             .build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
 
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/debug/foo")
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
             .useHttp1_1(true)
             .build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP);
@@ -91,7 +91,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
       } catch (RemoteSolrException ignored) {
       }
     } finally {
-      solrClientTestRule.reset();
+      solrTestRule.reset();
     }
   }
 
@@ -105,11 +105,11 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .useOnlyHttp1(true)
             .build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
 
     System.clearProperty("solr.http1");
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/debug/foo").build()) {
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo").build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
       try {
         client.query(new SolrQuery("*:*"), SolrRequest.METHOD.GET);
@@ -120,7 +120,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
         // expected
       }
     } finally {
-      solrClientTestRule.reset();
+      solrTestRule.reset();
     }
   }
 }

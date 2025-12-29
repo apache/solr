@@ -33,7 +33,7 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrJettyTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Override

@@ -36,7 +36,7 @@ import org.junit.Test;
 
 public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   // TODO add SSL test
 
@@ -44,10 +44,10 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
-    solrClientTestRule.enableProxy();
-    solrClientTestRule.startSolr(createTempDir());
+    solrTestRule.enableProxy();
+    solrTestRule.startSolr(createTempDir());
     // Actually only need extremely minimal configSet but just use the default
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(
             ExternalPaths.DEFAULT_CONFIGSET.toString()) // TODO should be default for empty home
@@ -62,7 +62,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() {
-    this.proxy = solrClientTestRule.getJetty().getProxy();
+    this.proxy = solrTestRule.getJetty().getProxy();
     this.host = proxy.getUrl().getHost();
     this.url = "http://" + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
   }

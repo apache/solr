@@ -41,7 +41,7 @@ import org.junit.Test;
 @SuppressSSL
 public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
 
-  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
@@ -62,13 +62,14 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrRule.startSolr(LuceneTestCase.createTempDir());
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.newCollection().withConfigSet(configSet.toString()).create();
   }
 
   @Test
   public void testFullStackTrace() throws Exception {
-    final String url = solrRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
+    final String url =
+        solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
     final HttpGet get = new HttpGet(url);
     var client = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse responseRaw = client.execute(get)) {
@@ -97,7 +98,7 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testRemoteSolrException() {
-    var client = solrRule.getSolrClient("collection1");
+    var client = solrTestRule.getSolrClient("collection1");
     QueryRequest queryRequest =
         new QueryRequest(new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
     queryRequest.setPath("/withError");

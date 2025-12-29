@@ -39,7 +39,7 @@ import org.junit.Test;
 
 public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private SolrClient client;
 
@@ -69,15 +69,15 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return SolrTestCaseJ4.getHttpSolrClient(solrJettyTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
+    return SolrTestCaseJ4.getHttpSolrClient(solrTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
   }
 
   protected static String getCoreUrl() {
-    return solrJettyTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
+    return solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
   }
 
   protected static String getBaseUrl() {
-    return solrJettyTestRule.getBaseUrl();
+    return solrTestRule.getBaseUrl();
   }
 
   // Backward compatibility methods for existing subclasses

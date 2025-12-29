@@ -44,7 +44,7 @@ import org.junit.Test;
 
 public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static SolrClient collection1;
   private static SolrClient collection2;
@@ -54,25 +54,25 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    solrJettyTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr(createTempDir());
 
-    solrJettyTestRule
+    solrTestRule
         .newCollection("collection1")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
-    solrJettyTestRule
+    solrTestRule
         .newCollection("collection2")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
-    var cc = solrJettyTestRule.getCoreContainer();
+    var cc = solrTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 
-    String urlCollection1 = solrJettyTestRule.getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = solrJettyTestRule.getBaseUrl() + "/" + "collection2";
+    String urlCollection1 = solrTestRule.getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = solrTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
-    collection1 = solrJettyTestRule.getSolrClient("collection1");
-    collection2 = solrJettyTestRule.getSolrClient("collection2");
+    collection1 = solrTestRule.getSolrClient("collection1");
+    collection2 = solrTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");

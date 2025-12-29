@@ -36,7 +36,7 @@ import org.junit.Test;
 
 public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   protected HttpRequestBase getSelectMethod(String method, String... params) {
     HttpRequestBase m = null;
@@ -52,7 +52,7 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
 
     URI uri =
         URI.create(
-            solrJettyTestRule.getBaseUrl()
+            solrTestRule.getBaseUrl()
                 + "/"
                 + DEFAULT_TEST_COLLECTION_NAME
                 + "/select?"
@@ -70,7 +70,7 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
   }
 
   protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) solrJettyTestRule.getSolrClient();
+    HttpSolrClient client = (HttpSolrClient) solrTestRule.getSolrClient();
     return client.getHttpClient();
   }
 

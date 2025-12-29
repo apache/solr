@@ -41,15 +41,15 @@ import org.junit.ClassRule;
 
 public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
   @ClassRule public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
   private static String fooUrl; // first Jetty URL
   private static String barUrl; // second Jetty URL
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
-    fooUrl = solrClientTestRule.getBaseUrl();
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+    fooUrl = solrTestRule.getBaseUrl();
 
     secondJetty.startSolr(legacyExampleCollection1SolrHome());
     barUrl = secondJetty.getBaseUrl();

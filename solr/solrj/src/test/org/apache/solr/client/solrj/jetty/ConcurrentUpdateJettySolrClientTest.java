@@ -170,20 +170,20 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Test
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = solrClientTestRule.getBaseUrl() + "/cuss/foo";
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -253,8 +253,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            (new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client))
+            (new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client))
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .build()) {
@@ -274,8 +273,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
@@ -297,8 +295,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .setPollQueueTime(0, TimeUnit.MILLISECONDS)
@@ -335,8 +332,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)

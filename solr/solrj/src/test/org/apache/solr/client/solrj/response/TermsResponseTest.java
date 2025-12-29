@@ -32,9 +32,9 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -44,7 +44,7 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClientTestRule.clearIndex();
+    solrTestRule.clearIndex();
   }
 
   @Test

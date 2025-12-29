@@ -432,7 +432,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("price:[* TO 2]", values.get(0));
     assertEquals("price:[2 TO 4]", values.get(1));
 
-    if (solrJettyTestRule.getJetty() != null) {
+    if (solrTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
       String url = getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {

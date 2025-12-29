@@ -24,9 +24,9 @@ import org.junit.ClassRule;
 public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
 
   @ClassRule
-  public static EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+  public static EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   public static SolrClient getSolrClient() {
-    return solrClientTestRule.getSolrClient();
+    return solrTestRule.getSolrClient();
   }
 }

@@ -67,7 +67,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
             StandardCharsets.UTF_8)) {
       props.store(writer, null);
     }
-    solrJettyTestRule.startSolr(tempSolrHome);
+    solrTestRule.startSolr(tempSolrHome);
   }
 
   @Test

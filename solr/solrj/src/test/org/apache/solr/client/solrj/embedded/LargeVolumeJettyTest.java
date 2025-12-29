@@ -24,9 +24,9 @@ public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     // TODO
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();

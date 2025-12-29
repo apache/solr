@@ -44,12 +44,12 @@ import org.junit.ClassRule;
 
 public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   private GenericSolrRequest createShowFileRequest(SolrParams params) {
@@ -59,7 +59,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void test404ViaHttp() {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     var request = createShowFileRequest(params("file", "does-not-exist-404.txt"));
     SolrException e = expectThrows(SolrException.class, () -> request.process(client));
     assertEquals(404, e.code());
@@ -82,14 +82,14 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testDirList() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     var request = createShowFileRequest(new ModifiableSolrParams());
     var resp = request.process(client);
     assertTrue(((NamedList) resp.getResponse().get("files")).size() > 0); // some files
   }
 
   public void testGetRawFile() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     var request = createShowFileRequest(params("file", "managed-schema.xml"));
     final AtomicBoolean readFile = new AtomicBoolean();
     request.setResponseParser(
@@ -142,7 +142,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testIllegalContentType() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     var request =
         createShowFileRequest(params("file", "managed-schema", "contentType", "not/known"));
     request.setResponseParser(new InputStreamResponseParser("xml"));
@@ -151,7 +151,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testAbsoluteFilename() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     final var request =
         createShowFileRequest(
             params("file", "/etc/passwd", "contentType", "text/plain; charset=utf-8"));
@@ -161,7 +161,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testEscapeConfDir() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     final var request =
         createShowFileRequest(
             params("file", "../../solr.xml", "contentType", "application/xml; charset=utf-8"));
@@ -171,7 +171,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void testPathTraversalFilename() throws SolrServerException, IOException {
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     final var request =
         createShowFileRequest(
             params(

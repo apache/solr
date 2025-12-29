@@ -29,7 +29,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -38,8 +38,8 @@ public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(createTempDir());
-    solrClientTestRule
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
         .newCollection("collection1")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -49,7 +49,7 @@ public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
         new LBHttpSolrClient.Builder()
-            .withBaseEndpoint(solrClientTestRule.getBaseUrl())
+            .withBaseEndpoint(solrTestRule.getBaseUrl())
             .withDefaultCollection(ANY_COLLECTION)
             .build()) {
       assertExceptionThrownWithMessageContaining(
@@ -79,7 +79,7 @@ public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
     }
 
     try (SolrClient client =
-        new LBHttpSolrClient.Builder().withBaseEndpoint(solrClientTestRule.getBaseUrl()).build()) {
+        new LBHttpSolrClient.Builder().withBaseEndpoint(solrTestRule.getBaseUrl()).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

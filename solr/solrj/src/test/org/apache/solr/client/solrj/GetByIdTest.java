@@ -34,9 +34,9 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -148,7 +148,7 @@ public class GetByIdTest extends EmbeddedSolrServerTestBase {
   @Test
   public void testGetIdsWithParams() throws Exception {
     SolrDocumentList rsp =
-        solrClientTestRule
+        solrTestRule
             .getSolrClient()
             .getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
     assertEquals(2, rsp.getNumFound());

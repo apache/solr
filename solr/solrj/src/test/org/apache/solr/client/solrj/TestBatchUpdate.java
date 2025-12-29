@@ -41,12 +41,12 @@ import org.junit.Test;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBatchUpdate extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(createTempDir());
-    solrClientTestRule
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
         .newCollection("collection1")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -57,7 +57,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
             .build()) {
@@ -69,7 +69,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
@@ -81,7 +81,7 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
   @Test
   public void testWithBinaryBean() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {

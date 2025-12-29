@@ -43,17 +43,17 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
     return new ByteArrayInputStream("NO-OP test response".getBytes(StandardCharsets.UTF_8));
   }
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
     // add document and commit, and ensure it's there
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
@@ -65,7 +65,7 @@ public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
   public void testQueryParse() throws Exception {
 
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withResponseParser(new InputStreamResponseParser("xml"))
             .build()) {

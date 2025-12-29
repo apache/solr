@@ -54,14 +54,14 @@ import org.slf4j.LoggerFactory;
 public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(createTempDir());
-    solrClientTestRule
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
         .newCollection("collection1")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -111,7 +111,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
             .build()) {
@@ -123,7 +123,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpSolrClient.Builder(solrClientTestRule.getBaseUrl())
+        new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
@@ -286,7 +286,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    String urlString = solrClientTestRule.getBaseUrl() + "/update";
+    String urlString = solrTestRule.getBaseUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = URI.create(urlString).toURL();
@@ -339,7 +339,7 @@ public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";
-    int port = solrClientTestRule.getJetty().getLocalPort();
+    int port = solrTestRule.getJetty().getLocalPort();
 
     try (Socket socket = new Socket(hostName, port);
         OutputStream out = new BufferedOutputStream(socket.getOutputStream());

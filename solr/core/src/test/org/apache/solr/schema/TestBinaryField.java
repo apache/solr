@@ -37,7 +37,7 @@ import org.junit.ClassRule;
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class TestBinaryField extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
@@ -53,11 +53,11 @@ public class TestBinaryField extends SolrTestCaseJ4 {
         collDir.resolve("conf/schema.xml"),
         StandardCopyOption.REPLACE_EXISTING);
 
-    solrClientTestRule.startSolr(homeDir);
+    solrTestRule.startSolr(homeDir);
   }
 
   public void testSimple() throws Exception {
-    try (SolrClient client = solrClientTestRule.getSolrClient()) {
+    try (SolrClient client = solrTestRule.getSolrClient()) {
       byte[] buf = new byte[10];
       for (int i = 0; i < 10; i++) {
         buf[i] = (byte) i;

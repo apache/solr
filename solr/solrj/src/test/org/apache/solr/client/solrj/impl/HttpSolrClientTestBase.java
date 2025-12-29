@@ -66,7 +66,7 @@ import org.junit.ClassRule;
 
 public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   protected static final String DEFAULT_COLLECTION = DEFAULT_TEST_CORENAME;
   protected static final String SLOW_SERVLET_PATH = "/slow";
@@ -91,7 +91,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Override
@@ -380,7 +380,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
   }
 
   protected void testQueryString() throws Exception {
-    final String clientUrl = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (HttpSolrClientBase client =
@@ -560,7 +560,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
   protected void testUpdateAsync() throws Exception {
     ResponseParser rp = new XMLResponseParser();
-    String url = solrClientTestRule.getBaseUrl();
+    String url = solrTestRule.getBaseUrl();
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
@@ -640,7 +640,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
-    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 

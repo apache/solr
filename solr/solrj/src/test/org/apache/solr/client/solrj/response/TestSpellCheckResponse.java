@@ -41,9 +41,9 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();

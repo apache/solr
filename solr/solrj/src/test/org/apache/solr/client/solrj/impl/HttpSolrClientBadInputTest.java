@@ -30,7 +30,7 @@ import org.junit.Test;
 
 /** Tests {@link HttpSolrClient}'s response to a variety of bad inputs. */
 public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
@@ -39,8 +39,8 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(createTempDir());
-    solrClientTestRule
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
         .newCollection("collection1")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();
@@ -48,7 +48,7 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(solrClientTestRule.getBaseUrl(), ANY_COLLECTION)) {
+    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl(), ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
@@ -75,7 +75,7 @@ public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
           });
     }
 
-    try (SolrClient client = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

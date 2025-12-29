@@ -35,11 +35,11 @@ import org.junit.Test;
 /** Test for SuggesterComponent's response in Solrj */
 public class TestSuggesterResponse extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   static String field = "cat";
@@ -114,8 +114,8 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
   }
 
   private void addSampleDocs() throws SolrServerException, IOException {
-    solrClientTestRule.getSolrClient().deleteByQuery("*:*");
-    solrClientTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().deleteByQuery("*:*");
+    solrTestRule.getSolrClient().commit(true, true);
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Computer");
@@ -125,10 +125,10 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
     SolrInputDocument doc3 = new SolrInputDocument();
     doc3.setField("id", "333");
     doc3.setField(field, "Laptop");
-    solrClientTestRule.getSolrClient().add(doc);
-    solrClientTestRule.getSolrClient().add(doc2);
-    solrClientTestRule.getSolrClient().add(doc3);
-    solrClientTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().add(doc);
+    solrTestRule.getSolrClient().add(doc2);
+    solrTestRule.getSolrClient().add(doc3);
+    solrTestRule.getSolrClient().commit(true, true);
   }
 
   /*
@@ -138,7 +138,7 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
     final ResponseParser randomParser =
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
-        .withBaseSolrUrl(solrClientTestRule.getBaseUrl())
+        .withBaseSolrUrl(solrTestRule.getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withResponseParser(randomParser)
         .build();

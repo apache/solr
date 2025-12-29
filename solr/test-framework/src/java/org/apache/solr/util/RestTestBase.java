@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
 public abstract class RestTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   protected static RestTestHarness restTestHarness;
 
@@ -112,17 +112,17 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
     nodeProps.setProperty("configSetBaseDir", solrHome.toString());
 
-    solrClientTestRule.startSolr(solrHome, nodeProps, jettyConfig);
+    solrTestRule.startSolr(solrHome, nodeProps, jettyConfig);
     return getJetty();
   }
 
   protected static JettySolrRunner getJetty() {
-    return solrClientTestRule.getJetty();
+    return solrTestRule.getJetty();
   }
 
   /** URL to Solr */
   protected static String getBaseUrl() {
-    return solrClientTestRule.getBaseUrl();
+    return solrTestRule.getBaseUrl();
   }
 
   /** URL to the core */
@@ -131,7 +131,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
   }
 
   protected static SolrClient getSolrClient() {
-    return solrClientTestRule.getSolrClient();
+    return solrTestRule.getSolrClient();
   }
 
   protected static HttpClient getHttpClient() {

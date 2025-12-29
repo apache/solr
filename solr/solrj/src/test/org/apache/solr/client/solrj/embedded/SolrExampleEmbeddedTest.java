@@ -28,6 +28,6 @@ public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrJettyTestRule.startSolr(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 }

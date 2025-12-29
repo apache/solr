@@ -36,7 +36,7 @@ import org.junit.Test;
 
 public class ResponseHeaderTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static Path solrHomeDirectory;
 
@@ -53,12 +53,12 @@ public class ResponseHeaderTest extends SolrTestCaseJ4 {
     // Create minimal config with custom solrconfig for headers testing
     SolrTestCaseJ4.copyMinConf(collectionDirectory, "name=collection1\n", "solrconfig-headers.xml");
 
-    solrJettyTestRule.startSolr(solrHomeDirectory);
+    solrTestRule.startSolr(solrHomeDirectory);
   }
 
   @Test
   public void testHttpResponse() throws IOException {
-    URI uri = URI.create(solrJettyTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
+    URI uri = URI.create(solrTestRule.getBaseUrl() + "/collection1/withHeaders?q=*:*");
     HttpGet httpGet = new HttpGet(uri);
     CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
     try {

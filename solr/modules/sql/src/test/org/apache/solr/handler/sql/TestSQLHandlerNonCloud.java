@@ -34,7 +34,7 @@ import org.junit.Test;
 
 public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrJettyTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static Path createSolrHome() throws Exception {
     Path workDir = createTempDir().toRealPath();
@@ -48,14 +48,14 @@ public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path solrHome = createSolrHome();
-    solrJettyTestRule.startSolr(solrHome);
+    solrTestRule.startSolr(solrHome);
   }
 
   @Test
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
-    String url = solrJettyTestRule.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
+    String url = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
     IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));

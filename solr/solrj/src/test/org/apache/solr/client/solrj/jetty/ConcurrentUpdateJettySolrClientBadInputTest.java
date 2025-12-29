@@ -35,11 +35,11 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrTestCaseJ4 
   private static final int ANY_QUEUE_SIZE = 1;
   private static final int ANY_MAX_NUM_THREADS = 1;
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(
+    solrTestRule.startSolr(
         legacyExampleCollection1SolrHome(), new Properties(), JettyConfig.builder().build());
   }
 
@@ -48,8 +48,7 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrTestCaseJ4 
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var client =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)
@@ -82,8 +81,7 @@ public class ConcurrentUpdateJettySolrClientBadInputTest extends SolrTestCaseJ4 
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var client =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    solrClientTestRule.getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(ANY_COLLECTION)
                 .withQueueSize(ANY_QUEUE_SIZE)
                 .withThreadCount(ANY_MAX_NUM_THREADS)

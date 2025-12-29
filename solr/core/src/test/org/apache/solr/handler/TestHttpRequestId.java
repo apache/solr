@@ -44,11 +44,11 @@ import org.slf4j.MDC;
 @LogLevel("org.apache.solr.client.solrj.jetty.HttpJettySolrClient=DEBUG")
 public class TestHttpRequestId extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr(createTempDir());
   }
 
   @Test
@@ -99,7 +99,7 @@ public class TestHttpRequestId extends SolrTestCaseJ4 {
               false);
       CompletableFuture<NamedList<Object>> cf;
       try (var client =
-          new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl())
+          new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
               .withDefaultCollection(collection)
               .withExecutor(commExecutor)
               .build()) {

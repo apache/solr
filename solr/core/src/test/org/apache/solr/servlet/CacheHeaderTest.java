@@ -51,7 +51,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
     nodeProps.setProperty("configSetBaseDir", solrHomeDirectory.toString());
 
-    solrJettyTestRule.startSolr(
+    solrTestRule.startSolr(
         solrHomeDirectory, nodeProps, org.apache.solr.embedded.JettyConfig.builder().build());
   }
 

@@ -23,9 +23,9 @@ import org.junit.BeforeClass;
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
+    solrTestRule
         .newCollection()
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
         .create();

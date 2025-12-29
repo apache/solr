@@ -79,10 +79,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(
-                    solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH,
-                    DEFAULT_CONNECTION_TIMEOUT,
-                    2000)
+            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 2000)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .build()) {
       client.query(q, SolrRequest.METHOD.GET);
@@ -97,10 +94,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(
-                    solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
-                    DEFAULT_CONNECTION_TIMEOUT,
-                    0)
+            builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .build()) {
       try {
@@ -115,10 +109,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     SolrQuery q = new SolrQuery("*:*");
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
-            builder(
-                    solrClientTestRule.getBaseUrl() + SLOW_SERVLET_PATH,
-                    DEFAULT_CONNECTION_TIMEOUT,
-                    0)
+            builder(solrTestRule.getBaseUrl() + SLOW_SERVLET_PATH, DEFAULT_CONNECTION_TIMEOUT, 0)
                 .withDefaultCollection(DEFAULT_COLLECTION)
                 .withRequestTimeout(500, TimeUnit.MILLISECONDS)
                 .build()) {
@@ -136,7 +127,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testSolrExceptionCodeNotFromSolr() throws IOException, SolrServerException {
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .build()) {
       super.testSolrExceptionCodeNotFromSolr(client);
@@ -155,14 +146,12 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
       try {
         // if client base url is null, request url will be used in exception message
         client.requestWithBaseUrl(
-            solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
-            new SolrPing(),
-            DEFAULT_COLLECTION);
+            solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH, new SolrPing(), DEFAULT_COLLECTION);
 
         fail("Didn't get excepted exception from oversided request");
       } catch (SolrException e) {
         assertEquals("Unexpected exception status code", status, e.code());
-        assertTrue(e.getMessage().contains(solrClientTestRule.getBaseUrl()));
+        assertTrue(e.getMessage().contains(solrTestRule.getBaseUrl()));
       }
     } finally {
       DebugServlet.clear();
@@ -172,7 +161,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Override
   protected void testQuerySetup(SolrRequest.METHOD method, ResponseParser rp) throws Exception {
     DebugServlet.clear();
-    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     SolrQuery q = new SolrQuery("foo");
     q.setParam("a", MUST_ENCODE);
     q.setParam("case_sensitive_param", "lowercase");
@@ -230,7 +219,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     DebugServlet.clear();
     final var defaultUrl =
         "http://not-a-real-url:8983/solr"; // Would result in an exception if used
-    final var urlToUse = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    final var urlToUse = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     final var queryParams = new ModifiableSolrParams();
     queryParams.add("q", "*:*");
 
@@ -264,7 +253,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testDelete() throws Exception {
     DebugServlet.clear();
-    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (var client =
         new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_COLLECTION).build()) {
       try {
@@ -279,7 +268,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testDeleteXml() throws Exception {
     DebugServlet.clear();
-    String url = solrClientTestRule.getBaseUrl() + "/debug/foo";
+    String url = solrTestRule.getBaseUrl() + "/debug/foo";
     try (var client =
         new HttpJettySolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_COLLECTION)
@@ -298,7 +287,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   public void testGetById() throws Exception {
     DebugServlet.clear();
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .build()) {
       super.testGetById(client);
@@ -307,7 +296,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testUpdateDefault() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     try (var client =
         new HttpJettySolrClient.Builder(url).withDefaultCollection(DEFAULT_COLLECTION).build()) {
       testUpdate(client, WT.JAVABIN, "application/javabin", MUST_ENCODE);
@@ -316,7 +305,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testUpdateXml() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + "/debug/foo";
+    String url = solrTestRule.getBaseUrl() + "/debug/foo";
     try (var client =
         new HttpJettySolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_COLLECTION)
@@ -329,7 +318,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testUpdateJavabin() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + "/debug/foo";
+    String url = solrTestRule.getBaseUrl() + "/debug/foo";
     try (var client =
         new HttpJettySolrClient.Builder(url)
             .withDefaultCollection(DEFAULT_COLLECTION)
@@ -342,7 +331,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testAsyncGet() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
     HttpSolrClientBuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
@@ -362,7 +351,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testAsyncQueryWithSharedClient() throws Exception {
     DebugServlet.clear();
-    final var url = solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
+    final var url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     ResponseParser rp = new XMLResponseParser();
     final var builder =
         new HttpJettySolrClient.Builder(url)
@@ -376,7 +365,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testFollowRedirect() throws Exception {
-    final String clientUrl = solrClientTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (var client =
         new HttpJettySolrClient.Builder(clientUrl)
             .withDefaultCollection(DEFAULT_COLLECTION)
@@ -389,7 +378,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testDoNotFollowRedirect() {
-    final String clientUrl = solrClientTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     try (var client =
         new HttpJettySolrClient.Builder(clientUrl)
             .withDefaultCollection(DEFAULT_COLLECTION)
@@ -404,7 +393,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testRedirectSwapping() throws Exception {
-    final String clientUrl = solrClientTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + REDIRECT_SERVLET_PATH;
     SolrQuery q = new SolrQuery("*:*");
 
     // default for follow redirects is false
@@ -440,9 +429,9 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testCollectionParameters() throws IOException, SolrServerException {
-    var baseUrlClient = new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl()).build();
+    var baseUrlClient = new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl()).build();
     var collection1UrlClient =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/" + DEFAULT_COLLECTION)
             .build();
     testCollectionParameters(baseUrlClient, collection1UrlClient);
   }
@@ -504,7 +493,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testSetCredentialsExplicitly() {
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withBasicAuthCredentials("foo", "explicit")
             .build()) {
@@ -523,7 +512,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(
         new PreemptiveBasicAuthClientCustomizer.CredentialsResolver().defaultParams);
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .build()) {
       QueryRequest r = new QueryRequest(new SolrQuery("quick brown fox"));
@@ -553,7 +542,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testPerRequestCredentials() {
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withBasicAuthCredentials("foo2", "explicit")
             .build()) {
@@ -564,7 +553,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testNoCredentials() {
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .build()) {
       super.testNoCredentials(client);
@@ -575,7 +564,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   public void testUseOptionalCredentials() {
     // username foo, password with embedded colon separator is "expli:cit".
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withOptionalBasicAuthCredentials("foo:expli:cit")
             .build()) {
@@ -586,7 +575,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
   @Test
   public void testUseOptionalCredentialsWithNull() {
     try (var client =
-        new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+        new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
             .withDefaultCollection(DEFAULT_COLLECTION)
             .withOptionalBasicAuthCredentials(null)
             .build()) {
@@ -627,7 +616,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     System.setProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP, "FakeClassName");
     try {
       SolrClient client =
-          new HttpJettySolrClient.Builder(solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
+          new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH)
               .withDefaultCollection(DEFAULT_COLLECTION)
               .build();
       fail("Expecting exception");
@@ -641,7 +630,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     try (HttpJettySolrClient client =
         (HttpJettySolrClient)
             builder(
-                    solrClientTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
+                    solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH,
                     DEFAULT_CONNECTION_TIMEOUT,
                     DEFAULT_CONNECTION_TIMEOUT)
                 .withDefaultCollection(DEFAULT_COLLECTION)
@@ -690,7 +679,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testIdleTimeoutWithHttpClient() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (var oldClient =
         new HttpJettySolrClient.Builder(url)
             .withRequestTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)
@@ -732,7 +721,7 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
 
   @Test
   public void testRequestTimeoutWithHttpClient() throws Exception {
-    String url = solrClientTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + SLOW_STREAM_SERVLET_PATH;
     try (var oldClient =
         new HttpJettySolrClient.Builder(url)
             .withIdleTimeout(Long.MAX_VALUE, TimeUnit.MILLISECONDS)

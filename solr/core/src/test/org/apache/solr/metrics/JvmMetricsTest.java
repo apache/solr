@@ -45,12 +45,12 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
     "mapped.TotalCapacity"
   };
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     System.setProperty("solr.metrics.jvm.enabled", "true");
-    solrClientTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr(createTempDir());
   }
 
   @Test
@@ -72,7 +72,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   @Test
   public void testSetupJvmMetrics() throws InterruptedException {
     PrometheusMetricReader reader =
-        solrClientTestRule
+        solrTestRule
             .getJetty()
             .getCoreContainer()
             .getMetricManager()
