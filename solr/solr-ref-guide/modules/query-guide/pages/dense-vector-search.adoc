@@ -516,26 +516,6 @@ Here is an example of a `knn` search using a `filteredSearchThreshold`:
 [source,text]
 ?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
 
-`parents.preFilter`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-This parameter is meant to be a filter query on parent document metadata.
-The knn search returns the top-k nearest children documents that satify the filter on the parent.
-+
-Only one child per distinct parent is returned.
-
-Here is an example of a `knn` search using a `parents.preFilter`:
-
-[source,text]
-?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
-&allParents=*:* -_nest_path_:*
-&someParents=color_s:RED
-
-The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
-
 `childrenOf`::
 +
 [%autowidth,frame=none]
@@ -545,8 +525,10 @@ The search results retrieved are the k=3 nearest documents to the vector in inpu
 |===
 +
 A query that matches the set of ALL possible parent documents.
-It's required to work with the 'parents.preFilter' parameter.
-
++
+This parameter is required to enable documents diversification per parent (to return maximum one document per parent).
++
+If you use it you can also add the 'parents.preFilter' parameter.
 
 Here is an example of a `knn` search using a `childrenOf`:
 
@@ -555,6 +537,28 @@ Here is an example of a `knn` search using a `childrenOf`:
 &allParents=*:* -_nest_path_:*
 
 The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'childrenOf' parameter must return all valid parents to guarantee the correct functioning of the query.
+
+`parents.preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+This parameter is meant to be a filter query on parent document metadata.
+The knn search returns the top-k nearest children documents that satisfy the filter on the parent.
++
+Only one child per distinct parent is returned.
++
+When using it, you need to also specify the `childrenOf` param.
+
+Here is an example of a `knn` search using a `parents.preFilter`:
+
+[source,text]
+?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
 
 === knn_text_to_vector Query Parser
 

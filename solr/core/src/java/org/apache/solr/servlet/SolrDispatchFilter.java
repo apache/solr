@@ -17,8 +17,6 @@
 package org.apache.solr.servlet;
 
 import static org.apache.solr.servlet.ServletUtils.closeShield;
-import static org.apache.solr.servlet.ServletUtils.configExcludes;
-import static org.apache.solr.servlet.ServletUtils.excludedPath;
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
 import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
@@ -67,7 +65,7 @@ import org.slf4j.LoggerFactory;
 // servlets that are more focused in scope. This should become possible now that we have a
 // ServletContextListener for startup/shutdown of CoreContainer that sets up a service from which
 // things like CoreContainer can be requested. (or better yet injected)
-public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
+public class SolrDispatchFilter extends HttpFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private CoreContainerProvider containerProvider;
@@ -77,11 +75,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
   protected String abortErrorMessage = null;
 
   private HttpSolrCallFactory solrCallFactory;
-
-  @Override
-  public void setExcludePatterns(List<Pattern> excludePatterns) {
-    this.excludePatterns = excludePatterns;
-  }
 
   private List<Pattern> excludePatterns;
 
@@ -133,7 +126,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
 
-      configExcludes(this, config.getInitParameter("excludePatterns"));
     } catch (Throwable t) {
       // catch this so our filter still works
       log.error("Could not start Dispatch Filter.", t);
@@ -157,9 +149,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
-    if (excludedPath(excludePatterns, request, response, chain)) {
-      return;
-    }
 
     try (var mdcSnapshot = MDCSnapshot.create()) {
       assert null != mdcSnapshot; // prevent compiler warning

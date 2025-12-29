@@ -14,15 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.servlet;
-
-import java.util.List;
-import java.util.regex.Pattern;
 
 /**
- * Denotes an object, usually a servlet that denies access to some paths based on the supplied
- * patterns. Typically, this would be implemented via compiled regular expressions.
+ * This contains the classes to combine the scores from search index results. Multiple
+ * implementation of algorithms can be added to support them.
  */
-public interface PathExcluder {
-  void setExcludePatterns(List<Pattern> excludePatterns);
-}
+package org.apache.solr.handler.component.combine;

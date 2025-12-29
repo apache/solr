@@ -17,18 +17,19 @@
 package org.apache.solr;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.join.TestScoreJoinQPNoScore;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,21 +37,21 @@ import org.junit.Test;
 public class TestCrossCoreJoin extends SolrTestCaseJ4 {
 
   private static SolrCore fromCore;
+  private static EmbeddedSolrServer fromServer;
 
   @BeforeClass
   public static void beforeTests() throws Exception {
     System.setProperty(
         "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     System.setProperty("solr.filterCache.async", "true");
-    //    initCore("solrconfig.xml","schema12.xml");
 
-    // File testHome = createTempDir().toFile();
-    // FileUtils.copyDirectory(getFile("solrj/solr"), testHome);
     initCore("solrconfig.xml", "schema12.xml", TEST_HOME(), "collection1");
     final CoreContainer coreContainer = h.getCoreContainer();
 
     fromCore = coreContainer.create("fromCore", Map.of("configSet", "minimal"));
+    fromServer = new EmbeddedSolrServer(fromCore.getCoreContainer(), fromCore.getName());
 
+    // Add documents to the main core
     assertU(
         add(
             doc(
@@ -98,63 +99,34 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
                 "Engineering")));
     assertU(commit());
 
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "10",
-                "id_s_dv",
-                "10",
-                "dept_id_s",
-                "Engineering",
-                "text",
-                "These guys develop stuff",
-                "cat",
-                "dev")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "11",
-                "id_s_dv",
-                "11",
-                "dept_id_s",
-                "Marketing",
-                "text",
-                "These guys make you look good")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "12",
-                "id_s_dv",
-                "12",
-                "dept_id_s",
-                "Sales",
-                "text",
-                "These guys sell stuff")));
-    update(
-        fromCore,
-        add(
-            doc(
-                "id",
-                "13",
-                "id_s_dv",
-                "13",
-                "dept_id_s",
-                "Support",
-                "text",
-                "These guys help customers")));
-    update(fromCore, commit());
-  }
+    // Add documents to the fromCore
+    List<SolrInputDocument> docs =
+        sdocs(
+            sdoc(
+                "id", "10",
+                "id_s_dv", "10",
+                "dept_id_s", "Engineering",
+                "text", "These guys develop stuff",
+                "cat", "dev"),
+            sdoc(
+                "id", "11",
+                "id_s_dv", "11",
+                "dept_id_s", "Marketing",
+                "text", "These guys make you look good"),
+            sdoc(
+                "id", "12",
+                "id_s_dv", "12",
+                "dept_id_s", "Sales",
+                "text", "These guys sell stuff"),
+            sdoc(
+                "id", "13",
+                "id_s_dv", "13",
+                "dept_id_s", "Support",
+                "text", "These guys help customers"));
 
-  public static String update(SolrCore core, String xml) throws Exception {
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update");
-    return connection.request(handler, null, xml);
+    // Add all documents to fromCore
+    fromServer.add(docs);
+    fromServer.commit();
   }
 
   @Test

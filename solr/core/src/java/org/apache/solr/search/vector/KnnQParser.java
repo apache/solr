@@ -141,7 +141,7 @@ public class KnnQParser extends AbstractVectorQParserBase {
       if (null == allParentsQuery) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
-            "When running a diversifying children KNN query, 'allParents' parameter is required");
+            "When running a diversifying children KNN query, 'childrenOf' parameter is required");
       }
       final DenseVectorParser vectorBuilder =
           denseVectorType.getVectorBuilder(vectorToSearch, DenseVectorParser.BuilderPhase.QUERY);
