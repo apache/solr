@@ -19,8 +19,8 @@
 
 <!-- 
   A minimal solrconfig specifically for testing property substitution functionality.
-  This config is used by TestConfig.testJavaProperty() to test that system property
-  substitution works correctly in Solr configuration files.
+  This config is used by TestConfigPropertySubstitution.testJavaPropertySubstitution() to test
+  that system property substitution works correctly in Solr configuration files.
 -->
 <config>
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
