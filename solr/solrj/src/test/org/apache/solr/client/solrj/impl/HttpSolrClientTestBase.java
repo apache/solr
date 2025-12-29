@@ -68,7 +68,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
 
-  protected static final String DEFAULT_COLLECTION = "collection1";
+  protected static final String DEFAULT_COLLECTION = DEFAULT_TEST_CORENAME;
   protected static final String SLOW_SERVLET_PATH = "/slow";
   protected static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
   protected static final String DEBUG_SERVLET_PATH = "/debug";
