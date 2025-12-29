@@ -17,7 +17,6 @@
 package org.apache.solr.client.solrj;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -82,10 +81,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   }
 
   // Backward compatibility methods for existing subclasses
-  @Deprecated
-  protected static void createAndStartJetty(Path solrHome) throws Exception {
-    solrJettyTestRule.startSolr(solrHome);
-  }
 
   /** query the example */
   @Test

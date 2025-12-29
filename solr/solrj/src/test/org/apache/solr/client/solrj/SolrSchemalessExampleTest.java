@@ -76,7 +76,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         }
       }
     }
-    createAndStartJetty(tempSolrHome);
+    solrJettyTestRule.startSolr(tempSolrHome);
   }
 
   @Test
