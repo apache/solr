@@ -95,7 +95,7 @@ abstract class ZkDistributedLock implements DistributedLock {
                 + lockNodePrefix,
             null,
             CreateMode.EPHEMERAL_SEQUENTIAL,
-            false);
+            true);
 
     sequence = getSequenceFromNodename(lockNode);
   }
