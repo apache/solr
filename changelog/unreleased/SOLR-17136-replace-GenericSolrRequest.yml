@@ -2,6 +2,7 @@ title: Introduce new SolrJ SolrRequest classes for metrics and "system info" req
 type: added
 authors:
 - name: Isabelle Giguère
+- name: Pierre Salagnac
 links:
 - name: SOLR-17136
   url: https://issues.apache.org/jira/browse/SOLR-17136
