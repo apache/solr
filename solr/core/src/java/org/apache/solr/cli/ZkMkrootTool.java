@@ -79,7 +79,7 @@ public class ZkMkrootTool extends ToolBase {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
 
       echo("Creating ZooKeeper path " + znode + " on ZooKeeper at " + zkHost);
-      zkClient.makePath(znode, failOnExists, true);
+      zkClient.makePath(znode, failOnExists);
     } catch (Exception e) {
       log.error("Could not complete mkroot operation for reason: ", e);
       throw (e);
