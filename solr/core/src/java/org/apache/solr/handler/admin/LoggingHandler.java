@@ -92,8 +92,11 @@ public class LoggingHandler extends RequestHandlerBase {
     }
 
     rsp.setHttpCaching(false);
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
-      return; // Request was proxied to other node
+    if (cc != null) {
+      final var adminProxy = AdminHandlersProxy.create(cc, req, rsp);
+      if (adminProxy.shouldProxy()) {
+        adminProxy.proxyRequest();
+      }
     }
   }
 

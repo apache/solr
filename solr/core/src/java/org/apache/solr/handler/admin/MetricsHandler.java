@@ -123,8 +123,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
               + format);
     }
 
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
-      return; // Request was proxied to other node
+    if (cc != null) {
+      final var adminProxy = AdminHandlersProxy.create(cc, req, rsp);
+      if (adminProxy.shouldProxy()) {
+        adminProxy.proxyRequest();
+        return;
+      }
     }
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     try {
