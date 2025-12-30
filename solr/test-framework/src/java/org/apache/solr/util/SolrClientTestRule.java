@@ -68,7 +68,7 @@ public abstract class SolrClientTestRule extends ExternalResource {
       this.name = name;
     }
 
-    public NewCollectionBuilder withConfigSet(Path configSet) {
+    public NewCollectionBuilder withConfigSet(String configSet) {
       // Chop off "/conf" if found -- configSet can be a path.
       // This is a hack so that we can continue to use ExternalPaths.DEFAULT_CONFIGSET etc. as-is.
       // Without this, managed resources might be written to
@@ -77,11 +77,16 @@ public abstract class SolrClientTestRule extends ExternalResource {
       if (configSet != null) {
         final var confSuffix = FileSystems.getDefault().getSeparator() + "conf";
         if (configSet.endsWith(confSuffix)) {
-          configSet = configSet.getParent();
+          configSet = configSet.substring(0, configSet.length() - confSuffix.length());
         }
-        this.configSet = configSet.toString();
+        this.configSet = configSet;
       }
 
+      return this;
+    }
+
+    public NewCollectionBuilder withConfigSet(Path configSet) {
+      withConfigSet(configSet.toString());
       return this;
     }
 
