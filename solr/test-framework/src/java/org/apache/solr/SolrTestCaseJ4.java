@@ -704,10 +704,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ignoreException("ignore_exception");
 
-    // other  methods like starting a jetty instance need these too
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
     String configFile = getSolrConfigFile();
     if (configFile != null) {
       createCore();
@@ -807,7 +803,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       CoreContainer cc = h.getCoreContainer();
       if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
-          cc.getZkController().getZkClient().exists("/", false);
+          cc.getZkController().getZkClient().exists("/");
         } catch (KeeperException e) {
           log.error("Testing connectivity to ZK by checking for root path failed", e);
           fail("Trying to tear down a ZK aware core container with ZK not reachable");

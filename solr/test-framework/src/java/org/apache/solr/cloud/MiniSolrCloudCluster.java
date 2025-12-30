@@ -300,7 +300,7 @@ public class MiniSolrCloudCluster {
             .withUrl(zkServer.getZkHost())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr/initialized", true)) {
+      if (!zkClient.exists("/solr/initialized")) {
         zkClient.makePath("/solr/initialized", "yes".getBytes(Charset.defaultCharset()), true);
         if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
           zkClient.makePath(
@@ -644,9 +644,7 @@ public class MiniSolrCloudCluster {
         // cleanup any property before removing the configset
         getZkClient()
             .delete(
-                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME,
-                -1,
-                true);
+                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1);
       } catch (KeeperException.NoNodeException nne) {
       }
       new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);
@@ -735,10 +733,9 @@ public class MiniSolrCloudCluster {
    * Set data in zk without exposing caller to the ZK API, i.e. tests won't need to include
    * Zookeeper dependencies
    */
-  public void zkSetData(String path, byte[] data, boolean retryOnConnLoss)
-      throws InterruptedException {
+  public void zkSetData(String path, byte[] data) throws InterruptedException {
     try {
-      getZkClient().setData(path, data, -1, retryOnConnLoss);
+      getZkClient().setData(path, data, -1);
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
     }

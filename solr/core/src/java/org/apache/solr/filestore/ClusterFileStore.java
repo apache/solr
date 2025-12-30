@@ -92,7 +92,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
 
       if (requestBody == null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
@@ -142,7 +142,7 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e.getMessage());
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }
@@ -275,14 +275,14 @@ public class ClusterFileStore extends JerseyResource implements ClusterFileStore
       coreContainer
           .getZkController()
           .getZkClient()
-          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL, true);
+          .create(TMP_ZK_NODE, "true".getBytes(UTF_8), CreateMode.EPHEMERAL);
       fileStore.delete(filePath);
     } catch (Exception e) {
       log.error("Unknown error", e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     } finally {
       try {
-        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1, true);
+        coreContainer.getZkController().getZkClient().delete(TMP_ZK_NODE, -1);
       } catch (Exception e) {
         log.error("Unexpected error  ", e);
       }

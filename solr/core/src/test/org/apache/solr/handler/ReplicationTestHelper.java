@@ -286,9 +286,6 @@ public final class ReplicationTestHelper {
     }
 
     public void setUp() throws Exception {
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
       Properties props = new Properties();
       props.setProperty("name", "collection1");
 
