@@ -45,12 +45,12 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   protected static void initWithRequestWriter(RequestWriterSupplier requestWriterSupplier)
       throws Exception {
-    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
     System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
 
-    solrClientTestRule.newCollection().withConfigSet("../collection1").create();
+    solrTestRule.newCollection().withConfigSet("../collection1").create();
   }
 
   @Before

@@ -25,8 +25,7 @@ import java.util.concurrent.ExecutorService;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.pool.PoolStats;
-import org.apache.solr.SolrJettyTestBase;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -39,16 +38,17 @@ import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
-public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
+public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
 
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
   @ClassRule public static SolrJettyTestRule secondJetty = new SolrJettyTestRule();
   private static String fooUrl; // first Jetty URL
   private static String barUrl; // second Jetty URL
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
-    fooUrl = getBaseUrl();
+  public static void beforeTest() {
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+    fooUrl = solrTestRule.getBaseUrl();
 
     secondJetty.startSolr(legacyExampleCollection1SolrHome());
     barUrl = secondJetty.getBaseUrl();
@@ -113,7 +113,6 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   public void testLBClient() throws IOException, SolrServerException {
 
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
-    final SolrClient client1;
     int threadCount = atLeast(2);
     final ExecutorService threads =
         ExecutorUtil.newMDCAwareFixedThreadPool(

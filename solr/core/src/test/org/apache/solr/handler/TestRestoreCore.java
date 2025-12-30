@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
@@ -41,7 +40,7 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs("SimpleText")
-public class TestRestoreCore extends SolrJettyTestBase {
+public class TestRestoreCore extends SolrTestCaseJ4 {
 
   JettySolrRunner leaderJetty;
   ReplicationTestHelper.SolrInstance leader = null;

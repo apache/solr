@@ -36,7 +36,7 @@ import org.junit.Test;
  */
 public class TestCustomCoreProperties extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   // TODO these properties files don't work with configsets
 
@@ -71,7 +71,7 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
       coreProperties.store(fos, null);
     }
 
-    solrClientTestRule.startSolr(homeDir, new Properties(), JettyConfig.builder().build());
+    solrTestRule.startSolr(homeDir, new Properties(), JettyConfig.builder().build());
   }
 
   @Test
@@ -80,7 +80,7 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
         params(
             "q", "*:*",
             "echoParams", "all");
-    QueryResponse res = solrClientTestRule.getSolrClient("collection1").query(params);
+    QueryResponse res = solrTestRule.getSolrClient("collection1").query(params);
     assertEquals(0, res.getResults().getNumFound());
 
     NamedList<?> echoedParams = (NamedList<?>) res.getHeader().get("params");

@@ -40,7 +40,7 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
 
   protected CoreContainer cores = null;
 
-  @Rule public EmbeddedSolrServerTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+  @Rule public EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @Rule public TestRule testRule = new SystemPropertiesRestoreRule();
 
@@ -70,9 +70,9 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
     System.setProperty("tempDir", tempDir.toString());
     SolrTestCaseJ4.newRandomConfig();
 
-    solrClientTestRule.startSolr(SOLR_HOME);
+    solrTestRule.startSolr(SOLR_HOME);
 
-    cores = solrClientTestRule.getCoreContainer();
+    cores = solrTestRule.getCoreContainer();
   }
 
   @Override
@@ -111,6 +111,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   }
 
   protected SolrClient getSolrAdmin() {
-    return solrClientTestRule.getAdminClient();
+    return solrTestRule.getAdminClient();
   }
 }

@@ -2231,10 +2231,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     copyMinConf(dstRoot, null);
   }
 
-  // Creates a minimal conf dir, adding in a core.properties file from the string passed in
-  // the string to write to the core.properties file may be null in which case nothing is done with
-  // it.
-  // propertiesContent may be an empty string, which will actually work.
+  /**
+   * Creates a minimal Solr configuration directory with default solrconfig. Adds in a
+   * core.properties if propertiesContent is provided.
+   *
+   * @param dstRoot the destination directory where conf/ will be created
+   * @param propertiesContent content for core.properties file, or null to skip creating it
+   */
   public static void copyMinConf(Path dstRoot, String propertiesContent) throws IOException {
     copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
   }

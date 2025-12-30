@@ -29,18 +29,17 @@ import org.junit.ClassRule;
 
 public class TestJsonRequestWithEdismaxDefType extends SolrTestCaseJ4 {
 
-  @ClassRule
-  public static final SolrClientTestRule solrClientTestRule = new EmbeddedSolrServerTestRule();
+  @ClassRule public static final SolrClientTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   public void test() throws Exception {
-    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
 
     Path configSet = LuceneTestCase.createTempDir();
     SolrTestCaseJ4.copyMinConf(configSet);
 
-    solrClientTestRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
-    SolrClient client = solrClientTestRule.getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
 
     client.request(
         new ConfigRequest(
