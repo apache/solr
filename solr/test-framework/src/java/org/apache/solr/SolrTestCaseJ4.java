@@ -2301,7 +2301,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try {
       Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
       Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-      
+
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
       Path collection1Dir = tempSolrHome.resolve("collection1");
 
