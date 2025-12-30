@@ -1,7 +1,6 @@
 package org.apache.solr.handler.admin;
 
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
-import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -34,7 +33,6 @@ public class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
     String cname = params.required().get(CoreAdminParams.CORE);
     final var requestBody = new UpgradeCoreIndexRequestBody();
     requestBody.updateChain = params.get(UpdateParams.UPDATE_CHAIN);
-    requestBody.async = params.get(CommonAdminParams.ASYNC);
 
     UpgradeCoreIndex upgradeCoreIndexApi =
         UPGRADE_CORE_INDEX_FACTORY.create(
