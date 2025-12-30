@@ -17,8 +17,8 @@
 package org.apache.solr.search.vector;
 
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
+import org.apache.lucene.tests.index.BaseKnnVectorsFormatTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
@@ -46,8 +46,8 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
         final SolrInputDocument kid =
             doc(f("id", kidId), f("parent_s", parentId), f("type_s", "KID"));
 
-        kid.addField("vector", randomFloatVector(random()));
-        kid.addField("vector_byte_encoding", randomByteVector(random()));
+        kid.addField("vector", randomFloatVector());
+        kid.addField("vector_byte_encoding", randomByteVector());
 
         parent.addChildDocument(kid);
       }
@@ -69,8 +69,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
       assertQ(
           req(
               "q",
-              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}"
-                  + vecStr(randomFloatVector(random())),
+              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}" + vecStr(randomFloatVector()),
               "indent",
               "true",
               "fl",
@@ -93,7 +92,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
           req(
               "q",
               "{!knn f=vector_byte_encoding topK=$k childrenOf='type_s:PARENT'}"
-                  + vecStr(randomByteVector(random())),
+                  + vecStr(randomByteVector()),
               "indent",
               "true",
               "fl",
@@ -126,8 +125,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
               "q",
               "{!parent which='type_s:PARENT' score=max v=$knn}",
               "knn",
-              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}"
-                  + vecStr(randomFloatVector(random())),
+              "{!knn f=vector topK=$k childrenOf='type_s:PARENT'}" + vecStr(randomFloatVector()),
               "indent",
               "true",
               "fl",
@@ -149,7 +147,7 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
               "{!parent which='type_s:PARENT' score=max v=$knn}",
               "knn",
               "{!knn f=vector_byte_encoding topK=$k childrenOf='type_s:PARENT'}"
-                  + vecStr(randomByteVector(random())),
+                  + vecStr(randomByteVector()),
               "indent",
               "true",
               "fl",
@@ -172,31 +170,15 @@ public class KnnQParserChildTest extends SolrTestCaseJ4 {
   }
 
   /** Random vector of size 4 */
-  protected static List<Float> randomFloatVector(Random r) {
-    // we don't want nextFloat() because it's bound by -1:1
-    // but we also don't want NaN, or +/- Infinity (so we don't mess with intBitsToFloat)
-    // we could be fancier to get *all* the possible "real" floats, but this is good enough...
-
-    // Note: bias first vec entry to ensure we never have an all zero vector (invalid w/cosine sim
-    // used in configs)
-    return List.of(
-        1F + (r.nextFloat() * 10000F),
-        r.nextFloat() * 10000F,
-        r.nextFloat() * 10000F,
-        r.nextFloat() * 10000F);
+  protected static List<Float> randomFloatVector() {
+    final float[] data = BaseKnnVectorsFormatTestCase.randomVector(4);
+    return List.of(data[0], data[1], data[2], data[3]);
   }
 
   /** Random vector of size 4 */
-  protected static List<Byte> randomByteVector(Random r) {
-    final byte[] byteBuff = new byte[4];
-    r.nextBytes(byteBuff);
-    // Note: bias first vec entry to ensure we never have an all zero vector (invalid w/cosine sim
-    // used in configs)
-    return List.of(
-        (Byte) (byte) (byteBuff[0] + 1),
-        (Byte) byteBuff[1],
-        (Byte) byteBuff[1],
-        (Byte) byteBuff[1]);
+  protected static List<Byte> randomByteVector() {
+    final byte[] data = BaseKnnVectorsFormatTestCase.randomVector8(4);
+    return List.of(data[0], data[1], data[2], data[3]);
   }
 
   /** Convenience method for building a SolrInputDocument */
