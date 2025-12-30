@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix phaser/semaphore double registration bug in HttpJettySolrClient
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: James Vanneman
+links:
+  - name: SOLR-18051
+    url: https://issues.apache.org/jira/browse/SOLR-18051
