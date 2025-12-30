@@ -34,12 +34,12 @@ import org.junit.ClassRule;
 public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   @ClassRule
-  public static final SolrClientTestRule solrClientTestRule =
+  public static final SolrClientTestRule solrTestRule =
       new EmbeddedSolrServerTestRule() {
         @Override
         protected void before() {
           System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
-          solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
+          solrTestRule.startSolr(LuceneTestCase.createTempDir());
         }
       };
 
@@ -47,7 +47,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testExternal() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
     Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
 
@@ -63,7 +63,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testRelative() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
     Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
 
@@ -89,16 +89,12 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
     // check that this config is unsuccessful
     expectThrows(
         Exception.class,
-        () ->
-            solrClientTestRule
-                .newCollection("illegal")
-                .withConfigSet(configSet.toString())
-                .create());
+        () -> solrTestRule.newCollection("illegal").withConfigSet(configSet).create());
   }
 
   public void testAbsoluteSubdir() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
     Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
 
@@ -114,7 +110,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testDefault() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
     Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
 
@@ -128,7 +124,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
   public void testExplicitDefault() throws Exception {
     String collectionName = "coll" + collectionIdx.getAndIncrement();
-    SolrClient client = solrClientTestRule.getSolrClient(collectionName);
+    SolrClient client = solrTestRule.getSolrClient(collectionName);
 
     Path coreRootDir = ((EmbeddedSolrServer) client).getCoreContainer().getCoreRootDirectory();
 
@@ -153,7 +149,7 @@ public class CustomTLogDirTest extends SolrTestCaseJ4 {
 
     String collectionName = instanceDir.getFileName().toString();
 
-    solrClientTestRule.newCollection(collectionName).withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection(collectionName).withConfigSet(configSet).create();
 
     // resolvedTlogDir = instanceDir.resolve("data/tlog"); // legacy impl _always_ resulted in this
 

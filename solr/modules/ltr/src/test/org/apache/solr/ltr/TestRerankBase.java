@@ -127,13 +127,13 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static ManagedFeatureStore getManagedFeatureStore() {
-    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedFeatureStore.getManagedFeatureStore(core);
     }
   }
 
   public static ManagedModelStore getManagedModelStore() {
-    try (SolrCore core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+    try (SolrCore core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
       return ManagedModelStore.getManagedModelStore(core);
     }
   }
@@ -198,7 +198,7 @@ public class TestRerankBase extends RestTestBase {
       restTestHarness.close();
       restTestHarness = null;
     }
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;

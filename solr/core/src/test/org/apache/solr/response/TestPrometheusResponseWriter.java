@@ -42,30 +42,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final List<String> VALID_PROMETHEUS_VALUES = Arrays.asList("NaN", "+Inf", "-Inf");
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
-    solrClientTestRule
-        .newCollection("core1")
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
-        .create();
-    solrClientTestRule
-        .newCollection("core2")
-        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET.toString())
-        .create();
-    var cc = solrClientTestRule.getCoreContainer();
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    var cc = solrTestRule.getCoreContainer();
     cc.waitForLoadingCoresToFinish(30000);
 
     // Populate request metrics on both cores
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
     queryParams.set("q", "*:*");
 
-    solrClientTestRule.getSolrClient("core1").query(queryParams);
-    solrClientTestRule.getSolrClient("core2").query(queryParams);
+    solrTestRule.getSolrClient("core1").query(queryParams);
+    solrTestRule.getSolrClient("core2").query(queryParams);
   }
 
   @Test
@@ -75,7 +69,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       String output = InputStreamResponseParser.consumeResponseToString(res);
 
@@ -126,7 +120,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.addHeader("Accept", "application/openmetrics-text;version=1.0.0");
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
 
       try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
@@ -144,7 +138,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("openmetrics"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
 
       try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
@@ -162,7 +156,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
 
       try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
@@ -180,7 +174,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser(null));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
 
       try (InputStream in = (InputStream) res.get(STREAM_KEY)) {
@@ -198,7 +192,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     req.setResponseParser(new InputStreamResponseParser("unknownFormat"));
 
-    try (SolrClient adminClient = getHttpSolrClient(solrClientTestRule.getBaseUrl())) {
+    try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
       assertEquals(400, res.get("responseStatus"));
     }
