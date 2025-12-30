@@ -49,8 +49,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     System.setProperty("solr.index.updatelog.enabled", "true");
     SolrTestCaseJ4.newRandomConfig();
-    System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
-    System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
 
     solrClientTestRule.newCollection().withConfigSet("../collection1").create();
   }

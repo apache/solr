@@ -101,7 +101,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -121,12 +120,12 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
@@ -705,10 +704,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ignoreException("ignore_exception");
 
-    // other  methods like starting a jetty instance need these too
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
     String configFile = getSolrConfigFile();
     if (configFile != null) {
       createCore();
@@ -808,7 +803,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       CoreContainer cc = h.getCoreContainer();
       if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
-          cc.getZkController().getZkClient().exists("/", false);
+          cc.getZkController().getZkClient().exists("/");
         } catch (KeeperException e) {
           log.error("Testing connectivity to ZK by checking for root path failed", e);
           fail("Trying to tear down a ZK aware core container with ZK not reachable");
@@ -1188,9 +1183,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     UpdateRequestHandler handler = new UpdateRequestHandler();
     handler.init(null);
-    ArrayList<ContentStream> streams = new ArrayList<>(2);
-    streams.add(new ContentStreamBase.StringStream(doc));
-    req.setContentStreams(streams);
+    req.setContentStreams(List.of(new ContentStreamBase.StringStream(doc)));
     handler.handleRequestBody(req, new SolrQueryResponse());
     req.close();
   }
@@ -1362,13 +1355,26 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       if (newArgs.get("indent") == null) newArgs.set("indent", "true");
       args = newArgs;
     }
-    DirectSolrConnection connection = new DirectSolrConnection(core);
-    SolrRequestHandler handler = core.getRequestHandler("/update/json");
-    if (handler == null) {
-      handler = new UpdateRequestHandler();
-      handler.init(null);
+
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, args);
+    if (json != null && !json.isEmpty()) {
+      req.setContentStreams(List.of(new ContentStreamBase.StringStream(json)));
     }
-    return connection.request(handler, args, json);
+
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrRequestHandler handler = core.getRequestHandler("/update/json");
+
+    try {
+      SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
+      handler.handleRequest(req, rsp);
+      if (rsp.getException() != null) {
+        throw rsp.getException();
+      }
+      return req.getResponseWriter().writeToString(req, rsp);
+    } finally {
+      req.close();
+      SolrRequestInfo.clearRequestInfo();
+    }
   }
 
   public static SolrInputDocument sdoc(Object... fieldsAndValues) {

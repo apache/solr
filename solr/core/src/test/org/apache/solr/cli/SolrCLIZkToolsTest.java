@@ -101,8 +101,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     String content =
         new String(
-            zkClient.getData("/configs/upconfig2/schema.xml", null, null, true),
-            StandardCharsets.UTF_8);
+            zkClient.getData("/configs/upconfig2/schema.xml", null, null), StandardCharsets.UTF_8);
     assertTrue(
         "There should be content in the node! ", content.contains("Apache Software Foundation"));
   }
@@ -243,7 +242,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy up to intermediate file should have succeeded.", 0, res);
     assertTrue(
         "Should have created an intermediate node on ZK",
-        zkClient.exists("/powerup/solrconfig.xml", true));
+        zkClient.exists("/powerup/solrconfig.xml"));
 
     // copy individual file up
     // src and cp3 are valid
@@ -259,8 +258,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ZkCpTool.class);
     assertEquals("Copy up to named file should have succeeded.", 0, res);
     assertTrue(
-        "Should NOT have created an intermediate node on ZK",
-        zkClient.exists("/copyUpFile.xml", true));
+        "Should NOT have created an intermediate node on ZK", zkClient.exists("/copyUpFile.xml"));
 
     // copy individual file down
     // src and cp3 are valid
@@ -288,8 +286,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     res = CLITestHelper.runTool(args, ZkCpTool.class);
     assertEquals("Copy from somewhere in ZK to ZK root should have succeeded.", 0, res);
-    assertTrue(
-        "Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml", true));
+    assertTrue("Should have found znode /solrconfig.xml: ", zkClient.exists("/solrconfig.xml"));
 
     // Check that the form path/ works for copying files up. Should append the last bit of the
     // source path to the dst
@@ -313,8 +310,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     String content =
-        new String(
-            zkClient.getData("/cp7/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/cp7/conf/stopwords", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     res = CLITestHelper.runTool(args, ZkCpTool.class);
@@ -336,8 +332,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Copy should have succeeded.", 0, res);
 
     content =
-        new String(
-            zkClient.getData("/cp9/conf/stopwords", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/cp9/conf/stopwords", null, null), StandardCharsets.UTF_8);
     assertTrue("There should be content in the node! ", content.contains("{Some Arbitrary Data}"));
 
     // Copy an individual empty file up and back down and insure it's still a file
@@ -409,7 +404,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     // Now does the moved directory match the original on disk?
     verifyZkLocalPathsMatch(srcPathCheck, "/mv2");
     // And are we sure the old path is gone?
-    assertFalse("/configs/mv1 Znode should not be there: ", zkClient.exists("/configs/mv1", true));
+    assertFalse("/configs/mv1 Znode should not be there: ", zkClient.exists("/configs/mv1"));
 
     // Files are in mv2
     // Now fail if we specify "file:". Everything should still be in /mv2
@@ -432,7 +427,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ZkMvTool.class);
     assertEquals("Move should have succeeded.", 0, res);
 
-    assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3", true));
+    assertFalse("Znode /mv3 really should be gone", zkClient.exists("/mv3"));
 
     // Now does the moved directory match the original on disk?
     verifyZkLocalPathsMatch(srcPathCheck, "/mv4");
@@ -442,8 +437,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     res = CLITestHelper.runTool(args, ZkMvTool.class);
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
-        "Should be able to move a single file",
-        zkClient.exists("/testmvsingle/solrconfig.xml", true));
+        "Should be able to move a single file", zkClient.exists("/testmvsingle/solrconfig.xml"));
 
     zkClient.makePath("/parentNode", true);
 
@@ -454,10 +448,9 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertEquals("Move should have succeeded.", 0, res);
     assertTrue(
         "Should be able to move a single file to a parent znode",
-        zkClient.exists("/parentnode/schema.xml", true));
+        zkClient.exists("/parentnode/schema.xml"));
     String content =
-        new String(
-            zkClient.getData("/parentnode/schema.xml", null, null, true), StandardCharsets.UTF_8);
+        new String(zkClient.getData("/parentnode/schema.xml", null, null), StandardCharsets.UTF_8);
     assertTrue(
         "There should be content in the node! ", content.contains("Apache Software Foundation"));
   }
@@ -566,16 +559,14 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
     assertEquals("Should have removed node /configs/rm1", 0, res);
-    assertFalse(
-        "Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1", true));
+    assertFalse("Znode /configs/toremove really should be gone", zkClient.exists("/configs/rm1"));
 
     // Check that zk prefix also works.
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/configs/rm2"};
 
     res = CLITestHelper.runTool(args, ZkRmTool.class);
     assertEquals("Should have removed node /configs/rm2", 0, res);
-    assertFalse(
-        "Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2", true));
+    assertFalse("Znode /configs/toremove2 really should be gone", zkClient.exists("/configs/rm2"));
 
     // This should silently just refuse to do anything to the / or /zookeeper
     args = new String[] {"rm", "--recursive", "--zk-host", zkAddr, "zk:/"};
@@ -593,14 +584,14 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
   }
 
   private static boolean isEphemeral(String zkPath) throws KeeperException, InterruptedException {
-    Stat znodeStat = zkClient.exists(zkPath, null, true);
+    Stat znodeStat = zkClient.exists(zkPath, null);
     return znodeStat.getEphemeralOwner() != 0;
   }
 
   void verifyAllZNodesAreFiles(Path fileRoot, String zkRoot)
       throws KeeperException, InterruptedException {
 
-    for (String child : zkClient.getChildren(zkRoot, null, true)) {
+    for (String child : zkClient.getChildren(zkRoot, null)) {
       // Skip ephemeral nodes
       if (!zkRoot.endsWith("/")) {
         zkRoot += "/";
@@ -622,8 +613,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
           void checkPathOnZk(Path path) {
             String znode = ZkMaintenanceUtils.createZkNodeName(zkRoot, fileRoot, path);
             try { // It's easier to catch this exception and fail than catch it everywhere else.
-              assertTrue(
-                  "Should have found " + znode + " on Zookeeper", zkClient.exists(znode, true));
+              assertTrue("Should have found " + znode + " on Zookeeper", zkClient.exists(znode));
             } catch (Exception e) {
               fail(
                   "Caught unexpected exception "
@@ -659,10 +649,10 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
   // Note, no fuss here with Windows path names.
   private void verifyFirstZNodesInSecond(String first, String second)
       throws KeeperException, InterruptedException {
-    for (String node : zkClient.getChildren(first, null, true)) {
+    for (String node : zkClient.getChildren(first, null)) {
       String fNode = first + "/" + node;
       String sNode = second + "/" + node;
-      assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode, true));
+      assertTrue("Node " + sNode + " not found. Exists on " + fNode, zkClient.exists(sNode));
       verifyFirstZNodesInSecond(fNode, sNode);
     }
   }

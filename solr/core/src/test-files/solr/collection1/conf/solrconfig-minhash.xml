@@ -434,10 +434,6 @@
     </lst>
   </requestHandler>
 
-  <!-- test getting system property -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
-
   <queryParser name="foo" class="FooQParserPlugin"/>
 
   <updateRequestProcessorChain name="uniq-fields">

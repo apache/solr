@@ -61,6 +61,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
+import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
@@ -109,8 +110,9 @@ public class JettySolrRunner {
 
   private Server server;
 
-  volatile FilterHolder dispatchFilter;
   volatile FilterHolder debugFilter;
+  volatile FilterHolder pathExcludeFilter;
+  volatile FilterHolder dispatchFilter;
 
   private int jettyPort = -1;
 
@@ -398,14 +400,35 @@ public class JettySolrRunner {
       for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
         root.addServlet(entry.getKey(), entry.getValue());
       }
+      // TODO: This needs to be driven by a parsing of web.xml eventually
+      //  though we still want to avoid classpath scanning.
+
+      // this path excludes filter isn't actually necessary for any tests, but it's being
+      // added for parity with the live application.
+      pathExcludeFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
+      pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
+
+      // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       dispatchFilter.setHeldClass(SolrDispatchFilter.class);
-      dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
+
       // Map dispatchFilter in same path as in web.xml
+      root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
-      root.addServlet(Servlet404.class, "/");
+      ServletHolder defaultHolder = root.getServletHandler().newServletHolder(Source.EMBEDDED);
+
+      // considered adding DefaultServlet.class here but perhaps that might grant our unit tests
+      // the power to serve static resources on the build machines? Not sure, so I'll just give a
+      // name to our existing hack. The tests passed without this, but it will ensure that if anyone
+      // ever hits the PathExcludeFilter in the unit test they get a 404 as before not a 500
+      defaultHolder.setHeldClass(Servlet404.class);
+      defaultHolder.setName("default");
+      root.addServlet(defaultHolder, "/");
+
+      // TODO: end area that should be driven by web.xml and webdefault.xml
       chain = root;
     }
 
