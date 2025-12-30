@@ -52,7 +52,6 @@ import org.slf4j.LoggerFactory;
 public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final Path ROOT_DIR = TEST_HOME();
 
   SecurityConfHandlerLocalForTesting securityConfHandler;
   SolrInstance instance = null;
