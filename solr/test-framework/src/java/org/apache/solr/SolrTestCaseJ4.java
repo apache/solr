@@ -2255,12 +2255,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
-  }
-
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
