@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -79,7 +80,7 @@ public class MiniClusterState {
     public String zkHost;
 
     /** The Cluster. */
-    MiniSolrCloudCluster cluster;
+    public MiniSolrCloudCluster cluster;
 
     /** The Client. */
     public HttpJettySolrClient client;
@@ -393,6 +394,7 @@ public class MiniClusterState {
     private void indexParallel(String collection, Docs docs, int docCount)
         throws InterruptedException {
       Meter meter = new Meter();
+      AtomicReference<Exception> indexingException = new AtomicReference<>();
       ExecutorService executorService =
           Executors.newFixedThreadPool(
               Runtime.getRuntime().availableProcessors(),
@@ -429,6 +431,7 @@ public class MiniClusterState {
                 try {
                   client.requestWithBaseUrl(url, updateRequest, collection);
                 } catch (Exception e) {
+                  indexingException.compareAndSet(null, e);
                   throw new RuntimeException(e);
                 }
               }
@@ -444,6 +447,11 @@ public class MiniClusterState {
       }
 
       scheduledExecutor.shutdown();
+
+      Exception ex = indexingException.get();
+      if (ex != null) {
+        throw new RuntimeException("Indexing failed", ex);
+      }
     }
 
     private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
