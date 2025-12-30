@@ -25,8 +25,9 @@ import org.junit.BeforeClass;
 public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest {
 
   @BeforeClass
-  public static void checkUrls() throws Exception {
-    URL[] urls = new URL[] {getJetty().getBaseUrl(), secondJetty.getJetty().getBaseUrl()};
+  public static void checkUrls() {
+    URL[] urls =
+        new URL[] {solrTestRule.getJetty().getBaseUrl(), secondJetty.getJetty().getBaseUrl()};
     for (URL u : urls) {
       assertEquals("expect https urls ", "https", u.getProtocol());
     }

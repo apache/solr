@@ -41,7 +41,9 @@ import org.junit.Test;
 /** Test for {@link ThinCache}. */
 public class TestThinCache extends SolrTestCaseJ4 {
 
-  @ClassRule public static EmbeddedSolrServerTestRule solrRule = new EmbeddedSolrServerTestRule();
+  @ClassRule
+  public static EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
+
   public static final String SOLR_NODE_LEVEL_CACHE_XML =
       "<solr>\n"
           + "  <caches>\n"
@@ -62,7 +64,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
     Path home = createTempDir("home");
     Files.writeString(home.resolve("solr.xml"), SOLR_NODE_LEVEL_CACHE_XML);
 
-    solrRule.startSolr(home);
+    solrTestRule.startSolr(home);
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
@@ -81,16 +83,15 @@ public class TestThinCache extends SolrTestCaseJ4 {
                     + "      initialSize=\"5\"/>\n"
                     + "</query></config>"));
 
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.newCollection().withConfigSet(configSet).create();
 
     // legacy; get rid of this someday!
-    h = new TestHarness(solrRule.getCoreContainer());
+    h = new TestHarness(solrTestRule.getCoreContainer());
     lrf = h.getRequestFactory("/select", 0, 20);
   }
 
   SolrMetricManager metricManager = new SolrMetricManager(null);
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
-  String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
   @Test
   public void testSimple() {
@@ -162,7 +163,7 @@ public class TestThinCache extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testInitCore() throws Exception {
+  public void testInitCore() {
     String thinCacheName = "myNodeLevelCacheThin";
     String nodeCacheName = "myNodeLevelCache";
     for (int i = 0; i < 20; i++) {
