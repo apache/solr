@@ -30,7 +30,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.index.LatestVersionFilterMergePolicy;
+import org.apache.solr.index.LatestVersionMergePolicy;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -119,7 +119,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
             log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
             CoreReindexingStatus coreRxStatus = CoreReindexingStatus.REINDEXING_ACTIVE;
 
-            // Set LatestVersionFilterMergePolicy to prevent older segments from
+            // Set LatestVersionMergePolicy to prevent older segments from
             // participating in merges while we reindex.
             // This must be done inside the async lambda to ensure it stays in effect
             // for the duration of the reindexing operation.
@@ -133,7 +133,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                   originalMergePolicy = iw.getConfig().getMergePolicy();
                   iw.getConfig()
                       .setMergePolicy(
-                          new LatestVersionFilterMergePolicy(iw.getConfig().getMergePolicy()));
+                          new LatestVersionMergePolicy(iw.getConfig().getMergePolicy()));
                 }
               }
 
