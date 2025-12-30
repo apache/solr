@@ -26,7 +26,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.pool.PoolStats;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -47,7 +46,7 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
   private static String barUrl; // second Jetty URL
 
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeTest() {
     solrTestRule.startSolr(legacyExampleCollection1SolrHome());
     fooUrl = solrTestRule.getBaseUrl();
 
@@ -114,7 +113,6 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
   public void testLBClient() throws IOException, SolrServerException {
 
     PoolingHttpClientConnectionManager pool = HttpClientUtil.createPoolingConnectionManager();
-    final SolrClient client1;
     int threadCount = atLeast(2);
     final ExecutorService threads =
         ExecutorUtil.newMDCAwareFixedThreadPool(

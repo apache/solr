@@ -25,7 +25,7 @@ import org.junit.BeforeClass;
 public class HttpSolrClientSSLAuthConPoolTest extends HttpSolrClientConPoolTest {
 
   @BeforeClass
-  public static void checkUrls() throws Exception {
+  public static void checkUrls() {
     URL[] urls =
         new URL[] {solrTestRule.getJetty().getBaseUrl(), secondJetty.getJetty().getBaseUrl()};
     for (URL u : urls) {
