@@ -77,7 +77,7 @@ The default is `false`.
 === ramPerThreadHardLimitMB
 
 Sets the maximum memory (defined in megabytes) consumption per thread triggering a forced flush if exceeded.
-The given value must be greater than `0` and less than `2048` MB (2GB).
+The given value must be greater than `0`.
 
 [source,xml]
 ----
@@ -85,6 +85,8 @@ The given value must be greater than `0` and less than `2048` MB (2GB).
 ----
 
 NOTE: This is an expert level parameter as it triggers forced flush even if `ramBufferSizeMB` has not been exceeded.
+
+WARNING: Values greater than 2048 MB (2GB) will bypass Lucene's built-in limit using reflection. This is an advanced feature that should only be used by experienced administrators who understand the memory implications.
 
 == Merging Index Segments
 

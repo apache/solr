@@ -53,6 +53,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -399,7 +400,7 @@ public class HttpSolrCall {
                 .getZkController()
                 .zkStateReader
                 .getZkClient()
-                .exists(DocCollection.getCollectionPath(collectionName), true)) {
+                .exists(DocCollection.getCollectionPath(collectionName))) {
           // no change and such a collection does not exist. go back
           return;
         }
@@ -1110,6 +1111,19 @@ public class HttpSolrCall {
 
   protected Map<String, JsonSchemaValidator> getValidators() {
     return Collections.emptyMap();
+  }
+
+  /**
+   * The URL to this core, e.g. {@code http://localhost:8983/solr}.
+   *
+   * @see ZkController#getBaseUrl()
+   */
+  public String getThisNodeUrl() {
+    String scheme = getReq().getScheme();
+    String host = getReq().getServerName();
+    int port = getReq().getServerPort();
+    String context = getReq().getContextPath();
+    return String.format(Locale.ROOT, "%s://%s:%d%s", scheme, host, port, context);
   }
 
   /** A faster method for randomly picking items when you do not need to consume all items. */

@@ -405,7 +405,16 @@ task buildLocalAntoraSite(type: NpxTask) {
         "--fetch"
     ] + extraArgs
 
-    environment = ["SITE_SEARCH_ENABLED": "true", "MATOMO_ENABLED": "false"]
+    // Configure HTTP request timeout via preload script to prevent timeout errors
+    // when downloading UI bundle from slow networks (especially in CI)
+    def nodeOptions = "--require ${projectDir}/increase-request-timeout.js"
+
+    environment = [
+        "SITE_SEARCH_ENABLED": "true",
+        "MATOMO_ENABLED": "false",
+        "NODE_OPTIONS": nodeOptions,
+        "HTTP_REQUEST_TIMEOUT_MS": "60000"  // 60 seconds timeout
+    ]
 
     inputs.files(fileTree(project.ext.siteStagingDir))
     inputs.property("Antora version", libs.versions.antora.asProvider().get())
@@ -500,7 +509,16 @@ task buildOfficialSite(type: NpxTask) {
         officialPlaybook,
     ] + extraArgs
 
-    environment = ["SITE_SEARCH_ENABLED": "true", "MATOMO_ENABLED": "true"]
+    // Configure HTTP request timeout via preload script to prevent timeout errors
+    // when downloading UI bundle from slow networks (especially in CI)
+    def nodeOptions = "--require ${projectDir}/increase-request-timeout.js"
+
+    environment = [
+        "SITE_SEARCH_ENABLED": "true",
+        "MATOMO_ENABLED": "true",
+        "NODE_OPTIONS": nodeOptions,
+        "HTTP_REQUEST_TIMEOUT_MS": "60000"  // 60 seconds timeout
+    ]
 
     inputs.files(officialPlaybook)
     inputs.property("Antora version", libs.versions.antora.asProvider().get())
@@ -528,8 +546,10 @@ dependencies {
     // For the SolrJ examples
     testImplementation project(":solr:core")
     testImplementation project(":solr:solrj")
+    testRuntimeOnly project(":solr:modules:sql")
     testImplementation project(":solr:test-framework")
     testImplementation libs.junit.junit
+    testImplementation libs.apache.lucene.testframework
 }
 
 // Copy all the test resource files from SolrJ to the build/resources/test directory

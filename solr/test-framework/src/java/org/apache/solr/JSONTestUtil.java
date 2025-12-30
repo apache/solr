@@ -187,7 +187,7 @@ class CollectionTester {
         sb.append(seg);
         sb.append(']');
       } else {
-        sb.append(seg.toString());
+        sb.append(seg);
       }
     }
     return sb.toString();

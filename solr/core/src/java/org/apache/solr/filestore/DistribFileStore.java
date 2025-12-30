@@ -355,7 +355,6 @@ public class DistribFileStore implements FileStore {
               CreateMode.PERSISTENT,
               null,
               false,
-              true,
               0);
 
     } catch (Exception e) {
@@ -539,7 +538,7 @@ public class DistribFileStore implements FileStore {
   private void checkInZk(String path) {
     try {
       // fail if file exists
-      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path, true)) {
+      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path)) {
         throw new SolrException(BAD_REQUEST, "The path exist ZK, delete and retry");
       }
 
@@ -563,11 +562,7 @@ public class DistribFileStore implements FileStore {
       @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
-        l =
-            coreContainer
-                .getZkController()
-                .getZkClient()
-                .getChildren(ZK_PACKAGESTORE + path, null, true);
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE + path, null);
       } catch (KeeperException.NoNodeException e) {
         // does not matter
       }
@@ -680,7 +675,7 @@ public class DistribFileStore implements FileStore {
 
   public static void deleteZKFileEntry(SolrZkClient client, String path) {
     try {
-      client.delete(ZK_PACKAGESTORE + path, -1, true);
+      client.delete(ZK_PACKAGESTORE + path, -1);
     } catch (KeeperException | InterruptedException e) {
       log.error("", e);
     }
