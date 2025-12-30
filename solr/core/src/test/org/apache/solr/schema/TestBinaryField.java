@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -45,9 +46,12 @@ public class TestBinaryField extends SolrTestCaseJ4 {
 
     copyMinConf(collDir, "name=collection1\n", "solrconfig-basic.xml");
 
+    // Copy the custom schema for binary field tests
     String sourceConfDir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(sourceConfDir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
-    Files.copy(Path.of(sourceConfDir, "solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
+    Files.copy(
+        Path.of(sourceConfDir, "schema-binaryfield.xml"),
+        collDir.resolve("conf/schema.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
 
     solrTestRule.startSolr(homeDir);
   }
@@ -85,7 +89,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
       assertEquals(3, res.size());
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
-        Integer id = Integer.parseInt(d.getFieldValue("id").toString());
+        int id = Integer.parseInt(d.getFieldValue("id").toString());
         for (String field : new String[] {"data", "data_dv"}) {
           byte[] data = (byte[]) d.getFieldValue(field);
           if (id == 1) {
@@ -112,7 +116,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
         }
       }
       for (Bean d : beans) {
-        Integer id = Integer.parseInt(d.id);
+        int id = Integer.parseInt(d.id);
         for (byte[] data : new byte[][] {d.data, d.data_dv}) {
           if (id == 1) {
             assertEquals(5, data.length);
