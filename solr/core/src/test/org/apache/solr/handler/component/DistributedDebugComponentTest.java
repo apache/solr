@@ -87,9 +87,15 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void destroyThings() {
-    collection1 = null;
-    collection2 = null;
+  public static void destroyThings() throws IOException {
+    if (collection1 != null) {
+      collection1.close();
+      collection1 = null;
+    }
+    if (collection2 != null) {
+      collection2.close();
+      collection2 = null;
+    }
     resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
   }
