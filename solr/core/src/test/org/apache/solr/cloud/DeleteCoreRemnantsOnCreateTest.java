@@ -256,5 +256,4 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     return replica.orElseThrow(
         () -> new AssertionError("No replica found on node " + nodeName + " for " + shard));
   }
-
 }
