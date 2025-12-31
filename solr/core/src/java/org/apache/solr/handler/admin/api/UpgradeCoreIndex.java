@@ -20,8 +20,8 @@ import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
+import org.apache.solr.client.api.model.UpgradeCoreIndexResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -50,42 +50,10 @@ import org.slf4j.LoggerFactory;
 public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  /*
-   * The re-indexing status at any point of time for a particular core.
-   * DEFAULT - This is the default status, meaning it is yet to be processed and checked if the version is LATEST
-   * for this core
-   * REINDEXING_ACTIVE - This is set at the start of the re-indexing operation
-   * PROCESSED - This is set at the end of the re-indexing operation if there are no errors
-   * ERROR - This is set if there is any error in any segment. This core will be retried CORE_ERROR_RETRIES number
-   * of
-   * times
-   * CORRECTVERSION - This is set if the core is already at the correct version
-   */
-  public enum CoreReindexingStatus {
-    DEFAULT,
-    REINDEXING_ACTIVE,
-    REINDEXING_PAUSED,
-    PROCESSED,
+  public enum CoreIndexUpgradeStatus {
+    UPGRADE_SUCCESSFUL,
     ERROR,
-    CORRECTVERSION;
-  }
-
-  /*
-   * The state that a single ReindexingThread would be in. This is set to START_REINDEXING by CPUMonitorTask
-   * thread
-   * START_REINDEXING - CPUMonitorTask checks if current CPU usage is below given threshold and sets this state
-   * WAITING - CPUMonitorTask checks if the CPU usage is above given threshold and sets this state to put
-   * the CVReindexingTask thread in a waiting state. Note that ReindexingTask thread run() will still be checked
-   * in this case. This can also be set when all cores have processed and there are no pending cores.
-   * STOP_REINDEXING - CPUMonitorTask checks if all cores are processed with the status between {CORRECTVERSION,
-   * ERROR}
-   * and if all cores are processed then sets it to STOP_REINDEXING
-   *
-   */
-  public enum ReindexingThreadState {
-    START_REINDEXING,
-    STOP_REINDEXING,
-    WAITING;
+    NO_UPGRADE_NEEDED;
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
@@ -103,10 +71,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return true;
   }
 
-  public SolrJerseyResponse upgradeCoreIndex(
+  public UpgradeCoreIndexResponse upgradeCoreIndex(
       String coreName, UpgradeCoreIndexRequestBody requestBody) throws Exception {
     ensureRequiredParameterProvided("coreName", coreName);
-    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+
+    final UpgradeCoreIndexResponse response =
+        instantiateJerseyResponse(UpgradeCoreIndexResponse.class);
 
     return handlePotentiallyAsynchronousTask(
         response,
@@ -117,14 +87,15 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           try (SolrCore core = coreContainer.getCore(coreName)) {
 
             log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
-            CoreReindexingStatus coreRxStatus = CoreReindexingStatus.REINDEXING_ACTIVE;
 
             // Set LatestVersionMergePolicy to prevent older segments from
-            // participating in merges while we reindex.
-            // This must be done inside the async lambda to ensure it stays in effect
-            // for the duration of the reindexing operation.
+            // participating in merges while we reindex. This is to prevent any older version
+            // segments from
+            // merging with any newly formed segments created due to reindexing and undoing the work
+            // we are doing.
             RefCounted<IndexWriter> iwRef = null;
             MergePolicy originalMergePolicy = null;
+            int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
             try {
               iwRef = core.getSolrCoreState().getIndexWriter(core);
               if (iwRef != null) {
@@ -147,6 +118,18 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                     getUpdateProcessorChain(core, requestBody.updateChain);
 
                 for (LeafReaderContext lrc : leafContexts) {
+                  if (shouldUpgradeSegment(lrc)) {
+                    numSegmentsEligibleForUpgrade++;
+                  }
+                }
+                if (numSegmentsEligibleForUpgrade == 0) {
+                  response.core = coreName;
+                  response.upgradeStatus = CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString();
+                  response.numSegmentsEligibleForUpgrade = 0;
+                  return response;
+                }
+
+                for (LeafReaderContext lrc : leafContexts) {
                   if (!shouldUpgradeSegment(lrc)) {
                     continue;
                   }
@@ -154,14 +137,16 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                   boolean success =
                       processSegment(lrc, updateProcessorChain, core, ssearcherRef.get(), dvICache);
 
-                  if (!success) {
-                    coreRxStatus = CoreReindexingStatus.ERROR;
+                  if (success) {
+                    numSegmentsUpgraded++;
+                  } else {
+                    response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
                     break;
                   }
                 }
               } catch (Exception e) {
                 log.error("Error while processing core: {}", coreName, e);
-                coreRxStatus = CoreReindexingStatus.ERROR;
+                response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
               } finally {
                 // important to decrement searcher ref count after use since we obtained it via the
                 // SolrCore.getSearcher() method
@@ -176,38 +161,23 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                 // giving some time for 0 doc segments to clear up
                 Thread.sleep(10000);
               } catch (InterruptedException ie) {
-                /* We don't need to preserve the interrupt here.
-                Otherwise, we may get immediately interrupted when we try to call sleep() during validation in the next steps.
-                And we are almost done anyway.
-                 */
+                Thread.currentThread().interrupt();
               }
 
               boolean indexUpgraded = isIndexUpgraded(core);
 
-              /*
-              There is a delay observed sometimes between when a commit happens and
-              when the segment (with zero live docs) gets cleared. So adding a validation check with retries.
-              */
-              for (int i = 0; i < RETRY_COUNT_FOR_SEGMENT_DELETION && !indexUpgraded; i++) {
-                try {
-                  doCommit(core);
-                  Thread.sleep(10000);
-                  indexUpgraded = isIndexUpgraded(core);
-
-                } catch (InterruptedException ie) {
-                  Thread.currentThread().interrupt();
-                }
-                if (Thread.currentThread().isInterrupted()) {
-                  break;
-                }
-              }
-
               if (!indexUpgraded) {
                 log.error(
-                    "Validation failed for core '{}'. Some older version segments still remain (likely despite 100% deleted docs).",
-                    coreName);
-                coreRxStatus = CoreReindexingStatus.ERROR;
+                    "Validation failed for core '{}'. Some data is still present in the older (<{}.x) Lucene index format.",
+                    coreName,
+                    Version.LATEST.major);
+                response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
               }
+
+              response.core = coreName;
+              response.upgradeStatus = CoreIndexUpgradeStatus.UPGRADE_SUCCESSFUL.toString();
+              response.numSegmentsEligibleForUpgrade = numSegmentsEligibleForUpgrade;
+              response.numSegmentsUpgraded = numSegmentsUpgraded;
             } catch (IOException ioEx) {
               // TO-DO
               // Throw exception wrapped in CoreAdminAPIBaseException
@@ -222,6 +192,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
               }
             }
           }
+
           return response;
         });
   }
