@@ -34,7 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocumentList;
@@ -124,7 +124,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
   }
 
   @Test
@@ -687,7 +687,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     String mutableId = getMutableId(configSet);
     assertFalse(cc.getZkController().getClusterState().hasCollection(mutableId));
     SolrZkClient zkClient = cc.getZkController().getZkClient();
-    assertFalse(zkClient.exists("/configs/" + mutableId, true));
+    assertFalse(zkClient.exists("/configs/" + mutableId));
 
     SolrQuery query = new SolrQuery("*:*");
     query.setRows(0);

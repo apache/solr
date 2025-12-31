@@ -19,17 +19,15 @@ package org.apache.solr.client.solrj.jetty;
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.impl.HttpJdkSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -38,7 +36,7 @@ import org.junit.Test;
 
 public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static SolrJettyTestRule solrClientTestRule = new SolrJettyTestRule();
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   // TODO add SSL test
 
@@ -46,13 +44,12 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
-    solrClientTestRule.enableProxy();
-    solrClientTestRule.startSolr(createTempDir(), new Properties(), JettyConfig.builder().build());
+    solrTestRule.enableProxy();
+    solrTestRule.startSolr(createTempDir());
     // Actually only need extremely minimal configSet but just use the default
-    solrClientTestRule
+    solrTestRule
         .newCollection()
-        .withConfigSet(
-            ExternalPaths.DEFAULT_CONFIGSET.toString()) // TODO should be default for empty home
+        .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET) // TODO should be default for empty home
         .create();
   }
 
@@ -64,7 +61,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
 
   @Before
   public void before() {
-    this.proxy = solrClientTestRule.getJetty().getProxy();
+    this.proxy = solrTestRule.getJetty().getProxy();
     this.host = proxy.getUrl().getHost();
     this.url = "http://" + host + ":" + (proxy.getUrl().getPort() + 10) + "/solr";
   }

@@ -27,27 +27,32 @@ import java.lang.invoke.MethodHandles;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.http.HttpResponse;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
+public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
@@ -130,14 +135,14 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Test
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = getBaseUrl() + "/cuss/foo";
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -205,7 +210,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int cussQueueSize = 10;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .build()) {
@@ -224,7 +229,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
@@ -245,7 +250,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     int expected = numDocs * numRunnables;
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)
             .withPollQueueTime(0)
@@ -281,7 +286,7 @@ public class ConcurrentUpdateSolrClientTest extends SolrJettyTestBase {
     }
 
     try (ConcurrentUpdateSolrClient concurrentClient =
-        (new ConcurrentUpdateSolrClient.Builder(getBaseUrl()))
+        (new ConcurrentUpdateSolrClient.Builder(solrTestRule.getBaseUrl()))
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withQueueSize(cussQueueSize)
             .withThreadCount(cussThreadCount)

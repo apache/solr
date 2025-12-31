@@ -46,15 +46,15 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -178,7 +178,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
       log.info("Restored from backup, took {}ms", timeTaken);
       t = System.nanoTime();
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
       timeTaken = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - t);
       log.info("Restored collection healthy, took {}ms", timeTaken);
@@ -310,7 +310,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       simpleRestoreAndCheckDocCount(solrClient, backupLocation, backupName);
 
       // test purge backups
-      // purging first since there may corrupted files were uploaded
+      // purging first since there may be corrupted files that were uploaded
       resp =
           CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
               .setRepositoryName(BACKUP_REPO_NAME)
@@ -409,7 +409,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
           .setRepositoryName(BACKUP_REPO_NAME)
           .processAndWait(solrClient, 500);
 
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), false, 3);
       assertEquals(
           numDocs,
@@ -553,7 +553,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         .setRepositoryName(BACKUP_REPO_NAME)
         .process(solrClient);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
         restoreCollectionName, ZkStateReader.from(solrClient), log.isDebugEnabled(), true, 30);
 
     // check num docs are the same
@@ -638,7 +638,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void backupThenWait() throws SolrServerException, IOException {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
@@ -661,7 +661,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         Map<String, Object> resp = (Map<String, Object>) rsp.getResponse().get("response");
         numBackup++;
         assertEquals(numBackup, resp.get("backupId"));
-        ;
       }
     }
 

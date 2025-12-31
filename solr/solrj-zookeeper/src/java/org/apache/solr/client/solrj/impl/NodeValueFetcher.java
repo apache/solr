@@ -17,7 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.impl.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -30,9 +30,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -175,7 +174,7 @@ public class NodeValueFetcher {
     params.add("name", StrUtils.join(uniqueMetricNames, ','));
 
     try {
-      var req = new GenericSolrRequest(METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, params);
+      var req = new MetricsRequest(params);
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       String baseUrl =

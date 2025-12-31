@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -62,7 +63,7 @@ public class SchemaTest extends RestTestBase {
 
   private static void assertFailedSchemaResponse(
       ThrowingRunnable runnable, String expectedErrorMessage) {
-    final var e = expectThrows(SolrClient.RemoteSolrException.class, runnable);
+    final var e = expectThrows(RemoteSolrException.class, runnable);
     assertThat(e.getMessage(), containsString(expectedErrorMessage));
   }
 
@@ -112,7 +113,7 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }

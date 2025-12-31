@@ -43,12 +43,12 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.cloud.AlreadyExistsException;
 import org.apache.solr.client.solrj.cloud.BadVersionException;
 import org.apache.solr.client.solrj.cloud.DelegatingCloudManager;
-import org.apache.solr.client.solrj.cloud.DelegatingClusterStateProvider;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NotEmptyException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
+import org.apache.solr.client.solrj.impl.DelegatingClusterStateProvider;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.RefreshCollectionMessage;
@@ -199,9 +199,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             new ClusterStateMutator(ccc.getSolrCloudManager())
                 .createCollection(clusterState, message);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
-        ccc.getZkStateReader()
-            .getZkClient()
-            .create(collectionPath, data, CreateMode.PERSISTENT, true);
+        ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
         newColl = command.collection;
         ccc.submitIntraProcessMessage(new RefreshCollectionMessage(collectionName));
@@ -373,7 +371,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             Utils.toJSON(
                 Collections.singletonMap(
                     collectionName, clusterState.getCollection(collectionName)));
-        zkStateReader.getZkClient().setData(collectionPath, data, true);
+        zkStateReader.getZkClient().setData(collectionPath, data);
       }
 
       // Distributed updates don't need to do anything for PRS collections that wrote state.json

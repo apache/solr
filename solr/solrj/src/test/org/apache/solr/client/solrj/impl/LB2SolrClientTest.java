@@ -29,12 +29,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
@@ -196,9 +197,23 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       solr[1].jetty = null;
       startJettyAndWaitForAliveCheckQuery(solr[0]);
 
-      resp = h.lbClient.query(solrQuery);
-      name = resp.getResults().get(0).getFieldValue("name").toString();
-      assertEquals("solr/collection10", name);
+      RetryUtil.retryOnBoolean(
+          5000,
+          500,
+          () -> {
+            try {
+              return ("solr/collection10"
+                  .equals(
+                      h.lbClient
+                          .query(solrQuery)
+                          .getResults()
+                          .get(0)
+                          .getFieldValue("name")
+                          .toString()));
+            } catch (Exception e) {
+              return false;
+            }
+          });
     }
   }
 

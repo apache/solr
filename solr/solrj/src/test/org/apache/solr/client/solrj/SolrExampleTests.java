@@ -45,25 +45,26 @@ import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingHttp2Test;
 import org.apache.solr.client.solrj.embedded.SolrExampleStreamingTest.ErrorTrackingConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
 import org.apache.solr.client.solrj.request.MultiContentWriterRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.StreamingUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RangeFacet;
 import org.apache.solr.client.solrj.response.RangeFacet.Count;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -86,17 +87,13 @@ import org.slf4j.LoggerFactory;
 /**
  * This should include tests against the example solr config
  *
- * <p>This lets us try various SolrServer implementations with the same tests.
+ * <p>This lets us try various SolrClient implementations with the same tests.
  *
  * @since solr 1.3
  */
 @SuppressSSL
 public abstract class SolrExampleTests extends SolrExampleTestsBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  static {
-    ignoreException("uniqueKey");
-  }
 
   @Before
   public void emptyCollection() throws Exception {
@@ -435,12 +432,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals("price:[* TO 2]", values.get(0));
     assertEquals("price:[2 TO 4]", values.get(1));
 
-    if (getJetty() != null) {
+    if (solrTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
       String url = getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
-        q.set("qt", "/admin/info/system");
+        q.set("qt", CommonParams.SYSTEM_INFO_PATH);
 
         QueryResponse rsp = adminClient.query(q);
         assertNotNull(rsp.getResponse().get("mode"));
@@ -648,7 +645,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   }
 
   private String randomTestString(int maxLength) {
-    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc
+    // we can't just use _TestUtil.randomUnicodeString() or we might get 0xfffe etc.
     // (considered invalid by XML)
 
     int size = random().nextInt(maxLength);
@@ -751,14 +748,15 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
       assertNotNull("Should throw exception!", concurrentClient.lastError);
       assertEquals(
           "Unexpected exception type",
-          SolrClient.RemoteSolrException.class,
+          RemoteSolrException.class,
           concurrentClient.lastError.getClass());
       assertTrue(
           "Unexpected exception message: " + concurrentClient.lastError.getMessage(),
           concurrentClient
               .lastError
               .getMessage()
-              .contains("Remote error message: Document contains multiple values for uniqueKey"));
+              .contains(
+                  "org.apache.solr.common.SolrException: Document contains multiple values for uniqueKey"));
     } else {
       if (log.isInfoEnabled()) {
         log.info("Ignoring update test for client: {}", client.getClass().getName());
@@ -912,31 +910,26 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testUpdateRequestWithParameters() throws Exception {
-    SolrClient client = createNewSolrClient();
+    try (SolrClient client = createNewSolrClient()) {
+      client.deleteByQuery("*:*");
+      client.commit();
 
-    client.deleteByQuery("*:*");
-    client.commit();
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id1");
 
-    SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", "id1");
+      UpdateRequest req = new UpdateRequest();
+      req.setParam("overwrite", "false");
+      req.add(doc);
+      client.request(req);
+      client.request(req);
+      client.commit();
 
-    UpdateRequest req = new UpdateRequest();
-    req.setParam("overwrite", "false");
-    req.add(doc);
-    client.request(req);
-    client.request(req);
-    client.commit();
+      SolrQuery query = new SolrQuery();
+      query.setQuery("*:*");
+      QueryResponse rsp = client.query(query);
 
-    SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
-    QueryResponse rsp = client.query(query);
-
-    SolrDocumentList out = rsp.getResults();
-    assertEquals(2, out.getNumFound());
-    if (!(client instanceof EmbeddedSolrServer)) {
-      /* Do not close in case of using EmbeddedSolrServer,
-       * as that would close the CoreContainer */
-      client.close();
+      SolrDocumentList out = rsp.getResults();
+      assertEquals(2, out.getNumFound());
     }
   }
 
@@ -1015,11 +1008,11 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     List<Pair<NamedList<String>, Object>> docs = new ArrayList<>();
     NamedList<String> params = new NamedList<>();
-    docs.add(new Pair<>(params, getFileContent(params, "solrj/docs1.xml")));
+    docs.add(new Pair<>(params, getFileContent("solrj/docs1.xml")));
 
     params = new NamedList<>();
     params.add(ASSUME_CONTENT_TYPE, "application/csv");
-    docs.add(new Pair<>(params, getFileContent(params, "solrj/books.csv")));
+    docs.add(new Pair<>(params, getFileContent("solrj/books.csv")));
 
     MultiContentWriterRequest up =
         new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
@@ -1030,7 +1023,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     assertEquals(12, rsp.getResults().getNumFound());
   }
 
-  private ByteBuffer getFileContent(NamedList<?> nl, String name) throws IOException {
+  private ByteBuffer getFileContent(String name) throws IOException {
     try (InputStream is = new FileInputStream(getFile(name).toFile())) {
       return MultiContentWriterRequest.readByteBuffer(is);
     }
@@ -2378,12 +2371,12 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     client.commit(); // Since the transaction log is disabled in the example, we need to commit
 
     SolrQuery q = new SolrQuery();
-    q.setRequestHandler("/get");
     q.set("id", "DOCID");
     q.set("fl", "id,name,aaa:[value v=aaa]");
 
     // First Try with the BinaryResponseParser
     QueryRequest req = new QueryRequest(q);
+    req.setPath("/get");
     req.setResponseParser(new JavaBinResponseParser());
     QueryResponse rsp = req.process(client);
     SolrDocument out = (SolrDocument) rsp.getResponse().get("doc");
@@ -2441,7 +2434,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("Conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       } else if (client
           instanceof
           SolrExampleStreamingHttp2Test.ErrorTrackingConcurrentUpdateSolrClient
@@ -2451,7 +2444,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             "ConcurrentUpdateSolrClient did not report an error", concurrentClient.lastError);
         assertTrue(
             "ConcurrentUpdateSolrClient did not report an error",
-            concurrentClient.lastError.getMessage().contains("conflict"));
+            concurrentClient.lastError.getMessage().contains("version conflict"));
       }
     } catch (SolrException se) {
       assertTrue(
@@ -2672,7 +2665,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     // between
     {
       q = new SolrQuery("q", "level_i:0", "indent", "true");
-      // NOTE: should be impossible to have more then 7 direct kids, or more then 49 grandkids
+      // NOTE: should be impossible to have more than 7 direct kids, or more than 49 grandkids
       q.setFields(
           "id", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:1\"]",
           "name", "[child parentFilter=\"level_i:0\" limit=100 childFilter=\"level_i:2\"]");
@@ -3018,12 +3011,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testAddChildToChildFreeDoc()
-      throws IOException,
-          SolrServerException,
-          IllegalArgumentException,
-          IllegalAccessException,
-          SecurityException,
-          NoSuchFieldException {
+      throws IOException, SolrServerException, IllegalArgumentException, SecurityException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 
@@ -3065,12 +3053,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
   @Test
   public void testDeleteParentDoc()
-      throws IOException,
-          SolrServerException,
-          IllegalArgumentException,
-          IllegalAccessException,
-          SecurityException,
-          NoSuchFieldException {
+      throws IOException, SolrServerException, IllegalArgumentException, SecurityException {
     SolrClient client = getSolrClient();
     client.deleteByQuery("*:*");
 

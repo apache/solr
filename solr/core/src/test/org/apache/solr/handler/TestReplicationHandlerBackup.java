@@ -38,7 +38,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.NIOFSDirectory;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
@@ -53,7 +52,7 @@ import org.slf4j.LoggerFactory;
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs({"SimpleText"})
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
-public class TestReplicationHandlerBackup extends SolrJettyTestBase {
+public class TestReplicationHandlerBackup extends SolrTestCaseJ4 {
 
   JettySolrRunner leaderJetty;
   ReplicationTestHelper.SolrInstance leader = null;
@@ -78,9 +77,8 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     return jetty;
   }
 
-  private static SolrClient createNewSolrClient(int port) {
-    final String baseUrl = buildUrl(port);
-    return new HttpSolrClient.Builder(baseUrl)
+  private static SolrClient createNewSolrClient(JettySolrRunner jetty) {
+    return new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();
@@ -102,7 +100,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     leader.copyConfigFile(CONF_DIR.resolve(configFile).toString(), "solrconfig.xml");
 
     leaderJetty = createAndStartJetty(leader);
-    leaderClient = createNewSolrClient(leaderJetty.getLocalPort());
+    leaderClient = createNewSolrClient(leaderJetty);
     docsSeed = random().nextLong();
   }
 
@@ -247,7 +245,7 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   public static void runBackupCommand(JettySolrRunner leaderJetty, String cmd, String params)
       throws IOException {
     String leaderUrl =
-        buildUrl(leaderJetty.getLocalPort())
+        leaderJetty.getBaseUrl().toString()
             + "/"
             + DEFAULT_TEST_CORENAME
             + ReplicationHandler.PATH

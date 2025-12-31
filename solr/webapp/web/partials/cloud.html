@@ -37,7 +37,7 @@ limitations under the License.
       <div>Ensemble size: {{zkState.ensembleSize}}</div>
       <div>Ensemble mode: {{zkState.mode}}</div>
       <div>Dynamic reconfig enabled: {{zkState.dynamicReconfig}}</div>
-      
+
       <table id="zk-table">
         <thead>
           <tr>
@@ -144,7 +144,7 @@ limitations under the License.
               <th>CPU</th>
               <th>Heap</th>
               <th>Disk usage</th>
-              <th>Requests</th>
+              <th ng-if="false">Requests</th>
               <th>Collections</th>
               <th>Replicas</th>
           </tr>
@@ -154,7 +154,7 @@ limitations under the License.
               <td rowspan="{{hosts[h.host].nodes.length}}" ng-show="isFirstNodeForHost(key)">
                 <div class="host-name">{{h.host}}</div>
                 <span class="host-spec" ng-show="!showDetails[h.host]">
-                  <span title="{{h.system.system.uptime}}">{{h.system.system.name}}</span> 
+                  <span title="{{h.system.system.uptime}}">{{h.system.system.name}}</span>
                   <span title="free: {{h.memFree}}">{{h.memTotal}}</span>
                   <span title="{{h.system.jvm.name}} {{h.system.jvm.version}}">Java {{h.system.jvm.spec.version}}</span>
                   <br/>Load: {{h.loadAvg}}
@@ -162,7 +162,7 @@ limitations under the License.
                 <div class="host-spec" ng-show="showDetails[h.host]">
                   {{h.system.system.name}} {{h.system.system.version}}, {{h.system.system.availableProcessors}}cpu<br/>
                   Uptime: {{h.uptime}}<br/>
-                  <span title="Used: {{h.memUsed}} - includes OS file-cache, and it is normal for it to approach 100%">Memory: {{h.memTotal}}</span><br/> 
+                  <span title="Used: {{h.memUsed}} - includes OS file-cache, and it is normal for it to approach 100%">Memory: {{h.memTotal}}</span><br/>
                   File descriptors: {{h.openFileDescriptorCount}}/{{h.maxFileDescriptorCount}}<br/>
                   Disk: <span class="{{h.diskUsedPctStyle}}" title="Nodes may use other disks too">{{h.diskTotal}} used: {{h.diskUsedPct}}%</span><br/>
                   Load: {{h.loadAvg}}
@@ -212,8 +212,8 @@ limitations under the License.
                   <div id="chart{{n.id}}" ng-show="showDetails[key] && !n.dead"></div>
                 </div>
               </td>
-              <td ng-class="{'dead-node': n.dead}"><div class="node-requests" title="1minRate: {{n.req1minRate}} 5minRate: {{n.req5minRate}} 15minRate: {{n.req15minRate}} p75: {{n.reqp75_ms}} p99: {{n.reqp99_ms}}" ng-show="!n.dead">
-                RPM: {{n.req15minRate}}<br/>p95: {{n.reqp95_ms}}ms</div>
+              <td ng-if="false" ng-class="{'dead-node': n.dead}">
+                <!-- TODO: Bring back RPM and p99 in 10.x -->
               </td>
               <td ng-class="{'dead-node': n.dead}">
                 <div ng-show="!n.collections">(none)</div>
@@ -243,7 +243,7 @@ limitations under the License.
         </tbody>
       </table>
     </div>
-    
+
     <div graph data="graphData" leaf-count="leafCount" helper-data="helperData" id="graph-content" class="content clearfix" ng-show="showGraph">
 
       <div id="canvas"></div>

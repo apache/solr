@@ -31,28 +31,31 @@ import java.net.SocketTimeoutException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
+public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
@@ -167,18 +170,20 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
     }
   }
 
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Test
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
 
-    String serverUrl = getBaseUrl() + "/cuss/foo";
+    String serverUrl = solrTestRule.getBaseUrl() + "/cuss/foo";
 
     int cussThreadCount = 2;
     int cussQueueSize = 100;
@@ -248,7 +253,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            (new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client))
+            (new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client))
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .build()) {
@@ -268,7 +273,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
@@ -290,7 +295,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)
                 .setPollQueueTime(0, TimeUnit.MILLISECONDS)
@@ -327,7 +332,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrJettyTestBase {
 
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(getBaseUrl(), http2Client)
+            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
                 .withDefaultCollection(DEFAULT_TEST_CORENAME)
                 .withQueueSize(cussQueueSize)
                 .withThreadCount(cussThreadCount)

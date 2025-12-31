@@ -21,11 +21,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -33,12 +32,7 @@ public final class SolrJMetricTestUtils {
 
   public static double getPrometheusMetricValue(SolrClient solrClient, String metricName)
       throws SolrServerException, IOException {
-    var req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/admin/metrics",
-            SolrRequest.SolrRequestType.ADMIN,
-            SolrParams.of("wt", "prometheus"));
+    var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
@@ -57,12 +51,7 @@ public final class SolrJMetricTestUtils {
       throws SolrServerException, IOException {
 
     try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
-      var req =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/admin/metrics",
-              SolrRequest.SolrRequestType.ADMIN,
-              SolrParams.of("wt", "prometheus"));
+      var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
@@ -90,12 +79,7 @@ public final class SolrJMetricTestUtils {
       throws SolrServerException, IOException {
 
     try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
-      var req =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/admin/metrics",
-              SolrRequest.SolrRequestType.ADMIN,
-              SolrParams.of("wt", "prometheus"));
+      var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
       req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);

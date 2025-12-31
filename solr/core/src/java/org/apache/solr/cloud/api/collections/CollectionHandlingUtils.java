@@ -36,7 +36,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -441,8 +441,8 @@ public class CollectionHandlingUtils {
       String shard,
       Set<String> okayExceptions) {
     String rootThrowable = null;
-    if (e instanceof SolrClient.RemoteSolrException) {
-      rootThrowable = ((SolrClient.RemoteSolrException) e).getRootThrowable();
+    if (e instanceof RemoteSolrException remoteSolrException) {
+      rootThrowable = remoteSolrException.getRootThrowable();
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {

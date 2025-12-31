@@ -78,6 +78,8 @@ The following classes were renamed with some refactorings: `Http2SolrClient` to 
 `CloudHttp2SolrClient.Builder` has moved to `CloudSolrClient`; users should generally have no need to refer to `CloudHttp2SolrClient` or any class/member with "http2" in it.
 The builder will check if Jetty `HttpClient` is available and use that, otherwise fallback on a JDK based `HttpClient`.
 `CloudJettySolrClient` is new, proving an explicit option.
+The system property `solr.solrj.http.jetty.customizer` (formerly `solr.httpclient.builder.factory`) can configure a `HttpJettySolrClient`.
+The only built-in implementation is `org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer`, renamed from `PreemptiveBasicAuthClientCustomizer`.
 
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
@@ -90,7 +92,9 @@ Users who previously relied on collection-specific URLs to avoid including the c
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
 * The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
-The system property `solr.httpclient.builder.factory` now only configures SolrClients using a Jetty based HttpClient.
+
+* A number of classes moved to different packages to be better organized:
+ShardTerms, DelegatingClusterStateProvider, JavaBinRequestWriter, RoutedAliasTypes, SolrQuery, XMLRequestWriter, JacksonContentWriter, FastStreamingDocsCallback, InputStreamResponse, InputStreamResponseParser, JavaBinResponseParser, ResponseParser, StreamingJavaBinResponseParser, StreamingResponseCallback, XMLResponseParser, JacksonDataBindResponseParser, JsonMapResponseParser, SocketProxy
 
 === SolrCloud Overseer
 
@@ -132,6 +136,10 @@ If only one node is exposed to a client, and if the client uses the bin/solr exp
 Solr now lets you access models encoded in ONNX format, commonly sourced from HuggingFace.
 The DocumentCategorizerUpdateProcessorFactorythat lets you perform sentiment and other classification tasks on fields.
 It is available as part of the `analysis-extras` module.
+
+=== Vector Search Enhancements
+
+* The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 === Deprecation removals
 
@@ -205,9 +213,13 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
+* The deprecated 'solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.proprties` "property" setting remains.
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
+
+* Use of `stream.file`, `stream.url`, and `stream.body` params in http requests have been removed.
 
 === Upgrade to Jetty 12.x and Jakarta namespace
 
@@ -267,3 +279,9 @@ Due to Lucene 10 changes (https://github.com/apache/lucene/pull/12875), `PathHie
   </analyzer>
 </fieldType>
 ----
+
+=== Renaming in Vector Search
+Attention:
+
+* The `llm` module has been renamed to `language-models`.
+* The HNSW parameters `hnswMaxConnections` and `hnswBeamWidth` have been renamed to `hnswM` and `hnswEfConstruction`, respectively, so they must be updated accordingly in the schema.xml file.

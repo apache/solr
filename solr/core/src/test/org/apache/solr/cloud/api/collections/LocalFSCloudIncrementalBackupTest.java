@@ -21,11 +21,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.BeforeClass;
@@ -140,7 +140,7 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
           .setRepositoryName(BACKUP_REPO_NAME)
           .processAndWait(solrClient, 500);
 
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           restoreCollectionName, ZkStateReader.from(solrClient), false, false, 3);
       assertEquals(
           numDocs,

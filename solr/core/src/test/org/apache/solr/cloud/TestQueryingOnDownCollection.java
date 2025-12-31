@@ -19,11 +19,11 @@ package org.apache.solr.cloud;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -125,7 +125,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     byte[] collectionState =
         cluster
             .getZkClient()
-            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null, true);
+            .getData("/collections/" + COLLECTION_NAME + "/state.json", null, null);
 
     Map<String, Map<String, ?>> infectedState =
         (Map<String, Map<String, ?>>) Utils.fromJSON(collectionState);
@@ -141,8 +141,7 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
     cluster
         .getZkClient()
-        .setData(
-            "/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState), true);
+        .setData("/collections/" + COLLECTION_NAME + "/state.json", Utils.toJSON(infectedState));
 
     cluster
         .getJettySolrRunner(0)
