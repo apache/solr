@@ -1513,7 +1513,7 @@ public class CoreContainer {
 
         final boolean deleteUnknownCores =
             Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
         if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
           log.warn(
               "There appears to be an existing directory for core {}, now deleting it",
@@ -1680,7 +1680,7 @@ public class CoreContainer {
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
             Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),

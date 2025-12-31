@@ -34,12 +34,12 @@ import org.junit.Test;
 
 /**
  * Solr occasionally gets into an inconsistent state with its cores lifecycle where remnant files
- * are left on disk after various operations. Examples include deleting a collection operation that
- * doesn't properly finish, or maybe the Solr process unexpectedly gets killed. The system property
- * "solr.cloud.delete.unknown.cores.enabled" is an expert setting that when enabled automatically
- * deletes any remnant core data on disk when new cores are created that would otherwise fail due to
- * the preexisting files. You should be cautious in enabling this feature, as it means that
- * something isn't working well in your Solr setup.
+ * are left on disk after various operations that delete a core. Examples include deleting a
+ * collection operation that doesn't properly finish, or maybe the Solr process unexpectedly gets
+ * killed. The system property "solr.cloud.delete.unknown.cores.enabled" is an expert setting that
+ * when enabled automatically deletes any remnant core data on disk when new cores are created that
+ * would otherwise fail due to the preexisting files. You should be cautious in enabling this
+ * feature, as it means that something isn't working well in your Solr setup.
  */
 public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
   private static final String DELETE_UNKNOWN_CORES_PROP = "solr.cloud.delete.unknown.cores.enabled";
