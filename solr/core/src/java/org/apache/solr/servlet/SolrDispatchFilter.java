@@ -130,10 +130,15 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   }
 
   /*
+  Wait? Where did X go??? (I hear you ask).
 
-  Wait? Where did X go??? (I hear you ask). First: look for a servlet filter to which request wrapping
-  operations may have been moved (see web.xml for list)
+  For over a decade this class did anything and everything
+  In late 2021 SOLR-15590 moved container startup to CoreContainerProvider
+  In late 2025 SOLR-18040 moved request wrappers to independent ServletFilters
+    such as PathExclusionFilter see web.xml for a full, up-to-date list
 
+  This class is moving toward only handling dispatch, please think twice
+  before adding anything else to it.
    */
 
   private void doFilterRetry(
