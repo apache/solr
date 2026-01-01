@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.ManagedIndexSchema;
@@ -219,8 +220,8 @@ public class ManagedSchemaDiff {
   @SuppressForbidden(reason = "Maps.difference")
   private static List<Map<String, Object>> getMapDifference(
       SimpleOrderedMap<Object> simpleOrderedMap1, SimpleOrderedMap<Object> simpleOrderedMap2) {
-    Map<String, Object> map1 = simpleOrderedMap1.toMap(new HashMap<>());
-    Map<String, Object> map2 = simpleOrderedMap2.toMap(new HashMap<>());
+    Map<String, Object> map1 = Utils.convertToMap(simpleOrderedMap1, new HashMap<>());
+    Map<String, Object> map2 = Utils.convertToMap(simpleOrderedMap2, new HashMap<>());
     Map<String, MapDifference.ValueDifference<Object>> mapDiff =
         Maps.difference(map1, map2).entriesDiffering();
     if (mapDiff.isEmpty()) {

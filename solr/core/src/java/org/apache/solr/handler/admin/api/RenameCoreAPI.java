@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -54,7 +55,7 @@ public class RenameCoreAPI {
   @Command(name = V2_RENAME_CORE_CMD)
   public void renameCore(PayloadObj<RenameCorePayload> obj) throws Exception {
     final RenameCorePayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = MapWriter.writeMap(v2Body, new HashMap<>());
     v1Params.put(
         CoreAdminParams.ACTION,
         CoreAdminParams.CoreAdminAction.RENAME.name().toLowerCase(Locale.ROOT));

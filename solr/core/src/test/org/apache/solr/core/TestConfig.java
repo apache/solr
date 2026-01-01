@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
@@ -162,10 +163,10 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
 
-    final int numDefaultsMapped = sic.toMap(new LinkedHashMap<>()).size();
+    final int numDefaultsMapped = MapWriter.writeMap(sic, new LinkedHashMap<>()).size();
     assertEquals(
         "numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="
-            + sic.toMap(new LinkedHashMap<>()).keySet(),
+            + MapWriter.writeMap(sic, new LinkedHashMap<>()).keySet(),
         numDefaultsTested,
         numDefaultsMapped + numNullDefaults);
   }

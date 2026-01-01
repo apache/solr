@@ -253,7 +253,7 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
     assertNotNull(solrIndexConfig.mergeSchedulerInfo);
 
-    Map<String, Object> m = solrIndexConfig.toMap(new LinkedHashMap<>());
+    Map<String, Object> m = MapWriter.writeMap(solrIndexConfig, new LinkedHashMap<>());
     int mSizeExpected = 0;
 
     ++mSizeExpected;

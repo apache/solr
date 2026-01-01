@@ -193,22 +193,20 @@ public class PluginInfo implements MapWriter {
     return l.isEmpty() ? null : l.get(0);
   }
 
-
   @Override
   @SuppressWarnings("unchecked")
   public void writeMap(EntryWriter ew) throws IOException {
     attributes.forEach(ew::putNoEx);
     if (initArgs != null) {
-      initArgs.asMap(3).forEach((k,v) -> ew.putNoEx((CharSequence) k,v));
+      initArgs.asMap(3).forEach((k, v) -> ew.putNoEx((CharSequence) k, v));
     }
     if (children == null || children.isEmpty()) {
       return;
     }
 
     for (PluginInfo child : children) {
-        child.writeMap(ew);
+      child.writeMap(ew);
     }
-
   }
 
   /**

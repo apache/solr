@@ -31,6 +31,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.SplitShardPayload;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.util.StrUtils;
@@ -60,7 +61,7 @@ public class SplitShardAPI {
   @Command(name = V2_SPLIT_CMD)
   public void splitShard(PayloadObj<SplitShardPayload> obj) throws Exception {
     final SplitShardPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = MapWriter.writeMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.SPLITSHARD.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 

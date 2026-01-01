@@ -1682,17 +1682,6 @@ public class IndexSchema {
     }
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> result) {
-      for (Handler it : Handler.values()) {
-        if (name == null || it.nameLower.equals(name)) {
-          Object val = it.fun.apply(this);
-          if (val != null) result.put(it.realName, val);
-        }
-      }
-      return result;
-    }
-
-    @Override
     public void writeMap(EntryWriter ew) throws IOException {
       for (Handler it : Handler.values()) {
         if (name == null || it.nameLower.equals(name)) {
@@ -1710,7 +1699,7 @@ public class IndexSchema {
                   SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return new SchemaProps(name, params, this).toMap(new LinkedHashMap<>());
+    return MapWriter.writeMap(new SchemaProps(name, params, this), new LinkedHashMap<>());
   }
 
   /**

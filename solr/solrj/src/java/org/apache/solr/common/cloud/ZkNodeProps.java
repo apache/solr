@@ -43,7 +43,7 @@ public class ZkNodeProps implements MapWriter {
   }
 
   public ZkNodeProps(MapWriter mw) {
-    propMap = mw.toMap(new HashMap<>());
+    propMap = MapWriter.writeMap(mw, new HashMap<>());
   }
 
   public ZkNodeProps plus(String key, Object val) {
