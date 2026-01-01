@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.Collections;
-import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -33,7 +32,7 @@ import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
  * This config object encapsulates IndexWriter config params, defined in the &lt;indexConfig&gt;
  * section of solrconfig.xml
  */
-public class SolrIndexConfig implements MapSerializable {
+public class SolrIndexConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final String NO_SUB_PACKAGES[] = new String[0];
@@ -196,28 +195,19 @@ public class SolrIndexConfig implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.put("useCompoundFile", useCompoundFile);
-    map.put("maxBufferedDocs", maxBufferedDocs);
-    map.put("ramBufferSizeMB", ramBufferSizeMB);
-    map.put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB);
-    map.put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis);
-    map.put("writeLockTimeout", writeLockTimeout);
-    map.put("lockType", lockType);
-    map.put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
-    if (mergeSchedulerInfo != null) {
-      map.put("mergeScheduler", mergeSchedulerInfo);
-    }
-    if (metricsInfo != null) {
-      map.put("metrics", metricsInfo);
-    }
-    if (mergePolicyFactoryInfo != null) {
-      map.put("mergePolicyFactory", mergePolicyFactoryInfo);
-    }
-    if (mergedSegmentWarmerInfo != null) {
-      map.put("mergedSegmentWarmer", mergedSegmentWarmerInfo);
-    }
-    return map;
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put("useCompoundFile", useCompoundFile)
+        .put("maxBufferedDocs", maxBufferedDocs)
+        .put("ramBufferSizeMB", ramBufferSizeMB)
+        .put("ramPerThreadHardLimitMB", ramPerThreadHardLimitMB)
+        .put("maxCommitMergeWaitTime", maxCommitMergeWaitMillis)
+        .put("writeLockTimeout", writeLockTimeout)
+        .put("lockType", lockType)
+        .put("infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT)
+        .putIfNotNull("mergeScheduler", mergeSchedulerInfo)
+        .putIfNotNull("metrics", metricsInfo)
+        .putIfNotNull("mergePolicyFactory", mergePolicyFactoryInfo)
+        .putIfNotNull("mergedSegmentWarmer", mergedSegmentWarmerInfo);
   }
 
   private PluginInfo getPluginInfo(ConfigNode node, PluginInfo def) {

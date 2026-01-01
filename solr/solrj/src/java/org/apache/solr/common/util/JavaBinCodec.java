@@ -47,7 +47,6 @@ import org.apache.solr.common.ConditionalKeyMapWriter;
 import org.apache.solr.common.EnumFieldValue;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.IteratorWriter.ItemWriter;
-import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
@@ -425,11 +424,6 @@ public class JavaBinCodec implements PushWriter {
     }
     if (val instanceof Map.Entry) {
       writeMapEntry((Map.Entry) val);
-      return true;
-    }
-    if (val instanceof MapSerializable) {
-      // todo find a better way to reuse the map more efficiently
-      writeMap(((MapSerializable) val).toMap(new NamedList().asShallowMap()));
       return true;
     }
     if (val instanceof AtomicInteger) {

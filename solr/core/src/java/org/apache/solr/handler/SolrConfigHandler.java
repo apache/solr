@@ -61,7 +61,7 @@ import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -284,12 +284,12 @@ public class SolrConfigHandler extends RequestHandlerBase
               Map pluginNameVsPluginInfo = (Map) val.get(parts.get(1));
               if (pluginNameVsPluginInfo != null) {
                 Object o =
-                    pluginNameVsPluginInfo instanceof MapSerializable
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginNameVsPluginInfo
                         : pluginNameVsPluginInfo.get(componentName);
                 Map<String, Object> pluginInfo =
-                    o instanceof MapSerializable
-                        ? ((MapSerializable) o).toMap(new LinkedHashMap<>())
+                    o instanceof MapWriter
+                        ? ((MapWriter) o).toMap(new LinkedHashMap<>())
                         : (Map<String, Object>) o;
                 val.put(
                     parts.get(1),

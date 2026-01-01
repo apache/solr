@@ -29,7 +29,7 @@ import org.apache.lucene.sandbox.index.MergeOnFlushMergePolicy;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrConfig;
@@ -292,12 +292,12 @@ public class SolrIndexConfigTest extends SolrTestCaseJ4 {
     }
 
     ++mSizeExpected;
-    assertTrue(m.get("mergeScheduler") instanceof MapSerializable);
+    assertTrue(m.get("mergeScheduler") instanceof MapWriter);
     ++mSizeExpected;
-    assertTrue(m.get("mergePolicyFactory") instanceof MapSerializable);
+    assertTrue(m.get("mergePolicyFactory") instanceof MapWriter);
     if (solrConfigFileName.equals(solrConfigFileNameWarmerRandomMergePolicyFactory)) {
       ++mSizeExpected;
-      assertTrue(m.get("mergedSegmentWarmer") instanceof MapSerializable);
+      assertTrue(m.get("mergedSegmentWarmer") instanceof MapWriter);
     } else {
       assertNull(m.get("mergedSegmentWarmer"));
     }
