@@ -27,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 /** ZkNodeProps contains generic immutable properties. */
@@ -43,7 +44,7 @@ public class ZkNodeProps implements MapWriter {
   }
 
   public ZkNodeProps(MapWriter mw) {
-    propMap = MapWriter.writeMap(mw, new HashMap<>());
+    propMap = new SimpleOrderedMap<>(mw);
   }
 
   public ZkNodeProps plus(String key, Object val) {

@@ -44,23 +44,6 @@ public interface MapWriter extends NavigableObject, JSONWriter.Writable {
     return Utils.convertToMap(this, map);
   }
 
-  // replace with simple ordered map
-  static Map<String, Object> writeMap(MapWriter mw, Map<String, Object> map) {
-    try {
-      mw.writeMap(
-          new EntryWriter() {
-            @Override
-            public EntryWriter put(CharSequence k, Object v) {
-              map.put(k == null ? null : k.toString(), v);
-              return this;
-            }
-          });
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    return map;
-  }
-
   /** For implementing Noggit {@link org.noggit.JSONWriter.Writable}. */
   @Override
   default void write(JSONWriter writer) {
@@ -164,7 +147,7 @@ public interface MapWriter extends NavigableObject, JSONWriter.Writable {
     }
 
     default BiConsumer<CharSequence, Object> getBiConsumer() {
-      return (k, v) -> putNoEx(k, v);
+      return this::putNoEx;
     }
   }
 

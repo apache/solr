@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -1699,7 +1698,7 @@ public class IndexSchema {
                   SchemaProps.Handler::getNameLower, SchemaProps.Handler::getRealName));
 
   public Map<String, Object> getNamedPropertyValues(String name, SolrParams params) {
-    return MapWriter.writeMap(new SchemaProps(name, params, this), new LinkedHashMap<>());
+    return new SimpleOrderedMap<>(new SchemaProps(name, params, this));
   }
 
   /**

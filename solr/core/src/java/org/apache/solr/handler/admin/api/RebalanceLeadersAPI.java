@@ -22,14 +22,13 @@ import static org.apache.solr.common.params.CommonParams.ACTION;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RebalanceLeadersPayload;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 /**
@@ -56,7 +55,7 @@ public class RebalanceLeadersAPI {
   @Command(name = V2_REBALANCE_LEADERS_CMD)
   public void rebalanceLeaders(PayloadObj<RebalanceLeadersPayload> obj) throws Exception {
     final RebalanceLeadersPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = MapWriter.writeMap(v2Body, new HashMap<>());
+    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
     v1Params.put(ACTION, CollectionParams.CollectionAction.REBALANCELEADERS.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
