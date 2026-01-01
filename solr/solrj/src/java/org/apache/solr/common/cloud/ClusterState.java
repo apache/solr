@@ -17,6 +17,7 @@
 package org.apache.solr.common.cloud;
 
 import static org.apache.solr.common.util.Utils.STANDARDOBJBUILDER;
+import static org.apache.solr.common.util.Utils.WEAKSTRINGINTERNEROBJBUILDER;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -389,14 +390,17 @@ public class ClusterState implements MapWriter {
     return collectionStates.size();
   }
 
-  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER =
-      STANDARDOBJBUILDER;
+  private static volatile Function<JSONParser, ObjectBuilder> STR_INTERNER_OBJ_BUILDER;
 
-  /**
-   * @lucene.internal
-   */
-  public static void setStrInternerParser(Function<JSONParser, ObjectBuilder> fun) {
-    if (fun == null) return;
-    STR_INTERNER_OBJ_BUILDER = fun;
+  static {
+    ClassLoader contextClassLoader = Thread.currentThread().getContextClassLoader();
+    if (contextClassLoader == null) {
+      contextClassLoader = ClusterState.class.getClassLoader();
+    }
+    String resourcePath = "com/github/benmanes/caffeine/cache/Interner.class";
+    boolean hasInterner =
+        contextClassLoader.getResource(resourcePath) != null
+            || ClassLoader.getSystemResource(resourcePath) != null;
+    STR_INTERNER_OBJ_BUILDER = hasInterner ? WEAKSTRINGINTERNEROBJBUILDER : STANDARDOBJBUILDER;
   }
 }

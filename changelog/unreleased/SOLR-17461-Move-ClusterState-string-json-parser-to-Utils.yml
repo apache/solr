@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Move ClusterState string json parser to Utils
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Sanjay Yadav
+links:
+  - name: SOLR-17461
+    url: https://issues.apache.org/jira/browse/SOLR-17461
