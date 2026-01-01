@@ -76,6 +76,7 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -207,7 +208,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             if (p != null) {
               m.put(
                   RequestParams.NAME,
-                  Map.of(parts.get(2), MapWriter.writeMap(p, new LinkedHashMap<>())));
+                  Map.of(parts.get(2), new SimpleOrderedMap<>(p)));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {

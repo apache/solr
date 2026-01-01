@@ -25,15 +25,14 @@ import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.handler.api.V2ApiUtils.flattenMapWithPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.SplitShardPayload;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonAdminParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
@@ -61,7 +60,7 @@ public class SplitShardAPI {
   @Command(name = V2_SPLIT_CMD)
   public void splitShard(PayloadObj<SplitShardPayload> obj) throws Exception {
     final SplitShardPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = MapWriter.writeMap(v2Body, new HashMap<>());
+    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
     v1Params.put(ACTION, CollectionParams.CollectionAction.SPLITSHARD.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 

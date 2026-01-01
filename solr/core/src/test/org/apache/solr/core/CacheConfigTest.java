@@ -20,15 +20,14 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.CacheConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.junit.Before;
@@ -92,7 +91,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     final CacheConfig cacheConfig =
         CacheConfig.getConfig(mockSolrConfig, domConfigNode, XPATH_DOCUMENT_CACHE);
     assertNotNull(cacheConfig);
-    final Map<String, Object> args = MapWriter.writeMap(cacheConfig, new HashMap<>());
+    final Map<String, Object> args = new SimpleOrderedMap<>(cacheConfig);
     assertNotNull(args);
     assertEquals("99", args.get("initialSize"));
     assertEquals("999", args.get("size"));
@@ -120,7 +119,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     final CacheConfig cacheConfig =
         CacheConfig.getConfig(mockSolrConfig, domConfigNode, XPATH_DOCUMENT_CACHE);
     assertNotNull(cacheConfig);
-    final Map<String, Object> args = MapWriter.writeMap(cacheConfig, new HashMap<>());
+    final Map<String, Object> args = new SimpleOrderedMap<>(cacheConfig);
     assertNotNull(args);
     assertEquals(overlaidSize, args.get("size"));
   }
@@ -147,7 +146,7 @@ public class CacheConfigTest extends SolrTestCaseJ4 {
     final CacheConfig cacheConfig =
         CacheConfig.getConfig(mockSolrConfig, overlayConfigNode, XPATH_QUERY_RESULT_CACHE);
     assertNotNull(cacheConfig);
-    final Map<String, Object> args = MapWriter.writeMap(cacheConfig, new HashMap<>());
+    final Map<String, Object> args = new SimpleOrderedMap<>(cacheConfig);
     assertNotNull(args);
     assertEquals("99", args.get("initialSize"));
     assertEquals("queryResultCache", cacheConfig.getNodeName());
