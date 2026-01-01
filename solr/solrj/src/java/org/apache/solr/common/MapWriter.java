@@ -31,7 +31,7 @@ import org.noggit.JSONWriter;
  * and is supposed to be memory efficient. If the entries are primitives, unnecessary boxing is also
  * avoided.
  */
-public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.Writable {
+public interface MapWriter extends NavigableObject, JSONWriter.Writable {
 
   /** Writes this object's entries out to {@code ew}. */
   void writeMap(EntryWriter ew) throws IOException;
@@ -40,7 +40,6 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
     return Utils.toJSONString(this);
   }
 
-  @Override
   default Map<String, Object> toMap(Map<String, Object> map) {
     return Utils.convertToMap(this, map);
   }
