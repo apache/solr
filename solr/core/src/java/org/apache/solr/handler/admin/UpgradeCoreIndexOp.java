@@ -2,6 +2,7 @@ package org.apache.solr.handler.admin;
 
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
 import org.apache.solr.client.api.model.UpgradeCoreIndexResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
@@ -32,6 +33,14 @@ public class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
 
   @Override
   public void execute(CoreAdminHandler.CallInfo it) throws Exception {
+
+    assert it.handler.coreContainer != null;
+    if (it.handler.coreContainer.isZooKeeperAware()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "action=UPRGADECOREINDEX is not supported in SolrCloud mode. As an alternative, in order to upgrade index, configure LatestVersionMergePolicyFactory in solrconfig.xml and reindex the data in your collection.");
+    }
+
     SolrParams params = it.req.getParams();
     String cname = params.required().get(CoreAdminParams.CORE);
     final boolean isAsync = params.get(CommonAdminParams.ASYNC) != null;
