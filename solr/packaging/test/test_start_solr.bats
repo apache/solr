@@ -60,6 +60,8 @@ teardown() {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
 
+  # Pre-check
+  timeout || skip "timeout utility is not available"
   # Set a timeout duration (in seconds)
   TIMEOUT_DURATION=2
 
