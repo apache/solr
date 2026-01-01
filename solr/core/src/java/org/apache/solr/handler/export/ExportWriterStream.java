@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -71,9 +70,7 @@ public class ExportWriterStream extends TupleStream implements Expressible {
         ((IteratorWriter) v).toList(lst);
         v = lst;
       } else if (v instanceof MapWriter) {
-        Map<String, Object> map = new HashMap<>();
-        ((MapWriter) v).toMap(map);
-        v = map;
+        v = MapWriter.writeMap((MapWriter) v, new HashMap<>());
       }
       tuple.put(k.toString(), v);
       return this;

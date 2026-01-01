@@ -199,7 +199,9 @@ public class SolrConfigHandler extends RequestHandlerBase
             Map<String, Object> m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(RequestParams.NAME, Map.of(parts.get(2), p.toMap(new LinkedHashMap<>())));
+              m.put(
+                  RequestParams.NAME,
+                  Map.of(parts.get(2), MapWriter.writeMap(p, new LinkedHashMap<>())));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
@@ -283,7 +285,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                         : pluginNameVsPluginInfo.get(componentName);
                 Map<String, Object> pluginInfo =
                     o instanceof MapWriter
-                        ? ((MapWriter) o).toMap(new LinkedHashMap<>())
+                        ? Utils.convertToMap((MapWriter) o, new LinkedHashMap<>())
                         : (Map<String, Object>) o;
                 val.put(
                     parts.get(1),
@@ -318,7 +320,8 @@ public class SolrConfigHandler extends RequestHandlerBase
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
       String componentName = componentType == null ? null : req.getParams().get("componentName");
       boolean showParams = req.getParams().getBool("expandParams", false);
-      Map<String, Object> map = this.req.getCore().getSolrConfig().toMap(new LinkedHashMap<>());
+      Map<String, Object> map =
+          Utils.convertToMap(this.req.getCore().getSolrConfig(), new LinkedHashMap<>());
       if (componentType != null && !SolrRequestHandler.TYPE.equals(componentType)) return map;
 
       @SuppressWarnings({"unchecked"})
@@ -351,7 +354,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (plugin instanceof Map) {
         pluginInfo = (Map) plugin;
       } else if (plugin instanceof PluginInfo) {
-        pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
+        pluginInfo = Utils.convertToMap((PluginInfo) plugin, new LinkedHashMap<>());
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
@@ -505,9 +508,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           ZkController.touchConfDir(zkLoader);
         } else {
           if (log.isDebugEnabled()) {
-            log.debug(
-                "persisting params data : {}",
-                Utils.toJSONString(params.toMap(new LinkedHashMap<>())));
+            log.debug("persisting params data : {}", Utils.toJSONString(params));
           }
           int latestVersion =
               ZkController.persistConfigResourceToZooKeeper(

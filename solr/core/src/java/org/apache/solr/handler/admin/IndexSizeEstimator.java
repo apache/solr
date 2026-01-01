@@ -278,11 +278,11 @@ public class IndexSizeEstimator {
       Object value = entry.getValue();
       if (value instanceof ItemPriorityQueue queue) {
         Map<String, Object> map = new LinkedHashMap<>();
-        queue.toMap(map);
+        MapWriter.writeMap(queue, map);
         entry.setValue(map);
       } else if (value instanceof MapWriterSummaryStatistics stats) {
         Map<String, Object> map = new LinkedHashMap<>();
-        stats.toMap(map);
+        MapWriter.writeMap(stats, map);
         entry.setValue(map);
       } else if (value instanceof AtomicLong) {
         entry.setValue(((AtomicLong) value).longValue());
