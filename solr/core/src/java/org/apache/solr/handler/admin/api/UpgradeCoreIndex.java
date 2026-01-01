@@ -22,6 +22,7 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
 import org.apache.solr.client.api.model.UpgradeCoreIndexResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -133,30 +134,24 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                   if (!shouldUpgradeSegment(lrc)) {
                     continue;
                   }
-
-                  boolean success =
-                      processSegment(lrc, updateProcessorChain, core, ssearcherRef.get(), dvICache);
-
-                  if (success) {
-                    numSegmentsUpgraded++;
-                  } else {
-                    response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
-                    break;
-                  }
+                  processSegment(lrc, updateProcessorChain, core, ssearcherRef.get(), dvICache);
+                  numSegmentsUpgraded++;
                 }
               } catch (Exception e) {
-                log.error("Error while processing core: {}", coreName, e);
-                response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
+                log.error(String.format("Error while processing core: [%s]", coreName), e);
+                throw new CoreAdminAPIBaseException(e);
               } finally {
                 // important to decrement searcher ref count after use since we obtained it via the
                 // SolrCore.getSearcher() method
                 ssearcherRef.decref();
               }
 
-              // TO-DO
-              // Prepare SolrjerseyResponse if coreRxStatus==ERROR at this point
+              try {
+                doCommit(core);
+              } catch (IOException e) {
+                throw new CoreAdminAPIBaseException(e);
+              }
 
-              doCommit(core);
               try {
                 // giving some time for 0 doc segments to clear up
                 Thread.sleep(10000);
@@ -171,16 +166,21 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                     "Validation failed for core '{}'. Some data is still present in the older (<{}.x) Lucene index format.",
                     coreName,
                     Version.LATEST.major);
-                response.upgradeStatus = CoreIndexUpgradeStatus.ERROR.toString();
+                throw new CoreAdminAPIBaseException(
+                    new SolrException(
+                        SolrException.ErrorCode.SERVER_ERROR,
+                        String.format(
+                            "Validation failed for core '%s'. Some data is still present in the older (<%d.x) Lucene index format.",
+                            coreName, Version.LATEST.major)));
               }
 
               response.core = coreName;
               response.upgradeStatus = CoreIndexUpgradeStatus.UPGRADE_SUCCESSFUL.toString();
               response.numSegmentsEligibleForUpgrade = numSegmentsEligibleForUpgrade;
               response.numSegmentsUpgraded = numSegmentsUpgraded;
-            } catch (IOException ioEx) {
-              // TO-DO
-              // Throw exception wrapped in CoreAdminAPIBaseException
+            } catch (Exception ioEx) {
+              throw new CoreAdminAPIBaseException(ioEx);
+
             } finally {
               // Restore original merge policy
               if (iwRef != null) {
@@ -224,8 +224,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
             "UPGRADECOREINDEX:: Requested update chain {} not found for core {}",
             requestedUpdateChain,
             core.getName());
-        // TO-DO
-        // Throw exception wrapped in CoreAdminAPIBaseException
       }
     }
 
@@ -255,7 +253,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     return core.getUpdateProcessingChain(updateChainName);
   }
 
-  private boolean isIndexUpgraded(SolrCore core) {
+  private boolean isIndexUpgraded(SolrCore core) throws IOException {
 
     try (FSDirectory dir = FSDirectory.open(Paths.get(core.getIndexDir()));
         IndexReader reader = DirectoryReader.open(dir)) {
@@ -291,11 +289,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           "Error while opening segmentInfos for core: {}, exception: {}",
           core.getName(),
           e.toString());
+      throw e;
     }
-    return false;
+
   }
 
-  private void doCommit(SolrCore core) {
+  private void doCommit(SolrCore core) throws IOException {
     RefCounted<IndexWriter> iwRef = null;
     try {
       iwRef = core.getSolrCoreState().getIndexWriter(null);
@@ -312,7 +311,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
     } catch (IOException ioEx) {
       log.warn(
-          String.format("Error commiting on core {} during index upgrade", core.getName()), ioEx);
+          String.format("Error committing on core [%s] during index upgrade", core.getName()), ioEx);
+      throw ioEx;
     } finally {
       if (iwRef != null) {
         iwRef.decref();
@@ -325,9 +325,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       UpdateRequestProcessorChain processorChain,
       SolrCore core,
       SolrIndexSearcher solrIndexSearcher,
-      DocValuesIteratorCache dvICache) {
+      DocValuesIteratorCache dvICache)
+      throws Exception {
 
-    boolean success = false;
+    boolean success;
     int numDocsProcessed = 0;
 
     String coreName = core.getName();
@@ -366,20 +367,21 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
       success = true;
     } catch (Exception e) {
-      log.error("Error in CvReindexingTask process() : {}", e.toString());
-
+      log.error("Error while processing segment [{}]", segmentReader.getSegmentName());
+      throw e;
     } finally {
       if (processor != null) {
         try {
           processor.finish();
         } catch (Exception e) {
           log.error("Exception while doing finish processor.finish() : {}", e.toString());
-
+          throw e;
         } finally {
           try {
             processor.close();
           } catch (IOException e) {
             log.error("Exception while closing processor: {}", e.toString());
+            throw e;
           }
         }
       }
