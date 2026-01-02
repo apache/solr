@@ -33,6 +33,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IORunnable;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -40,6 +41,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.IntervalFacets.FacetInterval;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocIterator;
@@ -188,76 +190,13 @@ public class IntervalFacets implements Iterable<FacetInterval> {
   private void doCount() throws IOException {
     if (schemaField.getType().getNumberType() != null
         && (!schemaField.multiValued() || schemaField.getType().isPointField())) {
-      if (schemaField.multiValued()) {
-        getCountMultiValuedNumeric();
-      } else {
-        getCountNumeric();
-      }
+      getCountNumeric();
     } else {
       getCountString();
     }
   }
 
   private void getCountNumeric() throws IOException {
-    final FieldType ft = schemaField.getType();
-    final String fieldName = schemaField.getName();
-    final NumberType numericType = ft.getNumberType();
-    if (numericType == null) {
-      throw new IllegalStateException();
-    }
-    final List<LeafReaderContext> leaves = searcher.getIndexReader().leaves();
-
-    final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
-    LeafReaderContext ctx = null;
-    NumericDocValues longs = null;
-    for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
-      final int doc = docsIt.nextDoc();
-      if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
-        do {
-          ctx = ctxIt.next();
-        } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
-        assert doc >= ctx.docBase;
-        switch (numericType) {
-          case LONG:
-          case DATE:
-          case INTEGER:
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case FLOAT:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-                  @Override
-                  public long longValue() throws IOException {
-                    return NumericUtils.sortableFloatBits((int) super.longValue());
-                  }
-                };
-            break;
-          case DOUBLE:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
-            longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
-                  @Override
-                  public long longValue() throws IOException {
-                    return NumericUtils.sortableDoubleBits(super.longValue());
-                  }
-                };
-            break;
-          default:
-            throw new AssertionError();
-        }
-      }
-      int valuesDocID = longs.docID();
-      if (valuesDocID < doc - ctx.docBase) {
-        valuesDocID = longs.advance(doc - ctx.docBase);
-      }
-      if (valuesDocID == doc - ctx.docBase) {
-        accumIntervalWithValue(longs.longValue());
-      }
-    }
-  }
-
-  private void getCountMultiValuedNumeric() throws IOException {
     final FieldType ft = schemaField.getType();
     final String fieldName = schemaField.getName();
     if (ft.getNumberType() == null) {
@@ -267,7 +206,8 @@ public class IntervalFacets implements Iterable<FacetInterval> {
 
     final Iterator<LeafReaderContext> ctxIt = leaves.iterator();
     LeafReaderContext ctx = null;
-    SortedNumericDocValues longs = null;
+    DocIdSetIterator longs = null;
+    IORunnable accumulate = null;
     for (DocIterator docsIt = docs.iterator(); docsIt.hasNext(); ) {
       final int doc = docsIt.nextDoc();
       if (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc()) {
@@ -275,14 +215,44 @@ public class IntervalFacets implements Iterable<FacetInterval> {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
-        longs = DocValues.getSortedNumeric(ctx.reader(), fieldName);
+        final SortedNumericDocValues sortedNumeric =
+            DocValues.getSortedNumeric(ctx.reader(), fieldName);
+        NumericDocValues numeric = DocValues.unwrapSingleton(sortedNumeric);
+        if (numeric != null) {
+          if (!schemaField.multiValued() && !(schemaField.getType() instanceof NumericField)) {
+            if (schemaField.getType().getNumberType() == NumberType.FLOAT) {
+              numeric =
+                  new FilterNumericDocValues(numeric) {
+                    @Override
+                    public long longValue() throws IOException {
+                      return NumericUtils.sortableFloatBits((int) super.longValue());
+                    }
+                  };
+            }
+            if (schemaField.getType().getNumberType() == NumberType.DOUBLE) {
+              numeric =
+                  new FilterNumericDocValues(numeric) {
+                    @Override
+                    public long longValue() throws IOException {
+                      return NumericUtils.sortableDoubleBits(super.longValue());
+                    }
+                  };
+            }
+          }
+          longs = numeric;
+          final NumericDocValues finalNumeric = numeric;
+          accumulate = () -> accumIntervalWithValue(finalNumeric.longValue());
+        } else {
+          longs = sortedNumeric;
+          accumulate = () -> accumIntervalWithMultipleValues(sortedNumeric);
+        }
       }
       int valuesDocID = longs.docID();
       if (valuesDocID < doc - ctx.docBase) {
         valuesDocID = longs.advance(doc - ctx.docBase);
       }
       if (valuesDocID == doc - ctx.docBase) {
-        accumIntervalWithMultipleValues(longs);
+        accumulate.run();
       }
     }
   }
@@ -294,24 +264,16 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       // solr docsets already exclude any deleted docs
       final DocIdSetIterator disi = docs.iterator(leaf);
       if (disi != null) {
-        if (schemaField.multiValued()) {
-          SortedSetDocValues sub = leaf.reader().getSortedSetDocValues(schemaField.getName());
-          if (sub == null) {
-            continue;
-          }
-          final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
-          if (singleton != null) {
-            // some codecs may optimize SORTED_SET storage for single-valued fields
-            accumIntervalsSingle(singleton, disi);
-          } else {
-            accumIntervalsMulti(sub, disi);
-          }
+        SortedSetDocValues sub = DocValues.getSortedSet(leaf.reader(), schemaField.getName());
+        if (sub == null) {
+          continue;
+        }
+        final SortedDocValues singleton = DocValues.unwrapSingleton(sub);
+        if (singleton != null) {
+          // some codecs may optimize SORTED_SET storage for single-valued fields
+          accumIntervalsSingle(singleton, disi);
         } else {
-          SortedDocValues sub = leaf.reader().getSortedDocValues(schemaField.getName());
-          if (sub == null) {
-            continue;
-          }
-          accumIntervalsSingle(sub, disi);
+          accumIntervalsMulti(sub, disi);
         }
       }
     }
@@ -723,8 +685,10 @@ public class IntervalFacets implements Iterable<FacetInterval> {
       if ("*".equals(value)) {
         return null;
       }
-      if (schemaField.getType().isPointField()) {
-        return ((PointField) schemaField.getType()).toInternalByteRef(value);
+      if (schemaField.getType() instanceof PointField pointField) {
+        return pointField.toInternalByteRef(value);
+      } else if (schemaField.getType() instanceof NumericField numericField) {
+        return numericField.toInternalByteRef(value);
       }
       return new BytesRef(schemaField.getType().toInternal(value));
     }
