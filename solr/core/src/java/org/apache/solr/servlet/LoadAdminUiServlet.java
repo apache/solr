@@ -44,6 +44,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
       Boolean.parseBoolean(System.getProperty("solr.ui.enabled", "true"));
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
+  public static final String CORE_CONTAINER_REQUEST_ATTRIBUTE = "org.apache.solr.CoreContainer";
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
@@ -62,7 +63,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
 
     // This attribute is set by the SolrDispatchFilter
     String admin = request.getRequestURI().substring(request.getContextPath().length());
-    CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
+    CoreContainer cores = (CoreContainer) request.getAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE);
     try (InputStream in = getServletContext().getResourceAsStream(admin)) {
       if (in != null && cores != null) {
         response.setCharacterEncoding("UTF-8");

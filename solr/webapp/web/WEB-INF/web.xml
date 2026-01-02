@@ -46,7 +46,7 @@
 
   <filter>
     <filter-name>MDCLoggingFilter</filter-name>
-    <filter-class>org.apache.solr.servlet.MdcLoggingFilter</filter-class>
+    <filter-class>org.apache.solr.servlet.EssentialSolrRequestFilter</filter-class>
   </filter>
 
   <filter-mapping>
