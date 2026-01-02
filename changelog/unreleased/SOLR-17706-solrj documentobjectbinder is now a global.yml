@@ -1,9 +1,0 @@
-title: SolrJ DocumentObjectBinder is now a global singleton via an INSTANCE field
-  and that which is pluggable via Java SPI/ServiceLoader. SolrClient.getBinder is
-  gone.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17706
-  url: https://issues.apache.org/jira/browse/SOLR-17706

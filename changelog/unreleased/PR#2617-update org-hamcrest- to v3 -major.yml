@@ -1,7 +1,0 @@
-title: Update org.hamcrest:* to v3 (major)
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2617
-  url: https://github.com/apache/solr/pull/2617

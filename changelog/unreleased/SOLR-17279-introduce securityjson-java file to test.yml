@@ -1,8 +1,0 @@
-title: Introduce SecurityJson.java file to Test Framework to consolidate setting up
-  authentication in tests.
-type: other
-authors:
-- name: Rudy Seitz
-links:
-- name: SOLR-17279
-  url: https://issues.apache.org/jira/browse/SOLR-17279

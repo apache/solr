@@ -1,7 +1,0 @@
-title: Update com.nimbusds:nimbus-jose-jwt to v10.5
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3649
-  url: https://github.com/apache/solr/pull/3649

@@ -1,7 +1,0 @@
-title: Update org.immutables:value-annotations to v2.10.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2307
-  url: https://github.com/apache/solr/pull/2307

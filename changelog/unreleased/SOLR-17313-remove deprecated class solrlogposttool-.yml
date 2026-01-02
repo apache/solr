@@ -1,8 +1,0 @@
-title: Remove deprecated class SolrLogPostTool. PostLogsTool and the bin/solr post
-  command has replaced this.
-type: removed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-17313
-  url: https://issues.apache.org/jira/browse/SOLR-17313

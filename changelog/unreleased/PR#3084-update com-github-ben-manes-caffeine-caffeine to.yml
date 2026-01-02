@@ -1,7 +1,0 @@
-title: Update com.github.ben-manes.caffeine:caffeine to v3.2.2
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3084
-  url: https://github.com/apache/solr/pull/3084

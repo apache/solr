@@ -1,8 +1,0 @@
-title: Removed deprecated methods on the various Solr Clients.
-type: removed
-authors:
-- name: Eric Pugh
-- name: Kevin Risden
-links:
-- name: SOLR-16601
-  url: https://issues.apache.org/jira/browse/SOLR-16601

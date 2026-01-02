@@ -1,8 +1,0 @@
-title: Remove backcompatiblity of -upconfig and -downconfig for bin/solr zk upconfig
-  and downconfig commands.
-type: removed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16823
-  url: https://issues.apache.org/jira/browse/SOLR-16823

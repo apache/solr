@@ -1,8 +1,0 @@
-title: Remove transient Solr cores capability.
-type: removed
-authors:
-- name: Eric Pugh
-- name: David Smiley
-links:
-- name: SOLR-17932
-  url: https://issues.apache.org/jira/browse/SOLR-17932

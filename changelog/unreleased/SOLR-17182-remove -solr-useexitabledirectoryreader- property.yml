@@ -1,7 +1,0 @@
-title: Remove `solr.useExitableDirectoryReader` property.
-type: removed
-authors:
-- name: Andrzej Bialecki
-links:
-- name: SOLR-17182
-  url: https://issues.apache.org/jira/browse/SOLR-17182

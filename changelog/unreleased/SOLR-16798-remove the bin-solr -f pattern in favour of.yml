@@ -1,7 +1,0 @@
-title: Remove the bin/solr -f pattern in favour of bin/solr start -f explicit command.
-type: other
-authors:
-- name: Bence Szabo
-links:
-- name: SOLR-16798
-  url: https://issues.apache.org/jira/browse/SOLR-16798

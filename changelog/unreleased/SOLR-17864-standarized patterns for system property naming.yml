@@ -1,9 +1,0 @@
-title: Standarized patterns for system property naming across Solr. i.e enable.packages
-  is now solr.packages.enabled.
-type: added
-authors:
-- name: janhoy
-- name: Eric Pugh
-links:
-- name: SOLR-17864
-  url: https://issues.apache.org/jira/browse/SOLR-17864

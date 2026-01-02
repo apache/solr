@@ -1,7 +1,0 @@
-title: Removed deprecated ExternalFileField field type.
-type: removed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-17655
-  url: https://issues.apache.org/jira/browse/SOLR-17655

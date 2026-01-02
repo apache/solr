@@ -1,7 +1,0 @@
-title: Update org.apache.hadoop.thirdparty:hadoop-shaded-guava to v1.2.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2269
-  url: https://github.com/apache/solr/pull/2269

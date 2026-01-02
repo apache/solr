@@ -1,7 +1,0 @@
-title: Removed deprecated SolrException#log methods
-type: removed
-authors:
-- name: Kevin Risden
-links:
-- name: SOLR-15703
-  url: https://issues.apache.org/jira/browse/SOLR-15703

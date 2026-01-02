@@ -1,8 +1,0 @@
-title: Removed obsolete 'roles' and 'numShards' core properties, which were persisted
-  with but unused
-type: removed
-authors:
-- name: Pierre Salagnac
-links:
-- name: SOLR-17779
-  url: https://issues.apache.org/jira/browse/SOLR-17779

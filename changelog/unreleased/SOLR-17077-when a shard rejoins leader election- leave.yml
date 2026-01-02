@@ -1,8 +1,0 @@
-title: When a shard rejoins leader election, leave previous election only once to
-  save unneeded calls to Zookeeper.
-type: changed
-authors:
-- name: Pierre Salagnac
-links:
-- name: SOLR-17077
-  url: https://issues.apache.org/jira/browse/SOLR-17077

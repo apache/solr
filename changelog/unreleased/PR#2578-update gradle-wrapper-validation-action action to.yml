@@ -1,7 +1,0 @@
-title: Update gradle/wrapper-validation-action action to v3
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2578
-  url: https://github.com/apache/solr/pull/2578

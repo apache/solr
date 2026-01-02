@@ -1,7 +1,0 @@
-title: Update commons-io:commons-io to v2.20.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3094
-  url: https://github.com/apache/solr/pull/3094

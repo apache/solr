@@ -1,7 +1,0 @@
-title: Update de.undercouch.download to v5.6.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3096
-  url: https://github.com/apache/solr/pull/3096

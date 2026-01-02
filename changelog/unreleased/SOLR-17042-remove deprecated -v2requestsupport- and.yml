@@ -1,8 +1,0 @@
-title: Remove deprecated `V2RequestSupport` and associated `SolrRequest` methods `setUseV2`
-  and `setUseBinaryV2`.
-type: removed
-authors:
-- name: Jason Gerlowski
-links:
-- name: SOLR-17042
-  url: https://issues.apache.org/jira/browse/SOLR-17042

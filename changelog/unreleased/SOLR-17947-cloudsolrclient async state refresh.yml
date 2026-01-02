@@ -1,8 +1,0 @@
-title: CloudSolrClient now refreshes collection state asynchronously using a dedicated
-  thread pool, reducing ZooKeeper blocking and improving performance under load.
-type: changed
-authors:
-- name: Mark Miller
-links:
-- name: SOLR-17947
-  url: https://issues.apache.org/jira/browse/SOLR-17947

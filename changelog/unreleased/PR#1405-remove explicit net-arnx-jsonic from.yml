@@ -1,7 +1,0 @@
-title: Remove explicit net.arnx:jsonic from versions.props
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1405
-  url: https://github.com/apache/solr/pull/1405

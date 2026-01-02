@@ -1,7 +1,0 @@
-title: Update com.google.j2objc:j2objc-annotations to v3.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3481
-  url: https://github.com/apache/solr/pull/3481

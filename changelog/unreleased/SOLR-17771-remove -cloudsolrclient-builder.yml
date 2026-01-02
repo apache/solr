@@ -1,7 +1,0 @@
-title: Remove `CloudSolrClient.Builder`.
-type: removed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-17771
-  url: https://issues.apache.org/jira/browse/SOLR-17771

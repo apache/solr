@@ -1,9 +1,0 @@
-title: Remove `solr.useExitableDirectoryReader` property. Using `ExitableDirectoryReader`
-  apparently has negligible impact on search performance so it's used now for all
-  queries regardless of their query limits params.
-type: other
-authors:
-- name: Andrzej Bialecki
-links:
-- name: SOLR-17182
-  url: https://issues.apache.org/jira/browse/SOLR-17182

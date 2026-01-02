@@ -1,7 +1,0 @@
-title: Update org.jctools:jctools-core to v4.0.5
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2131
-  url: https://github.com/apache/solr/pull/2131

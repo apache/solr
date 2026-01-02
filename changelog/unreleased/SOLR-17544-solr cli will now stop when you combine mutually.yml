@@ -1,9 +1,0 @@
-title: Solr CLI will now stop when you combine mutually exclusive options. Combining
-  -s and -z options is a common example.
-type: changed
-authors:
-- name: Eric Pugh
-- name: Christos Malliaridis
-links:
-- name: SOLR-17544
-  url: https://issues.apache.org/jira/browse/SOLR-17544
