@@ -1,8 +1,0 @@
-title: Remove bin/solr create_core and create_collection commands in favour of bin/solr
-  create command.
-type: removed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16893
-  url: https://issues.apache.org/jira/browse/SOLR-16893

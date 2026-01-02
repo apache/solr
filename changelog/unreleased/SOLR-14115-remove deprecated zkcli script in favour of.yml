@@ -1,7 +1,0 @@
-title: Remove deprecated zkcli script in favour of equivalent bin/solr sub commmands.
-type: removed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-14115
-  url: https://issues.apache.org/jira/browse/SOLR-14115

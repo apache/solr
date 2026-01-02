@@ -1,7 +1,0 @@
-title: Removed PreAnalyzedFields
-type: removed
-authors:
-- name: Ishan Chattopadhyaya
-links:
-- name: SOLR-17839
-  url: https://issues.apache.org/jira/browse/SOLR-17839

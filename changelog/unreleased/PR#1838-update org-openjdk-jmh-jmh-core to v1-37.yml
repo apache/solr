@@ -1,7 +1,0 @@
-title: Update org.openjdk.jmh:jmh-core to v1.37
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1838
-  url: https://github.com/apache/solr/pull/1838

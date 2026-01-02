@@ -1,7 +1,0 @@
-title: Remove unused parameter pauseBeforeStart from leader election code
-type: removed
-authors:
-  - name: Pierre Salagnac
-links:
-  - name: SOLR-18035
-    url: https://issues.apache.org/jira/browse/SOLR-18035

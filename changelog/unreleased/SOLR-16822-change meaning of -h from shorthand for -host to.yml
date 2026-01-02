@@ -1,8 +1,0 @@
-title: Change meaning of -h from shorthand for -host to instead return help information
-  for bin/solr start and restart commands.
-type: other
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16822
-  url: https://issues.apache.org/jira/browse/SOLR-16822

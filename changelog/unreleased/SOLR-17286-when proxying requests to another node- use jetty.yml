@@ -1,7 +1,0 @@
-title: When proxying requests to another node, use Jetty HttpClient not Apache HttpClient.
-type: other
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17286
-  url: https://issues.apache.org/jira/browse/SOLR-17286

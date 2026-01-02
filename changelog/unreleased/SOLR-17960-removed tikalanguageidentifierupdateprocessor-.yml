@@ -1,8 +1,0 @@
-title: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
-  or OpenNLPLangDetectUpdateProcessor instead.
-type: other
-authors:
-- name: janhoy
-links:
-- name: SOLR-17960
-  url: https://issues.apache.org/jira/browse/SOLR-17960

@@ -1,7 +1,0 @@
-title: Update org.eclipse.jgit:org.eclipse.jgit to v7
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3135
-  url: https://github.com/apache/solr/pull/3135

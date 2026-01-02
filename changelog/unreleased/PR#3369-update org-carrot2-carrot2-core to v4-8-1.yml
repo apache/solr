@@ -1,7 +1,0 @@
-title: Update org.carrot2:carrot2-core to v4.8.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3369
-  url: https://github.com/apache/solr/pull/3369

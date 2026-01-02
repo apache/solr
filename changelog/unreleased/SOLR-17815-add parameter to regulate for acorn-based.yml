@@ -1,8 +1,0 @@
-title: Add parameter to regulate for ACORN-based filtering in vector search.
-type: added
-authors:
-- name: Anna Ruggero
-- name: Alessandro Benedetti
-links:
-- name: SOLR-17815
-  url: https://issues.apache.org/jira/browse/SOLR-17815

@@ -1,7 +1,0 @@
-title: Remove deprecated feature to load solr.xml from ZK
-type: removed
-authors:
-- name: janhoy
-links:
-- name: SOLR-15959
-  url: https://issues.apache.org/jira/browse/SOLR-15959

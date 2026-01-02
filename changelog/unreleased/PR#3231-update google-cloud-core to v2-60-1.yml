@@ -1,7 +1,0 @@
-title: Update google.cloud.core to v2.60.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3231
-  url: https://github.com/apache/solr/pull/3231

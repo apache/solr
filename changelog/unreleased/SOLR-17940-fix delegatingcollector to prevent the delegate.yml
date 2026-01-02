@@ -1,8 +1,0 @@
-title: Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore
-  if the scoreMode is not TOP_SCORES
-type: fixed
-authors:
-- name: hossman
-links:
-- name: SOLR-17940
-  url: https://issues.apache.org/jira/browse/SOLR-17940

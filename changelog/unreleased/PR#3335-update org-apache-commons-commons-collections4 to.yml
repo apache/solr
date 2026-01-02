@@ -1,7 +1,0 @@
-title: Update org.apache.commons:commons-collections4 to v4.5.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3335
-  url: https://github.com/apache/solr/pull/3335

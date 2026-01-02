@@ -1,9 +1,0 @@
-title: SolrJ's SolrRequest now allows any type for its response; needn't be SolrResponse.
-  Simplified the V2 API to remove the needless SolrResponse. And moved JSON/Jackson
-  binding into a new JacksonDataBindResponseParser
-type: changed
-authors:
-- name: David Smiley
-links:
-- name: SOLR-17705
-  url: https://issues.apache.org/jira/browse/SOLR-17705

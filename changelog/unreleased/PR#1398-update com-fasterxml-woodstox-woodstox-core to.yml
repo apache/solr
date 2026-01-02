@@ -1,7 +1,0 @@
-title: Update com.fasterxml.woodstox:woodstox-core to v6.5.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#1398
-  url: https://github.com/apache/solr/pull/1398

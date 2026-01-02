@@ -1,7 +1,0 @@
-title: The 'jaegertracer-configurator' module is removed. Please use 'opentelemetry'
-type: removed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16535
-  url: https://issues.apache.org/jira/browse/SOLR-16535

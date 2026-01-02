@@ -1,7 +1,0 @@
-title: Add support for scalar quantized dense vectors
-type: added
-authors:
-- name: Kevin Liang
-links:
-- name: SOLR-17780
-  url: https://issues.apache.org/jira/browse/SOLR-17780

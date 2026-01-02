@@ -1,8 +1,0 @@
-title: Change Solr CLI delete command to not delete configs by default. Decouple lifecycle
-  of collections from configsets.
-type: changed
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-17495
-  url: https://issues.apache.org/jira/browse/SOLR-17495

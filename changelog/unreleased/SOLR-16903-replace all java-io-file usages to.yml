@@ -1,8 +1,0 @@
-title: Replace all java.io.File usages to java.nio.file.Path (NIO)
-type: other
-authors:
-- name: Andrey Bozhko
-- name: Matthew Biscocho
-links:
-- name: SOLR-16903
-  url: https://issues.apache.org/jira/browse/SOLR-16903

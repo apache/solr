@@ -1,7 +1,0 @@
-title: Update decompose to v3.3.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3220
-  url: https://github.com/apache/solr/pull/3220

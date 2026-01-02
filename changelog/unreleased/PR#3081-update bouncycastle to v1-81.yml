@@ -1,7 +1,0 @@
-title: Update bouncycastle to v1.81
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3081
-  url: https://github.com/apache/solr/pull/3081

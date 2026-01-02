@@ -1,7 +1,0 @@
-title: Update com.carrotsearch.randomizedtesting:randomizedtesting-runner to v2.8.3
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3062
-  url: https://github.com/apache/solr/pull/3062

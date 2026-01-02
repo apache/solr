@@ -1,7 +1,0 @@
-title: Update commons-cli:commons-cli to v1.10.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3457
-  url: https://github.com/apache/solr/pull/3457

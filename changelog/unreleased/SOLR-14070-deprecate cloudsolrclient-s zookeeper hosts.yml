@@ -1,7 +1,0 @@
-title: Deprecate CloudSolrClient's ZooKeeper Hosts constructor.
-type: other
-authors:
-- name: Abhishek Umarjikar
-links:
-- name: SOLR-14070
-  url: https://issues.apache.org/jira/browse/SOLR-14070

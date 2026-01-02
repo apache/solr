@@ -1,9 +1,0 @@
-title: Remove deprecated Solr CLI options. Run bin/solr yourcommand -h to see current
-  options.
-type: removed
-authors:
-- name: Eric Pugh
-- name: Christos Malliardis
-links:
-- name: SOLR-17352
-  url: https://issues.apache.org/jira/browse/SOLR-17352
