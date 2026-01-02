@@ -54,7 +54,12 @@ public class LongField extends NumericField implements LongValueFieldType {
   public Object toNativeType(Object val) {
     if (val == null) return null;
     if (val instanceof Number) return ((Number) val).longValue();
-    if (val instanceof CharSequence) return Long.parseLong(val.toString());
+    try {
+      if (val instanceof CharSequence) return Long.parseLong(val.toString());
+    } catch (NumberFormatException e) {
+      Double v = Double.parseDouble(val.toString());
+      return v.longValue();
+    }
     return super.toNativeType(val);
   }
 

@@ -95,15 +95,20 @@ public class HashQParserPlugin extends QParserPlugin {
       final LongValues[] resultValues = new LongValues[fields.length];
       for (int i = 0; i < fields.length; i++) {
         final String field = fields[i];
-        final NumericDocValues numericDocValues =
-            DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), field));
+        NumericDocValues numericDocValues = null;
+        try {
+          numericDocValues =
+              DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), field));
+        } catch (IllegalStateException ignored) {
+        }
         if (numericDocValues != null) {
+          final NumericDocValues finalNumericDocValues = numericDocValues;
           // Numeric
           resultValues[i] =
               new LongValues() {
                 // Even if not a Long field; could be int, double, float and this still works
                 // because DocValues numerics are based on a Long.
-                final NumericDocValues values = numericDocValues;
+                final NumericDocValues values = finalNumericDocValues;
                 boolean atDoc = false;
 
                 @Override

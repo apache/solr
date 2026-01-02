@@ -222,6 +222,18 @@ public class FloatField extends NumericField implements FloatValueFieldType {
         sf.getName(), floatValue, sf.indexed(), sf.hasDocValues(), sf.stored());
   }
 
+  /**
+   * For doubles and floats, unbounded range queries (which do not match NaN values) are not
+   * equivalent to existence queries (which do match NaN values).
+   *
+   * @param field the schema field
+   * @return false
+   */
+  @Override
+  protected boolean treatUnboundedRangeAsExistence(SchemaField field) {
+    return false;
+  }
+
   @Override
   public Query getSpecializedExistenceQuery(QParser parser, SchemaField field) {
     return FloatPoint.newRangeQuery(field.getName(), Float.NEGATIVE_INFINITY, Float.NaN);

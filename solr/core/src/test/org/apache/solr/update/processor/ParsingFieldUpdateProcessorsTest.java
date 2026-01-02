@@ -36,6 +36,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.schema.DateField;
+import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.IndexSchema;
 import org.junit.BeforeClass;
 
@@ -155,15 +157,20 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertNotNull(schema.getFieldOrNull("date_dt"));
     String dateString = "2010-11-12T13:14:15.168Z";
     SolrInputDocument d;
-    if (schema.getField("date_dt").getType().isPointField()) {
+    if (schema.getField("date_dt").getType() instanceof DatePointField) {
       d =
           processAdd(
               "parse-date-explicit-typeclass-point-selector-no-run-processor",
               doc(f("id", "77"), f("date_dt", dateString)));
+    } else if (schema.getField("date_dt").getType() instanceof DateField) {
+      d =
+          processAdd(
+              "parse-date-explicit-typeclass-numeric-selector-no-run-processor",
+              doc(f("id", "77"), f("date_dt", dateString)));
     } else {
       d =
           processAdd(
-              "parse-date-explicit-typeclass-selector-no-run-processor",
+              "parse-date-explicit-typeclass-trie-selector-no-run-processor",
               doc(f("id", "77"), f("date_dt", dateString)));
     }
 

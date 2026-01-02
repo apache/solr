@@ -54,7 +54,12 @@ public class IntField extends NumericField implements IntValueFieldType {
   public Object toNativeType(Object val) {
     if (val == null) return null;
     if (val instanceof Number) return ((Number) val).intValue();
-    if (val instanceof CharSequence) return Integer.parseInt(val.toString());
+    try {
+      if (val instanceof CharSequence) return Integer.parseInt(val.toString());
+    } catch (NumberFormatException e) {
+      Float v = Float.parseFloat(val.toString());
+      return v.intValue();
+    }
     return super.toNativeType(val);
   }
 

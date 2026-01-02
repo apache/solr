@@ -59,7 +59,7 @@ public class LongValue implements SortValue {
 
   @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
-    this.vals = DocValues.getNumeric(context.reader(), field);
+    this.vals = DocValues.unwrapSingleton(DocValues.getSortedNumeric(context.reader(), field));
     lastDocID = 0;
   }
 

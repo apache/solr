@@ -46,7 +46,9 @@ public class DocValuesIteratorCache {
       funcMap = new EnumMap<>(DocValuesType.class);
 
   static {
-    funcMap.put(DocValuesType.NUMERIC, DocValues::getNumeric);
+    funcMap.put(
+        DocValuesType.NUMERIC,
+        ((leafReader, s) -> DocValues.unwrapSingleton(DocValues.getSortedNumeric(leafReader, s))));
     funcMap.put(DocValuesType.BINARY, DocValues::getBinary);
     funcMap.put(
         DocValuesType.SORTED,

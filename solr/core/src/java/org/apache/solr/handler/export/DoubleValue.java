@@ -22,6 +22,8 @@ import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.SortedNumericSelector;
 
 class DoubleValue implements SortValue {
 
@@ -59,7 +61,15 @@ class DoubleValue implements SortValue {
   @Override
   public void setNextReader(LeafReaderContext context) throws IOException {
     this.reader = context.reader();
-    this.vals = DocValues.getNumeric(this.reader, this.field);
+    try {
+      this.vals = DocValues.getNumeric(this.reader, field);
+    } catch (IllegalStateException ise) {
+      this.vals =
+          SortedNumericSelector.wrap(
+              DocValues.getSortedNumeric(this.reader, field),
+              SortedNumericSelector.Type.MIN,
+              SortField.Type.DOUBLE);
+    }
     lastDocID = 0;
   }
 

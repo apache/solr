@@ -2840,6 +2840,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   public static final String NUMERIC_POINTS_SYSPROP = "solr.tests.numeric.points";
 
   /**
+   * The name of a sysprop that will either <code>true</code> or <code>false</code> indicating if
+   * NumericFields are currently in use, depending on the user specified value of {@link
+   * #USE_FULL_NUMERIC_FIELDS_SYSPROP} and/or randomization. Tests can use <code>
+   * Boolean.getBoolean(NUMERIC_FULL_SYSPROP)</code>.
+   *
+   * @see #randomizeNumericTypesProperties
+   */
+  public static final String NUMERIC_FULL_SYSPROP = "solr.tests.numeric.full";
+
+  /**
    * The name of a sysprop that will be either <code>true</code> or <code>false</code> indicating if
    * docValues should be used on a numeric field. This property string should be used in the <code>
    * docValues</code> attribute of (most) numeric fieldTypes in schemas, and by default will be
@@ -2873,7 +2883,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     final int randNumericType = random().nextInt(15); // 0-14
     // 0-4: Trie (33%), 5-9: Point (33%), 10-14: NumericField (33%)
 
-    final String useFullNumericsStr = System.getProperty(USE_FULL_NUMERIC_FIELDS_SYSPROP);
+    final String useFullNumericsStr =
+        "true"; // System.getProperty(USE_FULL_NUMERIC_FIELDS_SYSPROP);
     final boolean useNumericField =
         (null == useFullNumericsStr)
             ? (randNumericType >= 10)
@@ -2889,7 +2900,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
                 .isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class);
 
     if (useNumericField) {
-      log.info("Using NumericFields w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
+      log.info(
+          "Using NumericFields (NUMERIC_FULL_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
       NumericField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
@@ -2899,6 +2911,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DateField");
 
+      System.setProperty(NUMERIC_FULL_SYSPROP, "true");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     } else if (usePoints) {
       log.info(
@@ -2912,6 +2925,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.DoublePointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.DatePointField");
 
+      System.setProperty(NUMERIC_FULL_SYSPROP, "false");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "true");
     } else {
       log.info(
@@ -2925,6 +2939,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
 
+      System.setProperty(NUMERIC_FULL_SYSPROP, "false");
       System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
     }
     for (Map.Entry<Class<?>, String> entry : RANDOMIZED_NUMERIC_FIELDTYPES.entrySet()) {
