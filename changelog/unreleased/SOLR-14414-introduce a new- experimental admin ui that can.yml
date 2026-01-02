@@ -1,9 +1,0 @@
-title: Introduce a new, experimental Admin UI that can be used aside the current Admin
-  UI. The new module is loaded together with the existing Admin UI and available under
-  the URL path /solr/compose.
-type: added
-authors:
-- name: Christos Malliaridis
-links:
-- name: SOLR-14414
-  url: https://issues.apache.org/jira/browse/SOLR-14414

@@ -1,8 +1,0 @@
-title: The base docker image has been upgraded from Ubuntu 22 (Jammy) to Ubuntu 24
-  (Noble).
-type: dependency_update
-authors:
-- name: Jan Høydahl
-links:
-- name: SOLR-17445
-  url: https://issues.apache.org/jira/browse/SOLR-17445

@@ -1,7 +1,0 @@
-title: Update org.bitbucket.b_c:jose4j to v0.9.6
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2342
-  url: https://github.com/apache/solr/pull/2342

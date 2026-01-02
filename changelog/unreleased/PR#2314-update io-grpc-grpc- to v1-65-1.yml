@@ -1,7 +1,0 @@
-title: Update io.grpc:grpc-* to v1.65.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2314
-  url: https://github.com/apache/solr/pull/2314

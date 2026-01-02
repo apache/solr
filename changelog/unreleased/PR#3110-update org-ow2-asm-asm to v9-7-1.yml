@@ -1,7 +1,0 @@
-title: Update org.ow2.asm:asm to v9.7.1
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3110
-  url: https://github.com/apache/solr/pull/3110

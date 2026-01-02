@@ -1,7 +1,0 @@
-title: Solr CLI commands now can interact with a Solr secured using Basic Authentication.
-type: added
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-14496
-  url: https://issues.apache.org/jira/browse/SOLR-14496

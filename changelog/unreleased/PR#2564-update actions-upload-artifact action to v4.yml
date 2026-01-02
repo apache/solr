@@ -1,7 +1,0 @@
-title: Update actions/upload-artifact action to v4
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2564
-  url: https://github.com/apache/solr/pull/2564

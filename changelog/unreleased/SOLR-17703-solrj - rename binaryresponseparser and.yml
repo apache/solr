@@ -1,8 +1,0 @@
-title: SolrJ - Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser
-  to "JavaBin.." equivalent.
-type: other
-authors:
-- name: Abhishek Umarjikar
-links:
-- name: SOLR-17703
-  url: https://issues.apache.org/jira/browse/SOLR-17703

@@ -1,7 +1,0 @@
-title: Update ow2.asm to v9.8
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3294
-  url: https://github.com/apache/solr/pull/3294

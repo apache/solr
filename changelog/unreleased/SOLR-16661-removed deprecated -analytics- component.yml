@@ -1,7 +1,0 @@
-title: Removed deprecated 'analytics' component
-type: removed
-authors:
-- name: janhoy
-links:
-- name: SOLR-16661
-  url: https://issues.apache.org/jira/browse/SOLR-16661

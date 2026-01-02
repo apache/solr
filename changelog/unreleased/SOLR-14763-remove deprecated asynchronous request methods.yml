@@ -1,9 +1,0 @@
-title: Remove deprecated asynchronous request methods from `Http2SolrClient`, `HttpJdkSolrClient`
-  and `LBHttp2SolrClient` in favor of the new CompletableFuture based methods. Remove
-  the related deprecated interfaces `AsyncListener` and `Cancellable`
-type: removed
-authors:
-- name: James Dyer
-links:
-- name: SOLR-14763
-  url: https://issues.apache.org/jira/browse/SOLR-14763

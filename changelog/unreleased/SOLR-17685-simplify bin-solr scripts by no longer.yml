@@ -1,9 +1,0 @@
-title: Simplify bin/solr scripts by no longer SOLR_TOOL_HOST variable in favour of
-  existing SOLR_HOST ENV variable.
-type: changed
-authors:
-- name: Eric Pugh
-- name: Houston Putnam
-links:
-- name: SOLR-17685
-  url: https://issues.apache.org/jira/browse/SOLR-17685

@@ -1,7 +1,0 @@
-title: Update software.amazon.awssdk:* to v2.26.19
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#2056
-  url: https://github.com/apache/solr/pull/2056

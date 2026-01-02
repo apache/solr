@@ -1,7 +1,0 @@
-title: Update jersey to v3.1.11
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3073
-  url: https://github.com/apache/solr/pull/3073

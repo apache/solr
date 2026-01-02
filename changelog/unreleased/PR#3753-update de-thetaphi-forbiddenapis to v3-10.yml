@@ -1,7 +1,0 @@
-title: Update de.thetaphi.forbiddenapis to v3.10
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3753
-  url: https://github.com/apache/solr/pull/3753

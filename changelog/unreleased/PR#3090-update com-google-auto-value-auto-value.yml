@@ -1,7 +1,0 @@
-title: Update com.google.auto.value:auto-value-annotations to v1.11.0
-type: dependency_update
-authors:
-- name: solrbot
-links:
-- name: PR#3090
-  url: https://github.com/apache/solr/pull/3090

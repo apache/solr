@@ -1,8 +1,0 @@
-title: bin/solr create command supports both standalone and cloud modes, and deprecate
-  create_core and create_collection commands.
-type: other
-authors:
-- name: Eric Pugh
-links:
-- name: SOLR-16892
-  url: https://issues.apache.org/jira/browse/SOLR-16892
