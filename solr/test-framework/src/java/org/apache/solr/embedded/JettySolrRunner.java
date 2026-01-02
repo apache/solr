@@ -61,6 +61,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
+import org.apache.solr.servlet.MdcLoggingFilter;
 import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.SocketProxy;
@@ -112,6 +113,7 @@ public class JettySolrRunner {
 
   volatile FilterHolder debugFilter;
   volatile FilterHolder pathExcludeFilter;
+  volatile FilterHolder mdcLoggingFilter;
   volatile FilterHolder dispatchFilter;
 
   private int jettyPort = -1;
@@ -409,12 +411,17 @@ public class JettySolrRunner {
       pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
       pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
 
+      // logging context setup
+      mdcLoggingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      mdcLoggingFilter.setHeldClass(MdcLoggingFilter.class);
+
       // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       dispatchFilter.setHeldClass(SolrDispatchFilter.class);
 
       // Map dispatchFilter in same path as in web.xml
       root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(mdcLoggingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
