@@ -1,0 +1,8 @@
+title: Remove deprecated `breakSugestionTieBreaker` parameter in favor of `breakSuggestionTieBreaker`
+  in WordBreakSolrSpellChecker
+type: removed
+authors:
+- name: Andrey Bozhko
+links:
+- name: SOLR-12089
+  url: https://issues.apache.org/jira/browse/SOLR-12089
