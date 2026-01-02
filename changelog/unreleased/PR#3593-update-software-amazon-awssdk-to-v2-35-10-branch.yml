@@ -1,0 +1,7 @@
+title: Update software.amazon.awssdk:* to v2.35.10 (branch_9x) - abandoned
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3593
+  url: https://github.com/apache/solr/pull/3593
