@@ -108,7 +108,7 @@ jobs:
           java-package: jdk
 
       - name: Cache gradle-wrapper.jar
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: gradle/wrapper/gradle-wrapper.jar
           key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.jar.sha256') }}
