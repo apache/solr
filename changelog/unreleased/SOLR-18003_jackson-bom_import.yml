@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Add the Jackson BOM import to solrj
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Mark Prins
+    nick: mprins
+    url: https://github.com/mprins
+links:
+  - name: SOLR-18003
+    url: https://issues.apache.org/jira/browse/SOLR-18003
