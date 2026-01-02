@@ -1,4 +1,4 @@
-title: Update io.grpc:grpc-* to v1.76.0 (branch_9x) - abandoned
+title: Update io.grpc:grpc-* to v1.78.0 (branch_9x)
 type: dependency_update
 authors:
 - name: solrbot
