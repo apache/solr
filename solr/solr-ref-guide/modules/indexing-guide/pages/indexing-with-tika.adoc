@@ -20,7 +20,7 @@ If the documents you need to index are in a binary format, such as Word, Excel, 
 
 Apache Tika incorporates many different file-format parsers such as http://pdfbox.apache.org/[Apache PDFBox] and http://poi.apache.org/index.html[Apache POI] to extract the text content and metadata from files.
 
-Solr's `ExtractingRequestHandler` uses Tika, either in-process or a remote Tika server, to support extracting text and metadata from binary files.
+Solr's `ExtractingRequestHandler` uses Apache Tika via an external Tika Server to extract text and metadata from binary files.
 
 When this framework was under development, it was called the Solr _Content Extraction Library_, or _CEL_; from that abbreviation came this framework's name: Solr Cell.
 The names Solr Cell and `ExtractingRequestHandler` are used
@@ -54,83 +54,64 @@ This is provided via the `extraction` xref:configuration-guide:solr-modules.adoc
 The "techproducts" example included with Solr is pre-configured to have Solr Cell configured.
 If you are not using the example, you will want to pay attention to the section <<solrconfig.xml Configuration>> below.
 
-== Tika Extraction Backends
+== Extraction Backends
 
-There are two backends for this module. The `local` backend embeds Tika inside Solr's own process, while the `tikaserver` backend uses an external Tika server process to do the extraction.
+The ExtractingRequestHandler supports multiple backends, selectable with the `extraction.backend` parameter. The only backend currently supported is the `tikaserver` backend, which uses an external Tika server process to do the extraction.
 
 === Tika Server
 
-The `tikaserver` backend lets Solr delegate content extraction to an external Apache Tika Server process instead of running Tika parsers inside the Solr JVM. This can improve operational isolation (crashes or heavy parsing won’t impact Solr), simplify dependency management, and allow you to scale Tika independently of Solr.
+Solr delegates content extraction to an external Apache Tika Server process. This provides operational isolation (crashes or heavy parsing won't impact Solr), simplifies dependency management, and allows you to scale Tika independently of Solr.
 
 Example handler configuration:
 
 [source,xml]
 ----
 <requestHandler name="/update/extract" class="solr.extraction.ExtractingRequestHandler">
-    <!-- Select the tikaserver backend by default for this handler -->
-    <str name="extraction.backend">tikaserver</str>
-    <!-- Point Solr to your Tika Server -->
+    <!-- Point Solr to your Tika Server (required) -->
     <str name="tikaserver.url">http://localhost:9998</str>
 </requestHandler>
 ----
 
 ==== Starting Tika Server with Docker
 
-The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost, matching the default value when `tikaserver.url` is not explicitly set.
+The quickest way to run Tika Server for development is using Docker. The examples below expose Tika on port 9998 on localhost for convenience, matching the handler configuration above.
 
 [,bash]
 ----
-docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
+docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
 ----
 
 NOTE: If Solr runs in Docker too, ensure both containers share a network and use the Tika container name as the host in `tikaserver.url`.
 
-==== Limitations
-
-Metadata produced by Tika Server can differ slightly from local Tika, particularly in key names and the presence/absence of certain fields. Adjust your `fmap.*` mappings accordingly.
-
 === Local in-process
 
-The `local` backend is identical to Solr Cell's behavior in previous Solr versions.
-
-IMPORTANT: This backend is deprecated in 9.x and gone in Solr 10.0.
-
-==== Performance Implications
-
-Rich document formats are frequently not well documented, and even in cases where there is documentation for the format, not everyone who creates documents will follow the specifications faithfully.
-
-This creates a situation where Tika may encounter something that it is simply not able to handle gracefully, despite taking great pains to support as many formats as possible.
-PDF files are particularly problematic, mostly due to the PDF format itself.
-
-In case of a failure processing any file, the `ExtractingRequestHandler` does not have a secondary mechanism to try to extract some text from the file; it will throw an exception and fail.
-
-If any exceptions cause the `ExtractingRequestHandler` and/or Tika to crash, Solr as a whole will also crash because
-the request handler is running in the same JVM that Solr uses for other operations.
-
-Indexing can also consume all available Solr resources, particularly with large PDFs, presentations, or other files
-that have a lot of rich media embedded in them.
-
-For these reasons, Solr Cell with `local` backend is not recommended for use in a production system. Prefer the
-`tikaserver` backend, which is more robust and isolates failures from Solr itself. Or alternatively, roll your own extraction pipeline in your application before sending anything to Solr.
+IMPORTANT: The `local` backend using an in-process Tika 1.x library to extract content, used to be the default until and including Solr 9.10. It was removed in Solr 9.11 for security reasons. See release notes for more information.
 
 == Trying out Solr Cell
 
 You can try out the Tika framework using the `schemaless` example included in Solr.
 
-This command will start Solr, create a core/collection named `gettingstarted` with the `_default` configset, and enable the extraction module. Then the `/update/extract` handler is added to the `gettingstarted` core/collection to enable Solr Cell.
+First we start a tika server on port 9998, using Docker.
+
+[source,bash]
+----
+# Start Tika Server in the background
+docker run --rm -p 9998:9998 --name tika -d apache/tika:3.2.3.0-full
+
+# To stop the server when done, run `docker stop tika`
+----
+
+The commands below will start Solr, create a core/collection named `gettingstarted` with the `_default` configset, and enable the extraction module. Then the `/update/extract` handler is added to the `gettingstarted` core/collection to enable Solr Cell.
 
 [source,bash]
 ----
 bin/solr start -e schemaless -Dsolr.modules=extraction
 
-# Optionally start Tika Server if using `tikaserver` backend below
-docker run --rm -p 9998:9998 apache/tika:3.2.3.0-full
-
+# Configure the handler
 curl -X POST -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/update/extract",
     "class": "solr.extraction.ExtractingRequestHandler",
-    "extraction.backend": "tikaserver",
     "tikaserver.url": "http://localhost:9998",
     "defaults":{
       "lowernames": "true",
@@ -268,14 +249,11 @@ Example: `defaultField=\_text_`
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: local
+|Optional |Default: `tikaserver`
 |===
 +
-Choose the backend to use for extraction. The options are `local` or `tikaserver`.
-The `local` backend uses Tika libraries included with Solr to do the extraction, and is the default in Solr 9.x.
-The `tikaserver` backend uses an external Tika server process to do the extraction, and
-requires the `tikaserver.url` parameter to point to a running Tika Server.
-**The `local` backend is deprecated and will be removed in a future release.**
+Specifies the backend to use for extraction. As of Solr 9.11, only `tikaserver` is supported.
+This parameter is optional since `tikaserver` is the only available backend.
 +
 Example: In `solrconfig.xml`: `<str name="extraction.backend">tikaserver</str>`.
 
@@ -329,7 +307,7 @@ Example: `fmap.content=text` causes the data in the `content` field generated by
 |===
 +
 If `true`, exceptions found during processing will be skipped.
-Any metadata available, however, will be indexed.
+In some cases, there may be metadata available that will be indexed.
 +
 Example: `ignoreTikaException=true`
 
@@ -386,18 +364,6 @@ If you have very large documents, you should increase this or they will be rejec
 +
 Example: `multipartUploadLimitInKB=2048000`
 
-`parseContext.config`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-If a Tika parser being used allows parameters, you can pass them to Tika by creating a parser configuration file and pointing Solr to it.
-See the section <<Parser-Specific Properties>> for more information about how to use this parameter.
-+
-Example: `parseContext.config=pdf-config.xml`
-
 `passwordsFile`::
 +
 [%autowidth,frame=none]
@@ -431,7 +397,7 @@ Example: `passwordsFile=/path/to/passwords.txt`
 +
 Sets a hard limit on the number of bytes Solr will accept from the Tika Server response body when using the `tikaserver` backend. If the extracted content exceeds this limit, the request will fail with HTTP 400 (Bad Request).
 +
-Only applicable for the `tikaserver` backend. This parameter can only be configured in the request handler configuration (`solrconfig.xml`), not per request.
+This parameter can only be configured in the request handler configuration (`solrconfig.xml`), not per request.
 +
 Example: In `solrconfig.xml`: `<long name="tikaserver.maxChars">1000000</long>`
 
@@ -442,7 +408,8 @@ Example: In `solrconfig.xml`: `<long name="tikaserver.maxChars">1000000</long>`
 |Optional |Default: false
 |===
 +
-**Only applicable for the `tikaserver` backend.** For `local` backend parsing is always recursive, i.e. extracts text from embedded documents. For `tikaserver` you have to enable it explicitly.
+Controls whether Tika Server should recursively extract text from embedded documents (e.g., attachments in emails, embedded files in archives).
+Set to `true` to enable recursive extraction.
 
 `resource.name`::
 +
@@ -468,18 +435,6 @@ See the section <<Indexing Encrypted Documents>> for more information about usin
 +
 Example: `resource.password=secret`
 
-`tika.config`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Defines a file path and name to a custom Tika configuration file.
-This is only required if you have customized your Tika implementation.
-+
-Example: `tika.config=/path/to/tika.config`
-
 `tikaserver.timeoutSeconds`::
 +
 [%autowidth,frame=none]
@@ -499,11 +454,11 @@ Examples:
 +
 [%autowidth,frame=none]
 |===
-|Optional |Default: none
+|Required |Default: none
 |===
 +
-Specifies the URL of the Tika server to use when the `extraction.backend` parameter is set to `tikaserver`.
-This parameter is required when using the `tikaserver` backend. This parameter can only be configured in the configuration, not per request.
+Specifies the URL of the Tika Server instance to use for content extraction.
+This parameter is required and can only be configured in `solrconfig.xml`, not per request.
 +
 If your TikaServer is using HTTPS, it needs to use a verifiable SSL certificate. If using self-signed or custom Certificate Authority, you will need to add those to Solr's Truststore. The `tikaserver` backend currently does not have support for configuring custom certificates for Tika alone.
 +
@@ -589,26 +544,9 @@ So you can use the other URPs without worrying about unexpected field additions.
 
 === Parser-Specific Properties
 
-NOTE: This setting currently applies to the `local` backend only. When using `tikaserver` you can configure similar settings on the Tika Server side.
+Parser-specific properties for Tika must be configured directly on your Tika Server instance. Consult the https://tika.apache.org/[Apache Tika documentation] for details.
 
-Parsers used by Tika may have specific properties to govern how data is extracted.
-These can be passed through Solr for special parsing situations.
-
-For instance, when using the Tika library from a Java program, the `PDFParserConfig` class has a method `setSortByPosition(boolean)` that can extract vertically oriented text.
-To access that method via configuration with the `ExtractingRequestHandler`, one can add the `parseContext.config` property to `solrconfig.xml` and then set properties in Tika's `PDFParserConfig` as in the example below.
-
-[source,xml]
-----
-<entries>
-  <entry class="org.apache.tika.parser.pdf.PDFParserConfig" impl="org.apache.tika.parser.pdf.PDFParserConfig">
-    <property name="extractInlineImages" value="true"/>
-    <property name="sortByPosition" value="true"/>
-  </entry>
-  <entry>...</entry>
-</entries>
-----
-
-Consult the Tika Java API documentation for configuration parameters that can be set for any particular parsers that require this level of control.
+NOTE: In earlier versions of Solr Cell you could supply Tika configuration directly to Solr. This is no longer possible.
 
 === Indexing Encrypted Documents
 
@@ -625,10 +563,6 @@ myFileName = myPassword
 .*\.docx$ = myWordPassword
 .*\.pdf$ = myPdfPassword
 ----
-
-=== Multi-Core Configuration
-
-For a multi-core configuration, you can specify `sharedLib='lib'` in the `<solr/>` section of `solr.xml` and place the necessary jar files there.
 
 === Extending the ExtractingRequestHandler
 
@@ -755,7 +689,7 @@ public class SolrCellRequestDemo {
 
 This operation streams the file `my-file.pdf` into the Solr index for `my_collection`.
 
-The sample code above calls the extract command, but you can easily substitute other commands that are supported by Solr Cell.
+The sample code above calls the extract command, but you can substitute other commands that are supported by Solr Cell.
 The key class to use is the `ContentStreamUpdateRequest`, which makes sure the ContentStreams are set properly.
 SolrJ takes care of the rest.
 

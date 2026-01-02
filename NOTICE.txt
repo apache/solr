@@ -99,6 +99,10 @@ This project includes the Malihu Custom Scrollbar Plugin
 Copyright (c) Manos Malihutsakis, http://manos.malihu.gr/
 License: MIT https://github.com/malihu/malihu-custom-scrollbar-plugin/blob/master/LICENSE.txt
 
+This project includes encryption software "bouncy castle".
+Copyright (c) 2000-2006 The Legion Of The Bouncy Castle
+(http://www.bouncycastle.org)
+
 =========================================================================
 ==  Antlr2 Notice                                                       ==
 =========================================================================
@@ -403,39 +407,18 @@ OF CONTRACT, TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 =========================================================================
-==  Apache Tika Notices                                                ==
+==  Extraction Module Notices                                                ==
 =========================================================================
 
 The following notices apply to modules/extraction:
 
-This product includes software developed by the following copyright owners:
+This product includes Apache Tika Core.
 
-Copyright (c) 2000-2006 The Legion Of The Bouncy Castle
-(http://www.bouncycastle.org)
+Apache Tika
+Copyright 2007-2024 The Apache Software Foundation
 
-Copyright (c) 2003-2005, www.pdfbox.org
-
-Copyright (c) 2003-2005, www.fontbox.org
-
-Copyright (c) 1995-2005 International Business Machines Corporation and others
-
-Copyright 2001-2005 (C) MetaStuff, Ltd. All Rights Reserved.
-
-Copyright 2004 Sun Microsystems, Inc. (Rome JAR)
-
-Copyright 2002-2008 by John Cowan (TagSoup -- http://ccil.org/~cowan/XML/tagsoup/)
-
-Copyright (C) 1994-2007 by the Xiph.org Foundation, http://www.xiph.org/ (OggVorbis)
-
-Copyright 2012 Kohei Taketa juniversalchardet (http://code.google.com/p/juniversalchardet/)
-
-Lasse Collin and others, XZ for Java (http://tukaani.org/xz/java.html)
-
-java-libpst is a pure java library for the reading of Outlook PST and OST files.
-https://github.com/rjohnsondev/java-libpst
-
-JMatIO is a JAVA library to read/write/manipulate with Matlab binary MAT-files.
-http://www.sourceforge.net/projects/jmatio
+Apache POI
+Copyright 2003-2025 The Apache Software Foundation
 
 =========================================================================
 ==  Language Detection Notices                                         ==

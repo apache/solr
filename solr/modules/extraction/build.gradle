@@ -31,15 +31,12 @@ dependencies {
   implementation 'org.apache.lucene:lucene-core'
   implementation 'org.slf4j:slf4j-api'
 
-  // For 'local' Tika backend
+  // Tika core - needed for common interfaces and utilities
+  implementation 'org.apache.tika:tika-core'
+  
+  // Apache POI for XLSX response writer
   implementation 'org.apache.poi:poi'
   implementation 'org.apache.poi:poi-ooxml'
-  implementation 'org.apache.tika:tika-core'
-  implementation ('org.apache.tika:tika-parsers', {
-    exclude group: 'org.apache.cxf', module: 'cxf-rt-rs-client'
-    exclude group: 'org.quartz-scheduler', module: 'quartz'
-    exclude group: 'xml-apis', module: 'xml-apis'
-  })
 
   // For 'tikaserver' backend
   implementation 'org.eclipse.jetty:jetty-client'
