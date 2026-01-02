@@ -138,7 +138,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                   numSegmentsUpgraded++;
                 }
               } catch (Exception e) {
-                log.error(String.format("Error while processing core: [%s]", coreName), e);
+                log.error("Error while processing core: [{}}]", coreName, e);
                 throw new CoreAdminAPIBaseException(e);
               } finally {
                 // important to decrement searcher ref count after use since we obtained it via the
@@ -291,7 +291,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           e.toString());
       throw e;
     }
-
   }
 
   private void doCommit(SolrCore core) throws IOException {
@@ -310,8 +309,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         log.warn("IWRef for core {} is null", core.getName());
       }
     } catch (IOException ioEx) {
-      log.warn(
-          String.format("Error committing on core [%s] during index upgrade", core.getName()), ioEx);
+      log.warn("Error committing on core [{}}] during index upgrade", core.getName(), ioEx);
       throw ioEx;
     } finally {
       if (iwRef != null) {
@@ -320,7 +318,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     }
   }
 
-  private boolean processSegment(
+  private void processSegment(
       LeafReaderContext leafReaderContext,
       UpdateRequestProcessorChain processorChain,
       SolrCore core,
@@ -328,7 +326,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       DocValuesIteratorCache dvICache)
       throws Exception {
 
-    boolean success;
+    Exception exceptionToThrow = null;
     int numDocsProcessed = 0;
 
     String coreName = core.getName();
@@ -365,28 +363,54 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         processor.processAdd(currDocCmd);
         numDocsProcessed++;
       }
-      success = true;
     } catch (Exception e) {
-      log.error("Error while processing segment [{}]", segmentReader.getSegmentName());
-      throw e;
+      log.error(
+          "Error while processing segment [{}] in core [{}]",
+          segmentReader.getSegmentName(),
+          coreName,
+          e);
+      exceptionToThrow = e;
     } finally {
       if (processor != null) {
         try {
           processor.finish();
         } catch (Exception e) {
-          log.error("Exception while doing finish processor.finish() : {}", e.toString());
-          throw e;
-        } finally {
-          try {
-            processor.close();
-          } catch (IOException e) {
-            log.error("Exception while closing processor: {}", e.toString());
-            throw e;
+          log.error(
+              "Exception during processor.finish() for segment [{}] in core [{}]",
+              segmentReader.getSegmentName(),
+              coreName,
+              e);
+          if (exceptionToThrow == null) {
+            exceptionToThrow = e;
+          } else {
+            exceptionToThrow.addSuppressed(e);
+          }
+        }
+        try {
+          processor.close();
+        } catch (Exception e) {
+          log.error(
+              "Exception while closing update processor for segment [{}] in core [{}]",
+              segmentReader.getSegmentName(),
+              coreName,
+              e);
+          if (exceptionToThrow == null) {
+            exceptionToThrow = e;
+          } else {
+            exceptionToThrow.addSuppressed(e);
           }
         }
       }
       if (solrRequest != null) {
-        solrRequest.close();
+        try {
+          solrRequest.close();
+        } catch (Exception e) {
+          if (exceptionToThrow == null) {
+            exceptionToThrow = e;
+          } else {
+            exceptionToThrow.addSuppressed(e);
+          }
+        }
       }
     }
 
@@ -396,7 +420,9 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         coreName,
         numDocsProcessed);
 
-    return success;
+    if (exceptionToThrow != null) {
+      throw exceptionToThrow;
+    }
   }
 
   /*
