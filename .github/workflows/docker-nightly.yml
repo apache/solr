@@ -1,0 +1,176 @@
+name: Nightly Docker Build & Publish
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  build-and-publish:
+    name: Build and publish Docker images
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # main branch - Gradle on JDK21, Docker images with JRE25
+          - branch: main
+            version: 11.0.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: full
+            base-image: eclipse-temurin:25-jre-jammy
+            tag-suffix: ''
+          - branch: main
+            version: 11.0.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: slim
+            base-image: eclipse-temurin:25-jre-jammy
+            tag-suffix: ''
+
+          # branch_10x - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
+          - branch: branch_10x
+            version: 10.1.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: full
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: ''
+          - branch: branch_10x
+            version: 10.1.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: slim
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: ''
+          - branch: branch_10x
+            version: 10.1.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: full
+            base-image: eclipse-temurin:25-jre-jammy
+            tag-suffix: '-java25'
+
+          # branch_10_0 - Gradle on JDK21, Docker images with JRE21 (default) and JRE25
+          - branch: branch_10_0
+            version: 10.0.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: full
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: ''
+          - branch: branch_10_0
+            version: 10.0.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: slim
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: ''
+          - branch: branch_10_0
+            version: 10.0.0-SNAPSHOT
+            gradle-jdk: 21
+            dist: full
+            base-image: eclipse-temurin:25-jre-jammy
+            tag-suffix: '-java25'
+
+          # branch_9x - Gradle on JDK17, Docker images with JRE17 (default) and JRE21
+          - branch: branch_9x
+            version: 9.11.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: full
+            base-image: eclipse-temurin:17-jre-jammy
+            tag-suffix: ''
+          - branch: branch_9x
+            version: 9.11.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: slim
+            base-image: eclipse-temurin:17-jre-jammy
+            tag-suffix: ''
+          - branch: branch_9x
+            version: 9.11.0-SNAPSHOT
+            gradle-jdk: 17
+            dist: full
+            base-image: eclipse-temurin:21-jre-jammy
+            tag-suffix: '-java21'
+
+    env:
+      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set up Java (JDK ${{ matrix.gradle-jdk }})
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.gradle-jdk }}
+          java-package: jdk
+
+      - name: Cache gradle-wrapper.jar
+        uses: actions/cache@v4
+        with:
+          path: gradle/wrapper/gradle-wrapper.jar
+          key: gradle-wrapper-${{ hashFiles('gradle/wrapper/gradle-wrapper.jar.sha256') }}
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          develocity-token-expiry: 8
+
+      - name: Create custom gradle.properties
+        run: |
+          cat > gradle.properties << 'EOF'
+          # Disable Gradle daemon for all builds.
+          org.gradle.daemon=false
+
+          # Lucene specific settings for lucene2 build nodes
+          systemProp.file.encoding=UTF-8
+          org.gradle.jvmargs=-Xmx2g -XX:ReservedCodeCacheSize=256m -XX:TieredStopAtLevel=1 -Dfile.encoding=UTF-8 -Dkotlin.daemon.jvm.options="-Xmx4096M" -XX:+UseParallelGC -XX:ActiveProcessorCount=1 \
+           --add-exports jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED \
+           --add-exports jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED \
+           --add-exports jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED \
+           --add-exports jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED \
+           --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED
+          org.gradle.workers.max=4
+          tests.jvms=4
+          tests.multiplier=2
+
+          # Temporary workaround while Gradle files are updated to fix a bug in how generated files are (or aren't) optimized
+          production=true
+          EOF
+
+      - name: Set up QEMU for multi-platform builds
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_TOKEN }}
+
+      - name: Build Docker tag name
+        id: tag
+        run: |
+          if [ "${{ matrix.dist }}" = "slim" ]; then
+            echo "tag=${{ matrix.version }}-slim${{ matrix.tag-suffix }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ matrix.version }}${{ matrix.tag-suffix }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Test and publish Docker image
+        run: |
+          ./gradlew testDocker dockerPush \
+            -Psolr.docker.imageRepo=apache/solr-nightly \
+            -Psolr.docker.imageTag=${{ steps.tag.outputs.tag }} \
+            -Psolr.docker.dist=${{ matrix.dist }} \
+            -Psolr.docker.platform=linux/arm64,linux/amd64 \
+            -Psolr.docker.baseImage=${{ matrix.base-image }}
+
+      - name: Report status
+        if: failure()
+        run: |
+          echo "::error::Failed to build and publish Docker image for ${{ matrix.branch }} (${{ matrix.dist }}, base-image: ${{ matrix.base-image }})"
