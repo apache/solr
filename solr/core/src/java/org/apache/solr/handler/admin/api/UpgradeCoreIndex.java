@@ -2,7 +2,7 @@ package org.apache.solr.handler.admin.api;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -87,7 +87,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         () -> {
           try (SolrCore core = coreContainer.getCore(coreName)) {
 
-            log.info("Received UPGRADECOREINDEX request for core: {}", core.getName());
+            log.info("Received UPGRADECOREINDEX request for core: {}", coreName);
 
             // Set LatestVersionMergePolicy to prevent older segments from
             // participating in merges while we reindex. This is to prevent any older version
@@ -169,9 +169,11 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                 throw new CoreAdminAPIBaseException(
                     new SolrException(
                         SolrException.ErrorCode.SERVER_ERROR,
-                        String.format(
-                            "Validation failed for core '%s'. Some data is still present in the older (<%d.x) Lucene index format.",
-                            coreName, Version.LATEST.major)));
+                        "Validation failed for core '"
+                            + coreName
+                            + "'. Some data is still present in the older (<"
+                            + Version.LATEST.major
+                            + ".x) Lucene index format."));
               }
 
               response.core = coreName;
@@ -255,7 +257,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private boolean isIndexUpgraded(SolrCore core) throws IOException {
 
-    try (FSDirectory dir = FSDirectory.open(Paths.get(core.getIndexDir()));
+    try (FSDirectory dir = FSDirectory.open(Path.of(core.getIndexDir()));
         IndexReader reader = DirectoryReader.open(dir)) {
 
       List<LeafReaderContext> leaves = reader.leaves();
@@ -285,10 +287,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       }
       return true;
     } catch (Exception e) {
-      log.error(
-          "Error while opening segmentInfos for core: {}, exception: {}",
-          core.getName(),
-          e.toString());
+      log.error("Error while opening segmentInfos for core [{}]", core.getName(), e);
       throw e;
     }
   }
@@ -309,7 +308,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         log.warn("IWRef for core {} is null", core.getName());
       }
     } catch (IOException ioEx) {
-      log.warn("Error committing on core [{}}] during index upgrade", core.getName(), ioEx);
+      log.warn("Error committing on core [{}] during index upgrade", core.getName(), ioEx);
       throw ioEx;
     } finally {
       if (iwRef != null) {
@@ -334,6 +333,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
     LeafReader leafReader = FilterLeafReader.unwrap(leafReaderContext.reader());
     SegmentReader segmentReader = (SegmentReader) leafReader;
+    final String segmentName = segmentReader.getSegmentName();
     Bits bits = segmentReader.getLiveDocs();
     SolrInputDocument solrDoc = null;
     UpdateRequestProcessor processor = null;
@@ -364,11 +364,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         numDocsProcessed++;
       }
     } catch (Exception e) {
-      log.error(
-          "Error while processing segment [{}] in core [{}]",
-          segmentReader.getSegmentName(),
-          coreName,
-          e);
+      log.error("Error while processing segment [{}] in core [{}]", segmentName, coreName, e);
       exceptionToThrow = e;
     } finally {
       if (processor != null) {
@@ -377,7 +373,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         } catch (Exception e) {
           log.error(
               "Exception during processor.finish() for segment [{}] in core [{}]",
-              segmentReader.getSegmentName(),
+              segmentName,
               coreName,
               e);
           if (exceptionToThrow == null) {
@@ -391,7 +387,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         } catch (Exception e) {
           log.error(
               "Exception while closing update processor for segment [{}] in core [{}]",
-              segmentReader.getSegmentName(),
+              segmentName,
               coreName,
               e);
           if (exceptionToThrow == null) {
@@ -416,7 +412,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
     log.info(
         "End processing segment : {}, core: {} docs processed: {}",
-        segmentReader.getSegmentName(),
+        segmentName,
         coreName,
         numDocsProcessed);
 
