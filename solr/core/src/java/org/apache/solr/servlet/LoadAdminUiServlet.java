@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.servlet.EssentialSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE;
+
 import com.google.common.net.HttpHeaders;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -44,7 +46,6 @@ public final class LoadAdminUiServlet extends HttpServlet {
       Boolean.parseBoolean(System.getProperty("solr.ui.enabled", "true"));
   // list of comma separated URLs to inject into the CSP connect-src directive
   public static final String SYSPROP_CSP_CONNECT_SRC_URLS = "solr.ui.headers.csp.connect-src.urls";
-  public static final String CORE_CONTAINER_REQUEST_ATTRIBUTE = "org.apache.solr.CoreContainer";
 
   @Override
   public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {

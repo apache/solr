@@ -40,6 +40,9 @@ import org.slf4j.LoggerFactory;
  */
 public class EssentialSolrRequestFilter extends CoreContainerAwareHttpFilter {
 
+  // Best to put constant here because solr is not supposed to be functional (or compile)
+  // without this filter.
+  public static final String CORE_CONTAINER_REQUEST_ATTRIBUTE = "org.apache.solr.CoreContainer";
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -71,7 +74,7 @@ public class EssentialSolrRequestFilter extends CoreContainerAwareHttpFilter {
 
       // put the core container in request attribute
       // This is essential for the LoadAdminUiServlet class. Removing it will cause 404
-      req.setAttribute("org.apache.solr.CoreContainer", getCores());
+      req.setAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE, getCores());
       chain.doFilter(req, res);
     } finally {
       // cleanups for above stuff
