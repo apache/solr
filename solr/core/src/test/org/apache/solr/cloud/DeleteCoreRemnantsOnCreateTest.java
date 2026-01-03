@@ -22,6 +22,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -89,6 +91,87 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     Files.writeString(remnantInstanceDir.resolve("core.properties"), "", StandardCharsets.UTF_8);
   }
 
+  /**
+   * Shared setup for testing replica addition with remnants. Creates a collection, then simulates a
+   * remnant directory on the single node that will impact the next addReplica command.
+   */
+  private void setupReplicaRemnant(String collectionName) throws Exception {
+    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    String primaryNode = jettys.getFirst().getNodeName();
+
+    CollectionAdminRequest.Create createRequest =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
+    createRequest.setCreateNodeSet(primaryNode);
+    createRequest.process(cluster.getSolrClient());
+
+    waitForState(
+        "Expected collection to be fully active",
+        collectionName,
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+
+    int nextReplicaIndex = 3; // Yep, from 1 to 3 due to how we count in ZK and setup.
+    String expectedNewReplicaName = collectionName + "_shard1_replica_n" + nextReplicaIndex;
+
+    // Simulate a core remnant on the single node adjacent to the existing replica instance path
+    Replica existing = getReplicaOnNode(collectionName, "shard1", primaryNode);
+    try (SolrCore core =
+        cluster.getReplicaJetty(existing).getCoreContainer().getCore(existing.getCoreName())) {
+      Path siblingDir = core.getInstancePath().getParent().resolve(expectedNewReplicaName);
+      Files.createDirectories(siblingDir);
+      Files.writeString(
+          siblingDir.resolve("core.properties"),
+          "name="
+              + expectedNewReplicaName
+              + "_remnant\n"
+              + "collection="
+              + collectionName
+              + "_remnant\n"
+              + "shard=shard1\n"
+              + "coreNodeName=core_node_remnant\n",
+          StandardCharsets.UTF_8);
+    }
+  }
+
+  /**
+   * Shared setup for testing DeleteCore admin API with remnants. Creates a collection, deletes it,
+   * and then leaves behind a remnant core directory.
+   */
+  private String setupCoreRemnantForUnloadCoreOperation(String collectionName) throws Exception {
+    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
+    String primaryNode = jettys.getFirst().getNodeName();
+
+    CollectionAdminRequest.Create createRequest =
+        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
+    createRequest.setCreateNodeSet(primaryNode);
+    createRequest.process(cluster.getSolrClient());
+
+    waitForState(
+        "Expected collection to be fully active",
+        collectionName,
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+
+    Replica primaryReplica = getReplicaOnNode(collectionName, "shard1", primaryNode);
+    JettySolrRunner primaryJetty = cluster.getReplicaJetty(primaryReplica);
+    String originalCoreName = primaryReplica.getCoreName();
+    Path remnantInstanceDir;
+    try (SolrCore core = primaryJetty.getCoreContainer().getCore(originalCoreName)) {
+      CoreDescriptor cd = core.getCoreDescriptor();
+      remnantInstanceDir = cd.getInstanceDir();
+    }
+
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    waitForState("Expected collection deletion", collectionName, (n, c) -> c == null);
+
+    // Simulate a core remnant still exists by creating the directory and core.properties
+    Files.createDirectories(remnantInstanceDir);
+    Files.writeString(
+        remnantInstanceDir.resolve("core.properties"),
+        "name=" + originalCoreName + "\n",
+        StandardCharsets.UTF_8);
+
+    return originalCoreName;
+  }
+
   @Test
   public void testCreateCollectionWithRemnantsFailsWithoutSetting() throws Exception {
     assertNull(
@@ -148,47 +231,6 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     assertEquals("Replica should be active", Replica.State.ACTIVE, recreatedReplica.getState());
   }
 
-  /**
-   * Shared setup for testing replica addition with remnants. Creates a collection, then simulates a
-   * remnant directory on the single node that will impact the next addReplica command.
-   */
-  private void setupReplicaRemnant(String collectionName) throws Exception {
-    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
-
-    CollectionAdminRequest.Create createRequest =
-        CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
-    createRequest.setCreateNodeSet(primaryNode);
-    createRequest.process(cluster.getSolrClient());
-
-    waitForState(
-        "Expected collection to be fully active",
-        collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
-
-    int nextReplicaIndex = 3; // Yep, from 1 to 3 due to how we count in ZK and setup.
-    String expectedNewReplicaName = collectionName + "_shard1_replica_n" + nextReplicaIndex;
-
-    // Simulate a core remnant on the single node adjacent to the existing replica instance path
-    Replica existing = getReplicaOnNode(collectionName, "shard1", primaryNode);
-    try (SolrCore core =
-        cluster.getReplicaJetty(existing).getCoreContainer().getCore(existing.getCoreName())) {
-      Path siblingDir = core.getInstancePath().getParent().resolve(expectedNewReplicaName);
-      Files.createDirectories(siblingDir);
-      Files.writeString(
-          siblingDir.resolve("core.properties"),
-          "name="
-              + expectedNewReplicaName
-              + "_remnant\n"
-              + "collection="
-              + collectionName
-              + "_remnant\n"
-              + "shard=shard1\n"
-              + "coreNodeName=core_node_remnant\n",
-          StandardCharsets.UTF_8);
-    }
-  }
-
   @Test
   public void testAddReplicaWithRemnantFailsWithoutSetting() throws Exception {
     assertNull(
@@ -246,6 +288,32 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     Replica addedReplica = getReplicaOnNode(collectionName, "shard1", primaryNode);
     assertNotNull("Should have added a replica on the primary node", addedReplica);
     assertEquals("Added replica should be active", Replica.State.ACTIVE, addedReplica.getState());
+  }
+
+  /**
+   * This test demonstrates that you can't call the direct core unload admin operation to get rid of
+   * a remnant core, not because of the existence of the remnant, but because the core no longer has
+   * a CoreDescriptor record in ZooKeeper.
+   */
+  @Test
+  public void testDeleteCoreFailsWhenUnknown() throws Exception {
+
+    String collectionName = "coreRemnantDelete";
+    String coreName = setupCoreRemnantForUnloadCoreOperation(collectionName);
+
+    // Try to delete a core that only exists as a remnant - and has no record in ZooKeeper
+    try {
+      CoreAdminRequest.Unload unloadRequest = new CoreAdminRequest.Unload(true);
+      unloadRequest.setDeleteIndex(true);
+      unloadRequest.setDeleteDataDir(true);
+      unloadRequest.setDeleteInstanceDir(true);
+      unloadRequest.setCoreName(coreName);
+      unloadRequest.setResponseParser(new JsonMapResponseParser());
+      cluster.getSolrClient().request(unloadRequest);
+      fail("Expected request to fail");
+    } catch (Exception sse) {
+      assert sse.getMessage().contains("Cannot unload non-existent core [" + coreName + "]");
+    }
   }
 
   private Replica getReplicaOnNode(String collectionName, String shard, String nodeName) {
