@@ -179,7 +179,7 @@ public class Utils {
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
-      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+      v = new SimpleOrderedMap<>((MapWriter) v);
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       List<Object> l = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {

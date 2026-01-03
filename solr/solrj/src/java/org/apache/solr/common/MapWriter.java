@@ -19,7 +19,6 @@ package org.apache.solr.common;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 import java.util.function.Supplier;
@@ -38,10 +37,6 @@ public interface MapWriter extends NavigableObject, JSONWriter.Writable {
 
   default String jsonStr() {
     return Utils.toJSONString(this);
-  }
-
-  default Map<String, Object> toMap(Map<String, Object> map) {
-    return Utils.convertToMap(this, map);
   }
 
   /** For implementing Noggit {@link org.noggit.JSONWriter.Writable}. */

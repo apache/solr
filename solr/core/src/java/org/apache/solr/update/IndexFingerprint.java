@@ -19,7 +19,6 @@ package org.apache.solr.update;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
@@ -30,6 +29,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -217,7 +217,7 @@ public class IndexFingerprint implements MapWriter {
 
   @Override
   public String toString() {
-    return toMap(new LinkedHashMap<>()).toString();
+    return new SimpleOrderedMap<>(this).toString();
   }
 
   @Override
