@@ -64,8 +64,6 @@ public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
         .newCollection("collection2")
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
-    var cc = solrTestRule.getCoreContainer();
-    cc.waitForLoadingCoresToFinish(30000);
 
     String urlCollection1 = solrTestRule.getBaseUrl() + "/" + "collection1";
     String urlCollection2 = solrTestRule.getBaseUrl() + "/" + "collection2";
