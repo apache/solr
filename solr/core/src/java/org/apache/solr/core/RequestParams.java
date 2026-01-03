@@ -29,6 +29,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -131,7 +132,9 @@ public class RequestParams implements MapWriter {
     Map p = (Map) deepCopy.get(NAME);
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
-    else p.put(name, paramSet.toMap(new LinkedHashMap<>()));
+    else {
+      p.put(name, new SimpleOrderedMap<>(paramSet));
+    }
     return new RequestParams(deepCopy, znodeVersion);
   }
 

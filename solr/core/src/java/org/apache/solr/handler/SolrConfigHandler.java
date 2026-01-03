@@ -206,9 +206,7 @@ public class SolrConfigHandler extends RequestHandlerBase
             Map<String, Object> m = new LinkedHashMap<>();
             m.put(ZNODEVER, params.getZnodeVersion());
             if (p != null) {
-              m.put(
-                  RequestParams.NAME,
-                  Map.of(parts.get(2), new SimpleOrderedMap<>(p)));
+              m.put(RequestParams.NAME, Map.of(parts.get(2), new SimpleOrderedMap<>(p)));
             }
             resp.add(SolrQueryResponse.NAME, m);
           } else {
