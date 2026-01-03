@@ -15,7 +15,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Tests what happens when remnant core directories and and files still are on disk.
+# Tests what happens when remnant core directories and files still are on disk.
 # Flip solr.delete.unknown.cores=false to see the out of box behavior and the failures.
 
 load bats_helper
