@@ -1516,7 +1516,8 @@ public class CoreContainer {
                 System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
         if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
           log.warn(
-              "There appears to be an existing directory for core {}, now deleting it",
+              "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
+              cd.getInstanceDir().toAbsolutePath(),
               cd.getName());
           SolrCore.deleteUnloadedCore(cd, true, true);
         }
