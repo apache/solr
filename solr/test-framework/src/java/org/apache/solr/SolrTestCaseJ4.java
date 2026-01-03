@@ -17,8 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -291,7 +289,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty(URL_SCHEME, HTTPS);
+      System.setProperty("urlScheme", "https");
     }
 
     ExecutorUtil.resetThreadLocalProviders();
@@ -325,7 +323,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("tests.shardhandler.randomSeed");
       System.clearProperty("solr.index.updatelog.enabled");
       System.clearProperty("useCompoundFile");
-      System.clearProperty(URL_SCHEME);
+      System.clearProperty("urlScheme");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
