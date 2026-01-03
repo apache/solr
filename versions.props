@@ -85,4 +85,4 @@ org.semver4j:semver4j=5.8.0
 org.slf4j:*=2.0.17
 org.testcontainers:testcontainers*=1.20.4
 org.xerial.snappy:snappy-java=1.1.10.8
-software.amazon.awssdk:*=2.35.10
+software.amazon.awssdk:*=2.41.0
