@@ -33,9 +33,6 @@ import org.junit.Test;
  */
 public class JerseyApplicationSharingTest extends SolrCloudTestCase {
 
-  private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
-
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1)

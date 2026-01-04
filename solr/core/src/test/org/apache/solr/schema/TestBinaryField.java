@@ -89,7 +89,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
       assertEquals(3, res.size());
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
-        Integer id = Integer.parseInt(d.getFieldValue("id").toString());
+        int id = Integer.parseInt(d.getFieldValue("id").toString());
         for (String field : new String[] {"data", "data_dv"}) {
           byte[] data = (byte[]) d.getFieldValue(field);
           if (id == 1) {
@@ -116,7 +116,7 @@ public class TestBinaryField extends SolrTestCaseJ4 {
         }
       }
       for (Bean d : beans) {
-        Integer id = Integer.parseInt(d.id);
+        int id = Integer.parseInt(d.id);
         for (byte[] data : new byte[][] {d.data, d.data_dv}) {
           if (id == 1) {
             assertEquals(5, data.length);

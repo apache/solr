@@ -47,8 +47,6 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
     PathUtils.touch(tmpSolrHome.resolve("core0/core.properties"));
     PathUtils.touch(tmpSolrHome.resolve("core1/core.properties"));
 
-    Files.copy(getFile("solr/solr.xml"), tmpSolrHome.resolve("solr.xml"));
-
     initCore("solrconfig-minimal.xml", "schema-tiny.xml", tmpSolrHome, "core1");
   }
 

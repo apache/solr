@@ -68,7 +68,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   private CoreContainer init() throws Exception {
     solrHomeDirectory = createTempDir();
 
-    copyXmlToHome(solrHomeDirectory, "solr.xml");
     for (int idx = 1; idx < 10; ++idx) {
       copyMinConf(solrHomeDirectory.resolve("collection" + idx));
     }
