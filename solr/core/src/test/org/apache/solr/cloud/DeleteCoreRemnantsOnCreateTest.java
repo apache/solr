@@ -30,18 +30,13 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Solr occasionally gets into an inconsistent state with its cores lifecycle where remnant files
- * are left on disk after various operations that delete a core. Examples include deleting a
- * collection operation that doesn't properly finish, or maybe the Solr process unexpectedly gets
- * killed. The system property "solr.cloud.delete.unknown.cores.enabled" is an expert setting that
- * when enabled automatically deletes any remnant core data on disk when new cores are created that
- * would otherwise fail due to the preexisting files. You should be cautious in enabling this
- * feature, as it means that something isn't working well in your Solr setup.
+ * Test "solr.cloud.delete.unknown.cores.enabled" property that can be used if Solr has an
+ * inconsistent state with its cores lifecycle where remnant files are left on disk after various
+ * operations that delete a core.
  */
 public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
   private static final String DELETE_UNKNOWN_CORES_PROP = "solr.cloud.delete.unknown.cores.enabled";
@@ -51,22 +46,16 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     configureCluster(1).addConfig("conf", configset("cloud-minimal")).configure();
   }
 
-  @Before
-  public void resetProperty() {
-    System.clearProperty(DELETE_UNKNOWN_CORES_PROP);
-  }
-
   /**
    * Shared setup for testing collection creation with remnants. Creates a collection, deletes it,
    * and then leaves behind a remnant directory.
    */
-  private void setupCollectionRemnant(String collectionName) throws Exception {
+  private String setupCollectionRemnant(String collectionName) throws Exception {
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
     String primaryNode = jettys.getFirst().getNodeName();
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
-    createRequest.setCreateNodeSet(primaryNode);
     createRequest.process(cluster.getSolrClient());
 
     waitForState(
@@ -88,7 +77,11 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
 
     // Simulate a core remnant still exists by creating the directory and core.properties
     Files.createDirectories(remnantInstanceDir);
-    Files.writeString(remnantInstanceDir.resolve("core.properties"), "", StandardCharsets.UTF_8);
+    String propertiesContent = "";
+    Files.writeString(
+        remnantInstanceDir.resolve("core.properties"), propertiesContent, StandardCharsets.UTF_8);
+
+    return originalCoreName;
   }
 
   /**
@@ -101,7 +94,6 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
-    createRequest.setCreateNodeSet(primaryNode);
     createRequest.process(cluster.getSolrClient());
 
     waitForState(
@@ -142,7 +134,6 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
-    createRequest.setCreateNodeSet(primaryNode);
     createRequest.process(cluster.getSolrClient());
 
     waitForState(
@@ -184,20 +175,19 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     // In typical environments, this might fail, but behavior depends on configuration
     CollectionAdminRequest.Create recreateRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
-    List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    recreateRequest.setCreateNodeSet(jettys.getFirst().getNodeName());
 
     // The request to create a collection SHOULD fail based on the remnant file, if it does not it
     // means we've changed Solr's behavior when creating a core and
     // remnants exist, and therefore we should rethink the utility of this setting.
-    try {
-      recreateRequest.process(cluster.getSolrClient());
-      fail("This request to recreate the collection should have failed due to remnant files.");
-    } catch (Exception e) {
-      assertTrue(
-          "Verify the exception was due to core creation failed.",
-          e.getMessage().contains("Underlying core creation failed"));
-    }
+    Exception e =
+        assertThrows(
+            "This request to recreate the collection should have failed due to remnant files.",
+            Exception.class,
+            () -> recreateRequest.process(cluster.getSolrClient()));
+
+    assertTrue(
+        "Verify the exception was due to core creation failed.",
+        e.getMessage().contains("Underlying core creation failed"));
   }
 
   @Test
@@ -211,7 +201,6 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create recreateRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    recreateRequest.setCreateNodeSet(jettys.getFirst().getNodeName());
     recreateRequest.process(cluster.getSolrClient());
 
     waitForState(
@@ -247,15 +236,15 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
         CollectionAdminRequest.addReplicaToShard(collectionName, "shard1");
     addReplicaRequest.setNode(primaryNode);
 
-    try {
-      addReplicaRequest.process(cluster.getSolrClient());
-      fail(
-          "This request to add a replica to the collection should have failed due to remnant files.");
-    } catch (Exception e) {
-      assertTrue(
-          "Verify the exception was due to core creation failed.",
-          e.getMessage().contains("ADDREPLICA failed to create replica"));
-    }
+    Exception e =
+        assertThrows(
+            "This request to add a replica to the collection should have failed due to remnant files.",
+            Exception.class,
+            () -> addReplicaRequest.process(cluster.getSolrClient()));
+
+    assertTrue(
+        "Verify the exception was due to core creation failed.",
+        e.getMessage().contains("ADDREPLICA failed to create replica"));
   }
 
   @Test
@@ -299,21 +288,25 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
   public void testDeleteCoreFailsWhenUnknown() throws Exception {
 
     String collectionName = "coreRemnantDelete";
-    String coreName = setupCoreRemnantForUnloadCoreOperation(collectionName);
+    String coreName = setupCollectionRemnant(collectionName);
 
     // Try to delete a core that only exists as a remnant - and has no record in ZooKeeper
-    try {
-      CoreAdminRequest.Unload unloadRequest = new CoreAdminRequest.Unload(true);
-      unloadRequest.setDeleteIndex(true);
-      unloadRequest.setDeleteDataDir(true);
-      unloadRequest.setDeleteInstanceDir(true);
-      unloadRequest.setCoreName(coreName);
-      unloadRequest.setResponseParser(new JsonMapResponseParser());
-      cluster.getSolrClient().request(unloadRequest);
-      fail("Expected request to fail");
-    } catch (Exception sse) {
-      assert sse.getMessage().contains("Cannot unload non-existent core [" + coreName + "]");
-    }
+    CoreAdminRequest.Unload unloadRequest = new CoreAdminRequest.Unload(true);
+    unloadRequest.setDeleteIndex(true);
+    unloadRequest.setDeleteDataDir(true);
+    unloadRequest.setDeleteInstanceDir(true);
+    unloadRequest.setCoreName(coreName);
+    unloadRequest.setResponseParser(new JsonMapResponseParser());
+
+    Exception e =
+        assertThrows(
+            "Expected request to fail.",
+            Exception.class,
+            () -> cluster.getSolrClient().request(unloadRequest));
+
+    assertTrue(
+        "Verify the exception was due to ZK not knowing about the core existence.",
+        e.getMessage().contains("Cannot unload non-existent core [" + coreName + "]"));
   }
 
   private Replica getReplicaOnNode(String collectionName, String shard, String nodeName) {

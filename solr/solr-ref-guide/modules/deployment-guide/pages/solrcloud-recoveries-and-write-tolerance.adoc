@@ -59,3 +59,14 @@ For instance, a client application may want to keep a log of which update reques
 
 NOTE: In previous version of Solr, the `min_rf` parameter had to be specified to ask Solr for the achieved replication factor.
 Now it is always included in the response.
+
+== Solr Core Lifecycle Inconsistency
+
+Solr can occasionally enter an inconsistent state where remnant core files remain on disk after collection deletion operations fail.
+
+The system property `solr.cloud.delete.unknown.cores.enabled` is an expert-level setting designed to handle this situation.
+When enabled, Solr automatically deletes any remnant core data on startup that lacks a record in ZooKeeper.
+During core creation (whether for new collections or replicas), Solr also deletes preexisting remnant files, allowing operations to complete.
+Without this setting, these files would cause new core creation to fail.
+
+Enable this feature with caution—it indicates an underlying problem in your Solr setup that should be investigated.

@@ -94,6 +94,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -1512,8 +1513,7 @@ public class CoreContainer {
         }
 
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(
-                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
+            EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores.enabled", false);
         if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
           log.warn(
               "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
@@ -1680,8 +1680,8 @@ public class CoreContainer {
         // this mostly happens when the core is deleted when this node is down
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(
-                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
+            EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores", false);
+
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),

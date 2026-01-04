@@ -44,7 +44,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.prep.recovery.read.timeout.additional.ms|prepRecoveryReadTimeoutExtraWait|8000|Specifies additional milliseconds to wait during recovery read operations in SolrCloud mode.
 
-|solr.cloud.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Determines if unknown cores should be removed at startup and during collection and replica creation in SolrCloud mode.
+|solr.cloud.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls deletion of unexpected cores at startup (per ZK state.json) and preexisting core data during core creation in SolrCloud mode.
 
 |solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
 
