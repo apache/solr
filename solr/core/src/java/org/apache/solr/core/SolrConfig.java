@@ -63,6 +63,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
@@ -953,7 +954,7 @@ public class SolrConfig implements MapWriter {
       ew.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
     }
 
-    getUpdateHandlerInfo().writeMap(ew);
+    ew.put("updateHandler", new SimpleOrderedMap<>(getUpdateHandlerInfo()));
     ew.put(
         "query",
         new SimpleOrderedMap<>((MapWriter)
@@ -989,12 +990,18 @@ public class SolrConfig implements MapWriter {
             overlay.getNamedPlugins(plugin.tag).entrySet()) {
           items.put(e.getKey(), e.getValue());
         }
-        ew.put(tag, items);
+        ew.put(tag, new SimpleOrderedMap<>(m -> {
+          new NamedList<>(items).writeMap(m);
+        }));
       } else {
         if (plugin.options.contains(MULTI_OK)) {
-          ew.put(tag, infos);
+          ew.put(tag, new SimpleOrderedMap<>( (MapWriter) m -> {
+            for (PluginInfo info : infos) {
+              info.writeMap(m);
+            }
+          }));
         } else {
-          ew.put(tag, infos.get(0));
+          ew.put(tag, new SimpleOrderedMap<>(m -> infos.getFirst().writeMap(m)));
         }
       }
     }
