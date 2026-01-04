@@ -358,7 +358,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       if (plugin instanceof Map) {
         pluginInfo = (Map) plugin;
       } else if (plugin instanceof PluginInfo) {
-        pluginInfo = Utils.convertToMap((PluginInfo) plugin, new LinkedHashMap<>());
+        pluginInfo = new SimpleOrderedMap<>((PluginInfo) plugin);
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
       String useParamsInReq = req.getOriginalParams().get(USEPARAM);
