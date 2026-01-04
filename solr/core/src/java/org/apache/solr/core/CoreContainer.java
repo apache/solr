@@ -1511,6 +1511,17 @@ public class CoreContainer {
           preExistingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
         }
 
+        final boolean deleteUnknownCores =
+            Boolean.parseBoolean(
+                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
+        if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
+          log.warn(
+              "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
+              cd.getInstanceDir().toAbsolutePath(),
+              cd.getName());
+          SolrCore.deleteUnloadedCore(cd, true, true);
+        }
+
         // Much of the logic in core handling pre-supposes that the core.properties file already
         // exists, so create it first and clean it up if there's an error.
         coresLocator.create(this, cd);
@@ -1670,7 +1681,7 @@ public class CoreContainer {
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
             Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+                System.getProperty("solr.cloud.delete.unknown.cores.enabled", "false"));
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
