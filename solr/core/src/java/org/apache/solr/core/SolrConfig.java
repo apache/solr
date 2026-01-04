@@ -995,11 +995,9 @@ public class SolrConfig implements MapWriter {
         }));
       } else {
         if (plugin.options.contains(MULTI_OK)) {
-          ew.put(tag, new SimpleOrderedMap<>( (MapWriter) m -> {
-            for (PluginInfo info : infos) {
-              info.writeMap(m);
-            }
-          }));
+          ArrayList<MapWriter> writers = new ArrayList<>();
+          infos.forEach(info -> writers.add(new SimpleOrderedMap<>(info)));
+          ew.put(tag, writers);
         } else {
           ew.put(tag, new SimpleOrderedMap<>(m -> infos.getFirst().writeMap(m)));
         }
