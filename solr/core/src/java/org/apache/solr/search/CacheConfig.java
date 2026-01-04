@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -178,7 +179,7 @@ public class CacheConfig implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    args.forEach(ew::putNoEx);
+    new NamedList<>(args).writeMap(ew);
   }
 
   public String getNodeName() {

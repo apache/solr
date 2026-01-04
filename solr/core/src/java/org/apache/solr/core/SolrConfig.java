@@ -1013,7 +1013,11 @@ public class SolrConfig implements MapWriter {
 
   private void addCacheConfig(EntryWriter queryMap, CacheConfig... cache) throws IOException {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
+    for (CacheConfig cc : cache) {
+      if (cc != null) {
+        cc.writeMap(queryMap);
+      }
+    }
   }
 
   public Properties getSubstituteProperties() {
