@@ -957,23 +957,24 @@ public class SolrConfig implements MapWriter {
     ew.put("updateHandler", new SimpleOrderedMap<>(getUpdateHandlerInfo()));
     ew.put(
         "query",
-        new SimpleOrderedMap<>((MapWriter)
-            m -> {
-              m.put("useFilterForSortedQuery", useFilterForSortedQuery);
-              m.put("queryResultWindowSize", queryResultWindowSize);
-              m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
-              m.put("enableLazyFieldLoading", enableLazyFieldLoading);
-              m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
-              m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
+        new SimpleOrderedMap<>(
+            (MapWriter)
+                m -> {
+                  m.put("useFilterForSortedQuery", useFilterForSortedQuery);
+                  m.put("queryResultWindowSize", queryResultWindowSize);
+                  m.put("queryResultMaxDocsCached", queryResultMaxDocsCached);
+                  m.put("enableLazyFieldLoading", enableLazyFieldLoading);
+                  m.put("maxBooleanClauses", booleanQueryMaxClauseCount);
+                  m.put(MIN_PREFIX_QUERY_TERM_LENGTH, prefixQueryMinPrefixLength);
 
-              addCacheConfig(
-                  m,
-                  filterCacheConfig,
-                  queryResultCacheConfig,
-                  documentCacheConfig,
-                  fieldValueCacheConfig,
-                  featureVectorCacheConfig);
-            }));
+                  addCacheConfig(
+                      m,
+                      filterCacheConfig,
+                      queryResultCacheConfig,
+                      documentCacheConfig,
+                      fieldValueCacheConfig,
+                      featureVectorCacheConfig);
+                }));
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
@@ -990,9 +991,12 @@ public class SolrConfig implements MapWriter {
             overlay.getNamedPlugins(plugin.tag).entrySet()) {
           items.put(e.getKey(), e.getValue());
         }
-        ew.put(tag, new SimpleOrderedMap<>(m -> {
-          new NamedList<>(items).writeMap(m);
-        }));
+        ew.put(
+            tag,
+            new SimpleOrderedMap<>(
+                m -> {
+                  new NamedList<>(items).writeMap(m);
+                }));
       } else {
         if (plugin.options.contains(MULTI_OK)) {
           ArrayList<MapWriter> writers = new ArrayList<>();
