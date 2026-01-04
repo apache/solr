@@ -780,6 +780,93 @@ This command is used as part of SolrCloud's xref:deployment-guide:shard-manageme
 When used against a core in a user-managed cluster without `split.key` parameter, this action will split the source index and distribute its documents alternately so that each split piece contains an equal number of documents.
 If the `split.key` parameter is specified then only documents having the same route key will be split from the source index.
 
+[[coreadmin-upgradecoreindex]]
+== UPGRADECOREINDEX
+
+The `UPGRADECOREINDEX` action upgrades an existing core's index in-place after a Solr major-version upgrade by reindexing documents from older-format segments.
+It temporarily adjusts merge behavior to keep older Lucene version segments from being merged with new segments while the operation reindexes all live documents from older-format segments, then commits and validates the result.
+If a core is upgraded by this action, it ensures index compatibility with the next Solr major version (upon a future Solr upgrade) without having to re-create the index from source.
+
+This action is expensive and is intended for user-managed clusters or single-node installations only. It is currently not supported in SolrCloud mode.
+
+[NOTE]
+====
+Only fields that are stored or have DocValues enabled can be preserved during upgrade.
+Fields that are neither stored nor docValues-backed will lose their data. However if a field is neither stored, nor docValues-enabled, but is a copyField target, it will be re-populated by the copy field mechanism during reindexing.
+Always test on a copy and ensure you have a backup before running on production data.
+====
+
+=== UPGRADECOREINDEX Parameters
+
+`core`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The name of the core whose index should be upgraded.
+
+`async`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Request ID to track this action which will be processed asynchronously.
+Use <<coreadmin-requeststatus,REQUESTSTATUS>> with the provided `requestid` to poll for completion and retrieve the operation response.
+
+`update.chain`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The update processor chain to use for reindexing.
+If omitted, Solr uses the chain configured for the `/update` handler, or the default update chain for the core (in that order).
+
+=== UPGRADECOREINDEX Response
+
+On success, the response includes:
+
+`core`::
+The core name.
+
+`numSegmentsEligibleForUpgrade`::
+The number of segments with an older Lucene format that were targeted.
+
+`numSegmentsUpgraded`::
+The number of segments successfully processed.
+
+`upgradeStatus`::
+One of `UPGRADE_SUCCESSFUL` or `NO_UPGRADE_NEEDED`.
+On failure, an exception is thrown with error details.
+
+=== UPGRADECOREINDEX Examples
+
+*Synchronous:*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts
+----
+
+*Asynchronous (recommended for large cores):*
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=UPGRADECOREINDEX&core=techproducts&async=upgrade_1
+----
+
+Then poll status:
+
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=REQUESTSTATUS&requestid=upgrade_1
+----
+
 [[coreadmin-requeststatus]]
 == REQUESTSTATUS
 
