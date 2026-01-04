@@ -63,6 +63,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackageListeners;
@@ -945,13 +946,17 @@ public class SolrConfig implements MapWriter {
 
   @Override
   public void writeMap(EntryWriter ew) throws IOException {
-    if (znodeVersion > -1) ew.put(ZNODEVER, znodeVersion);
-    if (luceneMatchVersion != null)
+    if (znodeVersion > -1) {
+      ew.put(ZNODEVER, znodeVersion);
+    }
+    if (luceneMatchVersion != null) {
       ew.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion.toString());
-    ew.put("updateHandler", getUpdateHandlerInfo());
+    }
+
+    getUpdateHandlerInfo().writeMap(ew);
     ew.put(
         "query",
-        (MapWriter)
+        new SimpleOrderedMap<>((MapWriter)
             m -> {
               m.put("useFilterForSortedQuery", useFilterForSortedQuery);
               m.put("queryResultWindowSize", queryResultWindowSize);
@@ -967,8 +972,7 @@ public class SolrConfig implements MapWriter {
                   documentCacheConfig,
                   fieldValueCacheConfig,
                   featureVectorCacheConfig);
-            });
-
+            }));
     for (SolrPluginInfo plugin : plugins) {
       List<PluginInfo> infos = getPluginInfos(plugin.clazz.getName());
       if (infos == null || infos.isEmpty()) continue;
