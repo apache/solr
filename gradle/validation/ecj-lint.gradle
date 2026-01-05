@@ -62,18 +62,27 @@ allprojects {
         def tmpDst = getTemporaryDir()
         workingDir tmpDst
 
-        args += [ "-d", "none" ]
+        args += ["-d", "none"]
 
         assert project.java.sourceCompatibility == project.java.targetCompatibility
 
         // Compilation environment.
-        args += [ "-source", project.java.sourceCompatibility ]
-        args += [ "-target", project.java.targetCompatibility ]
-        args += [ "-encoding", "UTF-8"]
-        args += [ "-proc:none" ]
-        args += [ "-nowarn" ]
-        args += [ "-enableJavadoc" ]
-        args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
+        args += [
+          "-source",
+          project.java.sourceCompatibility
+        ]
+        args += [
+          "-target",
+          project.java.targetCompatibility
+        ]
+        args += ["-encoding", "UTF-8"]
+        args += ["-proc:none"]
+        args += ["-nowarn"]
+        args += ["-enableJavadoc"]
+        args += [
+          "-properties",
+          file("${resources}/ecj.javadocs.prefs").absolutePath
+        ]
 
         doFirst {
           tmpDst.mkdirs()

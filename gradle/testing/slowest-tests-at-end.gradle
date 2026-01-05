@@ -24,8 +24,8 @@ allprojects {
   plugins.withType(JavaPlugin) {
     project.ext {
       testOptions += [
-          [propName: 'tests.slowestTests', value: true, description: "Print the summary of the slowest tests."],
-          [propName: 'tests.slowestSuites', value: true, description: "Print the summary of the slowest suites."]
+        [propName: 'tests.slowestTests', value: true, description: "Print the summary of the slowest tests."],
+        [propName: 'tests.slowestSuites', value: true, description: "Print the summary of the slowest suites."]
       ]
     }
 
@@ -35,8 +35,8 @@ allprojects {
           def duration = (result.getEndTime() - result.getStartTime())
 
           allTests << [
-              name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
-              duration: duration
+            name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
+            duration: duration
           ]
         }
       }
@@ -48,8 +48,8 @@ allprojects {
             def duration = (result.getEndTime() - result.getStartTime())
 
             allSuites << [
-                name    : "${desc.className.replaceAll('.+\\.', "")} (${project.path})",
-                duration: duration
+              name    : "${desc.className.replaceAll('.+\\.', "")} (${project.path})",
+              duration: duration
             ]
           }
         }

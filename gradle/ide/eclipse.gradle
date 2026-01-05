@@ -38,12 +38,16 @@ configure(rootProject) {
         defaultOutputDir = file('build/eclipse')
 
         file {
-          beforeMerged { classpath -> classpath.entries.removeAll { it.kind == "src" } }
+          beforeMerged { classpath ->
+            classpath.entries.removeAll {
+              it.kind == "src"
+            }
+          }
 
           whenMerged { classpath ->
             def projects = allprojects.findAll { prj ->
               return prj.plugins.hasPlugin(JavaPlugin) &&
-                     prj.path != ":solr:solr-ref-guide"
+                  prj.path != ":solr:solr-ref-guide"
             }
 
             Set<String> sources = []
@@ -105,6 +109,6 @@ public class LibEntry implements ClasspathEntry {
     node.appendNode("classpathentry", Map.of(
         "kind", "lib",
         "path", path
-    ));
+        ));
   }
 }

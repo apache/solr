@@ -34,31 +34,31 @@ buildscript {
 }
 
 def extensions = [
-    'adoc',
-    'bat',
-    'cmd',
-    'css',
-    'g4',
-    'gradle',
-    'groovy',
-    'html',
-    'java',
-    'jflex',
-    'jj',
-    'js',
-    'json',
-    'md',
-    'mdtext',
-    'pl',
-    'policy',
-    'properties',
-    'py',
-    'sh',
-    'template',
-    'txt',
-    'vm',
-    'xml',
-    'xsl',
+  'adoc',
+  'bat',
+  'cmd',
+  'css',
+  'g4',
+  'gradle',
+  'groovy',
+  'html',
+  'java',
+  'jflex',
+  'jj',
+  'js',
+  'json',
+  'md',
+  'mdtext',
+  'pl',
+  'policy',
+  'properties',
+  'py',
+  'sh',
+  'template',
+  'txt',
+  'vm',
+  'xml',
+  'xsl',
 ]
 
 // Create source validation task local to each project
@@ -71,7 +71,7 @@ allprojects {
       extensions.each{
         include "**/*.${it}"
       }
-      
+
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
@@ -137,7 +137,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
     this.progressLoggerFactory = progressLoggerFactory
   }
-  
+
   @TaskAction
   public void check() {
     def invalidPatterns = [
@@ -226,7 +226,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
       while (javadocsMatcher.find()) {
         if (isLicense(javadocsMatcher, ratDocument)) {
           reportViolation(f, String.format(Locale.ENGLISH, 'javadoc-style license header [%s]',
-            ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
+              ratDocument.getMetaData().value(MetaData.RAT_URL_LICENSE_FAMILY_NAME)));
         }
       }
       if (f.name.endsWith('.java')) {
@@ -248,8 +248,8 @@ class ValidateSourcePatternsTask extends DefaultTask {
         if (!f.name.contains("Test") && !f.name.contains("Mock") && !f.name.contains("Fake") && !text.contains("abstract class") &&
             !f.name.equals("TokenizerFactory.java") && !f.name.equals("CharFilterFactory.java") && !f.name.equals("TokenFilterFactory.java") &&
             (f.name.contains("TokenizerFactory") && text.contains("extends TokenizerFactory") ||
-                f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
-                f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
+            f.name.contains("CharFilterFactory") && text.contains("extends CharFilterFactory") ||
+            f.name.contains("FilterFactory") && text.contains("extends TokenFilterFactory"))) {
           if (!validSPINameJavadocTag.matcher(text).find()) {
             reportViolation(f, 'invalid spi name documentation')
           }

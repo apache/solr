@@ -41,6 +41,9 @@ java {
 }
 
 tasks.withType(JavaCompile).configureEach {
-  options.compilerArgs += ["--release", targetCompatibility.toString()]
+  options.compilerArgs += [
+    "--release",
+    targetCompatibility.toString()
+  ]
   options.encoding = "UTF-8"
 }

@@ -59,4 +59,3 @@ gradle.taskGraph.whenReady { graph ->
     }
   }
 }
-

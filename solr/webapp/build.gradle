@@ -88,7 +88,10 @@ task jsClientBuild(type: NpmTask) {
 
 task downloadBrowserify(type: NpmTask) {
   group = 'Build Dependency Download'
-  args = ["install", "browserify@${libs.versions.browserify.get()}"]
+  args = [
+    "install",
+    "browserify@${libs.versions.browserify.get()}"
+  ]
 
   inputs.property("browserify version", libs.versions.browserify.get())
   outputs.dir("${nodeProjectDir}/node_modules/browserify")
@@ -120,7 +123,13 @@ task generateJsClientBundle(type: NpxTask) {
   dependsOn tasks.jsClientBuild
 
   command = 'browserify'
-  args = ['dist/index.js', '-s', 'solrApi', '-o', "${jsClientBuildDir}/index.js"]
+  args = [
+    'dist/index.js',
+    '-s',
+    'solrApi',
+    '-o',
+    "${jsClientBuildDir}/index.js"
+  ]
   workingDir = file(jsClientWorkspace)
 
   inputs.dir(jsClientWorkspace)

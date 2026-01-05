@@ -26,19 +26,19 @@ allprojects {
   repositories {
     mavenCentral()
     /* Reenable this if we need it again in future
-    maven {
-      name "LucenePrerelease${lucenePrereleaseBuild}"
-      url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
-    }
-    */
+     maven {
+     name "LucenePrerelease${lucenePrereleaseBuild}"
+     url "https://nightlies.apache.org/solr/lucene-prereleases/${lucenePrereleaseBuild}/"
+     }
+     */
   }
 
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path
-          .replaceAll("^:", "")
-          .replace(':', '-')
-          .replace("-modules-", "-")
+      .replaceAll("^:", "")
+      .replace(':', '-')
+      .replace("-modules-", "-")
 
   project.ext {
     // Utility method to support passing overrides via -P or -D.
@@ -104,10 +104,10 @@ allprojects {
         // that one still tries to write something when the other closed
         // the underlying output stream.
         def wrapped = new java.io.FilterOutputStream(output) {
-          public void close() {
-            // no-op. we close this stream manually.
-          }
-        }
+              public void close() {
+                // no-op. we close this stream manually.
+              }
+            }
 
         result = project.exec { ExecSpec execSpec ->
           project.configure(execSpec, closure)
@@ -129,9 +129,9 @@ allprojects {
         if (!saveIgnoreExitValue) {
           result.rethrowFailure()
           throw new GradleException("The executed process ${saveExecSpec.executable} " +
-              "returned an odd status " +
-              "code: ${result.exitValue}, " +
-              "output at: ${outputFile} (and logged above).")
+          "returned an odd status " +
+          "code: ${result.exitValue}, " +
+          "output at: ${outputFile} (and logged above).")
         }
       }
 

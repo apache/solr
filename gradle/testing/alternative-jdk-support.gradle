@@ -89,4 +89,3 @@ if (jvmGradle != jvmCurrent) {
 rootProject.ext.runtimeJavaHome = jvmCurrent.javaHome
 rootProject.ext.runtimeJavaVersion = jvmDetector.getMetadata(InstallationLocation.userDefined(jvmCurrent.javaHome, "specific path")).getLanguageVersion()
 rootProject.ext.usesAltJvm = (jvmGradle != jvmCurrent);
-

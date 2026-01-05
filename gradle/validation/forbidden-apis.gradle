@@ -31,14 +31,19 @@ allprojects { prj ->
       def resolvedMods = configuration.resolvedConfiguration.resolvedArtifacts
           .collect { a -> a.moduleVersion.id }
       def deps = resolvedMods
-          .collect { id -> [
+          .collect { id ->
+            [
               "${id.group}.${id.name}.all.txt",
               "${id.group}.${id.name}.${suffix}.txt",
-          ]}
+            ]
+          }
           .flatten()
           .sort()
 
-      deps += ["defaults.all.txt", "defaults.${suffix}.txt"]
+      deps += [
+        "defaults.all.txt",
+        "defaults.${suffix}.txt"
+      ]
 
       deps.each { sig ->
         def signaturesFile = file("${resources}/${sig}")
@@ -49,24 +54,24 @@ allprojects { prj ->
           logger.debug("Signature file omitted (does not exist): ${sig}")
         }
       }
-      
+
       // commons-io is special: forbiddenapis has a versioned bundledSignature.
       bundledSignatures += resolvedMods
-        .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
-        .collect { id -> "${id.name}-unsafe-${id.version}" as String }
+          .findAll { id -> id.group == 'commons-io' && id.name == 'commons-io' }
+          .collect { id -> "${id.name}-unsafe-${id.version}" as String }
     }
 
     // Configure defaults for all sourceSets (main and test)
     forbiddenApis {
       bundledSignatures += [
-          'jdk-unsafe',
-          'jdk-deprecated',
-          'jdk-non-portable',
-          'jdk-reflection',
+        'jdk-unsafe',
+        'jdk-deprecated',
+        'jdk-non-portable',
+        'jdk-reflection',
       ]
 
       suppressAnnotations += [
-          "**.SuppressForbidden"
+        "**.SuppressForbidden"
       ]
 
       ignoreSignaturesOfMissingClasses = true
@@ -75,7 +80,7 @@ allprojects { prj ->
     // Configure defaults for sourceSets.main
     forbiddenApisMain {
       bundledSignatures += [
-          'jdk-system-out'
+        'jdk-system-out'
       ]
     }
 
@@ -83,20 +88,20 @@ allprojects { prj ->
     forbiddenApisTest {
       signaturesFiles = files(
           file("${resources}/defaults.tests.txt")
-      )
+          )
     }
 
     // Configure defaults for sourceSets.tools (if present).
     tasks.matching { it.name == "forbiddenApisTools" }.all {
       bundledSignatures += [
-          'jdk-unsafe',
-          'jdk-deprecated',
-          'jdk-non-portable',
-          'jdk-reflection',
+        'jdk-unsafe',
+        'jdk-deprecated',
+        'jdk-non-portable',
+        'jdk-reflection',
       ]
 
       suppressAnnotations += [
-          "**.SuppressForbidden"
+        "**.SuppressForbidden"
       ]
 
       doFirst dynamicSignatures.curry(configurations.toolsCompileClasspath, "lucene")
@@ -105,11 +110,11 @@ allprojects { prj ->
 
     // Disable sysout signatures for these projects.
     if (prj.path in [
-        ":solr:solr-ref-guide",
-        ":solr:test-framework"
-    ]) {
+          ":solr:solr-ref-guide",
+          ":solr:test-framework"
+        ]) {
       forbiddenApisMain.bundledSignatures -= [
-          'jdk-system-out'
+        'jdk-system-out'
       ]
     }
 
@@ -137,7 +142,10 @@ allprojects { prj ->
     //
     // This is the simplest workaround possible: just point at all the rule files and indicate
     // them as inputs. This way if a rule is modified, checks will be reapplied.
-    configure([forbiddenApisMain, forbiddenApisTest]) { task ->
+    configure([
+      forbiddenApisMain,
+      forbiddenApisTest
+    ]) { task ->
       task.inputs.dir(file(resources))
     }
   })

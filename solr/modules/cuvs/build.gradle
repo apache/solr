@@ -39,4 +39,3 @@ dependencies {
   // lucene-backward-codecs is a transitive dependency from cuvs-lucene but required in lockfile
   permitUnusedDeclared libs.apache.lucene.backward.codecs
 }
-

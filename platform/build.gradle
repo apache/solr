@@ -19,16 +19,16 @@
 // that is inherited by all modules through transitive dependencies (api).
 
 plugins {
-    id("java-platform")
+  id("java-platform")
 }
 
 dependencies {
-    constraints {
-        def versionCatalog = rootProject.extensions
-                .getByType(VersionCatalogsExtension).named("libs")
-        versionCatalog.libraryAliases.forEach { alias ->
-            def library = versionCatalog.findLibrary(alias)
-            api library.get()
-        }
+  constraints {
+    def versionCatalog = rootProject.extensions
+        .getByType(VersionCatalogsExtension).named("libs")
+    versionCatalog.libraryAliases.forEach { alias ->
+      def library = versionCatalog.findLibrary(alias)
+      api library.get()
     }
+  }
 }

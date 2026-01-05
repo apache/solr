@@ -26,10 +26,16 @@ allprojects {
       compileTestJava {
         sourceCompatibility = project.minJavaTestVersion
         targetCompatibility = project.minJavaTestVersion
-        options.compilerArgs += ["--release", project.minJavaTestVersion.toString()]
+        options.compilerArgs += [
+          "--release",
+          project.minJavaTestVersion.toString()
+        ]
       }
       compileJava {
-        options.compilerArgs += ["--release", project.minJavaVersion.toString()]
+        options.compilerArgs += [
+          "--release",
+          project.minJavaVersion.toString()
+        ]
       }
     }
     // Configure warnings.
@@ -58,7 +64,8 @@ allprojects {
         "-Xdoclint:-accessibility",
         "-Xlint:synchronization",
         "-Xlint:text-blocks",
-        "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
+        "-proc:none",
+        // proc:none was added because of LOG4J2-1925 / JDK-8186647
         "-Xlint:removal",
         "--should-stop=ifError=FLOW" // error-prone 2.41
       ]
@@ -73,7 +80,7 @@ allprojects {
 configure(project(":solr:benchmark")) {
   plugins.withType(JavaPlugin) {
     tasks.named('compileJava').configure {
-      options.compilerArgs -= [ "-Werror", "-proc:none" ]
+      options.compilerArgs -= ["-Werror", "-proc:none"]
       options.compilerArgs += "-Xlint:none"
     }
   }

@@ -23,8 +23,8 @@ import java.nio.charset.StandardCharsets
 configure(rootProject) {
   task gradlewScriptsTweaked() { task ->
     def scripts = [
-        file("gradlew"),
-        file("gradlew.bat")
+      file("gradlew"),
+      file("gradlew.bat")
     ]
 
     inputs.files(scripts)

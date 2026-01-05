@@ -31,11 +31,12 @@ def setupDummyOutputs = { Task task ->
 allprojects {
   tasks.matching {
     it.name.startsWith("ecjLint") ||
-    it.name in [
-        "gradlewScriptsTweaked",
-        "validateSourcePatterns",
-        "validateLogCalls"
-    ] }.configureEach { Task task ->
+        it.name in [
+          "gradlewScriptsTweaked",
+          "validateSourcePatterns",
+          "validateLogCalls"
+        ]
+  }.configureEach { Task task ->
     task.logger.info("Setting up ${task.path} as no-output.")
     setupDummyOutputs(task)
   }

@@ -23,7 +23,8 @@ def genFailInfo(def task, TestDescriptor desc) {
   boolean isSuite = (desc.name == 'classMethod')
   def name = isSuite ? desc.className : "${desc.className}.${desc.name}"
   def historyUrl = "https://develocity.apache.org/scans/tests?search.rootProjectNames=solr-root&tests.container=$desc.className"
-  if (!isSuite) { // is test method specific
+  if (!isSuite) {
+    // is test method specific
     historyUrl += "&tests.test=$desc.name"
     historyUrl += " http://fucit.org/solr-jenkins-reports/history-trend-of-recent-failures.html#series/$name"
   }
@@ -53,16 +54,17 @@ allprojects {
 
 gradle.buildFinished { result ->
   if (!failedTests) return
-  def formatted = failedTests
-      .sort { a, b -> b.project <=> a.project }
-      .collect { e -> """
+    def formatted = failedTests
+        .sort { a, b -> b.project <=> a.project }
+        .collect { e ->
+          """
   - ${e.name} (${e.project})
     Test history: ${e.historyUrl}
     Test output: ${e.output}
     Reproduce with: ${e.reproduce}
 """ // In Groovy there is no incidental leading whitespace, so must fully left justify
-      }
-      .join()
+        }
+        .join()
 
   logger.error("ERROR: The following test(s) have failed:${formatted}")
 }

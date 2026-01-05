@@ -42,9 +42,9 @@ configure(rootProject) {
     doFirst {
       try {
         def repository = new FileRepositoryBuilder()
-                .setWorkTree(rootProject.projectDir)
-                .setMustExist(true)
-                .build()
+            .setWorkTree(rootProject.projectDir)
+            .setMustExist(true)
+            .build()
 
         def ref = repository.findRef("HEAD").getObjectId()
         project.ext.gitRev = ref.name()
@@ -79,26 +79,26 @@ configure(rootProject) {
           File location = file("${rootProject.projectDir}/${path}")
           boolean hasFiles = false
           Files.walkFileTree(location.toPath(), new SimpleFileVisitor<Path>() {
-            @Override
-            FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-              hasFiles = true
-              // Terminate early.
-              return FileVisitResult.TERMINATE
-            }
-          })
+                @Override
+                FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+                  hasFiles = true
+                  // Terminate early.
+                  return FileVisitResult.TERMINATE
+                }
+              })
           return hasFiles
         }
 
         def offenders = [
-            // Exclude staged changes. These are fine in precommit.
-            // "(added)": status.added,
-            // "(changed)": status.changed,
-            // "(removed)": status.removed,
-            "(conflicting)": status.conflicting,
-            "(missing)": status.missing,
-            "(modified)": status.modified,
-            "(untracked)": status.untracked,
-            "(untracked non-empty dir)": untrackedNonEmptyFolders
+          // Exclude staged changes. These are fine in precommit.
+          // "(added)": status.added,
+          // "(changed)": status.changed,
+          // "(removed)": status.removed,
+          "(conflicting)": status.conflicting,
+          "(missing)": status.missing,
+          "(modified)": status.modified,
+          "(untracked)": status.untracked,
+          "(untracked non-empty dir)": untrackedNonEmptyFolders
         ].collectMany { fileStatus, files ->
           files.collect {file -> "  - ${file} ${fileStatus}" }
         }.sort()
@@ -107,7 +107,7 @@ configure(rootProject) {
           def propName = "validation.git.failOnModified"
           def shouldFail = Boolean.valueOf(propertyOrDefault(propName, isCIBuild))
           def msg = "Working copy is not a clean git checkout" +
-                  (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${offenders.join("\n")}"
+              (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${offenders.join("\n")}"
 
           if (shouldFail) {
             throw new GradleException(msg)

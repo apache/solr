@@ -37,7 +37,7 @@ class CheckBrokenLinksTask extends DefaultTask {
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   final DirectoryProperty docsDir = project.objects.directoryProperty()
-    .fileProvider(project.providers.provider { project.docroot })
+  .fileProvider(project.providers.provider { project.docroot })
 
   @InputFile
   @PathSensitive(PathSensitivity.RELATIVE)

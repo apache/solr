@@ -30,29 +30,29 @@ allprojects {
       // completes.
       // [propName: 'tests.foo', value: "bar", description: "Sets foo in tests."],
       testOptions = [
-          // asserts, debug output.
-          [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
-          [propName: 'tests.workDir',
-           value: { -> project.relativePath(file("${buildDir}/tmp/tests-tmp")) },
-           description: "Working directory for forked test JVMs",
-           includeInReproLine: false
-          ],
-          // JVM settings
-          [propName: 'tests.minheapsize', value: "256m", description: "Minimum heap size for test JVMs"],
-          [propName: 'tests.heapsize', value: "512m", description: "Heap size for test JVMs"],
-          // Test forks
-          [propName: 'tests.jvms',
-           value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
-           description: "Number of forked test JVMs",
-           includeInReproLine: false],
-          [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
-          // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
-          [propName: 'tests.jvmargs',
-           value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
-           description: "Arguments passed to each forked JVM."],
-          // Other settings.
-          [propName: 'tests.neverUpToDate', value: true,
-           description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
+        // asserts, debug output.
+        [propName: 'tests.verbose', value: false, description: "Enables verbose mode (emits full test outputs immediately)."],
+        [propName: 'tests.workDir',
+          value: { -> project.relativePath(file("${buildDir}/tmp/tests-tmp")) },
+          description: "Working directory for forked test JVMs",
+          includeInReproLine: false
+        ],
+        // JVM settings
+        [propName: 'tests.minheapsize', value: "256m", description: "Minimum heap size for test JVMs"],
+        [propName: 'tests.heapsize', value: "512m", description: "Heap size for test JVMs"],
+        // Test forks
+        [propName: 'tests.jvms',
+          value: { -> ((int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) },
+          description: "Number of forked test JVMs",
+          includeInReproLine: false],
+        [propName: 'tests.haltonfailure', value: true, description: "Halt processing on test failure."],
+        // Default code cache size is 240m, but disabling C2 compiler shrinks it to 48m, which turns out to not be enough
+        [propName: 'tests.jvmargs',
+          value: { -> propertyOrEnvOrDefault("tests.jvmargs", "TEST_JVM_ARGS", "-XX:TieredStopAtLevel=1 -XX:+UseParallelGC -XX:ActiveProcessorCount=1 -XX:ReservedCodeCacheSize=120m") },
+          description: "Arguments passed to each forked JVM."],
+        // Other settings.
+        [propName: 'tests.neverUpToDate', value: true,
+          description: "Make test tasks always fail the up-to-date checks (rerun) even if the inputs have not changed."],
       ]
 
       // Resolves test option's value.
@@ -124,10 +124,10 @@ allprojects {
       def tempDir = layout.projectDirectory.dir(testsTmpDir.toString())
       jvmArgumentProviders.add(
           new LoggingFileArgumentProvider(
-              loggingConfigFile: loggingConfigFile,
-              tempDir: tempDir
+          loggingConfigFile: loggingConfigFile,
+          tempDir: tempDir
           )
-      )
+          )
 
       systemProperty 'java.awt.headless', 'true'
       systemProperty 'jdk.map.althashing.threshold', '0'
@@ -197,8 +197,8 @@ class LoggingFileArgumentProvider implements CommandLineArgumentProvider {
   @Override
   Iterable<String> asArguments() {
     [
-        "-Djava.util.logging.config.file=${loggingConfigFile.getAsFile()}",
-        "-DtempDir=${tempDir.getAsFile()}"
+      "-Djava.util.logging.config.file=${loggingConfigFile.getAsFile()}",
+      "-DtempDir=${tempDir.getAsFile()}"
     ]
   }
 }

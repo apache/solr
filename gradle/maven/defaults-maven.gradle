@@ -24,13 +24,13 @@
 configure(rootProject) {
   ext {
     published = [
-        ":solr:api",
-        ":solr:cross-dc-manager",
-        ":solr:core",
-        ":solr:solrj",
-        ":solr:solrj-streaming",
-        ":solr:solrj-zookeeper",
-        ":solr:test-framework",
+      ":solr:api",
+      ":solr:cross-dc-manager",
+      ":solr:core",
+      ":solr:solrj",
+      ":solr:solrj-streaming",
+      ":solr:solrj-zookeeper",
+      ":solr:test-framework",
     ] + project(":solr:modules").getChildProjects().values().path
 
     apacheNexusSnapshots = "https://repository.apache.org/content/repositories/snapshots"

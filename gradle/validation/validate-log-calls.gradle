@@ -42,15 +42,22 @@ configure(subprojects.findAll { it.path.startsWith(':solr') }) {
 
       sourceFiles = files(sourceSets*.java)
     }
- 
+
     // Add log validation to per-project checks as well.
     check.dependsOn validateLogCalls
- }
+  }
 }
 
 class ValidateLogCallsTask extends DefaultTask {
   @Input
-  def logLevels = ["log.trace", "log.debug", "log.info", "log.warn", "log.error", "log.fatal"]
+  def logLevels = [
+    "log.trace",
+    "log.debug",
+    "log.info",
+    "log.warn",
+    "log.error",
+    "log.fatal"
+  ]
 
   private def errsFound = 0;
   private def violations = new ArrayList();
@@ -71,13 +78,13 @@ class ValidateLogCallsTask extends DefaultTask {
     // Strip all of the comments, things in quotes and the like.
     def stripped =
         line.replaceFirst("//.*", " ") // remove comment to EOL. May be fragile due to the possibility of embedded double slashes
-            .replaceFirst(/.*?\(/, " ") // Get rid of "log.whatever("
-            .replaceFirst(/\);/, " ") // get rid of the closing ");"
-            .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-            .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
-            .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
-            .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
-            .replaceAll("\\s", "")
+        .replaceFirst(/.*?\(/, " ") // Get rid of "log.whatever("
+        .replaceFirst(/\);/, " ") // get rid of the closing ");"
+        .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
+        .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+        .replaceAll(/timeLeft\(.*?\)/, " ") // used all over tests, it's benign
+        .replaceAll(/TimeUnit\..*?\.convert\(.*?\)/, " ") // again, a pattern that's efficient
+        .replaceAll("\\s", "")
 
     // The compiler will pre-assemble patterns like 'log.info("string const1 {}" + " string const2 {}", obj1, obj2)'
     // to log.info("string const1 {} string const2 {}", obj1, obj2)', so don't worry about any plus preceded and
@@ -149,7 +156,7 @@ class ValidateLogCallsTask extends DefaultTask {
     return
   }
 
-// Require all our logger definitions lower case "log", except if they have //nowarn
+  // Require all our logger definitions lower case "log", except if they have //nowarn
   def checkLogName(File file, String line) {
     // It's many times faster to do check this way than use a regex
     if (line.contains("static ") && line.contains("getLogger") && line.contains(" log ") == false) {
@@ -188,9 +195,9 @@ class ValidateLogCallsTask extends DefaultTask {
 
         case 1: // collecting a log line
           if (line.replaceFirst("//.*", " ")
-              .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
-              .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
-              .trim().endsWith(");")) {
+          .replaceFirst("/\\*.*?\\*/", " ") // replace embedded comments "/*....*/"
+          .replaceAll(/".*?"/, '""') // remove anything between quotes. This is a bit fragile if there are embedded double quotes.
+          .trim().endsWith(");")) {
             state = 2
           }
           sb.append(line)
@@ -203,16 +210,16 @@ class ValidateLogCallsTask extends DefaultTask {
 
       // It's just easier to do this here rather than read another line in the switch above.
       if (state == 0) {
-          // Not collecting a log line
-          prevLine = line.toLowerCase();
+        // Not collecting a log line
+        prevLine = line.toLowerCase();
       } else if (state == 1) {
-          // collecting a logging line.
+        // collecting a logging line.
       } else if (state == 2) {
-          // We've collected the complete log line.
-          checkLine(file, sb.toString(), lineNumber, prevLine)
-          state = 0
+        // We've collected the complete log line.
+        checkLine(file, sb.toString(), lineNumber, prevLine)
+        state = 0
       } else {
-          assert false
+        assert false
       }
     }
   }
@@ -228,7 +235,7 @@ class ValidateLogCallsTask extends DefaultTask {
 
     if (errsFound > 0) {
       throw new BuildException(String.format(Locale.ENGLISH, 'Found %d violations in source files (%s).',
-          errsFound, violations.join(', ')));
+      errsFound, violations.join(', ')));
     }
   }
 }

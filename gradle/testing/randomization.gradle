@@ -45,8 +45,8 @@ class SecurityArgumentProvider implements CommandLineArgumentProvider {
   @Override
   Iterable<String> asArguments() {
     [
-        "-Dcommon-solr.dir=${commonSolrDir.getAsFile()}",
-        "-Djava.security.policy=${javaSecurityPolicy.getAsFile()}"
+      "-Dcommon-solr.dir=${commonSolrDir.getAsFile()}",
+      "-Djava.security.policy=${javaSecurityPolicy.getAsFile()}"
     ]
   }
 }
@@ -81,43 +81,48 @@ allprojects {
   plugins.withType(JavaPlugin) {
     project.ext {
       testOptions += [
-          // seed, repetition and amplification.
-          [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
-          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],
-          [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
-          [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
-          [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
-          [propName: 'tests.failfast', value: "false", description: "Stop the build early on failure.", buildOnly: true],
-          // asserts, debug output.
-          [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
-          [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
-          [propName: 'tests.leaveTemporary', value: false, description: "Leave temporary directories after tests complete."],
-          [propName: 'tests.useSecurityManager',
-           value: { -> rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 ? 'true' : 'false' },
-           description: "Control security manager in tests.", buildOnly: true],
-          // component randomization
-          [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
-          [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
-          [propName: 'tests.postingsformat', value: "random", description: "Sets the postings format tests should run with."],
-          [propName: 'tests.docvaluesformat', value: "random", description: "Sets the doc values format tests should run with."],
-          [propName: 'tests.locale', value: "random", description: "Sets the default locale tests should run with."],
-          [propName: 'tests.timezone', value: "random", description: "Sets the default time zone tests should run with."],
-          // filtering
-          [propName: 'tests.filter', value: null, description: "Applies a test filter (see :helpTests)."],
-          [propName: 'tests.nightly', value: false, description: "Enables or disables @Nightly tests."],
-          [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
-          [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
-          [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
-          [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
-          [propName: 'tests.file.encoding',
-           value: { ->
-             RandomPicks.randomFrom(new Random(projectSeedLong), ["US-ASCII", "ISO-8859-1", "UTF-8"])
-           },
-           description: "Sets the default file.encoding on test JVM.", buildOnly: true],
-          // test data
-          [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
-          // miscellaneous; some of them very weird.
-          [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
+        // seed, repetition and amplification.
+        [propName: 'tests.seed', value: { -> rootSeed }, description: "Sets the master randomization seed."],
+        [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test case N times."],
+        [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
+        [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
+        [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
+        [propName: 'tests.failfast', value: "false", description: "Stop the build early on failure.", buildOnly: true],
+        // asserts, debug output.
+        [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
+        [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
+        [propName: 'tests.leaveTemporary', value: false, description: "Leave temporary directories after tests complete."],
+        [propName: 'tests.useSecurityManager',
+          value: { -> rootProject.ext.runtimeJavaVersion <= JavaVersion.VERSION_23 ? 'true' : 'false' },
+          description: "Control security manager in tests.", buildOnly: true],
+        // component randomization
+        [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
+        [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
+        [propName: 'tests.postingsformat', value: "random", description: "Sets the postings format tests should run with."],
+        [propName: 'tests.docvaluesformat', value: "random", description: "Sets the doc values format tests should run with."],
+        [propName: 'tests.locale', value: "random", description: "Sets the default locale tests should run with."],
+        [propName: 'tests.timezone', value: "random", description: "Sets the default time zone tests should run with."],
+        // filtering
+        [propName: 'tests.filter', value: null, description: "Applies a test filter (see :helpTests)."],
+        [propName: 'tests.nightly', value: false, description: "Enables or disables @Nightly tests."],
+        [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
+        [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
+        [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
+        [propName: 'tests.badapples', value: null, description: "Enables or disables @BadApple tests."],
+        [propName: 'tests.file.encoding',
+          value: {
+            ->
+            RandomPicks.randomFrom(new Random(projectSeedLong), [
+              "US-ASCII",
+              "ISO-8859-1",
+              "UTF-8"
+            ])
+          },
+          description: "Sets the default file.encoding on test JVM.", buildOnly: true],
+        // test data
+        [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
+        // miscellaneous; some of them very weird.
+        [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
       ]
     }
   }
@@ -128,8 +133,8 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     project.ext {
       testOptions += [
-          [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
-          [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
+        [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
+        [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
       ]
     }
   }
@@ -160,17 +165,17 @@ allprojects {
 
       // leaving temporary folder option has multiple aliases...
       if ([
-         "tests.leaveTemporary",
-         "tests.leavetemporary",
-         "tests.leavetmpdir",
-         "solr.test.leavetmpdir",
-      ].find { prop ->
-        def v = Boolean.parseBoolean(propertyOrDefault(prop, "false"))
-        if (v) {
-          logger.lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
-        }
-        return v
-      }) {
+            "tests.leaveTemporary",
+            "tests.leavetemporary",
+            "tests.leavetmpdir",
+            "solr.test.leavetmpdir",
+          ].find { prop ->
+            def v = Boolean.parseBoolean(propertyOrDefault(prop, "false"))
+            if (v) {
+              logger.lifecycle("Update your code to use the official 'tests.leaveTemporary' option (you used '${prop}').")
+            }
+            return v
+          }) {
         testOptionsResolved['tests.leaveTemporary'] = "true"
       }
 
@@ -211,10 +216,10 @@ allprojects {
           def javaSecurityPolicy = layout.projectDirectory.file("${resources}/policies/solr-tests.policy")
           jvmArgumentProviders.add(
               new SecurityArgumentProvider(
-                  commonSolrDir: commonSolrDir,
-                  javaSecurityPolicy: javaSecurityPolicy
+              commonSolrDir: commonSolrDir,
+              javaSecurityPolicy: javaSecurityPolicy
               )
-          )
+              )
           systemProperty 'java.security.manager', "default"
 
           def gradleUserHome = project.gradle.getGradleUserHomeDir()

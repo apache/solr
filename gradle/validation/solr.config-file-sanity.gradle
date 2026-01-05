@@ -25,8 +25,8 @@ configure(project(":solr")) {
 
       // Verify solrconfig.xml files declare proper luceneMatchVersion.
       [
-          file("server/solr/configsets"),
-          file("example")
+        file("server/solr/configsets"),
+        file("example")
       ].each { configsetsDir ->
         def configFiles = fileTree(configsetsDir, {
           include "**/solrconfig.xml"

@@ -123,8 +123,8 @@ if (luceneDevRepo != null) {
               // Map Maven artifact name to lucene module name.
               def projectModuleName =
                   moduleSelector.moduleIdentifier.name
-                      .replaceFirst("^lucene-analysis-", ":lucene:analysis:")
-                      .replaceFirst("^lucene-", ":lucene:")
+                  .replaceFirst("^lucene-analysis-", ":lucene:analysis:")
+                  .replaceFirst("^lucene-", ":lucene:")
 
               logger.info("Substituting Lucene dependency ${moduleSelector} with an included build project: ${projectModuleName}")
               dependency.useTarget(project(projectModuleName))
@@ -136,7 +136,7 @@ if (luceneDevRepo != null) {
   } else {
     // We're being applied at build-time and Lucene development repository exists. Configure
     // certain aspects of the build so that things work with it.
-    
+
     // replace luceneBaseVersionProvider by one evaluating the included build:
     configure(rootProject) {
       def line = new File(gradle.includedBuild('lucene-root').projectDir, 'build.gradle').readLines("UTF-8").find { it =~ /\bbaseVersion\s*=\s*['"]/ }
@@ -144,7 +144,7 @@ if (luceneDevRepo != null) {
         throw new GradleException('Cannot extract Lucene baseVersion from build.gradle file.')
       }
       def luceneBaseVersion = evaluate(line)
-      
+
       logger.lifecycle("Local Lucene development repository will override luceneBaseVersion with: {}", luceneBaseVersion)
 
       ext {
@@ -160,4 +160,3 @@ if (luceneDevRepo != null) {
     }
   }
 }
-

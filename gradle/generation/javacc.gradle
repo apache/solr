@@ -66,14 +66,14 @@ def commonCleanups = { FileTree generatedFiles ->
       // Add CharStream imports.
       text = text.replaceAll(
           /package (.+)/,
-'''package $1
+          '''package $1
 import javax.annotation.processing.Generated;
 import org.apache.lucene.queryparser.charstream.CharStream;'''.trim())
       text = text.replace(
-              "/** Token Manager. */",
-'''/** Token Manager. */
+          "/** Token Manager. */",
+          '''/** Token Manager. */
 @Generated("JavaCC")'''
-      )
+          )
       // Eliminates redundant cast message.
       text = text.replace(
           "int hiByte = (int)(curChar >> 8);",
@@ -137,12 +137,12 @@ class JavaCCTask extends DefaultTask {
     def baseName = javaccFile.name.replace(".jj", "")
 
     return [
-        project.file("${baseDir}/${baseName}.java"),
-        project.file("${baseDir}/${baseName}Constants.java"),
-        project.file("${baseDir}/${baseName}TokenManager.java"),
-        project.file("${baseDir}/ParseException.java"),
-        project.file("${baseDir}/Token.java"),
-        project.file("${baseDir}/TokenMgrError.java")
+      project.file("${baseDir}/${baseName}.java"),
+      project.file("${baseDir}/${baseName}Constants.java"),
+      project.file("${baseDir}/${baseName}TokenManager.java"),
+      project.file("${baseDir}/ParseException.java"),
+      project.file("${baseDir}/Token.java"),
+      project.file("${baseDir}/TokenMgrError.java")
     ]
   }
 
@@ -177,8 +177,8 @@ class JavaCCTask extends DefaultTask {
 
       main = "org.javacc.parser.Main"
       args += [
-          "-OUTPUT_DIRECTORY=${tempDir}",
-          javaccFile
+        "-OUTPUT_DIRECTORY=${tempDir}",
+        javaccFile
       ]
     }
 

@@ -29,7 +29,7 @@ allprojects {
   plugins.withType(JavaPlugin) {
     project.ext {
       testOptions += [
-          [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
+        [propName: 'tests.dups', value: 0, description: "Reiterate runs of entire test suites ('beast' task)."]
       ]
     }
   }
