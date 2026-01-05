@@ -59,6 +59,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "60000");
+    System.setProperty("tests.zk.violationReportAction", "IGNORE");
 
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     // Add proxies
@@ -87,9 +88,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }
@@ -274,7 +272,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();
     cluster.waitForAllNodes(30);
-    ;
+
     waitForState(
         "Timeout waiting for leader",
         collection,
