@@ -37,7 +37,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -146,25 +145,17 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       throws IOException, ServletException {
     setTracer(request, getCores().getTracer());
     RateLimitManager rateLimitManager = getRateLimitManager();
-    try {
-      ServletUtils.rateLimitRequest(
-          rateLimitManager,
-          request,
-          response,
-          () -> {
-            try {
-              dispatch(chain, request, response, retry);
-            } catch (IOException | ServletException | SolrAuthenticationException e) {
-              throw new ExceptionWhileTracing(e);
-            }
-          });
-    } finally {
-      SolrRequestInfo.reset();
-      if (!request.isAsyncStarted()) { // jetty's proxy uses this
-        ServletUtils.consumeInputFully(request, response);
-        SolrRequestParsers.cleanupMultipartFiles(request);
-      }
-    }
+    ServletUtils.rateLimitRequest(
+        rateLimitManager,
+        request,
+        response,
+        () -> {
+          try {
+            dispatch(chain, request, response, retry);
+          } catch (IOException | ServletException | SolrAuthenticationException e) {
+            throw new ExceptionWhileTracing(e);
+          }
+        });
   }
 
   private void dispatch(
