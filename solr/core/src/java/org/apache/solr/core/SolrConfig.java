@@ -1010,7 +1010,7 @@ public class SolrConfig implements MapWriter {
 
     ew.put(
         "requestDispatcher",
-        (MapWriter)
+        new SimpleOrderedMap<>((MapWriter)
             m -> {
               if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
               m.put(
@@ -1020,8 +1020,8 @@ public class SolrConfig implements MapWriter {
                       multipartUploadLimitKB,
                       "formUploadLimitKB",
                       formUploadLimitKB));
-            });
-    if (indexConfig != null) ew.put("indexConfig", indexConfig);
+            }));
+    if (indexConfig != null) ew.put("indexConfig", new SimpleOrderedMap<>(indexConfig));
   }
 
   private void addCacheConfig(EntryWriter queryMap, CacheConfig... cache) throws IOException {

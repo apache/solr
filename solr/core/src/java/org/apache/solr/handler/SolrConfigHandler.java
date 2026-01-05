@@ -294,7 +294,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                         : (Map<String, Object>) o;
                 val.put(
                     parts.get(1),
-                    pluginNameVsPluginInfo instanceof PluginInfo
+                    pluginNameVsPluginInfo instanceof MapWriter
                         ? pluginInfo
                         : Map.of(componentName, pluginInfo));
                 if (req.getParams().getBool("meta", false)) {
