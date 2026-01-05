@@ -224,7 +224,8 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
   public void init(PluginInfo info) {
     StringBuilder sb = new StringBuilder();
     NamedList<?> args = info.initArgs;
-    this.scheme = getParameter(args, INIT_URL_SCHEME, null, sb);
+    // note: the sys prop is only used in testing
+    this.scheme = getParameter(args, INIT_URL_SCHEME, System.getProperty(INIT_URL_SCHEME), sb);
     if (this.scheme != null && this.scheme.endsWith("://")) {
       this.scheme = this.scheme.replace("://", "");
     }

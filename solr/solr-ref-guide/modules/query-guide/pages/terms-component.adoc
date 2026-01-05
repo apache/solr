@@ -434,17 +434,7 @@ Results (notice that the term counts are not affected by the query):
 
 [source,java]
 ----
-    SolrQuery query = new SolrQuery();
-    query.setRequestHandler("/terms");
-    query.setTerms(true);
-    query.setTermsLimit(5);
-    query.setTermsLower("s");
-    query.setTermsPrefix("s");
-    query.addTermsField("terms_s");
-    query.setTermsMinCount(1);
-
-    QueryRequest request = new QueryRequest(query);
-    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
+include::example$TermComponentRefGuideExamplesTest.java[tag=term-component-request]
 ----
 
 == Using the Terms Component for an Auto-Suggest Feature

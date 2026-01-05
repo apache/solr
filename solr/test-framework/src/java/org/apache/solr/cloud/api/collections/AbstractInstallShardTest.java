@@ -82,7 +82,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   }
 
   @Before
-  public void clearCollsToDelete() {
+  public void clearCollectionsToDelete() {
     collectionsToDelete = new ArrayList<>();
   }
 
@@ -264,7 +264,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     deleteAfterTest(collectionName);
     enableReadOnly(collectionName);
 
-    runParallelShardInstalls(collectionName, multiShardUris);
+    runParallelShardInstalls(collectionName);
 
     assertCollectionHasNumDocs(collectionName, multiShardNumDocs);
   }
@@ -413,8 +413,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
   }
 
-  private void runParallelShardInstalls(String collectionName, URI[] dataLocations)
-      throws Exception {
+  private void runParallelShardInstalls(String collectionName) throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
     final List<Callable<Exception>> tasks = new ArrayList<>();
     for (int i = 0; i < multiShardUris.length; i++) {

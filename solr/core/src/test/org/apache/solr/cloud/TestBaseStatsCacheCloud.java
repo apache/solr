@@ -22,12 +22,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -140,12 +138,7 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     StatsCache.StatsCacheMetrics statsCacheMetrics = new StatsCache.StatsCacheMetrics();
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
-        var req =
-            new GenericSolrRequest(
-                METHOD.GET,
-                "/admin/metrics",
-                SolrRequestType.ADMIN,
-                SolrParams.of("wt", "prometheus"));
+        var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
         req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
         NamedList<Object> resp = client.request(req);

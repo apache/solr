@@ -16,15 +16,11 @@
  */
 package org.apache.solr.schema;
 
-import java.io.OutputStreamWriter;
-import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Properties;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
@@ -34,46 +30,34 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestBinaryField extends SolrJettyTestBase {
+public class TestBinaryField extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
     Path homeDir = createTempDir();
-
     Path collDir = homeDir.resolve("collection1");
-    Path dataDir = collDir.resolve("data");
-    Path confDir = collDir.resolve("conf");
 
-    Files.createDirectories(homeDir);
-    Files.createDirectories(collDir);
-    Files.createDirectories(dataDir);
-    Files.createDirectories(confDir);
+    copyMinConf(collDir, "name=collection1\n", "solrconfig-basic.xml");
 
-    Files.copy(SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), homeDir.resolve("solr.xml"));
-
-    String src_dir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(src_dir, "schema-binaryfield.xml"), confDir.resolve("schema.xml"));
-    Files.copy(Path.of(src_dir, "solrconfig-basic.xml"), confDir.resolve("solrconfig.xml"));
+    // Copy the custom schema for binary field tests
+    String sourceConfDir = TEST_HOME() + "/collection1/conf";
     Files.copy(
-        Path.of(src_dir, "solrconfig.snippet.randomindexconfig.xml"),
-        confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
+        Path.of(sourceConfDir, "schema-binaryfield.xml"),
+        collDir.resolve("conf/schema.xml"),
+        StandardCopyOption.REPLACE_EXISTING);
 
-    try (Writer w =
-        new OutputStreamWriter(
-            Files.newOutputStream(collDir.resolve("core.properties")), StandardCharsets.UTF_8)) {
-      Properties coreProps = new Properties();
-      coreProps.put("name", "collection1");
-      coreProps.store(w, "");
-    }
-
-    createAndStartJetty(homeDir);
+    solrTestRule.startSolr(homeDir);
   }
 
   public void testSimple() throws Exception {
-    try (SolrClient client = getSolrClient()) {
+    try (SolrClient client = solrTestRule.getSolrClient()) {
       byte[] buf = new byte[10];
       for (int i = 0; i < 10; i++) {
         buf[i] = (byte) i;
@@ -105,7 +89,7 @@ public class TestBinaryField extends SolrJettyTestBase {
       assertEquals(3, res.size());
       assertEquals(3, beans.size());
       for (SolrDocument d : res) {
-        Integer id = Integer.parseInt(d.getFieldValue("id").toString());
+        int id = Integer.parseInt(d.getFieldValue("id").toString());
         for (String field : new String[] {"data", "data_dv"}) {
           byte[] data = (byte[]) d.getFieldValue(field);
           if (id == 1) {
@@ -132,7 +116,7 @@ public class TestBinaryField extends SolrJettyTestBase {
         }
       }
       for (Bean d : beans) {
-        Integer id = Integer.parseInt(d.id);
+        int id = Integer.parseInt(d.id);
         for (byte[] data : new byte[][] {d.data, d.data_dv}) {
           if (id == 1) {
             assertEquals(5, data.length);

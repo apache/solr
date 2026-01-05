@@ -326,7 +326,7 @@ public class ZkShardTerms implements AutoCloseable {
       throws KeeperException.NoNodeException {
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
-      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
+      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion());
       setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
       log.info("Successful update of terms at {} to {} for {}", znodePath, newTerms, action);
       return true;
@@ -353,7 +353,7 @@ public class ZkShardTerms implements AutoCloseable {
 
       try {
         Map<String, Long> initialTerms = new HashMap<>();
-        zkClient.makePath(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT, true);
+        zkClient.makePath(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT);
       } catch (KeeperException.NodeExistsException e) {
         // it's okay if another beats us creating the node
       }
@@ -373,7 +373,7 @@ public class ZkShardTerms implements AutoCloseable {
     ShardTerms newTerms;
     try {
       Stat stat = new Stat();
-      byte[] data = zkClient.getData(znodePath, null, stat, true);
+      byte[] data = zkClient.getData(znodePath, null, stat);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (KeeperException | InterruptedException e) {
       Throwable cause = SolrZkClient.checkInterrupted(e);
@@ -436,7 +436,7 @@ public class ZkShardTerms implements AutoCloseable {
         };
     try {
       // exists operation is faster than getData operation
-      zkClient.exists(znodePath, watcher, true);
+      zkClient.exists(znodePath, watcher);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(

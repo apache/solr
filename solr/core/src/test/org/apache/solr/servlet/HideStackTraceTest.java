@@ -38,7 +38,7 @@ import org.junit.Test;
 @SuppressSSL
 public class HideStackTraceTest extends SolrTestCaseJ4 {
 
-  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
@@ -62,8 +62,8 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrRule.startSolr(LuceneTestCase.createTempDir());
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 
   @AfterClass
@@ -143,7 +143,8 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
     // }
     // }
 
-    final String url = solrRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
+    final String url =
+        solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
     final HttpGet get = new HttpGet(url);
     var client = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse response = client.execute(get)) {

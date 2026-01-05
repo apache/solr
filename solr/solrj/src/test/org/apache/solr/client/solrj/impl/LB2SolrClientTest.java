@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
@@ -196,9 +197,23 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       solr[1].jetty = null;
       startJettyAndWaitForAliveCheckQuery(solr[0]);
 
-      resp = h.lbClient.query(solrQuery);
-      name = resp.getResults().get(0).getFieldValue("name").toString();
-      assertEquals("solr/collection10", name);
+      RetryUtil.retryOnBoolean(
+          5000,
+          500,
+          () -> {
+            try {
+              return ("solr/collection10"
+                  .equals(
+                      h.lbClient
+                          .query(solrQuery)
+                          .getResults()
+                          .get(0)
+                          .getFieldValue("name")
+                          .toString()));
+            } catch (Exception e) {
+              return false;
+            }
+          });
     }
   }
 
@@ -241,10 +256,6 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       return homeDir.toString();
     }
 
-    public String getUrl() {
-      return buildUrl(port) + "/collection1";
-    }
-
     public String getBaseUrl() {
       return buildUrl(port);
     }
@@ -257,10 +268,6 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
 
-    public String getConfDir() {
-      return confDir.toString();
-    }
-
     public String getDataDir() {
       return dataDir.toString();
     }
@@ -269,16 +276,10 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/solrconfig-follower1.xml";
     }
 
-    public String getSolrXmlFile() {
-      return "solrj/solr/solr.xml";
-    }
-
     public void setUp() throws Exception {
       Files.createDirectories(homeDir);
       Files.createDirectories(dataDir);
       Files.createDirectories(confDir);
-
-      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.resolve("solr.xml"));
 
       Path f = confDir.resolve("solrconfig.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);

@@ -155,8 +155,8 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
         replica.getBool(ZkStateReader.SHARED_STORAGE_PROP, false) && dataDir != null;
 
     if (isSharedFS && inPlaceMove) {
-      log.debug("-- moveHdfsReplica");
-      moveHdfsReplica(
+      log.debug("-- moveSharedFsReplica");
+      moveSharedFsReplica(
           clusterState,
           results,
           dataDir.toString(),
@@ -180,7 +180,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     }
   }
 
-  private void moveHdfsReplica(
+  private void moveSharedFsReplica(
       ClusterState clusterState,
       NamedList<Object> results,
       String dataDir,

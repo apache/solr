@@ -27,7 +27,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -62,14 +61,9 @@ public final class ReplicationTestHelper {
           + FileSystems.getDefault().getSeparator();
 
   public static JettySolrRunner createAndStartJetty(SolrInstance instance) throws Exception {
-    Files.copy(
-        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"),
-        Path.of(instance.getHomeDir(), "solr.xml"),
-        StandardCopyOption.REPLACE_EXISTING);
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -292,9 +286,6 @@ public final class ReplicationTestHelper {
     }
 
     public void setUp() throws Exception {
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
       Properties props = new Properties();
       props.setProperty("name", "collection1");
 
