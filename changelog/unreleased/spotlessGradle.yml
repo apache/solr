@@ -1,0 +1,5 @@
+title: Spotless/tidy now applies to gradle build files.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: David Smiley
+

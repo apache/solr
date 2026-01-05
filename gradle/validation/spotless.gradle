@@ -102,6 +102,35 @@ configure(allprojects) { prj ->
     }
   }
 
+  // Apply Spotless in the root project to format Gradle (Groovy DSL) files
+  if (prj == rootProject) {
+    prj.apply plugin: libs.plugins.diffplug.spotless.get().pluginId
+
+    spotless {
+      // Gradle build scripts written in Groovy DSL
+      groovyGradle {
+        target "gradle/**/*.gradle", "build-tools/**/*.gradle", "**/build.gradle"
+        targetExclude "**/build/**"
+
+        // Use Greclipse for Groovy/Gradle formatting
+        greclipse()
+        leadingTabsToSpaces(2)
+        trimTrailingWhitespace()
+        endWithNewline()
+
+        // Unfortunately some of our files confuse Greclipse
+        suppressLintsFor {
+          step = 'eclipse groovy formatter'
+          shortCode = 'java.lang.IllegalArgumentException'
+        }
+        suppressLintsFor {
+          step = 'eclipse groovy formatter'
+          shortCode = 'java.lang.RuntimeException'
+        }
+      }
+    }
+  }
+
   // Emit a custom message about how to fix formatting errors.
   tasks.matching { task -> task.name == "spotlessJavaCheck" }.configureEach {
     it.runToFixMessage.set("\nIMPORTANT: run the top-level './gradlew tidy' to format code automatically (see dev-docs/gradle-help/formatting.txt for more info).")
