@@ -318,14 +318,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("zookeeper.forceSync");
-      System.clearProperty("jetty.testMode");
-      System.clearProperty("tests.shardhandler.randomSeed");
-      System.clearProperty("solr.index.updatelog.enabled");
-      System.clearProperty("useCompoundFile");
-      System.clearProperty("urlScheme");
-      System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
-      System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
       HttpJettySolrClient.resetSslContextFactory();
 
@@ -405,8 +397,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
       savedFactory = null;
-    } else {
-      System.clearProperty("solr.directoryFactory");
     }
   }
 
@@ -811,8 +801,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       h.close();
     }
-
-    System.clearProperty("solr.directoryFactory");
 
     if (System.getProperty(UPDATELOG_SYSPROP) != null) {
       // clears the updatelog system property at the end of the test run
@@ -2772,9 +2760,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
 
-  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
-  }
+  protected static void systemClearPropertySolrTestsMergePolicyFactory() {}
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
@@ -2782,9 +2768,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrEnableUrlAllowList() {
-    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
-  }
+  protected static void systemClearPropertySolrEnableUrlAllowList() {}
 
   @SafeVarargs
   protected static <T> T pickRandom(T... options) {
@@ -2903,8 +2887,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   private static void clearNumericTypesProperties() {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
-    System.clearProperty("solr.tests.numeric.points");
-    System.clearProperty("solr.tests.numeric.points.dv");
     for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
       System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
     }

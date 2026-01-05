@@ -74,7 +74,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
     } else {
       System.setProperty("solr.directoryFactory", savedFactory);
     }
-    System.clearProperty("tests.shardhandler.randomSeed");
   }
 
   @Override

@@ -39,7 +39,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,7 +59,6 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
   private final ZkController zkController = Mockito.mock(ZkController.class);
   private final SolrZkClient solrZkClient = Mockito.mock(SolrZkClient.class);
 
-  @SuppressWarnings("unchecked")
   private ArgumentCaptor<MirroredSolrRequest<?>> captor;
 
   @BeforeClass
@@ -83,14 +81,6 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
     // make ConfUtil happy
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "foo");
     System.setProperty(KafkaCrossDcConf.TOPIC_NAME, "foo");
-  }
-
-  @After
-  public void teardown() throws Exception {
-    System.clearProperty(KafkaCrossDcConf.MIRROR_COLLECTIONS);
-    System.clearProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS);
-    System.clearProperty(KafkaCrossDcConf.TOPIC_NAME);
-    super.tearDown();
   }
 
   @Test
