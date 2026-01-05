@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -51,8 +50,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
     solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
-    var cc = solrTestRule.getCoreContainer();
-    cc.waitForLoadingCoresToFinish(30000);
 
     // Populate request metrics on both cores
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
@@ -88,7 +85,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
                         seenTypeInfo.add(line));
                     return false;
                   })
-              .collect(Collectors.toList());
+              .toList();
       filteredResponse.forEach(
           (actualMetric) -> {
             String actualValue;
