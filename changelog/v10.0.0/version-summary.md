@@ -64,7 +64,7 @@
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
 - Rename vector search parameters and language model modules [SOLR-17927](https://issues.apache.org/jira/browse/SOLR-17927) (Ishan Chattopadhyaya) (Alessandro Benedetti) (Ilaria Petreti) (Chaitali Rajhans)
 
-### Fixed (10 changes)
+### Fixed (11 changes)
 
 - When using SolrCell with TikaServer, the connection will no longer timeout after 30s idle, such as during OCR processing [PR#3926](https://github.com/apache/solr/pull/3926) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 - Restore actual infoStream logging when infoStream in solrconfig.xml is set to true. [SOLR-11373](https://issues.apache.org/jira/browse/SOLR-11373) (Eric Pugh)
@@ -73,6 +73,7 @@
 - Fix TextToVectorUpdateProcessor for Partial Updates [SOLR-17843](https://issues.apache.org/jira/browse/SOLR-17843) (Ilaria Petreti) ([Alessandro Benedetti](https://home.apache.org/phonebook.html?uid=abenedetti))
 - Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES [SOLR-17940](https://issues.apache.org/jira/browse/SOLR-17940) (hossman)
 - Make distributed no-rows queries fast again [SOLR-17985](https://issues.apache.org/jira/browse/SOLR-17985) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+- Add the Jackson BOM import to solrj [SOLR-18003](https://issues.apache.org/jira/browse/SOLR-18003) ([Mark Prins](https://github.com/mprins) @mprins)
 - Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint [SOLR-18004](https://issues.apache.org/jira/browse/SOLR-18004) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (David Smiley)
 - Fix reverse distance sorting on LatLonPointSpatialField and "SRPT" fields when combined with the filter cache. This is a regression since Solr 9.9. [SOLR-18006](https://issues.apache.org/jira/browse/SOLR-18006) [SOLR-18016](https://issues.apache.org/jira/browse/SOLR-18016) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (Umut Saribiyik @umut-sar) (David Smiley)
 - Ensure ParallelHttpShardHandler records submit failures so distributed requests don’t hang [SOLR-17983](https://issues.apache.org/jira/browse/SOLR-17983) (Mark Miller)
