@@ -44,7 +44,7 @@ setup_file() {
     echo "Tika Server started on port ${TIKA_PORT}" >&3
   else
     export DOCKER_UNAVAILABLE=1
-    echo "WARNING: Docker not available (CLI missing or daemon not running); Tika-dependent tests will be bypassed and marked as passed." >&3
+    echo "WARNING: Docker not available (CLI missing or daemon not running); Tika-dependent tests will be bypassed." >&3
   fi
 }
 
@@ -70,8 +70,7 @@ teardown() {
 @test "using curl to extract a single pdf file" {
 
   if [ -n "${DOCKER_UNAVAILABLE:-}" ]; then
-    echo "WARNING: Docker not available; bypassing test." >&3
-    return 0
+    skip "Docker is not available"
   fi
 
   # Disable security manager to allow extraction
@@ -92,8 +91,7 @@ teardown() {
 @test "using the bin/solr post tool to extract content from pdf" {
 
   if [ -n "${DOCKER_UNAVAILABLE:-}" ]; then
-    echo "WARNING: Docker not available; bypassing test." >&3
-    return 0
+    skip "Docker is not available"
   fi
 
   # Disable security manager to allow extraction
@@ -118,8 +116,7 @@ teardown() {
 @test "using the bin/solr post tool to crawl web site" {
 
   if [ -n "${DOCKER_UNAVAILABLE:-}" ]; then
-    echo "WARNING: Docker not available; bypassing test." >&3
-    return 0
+    skip "Docker is not available"
   fi
 
   # Disable security manager to allow extraction
