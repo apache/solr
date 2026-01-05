@@ -42,6 +42,7 @@ import org.apache.solr.search.DocValuesIteratorCache;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.RefCounted;
@@ -293,27 +294,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private void doCommit(SolrCore core) throws IOException {
-    RefCounted<IndexWriter> iwRef = null;
-    try {
-      iwRef = core.getSolrCoreState().getIndexWriter(null);
-      if (iwRef != null) {
-        IndexWriter iw = iwRef.get();
-
-        if (iw != null) {
-          iw.commit();
-        } else {
-          log.warn("IndexWriter for core {} is null", core.getName());
-        }
-      } else {
-        log.warn("IWRef for core {} is null", core.getName());
-      }
+    try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+      core.getUpdateHandler().commit(cmd);
     } catch (IOException ioEx) {
       log.warn("Error committing on core [{}] during index upgrade", core.getName(), ioEx);
       throw ioEx;
-    } finally {
-      if (iwRef != null) {
-        iwRef.decref();
-      }
     }
   }
 
