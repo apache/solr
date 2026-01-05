@@ -27,7 +27,9 @@ setup() {
   common_clean_setup
 
   # Pre-checks
-  docker version || skip "Docker is not available"
+  if ! command -v docker >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+    skip "Docker is not available"
+  fi
   docker pull "$SOLR_BEGIN_IMAGE" || skip "Docker image $SOLR_BEGIN_IMAGE is not available"
   docker pull "$SOLR_END_IMAGE" || skip "Docker image $SOLR_END_IMAGE is not available"
 
@@ -117,6 +119,7 @@ teardown() {
 
   echo "Add some sample data"
   docker exec --user=solr solr-node1 solr post -c test-collection example/exampledocs/mem.xml
+  assert_success
 
   # Begin rolling upgrade - upgrade node 3 first (reverse order: 3, 2, 1)
   echo "Starting rolling upgrade - upgrading node 3"
@@ -129,6 +132,7 @@ teardown() {
     -v solr-data3:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node3 -p 8985 -z solr-node1:9983
   docker exec solr-node3 solr assert --started http://solr-node3:8985 --timeout 30000
+  assert_success
 
   # Upgrade node 2 second
   echo "Upgrading node 2"
@@ -141,6 +145,7 @@ teardown() {
     -v solr-data2:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node2 -p 8984 -z solr-node1:9983
   docker exec solr-node2 solr assert --started http://solr-node2:8984 --timeout 30000
+  assert_success
 
   echo "Upgrading node 1 (ZK node)"
   docker stop solr-node1
@@ -152,6 +157,7 @@ teardown() {
     -v solr-data1:/var/solr \
     "$SOLR_END_IMAGE" solr start -f -m 200m --host solr-node1 -p 8983
   docker exec solr-node1 solr assert --started http://solr-node1:8983 --timeout 30000
+  assert_success
 
   # Final collection health check
   wait_for 30 1 docker exec solr-node1 solr healthcheck -c test-collection
