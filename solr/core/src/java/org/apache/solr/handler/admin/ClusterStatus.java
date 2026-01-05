@@ -115,8 +115,7 @@ public class ClusterStatus {
 
     List<String> liveNodes = null;
     if (withLiveNodes || collection != null) {
-      liveNodes =
-          zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      liveNodes = zkStateReader.getZkClient().getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
       // add live_nodes
       if (withLiveNodes) clusterStatus.add("live_nodes", liveNodes);
     }
@@ -146,11 +145,11 @@ public class ClusterStatus {
     // add the roles map
     if (withRoles) {
       Map<?, ?> roles = Collections.emptyMap();
-      if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES, true)) {
+      if (zkStateReader.getZkClient().exists(ZkStateReader.ROLES)) {
         roles =
             (Map<?, ?>)
                 Utils.fromJSON(
-                    zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null, true));
+                    zkStateReader.getZkClient().getData(ZkStateReader.ROLES, null, null));
       }
       clusterStatus.add("roles", roles);
     }

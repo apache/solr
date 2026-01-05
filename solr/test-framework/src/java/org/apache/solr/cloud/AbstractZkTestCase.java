@@ -49,7 +49,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   protected static volatile Path zkDir;
 
   @BeforeClass
-  public static void azt_beforeClass() throws Exception {
+  public static void aztBeforeClass() throws Exception {
     zkDir = createTempDir("zkData");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -65,15 +65,13 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void azt_afterClass() throws Exception {
+  public static void aztAfterClass() throws Exception {
 
     try {
       deleteCore();
     } finally {
 
       System.clearProperty("zkHost");
-      System.clearProperty("solr.test.sys.prop1");
-      System.clearProperty("solr.test.sys.prop2");
       System.clearProperty("solrcloud.skip.autorecovery");
       System.clearProperty("solr.port.listen");
       System.clearProperty(ZOOKEEPER_FORCE_SYNC);

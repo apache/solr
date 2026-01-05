@@ -26,19 +26,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import javax.xml.xpath.XPathExpressionException;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
@@ -47,6 +50,8 @@ import org.junit.Test;
 import org.xml.sax.SAXException;
 
 public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
+
+  private static EmbeddedSolrServer server;
 
   /** List of valid + invalid documents */
   private static List<SolrInputDocument> docs = null;
@@ -57,10 +62,11 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-update-processor-chains.xml", "schema12.xml");
+    server = new EmbeddedSolrServer(h.getCoreContainer(), h.getCore().getName());
   }
 
   @AfterClass
-  public static void tearDownClass() {
+  public static void afterClass() {
     docs = null;
     badIds = null;
   }
@@ -379,12 +385,21 @@ public class TolerantUpdateProcessorTest extends UpdateProcessorTestBase {
   }
 
   public String update(String chain, String xml) {
-    DirectSolrConnection connection = new DirectSolrConnection(h.getCore());
-    SolrRequestHandler handler = h.getCore().getRequestHandler("/update");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add("update.chain", chain);
     try {
-      return connection.request(handler, params, xml);
+      // Use ContentStreamUpdateRequest to send raw XML through EmbeddedSolrServer
+      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
+      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
+
+      // Set the update chain parameter and request XML response
+      xmlRequest.getParams().add("update.chain", chain);
+      xmlRequest.getParams().add("wt", "xml");
+
+      // Use InputStreamResponseParser to get the raw XML response directly
+      xmlRequest.setResponseParser(new InputStreamResponseParser("xml"));
+      NamedList<Object> response = server.request(xmlRequest);
+
+      // Extract the XML string from the response
+      return InputStreamResponseParser.consumeResponseToString(response);
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {

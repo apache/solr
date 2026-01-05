@@ -320,7 +320,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       simpleRestoreAndCheckDocCount(solrClient, backupLocation, backupName);
 
       // test purge backups
-      // purging first since there may corrupted files were uploaded
+      // purging first since there may be corrupted files that were uploaded
       resp =
           CollectionAdminRequest.deleteBackupPurgeUnusedFiles(backupName)
               .setRepositoryName(BACKUP_REPO_NAME)
@@ -651,7 +651,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
       this.maxNumberOfBackupToKeep = maxNumberOfBackupToKeep;
     }
 
-    @SuppressWarnings({"rawtypes", "unchecked"})
+    @SuppressWarnings({"unchecked"})
     private void backupThenWait() throws SolrServerException, IOException {
       CollectionAdminRequest.Backup backup =
           CollectionAdminRequest.backupCollection(getCollectionName(), backupName)
@@ -674,7 +674,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
         Map<String, Object> resp = (Map<String, Object>) rsp.getResponse().get("response");
         numBackup++;
         assertEquals(numBackup, resp.get("backupId"));
-        ;
       }
     }
 

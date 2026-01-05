@@ -138,21 +138,6 @@ public interface CommonParams {
   /** another query to explain against */
   String EXPLAIN_OTHER = "explainOther";
 
-  /** If the content stream should come from a URL (using URLConnection) */
-  String STREAM_URL = "stream.url";
-
-  /** If the content stream should come from a File (using FileReader) */
-  String STREAM_FILE = "stream.file";
-
-  /** If the content stream should come directly from a field */
-  String STREAM_BODY = "stream.body";
-
-  /**
-   * Explicitly set the content type for the input stream If multiple streams are specified, the
-   * explicit contentType will be used for all of them.
-   */
-  String STREAM_CONTENTTYPE = "stream.contentType";
-
   /** Whether the search may be terminated early within a segment. */
   String SEGMENT_TERMINATE_EARLY = "segmentTerminateEarly";
 
@@ -220,6 +205,7 @@ public interface CommonParams {
   String ZK_STATUS_PATH = "/admin/zookeeper/status";
   String SYSTEM_INFO_PATH = "/admin/info/system";
   String METRICS_PATH = "/admin/metrics";
+  String V2_SYSTEM_INFO_PATH = "/node/system";
 
   String STATUS = "status";
 
@@ -291,26 +277,6 @@ public interface CommonParams {
    * then that interface will be used to do post query filtering.
    */
   String COST = "cost";
-
-  /**
-   * Request ID parameter added to all distributed queries (that do not opt out)
-   *
-   * @see #DISABLE_REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  String REQUEST_ID = "rid";
-
-  /**
-   * An opt-out flag to prevent the addition of {@link #REQUEST_ID} tracing on distributed queries
-   *
-   * <p>Defaults to 'false' if not specified.
-   *
-   * @see #REQUEST_ID
-   * @deprecated this was replaced by the auto-generated trace ids
-   */
-  @Deprecated(since = "9.4")
-  String DISABLE_REQUEST_ID = "disableRequestId";
 
   /**
    * Parameter to control the distributed term statistics request for current query when distributed
