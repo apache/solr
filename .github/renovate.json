@@ -2,7 +2,10 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "includePaths": ["versions.*", "build.gradle", ".github/workflows/*"],
   "postUpgradeTasks": {
-    "commands": ["./gradlew updateLicenses"],
+    "commands": [
+      "./gradlew --write-locks",
+      "./gradlew updateLicenses"
+    ],
     "fileFilters": ["solr/licenses/*.sha1"],
     "executionMode": "branch"
   },
