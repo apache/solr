@@ -56,12 +56,10 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
       String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
       if (terms.haveHighestTermValue(coreNodeName)) return true;
       if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
-        log.info(
-            "Start recovery on {} because core's term is less than leader's term", coreNodeName);
         lastTermDoRecovery.set(terms.getTerm(coreNodeName));
         if (coreDescriptor.getCloudDescriptor().isLeader()) {
           log.warn(
-              "Removing {} leader as leader, since its term is no longer the highest",
+              "Removing {} leader as leader, since its term is no longer the highest. This will initiate recovery",
               coreNodeName);
           coreContainer.getZkController().giveupLeadership(coreDescriptor);
           coreContainer
@@ -75,11 +73,14 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
                     Replica leader = dc.getLeader(coreDescriptor.getCloudDescriptor().getShardId());
                     return leader == null || !leader.getCoreName().equals(coreDescriptor.getName());
                   });
+        } else {
+          log.info(
+              "Start recovery on {} because core's term is less than leader's term", coreNodeName);
+          solrCore
+              .getUpdateHandler()
+              .getSolrCoreState()
+              .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
         }
-        solrCore
-            .getUpdateHandler()
-            .getSolrCoreState()
-            .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
       }
     } catch (Exception e) {
       if (log.isInfoEnabled()) {
