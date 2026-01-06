@@ -45,6 +45,7 @@ import javax.servlet.http.Part;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
@@ -173,7 +174,11 @@ public class SolrRequestParsers {
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
     sreq.getContext().put(PATH, RequestHandlers.normalize(path));
-    sreq.getContext().put("httpMethod", req.getMethod());
+
+    final var methodStr = req.getMethod();
+    final var parsedMethod =
+        SolrRequest.METHOD.fromString(methodStr); // Throws error if method not recognized
+    sreq.getContext().put("httpMethod", parsedMethod);
 
     if (addHttpRequestToContext) {
       sreq.getContext().put("httpRequest", req);

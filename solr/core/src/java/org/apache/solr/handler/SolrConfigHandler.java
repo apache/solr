@@ -131,24 +131,30 @@ public class SolrConfigHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    Command command = new Command(req, rsp, httpMethod);
-    if ("POST".equals(httpMethod)) {
-      if (configEditing_disabled || isImmutableConfigSet) {
-        final String reason =
-            configEditing_disabled
-                ? "due to " + CONFIGSET_EDITING_DISABLED_ARG
-                : "because ConfigSet is immutable";
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
+    Command command = new Command(req, rsp, httpMethod.name());
+    switch (httpMethod) {
+      case POST:
+        if (configEditing_disabled || isImmutableConfigSet) {
+          final String reason =
+              configEditing_disabled
+                  ? "due to " + CONFIGSET_EDITING_DISABLED_ARG
+                  : "because ConfigSet is immutable";
+          throw new SolrException(
+              SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
+        }
+        try {
+          command.handlePOST();
+        } finally {
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+        }
+        break;
+      case GET:
+        command.handleGET();
+        break;
+      default:
         throw new SolrException(
-            SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
-      }
-      try {
-        command.handlePOST();
-      } finally {
-        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-      }
-    } else {
-      command.handleGET();
+            SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + httpMethod);
     }
   }
 
