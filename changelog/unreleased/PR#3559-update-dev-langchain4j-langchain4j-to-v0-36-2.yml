@@ -1,0 +1,7 @@
+title: Update dev.langchain4j:langchain4j-* to v0.36.2 (branch_9x) - abandoned
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3559
+  url: https://github.com/apache/solr/pull/3559
