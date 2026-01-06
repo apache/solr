@@ -1,0 +1,7 @@
+title: Update org.apache.commons:commons-exec to v1.6.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4020
+  url: https://github.com/apache/solr/pull/4020
