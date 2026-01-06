@@ -30,17 +30,19 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.BackupFilePaths;
@@ -54,20 +56,21 @@ import org.slf4j.LoggerFactory;
 public class RestoreCore implements Callable<Boolean> {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final int DEFAULT_MAX_PARALLEL_DOWNLOADS = 8;
+
+  /**
+   * Maximum number of files to download in parallel during restore. Can be configured via the
+   * system property {@code solr.backup.maxParallelDownloads} or environment variable {@code
+   * SOLR_BACKUP_MAX_PARALLEL_DOWNLOADS}.
+   */
+  private static final int DEFAULT_MAX_PARALLEL_DOWNLOADS =
+      EnvUtils.getPropertyAsInteger("solr.backup.maxParallelDownloads", 1);
 
   private final SolrCore core;
   private RestoreRepository repository;
-  private int maxParallelDownloads;
 
   private RestoreCore(SolrCore core, RestoreRepository repository) {
-    this(core, repository, DEFAULT_MAX_PARALLEL_DOWNLOADS);
-  }
-
-  private RestoreCore(SolrCore core, RestoreRepository repository, int maxParallelDownloads) {
     this.core = core;
     this.repository = repository;
-    this.maxParallelDownloads = maxParallelDownloads > 0 ? maxParallelDownloads : DEFAULT_MAX_PARALLEL_DOWNLOADS;
   }
 
   public static RestoreCore create(
@@ -121,82 +124,140 @@ public class RestoreCore implements Callable<Boolean> {
                   DirectoryFactory.DirContext.DEFAULT,
                   core.getSolrConfig().indexConfig.lockType);
       Set<String> indexDirFiles = new HashSet<>(Arrays.asList(indexDir.listAll()));
-      
-      // Parallelize file restoration
-      Semaphore downloadSemaphore = new Semaphore(maxParallelDownloads);
-      ExecutorService executor = new ThreadPoolExecutor(
-          0, maxParallelDownloads,
-          60L, TimeUnit.SECONDS,
-          new SynchronousQueue<>(),
-          new ThreadPoolExecutor.CallerRunsPolicy());
-      
+
+      // Capture directories as final for lambda access
+      final Directory finalIndexDir = indexDir;
+      final Directory finalRestoreIndexDir = restoreIndexDir;
+
+      // Only use an executor for parallel downloads when parallelism > 1
+      // When set to 1, run synchronously to avoid thread-local state issues with CallerRunsPolicy
+      int maxParallelDownloads = DEFAULT_MAX_PARALLEL_DOWNLOADS;
+      ExecutorService executor =
+          maxParallelDownloads > 1
+              ? new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                  0,
+                  maxParallelDownloads,
+                  60L,
+                  TimeUnit.SECONDS,
+                  new SynchronousQueue<>(),
+                  new SolrNamedThreadFactory("RestoreCore"),
+                  new ExecutorUtil.MDCAwareThreadPoolExecutor.CallerRunsPolicy())
+              : null;
+
       List<Future<?>> downloadFutures = new ArrayList<>();
-      
+
       try {
         // Move all files from backupDir to restoreIndexDir
         for (String filename : repository.listAllFiles()) {
           checkInterrupted();
-          
+
           // Capture variables for lambda
           final String filenameFinal = filename;
           final boolean fileExistsLocally = indexDirFiles.contains(filename);
-          
-          Future<?> future = executor.submit(() -> {
-            try {
-              downloadSemaphore.acquire();
-              try {
-                if (fileExistsLocally) {
-                  Checksum cs = repository.checksum(filenameFinal);
-                  IndexFetcher.CompareResult compareResult;
-                  if (cs == null) {
-                    compareResult = new IndexFetcher.CompareResult();
-                    compareResult.equal = false;
+
+          Runnable downloadTask =
+              () -> {
+                try {
+                  if (fileExistsLocally) {
+                    Checksum cs = repository.checksum(filenameFinal);
+                    IndexFetcher.CompareResult compareResult;
+                    if (cs == null) {
+                      compareResult = new IndexFetcher.CompareResult();
+                      compareResult.equal = false;
+                    } else {
+                      compareResult =
+                          IndexFetcher.compareFile(
+                              finalIndexDir, filenameFinal, cs.size, cs.checksum);
+                    }
+                    if (!compareResult.equal
+                        || (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(
+                            filenameFinal, cs.size, compareResult))) {
+                      repository.repoCopy(filenameFinal, finalRestoreIndexDir);
+                    } else {
+                      // prefer local copy
+                      repository.localCopy(finalIndexDir, filenameFinal, finalRestoreIndexDir);
+                    }
                   } else {
-                    compareResult = IndexFetcher.compareFile(indexDir, filenameFinal, cs.size, cs.checksum);
+                    repository.repoCopy(filenameFinal, finalRestoreIndexDir);
                   }
-                  if (!compareResult.equal
-                      || (IndexFetcher.filesToAlwaysDownloadIfNoChecksums(
-                          filenameFinal, cs.size, compareResult))) {
-                    repository.repoCopy(filenameFinal, restoreIndexDir);
-                  } else {
-                    // prefer local copy
-                    repository.localCopy(indexDir, filenameFinal, restoreIndexDir);
-                  }
-                } else {
-                  repository.repoCopy(filenameFinal, restoreIndexDir);
+                } catch (Exception e) {
+                  log.warn("Exception while restoring the backup index ", e);
+                  throw new RuntimeException(
+                      "Exception while restoring the backup index for file: " + filenameFinal, e);
                 }
-              } finally {
-                downloadSemaphore.release();
+              };
+
+          if (executor != null) {
+            downloadFutures.add(executor.submit(downloadTask));
+          } else {
+            // Run synchronously when parallelism is 1
+            try {
+              downloadTask.run();
+            } catch (RuntimeException e) {
+              if (e.getCause() instanceof IOException) {
+                throw (IOException) e.getCause();
+              }
+              throw e;
+            }
+          }
+        }
+
+        // Wait for all downloads to complete and collect any errors (only if using executor)
+        if (executor != null) {
+          // We need to wait for ALL futures to ensure all files are processed
+          Throwable firstError = null;
+          for (Future<?> future : downloadFutures) {
+            try {
+              future.get();
+            } catch (ExecutionException e) {
+              if (firstError == null) {
+                Throwable cause = e.getCause();
+                // Unwrap RuntimeExceptions that wrap the original IOException
+                if (cause instanceof RuntimeException && cause.getCause() != null) {
+                  firstError = cause.getCause();
+                } else {
+                  firstError = cause;
+                }
               }
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();
-              throw new RuntimeException("Restore interrupted for file: " + filenameFinal, e);
-            } catch (Exception e) {
-              log.warn("Exception while restoring the backup index ", e);
-              throw new RuntimeException("Exception while restoring the backup index for file: " + filenameFinal, e);
+              if (firstError == null) {
+                firstError = e;
+              }
             }
-          });
-          downloadFutures.add(future);
-        }
-        
-        // Wait for all downloads to complete and check for errors
-        for (Future<?> future : downloadFutures) {
-          try {
-            future.get();
-          } catch (Exception e) {
-            throw new SolrException(
-                SolrException.ErrorCode.UNKNOWN, "Error during parallel restore download", e);
+          }
+
+          // Now throw the first error we encountered, if any
+          if (firstError != null) {
+            if (firstError instanceof Error) {
+              // Rethrow Errors (like OutOfMemoryError) - don't try to recover
+              throw (Error) firstError;
+            } else if (firstError instanceof IOException) {
+              throw (IOException) firstError;
+            } else if (firstError instanceof RuntimeException) {
+              throw (RuntimeException) firstError;
+            } else if (firstError instanceof InterruptedException) {
+              throw new SolrException(
+                  SolrException.ErrorCode.UNKNOWN, "Restore interrupted", firstError);
+            } else {
+              throw new SolrException(
+                  SolrException.ErrorCode.UNKNOWN,
+                  "Error during parallel restore download",
+                  firstError);
+            }
           }
         }
       } finally {
-        executor.shutdown();
-        try {
-          if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+        if (executor != null) {
+          executor.shutdown();
+          try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+              executor.shutdownNow();
+            }
+          } catch (InterruptedException e) {
             executor.shutdownNow();
+            Thread.currentThread().interrupt();
           }
-        } catch (InterruptedException e) {
-          executor.shutdownNow();
-          Thread.currentThread().interrupt();
         }
       }
       log.debug("Switching directories");

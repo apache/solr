@@ -28,11 +28,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,6 +41,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
@@ -62,7 +64,14 @@ import org.slf4j.LoggerFactory;
  */
 public class IncrementalShardBackup {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final int DEFAULT_MAX_PARALLEL_UPLOADS = 8;
+
+  /**
+   * Maximum number of files to upload in parallel during backup. Can be configured via the system
+   * property {@code solr.backup.maxParallelUploads} or environment variable {@code
+   * SOLR_BACKUP_MAX_PARALLEL_UPLOADS}.
+   */
+  private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
+      EnvUtils.getPropertyAsInteger("solr.backup.maxParallelUploads", 1);
 
   private SolrCore solrCore;
 
@@ -72,7 +81,6 @@ public class IncrementalShardBackup {
   private ShardBackupId prevShardBackupId;
   private ShardBackupId shardBackupId;
   private Optional<String> commitNameOption;
-  private int maxParallelUploads;
 
   /**
    * @param prevShardBackupId previous ShardBackupMetadata file which will be used for skipping
@@ -86,30 +94,12 @@ public class IncrementalShardBackup {
       ShardBackupId prevShardBackupId,
       ShardBackupId shardBackupId,
       Optional<String> commitNameOption) {
-    this(backupRepo, solrCore, incBackupFiles, prevShardBackupId, shardBackupId, commitNameOption, DEFAULT_MAX_PARALLEL_UPLOADS);
-  }
-
-  /**
-   * @param prevShardBackupId previous ShardBackupMetadata file which will be used for skipping
-   *     uploading index files already present in this file.
-   * @param shardBackupId file where all meta data of this backup will be stored to.
-   * @param maxParallelUploads maximum number of files to upload in parallel.
-   */
-  public IncrementalShardBackup(
-      BackupRepository backupRepo,
-      SolrCore solrCore,
-      BackupFilePaths incBackupFiles,
-      ShardBackupId prevShardBackupId,
-      ShardBackupId shardBackupId,
-      Optional<String> commitNameOption,
-      int maxParallelUploads) {
     this.backupRepo = backupRepo;
     this.solrCore = solrCore;
     this.incBackupFiles = incBackupFiles;
     this.prevShardBackupId = prevShardBackupId;
     this.shardBackupId = shardBackupId;
     this.commitNameOption = commitNameOption;
-    this.maxParallelUploads = maxParallelUploads > 0 ? maxParallelUploads : DEFAULT_MAX_PARALLEL_UPLOADS;
   }
 
   public IncrementalShardSnapshotResponse backup() throws Exception {
@@ -222,13 +212,20 @@ public class IncrementalShardBackup {
     URI indexDir = incBackupFiles.getIndexDir();
     BackupStats backupStats = new BackupStats();
 
-    // Use a semaphore to limit concurrent uploads
-    Semaphore uploadSemaphore = new Semaphore(maxParallelUploads);
-    ExecutorService executor = new ThreadPoolExecutor(
-        0, maxParallelUploads,
-        60L, TimeUnit.SECONDS,
-        new SynchronousQueue<>(),
-        new ThreadPoolExecutor.CallerRunsPolicy());
+    // Only use an executor for parallel uploads when parallelism > 1
+    // When set to 1, run synchronously to avoid thread-local state issues with CallerRunsPolicy
+    int maxParallelUploads = DEFAULT_MAX_PARALLEL_UPLOADS;
+    ExecutorService executor =
+        maxParallelUploads > 1
+            ? new ExecutorUtil.MDCAwareThreadPoolExecutor(
+                0,
+                maxParallelUploads,
+                60L,
+                TimeUnit.SECONDS,
+                new SynchronousQueue<>(),
+                new SolrNamedThreadFactory("IncrementalBackup"),
+                new ExecutorUtil.MDCAwareThreadPoolExecutor.CallerRunsPolicy())
+            : null;
 
     List<Future<?>> uploadFutures = new ArrayList<>();
 
@@ -253,47 +250,90 @@ public class IncrementalShardBackup {
         final String fileNameFinal = fileName;
         final Checksum originalFileCSFinal = originalFileCS;
 
-        Future<?> future = executor.submit(() -> {
-          try {
-            uploadSemaphore.acquire();
-            try {
-              String backedFileName = UUID.randomUUID().toString();
-              backupRepo.copyIndexFileFrom(dir, fileNameFinal, indexDir, backedFileName);
+        Runnable uploadTask =
+            () -> {
+              try {
+                String backedFileName = UUID.randomUUID().toString();
+                backupRepo.copyIndexFileFrom(dir, fileNameFinal, indexDir, backedFileName);
 
-              synchronized (currentBackupPoint) {
-                currentBackupPoint.addBackedFile(backedFileName, fileNameFinal, originalFileCSFinal);
+                synchronized (currentBackupPoint) {
+                  currentBackupPoint.addBackedFile(
+                      backedFileName, fileNameFinal, originalFileCSFinal);
+                }
+                backupStats.uploadedFile(originalFileCSFinal);
+              } catch (IOException e) {
+                throw new RuntimeException("Failed to upload file: " + fileNameFinal, e);
               }
-              backupStats.uploadedFile(originalFileCSFinal);
-            } finally {
-              uploadSemaphore.release();
+            };
+
+        if (executor != null) {
+          uploadFutures.add(executor.submit(uploadTask));
+        } else {
+          // Run synchronously when parallelism is 1
+          try {
+            uploadTask.run();
+          } catch (RuntimeException e) {
+            if (e.getCause() instanceof IOException) {
+              throw (IOException) e.getCause();
+            }
+            throw e;
+          }
+        }
+      }
+
+      // Wait for all uploads to complete and collect any errors (only if using executor)
+      if (executor != null) {
+        // We need to wait for ALL futures before throwing, otherwise we might exit
+        // before all successfully uploaded files are added to currentBackupPoint
+        Throwable firstError = null;
+        for (Future<?> future : uploadFutures) {
+          try {
+            future.get();
+          } catch (ExecutionException e) {
+            if (firstError == null) {
+              Throwable cause = e.getCause();
+              // Unwrap RuntimeExceptions that wrap the original IOException
+              if (cause instanceof RuntimeException && cause.getCause() != null) {
+                firstError = cause.getCause();
+              } else {
+                firstError = cause;
+              }
             }
           } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new RuntimeException("Upload interrupted for file: " + fileNameFinal, e);
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to upload file: " + fileNameFinal, e);
+            if (firstError == null) {
+              firstError = e;
+            }
           }
-        });
-        uploadFutures.add(future);
-      }
+        }
 
-      // Wait for all uploads to complete and check for errors
-      for (Future<?> future : uploadFutures) {
-        try {
-          future.get();
-        } catch (Exception e) {
-          throw new IOException("Error during parallel backup upload", e);
+        // Now throw the first error we encountered, if any
+        if (firstError != null) {
+          if (firstError instanceof Error) {
+            // Rethrow Errors (like OutOfMemoryError) - don't try to recover
+            throw (Error) firstError;
+          } else if (firstError instanceof IOException) {
+            throw (IOException) firstError;
+          } else if (firstError instanceof RuntimeException) {
+            throw (RuntimeException) firstError;
+          } else if (firstError instanceof InterruptedException) {
+            throw new IOException("Backup interrupted", firstError);
+          } else {
+            throw new IOException("Error during parallel backup upload", firstError);
+          }
         }
       }
     } finally {
-      executor.shutdown();
-      try {
-        if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+      if (executor != null) {
+        executor.shutdown();
+        try {
+          if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+            executor.shutdownNow();
+          }
+        } catch (InterruptedException e) {
           executor.shutdownNow();
+          Thread.currentThread().interrupt();
         }
-      } catch (InterruptedException e) {
-        executor.shutdownNow();
-        Thread.currentThread().interrupt();
       }
     }
 
