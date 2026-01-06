@@ -1010,17 +1010,18 @@ public class SolrConfig implements MapWriter {
 
     ew.put(
         "requestDispatcher",
-        new SimpleOrderedMap<>((MapWriter)
-            m -> {
-              if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
-              m.put(
-                  "requestParsers",
-                  Map.of(
-                      "multipartUploadLimitKB",
-                      multipartUploadLimitKB,
-                      "formUploadLimitKB",
-                      formUploadLimitKB));
-            }));
+        new SimpleOrderedMap<>(
+            (MapWriter)
+                m -> {
+                  if (httpCachingConfig != null) m.put("httpCaching", httpCachingConfig);
+                  m.put(
+                      "requestParsers",
+                      Map.of(
+                          "multipartUploadLimitKB",
+                          multipartUploadLimitKB,
+                          "formUploadLimitKB",
+                          formUploadLimitKB));
+                }));
     if (indexConfig != null) ew.put("indexConfig", new SimpleOrderedMap<>(indexConfig));
   }
 
@@ -1028,7 +1029,7 @@ public class SolrConfig implements MapWriter {
     if (cache == null) return;
     for (CacheConfig cc : cache) {
       if (cc != null) {
-        cc.writeMap(queryMap);
+        queryMap.put(cc.getNodeName(), new SimpleOrderedMap<>((MapWriter) cc));
       }
     }
   }

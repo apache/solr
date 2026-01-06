@@ -308,8 +308,10 @@ public class SolrConfigHandler extends RequestHandlerBase
                     if (infos == null || infos.isEmpty()) continue;
                     infos.forEach(
                         (s, mapWriter) -> {
-                          if (s.equals(pluginInfo.get("class"))) {
-                            (pluginInfo).put("_packageinfo_", mapWriter);
+                          Map<String, Object> componentInfo =
+                              getComponentInfo(pluginInfo, componentName);
+                          if (s.equals(componentInfo.get("class"))) {
+                            (componentInfo).put("_packageinfo_", mapWriter);
                           }
                         });
                   }
@@ -320,6 +322,14 @@ public class SolrConfigHandler extends RequestHandlerBase
           }
         }
       }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private Map<String, Object> getComponentInfo(
+        Map<String, Object> pluginInfo, String componentName) {
+      return pluginInfo.containsKey("class")
+          ? pluginInfo
+          : (Map<String, Object>) pluginInfo.getOrDefault(componentName, new HashMap<>());
     }
 
     private Map<String, Object> getConfigDetails(String componentType, SolrQueryRequest req) {
