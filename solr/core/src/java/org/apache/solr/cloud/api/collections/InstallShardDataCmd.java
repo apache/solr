@@ -25,10 +25,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -145,22 +147,26 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
           ccc.getCoreContainer()
               .getZkController()
               .getShardTerms(typedMessage.collection, typedMessage.shard);
+      final Set<String> replicasToStartRecovery = new HashSet<>();
+      leaderEligibleReplicas.stream()
+          .filter(r -> !successfulReplicas.contains(r))
+          .map(Replica::getName)
+          .forEach(replicasToStartRecovery::add);
+      log.info("Putting the unsuccessful replicas into recovery: {}", replicasToStartRecovery);
       shardTerms.ensureHighestTerms(
           successfulReplicas.stream().map(Replica::getName).collect(Collectors.toSet()));
-      Set<String> replicasToRecover =
-          leaderEligibleReplicas.stream()
-              .filter(r -> !successfulReplicas.contains(r))
-              .map(Replica::getName)
-              .collect(Collectors.toSet());
       ccc.getZkStateReader()
           .waitForState(
               typedMessage.collection,
               10,
               TimeUnit.SECONDS,
-              (liveNodes, collectionState) ->
-                  collectionState.getSlice(typedMessage.shard).getReplicas().stream()
-                      .filter(r -> replicasToRecover.contains(r.getName()))
-                      .allMatch(r -> Replica.State.RECOVERING.equals(r.getState())));
+              (liveNodes, collectionState) -> {
+                collectionState.getSlice(typedMessage.shard).getReplicas().stream()
+                    .filter(r -> Replica.State.RECOVERING.equals(r.getState()))
+                    .map(Replica::getName)
+                    .forEach(replicasToStartRecovery::remove);
+                return replicasToStartRecovery.isEmpty();
+              });
 
       // In order for the async request to succeed, we need to ensure that there is no failure
       // message
