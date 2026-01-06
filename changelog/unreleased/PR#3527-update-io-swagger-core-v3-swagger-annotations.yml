@@ -1,0 +1,7 @@
+title: Update io.swagger.core.v3:swagger-annotations-jakarta to v2.2.39
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3527
+  url: https://github.com/apache/solr/pull/3527
