@@ -263,6 +263,28 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     }
   }
 
+  @Test
+  public void testReportsErrorForUnexpectedHttpMethod() throws Exception {
+    final String getParams = "q=hello";
+    HttpServletRequest request = getMock("/solr/select", "application/x-www-form-urlencoded", 0);
+    when(request.getMethod()).thenReturn("UNEXPECTED");
+    when(request.getQueryString()).thenReturn(getParams);
+
+    MultipartRequestParser multipart = new MultipartRequestParser(2048);
+    RawRequestParser raw = new RawRequestParser();
+    FormDataRequestParser formdata = new FormDataRequestParser(2048);
+    StandardRequestParser standard = new StandardRequestParser(multipart, raw, formdata);
+
+    final SolrException thrown =
+        expectThrows(
+            SolrException.class,
+            () -> {
+              parser.parse(h.getCore(), "/select", request);
+            });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
+    assertEquals("Request contained unexpected HTTP method: UNEXPECTED", thrown.getMessage());
+  }
+
   static class ByteServletInputStream extends ServletInputStream {
     final BufferedInputStream in;
     final int len;
