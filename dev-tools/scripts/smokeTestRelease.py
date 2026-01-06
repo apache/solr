@@ -106,7 +106,7 @@ def load(urlString):
   try:
     raw_request = urllib.request.Request(urlString)
     raw_request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:78.0) Gecko/20100101 Firefox/78.0')
-    raw_request.add_header('Accept', 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
+    raw_request.add_header('Accept', 'text/json,text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8')
     content = urllib.request.urlopen(raw_request).read().decode('utf-8')
   except Exception as e:
     print('Retrying download of url %s after exception: %s' % (urlString, e))
