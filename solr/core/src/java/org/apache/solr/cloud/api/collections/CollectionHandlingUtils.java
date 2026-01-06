@@ -237,7 +237,8 @@ public class CollectionHandlingUtils {
           parentShardLeader.getCoreName(),
           updateResponse,
           slice,
-          Collections.emptySet());
+          Collections.emptySet(),
+          null);
     } catch (Exception e) {
       CollectionHandlingUtils.processResponse(
           results,
@@ -246,7 +247,8 @@ public class CollectionHandlingUtils {
           parentShardLeader.getCoreName(),
           updateResponse,
           slice,
-          Collections.emptySet());
+          Collections.emptySet(),
+          null);
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "Unable to call distrib softCommit on: " + parentShardLeader.getCoreUrl(),
@@ -435,7 +437,7 @@ public class CollectionHandlingUtils {
   }
 
   static void processResponse(
-      NamedList<Object> results, ShardResponse srsp, Set<String> okayExceptions) {
+      NamedList<Object> results, ShardResponse srsp, Set<String> okayExceptions, String asyncId) {
     Throwable e = srsp.getException();
     String nodeName = srsp.getNodeName();
     // Use core or coreNodeName if given as a param, otherwise use nodeName
@@ -443,7 +445,7 @@ public class CollectionHandlingUtils {
     SolrResponse solrResponse = srsp.getSolrResponse();
     String shard = srsp.getShard();
 
-    processResponse(results, e, nodeName, coreName, solrResponse, shard, okayExceptions);
+    processResponse(results, e, nodeName, coreName, solrResponse, shard, okayExceptions, asyncId);
   }
 
   static void processResponse(
@@ -453,7 +455,8 @@ public class CollectionHandlingUtils {
       String coreName,
       SolrResponse solrResponse,
       String shard,
-      Set<String> okayExceptions) {
+      Set<String> okayExceptions,
+      String asyncId) {
     String rootThrowable = null;
     if (e instanceof RemoteSolrException remoteSolrException) {
       rootThrowable = remoteSolrException.getRootThrowable();
@@ -462,7 +465,8 @@ public class CollectionHandlingUtils {
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
       log.error("Error from shard: {}", shard, e);
       addFailure(results, nodeName, coreName, e);
-    } else {
+    } else if (asyncId == null) {
+      // Do not add a success for async requests, that will be done when the async result is found
       addSuccess(results, nodeName, coreName, solrResponse.getResponse());
     }
   }
@@ -551,8 +555,6 @@ public class CollectionHandlingUtils {
       do {
         srsp = shardHandler.takeCompletedOrError();
         if (srsp != null) {
-          NamedList<Object> results = new NamedList<>();
-          processResponse(results, srsp, Collections.emptySet());
           if (srsp.getSolrResponse().getResponse() == null) {
             NamedList<Object> response = new NamedList<>();
             response.add("STATUS", "failed");
@@ -760,7 +762,7 @@ public class CollectionHandlingUtils {
                 ? shardHandler.takeCompletedOrError()
                 : shardHandler.takeCompletedIncludingErrors();
         if (srsp != null) {
-          processResponse(results, srsp, okayExceptions);
+          processResponse(results, srsp, okayExceptions, asyncId);
           Throwable exception = srsp.getException();
           if (abortOnError && exception != null) {
             // drain pending requests
@@ -782,6 +784,11 @@ public class CollectionHandlingUtils {
 
     private void waitForAsyncCallsToComplete(NamedList<Object> results) {
       for (AsyncCmdInfo asyncCmdInfo : shardAsyncCmds) {
+        Object failure = results._get("failure/" + requestKey(asyncCmdInfo.nodeName, asyncCmdInfo.coreName));
+        // Do not wait for Async calls that have already failed
+        if (failure != null) {
+          return;
+        }
         final String node = asyncCmdInfo.nodeName;
         final String coreName = asyncCmdInfo.coreName;
         final String shardAsyncId = asyncCmdInfo.asyncId;
