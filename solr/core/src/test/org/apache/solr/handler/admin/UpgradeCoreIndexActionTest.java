@@ -16,7 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +42,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   private static final int DOCS_PER_SEGMENT = 3;
   private static final String DV_FIELD = "dvonly_i_dvo";
 
-  private static Field segmentInfoMinVersionField;
+  private static VarHandle segmentInfoMinVersionHandle;
   private static String savedDirectoryFactory;
 
   @BeforeClass
@@ -50,8 +51,9 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     // UpgradeCoreIndex currently validates via FSDirectory; use a filesystem-backed factory.
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     initCore("solrconfig-nomergepolicyfactory.xml", "schema.xml");
-    segmentInfoMinVersionField = SegmentInfo.class.getDeclaredField("minVersion");
-    segmentInfoMinVersionField.setAccessible(true);
+    segmentInfoMinVersionHandle =
+        MethodHandles.privateLookupIn(SegmentInfo.class, MethodHandles.lookup())
+            .findVarHandle(SegmentInfo.class, "minVersion", Version.class);
   }
 
   @AfterClass
@@ -121,7 +123,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
 
     // Validate docValues-only (non-stored) fields were preserved for reindexed documents.
     // seg1 and seg3 were reindexed; seg2 was not.
-    assertDocValuesOnlyFieldPreserved(layout);
+    assertDocValuesOnlyFieldPreserved();
   }
 
   @Test
@@ -194,7 +196,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     assertFalse("Expected seg3 to be dropped", segmentsAfter.contains(layout.seg3));
 
     // Validate docValues-only (non-stored) fields were preserved for reindexed documents.
-    assertDocValuesOnlyFieldPreserved(layout);
+    assertDocValuesOnlyFieldPreserved();
   }
 
   @Test
@@ -270,7 +272,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     }
   }
 
-  private void assertDocValuesOnlyFieldPreserved(SegmentLayout layout) {
+  private void assertDocValuesOnlyFieldPreserved() {
     // Assert one doc that must have been reindexed (seg1) and one from seg3.
     assertDocHasDvFieldValue(0, 10_000);
     assertDocHasDvFieldValue(2000, 12_000);
@@ -320,7 +322,7 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
           continue;
         }
         final SegmentInfo segmentInfo = segmentReader.getSegmentInfo().info;
-        segmentInfoMinVersionField.set(segmentInfo, minVersion);
+        segmentInfoMinVersionHandle.set(segmentInfo, minVersion);
       }
     } finally {
       searcherRef.decref();
