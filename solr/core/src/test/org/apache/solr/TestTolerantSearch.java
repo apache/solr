@@ -21,7 +21,6 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -34,10 +33,14 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
-public class TestTolerantSearch extends SolrJettyTestBase {
+public class TestTolerantSearch extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static SolrClient collection1;
   private static SolrClient collection2;
@@ -45,14 +48,22 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   private static String shard2;
 
   private static Path createSolrHome() throws Exception {
-    Path workDir = createTempDir();
-    setupJettyTestHome(workDir, "collection1");
+    Path workDir = createTempDir().toRealPath();
+
+    // Copy solr.xml
     Files.copy(
-        Path.of(SolrTestCaseJ4.TEST_HOME() + "/collection1/conf/solrconfig-tolerant-search.xml"),
-        workDir.resolve("collection1").resolve("conf").resolve("solrconfig.xml"),
+        SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
+        workDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
-    FileUtils.copyDirectory(
-        workDir.resolve("collection1").toFile(), workDir.resolve("collection2").toFile());
+
+    // Set up collection1 with minimal config + tolerant search solrconfig
+    Path collection1Dir = workDir.resolve("collection1");
+    copyMinConf(collection1Dir, "name=collection1\n", "solrconfig-tolerant-search.xml");
+
+    // Set up configset for CoreAdminRequest.Create (reuse the same config)
+    Path configSetDir = workDir.resolve("configsets").resolve("collection1");
+    copyMinConf(configSetDir, null, "solrconfig-tolerant-search.xml");
+
     return workDir;
   }
 
@@ -60,23 +71,24 @@ public class TestTolerantSearch extends SolrJettyTestBase {
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
     Path solrHome = createSolrHome();
-    createAndStartJetty(solrHome);
-    String url = getBaseUrl();
-    collection1 = getHttpSolrClient(url, "collection1");
-    collection2 = getHttpSolrClient(url, "collection2");
+    solrTestRule.startSolr(solrHome);
 
-    String urlCollection1 = getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = getBaseUrl() + "/" + "collection2";
+    collection1 = solrTestRule.getSolrClient("collection1");
+
+    String urlCollection1 = solrTestRule.getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = solrTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
 
     // create second core
-    try (SolrClient nodeClient = getHttpSolrClient(url)) {
-      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-      req.setCoreName("collection2");
-      req.setConfigSet("collection1");
-      nodeClient.request(req);
-    }
+    SolrClient nodeClient = solrTestRule.getSolrClient();
+    CoreAdminRequest.Create req = new CoreAdminRequest.Create();
+    req.setCoreName("collection2");
+    req.setConfigSet("collection1");
+    nodeClient.request(req);
+
+    // Now get the client for collection2 after it's been created
+    collection2 = solrTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
@@ -100,14 +112,8 @@ public class TestTolerantSearch extends SolrJettyTestBase {
 
   @AfterClass
   public static void destroyThings() throws Exception {
-    if (null != collection1) {
-      collection1.close();
-      collection1 = null;
-    }
-    if (null != collection2) {
-      collection2.close();
-      collection2 = null;
-    }
+    collection1 = null;
+    collection2 = null;
     resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
   }

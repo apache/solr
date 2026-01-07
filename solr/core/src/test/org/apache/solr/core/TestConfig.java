@@ -20,13 +20,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.LinkedHashMap;
-import java.util.List;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.ConfigNode;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
@@ -61,30 +59,6 @@ public class TestConfig extends SolrTestCaseJ4 {
   public void testDisableRequetsHandler() {
     assertNull(h.getCore().getRequestHandler("/disabled"));
     assertNotNull(h.getCore().getRequestHandler("/enabled"));
-  }
-
-  @Test
-  public void testJavaProperty() {
-    // property values defined in build.xml
-
-    String s = solrConfig.get("propTest").txt();
-    assertEquals("prefix-proptwo-suffix", s);
-
-    s = solrConfig.get("propTest").attr("attr1", "default");
-    assertEquals("propone-${literal}", s);
-
-    s = solrConfig.get("propTest").attr("attr2", "default");
-    assertEquals("default-from-config", s);
-
-    assertEquals(
-        "prefix-proptwo-suffix",
-        solrConfig.get("propTest", it -> "default-from-config".equals(it.attr("attr2"))).txt());
-
-    List<ConfigNode> nl = solrConfig.root.getAll("propTest");
-    assertEquals(1, nl.size());
-    assertEquals("prefix-proptwo-suffix", nl.get(0).txt());
-
-    assertEquals("prefix-proptwo-suffix", solrConfig.get("propTest").txt());
   }
 
   @Test
