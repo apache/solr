@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 /**
@@ -60,8 +61,8 @@ public interface StreamingResponse extends AutoCloseable {
   /**
    * Release resources associated with this response.
    *
-   * @throws Exception if cleanup fails
+   * @throws IOException if cleanup fails
    */
   @Override
-  void close() throws Exception;
+  void close() throws IOException;
 }

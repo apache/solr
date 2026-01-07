@@ -75,7 +75,7 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
     }
 
     @Override
-    public void close() {
+    public void close() throws IOException {
       // Jetty handles cleanup automatically
     }
   }
