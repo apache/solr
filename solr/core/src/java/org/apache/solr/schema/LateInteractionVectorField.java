@@ -34,6 +34,7 @@ import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.LateInteractionFloatValuesSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -288,6 +289,11 @@ public class LateInteractionVectorField extends FieldType {
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), false);
+  }
+  
+  @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return multiFloatVectorToString(LateInteractionField.decode(term));
   }
 
   /** Not supported */

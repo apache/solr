@@ -196,20 +196,8 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         "//str[@name='lv_4_cosine'][.='" + d4s + "']",
 
         // dv only non-stored fields
-        //
-        // nocommit: non-stored fields can't be retrieved correctly yet.
-        //
-        // nocommit: this is because SolrDocumentFetcher doesn't correctly delegate to the
-        // FieldType.toObject (consistently) for BytesRef conversion
-        // nocommit: (only special cases are delegated, for things like BoolField and SORTED_SET)
-        //
-        // nocommit: need to open a new issue to track this for BINARY docValues (BinaryField should
-        // be only existing FT affected)
-        // nocommit: (or maybe all DV BytesRef conversion? ... would require thorough review of more
-        // FieldTypes)
-        //
-        // "//str[@name='lv_3_nostored'][.='"+d3s+"']",
-        // "//str[@name='lv_4_nostored'][.='"+d4s+"']",
+        "//str[@name='lv_3_nostored'][.='"+d3s+"']", // nocommit: requires SOLR-18033.patch be applied
+        "//str[@name='lv_4_nostored'][.='"+d4s+"']", // nocommit: requires SOLR-18033.patch be applied
 
         // function computations
         "//float[@name='euclid_3_def'][.=" + euclid3 + "]",
