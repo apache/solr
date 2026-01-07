@@ -46,6 +46,7 @@ dependencies {
   runtimeOnly libs.lmax.disruptor
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-jetty')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit

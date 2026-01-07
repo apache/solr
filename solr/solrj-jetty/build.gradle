@@ -24,7 +24,6 @@ description = 'Solrj-Jetty - Jetty-based HTTP clients for SolrJ'
 dependencies {
   // Core dependencies on solr-solrj (without Jetty)
   api project(':solr:solrj')
-  api project(':solr:api')
 
   // Jetty dependencies - moved from solr-solrj
   api libs.eclipse.jetty.http2.client
@@ -47,9 +46,14 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
   testImplementation project(':solr:solrj')
+  // Access to solrj test classes (e.g., HttpSolrClientTestBase)
+  testImplementation project(path: ':solr:solrj', configuration: 'testArtifacts')
+  // Test classes use main classes from this module
+  testImplementation project(':solr:solrj-jetty')
 
   // ZK dependencies for tests
   testImplementation project(':solr:solrj-zookeeper')
+  permitTestUnusedDeclared project(':solr:solrj-zookeeper')
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
@@ -83,4 +87,15 @@ dependencies {
   testRuntimeOnly(libs.apache.log4j.slf4j2impl, {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
+
+  // Permit unused test dependencies (transitive dependencies)
+  permitTestUnusedDeclared libs.commonsio.commonsio
+  permitTestUnusedDeclared libs.apache.httpcomponents.httpclient
+  permitTestUnusedDeclared libs.apache.httpcomponents.httpcore
+  permitTestUnusedDeclared libs.apache.lucene.core
+  permitTestUnusedDeclared libs.apache.zookeeper.jute
+  permitTestUnusedDeclared libs.eclipse.jetty.ee10.webapp
+  permitTestUnusedDeclared libs.eclipse.jetty.server
+  permitTestUnusedDeclared libs.eclipse.jetty.session
+  permitTestUnusedDeclared libs.mockito.core
 }
