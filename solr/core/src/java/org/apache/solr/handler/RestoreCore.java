@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -141,7 +142,7 @@ public class RestoreCore implements Callable<Boolean> {
                   TimeUnit.SECONDS,
                   new SynchronousQueue<>(),
                   new SolrNamedThreadFactory("RestoreCore"),
-                  new ExecutorUtil.MDCAwareThreadPoolExecutor.CallerRunsPolicy())
+                  new ThreadPoolExecutor.CallerRunsPolicy())
               : null;
 
       List<Future<?>> downloadFutures = new ArrayList<>();

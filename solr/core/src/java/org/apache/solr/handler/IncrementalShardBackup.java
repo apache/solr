@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -224,7 +225,7 @@ public class IncrementalShardBackup {
                 TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
                 new SolrNamedThreadFactory("IncrementalBackup"),
-                new ExecutorUtil.MDCAwareThreadPoolExecutor.CallerRunsPolicy())
+                new ThreadPoolExecutor.CallerRunsPolicy())
             : null;
 
     List<Future<?>> uploadFutures = new ArrayList<>();
