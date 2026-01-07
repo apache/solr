@@ -1,0 +1,8 @@
+title: Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it
+type: changed
+authors:
+  - name: Jan Høydahl
+  - name: David Smiley
+links:
+  - name: SOLR-17161
+    url: https://issues.apache.org/jira/browse/SOLR-17161
