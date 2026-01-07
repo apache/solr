@@ -71,7 +71,7 @@ public class IncrementalShardBackup {
    * SOLR_BACKUP_MAX_PARALLEL_UPLOADS}.
    */
   private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
-      EnvUtils.getPropertyAsInteger("solr.backup.maxParallelUploads", 1);
+      EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
 
   private SolrCore solrCore;
 

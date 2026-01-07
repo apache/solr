@@ -401,7 +401,7 @@ Information on each of the repository implementations provided with Solr is prov
 Backup and restore operations can transfer multiple index files in parallel to improve throughput, especially when using cloud storage repositories like S3 or GCS where latency is higher.
 The parallelism is controlled via system properties or environment variables:
 
-`solr.backup.maxParallelUploads`::
+`solr.backup.maxparalleluploads`::
 +
 [%autowidth,frame=none]
 |===
@@ -409,10 +409,10 @@ The parallelism is controlled via system properties or environment variables:
 |===
 +
 Maximum number of index files to upload in parallel during backup operations.
-Can also be set via the `SOLR_BACKUP_MAX_PARALLEL_UPLOADS` environment variable.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELUPLOADS` environment variable.
 For cloud storage repositories (S3, GCS), consider setting this to `8` or higher to improve backup performance.
 
-`solr.backup.maxParallelDownloads`::
+`solr.backup.maxparalleldownloads`::
 +
 [%autowidth,frame=none]
 |===
@@ -420,7 +420,7 @@ For cloud storage repositories (S3, GCS), consider setting this to `8` or higher
 |===
 +
 Maximum number of index files to download in parallel during restore operations.
-Can also be set via the `SOLR_BACKUP_MAX_PARALLEL_DOWNLOADS` environment variable.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELDOWNLOADS` environment variable.
 For cloud storage repositories (S3, GCS), consider setting this to `8` or higher to improve restore performance.
 
 TIP: When using cloud storage, increasing parallelism significantly improves backup and restore speed by overlapping network latency.

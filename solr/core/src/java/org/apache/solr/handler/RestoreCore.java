@@ -63,7 +63,7 @@ public class RestoreCore implements Callable<Boolean> {
    * SOLR_BACKUP_MAX_PARALLEL_DOWNLOADS}.
    */
   private static final int DEFAULT_MAX_PARALLEL_DOWNLOADS =
-      EnvUtils.getPropertyAsInteger("solr.backup.maxParallelDownloads", 1);
+      EnvUtils.getPropertyAsInteger("solr.backup.maxparalleldownloads", 1);
 
   private final SolrCore core;
   private RestoreRepository repository;
