@@ -38,7 +38,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.PropertiesUtil;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -159,7 +158,7 @@ public class CreateCore extends CoreAdminAPIBase implements CoreApis.Create {
   }
 
   public static CreateCoreParams createRequestBodyFromV1Params(SolrParams solrParams) {
-    final var v1ParamMap = new SimpleOrderedMap<>(solrParams);
+    final var v1ParamMap = Utils.convertToMap(solrParams, new HashMap<>());
     v1ParamMap.remove(ACTION);
     v1ParamMap.remove(ASYNC);
 
