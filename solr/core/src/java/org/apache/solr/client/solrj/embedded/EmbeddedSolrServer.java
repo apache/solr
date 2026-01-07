@@ -168,7 +168,7 @@ public class EmbeddedSolrServer extends SolrClient {
         SolrQueryRequest req =
             _parser.buildRequestFrom(
                 null, getParams(request), getContentStreams(request), request.getUserPrincipal());
-        req.getContext().put("httpMethod", request.getMethod().name());
+        req.getContext().put("httpMethod", request.getMethod());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -221,7 +221,7 @@ public class EmbeddedSolrServer extends SolrClient {
               .buildRequestFrom(
                   core, params, getContentStreams(request), request.getUserPrincipal());
       req.getContext().put(PATH, path);
-      req.getContext().put("httpMethod", request.getMethod().name());
+      req.getContext().put("httpMethod", request.getMethod());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 
