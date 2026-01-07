@@ -113,7 +113,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
-    System.clearProperty(TEST_URL_ALLOW_LIST);
 
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
     IndexFetcher.testWait = originalTestWait;

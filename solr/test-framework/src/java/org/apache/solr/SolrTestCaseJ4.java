@@ -2760,8 +2760,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
 
-  protected static void systemClearPropertySolrTestsMergePolicyFactory() {}
-
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));

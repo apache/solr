@@ -100,7 +100,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
         new MiniSolrCloudCluster.Builder(3, createTempDir())
             .addConfig("conf", configset("conf2"))
             .configure();
-    System.clearProperty("metricsEnabled");
     JettySolrRunner j = cluster.getRandomJetty(random());
     var builder =
         Labels.builder().label("category", "CONTAINER").label("otel_scope_name", "org.apache.solr");

@@ -43,13 +43,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() {
-    System.clearProperty("filterCache.enabled");
-    System.clearProperty("queryResultCache.enabled");
-    System.clearProperty("documentCache.enabled");
-    System.clearProperty("solr.tests.id.stored");
-    System.clearProperty("solr.tests.id.docValues");
-  }
+  public static void afterClass() {}
 
   @Override
   public void setUp() throws Exception {

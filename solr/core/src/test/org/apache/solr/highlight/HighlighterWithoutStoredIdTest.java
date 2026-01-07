@@ -28,8 +28,5 @@ public class HighlighterWithoutStoredIdTest extends HighlighterTest {
   }
 
   @AfterClass
-  public static void afterClassProps() {
-    System.clearProperty("solr.tests.id.stored");
-    System.clearProperty("solr.tests.id.docValues");
-  }
+  public static void afterClassProps() {}
 }

@@ -54,9 +54,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void clearSysProps() {
-    System.clearProperty("managed.schema.mutable");
-  }
+  public static void clearSysProps() {}
 
   @Test
   public void testAddFieldsRoundRobin() throws Exception {

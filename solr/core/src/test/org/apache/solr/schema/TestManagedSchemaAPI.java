@@ -49,9 +49,7 @@ public class TestManagedSchemaAPI extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void tearDownClass() {
-    System.clearProperty("managed.schema.mutable");
-  }
+  public static void tearDownClass() {}
 
   @Test
   public void test() throws Exception {

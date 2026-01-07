@@ -78,10 +78,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void afterClass() {
-    System.clearProperty("documentCache.enabled");
-    System.clearProperty("enableLazyFieldLoading");
-  }
+  public static void afterClass() {}
 
   @Test
   public void test() throws Exception {

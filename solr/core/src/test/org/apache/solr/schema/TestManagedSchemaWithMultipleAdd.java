@@ -53,10 +53,7 @@ public class TestManagedSchemaWithMultipleAdd extends SolrCloudTestCase {
   }
 
   @AfterClass
-  public static void afterRestartWhileUpdatingTest() {
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.autoSoftCommit.maxTime");
-  }
+  public static void afterRestartWhileUpdatingTest() {}
 
   @Test
   public void test() throws Exception {

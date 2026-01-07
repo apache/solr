@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -64,11 +63,6 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
 
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
     solrTestRule.newCollection().withConfigSet(configSet).create();
-  }
-
-  @AfterClass
-  public static void cleanup() throws Exception {
-    System.clearProperty("solr.hideStackTrace");
   }
 
   @Test
@@ -143,8 +137,7 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
     // }
     // }
 
-    final String url =
-        solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
+    final String url = solrTestRule.getBaseUrl() + "/collection1/withError?q=*:*&wt=json";
     final HttpGet get = new HttpGet(url);
     var client = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse response = client.execute(get)) {

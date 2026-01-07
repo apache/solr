@@ -306,7 +306,6 @@ public class SchemaVersionSpecificBehaviorTest extends SolrTestCaseJ4 {
           "Schema version not set correctly", String.valueOf(ver), String.valueOf(s.getVersion()));
       return s;
     } finally {
-      System.clearProperty("solr.schema.test.ver");
     }
   }
 }

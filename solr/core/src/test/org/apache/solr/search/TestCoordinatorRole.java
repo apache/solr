@@ -95,7 +95,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
       QueryResponse rslt =
           new QueryRequest(new SolrQuery("*:*"))
@@ -153,7 +152,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
         coordinatorJetty1 = cluster.startJettySolrRunner();
         coordinatorJetty2 = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
       for (int j = 1; j <= 10; j++) {
         String collname = COLLECTION_NAME + "_" + j;
@@ -191,7 +189,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
     System.setProperty(NodeRoles.NODE_ROLES_PROP, "coordinator:on");
     JettySolrRunner qaJetty = cluster.startJettySolrRunner();
     String qaJettyBase = qaJetty.getBaseUrl().toString();
-    System.clearProperty(NodeRoles.NODE_ROLES_PROP);
     ExecutorService executor =
         ExecutorUtil.newMDCAwareSingleThreadExecutor(new SolrNamedThreadFactory("manipulateJetty"));
     try {
@@ -543,7 +540,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
           coordinatorNodes.add(coordinatorJetty.getNodeName());
         }
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       int THREAD_COUNT = 10;
@@ -611,7 +607,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       // Tricky to test configset, since operation such as collection status would direct it to the
@@ -660,7 +655,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       ZkStateReader zkStateReader =
@@ -747,7 +741,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       QueryResponse response =
@@ -832,7 +825,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       QueryResponse response =
@@ -897,7 +889,6 @@ public class TestCoordinatorRole extends SolrCloudTestCase {
       try {
         coordinatorJetty = cluster.startJettySolrRunner();
       } finally {
-        System.clearProperty(NodeRoles.NODE_ROLES_PROP);
       }
 
       try (HttpSolrClient coordinatorClient =

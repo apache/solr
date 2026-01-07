@@ -44,6 +44,10 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
   @Test
   public void test2xBuildReload() throws Exception {
     for (int i = 0; i < 2; ++i) {
+      // Clear system property before each build to prevent "already in use" error
+      System.clearProperty(
+          RandomTestDictionaryFactory.RandomTestDictionary.getEnabledSysProp(
+              "shortRandomAnalyzingInfixSuggester"));
       assertQ(
           req("qt", rh_analyzing_short, SuggesterParams.SUGGEST_BUILD_ALL, "true"),
           "//str[@name='command'][.='buildAll']");
@@ -110,9 +114,6 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
                               "//str[@name='command'][.='buildAll']")));
       h.reload();
       // Stop the dictionary's input iterator
-      System.clearProperty(
-          RandomTestDictionaryFactory.RandomTestDictionary.getEnabledSysProp(
-              "longRandomAnalyzingInfixSuggester"));
       assertNotNull("Should have thrown exception", job.get());
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
@@ -151,9 +152,6 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
       Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?
       h.close();
       // Stop the dictionary's input iterator
-      System.clearProperty(
-          RandomTestDictionaryFactory.RandomTestDictionary.getEnabledSysProp(
-              "longRandomAnalyzingInfixSuggester"));
       job.get();
       Throwable wrappedException = outerException[0].getCause();
       if (wrappedException instanceof SolrException) {

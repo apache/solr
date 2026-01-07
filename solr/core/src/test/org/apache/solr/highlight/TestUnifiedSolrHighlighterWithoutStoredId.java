@@ -29,8 +29,5 @@ public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHi
   }
 
   @AfterClass
-  public static void afterClassProps() {
-    System.clearProperty("solr.tests.id.stored");
-    System.clearProperty("solr.tests.id.docValues");
-  }
+  public static void afterClassProps() {}
 }

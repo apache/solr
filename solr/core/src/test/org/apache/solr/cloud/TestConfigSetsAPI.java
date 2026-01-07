@@ -108,7 +108,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,11 +124,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public static void setUpClass() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1).withSecurityJson(getSecurityJson()).configure();
-  }
-
-  @AfterClass
-  public static void tearDownClass() {
-    System.clearProperty("managed.schema.mutable");
   }
 
   private static ConfigSetService getConfigSetService() {
@@ -427,7 +421,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
               enabled ? 0l : 400l,
               statusCode);
         } finally {
-          System.clearProperty("solr.configset.upload.enabled");
         }
       }
       unIgnoreException("Configset upload feature is disabled");
