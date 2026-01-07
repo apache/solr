@@ -48,8 +48,10 @@ configurations {
 }
 
 dependencies {
-  project(":solr:modules").childProjects.values().stream().map{project -> project.path}.each { module ->
-    modules project(path: module, configuration: "packaging")
+  project(":solr:modules").childProjects.values().stream().map {project -> project.path}.each {
+    module
+      ->
+      modules project(path: module, configuration: "packaging")
   }
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")
@@ -93,7 +95,7 @@ distributions {
         include "README.txt"
       })
 
-      from ('static/lib', {
+      from('static/lib', {
         into 'lib'
       })
 
@@ -113,7 +115,7 @@ distributions {
         into "docker"
         filesMatching([
             "scripts/**",
-        ]) { copy ->
+        ]) {copy ->
           copy.setMode(0755)
         }
       })
@@ -123,7 +125,7 @@ distributions {
           "**/*.sh",
           "**/bin/solr",
           "**/bin/systemd/solr.service",
-      ]) { copy ->
+      ]) {copy ->
         copy.setMode(0755)
       }
 
@@ -142,8 +144,8 @@ distributions {
       from(configurations.crossDcManager, {
         into "cross-dc-manager"
         filesMatching([
-                "bin/*",
-        ]) { copy ->
+            "bin/*",
+        ]) {copy ->
           copy.setMode(0755)
         }
       })
@@ -251,8 +253,8 @@ tasks.register('runDev', JavaExec) {
 task downloadBats(type: NpmTask) {
   group = 'Build Dependency Download'
   args = ["install", "https://github.com/bats-core/bats-core#v${libs.versions.bats.core.get()}",
-                     "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
-                     "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
+      "https://github.com/bats-core/bats-assert#v${libs.versions.bats.assert.get()}",
+      "https://github.com/bats-core/bats-file#v${libs.versions.bats.file.get()}",
   ]
 
   inputs.files("${project.ext.nodeProjectDir}/package.json")
@@ -269,7 +271,8 @@ task integrationTests(type: BatsTask) {
   def integrationTestOutput = "$buildDir/test-output"
   def solrHome = "$integrationTestOutput/solr-home"
   def solrTestFailuresDir = "$integrationTestOutput/failure-snapshots"
-  var solrPort = Integer.parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
+  var solrPort = Integer
+      .parseInt((String) project.findProperty('bats.port') ?: System.getProperty("bats.port", "-1"))
   while (solrPort > 64000 || solrPort < 0) { // We need room for +1000 for ZK
     try (ServerSocket s = new ServerSocket(0)) {
       solrPort = s.getLocalPort()
@@ -289,7 +292,8 @@ task integrationTests(type: BatsTask) {
     mkdir solrTestFailuresDir
 
     // TODO - if quiet then don't tee
-    standardOutput = new TeeOutputStream(System.out, new FileOutputStream("$integrationTestOutput/test-output.txt"))
+    standardOutput = new TeeOutputStream(System.out,
+        new FileOutputStream("$integrationTestOutput/test-output.txt"))
     println("Running BATS tests with Solr base port ${solrPort}")
   }
 
@@ -317,7 +321,7 @@ class BatsTask extends Exec {
   @Option(option = "tests", description = "Sets test cases to be included")
   public void setTestNamePatterns(List<String> tests) {
     // TODO: bats --filter <regex>
-    tests.each { testFiles << "$testDir/$it" }
+    tests.each {testFiles << "$testDir/$it"}
   }
 
   @Override
@@ -327,8 +331,8 @@ class BatsTask extends Exec {
 
     // Note: tests to run must be listed after all other arguments
     // Additional debugging output: -x, --verbose-run
-    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] + (testFiles.empty ? testDir : testFiles))
-
+    setArgs(['-T', '--print-output-on-failure', '--report-formatter', 'junit', '--output', "$project.buildDir/test-output"] +
+        (testFiles.empty ? testDir : testFiles))
 
     super.exec()
   }

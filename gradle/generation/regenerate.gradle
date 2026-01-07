@@ -22,8 +22,8 @@ configure(rootProject) {
     /**
      * Utility function to read a file, apply changes to its content and write it back.
      */
-    modifyFile = { File path, Function<String, String> modify ->
-      Function<String, String> normalizeEols = { text -> text.replace("\r\n", "\n") }
+    modifyFile = {File path, Function<String, String> modify ->
+      Function<String, String> normalizeEols = {text -> text.replace("\r\n", "\n")}
 
       String original = path.getText("UTF-8")
       String modified = normalizeEols.apply(original)

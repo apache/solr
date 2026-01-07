@@ -29,26 +29,27 @@ allprojects {
       ]
     }
 
-    tasks.withType(Test) { task ->
+    tasks.withType(Test) {task ->
       if (resolvedTestOption("tests.slowestTests").toBoolean()) {
-        afterTest { desc, result ->
+        afterTest {desc, result ->
           def duration = (result.getEndTime() - result.getStartTime())
 
           allTests << [
-              name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
+              name: "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
               duration: duration
           ]
         }
       }
 
       if (resolvedTestOption("tests.slowestSuites").toBoolean()) {
-        afterSuite { desc, result ->
+        afterSuite {desc, result
+          ->
           // Gradle reports runner times as well, omit anything that isn't attached to a concrete class.
           if (desc.className != null) {
             def duration = (result.getEndTime() - result.getStartTime())
 
             allSuites << [
-                name    : "${desc.className.replaceAll('.+\\.', "")} (${project.path})",
+                name: "${desc.className.replaceAll('.+\\.', "")} (${project.path})",
                 duration: duration
             ]
           }
@@ -58,14 +59,14 @@ allprojects {
   }
 }
 
-gradle.buildFinished { result ->
+gradle.buildFinished {result ->
   if (result.getFailure() == null) {
     if (allTests) {
       def slowest = allTests
-          .sort { a, b -> b.duration.compareTo(a.duration) }
+          .sort {a, b -> b.duration.compareTo(a.duration)}
           .take(10)
-          .findAll { e -> e.duration >= 500 }
-          .collect { e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name) }
+          .findAll {e -> e.duration >= 500}
+          .collect {e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name)}
 
       if (slowest) {
         logger.lifecycle("The slowest tests (exceeding 500 ms) during this run:\n  " +
@@ -75,10 +76,10 @@ gradle.buildFinished { result ->
 
     if (allSuites) {
       def slowest = allSuites
-          .sort { a, b -> b.duration.compareTo(a.duration) }
+          .sort {a, b -> b.duration.compareTo(a.duration)}
           .take(10)
-          .findAll { e -> e.duration >= 1000 }
-          .collect { e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name) }
+          .findAll {e -> e.duration >= 1000}
+          .collect {e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name)}
 
       if (slowest) {
         logger.lifecycle("The slowest suites (exceeding 1s) during this run:\n  " +

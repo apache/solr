@@ -41,7 +41,8 @@ rootProject.ext.minJavaVersionDefault = JavaVersion.toVersion(libs.versions.java
 rootProject.ext.minJavaVersionSolrJ = JavaVersion.toVersion(libs.versions.java.solrj.get())
 
 // Check development mode for entire project (defaults to true if 'production' not provided and set to true)
-rootProject.ext.development = !project.hasProperty('production') || project.findProperty('production') != 'true'
+rootProject.ext.development =
+    !project.hasProperty('production') || project.findProperty('production') != 'true'
 
 apply from: file('gradle/globals.gradle')
 
@@ -54,10 +55,10 @@ version = {
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
-  
+
   // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
   //  -Dversion.suffix=jenkins123
-  
+
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
   if (v.endsWith("-")) {
@@ -73,7 +74,7 @@ allprojects {
 
   gradle.projectsEvaluated {
     tasks.withType(JavaCompile) {
-        options.compilerArgs << "-Xmaxerrs" << "1000"
+      options.compilerArgs << "-Xmaxerrs" << "1000"
     }
   }
 }
@@ -105,13 +106,13 @@ ext {
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
   // Allow definiting external tool locations using system props.
-  externalTool = { name ->
+  externalTool = {name ->
     def resolved = propertyOrDefault("${name}.exe", name as String)
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
-  
-  luceneBaseVersionProvider = project.provider { 
+
+  luceneBaseVersionProvider = project.provider {
     def luceneVersion = libs.versions.apache.lucene.get()
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
@@ -123,7 +124,9 @@ ext {
   }
 
   // For testing code
-  vectorIncubatorJavaVersions = [ JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion.VERSION_24, JavaVersion.VERSION_25 ] as Set
+  vectorIncubatorJavaVersions =
+      [JavaVersion.VERSION_21, JavaVersion.VERSION_22, JavaVersion.VERSION_23, JavaVersion
+          .VERSION_24, JavaVersion.VERSION_25] as Set
 
   // Use gradle flag in root project for further referencing
   withUiModule = gradle.ext.withUiModule

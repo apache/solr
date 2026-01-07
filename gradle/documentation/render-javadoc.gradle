@@ -40,7 +40,7 @@ allprojects {
     // javadoc rendering task below. The default javadoc task
     // will just invoke 'renderJavadoc' (to allow people to call
     // conventional task name).
-    tasks.matching { it.name == "javadoc" }.all {
+    tasks.matching {it.name == "javadoc"}.all {
       enabled = false
       dependsOn "renderJavadoc"
     }
@@ -87,11 +87,12 @@ allprojects {
     title = "Solr ${project.version} ${project.name} API"
 
     offlineLinks += [
-        "https://docs.oracle.com/en/java/javase/${project.minJavaVersion}/docs/api/": rootProject.file("${resources}/java${project.minJavaVersion}/"),
+        "https://docs.oracle.com/en/java/javase/${project.minJavaVersion}/docs/api/": rootProject
+            .file("${resources}/java${project.minJavaVersion}/"),
         "https://junit.org/junit4/javadoc/4.12/": rootProject.file("${resources}/junit/")
     ]
 
-    solrDocUrl = provider({ rootProject.solrDocUrl })
+    solrDocUrl = provider({rootProject.solrDocUrl})
 
     // Set up custom doclet.
     dependsOn configurations.missingdoclet
@@ -136,10 +137,10 @@ configure(project(":solr:solrj-zookeeper")) {
   project.tasks.withType(RenderJavadocTask) {
     // TODO: clean up split packages SOLR-15604
     javadocMissingIgnore = [
-            "org.apache.solr.common",
-            "org.apache.solr.common.cloud",
-            "org.apache.solr.client.solrj.impl",
-            "org.apache.solr.client.solrj.cloud"
+        "org.apache.solr.common",
+        "org.apache.solr.common.cloud",
+        "org.apache.solr.client.solrj.impl",
+        "org.apache.solr.client.solrj.cloud"
     ]
   }
 }
@@ -190,9 +191,11 @@ configure(subprojects.findAll {
 // - each RenderJavaDocs task gets a dependency to all tasks with same name in its dependencies
 // - the dependency is using dependsOn with a closure to enable lazy evaluation
 configure(subprojects) {
-  project.tasks.withType(RenderJavadocTask) { task ->
+  project.tasks.withType(RenderJavadocTask) {task ->
     task.dependsOn {
-      task.project.configurations.implementation.allDependencies.withType(ProjectDependency).collect { dep ->
+      task
+          .project
+          .configurations.implementation.allDependencies.withType(ProjectDependency).collect {dep ->
         def otherProject = dep.dependencyProject
         return otherProject.tasks.findByName(task.name)
       }.findAll {
@@ -257,7 +260,7 @@ class RenderJavadocTask extends DefaultTask {
   // Computes cacheable inputs from the map in offlineLinks.
   @Nested
   List<OfflineLink> getCacheableOfflineLinks() {
-    return offlineLinks.collect { url, location -> new OfflineLink(url, location) }
+    return offlineLinks.collect {url, location -> new OfflineLink(url, location)}
   }
 
   @Input
@@ -283,7 +286,7 @@ class RenderJavadocTask extends DefaultTask {
   @Optional
   @Input
   final Property<String> executable = project.objects.property(String).convention(
-      project.provider { Jvm.current().javadocExecutable.toString() })
+      project.provider {Jvm.current().javadocExecutable.toString()})
 
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
@@ -294,13 +297,13 @@ class RenderJavadocTask extends DefaultTask {
   private Set findRenderTasksInDependencies() {
     Set found = []
     def collectDeps
-    collectDeps = { task ->
+    collectDeps = {task ->
       task.taskDependencies.getDependencies(task)
-              .findAll{ it.name == this.name && it.enabled && !found.contains(it) }
-              .each{
-                found << it
-                collectDeps(it)
-              }
+          .findAll {it.name == this.name && it.enabled && !found.contains(it)}
+          .each {
+            found << it
+            collectDeps(it)
+          }
     }
     collectDeps(this)
     return found
@@ -308,7 +311,7 @@ class RenderJavadocTask extends DefaultTask {
 
   @TaskAction
   public void render() {
-    def srcDirs = srcDirSet.srcDirs.findAll { dir -> dir.exists() }
+    def srcDirs = srcDirSet.srcDirs.findAll {dir -> dir.exists()}
     def optionsFile = project.file("${getTemporaryDir()}/javadoc-options.txt")
 
     // create the directory, so relative link calculation knows that it's a directory:
@@ -316,14 +319,14 @@ class RenderJavadocTask extends DefaultTask {
     outputDir.mkdirs();
 
     def opts = []
-    opts << [ '-overview', project.file("${srcDirs[0]}/overview.html") ]
-    opts << [ '-sourcepath', srcDirs.join(File.pathSeparator) ]
-    opts << [ '-subpackages', 'org.apache.solr' ]
-    opts << [ '-d', outputDir ]
+    opts << ['-overview', project.file("${srcDirs[0]}/overview.html")]
+    opts << ['-sourcepath', srcDirs.join(File.pathSeparator)]
+    opts << ['-subpackages', 'org.apache.solr']
+    opts << ['-d', outputDir]
     opts << '-protected'
-    opts << [ '-encoding', 'UTF-8' ]
-    opts << [ '-charset', 'UTF-8' ]
-    opts << [ '-docencoding', 'UTF-8' ]
+    opts << ['-encoding', 'UTF-8']
+    opts << ['-charset', 'UTF-8']
+    opts << ['-docencoding', 'UTF-8']
     if (!enableSearch) {
       opts << '-noindex'
     }
@@ -333,29 +336,33 @@ class RenderJavadocTask extends DefaultTask {
       opts << '-linksource'
     }
     opts << '-use'
-    opts << [ '-locale', 'en_US' ]
-    opts << [ '-windowtitle', title ]
-    opts << [ '-doctitle', title ]
+    opts << ['-locale', 'en_US']
+    opts << ['-windowtitle', title]
+    opts << ['-doctitle', title]
     if (!classpath.isEmpty()) {
-      opts << [ '-classpath', classpath.asPath ]
+      opts << ['-classpath', classpath.asPath]
     }
-    opts << [ '-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>" ]
+    opts <<
+        ['-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>"]
 
-    opts << [ '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.' ]
-    opts << [ '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.' ]
-    opts << [ '-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)." ]
+    opts <<
+        ['-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.']
+    opts <<
+        ['-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.']
+    opts <<
+        ['-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)."]
 
-    opts << [ '-doclet', "org.apache.lucene.missingdoclet.MissingDoclet" ]
-    opts << [ '-docletpath', docletpath.asPath ]
-    opts << [ '--missing-level', javadocMissingLevel ]
+    opts << ['-doclet', "org.apache.lucene.missingdoclet.MissingDoclet"]
+    opts << ['-docletpath', docletpath.asPath]
+    opts << ['--missing-level', javadocMissingLevel]
     if (javadocMissingIgnore) {
-      opts << [ '--missing-ignore', String.join(',', javadocMissingIgnore) ]
+      opts << ['--missing-ignore', String.join(',', javadocMissingIgnore)]
     }
     if (javadocMissingMethod) {
-      opts << [ '--missing-method', String.join(',', javadocMissingMethod) ]
+      opts << ['--missing-method', String.join(',', javadocMissingMethod)]
     }
 
-    opts << [ '-quiet' ]
+    opts << ['-quiet']
 
     // Add all extra options, if any.
     opts.addAll(extraOpts.orElse([]).get())
@@ -373,8 +380,10 @@ class RenderJavadocTask extends DefaultTask {
     if (project.path != ':solr:test-framework') {  //
       findRenderTasksInDependencies()
           .findAll({it.project.path != ':solr:solrj' && it.project.path != ':solr:solrj-zookeeper'}) // split packages
-          .sort(false, Comparator.comparing { (it.project.name != 'core') as Boolean }.thenComparing(Comparator.comparing { it.path }))
-          .each { otherTask ->
+          .sort(false,
+              Comparator.comparing {(it.project.name != 'core') as Boolean}.thenComparing(Comparator
+                  .comparing {it.path}))
+          .each {otherTask ->
             def otherProject = otherTask.project
             // For relative links we compute the actual relative link between projects.
             def crossLuceneSolr = (otherProject.docroot != project.docroot)
@@ -387,42 +396,44 @@ class RenderJavadocTask extends DefaultTask {
               // For absolute links, we determine the target URL by assembling the full URL.
               def value = solrDocUrl.getOrElse(null)
               if (value) {
-                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(), otherTask.outputDir)
+                allOfflineLinks.put("${value}/${otherProject.relativeDocPath}/".toString(),
+                    otherTask.outputDir)
               }
             }
           }
     }
 
     // Add offline links.
-    allOfflineLinks.each { url, dir ->
+    allOfflineLinks.each {url, dir
+      ->
       // Some sanity check/ validation here to ensure dir/package-list or dir/element-list is present.
       if (!project.file("$dir/package-list").exists() &&
           !project.file("$dir/element-list").exists()) {
         throw new GradleException("Expected pre-rendered package-list or element-list at ${dir}.")
       }
-      opts << [ '-linkoffline', url, dir ]
+      opts << ['-linkoffline', url, dir]
     }
 
-    opts << [ '--release', releaseVersion.toString() ]
+    opts << ['--release', releaseVersion.toString()]
     opts << '-Xdoclint:all,-missing'
 
     // Increase Javadoc's heap.
-    opts += [ "-J-Xmx512m" ]
+    opts += ["-J-Xmx512m"]
     // Force locale to be "en_US" (fix for: https://bugs.openjdk.java.net/browse/JDK-8222793)
-    opts += [ "-J-Duser.language=en", "-J-Duser.country=US" ]
+    opts += ["-J-Duser.language=en", "-J-Duser.country=US"]
 
     // -J options have to be passed on command line, they are not interpreted if passed via args file.
-    def jOpts = opts.findAll { opt -> opt instanceof String && opt.startsWith("-J") }
+    def jOpts = opts.findAll {opt -> opt instanceof String && opt.startsWith("-J")}
     opts.removeAll(jOpts)
 
     // Temporary file that holds all javadoc options for the current task (except jOpts)
-    optionsFile.withWriter("UTF-8", { writer ->
+    optionsFile.withWriter("UTF-8", {writer ->
       // escapes an option with single quotes or whitespace to be passed in the options.txt file for
-      def escapeJavadocOption = { String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s }
+      def escapeJavadocOption = {String s -> (s =~ /[ '"]/) ? ("'" + s.replaceAll(/[\\'"]/, /\\$0/) + "'") : s}
 
-      opts.each { entry ->
+      opts.each {entry ->
         if (entry instanceof List) {
-          writer.write(entry.collect { escapeJavadocOption(it as String) }.join(" "))
+          writer.write(entry.collect {escapeJavadocOption(it as String)}.join(" "))
         } else {
           writer.write(escapeJavadocOption(entry as String))
         }
@@ -434,23 +445,34 @@ class RenderJavadocTask extends DefaultTask {
     logger.info("Javadoc executable used: ${javadocCmd}")
 
     project.quietExec {
-        executable javadocCmd
+      executable javadocCmd
 
-        args += [ "@${optionsFile}" ]
-        args += jOpts
+      args += ["@${optionsFile}"]
+      args += jOpts
     }
 
     // append some special table css, prettify css
-    ant.concat(destfile: "${outputDir}/stylesheet.css", append: "true", fixlastline: "true", encoding: "UTF-8") {
+    ant.concat(destfile: "${outputDir}/stylesheet.css",
+        append: "true",
+        fixlastline: "true",
+        encoding: "UTF-8") {
       filelist(dir: taskResources, files: "table_padding.css")
       filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.css")
     }
 
     // append prettify to scripts
-    ant.concat(destfile: "${outputDir}/script.js", append: "true", fixlastline: "true", encoding: "UTF-8") {
-      filelist(dir: project.file("${taskResources}/prettify"), files: "prettify.min.js inject-javadocs.js")
+    ant.concat(destfile: "${outputDir}/script.js",
+        append: "true",
+        fixlastline: "true",
+        encoding: "UTF-8") {
+      filelist(dir: project.file("${taskResources}/prettify"),
+          files: "prettify.min.js inject-javadocs.js")
     }
 
-    ant.fixcrlf(srcdir: outputDir, includes: "stylesheet.css script.js", eol: "lf", fixlast: "true", encoding: "UTF-8")
+    ant.fixcrlf(srcdir: outputDir,
+        includes: "stylesheet.css script.js",
+        eol: "lf",
+        fixlast: "true",
+        encoding: "UTF-8")
   }
 }

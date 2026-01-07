@@ -40,7 +40,6 @@ dependencies {
   implementation libs.apache.lucene.queries
   implementation libs.apache.lucene.suggest
 
-
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   }
@@ -59,7 +58,7 @@ dependencies {
 
   implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
   implementation(libs.apache.zookeeper.jute, zkExcludes)
-  implementation(variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }, zkExcludes)
+  implementation(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
 
   implementation libs.commonsio.commonsio
   implementation libs.slf4j.api

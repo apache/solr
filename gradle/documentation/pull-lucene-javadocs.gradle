@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // Pull and unpack Lucene javadocs from published Maven artifacts for use in local link checking.
 
 configure(project(":solr:documentation")) {
@@ -45,15 +44,14 @@ configure(project(":solr:documentation")) {
     //   from all Solr javadocs?) then perhaps we can find a way to build this list programmatically?
     // - If these javadocs are only consumed by the ref guide, then these deps & associated tasks
     //   should just be moved to the ref-guide build.gradle
-    javadocs variantOf(libs.apache.lucene.core) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.expressions) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.analysis.common) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.analysis.stempel) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.queryparser) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.queries) { classifier 'javadoc' }
-    javadocs variantOf(libs.apache.lucene.spatialextras) { classifier 'javadoc' }
+    javadocs variantOf(libs.apache.lucene.core) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.expressions) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.analysis.common) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.analysis.stempel) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.queryparser) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.queries) {classifier 'javadoc'}
+    javadocs variantOf(libs.apache.lucene.spatialextras) {classifier 'javadoc'}
   }
-
 
   task collectLuceneJavadocs() {
     description "Collect and unpack javadoc artifacts from 'javadocs' configuration"
@@ -64,7 +62,8 @@ configure(project(":solr:documentation")) {
 
     doFirst {
       def resolved = configurations.javadocs.resolvedConfiguration
-      resolved.resolvedArtifacts.each { artifact ->
+      resolved.resolvedArtifacts.each {artifact
+        ->
         def id = artifact.moduleVersion.id
         // This mimics the directory structure used on lucene.apache.org for the javadocs of all modules.
         //
@@ -72,7 +71,7 @@ configure(project(":solr:documentation")) {
         // not the "flat" artifact names -- so there is no one size fits all way to determine the directory name.
         // We have to "special case" that analysis-* modules are in an 'analysis/*' subdir, while the general rule is that
         // '-' in artifact names are left as part of the dir name (ie: 'spatial-extras/')....
-        def path = id.name.replaceFirst('^lucene-', '').replaceFirst('^analysis-','analysis/')
+        def path = id.name.replaceFirst('^lucene-', '').replaceFirst('^analysis-', 'analysis/')
         project.sync {
           from zipTree(artifact.file)
           into file("${project.ext.luceneDocsDir}/${path}/")

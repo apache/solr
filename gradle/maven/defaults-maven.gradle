@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // Maven publications and configuration.
 //
 // the 'published' list contains an explicit list of all projects
@@ -37,7 +36,7 @@ configure(rootProject) {
   }
 }
 
-configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
+configure(subprojects.findAll {it.path in rootProject.published}) {prj ->
   apply plugin: 'maven-publish'
   apply plugin: 'signing'
 
@@ -165,7 +164,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
         if (project(":solr:distribution").ext.useGpgForSigning) {
           useGpgCmd()
         }
-        required { project(":solr:distribution").ext.withSignedArtifacts }
+        required {project(":solr:distribution").ext.withSignedArtifacts}
         sign publishing.publications.jars
       }
     }
