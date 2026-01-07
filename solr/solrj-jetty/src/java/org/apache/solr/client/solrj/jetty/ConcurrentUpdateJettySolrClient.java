@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.jetty;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.StreamingResponse;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -35,6 +37,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.eclipse.jetty.client.InputStreamResponseListener;
 import org.eclipse.jetty.client.OutputStreamRequestContent;
 import org.eclipse.jetty.client.Request;
+import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.http.HttpMethod;
 
 /** A ConcurrentUpdate SolrClient using {@link HttpJettySolrClient}. */
@@ -42,6 +45,40 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
   private final HttpJettySolrClient client;
+
+  /**
+   * Jetty-specific implementation of StreamingResponse that wraps Jetty's
+   * InputStreamResponseListener.
+   */
+  private static class JettyStreamingResponse implements StreamingResponse {
+    private final InputStreamResponseListener listener;
+    private Response response;
+
+    JettyStreamingResponse(InputStreamResponseListener listener) {
+      this.listener = listener;
+    }
+
+    @Override
+    public int awaitResponse(long timeoutMillis) throws Exception {
+      response = listener.get(timeoutMillis, TimeUnit.MILLISECONDS);
+      return response.getStatus();
+    }
+
+    @Override
+    public InputStream getInputStream() {
+      return listener.getInputStream();
+    }
+
+    @Override
+    public Object getUnderlyingResponse() {
+      return response;
+    }
+
+    @Override
+    public void close() {
+      // Jetty handles cleanup automatically
+    }
+  }
 
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
@@ -73,9 +110,9 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
   }
 
   @Override
-  protected InputStreamResponseListener doSendUpdateStream(
-      ConcurrentUpdateBaseSolrClient.Update update) throws IOException, InterruptedException {
-    InputStreamResponseListener responseListener;
+  protected StreamingResponse doSendUpdateStream(ConcurrentUpdateBaseSolrClient.Update update)
+      throws IOException, InterruptedException {
+    InputStreamResponseListener jettyListener;
     try (OutStream out = initOutStream(basePath, update.request(), update.collection())) {
       ConcurrentUpdateBaseSolrClient.Update upd = update;
       while (upd != null) {
@@ -91,9 +128,9 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
         notifyQueueAndRunnersIfEmptyQueue();
         upd = queue.poll(pollQueueTimeMillis, TimeUnit.MILLISECONDS);
       }
-      responseListener = out.getResponseListener();
+      jettyListener = out.getResponseListener();
     }
-    return responseListener;
+    return new JettyStreamingResponse(jettyListener);
   }
 
   private static class OutStream implements Closeable {

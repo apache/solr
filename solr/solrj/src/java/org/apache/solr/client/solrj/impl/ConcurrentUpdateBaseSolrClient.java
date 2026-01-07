@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -42,9 +43,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.eclipse.jetty.client.InputStreamResponseListener;
-import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -246,15 +244,14 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
               break;
             }
 
-            InputStreamResponseListener responseListener = null;
+            StreamingResponse responseListener = null;
             responseListener = doSendUpdateStream(update);
 
             // just wait for the headers, so the idle timeout is sensible
-            Response response = responseListener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+            int statusCode = responseListener.awaitResponse(idleTimeoutMillis);
             rspBody = responseListener.getInputStream();
 
-            int statusCode = response.getStatus();
-            if (statusCode != HttpStatus.OK_200) {
+            if (statusCode != HttpURLConnection.HTTP_OK) {
               SolrException solrExc;
               Object remoteError = null;
               // parse out the metadata from the SolrException
@@ -271,7 +268,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
               handleError(solrExc);
             } else {
-              onSuccess(response, rspBody);
+              onSuccess(responseListener.getUnderlyingResponse(), rspBody);
             }
             stallDetection.incrementProcessedCount();
 
@@ -290,7 +287,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     }
   }
 
-  protected abstract InputStreamResponseListener doSendUpdateStream(Update update)
+  protected abstract StreamingResponse doSendUpdateStream(Update update)
       throws IOException, InterruptedException;
 
   private void consumeFully(InputStream is) {
@@ -550,9 +547,11 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   /**
    * Intended to be used as an extension point for doing post-processing after a request completes.
    *
+   * @param responseMetadata implementation-specific response object (e.g., Jetty Response), may be
+   *     null
    * @param respBody the body of the response, subclasses must not close this stream.
    */
-  public void onSuccess(Response resp, InputStream respBody) {
+  public void onSuccess(Object responseMetadata, InputStream respBody) {
     // no-op by design, override to add functionality
   }
 
