@@ -4,4 +4,6 @@ type: changed
 authors:
   - name: Samuel Verstraete
     github: elangelo
-
+links:
+- name: PR#4023
+  url: https://github.com/apache/solr/pull/4023
