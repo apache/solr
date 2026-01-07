@@ -59,8 +59,8 @@ public class RestoreCore implements Callable<Boolean> {
 
   /**
    * Maximum number of files to download in parallel during restore. Can be configured via the
-   * system property {@code solr.backup.maxParallelDownloads} or environment variable {@code
-   * SOLR_BACKUP_MAX_PARALLEL_DOWNLOADS}.
+   * system property {@code solr.backup.maxparalleldownloads} or environment variable {@code
+   * SOLR_BACKUP_MAXPARALLELDOWNLOADS}.
    */
   private static final int DEFAULT_MAX_PARALLEL_DOWNLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleldownloads", 1);

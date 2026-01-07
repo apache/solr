@@ -88,8 +88,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
     System.setProperty("aws.accessKeyId", "foo");
     System.setProperty("aws.secretAccessKey", "bar");
     // Enable parallel backup/restore for cloud storage tests
-    System.setProperty("solr.backup.maxParallelUploads", "2");
-    System.setProperty("solr.backup.maxParallelDownloads", "2");
+    System.setProperty("solr.backup.maxparalleluploads", "2");
+    System.setProperty("solr.backup.maxparalleldownloads", "2");
     String retryMode;
     switch (random().nextInt(3)) {
       case 0:

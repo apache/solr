@@ -67,8 +67,8 @@ public class IncrementalShardBackup {
 
   /**
    * Maximum number of files to upload in parallel during backup. Can be configured via the system
-   * property {@code solr.backup.maxParallelUploads} or environment variable {@code
-   * SOLR_BACKUP_MAX_PARALLEL_UPLOADS}.
+   * property {@code solr.backup.maxparalleluploads} or environment variable {@code
+   * SOLR_BACKUP_MAXPARALLELUPLOADS}.
    */
   private static final int DEFAULT_MAX_PARALLEL_UPLOADS =
       EnvUtils.getPropertyAsInteger("solr.backup.maxparalleluploads", 1);
