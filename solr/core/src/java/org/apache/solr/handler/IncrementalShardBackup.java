@@ -231,38 +231,39 @@ public class IncrementalShardBackup {
 
     try {
       for (String fileName : indexFiles) {
-        Optional<ShardBackupMetadata.BackedFile> opBackedFile = oldBackupPoint.getFile(fileName);
-        Checksum originalFileCS = backupRepo.checksum(dir, fileName);
-
-        if (opBackedFile.isPresent()) {
-          ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
-          Checksum existedFileCS = backedFile.fileChecksum;
-          if (existedFileCS.equals(originalFileCS)) {
-            synchronized (currentBackupPoint) {
-              currentBackupPoint.addBackedFile(opBackedFile.get());
-            }
-            backupStats.skippedUploadingFile(existedFileCS);
-            continue;
-          }
-        }
-
-        // Capture variables for lambda
+        // Capture variable for lambda
         final String fileNameFinal = fileName;
-        final Checksum originalFileCSFinal = originalFileCS;
 
         Runnable uploadTask =
             () -> {
               try {
+                // Calculate checksum and check if file already exists in previous backup
+                Optional<ShardBackupMetadata.BackedFile> opBackedFile =
+                    oldBackupPoint.getFile(fileNameFinal);
+                Checksum originalFileCS = backupRepo.checksum(dir, fileNameFinal);
+
+                if (opBackedFile.isPresent()) {
+                  ShardBackupMetadata.BackedFile backedFile = opBackedFile.get();
+                  Checksum existedFileCS = backedFile.fileChecksum;
+                  if (existedFileCS.equals(originalFileCS)) {
+                    synchronized (currentBackupPoint) {
+                      currentBackupPoint.addBackedFile(opBackedFile.get());
+                    }
+                    backupStats.skippedUploadingFile(existedFileCS);
+                    return;
+                  }
+                }
+
+                // File doesn't exist or has changed - upload it
                 String backedFileName = UUID.randomUUID().toString();
                 backupRepo.copyIndexFileFrom(dir, fileNameFinal, indexDir, backedFileName);
 
                 synchronized (currentBackupPoint) {
-                  currentBackupPoint.addBackedFile(
-                      backedFileName, fileNameFinal, originalFileCSFinal);
+                  currentBackupPoint.addBackedFile(backedFileName, fileNameFinal, originalFileCS);
                 }
-                backupStats.uploadedFile(originalFileCSFinal);
+                backupStats.uploadedFile(originalFileCS);
               } catch (IOException e) {
-                throw new RuntimeException("Failed to upload file: " + fileNameFinal, e);
+                throw new RuntimeException("Failed to process file: " + fileNameFinal, e);
               }
             };
 
