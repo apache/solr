@@ -71,7 +71,6 @@ import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -85,9 +84,6 @@ import org.slf4j.LoggerFactory;
  * <p>For a similar test harness for snapshot backup/restoration see {@link
  * AbstractCloudBackupRestoreTestCase}
  */
-@LogLevel(
-    value =
-        "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -131,9 +127,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   public abstract String getBackupLocation();
 
   @Test
-  @LogLevel(
-      value =
-          "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testSimple() throws Exception {
     setTestSuffix("testbackupincsimple");
     final String backupCollectionName = getCollectionName();
@@ -200,9 +193,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel(
-      value =
-          "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testRestoreToOriginalCollection() throws Exception {
     setTestSuffix("testbackuprestoretooriginal");
     final String backupCollectionName = getCollectionName();
@@ -244,7 +234,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   @Test
-  @Nightly
+  //@Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -365,9 +355,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   @Test
-  @LogLevel(
-      value =
-          "org.apache.solr.cloud=DEBUG;org.apache.solr.cloud.api.collections=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
   public void testSkipConfigset() throws Exception {
     setTestSuffix("testskipconfigset");
     final String backupCollectionName = getCollectionName();
@@ -617,7 +604,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
-  private long getNumDocsInCollection(String collectionName) throws Exception {
+  protected long getNumDocsInCollection(String collectionName) throws Exception {
     return new QueryRequest(new SolrQuery("*:*"))
         .process(cluster.getSolrClient(), collectionName)
         .getResults()

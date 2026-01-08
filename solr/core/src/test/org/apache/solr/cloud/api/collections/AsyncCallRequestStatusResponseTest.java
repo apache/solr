@@ -68,8 +68,8 @@ public class AsyncCallRequestStatusResponseTest extends SolrCloudTestCase {
       final NamedList<?> success = (NamedList<?>) r.get("success");
       assertNotNull("Expected 'success' response" + r, success);
 
-      final int actualSuccessElems = 2 * (numShards * numReplicas);
-      // every replica responds once on submit and once on complete
+      final int actualSuccessElems = numShards * numReplicas;
+      // every replica responds either once on submit (failure) or once on complete (if submit succeeds)
       assertEquals(
           "Expected " + actualSuccessElems + " elements in the success element" + success.jsonStr(),
           actualSuccessElems,
