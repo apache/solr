@@ -89,7 +89,14 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
         return true;
       } else if (lastRecoveryTerm < newTerm) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
-        Replica leaderReplica = solrCore.getCoreContainer().getZkController().getClusterState().getCollection(cloudDescriptor.getCollectionName()).getSlice(cloudDescriptor.getShardId()).getLeader();
+        Replica leaderReplica =
+            solrCore
+                .getCoreContainer()
+                .getZkController()
+                .getClusterState()
+                .getCollection(cloudDescriptor.getCollectionName())
+                .getSlice(cloudDescriptor.getShardId())
+                .getLeader();
 
         // Only recover if the leader replica still has the highest term.
         // If not, then the leader-election process will take care of recovery.
@@ -102,7 +109,9 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
               .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
         } else {
           log.info(
-              "Defer recovery on {} because leader-election will happen soon, old leader {}", coreNodeName, leaderReplica.getName());
+              "Defer recovery on {} because leader-election will happen soon, old leader {}",
+              coreNodeName,
+              leaderReplica.getName());
         }
       }
     } catch (Exception e) {

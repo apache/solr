@@ -29,7 +29,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.api.collections.AbstractIncrementalBackupTest;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.LogLevel;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -155,14 +154,15 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
   @Test
   public void testRestoreToOriginalSucceedsOnASingleError() throws Exception {
-    JettySolrRunner badNodeJetty = cluster.startJettySolrRunner(
-        SOLR_XML
-            // The first solr node will not have a bad bucket
-            .replace("BAD_BUCKET_ALL_BUT_ONE", BUCKET_NAME)
-            .replace("BAD_BUCKET_ONE", "non-existent")
-            .replace("BUCKET", BUCKET_NAME)
-            .replace("REGION", Region.US_EAST_1.id())
-            .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()));
+    JettySolrRunner badNodeJetty =
+        cluster.startJettySolrRunner(
+            SOLR_XML
+                // The first solr node will not have a bad bucket
+                .replace("BAD_BUCKET_ALL_BUT_ONE", BUCKET_NAME)
+                .replace("BAD_BUCKET_ONE", "non-existent")
+                .replace("BUCKET", BUCKET_NAME)
+                .replace("REGION", Region.US_EAST_1.id())
+                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()));
 
     try {
       setTestSuffix("testRestoreToOriginalSucceedsOnASingleError");
@@ -170,7 +170,8 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
       final String backupName = BACKUPNAME_PREFIX + testSuffix;
 
       // Bootstrap the backup collection with seed docs
-      CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, NUM_NODES + 1)
+      CollectionAdminRequest.createCollection(
+              backupCollectionName, "conf1", NUM_SHARDS, NUM_NODES + 1)
           .process(cluster.getSolrClient());
       final int firstBatchNumDocs = indexDocs(backupCollectionName, true);
 
@@ -191,11 +192,14 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
       assertEquals(maxDocs, getNumDocsInCollection(backupCollectionName));
 
       /*
-       Restore original docs and validate that doc count is correct
-       */
+      Restore original docs and validate that doc count is correct
+      */
       // Test a single bad node
       try (BackupRepository repository =
-          cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME);
+              cluster
+                  .getJettySolrRunner(0)
+                  .getCoreContainer()
+                  .newBackupRepository(BACKUP_REPO_NAME);
           SolrClient goodNodeClient = cluster.getJettySolrRunner(0).newClient()) {
         final String backupLocation = repository.getBackupLocation(getBackupLocation());
         final RequestStatusState result =
@@ -218,7 +222,10 @@ public class S3IncrementalBackupTest extends AbstractIncrementalBackupTest {
 
       // Test a single good node
       try (BackupRepository repository =
-          cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(BACKUP_REPO_NAME);
+              cluster
+                  .getJettySolrRunner(0)
+                  .getCoreContainer()
+                  .newBackupRepository(BACKUP_REPO_NAME);
           SolrClient goodNodeClient = badNodeJetty.newClient()) {
         final String backupLocation = repository.getBackupLocation(getBackupLocation());
         final RequestStatusState result =

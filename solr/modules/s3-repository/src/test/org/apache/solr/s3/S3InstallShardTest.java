@@ -19,7 +19,7 @@ package org.apache.solr.s3;
 
 import com.adobe.testing.s3mock.junit4.S3MockRule;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import org.apache.commons.io.file.PathUtils;
+import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -31,9 +31,6 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import software.amazon.awssdk.regions.Region;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests validating that the 'Install Shard API' works when used with {@link S3BackupRepository}
@@ -98,13 +95,14 @@ public class S3InstallShardTest extends AbstractInstallShardTest {
 
   @Test
   public void testInstallSucceedsOnASingleError() throws Exception {
-    JettySolrRunner jettySolrRunner = cluster.startJettySolrRunner(
-        SOLR_XML
-            // The first solr node will not have a bad bucket
-            .replace("BAD_BUCKET", "non-existent")
-            .replace("BUCKET", BUCKET_NAME)
-            .replace("REGION", Region.US_EAST_1.id())
-            .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()));
+    JettySolrRunner jettySolrRunner =
+        cluster.startJettySolrRunner(
+            SOLR_XML
+                // The first solr node will not have a bad bucket
+                .replace("BAD_BUCKET", "non-existent")
+                .replace("BUCKET", BUCKET_NAME)
+                .replace("REGION", Region.US_EAST_1.id())
+                .replace("ENDPOINT", "http://localhost:" + S3_MOCK_RULE.getHttpPort()));
 
     try {
       final String collectionName = createAndAwaitEmptyCollection(1, 2);

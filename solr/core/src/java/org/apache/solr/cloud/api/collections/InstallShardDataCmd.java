@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.cloud.ZkShardTerms;
@@ -138,7 +137,9 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
             errorMessage + ". No leader-eligible replicas are live.");
       } else {
         throw new SolrErrorWrappingException(
-            SolrException.ErrorCode.SERVER_ERROR, errorMessage, Collections.singletonList(failures.asMap(1)));
+            SolrException.ErrorCode.SERVER_ERROR,
+            errorMessage,
+            Collections.singletonList(failures.asMap(1)));
       }
     } else if (successfulReplicas.size() < leaderEligibleReplicas.size()) {
       // Some, but not all, leader-eligible replicas succeeded.

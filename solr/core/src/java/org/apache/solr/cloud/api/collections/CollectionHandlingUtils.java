@@ -784,7 +784,8 @@ public class CollectionHandlingUtils {
 
     private void waitForAsyncCallsToComplete(NamedList<Object> results) {
       for (AsyncCmdInfo asyncCmdInfo : shardAsyncCmds) {
-        Object failure = results._get("failure/" + requestKey(asyncCmdInfo.nodeName, asyncCmdInfo.coreName));
+        Object failure =
+            results._get("failure/" + requestKey(asyncCmdInfo.nodeName, asyncCmdInfo.coreName));
         // Do not wait for Async calls that have already failed
         if (failure != null) {
           return;
