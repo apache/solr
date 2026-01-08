@@ -1512,14 +1512,21 @@ public class CoreContainer {
           preExistingZkEntry = getZkController().checkIfCoreNodeNameAlreadyExists(cd);
         }
 
-        final boolean deleteUnknownCores =
-            EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores.enabled", false);
-        if (deleteUnknownCores && Files.exists(cd.getInstanceDir())) {
-          log.warn(
-              "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
-              cd.getInstanceDir().toAbsolutePath(),
-              cd.getName());
-          SolrCore.deleteUnloadedCore(cd, true, true);
+        if (Files.exists(cd.getInstanceDir())) {
+          final boolean deleteUnknownCores =
+              EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores.enabled", false);
+          if (deleteUnknownCores) {
+            log.warn(
+                "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
+                cd.getInstanceDir().toAbsolutePath(),
+                cd.getName());
+            SolrCore.deleteUnloadedCore(cd, true, true);
+          } else {
+            log.warn(
+                "Directory at [{}] for core[{}] already exists preventing create operation.  Set solr.cloud.delete.unknown.cores.enabled=true to delete directory.  (SOLR-18008)",
+                cd.getInstanceDir().toAbsolutePath(),
+                cd.getName());
+          }
         }
 
         // Much of the logic in core handling pre-supposes that the core.properties file already
