@@ -19,7 +19,6 @@ package org.apache.solr.highlight;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Tests for the UnifiedHighlighter Solr plugin * */
@@ -41,9 +40,6 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertTrue(schema.getField("text3").storeOffsetsWithPositions());
     assertFalse(schema.getField("text2").storeOffsetsWithPositions());
   }
-
-  @AfterClass
-  public static void afterClass() {}
 
   @Override
   public void setUp() throws Exception {

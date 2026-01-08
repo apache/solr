@@ -16,7 +16,6 @@
  */
 package org.apache.solr.highlight;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class HighlighterWithoutStoredIdTest extends HighlighterTest {
@@ -26,7 +25,4 @@ public class HighlighterWithoutStoredIdTest extends HighlighterTest {
     System.setProperty("solr.tests.id.stored", "false");
     System.setProperty("solr.tests.id.docValues", "true");
   }
-
-  @AfterClass
-  public static void afterClassProps() {}
 }

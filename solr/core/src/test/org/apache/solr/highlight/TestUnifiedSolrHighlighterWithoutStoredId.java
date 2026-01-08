@@ -16,7 +16,6 @@
  */
 package org.apache.solr.highlight;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /** Tests for the UnifiedHighlighter Solr plugin * */
@@ -27,7 +26,4 @@ public class TestUnifiedSolrHighlighterWithoutStoredId extends TestUnifiedSolrHi
     System.setProperty("solr.tests.id.stored", "false");
     System.setProperty("solr.tests.id.docValues", "true");
   }
-
-  @AfterClass
-  public static void afterClassProps() {}
 }
