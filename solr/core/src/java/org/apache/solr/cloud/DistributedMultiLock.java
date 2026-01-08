@@ -47,7 +47,12 @@ public class DistributedMultiLock {
     for (DistributedLock lock : locks) {
       log.debug("DistributedMultiLock.waitUntilAcquired. About to wait on lock {}", lock);
       lock.waitUntilAcquired();
-      log.debug("DistributedMultiLock.waitUntilAcquired. Acquired lock {}", lock);
+      if (lock.isMirroringLock()) {
+        log.debug(
+            "DistributedMultiLock.waitUntilAcquired. Mirroring already-acquired lock {}", lock);
+      } else {
+        log.debug("DistributedMultiLock.waitUntilAcquired. Acquired lock {}", lock);
+      }
     }
   }
 
