@@ -39,6 +39,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +66,7 @@ public class CorePropertiesLocator implements CoresLocator {
   @Override
   public void create(CoreContainer cc, CoreDescriptor... coreDescriptors) {
     for (CoreDescriptor cd : coreDescriptors) {
+      checkForExistingCore(cd);
       Path propertiesFile = cd.getInstanceDir().resolve(PROPERTIES_FILENAME);
       if (Files.exists(propertiesFile))
         throw new SolrException(
@@ -239,5 +241,24 @@ public class CorePropertiesLocator implements CoresLocator {
     p.putAll(cd.getPersistableStandardProperties());
     p.putAll(cd.getPersistableUserProperties());
     return p;
+  }
+
+  protected void checkForExistingCore(CoreDescriptor cd) {
+    if (Files.exists(cd.getInstanceDir())) {
+      final boolean deleteUnknownCores =
+          EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores.enabled", false);
+      if (deleteUnknownCores) {
+        log.warn(
+            "Automatically deleting existing directory at [{}] for core [{}] because solr.cloud.delete.unknown.cores.enabled is true",
+            cd.getInstanceDir().toAbsolutePath(),
+            cd.getName());
+        SolrCore.deleteUnloadedCore(cd, true, true);
+      } else {
+        log.warn(
+            "Directory at [{}] for core[{}] already exists preventing create operation.  Set solr.cloud.delete.unknown.cores.enabled=true to delete directory.  (SOLR-18008)",
+            cd.getInstanceDir().toAbsolutePath(),
+            cd.getName());
+      }
+    }
   }
 }
