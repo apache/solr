@@ -28,7 +28,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.StreamingResponse;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -45,40 +44,6 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
 
   private final HttpJettySolrClient client;
-
-  /**
-   * Jetty-specific implementation of StreamingResponse that wraps Jetty's
-   * InputStreamResponseListener.
-   */
-  private static class JettyStreamingResponse implements StreamingResponse {
-    private final InputStreamResponseListener listener;
-    private Response response;
-
-    JettyStreamingResponse(InputStreamResponseListener listener) {
-      this.listener = listener;
-    }
-
-    @Override
-    public int awaitResponse(long timeoutMillis) throws Exception {
-      response = listener.get(timeoutMillis, TimeUnit.MILLISECONDS);
-      return response.getStatus();
-    }
-
-    @Override
-    public InputStream getInputStream() {
-      return listener.getInputStream();
-    }
-
-    @Override
-    public Object getUnderlyingResponse() {
-      return response;
-    }
-
-    @Override
-    public void close() throws IOException {
-      // Jetty handles cleanup automatically
-    }
-  }
 
   public static class Builder extends ConcurrentUpdateBaseSolrClient.Builder {
     /**
@@ -177,6 +142,40 @@ public class ConcurrentUpdateJettySolrClient extends ConcurrentUpdateBaseSolrCli
     // TODO this class should be hidden
     public InputStreamResponseListener getResponseListener() {
       return responseListener;
+    }
+  }
+
+  /**
+   * Jetty-specific implementation of StreamingResponse that wraps Jetty's
+   * InputStreamResponseListener.
+   */
+  private static class JettyStreamingResponse implements StreamingResponse {
+    private final InputStreamResponseListener listener;
+    private Response response;
+
+    JettyStreamingResponse(InputStreamResponseListener listener) {
+      this.listener = listener;
+    }
+
+    @Override
+    public int awaitResponse(long timeoutMillis) throws Exception {
+      response = listener.get(timeoutMillis, TimeUnit.MILLISECONDS);
+      return response.getStatus();
+    }
+
+    @Override
+    public InputStream getInputStream() {
+      return listener.getInputStream();
+    }
+
+    @Override
+    public Object getUnderlyingResponse() {
+      return response;
+    }
+
+    @Override
+    public void close() throws IOException {
+      // Jetty handles cleanup automatically
     }
   }
 
