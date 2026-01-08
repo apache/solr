@@ -60,8 +60,7 @@ public class CreateCollectionSnapshot extends AdminAPIBase
   public CreateCollectionSnapshotResponse createCollectionSnapshot(
       String collName, String snapshotName, CreateCollectionSnapshotRequestBody requestBody)
       throws Exception {
-    final CreateCollectionSnapshotResponse response =
-        instantiateJerseyResponse(CreateCollectionSnapshotResponse.class);
+    final var response = instantiateJerseyResponse(CreateCollectionSnapshotResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
@@ -79,35 +78,27 @@ public class CreateCollectionSnapshot extends AdminAPIBase
     }
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(collName, requestBody.followAliases, snapshotName, requestBody.async);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.CREATESNAPSHOT,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+        createRemoteMessage(collName, requestBody.followAliases, snapshotName);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.CREATESNAPSHOT,
+        remoteMessage,
+        requestBody.async);
 
     response.collection = collName;
     response.followAliases = requestBody.followAliases;
     response.snapshotName = snapshotName;
-    response.requestId = requestBody.async;
 
     return response;
   }
 
   public static ZkNodeProps createRemoteMessage(
-      String collectionName, boolean followAliases, String snapshotName, String asyncId) {
+      String collectionName, boolean followAliases, String snapshotName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATESNAPSHOT.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(CoreAdminParams.COMMIT_NAME, snapshotName);
     remoteMessage.put(FOLLOW_ALIASES, followAliases);
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

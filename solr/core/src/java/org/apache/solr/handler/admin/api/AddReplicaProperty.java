@@ -34,7 +34,9 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.AddReplicaPropertyApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -72,21 +74,17 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(collName, shardName, replicaName, propertyName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
+    submitRemoteMessageAndHandleResponse(
+            response,
             CollectionParams.CollectionAction.ADDREPLICAPROP,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+            remoteMessage,
+            null);
 
     disableResponseCaching();
     return response;
@@ -104,7 +102,6 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
     remoteMessage.put(SHARD_ID_PROP, shardName);
     remoteMessage.put(REPLICA_PROP, replicaName);
     remoteMessage.put(PROPERTY_VALUE_PROP, requestBody.value);
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.ADDREPLICAPROP.toLower());
     if (requestBody.shardUnique != null) {
       remoteMessage.put(SHARD_UNIQUE, requestBody.shardUnique);
     }

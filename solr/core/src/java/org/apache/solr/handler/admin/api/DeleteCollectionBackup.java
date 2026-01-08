@@ -87,7 +87,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     location = getAndValidateBackupLocation(repositoryName, location);
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(backupName, backupId, null, null, location, repositoryName, asyncId);
+        createRemoteMessage(backupName, backupId, null, null, location, repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
@@ -114,7 +114,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
-            backupName, null, versionsToRetain, null, location, repositoryName, asyncId);
+            backupName, null, versionsToRetain, null, location, repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
@@ -144,8 +144,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
             null,
             Boolean.TRUE,
             requestBody.location,
-            requestBody.repositoryName,
-            requestBody.async);
+            requestBody.repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response,
@@ -167,12 +166,10 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
       Integer versionsToRetain,
       Boolean purgeUnused,
       String location,
-      String repositoryName,
-      String asyncId) {
+      String repositoryName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
     // Always provided
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEBACKUP.toLower());
     remoteMessage.put(NAME, backupName);
     // Mutually exclusive
     assert backupId != null || versionsToRetain != null || purgeUnused != null;
@@ -182,7 +179,6 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     // Remaining params are truly optional
     insertIfNotNull(remoteMessage, BACKUP_LOCATION, location);
     insertIfNotNull(remoteMessage, BACKUP_REPOSITORY, repositoryName);
-    insertIfNotNull(remoteMessage, ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

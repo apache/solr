@@ -84,8 +84,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
   @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception {
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     if (requestBody == null) {
@@ -109,19 +108,11 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
       remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
     }
 
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.CREATEALIAS,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.CREATEALIAS,
+        remoteMessage,
+        requestBody.async);
     return response;
   }
 
@@ -129,19 +120,15 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
       CreateAliasRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
     remoteMessage.put(NAME, requestBody.name);
     remoteMessage.put("collections", String.join(",", requestBody.collections));
-    remoteMessage.put(ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }
 
   public static ZkNodeProps createRemoteMessageForRoutedAlias(CreateAliasRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
     remoteMessage.put(NAME, requestBody.name);
-    if (StrUtils.isNotBlank(requestBody.async)) remoteMessage.put(ASYNC, requestBody.async);
 
     if (requestBody.routers.size() > 1) { // Multi-dimensional alias
       for (int i = 0; i < requestBody.routers.size(); i++) {

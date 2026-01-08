@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.BalanceReplicasApi;
 import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -53,19 +54,15 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse balanceReplicas(BalanceReplicasRequestBody requestBody)
       throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    // TODO Record node for log and tracing
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    recordCollectionForLogAndTracing(null, solrQueryRequest);
+    fetchAndValidateZooKeeperAwareCoreContainer();
     final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionAction.BALANCE_REPLICAS,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionAction.BALANCE_REPLICAS,
+        remoteMessage,
+        requestBody.async);
 
     disableResponseCaching();
     return response;
@@ -76,7 +73,6 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
     if (requestBody != null) {
       insertIfNotNull(remoteMessage, NODES, requestBody.nodes);
       insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
     }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.BALANCE_REPLICAS.toLower());
 

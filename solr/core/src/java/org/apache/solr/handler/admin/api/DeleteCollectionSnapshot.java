@@ -56,23 +56,16 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
       String collName, String snapshotName, boolean followAliases, String asyncId)
       throws Exception {
     final var response = instantiateJerseyResponse(DeleteCollectionSnapshotResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
     final String collectionName = resolveCollectionName(collName, followAliases);
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(collectionName, followAliases, snapshotName, asyncId);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETESNAPSHOT,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        createRemoteMessage(collectionName, followAliases, snapshotName),
+        asyncId);
 
     response.collection = collName;
     response.snapshotName = snapshotName;
@@ -82,16 +75,12 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
-      String collectionName, boolean followAliases, String snapshotName, String asyncId) {
+  public static ZkNodeProps createRemoteMessage(String collectionName, boolean followAliases, String snapshotName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETESNAPSHOT.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(CoreAdminParams.COMMIT_NAME, snapshotName);
     remoteMessage.put(FOLLOW_ALIASES, followAliases);
-
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

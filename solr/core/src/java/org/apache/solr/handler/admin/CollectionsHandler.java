@@ -140,6 +140,7 @@ import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkController.NotInClusterStateException;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.api.collections.ReindexCollectionCmd;
@@ -317,17 +318,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       return;
     }
 
-    String asyncId = req.getParams().get(ASYNC);
-    if (asyncId != null) {
-      props.put(ASYNC, asyncId);
-    }
-
-    props.put(QUEUE_OPERATION, operation.action.toLower());
+    AdminCmdContext adminCmdContext = new AdminCmdContext(operation.action, req.getParams().get(ASYNC));
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
 
-    overseerResponse = submitCollectionApiCommand(zkProps, operation.action, operation.timeOut);
+    overseerResponse = submitCollectionApiCommand(adminCmdContext, zkProps, operation.timeOut);
 
     rsp.getValues().addAll(overseerResponse.getResponse());
     Exception exp = overseerResponse.getException();
@@ -340,13 +336,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
 
   public static long DEFAULT_COLLECTION_OP_TIMEOUT = 180 * 1000;
 
-  public SolrResponse submitCollectionApiCommand(ZkNodeProps m, CollectionAction action)
+  public SolrResponse submitCollectionApiCommand(AdminCmdContext adminCmdContext, ZkNodeProps m)
       throws KeeperException, InterruptedException {
-    return submitCollectionApiCommand(m, action, DEFAULT_COLLECTION_OP_TIMEOUT);
+    return submitCollectionApiCommand(adminCmdContext, m, DEFAULT_COLLECTION_OP_TIMEOUT);
   }
 
   public static SolrResponse submitCollectionApiCommand(
-      ZkController zkController, ZkNodeProps m, CollectionAction action, long timeout)
+      ZkController zkController, AdminCmdContext adminCmdContext, ZkNodeProps m, long timeout)
       throws KeeperException, InterruptedException {
     // Collection API messages are either sent to Overseer and processed there, or processed
     // locally. Distributing Collection API implies we're also distributing Cluster State Updates.
@@ -360,15 +356,17 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // updates (but the other way around is ok). See constructor of CloudConfig.
     Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
         zkController.getDistributedCommandRunner();
+    String operation = adminCmdContext.getAction().lowerName;
+    if (adminCmdContext.getAsyncId() == null) {
+      m = m.plus(Map.of(QUEUE_OPERATION, operation));
+    } else {
+      m = m.plus(Map.of(QUEUE_OPERATION, operation, ASYNC, adminCmdContext.getAsyncId()));
+    }
     if (distribCommandRunner.isPresent()) {
-      return distribCommandRunner.get().runCollectionCommand(m, action, timeout, m.getStr(CALLING_LOCK_ID));
+      return distribCommandRunner.get().runCollectionCommand(adminCmdContext, m, timeout);
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
-      String operation = m.getStr(QUEUE_OPERATION);
-      if (operation == null) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "missing key " + QUEUE_OPERATION);
-      }
-      if (m.get(ASYNC) != null) {
-        String asyncId = m.getStr(ASYNC);
+      if (adminCmdContext.getAsyncId() != null) {
+        String asyncId = adminCmdContext.getAsyncId();
         NamedList<Object> r = new NamedList<>();
 
         if (zkController.claimAsyncId(asyncId)) {
@@ -391,7 +389,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           throw new SolrException(
               BAD_REQUEST, "Task with the same requestid already exists. (" + asyncId + ")");
         }
-        r.add(CoreAdminParams.REQUESTID, m.get(ASYNC));
+        r.add(CoreAdminParams.REQUESTID, asyncId);
 
         return new OverseerSolrResponse(r);
       }
@@ -426,9 +424,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   }
 
   public SolrResponse submitCollectionApiCommand(
-      ZkNodeProps m, CollectionAction action, long timeout)
+      AdminCmdContext adminCmdContext, ZkNodeProps m, long timeout)
       throws KeeperException, InterruptedException {
-    return submitCollectionApiCommand(coreContainer.getZkController(), m, action, timeout);
+    return submitCollectionApiCommand(coreContainer.getZkController(), adminCmdContext, m, timeout);
   }
 
   private boolean overseerCollectionQueueContains(String asyncId)

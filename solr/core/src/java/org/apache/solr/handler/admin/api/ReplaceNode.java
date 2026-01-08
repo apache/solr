@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.ReplaceNodeApi;
 import org.apache.solr.client.api.model.ReplaceNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -59,19 +60,14 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse replaceNode(String sourceNodeName, ReplaceNodeRequestBody requestBody)
       throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    // TODO Record node for log and tracing
-    final ZkNodeProps remoteMessage = createRemoteMessage(sourceNodeName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.REPLACENODE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(null, solrQueryRequest);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.REPLACENODE,
+        createRemoteMessage(sourceNodeName, requestBody),
+        requestBody.async);
 
     disableResponseCaching();
     return response;
@@ -83,7 +79,6 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
     if (requestBody != null) {
       insertIfValueNotNull(remoteMessage, TARGET_NODE, requestBody.targetNodeName);
       insertIfValueNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      insertIfValueNotNull(remoteMessage, ASYNC, requestBody.async);
     }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());
 

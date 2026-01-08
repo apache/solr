@@ -99,8 +99,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
       throw new SolrException(BAD_REQUEST, "Request body is missing but required");
     }
 
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(requestBody.name, solrQueryRequest);
 
@@ -111,24 +110,11 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
 
     final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
+        submitRemoteMessageAndHandleResponse(
+            response,
             CollectionParams.CollectionAction.CREATE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-    response.warning = (String) remoteResponse.getResponse().get("warning");
+            remoteMessage,
+            requestBody.async);
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches
@@ -163,7 +149,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     final Map<String, Object> rawProperties = new HashMap<>();
     rawProperties.put("fromApi", "true");
 
-    rawProperties.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
     rawProperties.put(NAME, reqBody.name);
     rawProperties.put(COLL_CONF, reqBody.config);
     rawProperties.put(NUM_SLICES, reqBody.numShards);
@@ -175,8 +160,6 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     rawProperties.put(TLOG_REPLICAS, reqBody.tlogReplicas);
     rawProperties.put(WAIT_FOR_FINAL_STATE, reqBody.waitForFinalState);
     rawProperties.put(PER_REPLICA_STATE, reqBody.perReplicaState);
-    rawProperties.put(ALIAS, reqBody.alias);
-    rawProperties.put(ASYNC, reqBody.async);
     if (reqBody.createReplicas == null || reqBody.createReplicas) {
       // The remote message expects a single comma-delimited string, so nodeSet requires flattening
       if (reqBody.nodeSet != null) {

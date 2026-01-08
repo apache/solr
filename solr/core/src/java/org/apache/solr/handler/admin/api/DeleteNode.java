@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.DeleteNodeApi;
 import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -59,18 +60,13 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
       throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    final ZkNodeProps remoteMessage = createRemoteMessage(nodeName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETENODE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETENODE,
+        new ZkNodeProps(Map.of(NODE, nodeName)),
+        requestBody.async);
     disableResponseCaching();
     return response;
   }
@@ -81,19 +77,5 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
     final var requestBody = new DeleteNodeRequestBody();
     requestBody.async = params.get(ASYNC);
     return apiInstance.deleteNode(requiredParams.get(NODE), requestBody);
-  }
-
-  public static ZkNodeProps createRemoteMessage(
-      String nodeName, DeleteNodeRequestBody requestBody) {
-    Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(NODE, nodeName);
-    if (requestBody != null) {
-      if (requestBody.async != null) {
-        remoteMessage.put(ASYNC, requestBody.async);
-      }
-    }
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETENODE.toLower());
-
-    return new ZkNodeProps(remoteMessage);
   }
 }

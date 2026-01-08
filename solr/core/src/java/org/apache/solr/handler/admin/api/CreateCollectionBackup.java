@@ -42,12 +42,14 @@ import org.apache.solr.client.api.endpoint.CollectionBackupApi;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionBackupResponseBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -109,20 +111,15 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
           "Unknown index backup strategy " + requestBody.backupStrategy);
     }
 
+    final var response = instantiateJerseyResponse(CreateCollectionBackupResponseBody.class);
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, backupName, requestBody);
     final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
+        submitRemoteMessageAndHandleResponse(
+            response,
             CollectionParams.CollectionAction.BACKUP,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    final SolrJerseyResponse response =
-        objectMapper.convertValue(
-            remoteResponse.getResponse(), CreateCollectionBackupResponseBody.class);
+            remoteMessage,
+            requestBody.async);
+    objectMapper.updateValue(response, remoteResponse.getResponse());
 
     return response;
   }
@@ -130,7 +127,6 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
     final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.BACKUP.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(NAME, backupName);
     if (!StringUtils.isBlank(requestBody.backupStrategy)) {

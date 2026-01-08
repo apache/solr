@@ -25,6 +25,7 @@ import java.util.HashMap;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
 import org.apache.solr.common.SolrException;
@@ -61,7 +62,7 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
   @PermissionName(COLL_EDIT_PERM)
   public AsyncJerseyResponse installShardData(
       String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {
-    final var response = instantiateJerseyResponse(AsyncJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
     if (requestBody == null) {
@@ -87,21 +88,11 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
           "Collection must be in readOnly mode before installing data to shard with more than 1 replica");
     }
 
-    ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.INSTALLSHARDDATA,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.INSTALLSHARDDATA,
+        createRemoteMessage(collName, shardName, requestBody),
+        requestBody.async);
 
     return response;
   }
@@ -127,7 +118,6 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
       messageTyped.repository = requestBody.repository;
       messageTyped.name = requestBody.name;
       messageTyped.shardBackupId = requestBody.shardBackupId;
-      messageTyped.asyncId = requestBody.async;
       messageTyped.callingLockId = requestBody.callingLockId;
     }
 

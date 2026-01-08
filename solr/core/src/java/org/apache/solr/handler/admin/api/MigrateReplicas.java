@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.MigrateReplicasApi;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -55,19 +56,14 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse migrateReplicas(MigrateReplicasRequestBody requestBody)
       throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    // TODO Record node for log and tracing
-    final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionAction.MIGRATE_REPLICAS,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(null, solrQueryRequest);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionAction.MIGRATE_REPLICAS,
+        createRemoteMessage(requestBody),
+        requestBody.async);
 
     disableResponseCaching();
     return response;
@@ -84,13 +80,11 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
       insertIfNotNull(remoteMessage, SOURCE_NODES, requestBody.sourceNodes);
       insertIfNotNull(remoteMessage, TARGET_NODES, requestBody.targetNodes);
       insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
-      insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
     } else {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "No request body sent with request. The MigrateReplicas API requires a body.");
     }
-    remoteMessage.put(QUEUE_OPERATION, CollectionAction.MIGRATE_REPLICAS.toLower());
 
     return new ZkNodeProps(remoteMessage);
   }

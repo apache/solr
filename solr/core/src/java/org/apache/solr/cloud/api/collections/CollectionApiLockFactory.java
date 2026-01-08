@@ -59,11 +59,11 @@ public class CollectionApiLockFactory {
    *     prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
-      CollectionParams.LockLevel lockLevel,
+      AdminCmdContext adminCmdContext,
       String collName,
       String shardId,
-      String replicaName,
-      String callingLockId) {
+      String replicaName) {
+    CollectionParams.LockLevel lockLevel = adminCmdContext.getAction().lockLevel;
     if (lockLevel == CollectionParams.LockLevel.NONE) {
       return new DistributedMultiLock(List.of());
     }
@@ -111,8 +111,10 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
-    List<String> callingLockIdList =
-        callingLockId == null ? Collections.emptyList() : List.of(callingLockId.split(","));
+    List<String> callingLockIdList = adminCmdContext.getCallingLockIds();
+    if (callingLockIdList == null) {
+      callingLockIdList = Collections.emptyList();
+    }
 
     // The first requested lock is a write one (on the target object for the action, depending on
     // lock level), then requesting read locks on "higher" levels (collection > shard > replica here

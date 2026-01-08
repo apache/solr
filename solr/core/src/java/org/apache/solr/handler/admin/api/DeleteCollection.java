@@ -57,42 +57,25 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
       String collectionName, Boolean followAliases, String asyncId) throws Exception {
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases, asyncId);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (asyncId != null) {
-      response.requestId = asyncId;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases);
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETE,
+        remoteMessage,
+        asyncId);
 
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
-      String collectionName, Boolean followAliases, String asyncId) {
+  public static ZkNodeProps createRemoteMessage(String collectionName, Boolean followAliases) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower());
     remoteMessage.put(NAME, collectionName);
     if (followAliases != null) remoteMessage.put(FOLLOW_ALIASES, followAliases);
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }
