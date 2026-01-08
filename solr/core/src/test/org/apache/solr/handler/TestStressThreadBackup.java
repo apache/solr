@@ -56,7 +56,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -79,9 +78,6 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
   public static void beforeClass() {
     System.setProperty("solr.security.allow.paths", "*");
   }
-
-  @AfterClass
-  public static void afterClass() {}
 
   @Before
   public void beforeTest() throws Exception {
