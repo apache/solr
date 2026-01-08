@@ -6,4 +6,3 @@ ics~=0.7.2
 console-menu~=0.7.1
 PyGithub~=1.56
 jira~=3.4.1
-json
