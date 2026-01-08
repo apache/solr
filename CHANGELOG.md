@@ -10,6 +10,26 @@
 This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
 
 
+[9.10.1] - 2026-01-08
+---------------------
+
+### Fixed (5 changes)
+
+- When using SolrCell with TikaServer, the connection will no longer timeout after 30s idle, such as during OCR processing [PR#3926](https://github.com/apache/solr/pull/3926) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
+- Retry creation of ZK lock on transient connection loss. [SOLR-17972](https://issues.apache.org/jira/browse/SOLR-17972) (Pierre Salagnac)
+- Make distributed no-rows queries fast again [SOLR-17985](https://issues.apache.org/jira/browse/SOLR-17985) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+- Fix reverse distance sorting on LatLonPointSpatialField and "SRPT" fields when combined with the filter cache. This is a regression since Solr 9.9. [SOLR-18006](https://issues.apache.org/jira/browse/SOLR-18006) [SOLR-18016](https://issues.apache.org/jira/browse/SOLR-18016) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (Umut Saribiyik @umut-sar) (David Smiley)
+- Ensure ParallelHttpShardHandler records submit failures so distributed requests don’t hang [SOLR-17983](https://issues.apache.org/jira/browse/SOLR-17983) (Mark Miller)
+
+### Dependency Upgrades (1 change)
+
+- Upgrade Log4j to 2.25.3 !3963 ([Piotr P. Karwasz](https://home.apache.org/phonebook.html?uid=pkarwasz) @ppkarwasz)
+
+### Security (1 change)
+
+- Mitigate CVE-2025-54988 by disabling XFA parsing in PDF documents when using SolrCell extraction [SOLR-17888](https://issues.apache.org/jira/browse/SOLR-17888) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
+
+
 [9.10.0]
 --------
 
@@ -91,7 +111,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 ### Other (9 changes)
 
 - Deprecate `CloudHttp2SolrClient.Builder#withHttpClient` in favor of `CloudHttp2SolrClient.Builder#withInternalClientBuilder`. Deprecate `LBHttp2SolrClient.Builder#withListenerFactory` in favor of `LBHttp2SolrClient.Builder#withListenerFactories`. [SOLR-17541](https://issues.apache.org/jira/browse/SOLR-17541) (James Dyer)
-- Use logchange for changelog management ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy) @janhoy)
+- Use logchange for changelog management [SOLR-17619](https://issues.apache.org/jira/browse/SOLR-17619) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy) @janhoy)
 - SolrCloud "live_node" now has metadata: version of Solr, roles [SOLR-17620](https://issues.apache.org/jira/browse/SOLR-17620) (Yuntong Qu) (David Smiley)
 - Deprecating waitForFinalState parameter in any SolrCloud command that accepts it. It remains defaulted to false in 9, but will become true and likely removed. [SOLR-17712](https://issues.apache.org/jira/browse/SOLR-17712) (Abhishek Umarjikar) (David Smiley)
 - Deprecate `CloudSolrClient.Builder` in favor of `CloudHttp2SolrClient.Builder`. [SOLR-17771](https://issues.apache.org/jira/browse/SOLR-17771) (James Dyer)
