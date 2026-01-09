@@ -255,7 +255,7 @@ public class CorePropertiesLocator implements CoresLocator {
         SolrCore.deleteUnloadedCore(cd, true, true);
       } else {
         log.warn(
-            "Directory at [{}] for core[{}] already exists preventing create operation.  Set solr.cloud.delete.unknown.cores.enabled=true to delete directory.  (SOLR-18008)",
+            "Directory at [{}] for core[{}] already exists may prevent create operation.  Set solr.cloud.delete.unknown.cores.enabled=true to delete directory.  (SOLR-18008)",
             cd.getInstanceDir().toAbsolutePath(),
             cd.getName());
       }
