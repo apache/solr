@@ -79,7 +79,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     private final int queueSize;
     private final E backdoorE;
 
-    public CustomBlockingQueue(int queueSize, int maxConsumers, E backdoorE) {
+    public CustomBlockingQueue(int queueSize, E backdoorE) {
       queue = new LinkedBlockingQueue<>();
       available = new Semaphore(queueSize);
       this.queueSize = queueSize;
@@ -154,7 +154,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     this.shutdownClient = builder.closeHttpClient;
     this.idleTimeoutMillis = builder.idleTimeoutMillis;
     this.threadCount = builder.threadCount;
-    this.queue = new CustomBlockingQueue<>(builder.queueSize, threadCount, END_UPDATE);
+    this.queue = new CustomBlockingQueue<>(builder.queueSize, END_UPDATE);
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
