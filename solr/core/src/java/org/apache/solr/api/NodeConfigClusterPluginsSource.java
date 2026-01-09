@@ -22,7 +22,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.PluginInfo;
@@ -80,8 +79,7 @@ public class NodeConfigClusterPluginsSource implements ClusterPluginsSource {
         pluginMap.put("class", p.className);
 
         if (p.initArgs.size() > 0) {
-          Map<String, Object> config = new SimpleOrderedMap<>(p.initArgs);
-          pluginMap.put("config", config);
+          pluginMap.put("config", p.initArgs.asMap(0));
         }
 
         pluginInfos.put(pluginName, pluginMap);
