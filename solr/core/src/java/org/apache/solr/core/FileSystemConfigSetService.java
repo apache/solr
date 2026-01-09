@@ -56,15 +56,21 @@ public class FileSystemConfigSetService extends ConfigSetService {
   public static final String METADATA_FILE = ".metadata.json";
 
   private final Path configSetBase;
+  // TODO currently it's not really possible to check paths against allowPaths without a
+  // CoreContainer reference, see SOLR-18059
+  private final CoreContainer cc;
 
   public FileSystemConfigSetService(CoreContainer cc) {
     super(cc.getResourceLoader(), cc.getConfig().hasSchemaCache());
+
+    this.cc = cc;
     this.configSetBase = cc.getConfig().getConfigSetBaseDirectory();
   }
 
   /** Testing purpose */
   protected FileSystemConfigSetService(Path configSetBase) {
     super(null, false);
+    this.cc = null;
     this.configSetBase = configSetBase;
   }
 
@@ -317,6 +323,13 @@ public class FileSystemConfigSetService extends ConfigSetService {
     String configSet = cd.getConfigSet();
     if (configSet == null) return cd.getInstanceDir();
     Path configSetDirectory = configSetBase.resolve(configSet);
+
+    // CoreContainer only null in testing scenarios - bit of a hack, but will go away with
+    // SOLR-18059
+    if (cc != null) {
+      cc.assertPathAllowed(configSetDirectory);
+    }
+
     if (!Files.isDirectory(configSetDirectory))
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,

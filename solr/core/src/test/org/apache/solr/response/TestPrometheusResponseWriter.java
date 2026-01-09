@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
@@ -33,6 +35,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ExternalPaths;
@@ -53,6 +56,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     SharedMetricRegistries.clear();
 
+    EnvUtils.setProperty(ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME);
     solrClientTestRule.startSolr(LuceneTestCase.createTempDir());
     solrClientTestRule.newCollection().withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     var cc = solrClientTestRule.getCoreContainer();
