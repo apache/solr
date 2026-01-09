@@ -71,10 +71,13 @@ public class SolrStandaloneScraperBasicAuthTest extends SolrTestCaseJ4 {
   public static void setupSolrHome() throws Exception {
     Path solrHome = LuceneTestCase.createTempDir();
     Files.write(solrHome.resolve("security.json"), securityJson.getBytes(StandardCharsets.UTF_8));
-    solrRule.startSolr(solrHome);
 
     Path configSet = LuceneTestCase.createTempDir();
     SolrStandaloneScraperTest.createConf(configSet);
+    System.setProperty("solr.allowPaths", configSet.toAbsolutePath().toString());
+
+    solrRule.startSolr(solrHome);
+
     solrRule
         .newCollection()
         .withConfigSet(configSet.toString())

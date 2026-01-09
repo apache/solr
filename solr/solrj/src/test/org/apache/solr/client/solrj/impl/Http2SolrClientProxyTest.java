@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import com.carrotsearch.randomizedtesting.RandomizedTest;
 import java.util.Arrays;
 import java.util.Objects;
@@ -26,6 +28,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -44,6 +47,8 @@ public class Http2SolrClientProxyTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     RandomizedTest.assumeFalse(sslConfig.isSSLMode());
 
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME); // Needed for configset location
     solrClientTestRule.enableProxy();
     solrClientTestRule.startSolr(createTempDir(), new Properties(), JettyConfig.builder().build());
     // Actually only need extremely minimal configSet but just use the default

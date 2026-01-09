@@ -54,10 +54,12 @@ public class SolrStandaloneScraperTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void setupBeforeClass() throws Exception {
-    solrRule.startSolr(LuceneTestCase.createTempDir());
-
     Path configSet = LuceneTestCase.createTempDir();
     createConf(configSet);
+    System.setProperty("solr.allowPaths", configSet.toAbsolutePath().toString());
+
+    solrRule.startSolr(LuceneTestCase.createTempDir());
+
     solrRule.newCollection().withConfigSet(configSet.toString()).create();
 
     PrometheusExporterSettings settings = PrometheusExporterSettings.builder().build();
