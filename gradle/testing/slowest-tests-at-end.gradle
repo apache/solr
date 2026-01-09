@@ -42,9 +42,9 @@ allprojects {
       }
 
       if (resolvedTestOption("tests.slowestSuites").toBoolean()) {
-        afterSuite {desc, result
-          ->
-          // Gradle reports runner times as well, omit anything that isn't attached to a concrete class.
+        afterSuite {desc, result ->
+          // Gradle reports runner times as well, omit anything that isn't attached to a concrete
+          // class.
           if (desc.className != null) {
             def duration = (result.getEndTime() - result.getStartTime())
 

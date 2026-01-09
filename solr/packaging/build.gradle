@@ -49,9 +49,7 @@ configurations {
 
 dependencies {
   project(":solr:modules").childProjects.values().stream().map {project -> project.path}.each {
-    module
-      ->
-      modules project(path: module, configuration: "packaging")
+    module -> modules project(path: module, configuration: "packaging")
   }
 
   crossDcManager project(path: ":solr:cross-dc-manager", configuration: "packaging")

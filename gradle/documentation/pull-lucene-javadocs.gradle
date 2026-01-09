@@ -62,15 +62,16 @@ configure(project(":solr:documentation")) {
 
     doFirst {
       def resolved = configurations.javadocs.resolvedConfiguration
-      resolved.resolvedArtifacts.each {artifact
-        ->
+      resolved.resolvedArtifacts.each {artifact ->
         def id = artifact.moduleVersion.id
-        // This mimics the directory structure used on lucene.apache.org for the javadocs of all modules.
+        // This mimics the directory structure used on lucene.apache.org for the javadocs of
+        // all modules.
         //
-        // HACK: the lucene.apache.org javadocs are organized to match the module directory structure in the repo,
-        // not the "flat" artifact names -- so there is no one size fits all way to determine the directory name.
-        // We have to "special case" that analysis-* modules are in an 'analysis/*' subdir, while the general rule is that
-        // '-' in artifact names are left as part of the dir name (ie: 'spatial-extras/')....
+        // HACK: the lucene.apache.org javadocs are organized to match the module directory
+        // structure in the repo, not the "flat" artifact names -- so there is no one size fits
+        // all way to determine the directory name. We have to "special case" that analysis-*
+        // modules are in an 'analysis/*' subdir, while the general rule is that '-' in artifact
+        // names are left as part of the dir name (ie: 'spatial-extras/')....
         def path = id.name.replaceFirst('^lucene-', '').replaceFirst('^analysis-', 'analysis/')
         project.sync {
           from zipTree(artifact.file)

@@ -179,8 +179,7 @@ allprojects {
       }
 
       // Append resolved test properties to the test task.
-      tasks.withType(Test) {task
-        ->
+      tasks.withType(Test) {
         // TODO: we could remove some options that are only relevant to the build environment
         // and not the test JVM itself.
         systemProperties testOptionsResolved
@@ -195,7 +194,8 @@ allprojects {
           failFast true
         }
 
-        // The Lucene version is only available after resolving was done, so add lately using a provider:
+        // The Lucene version is only available after resolving was done, so add lately using a
+        // provider:
         jvmArgumentProviders.add({
           def luceneMatchVersion = rootProject.luceneBaseVersionProvider.get()
           return [
@@ -204,8 +204,9 @@ allprojects {
           ]
         } as CommandLineArgumentProvider)
 
-        // Enable security manager, if requested. We could move the selection of security manager and security policy
-        // to each project's build/ configuration but it seems compact enough to keep it here for now.
+        // Enable security manager, if requested. We could move the selection of security manager
+        // and security policy to each project's build/ configuration but it seems compact enough to
+        // keep it here for now.
         def useSecurityManager = Boolean
             .parseBoolean(testOptionsResolved["tests.useSecurityManager"]);
         // Allow the project to override this
