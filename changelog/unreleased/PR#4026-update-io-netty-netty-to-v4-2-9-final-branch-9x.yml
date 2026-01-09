@@ -1,0 +1,7 @@
+title: Update io.netty:netty* to v4.2.9.Final (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4026
+  url: https://github.com/apache/solr/pull/4026
