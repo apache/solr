@@ -169,9 +169,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
-      throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     log.debug("*** called: {}", message);
 
@@ -189,6 +187,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       collection = extCollection;
     }
+    ClusterState clusterState = ccc.getZkStateReader().getClusterState();
     if (!clusterState.hasCollection(collection)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Source collection name must exist");
@@ -294,13 +293,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
       if (clusterState.hasCollection(chkCollection)) {
         // delete the checkpoint collection
-        cmd =
-            new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                CollectionParams.CollectionAction.DELETE.toLower(),
-                CommonParams.NAME,
-                chkCollection);
-        new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+        new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, null).withClusterState(clusterState), new ZkNodeProps(CommonParams.NAME, chkCollection), cmdResults);
         CollectionHandlingUtils.checkResults(
             "deleting old checkpoint collection " + chkCollection, cmdResults, true);
       }
@@ -311,7 +304,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower());
       propMap.put(CommonParams.NAME, targetCollection);
       propMap.put(ZkStateReader.NUM_SHARDS_PROP, numShards);
       propMap.put(CollectionAdminParams.COLL_CONF, configName);
@@ -339,7 +331,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // create the target collection
       cmd = new ZkNodeProps(propMap);
       cmdResults = new NamedList<>();
-      new CreateCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+      new CreateCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.CREATE, null).withClusterState(ccc.getSolrCloudManager().getClusterState()), cmd, cmdResults);
       createdTarget = true;
       CollectionHandlingUtils.checkResults(
           "creating target collection " + targetCollection, cmdResults, true);
@@ -347,14 +339,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       // create the checkpoint collection - use RF=1 and 1 shard
       cmd =
           new ZkNodeProps(
-              Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.CREATE.toLower(),
               CommonParams.NAME, chkCollection,
               ZkStateReader.NUM_SHARDS_PROP, "1",
               ZkStateReader.REPLICATION_FACTOR, "1",
               CollectionAdminParams.COLL_CONF, "_default",
               CommonAdminParams.WAIT_FOR_FINAL_STATE, "true");
       cmdResults = new NamedList<>();
-      new CreateCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+      new CreateCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.CREATE, null).withClusterState(ccc.getSolrCloudManager().getClusterState()), cmd, cmdResults);
       CollectionHandlingUtils.checkResults(
           "creating checkpoint collection " + chkCollection, cmdResults, true);
       // wait for a while until we see both collections
@@ -366,8 +357,6 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Could not fully create temporary collection(s)");
       }
-
-      clusterState = ccc.getSolrCloudManager().getClusterState();
 
       if (maybeAbort(collection)) {
         aborted = true;
@@ -481,7 +470,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.debug("- setting up alias from {} to {}", extCollection, targetCollection);
         cmd = new ZkNodeProps(CommonParams.NAME, extCollection, "collections", targetCollection);
         cmdResults = new NamedList<>();
-        new CreateAliasCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+        new CreateAliasCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.CREATEALIAS, null).withClusterState(ccc.getSolrCloudManager().getClusterState()), cmd, cmdResults);
         CollectionHandlingUtils.checkResults(
             "setting up alias " + extCollection + " -> " + targetCollection, cmdResults, true);
         reindexingState.put("alias", extCollection + " -> " + targetCollection);
@@ -499,14 +488,8 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
       // 6. delete the checkpoint collection
       log.debug("- deleting {}", chkCollection);
-      cmd =
-          new ZkNodeProps(
-              Overseer.QUEUE_OPERATION,
-              CollectionParams.CollectionAction.DELETE.toLower(),
-              CommonParams.NAME,
-              chkCollection);
       cmdResults = new NamedList<>();
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+      new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, null).withClusterState(ccc.getSolrCloudManager().getClusterState()), new ZkNodeProps(CommonParams.NAME, chkCollection), cmdResults);
       CollectionHandlingUtils.checkResults(
           "deleting checkpoint collection " + chkCollection, cmdResults, true);
 
@@ -515,14 +498,12 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
         log.debug("- deleting source collection");
         cmd =
             new ZkNodeProps(
-                Overseer.QUEUE_OPERATION,
-                CollectionParams.CollectionAction.DELETE.toLower(),
                 CommonParams.NAME,
                 collection,
                 FOLLOW_ALIASES,
                 "false");
         cmdResults = new NamedList<>();
-        new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+        new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, null).withClusterState(ccc.getSolrCloudManager().getClusterState()), cmd, cmdResults);
         CollectionHandlingUtils.checkResults(
             "deleting source collection " + collection, cmdResults, true);
       } else {
@@ -576,13 +557,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
       if (aborted) {
         cleanup(
+            adminCmdContext,
             collection,
             targetCollection,
             chkCollection,
             daemonReplica,
             targetCollection,
-            createdTarget,
-            lockId);
+            createdTarget);
         if (exc != null) {
           results.add("error", exc.toString());
         }
@@ -871,13 +852,13 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private void cleanup(
+      AdminCmdContext adminCmdContext,
       String collection,
       String targetCollection,
       String chkCollection,
       Replica daemonReplica,
       String daemonName,
-      boolean createdTarget,
-      String lockId)
+      boolean createdTarget)
       throws Exception {
     log.info("## Cleaning up after abort or error");
     // 1. kill the daemon
@@ -895,13 +876,11 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug(" -- removing {}", targetCollection);
       ZkNodeProps cmd =
           new ZkNodeProps(
-              Overseer.QUEUE_OPERATION,
-              CollectionParams.CollectionAction.DELETE.toLower(),
               CommonParams.NAME,
               targetCollection,
               FOLLOW_ALIASES,
               "false");
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+      new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, null).withClusterState(clusterState), cmd, cmdResults);
       CollectionHandlingUtils.checkResults(
           "CLEANUP: deleting target collection " + targetCollection, cmdResults, false);
     }
@@ -910,14 +889,12 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       log.debug(" -- removing {}", chkCollection);
       ZkNodeProps cmd =
           new ZkNodeProps(
-              Overseer.QUEUE_OPERATION,
-              CollectionParams.CollectionAction.DELETE.toLower(),
               CommonParams.NAME,
               chkCollection,
               FOLLOW_ALIASES,
               "false");
       cmdResults = new NamedList<>();
-      new DeleteCollectionCmd(ccc).call(clusterState, cmd, lockId, cmdResults);
+      new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, null).withClusterState(clusterState), cmd, cmdResults);
       CollectionHandlingUtils.checkResults(
           "CLEANUP: deleting checkpoint collection " + chkCollection, cmdResults, false);
     }

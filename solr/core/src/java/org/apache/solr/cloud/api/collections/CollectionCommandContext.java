@@ -55,9 +55,9 @@ public interface CollectionCommandContext {
 
   CoreContainer getCoreContainer();
 
-  default ShardRequestTracker asyncRequestTracker(String asyncId) {
+  default ShardRequestTracker asyncRequestTracker(AdminCmdContext adminCmdContext) {
     return new ShardRequestTracker(
-        asyncId, getAdminPath(), getZkStateReader(), newShardHandler().getShardHandlerFactory());
+        adminCmdContext.getAsyncId(), adminCmdContext.getSubRequestCallingLockIds(), getAdminPath(), getZkStateReader(), newShardHandler().getShardHandlerFactory());
   }
 
   /** admin path passed to Overseer is a constant, including in tests. */

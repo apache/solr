@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -34,7 +33,6 @@ import java.util.Optional;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -71,9 +69,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
   @SuppressWarnings("unchecked")
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
-      throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -124,7 +120,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
             if (incremental) {
               try {
                 incrementalCopyIndexFiles(
-                    backupUri, collectionName, message, results, backupProperties, backupMgr);
+                    adminCmdContext, backupUri, collectionName, message, results, backupProperties, backupMgr);
               } catch (SolrException e) {
                 log.error(
                     "Error happened during incremental backup for collection: {}",
@@ -136,7 +132,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
               }
             } else {
               copyIndexFiles(
-                  backupUri, collectionName, message, results, backupProperties, backupMgr);
+                  adminCmdContext, backupUri, collectionName, message, results, backupProperties, backupMgr);
             }
             break;
           }
@@ -289,6 +285,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private void incrementalCopyIndexFiles(
+      AdminCmdContext adminCmdContext,
       URI backupUri,
       String collectionName,
       ZkNodeProps request,
@@ -297,7 +294,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       BackupManager backupManager)
       throws IOException {
     String backupName = request.getStr(NAME);
-    String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     ShardHandler shardHandler = ccc.newShardHandler();
 
@@ -309,7 +305,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
     Optional<BackupProperties> previousProps = backupManager.tryReadBackupProperties();
     final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
 
     Collection<Slice> slices =
         ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices();
@@ -435,6 +431,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private void copyIndexFiles(
+      AdminCmdContext adminCmdContext,
       URI backupPath,
       String collectionName,
       ZkNodeProps request,
@@ -443,7 +440,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       BackupManager backupManager)
       throws Exception {
     String backupName = request.getStr(NAME);
-    String asyncId = request.getStr(ASYNC);
     String repoName = request.getStr(CoreAdminParams.BACKUP_REPOSITORY);
     ShardHandler shardHandler = ccc.newShardHandler();
 
@@ -485,7 +481,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     Collection<Slice> slices =
         ccc.getZkStateReader().getClusterState().getCollection(collectionName).getActiveSlices();
     for (Slice slice : slices) {

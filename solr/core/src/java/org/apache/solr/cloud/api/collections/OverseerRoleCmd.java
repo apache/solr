@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -55,9 +54,7 @@ public class OverseerRoleCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
-      throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
     if (ccc.isDistributedCollectionAPI()) {
       // No Overseer (not accessible from Collection API command execution in any case) so this
       // command can't be run...

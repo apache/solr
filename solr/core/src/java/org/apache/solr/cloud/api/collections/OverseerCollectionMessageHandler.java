@@ -21,11 +21,14 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logF
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -41,11 +44,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -128,7 +131,11 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       CollectionAction action = getCollectionAction(operation);
       CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
       if (command != null) {
-        command.call(cloudManager.getClusterState(), message, lock.id(), results);
+        AdminCmdContext adminCmdContext = new AdminCmdContext(action, message.getStr(ASYNC));
+        adminCmdContext.setLockId(lock.id());
+        adminCmdContext.setCallingLockIds(message.getStr(CALLING_LOCK_IDS_HEADER));
+        adminCmdContext.withClusterState(cloudManager.getClusterState());
+        command.call(adminCmdContext, message, results);
       } else {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown operation:" + operation);
       }
@@ -189,13 +196,18 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       sessionId = batchSessionId;
     }
 
+    List<String> callingLockIds = null;
+    String callingLockIdsString = message.getStr(CALLING_LOCK_IDS_HEADER);
+    if (StrUtils.isNotBlank(callingLockIdsString)) {
+      callingLockIds = List.of(callingLockIdsString.split(","));
+    }
     return lockSession.lock(
         getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
         Arrays.asList(
             getTaskKey(message),
             message.getStr(ZkStateReader.SHARD_ID_PROP),
             message.getStr(ZkStateReader.REPLICA_PROP)),
-        message.getStr(CollectionAdminParams.CALLING_LOCK_ID));
+        callingLockIds);
   }
 
   @Override

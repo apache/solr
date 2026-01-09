@@ -118,7 +118,6 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
       messageTyped.repository = requestBody.repository;
       messageTyped.name = requestBody.name;
       messageTyped.shardBackupId = requestBody.shardBackupId;
-      messageTyped.callingLockId = requestBody.callingLockId;
     }
 
     messageTyped.validate();

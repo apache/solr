@@ -34,7 +34,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_VALUE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_ID;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -109,6 +109,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -117,6 +118,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -319,6 +321,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext = new AdminCmdContext(operation.action, req.getParams().get(ASYNC));
+    adminCmdContext.setCallingLockIds(req.getContext().get(CALLING_LOCK_IDS_HEADER).toString());
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;
@@ -356,15 +359,19 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     // updates (but the other way around is ok). See constructor of CloudConfig.
     Optional<DistributedCollectionConfigSetCommandRunner> distribCommandRunner =
         zkController.getDistributedCommandRunner();
-    String operation = adminCmdContext.getAction().lowerName;
-    if (adminCmdContext.getAsyncId() == null) {
-      m = m.plus(Map.of(QUEUE_OPERATION, operation));
-    } else {
-      m = m.plus(Map.of(QUEUE_OPERATION, operation, ASYNC, adminCmdContext.getAsyncId()));
-    }
     if (distribCommandRunner.isPresent()) {
       return distribCommandRunner.get().runCollectionCommand(adminCmdContext, m, timeout);
     } else { // Sending the Collection API message to Overseer via a Zookeeper queue
+      String operation = adminCmdContext.getAction().lowerName;
+      HashMap<String, Object> additionalProps = new HashMap<>();
+      additionalProps.put(QUEUE_OPERATION, operation);
+      if (adminCmdContext.getAsyncId() != null && !adminCmdContext.getAsyncId().isBlank()) {
+        additionalProps.put(ASYNC, adminCmdContext.getAsyncId());
+      }
+      if (StringUtils.isNotBlank(adminCmdContext.getCallingLockIds())) {
+        additionalProps.put(CALLING_LOCK_IDS_HEADER, adminCmdContext.getCallingLockIds());
+      }
+      m = m.plus(additionalProps);
       if (adminCmdContext.getAsyncId() != null) {
         String asyncId = adminCmdContext.getAsyncId();
         NamedList<Object> r = new NamedList<>();
@@ -1063,7 +1070,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
           reqBody.name = req.getParams().get(NAME);
           reqBody.shardBackupId = req.getParams().get(SHARD_BACKUP_ID);
-          reqBody.callingLockId = req.getParams().get(CALLING_LOCK_ID);
 
           final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =

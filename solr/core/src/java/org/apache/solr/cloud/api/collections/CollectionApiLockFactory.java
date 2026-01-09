@@ -111,9 +111,11 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
-    List<String> callingLockIdList = adminCmdContext.getCallingLockIds();
-    if (callingLockIdList == null) {
+    List<String> callingLockIdList;
+    if (adminCmdContext.getCallingLockIds() == null) {
       callingLockIdList = Collections.emptyList();
+    }  else {
+      callingLockIdList = List.of(adminCmdContext.getCallingLockIds().split(","));
     }
 
     // The first requested lock is a write one (on the target object for the action, depending on

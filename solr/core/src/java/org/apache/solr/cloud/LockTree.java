@@ -88,15 +88,15 @@ public class LockTree {
     private SessionNode root = new SessionNode(LockLevel.CLUSTER);
 
     public Lock lock(
-        CollectionParams.CollectionAction action, List<String> path, String callingLockId) {
+        CollectionParams.CollectionAction action, List<String> path, List<String> callingLockIds) {
       if (action.lockLevel == LockLevel.NONE) return FREELOCK;
-      log.info("Calling lock level: {}", callingLockId);
+      log.info("Calling lock level: {}", callingLockIds);
       Node startingNode = LockTree.this.root;
       SessionNode startingSession = root;
 
       // If a callingLockId was passed in, validate it with the current lock path, and only start
       // locking below the calling lock
-      Lock callingLock = callingLockId != null ? allLocks.get(callingLockId) : null;
+      Lock callingLock = callingLockIds != null ? allLocks.get(callingLockIds.getLast()) : null;
       boolean ignoreCallingLock = false;
       if (callingLock != null && callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
         startingNode = ((LockImpl) callingLock).node;

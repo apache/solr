@@ -22,7 +22,6 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logF
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -46,7 +45,6 @@ import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -426,9 +424,8 @@ public class DistributedCollectionConfigSetCommandRunner {
 
           CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(adminCmdContext.getAction());
           if (command != null) {
-            adminCmdContext.setClusterState(ccc.getSolrCloudManager().getClusterState());
             command.call(
-                adminCmdContext, message, results);
+                adminCmdContext.withClusterState(ccc.getSolrCloudManager().getClusterState()), message, results);
           } else {
             asyncTaskTracker.cancelAsyncId(adminCmdContext.getAsyncId());
             // Seeing this is a bug, not bad user data

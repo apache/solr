@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -48,9 +46,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
-      throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     Set<String> sourceNodes = getNodesFromParam(message, CollectionParams.SOURCE_NODES);
     Set<String> targetNodes = getNodesFromParam(message, CollectionParams.TARGET_NODES);
@@ -59,7 +55,6 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "sourceNodes is a required param");
     }
-    String async = message.getStr(ASYNC);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
     ClusterState clusterState = zkStateReader.getClusterState();
@@ -122,7 +117,7 @@ public class MigrateReplicasCmd implements CollApiCmds.CollectionApiCommand {
 
     boolean migrationSuccessful =
         ReplicaMigrationUtils.migrateReplicas(
-            ccc, replicaMovements, parallel, waitForFinalState, timeout, async, results);
+            ccc, adminCmdContext, replicaMovements, parallel, waitForFinalState, timeout, results);
     if (migrationSuccessful) {
       results.add(
           "success",
