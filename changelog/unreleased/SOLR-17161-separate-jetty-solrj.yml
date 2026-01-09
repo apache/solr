@@ -1,4 +1,4 @@
-title: Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it
+title: Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it. Also makes ConcurrentUpdateBaseSolrClient client independent.
 type: changed
 authors:
   - name: Jan Høydahl
