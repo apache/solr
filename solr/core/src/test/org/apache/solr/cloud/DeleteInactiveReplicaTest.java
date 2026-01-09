@@ -48,12 +48,12 @@ public class DeleteInactiveReplicaTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void reset() {
-    System.setProperty("solr.cloud.delete.unknown.cores.enabled", "false");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false");
   }
 
   @Test
   public void deleteInactiveReplicaTest() throws Exception {
-    System.setProperty("solr.cloud.delete.unknown.cores.enabled", "true");
+    System.setProperty("solr.cloud.startup.delete.unknown.cores.enabled", "true");
 
     String collectionName = "delDeadColl";
     int replicationFactor = 2;
