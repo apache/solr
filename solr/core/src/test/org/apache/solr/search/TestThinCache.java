@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.metrics.SolrMetricProducer.CATEGORY_ATTR;
 import static org.apache.solr.metrics.SolrMetricProducer.NAME_ATTR;
 
@@ -44,6 +45,9 @@ public class TestThinCache extends SolrTestCaseJ4 {
   @ClassRule public static EmbeddedSolrServerTestRule solrRule = new EmbeddedSolrServerTestRule();
   public static final String SOLR_NODE_LEVEL_CACHE_XML =
       "<solr>\n"
+          + "  <str name=\"allowPaths\">${"
+          + ALLOW_PATHS_SYSPROP
+          + ":}</str>"
           + "  <caches>\n"
           + "    <cache name='myNodeLevelCache'\n"
           + "      size='10'\n"
@@ -60,11 +64,12 @@ public class TestThinCache extends SolrTestCaseJ4 {
   @BeforeClass
   public static void setupSolrHome() throws Exception {
     Path home = createTempDir("home");
+    Path configSet = createTempDir("configSet");
+    System.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
     Files.writeString(home.resolve("solr.xml"), SOLR_NODE_LEVEL_CACHE_XML);
 
     solrRule.startSolr(home);
 
-    Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
