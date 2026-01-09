@@ -40,8 +40,6 @@ dependencies {
   compileOnly libs.stephenc.jcip.annotations
 
   // Test dependencies
-  testImplementation libs.apache.httpcomponents.httpclient
-  testImplementation libs.apache.httpcomponents.httpcore
 
   testImplementation project(':solr:test-framework')
   testImplementation project(':solr:core')
@@ -52,50 +50,25 @@ dependencies {
   testImplementation project(':solr:solrj-jetty')
 
   // ZK dependencies for tests
-  testImplementation project(':solr:solrj-zookeeper')
+  testRuntimeOnly project(':solr:solrj-zookeeper')
   permitTestUnusedDeclared project(':solr:solrj-zookeeper')
-  testImplementation(libs.apache.zookeeper.zookeeper, {
+  testRuntimeOnly(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
-  testImplementation libs.apache.zookeeper.jute
 
-  testImplementation libs.apache.lucene.core
   testImplementation libs.apache.lucene.testframework
 
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
-  testImplementation libs.commonsio.commonsio
-
   testImplementation libs.jakarta.servlet.api
 
-  testImplementation libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
-  testImplementation libs.eclipse.jetty.ee10.webapp
   testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
-  })
-  testImplementation libs.eclipse.jetty.session
-  testImplementation(libs.mockito.core, {
-    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  })
-  testRuntimeOnly(libs.mockito.subclass, {
-    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
   testRuntimeOnly(libs.apache.log4j.slf4j2impl, {
     exclude group: "org.apache.logging.log4j", module: "log4j-api"
   })
-
-  // Permit unused test dependencies (transitive dependencies)
-  permitTestUnusedDeclared libs.commonsio.commonsio
-  permitTestUnusedDeclared libs.apache.httpcomponents.httpclient
-  permitTestUnusedDeclared libs.apache.httpcomponents.httpcore
-  permitTestUnusedDeclared libs.apache.lucene.core
-  permitTestUnusedDeclared libs.apache.zookeeper.jute
-  permitTestUnusedDeclared libs.eclipse.jetty.ee10.webapp
-  permitTestUnusedDeclared libs.eclipse.jetty.server
-  permitTestUnusedDeclared libs.eclipse.jetty.session
-  permitTestUnusedDeclared libs.mockito.core
 }
