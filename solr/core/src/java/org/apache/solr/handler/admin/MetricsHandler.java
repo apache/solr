@@ -39,6 +39,7 @@ import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -122,8 +123,12 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
               + format);
     }
 
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
-      return; // Request was proxied to other node
+    if (cc != null) {
+      final var adminProxy = AdminHandlersProxy.create(cc, req, rsp);
+      if (adminProxy.shouldProxy()) {
+        adminProxy.proxyRequest();
+        return;
+      }
     }
     SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
     try {
