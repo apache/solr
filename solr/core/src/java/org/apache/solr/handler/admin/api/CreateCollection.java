@@ -160,6 +160,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     rawProperties.put(TLOG_REPLICAS, reqBody.tlogReplicas);
     rawProperties.put(WAIT_FOR_FINAL_STATE, reqBody.waitForFinalState);
     rawProperties.put(PER_REPLICA_STATE, reqBody.perReplicaState);
+    rawProperties.put(ALIAS, reqBody.alias);
     if (reqBody.createReplicas == null || reqBody.createReplicas) {
       // The remote message expects a single comma-delimited string, so nodeSet requires flattening
       if (reqBody.nodeSet != null) {

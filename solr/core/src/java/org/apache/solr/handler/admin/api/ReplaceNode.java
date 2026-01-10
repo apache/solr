@@ -67,7 +67,7 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
         response,
         CollectionParams.CollectionAction.REPLACENODE,
         createRemoteMessage(sourceNodeName, requestBody),
-        requestBody.async);
+        requestBody != null ? requestBody.async : null);
 
     disableResponseCaching();
     return response;

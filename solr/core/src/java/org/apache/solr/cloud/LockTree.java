@@ -90,7 +90,7 @@ public class LockTree {
     public Lock lock(
         CollectionParams.CollectionAction action, List<String> path, List<String> callingLockIds) {
       if (action.lockLevel == LockLevel.NONE) return FREELOCK;
-      log.info("Calling lock level: {}", callingLockIds);
+      log.debug("Calling lock level: {}", callingLockIds);
       Node startingNode = LockTree.this.root;
       SessionNode startingSession = root;
 

@@ -66,7 +66,7 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
         response,
         CollectionParams.CollectionAction.DELETENODE,
         new ZkNodeProps(Map.of(NODE, nodeName)),
-        requestBody.async);
+        requestBody != null ? requestBody.async : null);
     disableResponseCaching();
     return response;
   }

@@ -311,10 +311,8 @@ public class CollectionHandlingUtils {
       AdminCmdContext adminCmdContext, String collectionName, NamedList<Object> results, CollectionCommandContext ccc)
       throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
-    Map<String, Object> props =
-        Map.of(NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(adminCmdContext.subRequestContext(DELETE), new ZkNodeProps(props), results);
+        .call(adminCmdContext.subRequestContext(DELETE), new ZkNodeProps(NAME, collectionName), results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -399,13 +397,13 @@ public class CollectionHandlingUtils {
     log.info("Executing Collection Cmd={}, asyncId={}", params, adminCmdContext.getAsyncId());
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = ccc.newShardHandler();
-    DocCollection coll = adminCmdContext.getClusterState().getCollection(collectionName);
+    DocCollection coll = ccc.getZkStateReader().getClusterState().getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =
         asyncRequestTracker(adminCmdContext, ccc);
     for (Slice slice : coll.getSlices()) {
       notLivesReplicas.addAll(
-          shardRequestTracker.sliceCmd(adminCmdContext.getClusterState(), params, stateMatcher, slice, shardHandler));
+          shardRequestTracker.sliceCmd(ccc.getZkStateReader().getClusterState(), params, stateMatcher, slice, shardHandler));
     }
 
     shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
