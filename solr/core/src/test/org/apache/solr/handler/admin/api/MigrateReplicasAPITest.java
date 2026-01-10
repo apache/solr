@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin.api;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -69,7 +68,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
     when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
     when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
-    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong(), nullable(String.class)))
+    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
         .thenReturn(new OverseerSolrResponse(new NamedList<>()));
     mockQueryRequest = mock(SolrQueryRequest.class);
     queryResponse = new SolrQueryResponse();
@@ -86,7 +85,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner)
-        .runCollectionCommand(messageCapturer.capture(), any(), anyLong(), nullable(String.class));
+        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
@@ -104,7 +103,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
         new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
     migrateReplicasAPI.migrateReplicas(requestBody);
     verify(mockCommandRunner)
-        .runCollectionCommand(messageCapturer.capture(), any(), anyLong(), nullable(String.class));
+        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
