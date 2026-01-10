@@ -80,10 +80,6 @@ public abstract class AbstractEmbeddedSolrServerTestCase extends SolrTestCaseJ4 
   public void tearDown() throws Exception {
     if (cores != null) cores.shutdown();
 
-    System.clearProperty("dataDir1");
-    System.clearProperty("dataDir2");
-    System.clearProperty("tests.shardhandler.randomSeed");
-
     deleteAdditionalFiles();
 
     super.tearDown();

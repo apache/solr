@@ -42,8 +42,6 @@ import org.slf4j.LoggerFactory;
 public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   protected CoreContainer cores;
-  private String saveProp;
-  private Path dataDir1;
   private Path dataDir2;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -60,7 +58,6 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
 
   @Override
   public void setUp() throws Exception {
-    saveProp = System.getProperty("solr.directoryFactory");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     super.setUp();
     Path dataDir1 = createTempDir();
@@ -84,9 +81,6 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     super.tearDown();
 
     cores.shutdown();
-
-    if (saveProp == null) System.clearProperty("solr.directoryFactory");
-    else System.setProperty("solr.directoryFactory", saveProp);
   }
 
   protected abstract SolrClient getSolrCore0();
@@ -165,7 +159,7 @@ public abstract class MergeIndexesExampleTestBase extends SolrTestCaseJ4 {
     assertEquals(1, getSolrCore0().query(new SolrQuery("id:BBB")).getResults().size());
   }
 
-  public void testMergeMultipleRequest() throws Exception {
+  public void testMergeMultipleRequest() {
     CoreAdminRequest.MergeIndexes req = new CoreAdminRequest.MergeIndexes();
     req.setCoreName("core0");
     req.setIndexDirs(Arrays.asList("/path/1", "/path/2"));

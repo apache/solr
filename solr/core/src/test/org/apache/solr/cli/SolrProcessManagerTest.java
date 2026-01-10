@@ -71,8 +71,6 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
     SolrProcessManager.enableTestingMode = false;
-    System.clearProperty("solr.port.listen");
-    System.clearProperty("solr.pid.dir");
   }
 
   private static int findAvailablePort() throws IOException {

@@ -122,8 +122,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   public void afterTest() {
     clearIndex();
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public String getCoreName() {

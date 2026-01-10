@@ -106,9 +106,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }

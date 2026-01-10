@@ -48,7 +48,6 @@ public class TestAtomicUpdateErrorCases extends SolrTestCaseJ4 {
       assertTrue(ex.getMessage().contains("unless <updateLog/> is configured"));
       resetExceptionIgnores();
     } finally {
-      System.clearProperty("solr.index.updatelog.enabled");
       deleteCore();
     }
   }

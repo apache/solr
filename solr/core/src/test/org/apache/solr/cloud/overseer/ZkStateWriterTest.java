@@ -45,7 +45,6 @@ import org.apache.solr.common.util.ZLibCompressor;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,12 +61,6 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
   public static void setup() {
     System.setProperty("solr.OverseerStateUpdateDelay", "1000");
     System.setProperty("solr.OverseerStateUpdateBatchSize", "10");
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    System.clearProperty("solr.OverseerStateUpdateDelay");
-    System.clearProperty("solr.OverseerStateUpdateBatchSize");
   }
 
   public void testZkStateWriterBatching() throws Exception {

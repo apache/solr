@@ -73,9 +73,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
         tika = null;
       }
     }
-    System.clearProperty("solr.test.tikaserver.url");
-    System.clearProperty("solr.test.extraction.backend");
-    System.clearProperty("solr.test.tikaserver.metadata.compatibility");
   }
 
   @Test

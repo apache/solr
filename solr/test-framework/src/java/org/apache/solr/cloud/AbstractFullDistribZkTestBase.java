@@ -112,7 +112,6 @@ import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
@@ -326,11 +325,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.update.delay", "0");
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    System.clearProperty("solrcloud.update.delay");
   }
 
   public AbstractFullDistribZkTestBase() {
@@ -2198,16 +2192,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         try {
           super.distribTearDown();
         } finally {
-          System.clearProperty(ZK_HOST);
-          System.clearProperty("collection");
-          System.clearProperty(ENABLE_UPDATE_LOG);
-          System.clearProperty(REMOVE_VERSION_FIELD);
-          System.clearProperty("solr.directoryFactory");
-          System.clearProperty(ZOOKEEPER_FORCE_SYNC);
-          System.clearProperty(
-              MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
-          System.clearProperty("zkHost");
-          System.clearProperty("numShards");
         }
       }
     }

@@ -65,8 +65,6 @@ public class SpatialRPTFieldTypeTest extends AbstractBadConfigTestBase {
   @After
   public void afterClass() {
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   static final String INDEXED_COORDINATES = "25,82";

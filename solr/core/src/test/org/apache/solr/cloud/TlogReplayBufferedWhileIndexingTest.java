@@ -27,7 +27,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +36,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
 
   private List<StoppableIndexingThread> threads;
 
-  public TlogReplayBufferedWhileIndexingTest() throws Exception {
+  public TlogReplayBufferedWhileIndexingTest() {
     super();
     sliceCount = 1;
     fixShardCount(2);
@@ -52,13 +51,6 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
     TestInjection.updateLogReplayRandomPause = "true:10";
     TestInjection.updateRandomPause = "true:10";
     useFactory("solr.StandardDirectoryFactory");
-  }
-
-  @AfterClass
-  public static void afterRestartWhileUpdatingTest() {
-    System.clearProperty("leaderVoteWait");
-    System.clearProperty("solr.autoCommit.maxTime");
-    System.clearProperty("solr.autoSoftCommit.maxTime");
   }
 
   @Test

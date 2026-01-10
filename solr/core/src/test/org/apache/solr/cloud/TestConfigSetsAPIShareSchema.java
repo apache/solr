@@ -22,7 +22,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,11 +42,6 @@ public class TestConfigSetsAPIShareSchema extends SolrCloudTestCase {
   @After
   public void doAfter() throws Exception {
     cluster.deleteAllCollections();
-  }
-
-  @AfterClass
-  public static void doAfterClass() {
-    System.clearProperty("shareSchema");
   }
 
   @Test

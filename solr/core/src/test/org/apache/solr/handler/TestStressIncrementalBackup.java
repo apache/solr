@@ -94,8 +94,6 @@ public class TestStressIncrementalBackup extends SolrCloudTestCase {
     if (null != coreClient) {
       coreClient.close();
     }
-
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @SuppressWarnings("AssertionFailureIgnored") // failure happens inside a thread

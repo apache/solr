@@ -57,9 +57,6 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
   @AfterClass
   public static void afterTest() {
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("useCompoundFile");
     TestInjection.reset();
   }
 

@@ -47,7 +47,6 @@ import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class TestIndexSearcher extends SolrTestCaseJ4 {
@@ -60,11 +59,6 @@ public class TestIndexSearcher extends SolrTestCaseJ4 {
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
 
     initCore("solrconfig.xml", "schema.xml");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Override

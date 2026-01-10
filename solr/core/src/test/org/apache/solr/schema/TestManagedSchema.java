@@ -87,8 +87,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   @After
   public void afterClass() {
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public void testUpgrade() throws Exception {

@@ -104,12 +104,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertEquals(2, sc.userCacheConfigs.size());
     assertNotNull(sc.userCacheConfigs.get("user_defined_cache_XXX"));
     assertNotNull(sc.userCacheConfigs.get("user_defined_cache_ZZZ"));
-
-    System.clearProperty("user_defined_cache_XXX.enabled");
-    System.clearProperty("user_defined_cache_ZZZ.enabled");
-    System.clearProperty("filterCache.enabled");
-    System.clearProperty("queryResultCache.enabled");
-    System.clearProperty("documentCache.enabled");
   }
 
   // If defaults change, add test methods to cover each version

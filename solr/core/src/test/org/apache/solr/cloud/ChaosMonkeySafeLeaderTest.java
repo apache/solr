@@ -51,7 +51,6 @@ public class ChaosMonkeySafeLeaderTest extends AbstractFullDistribZkTestBase {
 
   @AfterClass
   public static void afterSuperClass() {
-    System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
   }
 

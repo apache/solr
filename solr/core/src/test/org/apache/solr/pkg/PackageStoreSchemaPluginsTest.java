@@ -79,7 +79,6 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
       cluster.shutdown();
       cluster = null;
     }
-    System.clearProperty("solr.packages.enabled");
     super.tearDown();
   }
 

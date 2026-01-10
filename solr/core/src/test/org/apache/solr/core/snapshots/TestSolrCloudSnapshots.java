@@ -44,7 +44,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.CollectionSnapshotMetaData.CoreSnapshotMetaData;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -77,13 +76,6 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
         .configure();
 
     docsSeed = random().nextLong();
-  }
-
-  @AfterClass
-  public static void teardownClass() {
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test

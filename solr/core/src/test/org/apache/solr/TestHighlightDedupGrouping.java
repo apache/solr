@@ -21,7 +21,6 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.AfterClass;
 import org.junit.Test;
 
 /**
@@ -33,9 +32,6 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
   private static final String id_s1 = "id_s1"; // string copy of the id for highlighting
   private static final String group_ti1 = "group_ti1";
   private static final String shard_i1 = "shard_i1";
-
-  @AfterClass
-  public static void afterClass() throws Exception {}
 
   @Test
   @ShardsFixed(num = 2)
@@ -79,7 +75,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
                 id_s1));
 
     // The number of highlighted documents should be the same as the de-duplicated docs
-    assertEquals(1, rsp.getHighlighting().values().size());
+    assertEquals(1, rsp.getHighlighting().size());
   }
 
   private void randomizedTest() throws Exception {
@@ -142,7 +138,7 @@ public class TestHighlightDedupGrouping extends BaseDistributedSearchTestCase {
                   "true"));
       // The number of highlighted documents should be the same as the de-duplicated docs for this
       // group
-      assertEquals(docsInGroup[group], rsp.getHighlighting().values().size());
+      assertEquals(docsInGroup[group], rsp.getHighlighting().size());
     }
   }
 

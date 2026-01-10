@@ -40,7 +40,6 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
@@ -54,23 +53,11 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
   SolrInstance[] solr = new SolrInstance[3];
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
 
   @BeforeClass
   public static void beforeClass() {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     System.setProperty("tests.shardhandler.randomSeed", Long.toString(random().nextLong()));
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-    System.clearProperty("tests.shardhandler.randomSeed");
   }
 
   @Override

@@ -83,7 +83,6 @@ public class TestAuthenticationFramework extends SolrCloudTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    System.clearProperty("solr.security.auth.plugin");
     shutdownCluster();
     super.tearDown();
   }

@@ -76,7 +76,6 @@ public class ChaosMonkeySafeLeaderWithPullReplicasTest extends AbstractFullDistr
 
   @AfterClass
   public static void afterSuperClass() {
-    System.clearProperty("solr.autoCommit.maxTime");
     clearErrorHook();
     TestInjection.reset();
   }

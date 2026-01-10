@@ -144,7 +144,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() throws Exception {
     shutdownCluster();
-    System.clearProperty("solr.packages.enabled");
   }
 
   @SuppressWarnings("unchecked")

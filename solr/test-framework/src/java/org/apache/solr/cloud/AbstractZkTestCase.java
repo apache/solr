@@ -71,11 +71,6 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
       deleteCore();
     } finally {
 
-      System.clearProperty("zkHost");
-      System.clearProperty("solrcloud.skip.autorecovery");
-      System.clearProperty("solr.port.listen");
-      System.clearProperty(ZOOKEEPER_FORCE_SYNC);
-
       if (zkServer != null) {
         zkServer.shutdown();
         zkServer = null;

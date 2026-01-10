@@ -41,7 +41,6 @@ import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsProvider;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.zookeeper.CreateMode;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,11 +59,6 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 
   @Override

@@ -88,7 +88,6 @@ public class ClusterEventProducerTest extends SolrCloudTestCase {
 
   @After
   public void teardown() throws Exception {
-    System.clearProperty("solr.packages.enabled");
     if (eventsListener != null) {
       cluster
           .getOpenOverseer()

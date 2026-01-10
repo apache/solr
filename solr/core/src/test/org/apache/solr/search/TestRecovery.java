@@ -69,11 +69,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   private static int timeout = 60;
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
-
   @Before
   public void beforeTest() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig-tlog.xml", "schema15.xml");
 
@@ -88,12 +85,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @After
   public void afterTest() {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-
     deleteCore();
   }
 
