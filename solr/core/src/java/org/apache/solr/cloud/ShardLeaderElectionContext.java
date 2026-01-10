@@ -507,11 +507,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
-    log.info("There may be a better leader candidate than us - going back into recovery");
+    log.info("There may be a better leader candidate than us - rejoin the election");
 
     cancelElection();
-
-    core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
 
     leaderElector.joinElection(this, true);
   }

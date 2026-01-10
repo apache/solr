@@ -234,7 +234,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   @Test
-  @Nightly
+  // @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -604,7 +604,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
-  private long getNumDocsInCollection(String collectionName) throws Exception {
+  protected long getNumDocsInCollection(String collectionName) throws Exception {
     return new QueryRequest(new SolrQuery("*:*"))
         .process(cluster.getSolrClient(), collectionName)
         .getResults()

@@ -93,20 +93,20 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     }
   }
 
-  private String deleteAfterTest(String collName) {
+  protected String deleteAfterTest(String collName) {
     collectionsToDelete.add(collName);
     return collName;
   }
 
   // Populated by 'bootstrapBackupRepositoryData'
-  private static int singleShardNumDocs = -1;
-  private static int replicasPerShard = -1;
-  private static int multiShardNumDocs = -1;
-  private static URI singleShard1Uri = null;
-  private static URI nonExistentLocationUri = null;
-  private static URI[] multiShardUris = null;
+  protected static int singleShardNumDocs = -1;
+  protected static int replicasPerShard = -1;
+  protected static int multiShardNumDocs = -1;
+  protected static URI singleShard1Uri = null;
+  protected static URI nonExistentLocationUri = null;
+  protected static URI[] multiShardUris = null;
 
-  private List<String> collectionsToDelete;
+  protected List<String> collectionsToDelete;
 
   public static void bootstrapBackupRepositoryData(String baseRepositoryLocation) throws Exception {
     final int numShards = /*random().nextInt(3) + 2*/ 4;
@@ -175,6 +175,12 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     CollectionAdminRequest.installDataToShard(
             collectionName, "shard1", singleShardLocation, BACKUP_REPO_NAME)
         .process(cluster.getSolrClient());
+    waitForState(
+        "The failed core-install (previous leader) should recover and become healthy",
+        collectionName,
+        30,
+        TimeUnit.SECONDS,
+        SolrCloudTestCase.activeClusterShape(1, replicasPerShard));
 
     assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
   }
@@ -272,7 +278,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
         + "</solr>\n";
   }
 
-  private static void assertCollectionHasNumDocs(String collection, int expectedNumDocs)
+  protected static void assertCollectionHasNumDocs(String collection, int expectedNumDocs)
       throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
     assertEquals(
@@ -364,7 +370,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     log.info("Indexed {} docs to collection: {}", numDocs, collectionName);
   }
 
-  private static String createAndAwaitEmptyCollection(int numShards, int replicasPerShard)
+  protected static String createAndAwaitEmptyCollection(int numShards, int replicasPerShard)
       throws Exception {
     final SolrClient solrClient = cluster.getSolrClient();
 
@@ -377,7 +383,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     return collectionName;
   }
 
-  private static void enableReadOnly(String collectionName) throws Exception {
+  protected static void enableReadOnly(String collectionName) throws Exception {
     CollectionAdminRequest.modifyCollection(collectionName, Map.of("readOnly", true))
         .process(cluster.getSolrClient());
   }

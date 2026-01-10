@@ -18,7 +18,9 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -52,15 +54,65 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
       if (solrCore.getCoreDescriptor() == null
           || solrCore.getCoreDescriptor().getCloudDescriptor() == null) return true;
       String coreNodeName = solrCore.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-      if (terms.haveHighestTermValue(coreNodeName)) return true;
-      if (lastTermDoRecovery.get() < terms.getTerm(coreNodeName)) {
-        log.info(
-            "Start recovery on {} because core's term is less than leader's term", coreNodeName);
-        lastTermDoRecovery.set(terms.getTerm(coreNodeName));
-        solrCore
-            .getUpdateHandler()
-            .getSolrCoreState()
-            .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
+
+      // If we have the highest term, there is nothing to do
+      if (terms.haveHighestTermValue(coreNodeName)) {
+        return true;
+      }
+
+      long lastRecoveryTerm;
+      long newTerm;
+      synchronized (lastTermDoRecovery) {
+        lastRecoveryTerm = lastTermDoRecovery.get();
+        newTerm = terms.getTerm(coreNodeName);
+        if (lastRecoveryTerm < newTerm) {
+          lastTermDoRecovery.set(newTerm);
+        }
+      }
+
+      if (coreDescriptor.getCloudDescriptor().isLeader()) {
+        log.warn(
+            "Removing {} leader as leader, since its term is no longer the highest. This will initiate recovery",
+            coreNodeName);
+        coreContainer.getZkController().giveupLeadership(coreDescriptor);
+        coreContainer
+            .getZkController()
+            .getZkStateReader()
+            .waitForState(
+                coreDescriptor.getCollectionName(),
+                20,
+                TimeUnit.SECONDS,
+                dc -> {
+                  Replica leader = dc.getLeader(coreDescriptor.getCloudDescriptor().getShardId());
+                  return leader == null || !leader.getCoreName().equals(coreDescriptor.getName());
+                });
+        return true;
+      } else if (lastRecoveryTerm < newTerm) {
+        CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
+        Replica leaderReplica =
+            solrCore
+                .getCoreContainer()
+                .getZkController()
+                .getClusterState()
+                .getCollection(cloudDescriptor.getCollectionName())
+                .getSlice(cloudDescriptor.getShardId())
+                .getLeader();
+
+        // Only recover if the leader replica still has the highest term.
+        // If not, then the leader-election process will take care of recovery.
+        if (leaderReplica != null && terms.canBecomeLeader(leaderReplica.getName())) {
+          log.info(
+              "Start recovery on {} because core's term is less than leader's term", coreNodeName);
+          solrCore
+              .getUpdateHandler()
+              .getSolrCoreState()
+              .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
+        } else {
+          log.info(
+              "Defer recovery on {} because leader-election will happen soon, old leader {}",
+              coreNodeName,
+              leaderReplica.getName());
+        }
       }
     } catch (Exception e) {
       if (log.isInfoEnabled()) {

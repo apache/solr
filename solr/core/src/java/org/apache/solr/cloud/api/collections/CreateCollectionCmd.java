@@ -101,7 +101,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      ClusterState clusterState, ZkNodeProps message, String lockId, NamedList<Object> results)
       throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
@@ -245,7 +246,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 numReplicas);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, results);
+        new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, lockId, results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -406,7 +407,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         ModifiableSolrParams params = e.getValue();
         String nodeName = nodeNames.get(e.getKey());
         params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-        shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+        shardRequestTracker.sendShardRequest(
+            nodeName, replicas.get(e.getKey()).getCoreName(), params, shardHandler);
       }
 
       shardRequestTracker.processResponses(
