@@ -2871,9 +2871,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   private static void clearNumericTypesProperties() {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
-    for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
-      System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
-    }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
   }
 
