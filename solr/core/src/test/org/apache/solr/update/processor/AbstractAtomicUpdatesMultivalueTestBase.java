@@ -31,17 +31,21 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSolrServerTestBase {
+public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   protected static void initWithRequestWriter(RequestWriterSupplier requestWriterSupplier)
       throws Exception {
@@ -55,14 +59,14 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   @Before
   public void before() throws SolrServerException, IOException {
-    getSolrClient().deleteByQuery("*:*");
+    solrTestRule.getSolrClient().deleteByQuery("*:*");
   }
 
   private void assertQR(final String fieldName, final String queryValue, final int numFound)
       throws SolrServerException, IOException {
 
     SolrQuery query = new SolrQuery("q", fieldName + ":" + queryValue);
-    QueryResponse rsp = getSolrClient().query(query);
+    QueryResponse rsp = solrTestRule.getSolrClient().query(query);
     assertEquals(numFound, rsp.getResults().getNumFound());
   }
 
@@ -75,12 +79,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     final Function<Object, Object> vc = valueConverter.orElse(o -> o);
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc("id", "20000", fieldName, Arrays.asList(values[0], values[1], values[2])),
                 sdoc("id", "20001", fieldName, Arrays.asList(values[1], values[2], values[3]))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 1);
@@ -89,19 +94,22 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
       assertQR(fieldName, queries[3], 1);
     }
 
-    Collection<Object> fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    Collection<Object> fieldValues =
+        solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
     assertThat(
         fieldValues, hasItems(vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2])));
     assertThat(fieldValues, not(hasItems(vc.apply(values[3]))));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
     assertThat(
         fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
-    getSolrClient().add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(values[0]))));
-    getSolrClient().commit(true, true);
+    solrTestRule
+        .getSolrClient()
+        .add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(values[0]))));
+    solrTestRule.getSolrClient().commit(true, true);
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 0);
@@ -110,24 +118,25 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
       assertQR(fieldName, queries[3], 1);
     }
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
     assertThat(
         fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]))));
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             sdoc(
                 "id",
                 "20001",
                 fieldName,
                 Map.of("remove", List.of(values[0], values[1], values[2]))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 0);
@@ -136,17 +145,18 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
       assertQR(fieldName, queries[3], 1);
     }
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(vc.apply(values[1]), vc.apply(values[2])));
     assertThat(fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[3]))));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
     assertThat(fieldValues, hasItems(vc.apply(values[3])));
     assertThat(
         fieldValues, not(hasItems(vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]))));
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc(
@@ -159,7 +169,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
                     "20001",
                     fieldName,
                     Map.of("add", List.of(values[0]), "remove", List.of(values[3])))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 2);
@@ -168,18 +178,19 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
       assertQR(fieldName, queries[3], 0);
     }
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
     assertThat(fieldValues, hasItems(vc.apply(values[0])));
     assertThat(
         fieldValues, not(hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3]))));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
     assertThat(fieldValues, hasItems(vc.apply(values[0])));
     assertThat(
         fieldValues, not(hasItems(vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3]))));
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc(
@@ -192,7 +203,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
                     "20001",
                     fieldName,
                     Map.of("set", List.of(values[0], values[1], values[2], values[3])))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 2);
@@ -201,13 +212,13 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
       assertQR(fieldName, queries[3], 2);
     }
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(4, fieldValues.size());
     assertThat(
         fieldValues,
         hasItems(
             vc.apply(values[0]), vc.apply(values[1]), vc.apply(values[2]), vc.apply(values[3])));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(4, fieldValues.size());
     assertThat(
         fieldValues,
@@ -259,76 +270,84 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
     final String fieldName = "booleanRemove";
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc("id", "20000", fieldName, List.of(true, false)),
                 sdoc("id", "20001", fieldName, List.of(false, true))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 2);
 
-    Collection<Object> fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    Collection<Object> fieldValues =
+        solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
 
-    getSolrClient().add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(false))));
-    getSolrClient().commit(true, true);
+    solrTestRule
+        .getSolrClient()
+        .add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(false))));
+    solrTestRule.getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 1);
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
     assertThat(fieldValues, hasItems(true));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
 
-    getSolrClient().add(sdoc("id", "20001", fieldName, Map.of("remove", List.of(true, false))));
-    getSolrClient().commit(true, true);
+    solrTestRule
+        .getSolrClient()
+        .add(sdoc("id", "20001", fieldName, Map.of("remove", List.of(true, false))));
+    solrTestRule.getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 1);
     assertQR(fieldName, "false", 0);
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(1, fieldValues.size());
     assertThat(fieldValues, hasItems(true));
     assertThat(fieldValues, not(hasItems(false)));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertNull(fieldValues);
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(Arrays.asList(sdoc("id", "20000", fieldName, Map.of("add", List.of(false, false)))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 1);
     assertQR(fieldName, "false", 1);
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(3, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertNull(fieldValues);
 
-    getSolrClient()
+    solrTestRule
+        .getSolrClient()
         .add(
             Arrays.asList(
                 sdoc("id", "20000", fieldName, Map.of("set", List.of(true, false))),
                 sdoc("id", "20001", fieldName, Map.of("set", List.of(false, true)))));
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit(true, true);
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 2);
 
-    fieldValues = getSolrClient().getById("20000").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20000").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
-    fieldValues = getSolrClient().getById("20001").getFieldValues(fieldName);
+    fieldValues = solrTestRule.getSolrClient().getById("20001").getFieldValues(fieldName);
     assertEquals(2, fieldValues.size());
     assertThat(fieldValues, hasItems(true, false));
   }

@@ -16,17 +16,21 @@
  */
 package org.apache.solr.client.solrj.request;
 
-import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test SolrPing in Solrj */
-public class SolrPingTest extends EmbeddedSolrServerTestBase {
+public class SolrPingTest extends SolrTestCaseJ4 {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -37,7 +41,6 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
   }
 
   @Before
-  @Override
   public void setUp() throws Exception {
     super.setUp();
     solrTestRule.clearIndex();
@@ -45,8 +48,8 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    getSolrClient().add(doc);
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().add(doc);
+    solrTestRule.getSolrClient().commit(true, true);
   }
 
   @Test
@@ -54,9 +57,9 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     SolrPing ping = new SolrPing();
     SolrPingResponse rsp = null;
     ping.setActionEnable();
-    ping.process(getSolrClient());
+    ping.process(solrTestRule.getSolrClient());
     ping.removeAction();
-    rsp = ping.process(getSolrClient());
+    rsp = ping.process(solrTestRule.getSolrClient());
     assertNotNull(rsp);
   }
 
@@ -66,12 +69,12 @@ public class SolrPingTest extends EmbeddedSolrServerTestBase {
     SolrPingResponse rsp = null;
     ping.setActionDisable();
     try {
-      ping.process(getSolrClient());
+      ping.process(solrTestRule.getSolrClient());
     } catch (Exception e) {
       throw new Exception("disable action failed!");
     }
     ping.setActionPing();
-    rsp = ping.process(getSolrClient());
+    rsp = ping.process(solrTestRule.getSolrClient());
     // the above line should fail with a 503 SolrException.
     assertNotNull(rsp);
   }
