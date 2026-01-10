@@ -292,6 +292,15 @@ Request ID to track this action which will be xref:configuration-guide:collectio
 Collections are first created in read-write mode but can be put in `readOnly`
 mode using the xref:collection-management.adoc#modifycollection[MODIFYCOLLECTION] action.
 
+Solr can occasionally enter an inconsistent state where remnant core files remain on disk after previous collection deletion operations fail.
+
+The system property `solr.cloud.delete.unknown.cores.enabled` is an expert-level setting designed to handle this situation.
+When enabled, Solr automatically deletes any remnant core data on startup that lacks a record in ZooKeeper.
+During core creation (whether for new collections or replicas), Solr also deletes preexisting remnant files, allowing operations to complete.
+Without this setting, these files would cause new core creation to fail.
+
+Enable this feature with caution— it indicates an underlying problem in your Solr setup that should be investigated.
+
 === CREATE Response
 
 The response will include the status of the request and the new core names.
