@@ -18,13 +18,14 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
@@ -103,27 +104,39 @@ public class LongPointField extends PointField implements LongValueFieldType {
   }
 
   @Override
-  protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(
-        field.getName(), parseLongFromUser(field.getName(), externalVal));
-  }
-
-  @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
-    assert externalVal.size() > 0;
-    if (!field.indexed()) {
-      return super.getSetQuery(parser, field, externalVal);
-    }
-    long[] values = new long[externalVal.size()];
-    int i = 0;
-    for (String val : externalVal) {
-      values[i] = parseLongFromUser(field.getName(), val);
-      i++;
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    assert externalVals.size() > 0;
+    Query indexQuery = null;
+    long[] values = null;
+    if (field.indexed()) {
+      values = new long[externalVals.size()];
+      int i = 0;
+      for (String val : externalVals) {
+        values[i++] = parseLongFromUser(field.getName(), val);
+      }
+      indexQuery = LongPoint.newSetQuery(field.getName(), values);
     }
     if (field.hasDocValues()) {
-      return LongField.newSetQuery(field.getName(), values);
+      long[] points;
+      if (values != null) {
+        points = values.clone();
+      } else {
+        points = new long[externalVals.size()];
+        int i = 0;
+        for (String val : externalVals) {
+          points[i++] = parseLongFromUser(field.getName(), val);
+        }
+      }
+      Query docValuesQuery = SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
+      if (indexQuery != null) {
+        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
+      } else {
+        return docValuesQuery;
+      }
+    } else if (indexQuery != null) {
+      return indexQuery;
     } else {
-      return LongPoint.newSetQuery(field.getName(), values);
+      return super.getSetQuery(parser, field, externalVals);
     }
   }
 

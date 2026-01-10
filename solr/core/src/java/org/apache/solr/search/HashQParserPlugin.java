@@ -95,7 +95,8 @@ public class HashQParserPlugin extends QParserPlugin {
       final LongValues[] resultValues = new LongValues[fields.length];
       for (int i = 0; i < fields.length; i++) {
         final String field = fields[i];
-        final NumericDocValues numericDocValues = ctx.reader().getNumericDocValues(field);
+        final NumericDocValues numericDocValues =
+            DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), field));
         if (numericDocValues != null) {
           // Numeric
           resultValues[i] =

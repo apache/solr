@@ -46,6 +46,7 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
@@ -215,39 +216,26 @@ final class NumericFacets {
           ctx = ctxIt.next();
         } while (ctx == null || doc >= ctx.docBase + ctx.reader().maxDoc());
         assert doc >= ctx.docBase;
-        switch (numericType) {
-          case LONG:
-          case DATE:
-          case INTEGER:
-            // Long, Date and Integer
-            longs = DocValues.getNumeric(ctx.reader(), fieldName);
-            break;
-          case FLOAT:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+        longs = DocValues.unwrapSingleton(DocValues.getSortedNumeric(ctx.reader(), fieldName));
+        if (!(sf.getType() instanceof NumericField)) {
+          if (sf.getType().getNumberType() == NumberType.FLOAT) {
             longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                new FilterNumericDocValues(longs) {
                   @Override
                   public long longValue() throws IOException {
-                    long bits = super.longValue();
-                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                    return bits;
+                    return NumericUtils.sortableFloatBits((int) super.longValue());
                   }
                 };
-            break;
-          case DOUBLE:
-            // TODO: this bit flipping should probably be moved to tie-break in the PQ comparator
+          }
+          if (sf.getType().getNumberType() == NumberType.DOUBLE) {
             longs =
-                new FilterNumericDocValues(DocValues.getNumeric(ctx.reader(), fieldName)) {
+                new FilterNumericDocValues(longs) {
                   @Override
                   public long longValue() throws IOException {
-                    long bits = super.longValue();
-                    if (bits < 0) bits ^= 0x7fffffffffffffffL;
-                    return bits;
+                    return NumericUtils.sortableDoubleBits(super.longValue());
                   }
                 };
-            break;
-          default:
-            throw new AssertionError("Unexpected type: " + numericType);
+          }
         }
       }
       int valuesDocID = longs.docID();

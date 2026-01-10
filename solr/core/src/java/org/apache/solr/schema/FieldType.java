@@ -397,6 +397,11 @@ public abstract class FieldType extends FieldProperties {
     return toObject(f);
   }
 
+  /** Return whether the given field can use Term queries */
+  protected boolean hasIndexedTerms(SchemaField field) {
+    return field.indexed();
+  }
+
   /** Given an indexed term, return the human readable representation */
   public String indexedToReadable(String indexedForm) {
     return indexedForm;
@@ -547,9 +552,13 @@ public abstract class FieldType extends FieldProperties {
                 return false;
               }
 
-              if (isPointField()) {
+              if (FieldType.this instanceof PointField) {
                 BytesRef b =
                     ((PointField) FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
+                bytesAtt.setBytesRef(b);
+              } else if (FieldType.this instanceof NumericField) {
+                BytesRef b =
+                    ((NumericField) FieldType.this).toInternalByteRef(new String(cbuf, 0, n));
                 bytesAtt.setBytesRef(b);
               } else {
                 String s = toInternal(new String(cbuf, 0, n));
@@ -857,7 +866,7 @@ public abstract class FieldType extends FieldProperties {
    * @see #getSortField
    */
   protected SortField getNumericSort(SchemaField field, NumberType type, boolean reverse) {
-    if (field.multiValued()) {
+    if (field.multiValued() || this instanceof NumericField) {
       MultiValueSelector selector = field.type.getDefaultMultiValueSelectorForSort(field, reverse);
       if (null != selector) {
         return getSortedNumericSortField(
@@ -1066,7 +1075,7 @@ public abstract class FieldType extends FieldProperties {
    *     {@link org.apache.lucene.search.TermQuery} but overriding queries may not
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (field.hasDocValues() && !field.indexed()) {
+    if (field.hasDocValues() && !hasIndexedTerms(field)) {
       // match-only
       return getRangeQuery(parser, field, externalVal, externalVal, true, true);
     } else {
@@ -1093,8 +1102,8 @@ public abstract class FieldType extends FieldProperties {
    * @lucene.experimental
    */
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    if (!field.indexed()) {
-      // TODO: if the field isn't indexed, this feels like the wrong query type to use?
+    if (!hasIndexedTerms(field)) {
+      // TODO: if the field doesn't have terms indexed, this feels like the wrong query type to use?
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       for (String externalVal : externalVals) {
         Query subq = getFieldQuery(parser, field, externalVal);
@@ -1120,7 +1129,7 @@ public abstract class FieldType extends FieldProperties {
    * @return A suitable rewrite method for rewriting multi-term queries to primitive queries.
    */
   public MultiTermQuery.RewriteMethod getRewriteMethod(QParser parser, SchemaField field) {
-    if (!field.indexed() && field.hasDocValues()) {
+    if (!hasIndexedTerms(field) && field.hasDocValues()) {
       return new DocValuesRewriteMethod();
     } else {
       return MultiTermQuery.CONSTANT_SCORE_REWRITE;
