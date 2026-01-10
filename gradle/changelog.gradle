@@ -44,7 +44,11 @@ task writeChangelog {
     def jiraRef = jiraMatcher ? jiraMatcher[0].toUpperCase() : "SOLR-XXXX"
     def jiraUrl = "https://issues.apache.org/jira/browse/${jiraRef}"
     def jiraLinks = jiraMatcher ? "links:\n  - name: ${jiraRef}\n    url: ${jiraUrl}" : ""
-    def title = gitBranch.replaceFirst(/(?i)SOLR-\d\d\d+-/, "").replace("-", " ").capitalize()
+    def title = gitBranch.replaceFirst(/(?i)SOLR-\d\d\d+\b-?/, "").replace("-", " ").capitalize()
+    // Warn user when generating empty title
+    if (title.isEmpty()) {
+      println "WARNING: Title in generated changelog is empty, please edit"
+    }
     // Strip everything before and including '/', then sanitize special characters
     def sanitizedBranchName = gitBranch.replaceAll(/^.*\//, "").replaceAll(/[^a-zA-Z0-9._-]/, "-")
     def fileName = "changelog/unreleased/${sanitizedBranchName}.yml"
@@ -58,7 +62,7 @@ authors:
 ${jiraLinks}
 """
 
-    println "Generated file: ${fileName} -- open it"
+    println "Generated file: ${fileName} -- open and edit before committing"
   }
 }
 
