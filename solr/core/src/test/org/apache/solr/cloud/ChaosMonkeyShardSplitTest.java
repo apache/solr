@@ -38,6 +38,7 @@ import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.zookeeper.KeeperException;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -51,6 +52,13 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
 
   static final int TIMEOUT = 10000;
   private AtomicInteger killCounter = new AtomicInteger();
+
+  @BeforeClass
+  public static void beforeSuperClass() {
+    System.clearProperty("solr.httpclient.retries");
+    System.clearProperty("solr.retries.on.forward");
+    System.clearProperty("solr.retries.to.followers");
+  }
 
   @Override
   @Test

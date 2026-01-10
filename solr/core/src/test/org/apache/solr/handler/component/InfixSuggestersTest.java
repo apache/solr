@@ -112,7 +112,7 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
       // Stop the dictionary's input iterator
       System.clearProperty(
           RandomTestDictionaryFactory.RandomTestDictionary.getEnabledSysProp(
-              "shortRandomAnalyzingInfixSuggester"));
+              "longRandomAnalyzingInfixSuggester"));
       assertNotNull("Should have thrown exception", job.get());
     } finally {
       ExecutorUtil.shutdownAndAwaitTermination(executor);
@@ -151,6 +151,9 @@ public class InfixSuggestersTest extends SolrTestCaseJ4 {
       Thread.sleep(100); // TODO: is there a better way to ensure that the build has begun?
       h.close();
       // Stop the dictionary's input iterator
+      System.clearProperty(
+          RandomTestDictionaryFactory.RandomTestDictionary.getEnabledSysProp(
+              "longRandomAnalyzingInfixSuggester"));
       job.get();
       Throwable wrappedException = outerException[0].getCause();
       if (wrappedException instanceof SolrException) {
