@@ -65,6 +65,34 @@ import org.apache.solr.util.RefCounted;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * Implements the UPGRADECOREINDEX CoreAdmin action, which upgrades an existing core's index
+ * in-place by reindexing documents from segments created by older Lucene versions.
+ *
+ * <p>This action is intended for user-managed or standalone installations when upgrading Solr
+ * across major versions.
+ *
+ * <p>The upgrade process:
+ *
+ * <ol>
+ *   <li>Temporarily installs {@link LatestVersionMergePolicy} to prevent older-version segments
+ *       from participating in merges during reindexing.
+ *   <li>Iterates each segment whose {@code minVersion} is older than the current Lucene major
+ *       version. For each live document, rebuilds a {@link SolrInputDocument} from stored fields,
+ *       decorates it with non-stored DocValues fields (excluding copyField targets), and re-adds it
+ *       through Solr's update pipeline.
+ *   <li>Commits the changes and validates that no older-format segments remain.
+ *   <li>Restores the original merge policy.
+ * </ol>
+ *
+ * <p><strong>Important:</strong> Only fields that are stored or have DocValues enabled can be
+ * preserved during upgrade. Fields that are neither stored, nor docValues-enabled or copyField
+ * targets, will lose their data.
+ *
+ * @see LatestVersionMergePolicy
+ * @see UpgradeCoreIndexRequestBody
+ * @see UpgradeCoreIndexResponse
+ */
 public class UpgradeCoreIndex extends CoreAdminAPIBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -104,8 +132,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         () -> {
           try (SolrCore core = coreContainer.getCore(coreName)) {
 
-            log.info("Received UPGRADECOREINDEX request for core: {}", coreName);
-
             // Set LatestVersionMergePolicy to prevent older segments from
             // participating in merges while we reindex. This is to prevent any older version
             // segments from
@@ -116,15 +142,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
             int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
             try {
               iwRef = core.getSolrCoreState().getIndexWriter(core);
-              if (iwRef != null) {
-                IndexWriter iw = iwRef.get();
-                if (iw != null) {
-                  originalMergePolicy = iw.getConfig().getMergePolicy();
-                  iw.getConfig()
-                      .setMergePolicy(
-                          new LatestVersionMergePolicy(iw.getConfig().getMergePolicy()));
-                }
-              }
+
+              IndexWriter iw = iwRef.get();
+
+              originalMergePolicy = iw.getConfig().getMergePolicy();
+              iw.getConfig()
+                  .setMergePolicy(new LatestVersionMergePolicy(iw.getConfig().getMergePolicy()));
 
               RefCounted<SolrIndexSearcher> ssearcherRef = core.getSearcher();
               try {
@@ -197,7 +220,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
               // Restore original merge policy
               if (iwRef != null) {
                 IndexWriter iw = iwRef.get();
-                if (iw != null && originalMergePolicy != null) {
+                if (originalMergePolicy != null) {
                   iw.getConfig().setMergePolicy(originalMergePolicy);
                 }
                 iwRef.decref();

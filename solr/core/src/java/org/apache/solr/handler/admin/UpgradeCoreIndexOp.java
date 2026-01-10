@@ -30,7 +30,7 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
-public class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
+class UpgradeCoreIndexOp implements CoreAdminHandler.CoreAdminOp {
   @FunctionalInterface
   public interface UpgradeCoreIndexFactory {
     UpgradeCoreIndex create(
