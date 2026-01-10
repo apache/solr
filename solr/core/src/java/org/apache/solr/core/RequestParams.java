@@ -25,10 +25,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -39,7 +40,7 @@ import org.slf4j.LoggerFactory;
  * The class encapsulates the request time parameters . This is immutable and any changes performed
  * returns a copy of the Object with the changed values
  */
-public class RequestParams implements MapSerializable {
+public class RequestParams implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, Object> data;
@@ -113,8 +114,9 @@ public class RequestParams implements MapSerializable {
   }
 
   @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    return getMapWithVersion(data, znodeVersion);
+  public void writeMap(EntryWriter ew) throws IOException {
+    ew.put(ConfigOverlay.ZNODEVER, znodeVersion);
+    data.forEach(ew::putNoEx);
   }
 
   public static Map<String, Object> getMapWithVersion(Map<String, Object> data, int znodeVersion) {
@@ -130,7 +132,9 @@ public class RequestParams implements MapSerializable {
     Map p = (Map) deepCopy.get(NAME);
     if (p == null) deepCopy.put(NAME, p = new LinkedHashMap<>());
     if (paramSet == null) p.remove(name);
-    else p.put(name, paramSet.toMap(new LinkedHashMap<>()));
+    else {
+      p.put(name, new SimpleOrderedMap<>(paramSet));
+    }
     return new RequestParams(deepCopy, znodeVersion);
   }
 
@@ -208,7 +212,7 @@ public class RequestParams implements MapSerializable {
   public static final String INVARIANTS = "_invariants_";
 
   @SuppressWarnings({"unchecked"})
-  public static class ParamSet implements MapSerializable {
+  public static class ParamSet implements MapWriter {
     private final Map<String, Object> defaults, appends, invariants;
     Map<String, VersionedParams> paramsMap;
     public final Map<String, Long> meta;
@@ -235,12 +239,11 @@ public class RequestParams implements MapSerializable {
     }
 
     @Override
-    public Map<String, Object> toMap(Map<String, Object> result) {
-      result.putAll(defaults);
-      if (appends != null) result.put(APPENDS, appends);
-      if (invariants != null) result.put(INVARIANTS, invariants);
-      if (meta != null) result.put("", meta);
-      return result;
+    public void writeMap(EntryWriter ew) throws IOException {
+      defaults.forEach(ew::putNoEx);
+      if (appends != null) ew.put(APPENDS, appends);
+      if (invariants != null) ew.put(INVARIANTS, invariants);
+      if (meta != null) ew.put("", meta);
     }
 
     @SuppressWarnings({"rawtypes"})

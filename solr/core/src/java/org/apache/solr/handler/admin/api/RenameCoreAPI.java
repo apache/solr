@@ -21,7 +21,6 @@ import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.api.Command;
@@ -30,6 +29,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -54,7 +54,7 @@ public class RenameCoreAPI {
   @Command(name = V2_RENAME_CORE_CMD)
   public void renameCore(PayloadObj<RenameCorePayload> obj) throws Exception {
     final RenameCorePayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
     v1Params.put(
         CoreAdminParams.ACTION,
         CoreAdminParams.CoreAdminAction.RENAME.name().toLowerCase(Locale.ROOT));

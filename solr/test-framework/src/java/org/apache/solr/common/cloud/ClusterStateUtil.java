@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.Utils;
 
 public class ClusterStateUtil {
@@ -178,7 +179,7 @@ public class ClusterStateUtil {
             .collectionStream()
             .collect(
                 LinkedHashMap::new,
-                (map, state) -> map.put(state.getName(), state.toMap(new LinkedHashMap<>())),
+                (map, state) -> map.put(state.getName(), new SimpleOrderedMap<>(state)),
                 Map::putAll);
     // toJSON requires standard types like Map; doesn't know about DocCollection etc.
     return Utils.toJSONString(stateMap);

@@ -21,7 +21,7 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
-import java.util.HashMap;
+import java.util.Map;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
@@ -129,6 +130,6 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     }
 
     messageTyped.validate();
-    return new ZkNodeProps(messageTyped.toMap(new HashMap<>()));
+    return new ZkNodeProps((Map<String, Object>) new SimpleOrderedMap<>(messageTyped));
   }
 }

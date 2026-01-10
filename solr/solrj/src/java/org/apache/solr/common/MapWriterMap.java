@@ -50,9 +50,4 @@ public class MapWriterMap implements MapWriter {
   public int _size() {
     return delegate.size();
   }
-
-  @Override
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    return delegate;
-  }
 }
