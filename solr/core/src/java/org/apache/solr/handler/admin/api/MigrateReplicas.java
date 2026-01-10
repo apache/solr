@@ -20,7 +20,6 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODES;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -83,7 +82,6 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
       }
       insertIfNotNull(remoteMessage, SOURCE_NODES, requestBody.sourceNodes);
       insertIfNotNull(remoteMessage, TARGET_NODES, requestBody.targetNodes);
-      insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
       insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
     } else {
       throw new SolrException(
