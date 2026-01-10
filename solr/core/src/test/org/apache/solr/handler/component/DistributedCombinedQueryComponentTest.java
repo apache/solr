@@ -53,13 +53,6 @@ public class DistributedCombinedQueryComponentTest extends BaseDistributedSearch
     System.setProperty("distribUpdateSoTimeout", "5000");
   }
 
-  @Override
-  public void distribSetUp() throws Exception {
-    super.distribSetUp();
-    // Enable fuzzy comparison to handle floating-point precision differences in distributed queries
-    flags = FUZZY;
-  }
-
   /**
    * Prepares Solr input documents for indexing, including adding sample data and vector fields.
    * This method populates the Solr index with test data, including text, title, and vector fields.

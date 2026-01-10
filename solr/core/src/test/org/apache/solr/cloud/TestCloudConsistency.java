@@ -59,7 +59,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
     System.setProperty("leaderVoteWait", "60000");
-    System.setProperty("tests.zk.violationReportAction", "IGNORE");
 
     configureCluster(4).addConfig("conf", configset("cloud-minimal")).configure();
     // Add proxies
