@@ -38,6 +38,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -665,7 +666,8 @@ public abstract class LBSolrClient extends SolrClient {
       }
     } catch (SolrServerException e) {
       Throwable rootCause = e.getRootCause();
-      if (!isNonRetryable && rootCause instanceof IOException) {
+      if (!isNonRetryable
+          && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else if (isNonRetryable && rootCause instanceof ConnectException) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
