@@ -21,7 +21,7 @@ import static org.apache.solr.SolrTestCaseJ4.getFile;
 
 import java.util.List;
 import org.apache.lucene.tests.util.LuceneTestCase;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -38,7 +38,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 @SuppressSSL
-public class DirectJsonQueryRequestFacetingEmbeddedTest extends SolrTestCaseJ4 {
+public class DirectJsonQueryRequestFacetingEmbeddedTest extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();

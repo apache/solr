@@ -31,6 +31,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
@@ -42,7 +43,7 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCaseJ4 {
+public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();

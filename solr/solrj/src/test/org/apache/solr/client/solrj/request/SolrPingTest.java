@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
@@ -27,7 +28,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test SolrPing in Solrj */
-public class SolrPingTest extends SolrTestCaseJ4 {
+public class SolrPingTest extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();

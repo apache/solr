@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -38,7 +38,7 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-public class TestSpellCheckResponse extends SolrTestCaseJ4 {
+public class TestSpellCheckResponse extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();

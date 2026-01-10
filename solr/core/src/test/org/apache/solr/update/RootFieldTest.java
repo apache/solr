@@ -19,6 +19,7 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -34,7 +35,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class RootFieldTest extends SolrTestCaseJ4 {
+public class RootFieldTest extends SolrTestCase {
   private static boolean useRootSchema;
   private static final String MESSAGE =
       "Update handler should create and process _root_ field "

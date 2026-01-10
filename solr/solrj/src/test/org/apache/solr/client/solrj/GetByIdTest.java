@@ -20,7 +20,7 @@ import static org.apache.solr.SolrTestCaseJ4.params;
 import static org.apache.solr.SolrTestCaseJ4.sdoc;
 
 import java.util.Arrays;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class GetByIdTest extends SolrTestCaseJ4 {
+public class GetByIdTest extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();

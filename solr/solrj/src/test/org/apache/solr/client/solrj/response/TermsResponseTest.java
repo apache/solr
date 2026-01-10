@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
@@ -30,7 +30,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test for TermComponent's response in Solrj */
-public class TermsResponseTest extends SolrTestCaseJ4 {
+public class TermsResponseTest extends SolrTestCase {
 
   @ClassRule
   public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
