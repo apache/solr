@@ -26,7 +26,7 @@
     <fieldType name="pdouble" class="solr.DoublePointField" useDocValuesAsStored="false"/>
     <fieldType name="pfloat" class="solr.FloatPointField" useDocValuesAsStored="false"/>
     <fieldType name="pdate" class="solr.DatePointField" useDocValuesAsStored="false"/>
-    
+
  </types>
 
  <fields>
@@ -37,11 +37,15 @@
 
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
-   
+
    <dynamicField name="*_p_i"  type="pint"    indexed="true"  stored="true"/>
    <dynamicField name="*_p_i_dv"  type="pint"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_p_i_mv"  type="pint"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p_i_mv_dv"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_p_i_e"  type="pint"    indexed="true"  stored="true" enhancedIndex="true" />
+   <dynamicField name="*_p_i_e_dv"  type="pint"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" />
+   <dynamicField name="*_p_i_e_mv"  type="pint"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" />
+   <dynamicField name="*_p_i_e_mv_dv"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" />
    <dynamicField name="*_p_i_ni"  type="pint"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_i_ni_dv"  type="pint"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_i_ni_dv_ns"  type="pint"    indexed="false"  stored="false" docValues="true"/>
@@ -51,22 +55,34 @@
    <dynamicField name="*_p_i_ni_ns"  type="pint"    indexed="false"  stored="false" docValues="false" />
    <dynamicField name="*_p_i_ni_ns_mv"  type="pint"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_i_smf"  type="pint"    indexed="true"  stored="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_i_e_smf"  type="pint"    indexed="true"  stored="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_i_e_dv_smf"  type="pint"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_i_e_mv_smf"  type="pint"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_i_e_mv_dv_smf"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_dv_smf"  type="pint"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_mv_smf"  type="pint"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_mv_dv_smf"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_ni_dv_smf"  type="pint"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_ni_mv_dv_smf"  type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_i_sml"  type="pint"    indexed="true"  stored="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_i_e_sml"  type="pint"    indexed="true"  stored="true" enhancedIndex="true" sortMissingLast="true" />
+   <dynamicField name="*_p_i_e_dv_sml"  type="pint"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingLast="true" />
+   <dynamicField name="*_p_i_e_mv_sml"  type="pint"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingLast="true" />
+   <dynamicField name="*_p_i_e_mv_dv_sml"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingLast="true" />
    <dynamicField name="*_p_i_dv_sml"  type="pint"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_i_mv_sml"  type="pint"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_i_mv_dv_sml"  type="pint"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_i_ni_dv_sml"  type="pint"    indexed="false"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_i_ni_mv_dv_sml"  type="pint"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
-   
+
    <dynamicField name="*_p_l"  type="plong"    indexed="true"  stored="true"/>
    <dynamicField name="*_p_l_dv"  type="plong"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_p_l_mv"  type="plong"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p_l_mv_dv"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_p_l_e"  type="plong"    indexed="true"  stored="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_l_e_dv"  type="plong"    indexed="true"  stored="true" docValues="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_l_e_mv"  type="plong"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_l_e_mv_dv"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true"/>
    <dynamicField name="*_p_l_ni"  type="plong"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_l_ni_dv"  type="plong"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_l_ni_dv_ns"  type="plong"    indexed="false"  stored="false" docValues="true"/>
@@ -76,12 +92,20 @@
    <dynamicField name="*_p_l_ni_ns"  type="plong"    indexed="false"  stored="false" docValues="false" />
    <dynamicField name="*_p_l_ni_ns_mv"  type="plong"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_l_smf"  type="plong"    indexed="true"  stored="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_l_e_smf"  type="plong"    indexed="true"  stored="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_l_e_dv_smf"  type="plong"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_l_e_mv_smf"  type="plong"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_l_e_mv_dv_smf"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_dv_smf"  type="plong"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_mv_smf"  type="plong"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_mv_dv_smf"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_ni_dv_smf"  type="plong"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_ni_mv_dv_smf"  type="plong"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_l_sml"  type="plong"    indexed="true"  stored="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_l_e_sml"  type="plong"    indexed="true"  stored="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_l_e_dv_sml"  type="plong"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_l_e_mv_sml"  type="plong"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_l_e_mv_dv_sml"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
    <dynamicField name="*_p_l_dv_sml"  type="plong"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_l_mv_sml"  type="plong"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_l_mv_dv_sml"  type="plong"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
@@ -92,6 +116,10 @@
    <dynamicField name="*_p_d_dv"  type="pdouble"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_p_d_mv"  type="pdouble"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p_d_mv_dv"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_p_d_e"  type="pdouble"    indexed="true"  stored="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_d_e_dv"  type="pdouble"    indexed="true"  stored="true" docValues="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_d_e_mv"  type="pdouble"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_d_e_mv_dv"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true"/>
    <dynamicField name="*_p_d_ni"  type="pdouble"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_d_ni_dv"  type="pdouble"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_d_ni_dv_ns"  type="pdouble"    indexed="false"  stored="false" docValues="true"/>
@@ -101,12 +129,20 @@
    <dynamicField name="*_p_d_ni_ns"  type="pdouble"    indexed="false"  stored="false" docValues="false"/>
    <dynamicField name="*_p_d_ni_ns_mv"  type="pdouble"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_d_smf"  type="pdouble"    indexed="true"  stored="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_d_e_smf"  type="pdouble"    indexed="true"  stored="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_d_e_dv_smf"  type="pdouble"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_d_e_mv_smf"  type="pdouble"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_d_e_mv_dv_smf"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_dv_smf"  type="pdouble"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_mv_smf"  type="pdouble"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_mv_dv_smf"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_ni_dv_smf"  type="pdouble"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_ni_mv_dv_smf"  type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_d_sml"  type="pdouble"    indexed="true"  stored="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_d_e_sml"  type="pdouble"    indexed="true"  stored="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_d_e_dv_sml"  type="pdouble"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_d_e_mv_sml"  type="pdouble"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_d_e_mv_dv_sml"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
    <dynamicField name="*_p_d_dv_sml"  type="pdouble"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_d_mv_sml"  type="pdouble"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_d_mv_dv_sml"  type="pdouble"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
@@ -117,6 +153,10 @@
    <dynamicField name="*_p_f_dv"  type="pfloat"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_p_f_mv"  type="pfloat"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p_f_mv_dv"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_p_f_e"  type="pfloat"    indexed="true"  stored="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_f_e_dv"  type="pfloat"    indexed="true"  stored="true" docValues="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_f_e_mv"  type="pfloat"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_f_e_mv_dv"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true"/>
    <dynamicField name="*_p_f_ni"  type="pfloat"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_f_ni_dv"  type="pfloat"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_f_ni_dv_ns"  type="pfloat"    indexed="false"  stored="false" docValues="true"/>
@@ -126,12 +166,20 @@
    <dynamicField name="*_p_f_ni_ns"  type="pfloat"    indexed="false"  stored="false" docValues="false"/>
    <dynamicField name="*_p_f_ni_ns_mv"  type="pfloat"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_f_smf"  type="pfloat"    indexed="true"  stored="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_f_e_smf"  type="pfloat"    indexed="true"  stored="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_f_e_dv_smf"  type="pfloat"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_f_e_mv_smf"  type="pfloat"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_f_e_mv_dv_smf"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_dv_smf"  type="pfloat"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_mv_smf"  type="pfloat"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_mv_dv_smf"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_ni_dv_smf"  type="pfloat"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_ni_mv_dv_smf"  type="pfloat"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_f_sml"  type="pfloat"    indexed="true"  stored="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_f_e_sml"  type="pfloat"    indexed="true"  stored="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_f_e_dv_sml"  type="pfloat"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_f_e_mv_sml"  type="pfloat"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_f_e_mv_dv_sml"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
    <dynamicField name="*_p_f_dv_sml"  type="pfloat"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_f_mv_sml"  type="pfloat"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_f_mv_dv_sml"  type="pfloat"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
@@ -142,6 +190,10 @@
    <dynamicField name="*_p_dt_dv"  type="pdate"    indexed="true"  stored="true" docValues="true"/>
    <dynamicField name="*_p_dt_mv"  type="pdate"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_p_dt_mv_dv"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+   <dynamicField name="*_p_dt_e"  type="pdate"    indexed="true"  stored="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_dt_e_dv"  type="pdate"    indexed="true"  stored="true" docValues="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_dt_e_mv"  type="pdate"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true"/>
+   <dynamicField name="*_p_dt_e_mv_dv"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true"/>
    <dynamicField name="*_p_dt_ni"  type="pdate"    indexed="false"  stored="true" docValues="false"/>
    <dynamicField name="*_p_dt_ni_dv"  type="pdate"    indexed="false"  stored="true" docValues="true"/>
    <dynamicField name="*_p_dt_ni_dv_ns"  type="pdate"    indexed="false"  stored="false" docValues="true"/>
@@ -151,12 +203,20 @@
    <dynamicField name="*_p_dt_ni_ns"  type="pdate"    indexed="false"  stored="false" docValues="false"/>
    <dynamicField name="*_p_dt_ni_ns_mv"  type="pdate"    indexed="false"  stored="false" docValues="false" multiValued="true"/>
    <dynamicField name="*_p_dt_smf"  type="pdate"    indexed="true"  stored="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_dt_e_smf"  type="pdate"    indexed="true"  stored="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_dt_e_dv_smf"  type="pdate"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_dt_e_mv_smf"  type="pdate"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
+   <dynamicField name="*_p_dt_e_mv_dv_smf"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_dv_smf"  type="pdate"    indexed="true"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_mv_smf"  type="pdate"    indexed="true"  stored="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_mv_dv_smf"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_ni_dv_smf"  type="pdate"    indexed="false"  stored="true" docValues="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_ni_mv_dv_smf"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true" sortMissingFirst="true"/>
    <dynamicField name="*_p_dt_sml"  type="pdate"    indexed="true"  stored="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_dt_e_sml"  type="pdate"    indexed="true"  stored="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_dt_e_dv_sml"  type="pdate"    indexed="true"  stored="true" docValues="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_dt_e_mv_sml"  type="pdate"    indexed="true"  stored="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
+   <dynamicField name="*_p_dt_e_mv_dv_sml"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true" enhancedIndex="true" sortMissingLast="true"/>
    <dynamicField name="*_p_dt_dv_sml"  type="pdate"    indexed="true"  stored="true" docValues="true" sortMissingLast="true"/>
    <dynamicField name="*_p_dt_mv_sml"  type="pdate"    indexed="true"  stored="true" multiValued="true" sortMissingLast="true"/>
    <dynamicField name="*_p_dt_mv_dv_sml"  type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true" sortMissingLast="true"/>
