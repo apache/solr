@@ -58,12 +58,12 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
-      throws Exception {
+  @SuppressWarnings("unchecked")
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
     final RemoteMessage typedMessage =
         new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(typedMessage.asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     final ClusterState clusterState = ccc.getZkStateReader().getClusterState();
     typedMessage.validate();
 
@@ -107,6 +107,10 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     @JsonProperty public String repository;
 
     @JsonProperty public String location;
+
+    @JsonProperty public String name = "";
+
+    @JsonProperty public String shardBackupId;
 
     @JsonProperty(ASYNC)
     public String asyncId;

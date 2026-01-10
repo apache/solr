@@ -124,4 +124,6 @@ public interface CollectionAdminParams {
   String PROPERTY_PREFIX = "property.";
 
   String PER_REPLICA_STATE = CollectionStateProps.PER_REPLICA_STATE;
+
+  String CALLING_LOCK_IDS_HEADER = "callingLockIds";
 }

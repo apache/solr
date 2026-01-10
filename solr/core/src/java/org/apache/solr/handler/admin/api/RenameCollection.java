@@ -72,18 +72,16 @@ public class RenameCollection extends AdminAPIBase implements RenameCollectionAp
         response,
         CollectionParams.CollectionAction.RENAME,
         remoteMessage,
-        requestBody != null ? requestBody.async : null);
+        requestBody.async);
     return response;
   }
 
   public static ZkNodeProps createRemoteMessage(
       String collectionName, RenameCollectionRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RENAME.toLower());
     remoteMessage.put(NAME, collectionName);
     remoteMessage.put(TARGET, requestBody.to);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }

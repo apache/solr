@@ -106,7 +106,8 @@ public class AddReplicaPropertyAPITest extends SolrTestCaseJ4 {
 
     addReplicaPropApi.addReplicaProperty(
         "someColl", "someShard", "someReplica", "somePropName", ANY_REQ_BODY);
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+    verify(mockCommandRunner)
+        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();

@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -562,7 +563,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, operation, lock);
         } finally {
           timerContext.stop();
           updateStats(statsName);

@@ -35,7 +35,7 @@ public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
   public void testConstructsValidOverseerMessage() {
     // Only required properties provided
     {
-      final ZkNodeProps message = DeleteCollection.createRemoteMessage("someCollName", null, null);
+      final ZkNodeProps message = DeleteCollection.createRemoteMessage("someCollName", null);
       final Map<String, Object> rawMessage = message.getProperties();
       assertEquals(2, rawMessage.size());
       assertThat(rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME));
@@ -43,18 +43,17 @@ public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
       assertEquals("someCollName", rawMessage.get(NAME));
     }
 
-    // Optional properties ('followAliases' and 'async') also provided
+    // Optional property 'followAliases' also provided
     {
       final ZkNodeProps message =
-          DeleteCollection.createRemoteMessage("someCollName", Boolean.TRUE, "someAsyncId");
+          DeleteCollection.createRemoteMessage("someCollName", Boolean.TRUE);
       final Map<String, Object> rawMessage = message.getProperties();
-      assertEquals(4, rawMessage.size());
+      assertEquals(3, rawMessage.size());
       assertThat(
-          rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME, ASYNC, FOLLOW_ALIASES));
+          rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME, FOLLOW_ALIASES));
       assertEquals("delete", rawMessage.get(QUEUE_OPERATION));
       assertEquals("someCollName", rawMessage.get(NAME));
       assertEquals(Boolean.TRUE, rawMessage.get(FOLLOW_ALIASES));
-      assertEquals("someAsyncId", rawMessage.get(ASYNC));
     }
   }
 }

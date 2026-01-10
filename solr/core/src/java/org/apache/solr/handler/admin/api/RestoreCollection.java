@@ -123,25 +123,11 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     }
 
     final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
+    submitRemoteMessageAndHandleResponse(
+            response,
             CollectionParams.CollectionAction.RESTORE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+            remoteMessage,
+            requestBody.async);
     return response;
   }
 

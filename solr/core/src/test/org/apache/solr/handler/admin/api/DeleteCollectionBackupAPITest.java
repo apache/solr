@@ -125,11 +125,10 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
                 123,
                 true,
                 "someLocation",
-                "someRepository",
-                "someAsyncId")
+                "someRepository")
             .getProperties();
 
-    assertEquals(8, remoteMessage.size());
+    assertEquals(7, remoteMessage.size());
     assertEquals("deletebackup", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someBackupName", remoteMessage.get(NAME));
     assertEquals("someBackupId", remoteMessage.get(BACKUP_ID));
@@ -137,14 +136,13 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE, remoteMessage.get(BACKUP_PURGE_UNUSED));
     assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
     assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
   }
 
   @Test
   public void testCreateRemoteMessageOnlyRequiredParams() {
     final var remoteMessage =
         DeleteCollectionBackup.createRemoteMessage(
-                "someBackupName", "someBackupId", null, null, null, null, null)
+                "someBackupName", "someBackupId", null, null, null, null)
             .getProperties();
 
     assertEquals(3, remoteMessage.size());

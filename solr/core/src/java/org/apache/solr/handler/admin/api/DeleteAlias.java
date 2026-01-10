@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.DeleteAliasApi;
 import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -50,33 +51,14 @@ public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
   @Override
   @PermissionName(COLL_EDIT_PERM)
   public SolrJerseyResponse deleteAlias(String aliasName, String asyncId) throws Exception {
-    final AsyncJerseyResponse response = instantiateJerseyResponse(AsyncJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(aliasName, asyncId);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETEALIAS,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (asyncId != null) {
-      response.requestId = asyncId;
-    }
-
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.DELETEALIAS,
+        new ZkNodeProps(Map.of(NAME, aliasName)),
+        asyncId);
     return response;
-  }
-
-  public static ZkNodeProps createRemoteMessage(String aliasName, String asyncId) {
-    final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETEALIAS.toLower());
-    remoteMessage.put(NAME, aliasName);
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
-
-    return new ZkNodeProps(remoteMessage);
   }
 }

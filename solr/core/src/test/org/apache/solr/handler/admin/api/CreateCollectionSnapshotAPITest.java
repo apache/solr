@@ -33,7 +33,7 @@ public class CreateCollectionSnapshotAPITest extends SolrTestCaseJ4 {
   @Test
   public void testConstructsValidOverseerMessage() {
     final ZkNodeProps messageOne =
-        CreateCollectionSnapshot.createRemoteMessage("myCollName", false, "mySnapshotName", null);
+        CreateCollectionSnapshot.createRemoteMessage("myCollName", false, "mySnapshotName");
     final Map<String, Object> rawMessageOne = messageOne.getProperties();
     assertEquals(4, rawMessageOne.size());
     assertThat(
@@ -47,17 +47,16 @@ public class CreateCollectionSnapshotAPITest extends SolrTestCaseJ4 {
 
     final ZkNodeProps messageTwo =
         CreateCollectionSnapshot.createRemoteMessage(
-            "myCollName", true, "mySnapshotName", "myAsyncId");
+            "myCollName", true, "mySnapshotName");
     final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
-    assertEquals(5, rawMessageTwo.size());
+    assertEquals(4, rawMessageTwo.size());
     assertThat(
         rawMessageTwo.keySet(),
         containsInAnyOrder(
-            QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES, ASYNC));
+            QUEUE_OPERATION, COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
     assertEquals("createsnapshot", rawMessageTwo.get(QUEUE_OPERATION));
     assertEquals("myCollName", rawMessageTwo.get(COLLECTION_PROP));
     assertEquals("mySnapshotName", rawMessageTwo.get(CoreAdminParams.COMMIT_NAME));
     assertEquals(true, rawMessageTwo.get(FOLLOW_ALIASES));
-    assertEquals("myAsyncId", rawMessageTwo.get(ASYNC));
   }
 }

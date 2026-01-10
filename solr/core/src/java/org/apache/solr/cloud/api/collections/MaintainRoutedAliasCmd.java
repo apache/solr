@@ -25,7 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
@@ -55,16 +54,13 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
    * standard OCP timeout) to prevent large batches of add's from sending a message to the overseer
    * for every document added in RoutedAliasUpdateProcessor.
    */
-  static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String targetCol)
-      throws Exception {
-    final CollectionParams.CollectionAction maintainroutedalias =
-        CollectionParams.CollectionAction.MAINTAINROUTEDALIAS;
-    Map<String, Object> msg = new HashMap<>();
-    msg.put(Overseer.QUEUE_OPERATION, maintainroutedalias.toLower());
-    msg.put(CollectionParams.NAME, aliasName);
-    msg.put(MaintainRoutedAliasCmd.ROUTED_ALIAS_TARGET_COL, targetCol);
+  static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String targetCol) throws Exception {
     final SolrResponse rsp =
-        collHandler.submitCollectionApiCommand(new ZkNodeProps(msg), maintainroutedalias);
+        collHandler.submitCollectionApiCommand(
+            new AdminCmdContext(CollectionParams.CollectionAction.MAINTAINROUTEDALIAS),
+            new ZkNodeProps(Map.of(
+                CollectionParams.NAME, aliasName,
+                MaintainRoutedAliasCmd.ROUTED_ALIAS_TARGET_COL, targetCol)));
     if (rsp.getException() != null) {
       throw rsp.getException();
     }
@@ -109,7 +105,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(
+      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     // ---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on
@@ -145,8 +142,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
                 .execute(
                     () -> {
                       try {
-                        deleteTargetCollection(
-                            clusterState, results, aliasName, aliasesManager, action);
+                        deleteTargetCollection(adminCmdContext, results, aliasName, aliasesManager, action);
                       } catch (Exception e) {
                         log.warn(
                             "Deletion of {} by {} {} failed (this might be ok if two clients were",
@@ -161,7 +157,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
         case ENSURE_EXISTS:
           if (!exists) {
             addTargetCollection(
-                clusterState, results, aliasName, aliasesManager, aliasMetadata, action);
+                adminCmdContext, results, aliasName, aliasesManager, aliasMetadata, action);
           } else {
             // check that the collection is properly integrated into the alias (see
             // TimeRoutedAliasUpdateProcessorTest.java:141). Presently we need to ensure inclusion
@@ -189,7 +185,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   public void addTargetCollection(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       NamedList<Object> results,
       String aliasName,
       ZkStateReader.AliasesManager aliasesManager,
@@ -198,7 +194,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
       throws Exception {
     NamedList<Object> createResults =
         createCollectionAndWait(
-            clusterState, aliasName, aliasMetadata, action.targetCollection, ccc);
+            adminCmdContext, aliasName, aliasMetadata, action.targetCollection, ccc);
     if (createResults != null) {
       results.add("create", createResults);
     }
@@ -206,7 +202,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   public void deleteTargetCollection(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       NamedList<Object> results,
       String aliasName,
       ZkStateReader.AliasesManager aliasesManager,
@@ -219,6 +215,6 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
             () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));
     delProps.put(NAME, action.targetCollection);
     ZkNodeProps messageDelete = new ZkNodeProps(delProps);
-    new DeleteCollectionCmd(ccc).call(clusterState, messageDelete, results);
+    new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE), messageDelete, results);
   }
 }

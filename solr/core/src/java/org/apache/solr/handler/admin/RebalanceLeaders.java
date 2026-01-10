@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -444,10 +445,8 @@ class RebalanceLeaders {
       Slice slice, String electionNode, String core, boolean rejoinAtHead)
       throws KeeperException, InterruptedException {
     Replica replica = slice.getReplica(LeaderElector.getNodeName(electionNode));
-    final CollectionParams.CollectionAction rebalanceleaders = REBALANCELEADERS;
     Map<String, Object> propMap = new HashMap<>();
     propMap.put(COLLECTION_PROP, collectionName);
-    propMap.put(QUEUE_OPERATION, rebalanceleaders.toLower());
     propMap.put(CORE_NAME_PROP, core);
     propMap.put(CORE_NODE_NAME_PROP, replica.getName());
     propMap.put(ZkStateReader.NODE_NAME_PROP, replica.getNodeName());
@@ -459,12 +458,10 @@ class RebalanceLeaders {
             .getBaseUrlForNodeName(replica.getNodeName()));
     propMap.put(
         REJOIN_AT_HEAD_PROP, Boolean.toString(rejoinAtHead)); // Get ourselves to be first in line.
-    String asyncId = rebalanceleaders.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
-    propMap.put(ASYNC, asyncId);
+    String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
     asyncRequests.add(asyncId);
 
-    collectionsHandler.submitCollectionApiCommand(
-        new ZkNodeProps(propMap), rebalanceleaders); // ignore response; we construct our own
+    collectionsHandler.submitCollectionApiCommand(new AdminCmdContext(REBALANCELEADERS, asyncId), new ZkNodeProps(propMap)); // ignore response; we construct our own
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
