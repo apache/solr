@@ -1,0 +1,317 @@
+= Solr MCP Server Tutorial
+:experimental:
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+This tutorial introduces the https://github.com/apache/solr-mcp[Solr MCP Server], an implementation of the Model Context Protocol (MCP) that enables AI assistants like Claude to interact directly with Apache Solr.
+
+== What is MCP?
+
+The https://modelcontextprotocol.io/docs/getting-started/intro[Model Context Protocol (MCP)] is a standardized way for AI assistants to interact with external tools and data sources. The Solr MCP Server bridges Apache Solr and MCP-compatible AI assistants, allowing natural language interactions with your Solr collections.
+
+== Features
+
+The Solr MCP Server provides the following https://modelcontextprotocol.io/specification/2025-11-25/server/tools[MCP tools]:
+
+[cols="1,3",options="header"]
+|===
+|Tool |Description
+|`search` |Query collections with filtering, faceting, and pagination
+|`index_documents` |Add documents in JSON, CSV, or XML format
+|`listCollections` |List all available collections
+|`getCollectionStats` |Retrieve collection metrics and statistics
+|`checkHealth` |Verify collection health status
+|`getSchema` |Access collection schema definitions
+|===
+
+Additionally, the server exposes https://modelcontextprotocol.io/specification/2025-11-25/server/resources[MCP resources]:
+
+* `solr://collections` - Lists all available collections
+* `solr://\{collection\}/schema` - Provides schema details for a specific collection
+
+NOTE: In a future release, https://modelcontextprotocol.io/specification/2025-11-25/server/prompts[MCP prompt templates] will be added to provide guided interactions with Solr.
+
+== Prerequisites
+
+* Java 25 or later
+* Docker and Docker Compose (for Docker-based deployment)
+* Git (for building from source)
+* A running Solr instance (or use the included Docker Compose setup)
+
+== Transport Modes
+
+The Solr MCP Server supports two transport modes:
+
+* *STDIO* - Standard input/output mode, ideal for direct integration with Claude Desktop
+* *HTTP* - HTTP-based transport, useful for the MCP Inspector and web-based integrations
+
+Choose the mode that best fits your use case. STDIO is simpler for local Claude Desktop usage, while HTTP offers more flexibility for development and testing.
+
+== STDIO Mode
+
+STDIO mode communicates via standard input/output streams, making it the natural choice for Claude Desktop integration.
+
+=== Using Docker
+
+The simplest way to run the Solr MCP Server in STDIO mode is with Docker.
+
+First, start a local Solr instance with sample data (optional, if you don't already have Solr running):
+
+[,console]
+----
+$ git clone https://github.com/apache/solr-mcp.git
+$ cd solr-mcp
+$ docker compose up -d
+----
+
+This starts Solr on `http://localhost:8983` with sample collections.
+
+Run the MCP server in STDIO mode:
+
+[,console]
+----
+$ docker run -i --rm ghcr.io/apache/solr-mcp:latest
+----
+
+==== Configuring Claude Desktop with Docker (STDIO)
+
+To integrate with Claude Desktop, add the following to your Claude Desktop configuration file:
+
+* macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+* Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+[,json]
+----
+{
+  "mcpServers": {
+    "solr-mcp": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "ghcr.io/apache/solr-mcp:latest"],
+      "env": {
+        "SOLR_URL": "http://host.docker.internal:8983/solr/"
+      }
+    }
+  }
+}
+----
+
+The `SOLR_URL` environment variable defaults to `http://localhost:8983/solr/`. When running the MCP server in Docker, use `host.docker.internal` to access Solr running on your host machine.
+
+=== Building from Source
+
+If you prefer to build from source:
+
+[,console]
+----
+$ git clone https://github.com/apache/solr-mcp.git
+$ cd solr-mcp
+----
+
+Start Solr with sample data (optional):
+
+[,console]
+----
+$ docker compose up -d
+----
+
+Build and run with Gradle:
+
+[,console]
+----
+$ ./gradlew bootRun
+----
+
+Or build a JAR and run it:
+
+[,console]
+----
+$ ./gradlew build
+$ java -jar build/libs/solr-mcp-1.0.0-SNAPSHOT.jar
+----
+
+==== Configuring Claude Desktop with JAR (STDIO)
+
+[,json]
+----
+{
+  "mcpServers": {
+    "solr-mcp": {
+      "command": "java",
+      "args": ["-jar", "/path/to/solr-mcp/build/libs/solr-mcp-1.0.0-SNAPSHOT.jar"],
+      "env": {
+        "SOLR_URL": "http://localhost:8983/solr/"
+      }
+    }
+  }
+}
+----
+
+Replace `/path/to/solr-mcp` with the actual path where you cloned the repository.
+
+== HTTP Mode
+
+HTTP mode exposes the MCP server over HTTP, which is useful for:
+
+* Testing with the https://github.com/modelcontextprotocol/inspector[MCP Inspector]
+* Web-based integrations
+* Scenarios requiring OAuth2 authentication
+
+=== Security in HTTP Mode
+
+HTTP mode supports OAuth2 authentication to ensure that only authenticated users can access your Solr data through the MCP server.
+
+Current security features:
+
+* OAuth2 resource server validation using JWT tokens
+* Support for Auth0 and compatible identity providers
+* All endpoints protected when security is enabled
+
+NOTE: Currently, `SECURITY_ENABLED` defaults to `false` for ease of development. In a future release, the default will change to `true` for HTTP mode. Fine-grained authorization (e.g., per-collection access control) is not yet implemented but can be added in the future.
+
+=== Using Docker
+
+Run the MCP server in HTTP mode with Docker:
+
+[,console]
+----
+$ docker run -p 8080:8080 --rm -e PROFILES=http ghcr.io/apache/solr-mcp:latest
+----
+
+To specify a custom Solr URL:
+
+[,console]
+----
+$ docker run -p 8080:8080 --rm \
+    -e PROFILES=http \
+    -e SOLR_URL=http://host.docker.internal:8983/solr/ \
+    ghcr.io/apache/solr-mcp:latest
+----
+
+The server will be available at `http://localhost:8080/mcp`.
+
+==== Configuring Claude Desktop with Docker (HTTP)
+
+For HTTP mode, use `mcp-remote` to connect Claude Desktop to the server:
+
+[,json]
+----
+{
+  "mcpServers": {
+    "solr-mcp": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:8080/mcp"]
+    }
+  }
+}
+----
+
+=== Building from Source
+
+Build and run in HTTP mode with Gradle:
+
+[,console]
+----
+$ PROFILES=http ./gradlew bootRun
+----
+
+Or with a JAR:
+
+[,console]
+----
+$ ./gradlew build
+$ PROFILES=http java -jar build/libs/solr-mcp-1.0.0-SNAPSHOT.jar
+----
+
+To set a custom Solr URL:
+
+[,console]
+----
+$ SOLR_URL=http://localhost:8983/solr/ PROFILES=http ./gradlew bootRun
+----
+
+==== Configuring Claude Desktop with Local HTTP Server
+
+[,json]
+----
+{
+  "mcpServers": {
+    "solr-mcp": {
+      "command": "npx",
+      "args": ["mcp-remote", "http://localhost:8080/mcp"]
+    }
+  }
+}
+----
+
+=== Enabling OAuth2 Authentication
+
+To enable OAuth2 authentication in HTTP mode:
+
+[,console]
+----
+$ SECURITY_ENABLED=true \
+  OAUTH2_ISSUER_URI=https://your-tenant.auth0.com/ \
+  PROFILES=http \
+  ./gradlew bootRun
+----
+
+To obtain a token for testing:
+
+[,console]
+----
+$ ./scripts/get-auth0-token.sh \
+    --domain your-tenant.auth0.com \
+    --client-id YOUR_CLIENT_ID \
+    --client-secret YOUR_CLIENT_SECRET \
+    --audience https://solr-mcp-api
+----
+
+Use the token in requests:
+
+[,console]
+----
+$ curl -H "Authorization: Bearer YOUR_TOKEN" http://localhost:8080/mcp
+----
+
+== Environment Variables
+
+[cols="1,2,1",options="header"]
+|===
+|Variable |Description |Default
+|`SOLR_URL` |URL of your Solr instance |`http://localhost:8983/solr/`
+|`PROFILES` |Server profile (`http` for HTTP mode) |STDIO mode
+|`SECURITY_ENABLED` |Enable/disable OAuth2 security (HTTP mode only) |`false`
+|`OAUTH2_ISSUER_URI` |OAuth2 issuer URI for token validation |None
+|===
+
+== Example Usage
+
+Once configured, you can ask Claude questions like:
+
+* "What collections are available in Solr?"
+* "Search for documents about 'electronics' in the techproducts collection"
+* "Show me the schema for the films collection"
+* "Index this JSON document into my products collection"
+* "How many documents are in each collection?"
+
+Claude will use the appropriate MCP tools to interact with your Solr instance and return the results.
+
+== Additional Resources
+
+* https://github.com/apache/solr-mcp[Solr MCP Server on GitHub]
+* https://modelcontextprotocol.io[Model Context Protocol Specification]
+* https://solr.apache.org[Apache Solr Documentation]
