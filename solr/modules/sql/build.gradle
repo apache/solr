@@ -52,7 +52,6 @@ dependencies {
   testRuntimeOnly project(':solr:modules:analysis-extras')
 }
 
-
 // Copy all the test resource files from core to the build/resources/test directory
 // of the SQL module so we can avoid duplication of the test resource files like
 // schemas and SolrConfigs. This can be improved later by making the test classes

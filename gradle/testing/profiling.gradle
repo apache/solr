@@ -28,7 +28,8 @@ allprojects {
     if (resolvedTestOption("tests.profile").toBoolean()) {
       allprojects {
         tasks.withType(Test) {
-          jvmArgs("-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings=" + rootProject.file("gradle/testing/profiling.jfc"),
+          jvmArgs("-XX:StartFlightRecording=dumponexit=true,maxsize=250M,settings=" +
+              rootProject.file("gradle/testing/profiling.jfc"),
               "-XX:+UnlockDiagnosticVMOptions",
               "-XX:+DebugNonSafepoints")
           // delete any previous profile results
@@ -46,10 +47,12 @@ allprojects {
 
 gradle.buildFinished {
   if (!recordings.isEmpty()) {
-    buildinfra.profileResultsClass().printReport(recordings.getFiles().collect { it.toString() },
+    buildinfra.profileResultsClass().printReport(recordings.getFiles().collect {it.toString()},
         propertyOrDefault(ProfileResults.MODE_KEY, ProfileResults.MODE_DEFAULT) as String,
-        Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY, ProfileResults.STACKSIZE_DEFAULT)),
+        Integer.parseInt(propertyOrDefault(ProfileResults.STACKSIZE_KEY,
+            ProfileResults.STACKSIZE_DEFAULT)),
         Integer.parseInt(propertyOrDefault(ProfileResults.COUNT_KEY, ProfileResults.COUNT_DEFAULT)),
-        Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY, ProfileResults.LINENUMBERS_DEFAULT)))
+        Boolean.parseBoolean(propertyOrDefault(ProfileResults.LINENUMBERS_KEY,
+            ProfileResults.LINENUMBERS_DEFAULT)))
   }
 }

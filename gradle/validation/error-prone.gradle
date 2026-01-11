@@ -22,7 +22,8 @@ if (rootProject.usesAltJvm) {
 }
 
 if (!propertyOrDefault("validation.errorprone", isCIBuild).asBoolean()) {
-  skipReason = "skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable"
+  skipReason =
+      "skipped on builds not running inside CI environments, pass -Pvalidation.errorprone=true to enable"
 }
 
 if (skipReason) {
@@ -35,12 +36,12 @@ if (skipReason) {
   }
 }
 
-allprojects { prj ->
+allprojects {prj ->
   plugins.withType(JavaPlugin) {
     // LUCENE-9650: Errorprone does not work when running as a plugin inside a forked Javac process.
     // Javac running inside Gradle works, because we have additional module system opens in place.
     if (skipReason) {
-      tasks.withType(JavaCompile) { task -> task.dependsOn ":errorProneSkipped" }
+      tasks.withType(JavaCompile) {task -> task.dependsOn ":errorProneSkipped"}
 
       // Error prone plugin adds error prone to test classpath. We need to add it here too
       // (manually) so that lockfiles are consistent with or without error prone.
@@ -61,7 +62,7 @@ allprojects { prj ->
         errorprone libs.google.errorprone.core
       }
 
-      tasks.withType(JavaCompile) { task ->
+      tasks.withType(JavaCompile) {task ->
         task.dependsOn ":checkJdkInternalsExportedToGradle"
 
         options.errorprone.disableWarningsInGeneratedCode = true
@@ -261,7 +262,6 @@ allprojects { prj ->
             '-Xep:XorPower:ERROR',
             '-Xep:ZoneIdOfZ:ERROR',
             // END -- On by Default : ERROR
-
 
             // BEGIN -- On by Default : WARNING
             // '-Xep:ASTHelpersSuggestions:OFF', // we don't use ASTHelpers

@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // This script tries to guess sensible defaults for gradle parallelism
 // and local machine's resources and save them under 'gradle.properties'.
 
@@ -34,8 +33,7 @@ configure(rootProject) {
           "com.sun.tools.javac.parser",
           "com.sun.tools.javac.tree",
           "com.sun.tools.javac.util"
-      ].stream()
-        .allMatch(pkg -> jdkCompilerModule.isExported(pkg, gradleModule))
+      ].stream().allMatch {pkg -> jdkCompilerModule.isExported(pkg, gradleModule)}
 
       if (!internalsExported) {
         throw new GradleException(

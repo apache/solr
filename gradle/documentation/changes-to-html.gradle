@@ -53,7 +53,7 @@ class ChangesToHtmlTask extends DefaultTask {
 
   @OutputDirectory
   final DirectoryProperty targetDir = project.objects.directoryProperty()
-      .fileProvider(project.providers.provider { project.file("${project.docroot}/changes") })
+      .fileProvider(project.providers.provider {project.file("${project.docroot}/changes")})
 
   @InputFile
   def script
@@ -63,8 +63,8 @@ class ChangesToHtmlTask extends DefaultTask {
 
     // Check if Python is available
     if (!pythonExists()) {
-        logger.warn("WARNING: Python is not installed, skipping creating Changes.html")
-        return
+      logger.warn("WARNING: Python is not installed, skipping creating Changes.html")
+      return
     }
 
     def result = project.exec {
@@ -101,11 +101,11 @@ class ChangesToHtmlTask extends DefaultTask {
 
   def pythonExists() {
     try {
-        def process = "python3 --version".execute()
-        process.waitFor()
-        return process.exitValue() == 0
+      def process = "python3 --version".execute()
+      process.waitFor()
+      return process.exitValue() == 0
     } catch (Exception e) {
-        return false
+      return false
     }
   }
 }

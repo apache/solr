@@ -18,7 +18,7 @@
 // This adds gradle-dependency-analyze validation of project dependencies
 // https://github.com/gradle-dependency-analyze/gradle-dependency-analyze
 
-allprojects { prj ->
+allprojects {prj ->
   plugins.withId("java", {
     prj.apply plugin: libs.plugins.cutterslade.analyze.get().pluginId
 

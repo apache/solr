@@ -75,7 +75,7 @@ dependencies {
 
   webapp project(path: ":solr:webapp", configuration: "war")
 
-  startJar(variantOf(libs.eclipse.jetty.start) { classifier 'shaded' }, {
+  startJar(variantOf(libs.eclipse.jetty.start) {classifier 'shaded'}, {
     transitive false
   })
 
@@ -107,13 +107,13 @@ task assemblePackaging(type: Sync) {
       // Allow duplicates to overwrite previous files
       duplicatesStrategy = DuplicatesStrategy.INCLUDE
       // Rename dev files in development
-      rename { String fileName -> fileName.replace("-dev.xml", ".xml") }
+      rename {String fileName -> fileName.replace("-dev.xml", ".xml")}
 
       // Exclude production configurations
       exclude "**/*-prod.xml"
     } else {
       // Rename prod files in production
-      rename { String fileName -> fileName.replace("-prod.xml", ".xml") }
+      rename {String fileName -> fileName.replace("-prod.xml", ".xml")}
 
       // Exclude dev configurations
       exclude "**/*-dev.xml"
@@ -121,7 +121,8 @@ task assemblePackaging(type: Sync) {
   })
 
   // Add in the intersection of serverLib and solrCore
-  from(configurations.libExt + (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
+  from(configurations.libExt +
+      (configurations.serverLib - (configurations.serverLib - configurations.solrCore)), {
     into "lib/ext"
   })
 
@@ -129,12 +130,12 @@ task assemblePackaging(type: Sync) {
     into "lib/"
   })
 
-  from { project.configurations.startJar.singleFile } {
-    rename { file -> 'start.jar' }
+  from {project.configurations.startJar.singleFile} {
+    rename {file -> 'start.jar'}
   }
 
   dependsOn configurations.webapp
-  from( { zipTree(configurations.webapp.asPath) }, {
+  from({zipTree(configurations.webapp.asPath)}, {
     into "solr-webapp/webapp"
   })
 

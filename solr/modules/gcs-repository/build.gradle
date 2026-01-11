@@ -22,35 +22,35 @@ apply plugin: 'java-library'
 description = 'GCS Backup Repository'
 
 ext {
-    // Use of the security manager is not supported on windows.
-    useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
+  // Use of the security manager is not supported on windows.
+  useSecurityManager = !Os.isFamily(Os.FAMILY_WINDOWS)
 }
 
 dependencies {
-    implementation platform(project(':platform'))
-    api project(':solr:core')
-    implementation project(':solr:solrj')
+  implementation platform(project(':platform'))
+  api project(':solr:core')
+  implementation project(':solr:solrj')
 
-    implementation libs.apache.lucene.core
-    implementation libs.slf4j.api
+  implementation libs.apache.lucene.core
+  implementation libs.slf4j.api
 
-    implementation platform(libs.google.cloud.bom)
-    implementation platform(libs.grpc.bom)
-    implementation libs.google.api.gax
-    implementation libs.google.auth.oauth2http
-    implementation libs.google.auth.credentials
-    implementation libs.google.cloud.core
-    implementation libs.google.cloud.corehttp
-    implementation libs.google.cloud.storage
-    implementation libs.threeten.bp
+  implementation platform(libs.google.cloud.bom)
+  implementation platform(libs.grpc.bom)
+  implementation libs.google.api.gax
+  implementation libs.google.auth.oauth2http
+  implementation libs.google.auth.credentials
+  implementation libs.google.cloud.core
+  implementation libs.google.cloud.corehttp
+  implementation libs.google.cloud.storage
+  implementation libs.threeten.bp
 
-    testImplementation project(':solr:test-framework')
-    testImplementation libs.apache.lucene.testframework
-    testImplementation libs.carrotsearch.randomizedtesting.runner
-    testImplementation libs.junit.junit
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.apache.lucene.testframework
+  testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.junit.junit
 
-    testImplementation(libs.google.cloud.nio) {
-      exclude group: 'javax.inject'
-    }
+  testImplementation(libs.google.cloud.nio) {
+    exclude group: 'javax.inject'
+  }
 }
 

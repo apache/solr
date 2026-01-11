@@ -38,7 +38,9 @@ configure(rootProject) {
       }
     }())
 
-    solrRefguideUrl = project.propertyOrDefault('solr.refguide.url', "https://solr.apache.org/guide/solr/${refguideUrlVersion}")
+    solrRefguideUrl =
+        project.propertyOrDefault('solr.refguide.url',
+            "https://solr.apache.org/guide/solr/${refguideUrlVersion}")
   }
 
   task documentation() {
@@ -65,11 +67,11 @@ configure(project(':solr:documentation')) {
     group = 'documentation'
     description = "Generate ${project.name.capitalize()} documentation"
 
-    dependsOn project.parent.subprojects.collect { prj ->
-      prj.tasks.matching { it.name == 'renderSiteJavadoc' }
+    dependsOn project.parent.subprojects.collect {prj ->
+      prj.tasks.matching {it.name == 'renderSiteJavadoc'}
     }
-    dependsOn 'changesToHtml','copyDocumentationAssets',
-      'markdownToHtml','createDocumentationIndex'
+    dependsOn 'changesToHtml', 'copyDocumentationAssets',
+        'markdownToHtml', 'createDocumentationIndex'
   }
 
   task copyDocumentationAssets(type: Copy) {
@@ -77,7 +79,7 @@ configure(project(':solr:documentation')) {
     from(project.assets)
     into project.docroot
   }
-  
+
   assemble {
     dependsOn documentation
   }
@@ -85,7 +87,7 @@ configure(project(':solr:documentation')) {
   configurations {
     site
   }
-  
+
   artifacts {
     site project.docroot, {
       builtBy documentation
@@ -95,7 +97,9 @@ configure(project(':solr:documentation')) {
   task documentationMinimal() {
     group = 'documentation'
     description = "Generate stub Solr documentation pointing to web page (that's part of Solr TGZ)"
-    dependsOn 'copyMiniDocumentationAssets', 'createMiniDocumentationIndex', 'copyChangesToHtmlForMiniSite'
+    dependsOn 'copyMiniDocumentationAssets',
+        'createMiniDocumentationIndex',
+        'copyChangesToHtmlForMiniSite'
   }
 
   task copyChangesToHtmlForMiniSite(type: Copy) {

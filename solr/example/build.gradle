@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // I am not convinced packaging of examples should be a separate project... Seems more logical to
 // move it to just the packaging project (?). Let's leave it for now though.
 

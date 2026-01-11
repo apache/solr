@@ -32,7 +32,7 @@ configure(rootProject) {
       ["Docker", "dev-docs/gradle-help/docker.txt", "Building Solr Docker images."],
   ]
 
-  helpFiles.each { section, path, sectionInfo ->
+  helpFiles.each {section, path, sectionInfo ->
     task "help${section}" {
       group = 'Help (developer guides and hints)'
       description = sectionInfo
@@ -48,7 +48,7 @@ configure(rootProject) {
       println "This is the Solr gradle build. See some guidelines, "
       println "ant-equivalent commands, etc. under dev-docs/gradle-help/*; or type:"
       println ""
-      helpFiles.each { section, path, sectionInfo ->
+      helpFiles.each {section, path, sectionInfo ->
         println String.format(Locale.ROOT,
             "  gradlew :help%-16s # %s", section, sectionInfo)
       }
@@ -59,7 +59,7 @@ configure(rootProject) {
 
   task allHelpFilesExit() {
     doFirst {
-      helpFiles.each { section, path, sectionInfo ->
+      helpFiles.each {section, path, sectionInfo ->
         if (!rootProject.file(path).exists()) {
           throw new GradleException("Help file missing: ${path} (correct help.gradle)")
         }
