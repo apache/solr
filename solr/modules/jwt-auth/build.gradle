@@ -49,9 +49,6 @@ dependencies {
     exclude group: "io.netty", module: "netty-all"
   })
   // required by mock-oauth2-server
-  testImplementation libs.fasterxml.jackson.core.databind
-  permitTestUnusedDeclared libs.fasterxml.jackson.core.databind
-
   testImplementation libs.bouncycastle.bcpkix
   testImplementation libs.bouncycastle.bcprov
   testImplementation libs.nimbusds.josejwt
