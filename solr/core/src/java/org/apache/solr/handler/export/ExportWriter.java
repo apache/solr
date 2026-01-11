@@ -28,12 +28,21 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
+import java.util.WeakHashMap;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedDocValues;
+import org.apache.lucene.index.StoredFieldVisitor;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
@@ -99,6 +108,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public static final String BATCH_SIZE_PARAM = "batchSize";
   public static final String QUEUE_SIZE_PARAM = "queueSize";
+  public static final String INCLUDE_STORED_FIELDS_PARAM = "includeStoredFields";
 
   public static final int DEFAULT_BATCH_SIZE = 30000;
   public static final int DEFAULT_QUEUE_SIZE = 150000;
@@ -493,34 +503,61 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   public List<FieldWriter> getFieldWriters(String[] fields, SolrQueryRequest req)
       throws IOException {
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
-
     SolrReturnFields solrReturnFields = new SolrReturnFields(fields, req);
+    boolean includeStoredFields =
+        req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
 
     List<FieldWriter> writers = new ArrayList<>();
+    Set<String> docValueFields = new LinkedHashSet<>();
+    Map<String, SchemaField> storedOnlyFields = new LinkedHashMap<>();
+
     for (String field : req.getSearcher().getFieldNames()) {
       if (!solrReturnFields.wantsField(field)) {
         continue;
       }
       SchemaField schemaField = req.getSchema().getField(field);
-      if (!schemaField.hasDocValues()) {
-        throw new IOException(schemaField + " must have DocValues to use this feature.");
+      FieldType fieldType = schemaField.getType();
+
+      // Check if field can use DocValues
+      boolean canUseDocValues = schemaField.hasDocValues()
+          && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
+
+      if (canUseDocValues) {
+        // Prefer DocValues when available
+        docValueFields.add(field);
+      } else if (schemaField.stored()) {
+        // Field is stored-only (no usable DocValues)
+        if (includeStoredFields) {
+          storedOnlyFields.put(field, schemaField);
+        } else if (solrReturnFields.getRequestedFieldNames() != null
+            && solrReturnFields.getRequestedFieldNames().contains(field)) {
+          // Explicitly requested field without DocValues and includeStoredFields=false
+          throw new IOException(
+              schemaField
+                  + " must have DocValues to use this feature. "
+                  + "Try setting includeStoredFields=true to retrieve this field from stored values.");
+        }
+        // Else: glob matched stored-only field without includeStoredFields - silently skip
+      } else if (solrReturnFields.getRequestedFieldNames() != null
+          && solrReturnFields.getRequestedFieldNames().contains(field)) {
+        // Explicitly requested field that has neither DocValues nor stored
+        if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
+          throw new IOException(
+              schemaField
+                  + " Must have useDocValuesAsStored='true' to be used with export writer");
+        } else {
+          throw new IOException(schemaField + " must have DocValues to use this feature.");
+        }
       }
+      // Else: glob matched field with neither DocValues nor stored - silently skip
+    }
+
+    // Process DocValues fields first
+    for (String field : docValueFields) {
+      SchemaField schemaField = req.getSchema().getField(field);
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
       FieldWriter writer;
-
-      if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
-        if (solrReturnFields.getRequestedFieldNames() != null
-            && solrReturnFields.getRequestedFieldNames().contains(field)) {
-          // Explicitly requested field cannot be used due to not having useDocValuesAsStored=true,
-          // throw exception
-          throw new IOException(
-              schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
-        } else {
-          // Glob pattern matched field cannot be used due to not having useDocValuesAsStored=true
-          continue;
-        }
-      }
 
       DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache = dvIterCache.getSupplier(field);
 
@@ -574,6 +611,18 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       writers.add(writer);
     }
+
+    // Add StoredFieldsWriter if there are stored-only fields to process
+    if (!storedOnlyFields.isEmpty()) {
+      if (log.isWarnEnabled()) {
+        log.warn(
+            "Export request includes stored-only fields {} which may significantly impact performance. "
+                + "Consider adding docValues to these fields for better export performance.",
+            storedOnlyFields.keySet());
+      }
+      writers.add(new StoredFieldsWriter(storedOnlyFields));
+    }
+
     return writers;
   }
 
@@ -854,6 +903,116 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     @Override
     public String getMessage() {
       return "Early Client Disconnect";
+    }
+  }
+
+  static class StoredFieldsWriter extends FieldWriter {
+
+    private final Map<String, SchemaField> fields;
+    private final ThreadLocal<WeakHashMap<IndexReader.CacheKey, StoredFields>> storedFieldsMap =
+        new ThreadLocal<>();
+
+    public StoredFieldsWriter(Map<String, SchemaField> fieldsToRead) {
+      this.fields = fieldsToRead;
+    }
+
+    @Override
+    public boolean write(
+        SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex)
+        throws IOException {
+      WeakHashMap<IndexReader.CacheKey, StoredFields> map = storedFieldsMap.get();
+      if (map == null) {
+        map = new WeakHashMap<>();
+        storedFieldsMap.set(map);
+      }
+      LeafReader reader = readerContext.reader();
+      StoredFields storedFields = map.get(reader.getReaderCacheHelper().getKey());
+      if (storedFields == null) {
+        storedFields = reader.storedFields();
+        map.put(reader.getReaderCacheHelper().getKey(), storedFields);
+      }
+      ExportVisitor visitor = new ExportVisitor(out);
+      storedFields.document(sortDoc.docId, visitor);
+      visitor.flush();
+      return false;
+    }
+
+    class ExportVisitor extends StoredFieldVisitor {
+
+      final EntryWriter out;
+      String lastFieldName;
+      List<Object> multiValue = null;
+
+      public ExportVisitor(EntryWriter out) {
+        this.out = out;
+      }
+
+      @Override
+      public void stringField(FieldInfo fieldInfo, String value) throws IOException {
+        var schemaField = fields.get(fieldInfo.name);
+        var fieldType = schemaField == null ? null : schemaField.getType();
+        if (fieldType instanceof BoolField) {
+          // Convert "T"/"F" stored value to boolean true/false
+          addField(fieldInfo.name, "T".equals(value));
+        } else {
+          addField(fieldInfo.name, value);
+        }
+      }
+
+      @Override
+      public void intField(FieldInfo fieldInfo, int value) throws IOException {
+        addField(fieldInfo.name, value);
+      }
+
+      @Override
+      public void longField(FieldInfo fieldInfo, long value) throws IOException {
+        var schemaField = fields.get(fieldInfo.name);
+        var fieldType = schemaField == null ? null : schemaField.getType();
+        if (fieldType instanceof DateValueFieldType) {
+          Date date = new Date(value);
+          addField(fieldInfo.name, date);
+        } else {
+          addField(fieldInfo.name, value);
+        }
+      }
+
+      @Override
+      public void floatField(FieldInfo fieldInfo, float value) throws IOException {
+        addField(fieldInfo.name, value);
+      }
+
+      @Override
+      public void doubleField(FieldInfo fieldInfo, double value) throws IOException {
+        addField(fieldInfo.name, value);
+      }
+
+      @Override
+      public Status needsField(FieldInfo fieldInfo) {
+        return fields.containsKey(fieldInfo.name) ? Status.YES : Status.NO;
+      }
+
+      private <T> void addField(String fieldName, T value) throws IOException {
+        if (fields.get(fieldName).multiValued()) {
+          if (fieldName.equals(lastFieldName)) {
+            multiValue.add(value);
+          } else {
+            if (multiValue != null) {
+              out.put(lastFieldName, multiValue);
+            }
+            multiValue = new ArrayList<>();
+            lastFieldName = fieldName;
+            multiValue.add(value);
+          }
+        } else {
+          out.put(fieldName, value);
+        }
+      }
+
+      private void flush() throws IOException {
+        if (lastFieldName != null && multiValue != null && !multiValue.isEmpty()) {
+          out.put(lastFieldName, multiValue);
+        }
+      }
     }
   }
 }

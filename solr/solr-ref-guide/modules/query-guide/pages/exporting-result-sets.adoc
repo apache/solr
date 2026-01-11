@@ -25,7 +25,9 @@ The cases where this functionality may be useful include: session analysis, dist
 
 == Field Requirements
 
-All the fields being sorted and exported must have docValues set to `true`.
+All the fields being sorted must have docValues set to `true`.
+By default, fields in the field list (`fl`) must also have docValues.
+However, you can include stored-only fields (fields without docValues) by setting the `includeStoredFields` parameter to `true`.
 For more information, see the section on xref:indexing-guide:docvalues.adoc[].
 
 == The /export RequestHandler
@@ -43,6 +45,11 @@ Filter queries are also supported.
 
 An optional parameter `batchSize` determines the size of the internal buffers for partial results.
 The default value is `30000` but users may want to specify smaller values to limit the memory use (at the cost of degraded performance) or higher values to improve export performance (the relationship is not linear and larger values don't bring proportionally larger performance increases).
+
+An optional parameter `includeStoredFields` (default `false`) enables exporting fields that only have stored values (no docValues).
+When set to `true`, fields without docValues but with stored values can be included in the field list (`fl`).
+Note that retrieving stored fields may significantly impact export performance compared to docValues fields, as stored fields require additional I/O operations.
+Fields that have both docValues and stored values will always use docValues for optimal performance, regardless of this parameter setting.
 
 The supported response writers are `json` and `javabin`.
 For backward compatibility reasons `wt=xsort` is also supported as input, but `wt=xsort` behaves same as `wt=json`.

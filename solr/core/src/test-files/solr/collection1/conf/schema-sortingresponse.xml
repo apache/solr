@@ -33,7 +33,7 @@
   <fieldType name="pdouble" class="solr.DoublePointField"/>
   <fieldType name="pfloat" class="solr.FloatPointField"/>
   <fieldType name="pdate" class="solr.DatePointField"/>
-  
+
 
   <fieldType name="boolean" class="solr.BoolField"/>
   <fieldType name="string" class="solr.StrField"/>
@@ -105,7 +105,7 @@
    <dynamicField name="*_dts_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_dt_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
    <dynamicField name="*_dts_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
-   
+
    <!-- Trie fields explicitly -->
    <dynamicField name="*_i_t"      type="int"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
    <dynamicField name="*_is_t"      type="int"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
@@ -127,6 +127,22 @@
    <dynamicField name="*_dts_t"      type="date"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_dt_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
    <dynamicField name="*_dts_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
+   <!-- Stored-only fields (no DocValues) for testing includeStoredFields parameter -->
+   <dynamicField name="*_s_stored"    type="string"  indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_ss_stored"   type="string"  indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_i_stored"    type="pint"    indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_is_stored"   type="pint"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_l_stored"    type="plong"   indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_ls_stored"   type="plong"   indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_f_stored"    type="pfloat"  indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_fs_stored"   type="pfloat"  indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_d_stored"    type="pdouble" indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_ds_stored"   type="pdouble" indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_dt_stored"   type="pdate"   indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_dts_stored"  type="pdate"   indexed="false"  stored="true" docValues="false" multiValued="true"/>
+   <dynamicField name="*_b_stored"    type="boolean" indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_bs_stored"   type="boolean" indexed="false"  stored="true" docValues="false" multiValued="true"/>
 
   <uniqueKey>id</uniqueKey>
 

@@ -1476,4 +1476,278 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     doc.addField("number_" + type + (mv ? "s" : "") + "_ni_t", value);
     doc.addField("number_" + type + (mv ? "s" : "") + "_ni_p", value);
   }
+
+  @Test
+  public void testIncludeStoredFieldsExplicitRequest() throws Exception {
+    // Test that stored-only fields are returned when includeStoredFields=true
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "str_s_stored", "hello",
+            "num_i_stored", "42",
+            "num_l_stored", "1234567890123",
+            "num_f_stored", "3.14",
+            "num_d_stored", "2.71828",
+            "date_dt_stored", "2024-01-15T10:30:00Z",
+            "bool_b_stored", "true"));
+    assertU(commit());
+
+    // Request stored-only fields with includeStoredFields=true
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"str_s_stored\":\"hello\",\n"
+            + "        \"num_i_stored\":42,\n"
+            + "        \"num_l_stored\":1234567890123,\n"
+            + "        \"num_f_stored\":3.14,\n"
+            + "        \"num_d_stored\":2.71828,\n"
+            + "        \"date_dt_stored\":\"2024-01-15T10:30:00Z\",\n"
+            + "        \"bool_b_stored\":true}]}}");
+  }
+
+  @Test
+  public void testIncludeStoredFieldsErrorWithoutParam() throws Exception {
+    // Test that error with hint is thrown when requesting stored-only field without includeStoredFields
+    clearIndex();
+
+    assertU(adoc("id", "1", "intdv", "1", "str_s_stored", "hello"));
+    assertU(commit());
+
+    // Request stored-only field without includeStoredFields=true should error
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,str_s_stored",
+                "sort", "intdv asc"));
+
+    assertTrue(
+        "Expected error message to contain hint about includeStoredFields",
+        resp.contains("includeStoredFields=true"));
+    assertTrue(
+        "Expected error message to mention the field",
+        resp.contains("str_s_stored"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsGlobSkipsWithoutParam() throws Exception {
+    // Test that glob pattern silently skips stored-only fields when includeStoredFields=false
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "stringdv", "docvalue_string",
+            "str_s_stored", "stored_string"));
+    assertU(commit());
+
+    // Glob fl=* without includeStoredFields should skip stored-only fields
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,intdv,stringdv,str_s_stored",
+                "sort", "intdv asc"));
+
+    // Should error because str_s_stored is explicitly requested
+    assertTrue(
+        "Expected error for explicitly requested stored-only field",
+        resp.contains("str_s_stored"));
+
+    // Now test with glob - should silently skip stored-only fields
+    resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "*",
+                "sort", "intdv asc"));
+
+    // Should succeed and return only DocValues fields (no str_s_stored)
+    assertTrue("Expected successful response", resp.contains("\"status\":0"));
+    assertFalse(
+        "Should not contain stored-only field without includeStoredFields",
+        resp.contains("str_s_stored"));
+    assertTrue("Should contain DocValues field", resp.contains("stringdv"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsGlobIncludesWithParam() throws Exception {
+    // Test that glob pattern includes stored-only fields when includeStoredFields=true
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "stringdv", "docvalue_string",
+            "str_s_stored", "stored_string"));
+    assertU(commit());
+
+    // Glob fl=* with includeStoredFields=true should include stored-only fields
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "*",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertTrue("Expected successful response", resp.contains("\"status\":0"));
+    assertTrue(
+        "Should contain stored-only field with includeStoredFields=true",
+        resp.contains("str_s_stored"));
+    assertTrue("Should contain DocValues field", resp.contains("stringdv"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsPreferDocValues() throws Exception {
+    // Test that fields with both DocValues and stored use DocValues regardless of param
+    clearIndex();
+
+    // field2_i_p has both stored=true and docValues=true
+    assertU(adoc("id", "1", "field2_i_p", "100"));
+    assertU(adoc("id", "2", "field2_i_p", "200"));
+    assertU(commit());
+
+    // With includeStoredFields=false (default)
+    String resp1 =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,field2_i_p",
+                "sort", "field2_i_p asc"));
+
+    // With includeStoredFields=true
+    String resp2 =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,field2_i_p",
+                "sort", "field2_i_p asc",
+                "includeStoredFields", "true"));
+
+    // Both should return the same result (DocValues preferred in both cases)
+    assertJsonEquals(resp1, resp2);
+
+    // Verify both have successful status and correct values
+    assertTrue("Expected successful response", resp1.contains("\"status\":0"));
+    assertTrue("Should contain field2_i_p", resp1.contains("field2_i_p"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsMultiValued() throws Exception {
+    // Test that multi-valued stored-only fields work correctly
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "strs_ss_stored", "value1",
+            "strs_ss_stored", "value2",
+            "strs_ss_stored", "value3",
+            "nums_is_stored", "10",
+            "nums_is_stored", "20",
+            "nums_is_stored", "30"));
+    assertU(commit());
+
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,strs_ss_stored,nums_is_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertTrue("Expected successful response", resp.contains("\"status\":0"));
+    // Multi-valued fields should be returned as arrays
+    assertTrue(
+        "Multi-valued string field should contain multiple values",
+        resp.contains("strs_ss_stored"));
+    assertTrue(
+        "Multi-valued int field should contain multiple values",
+        resp.contains("nums_is_stored"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsAllTypes() throws Exception {
+    // Test all supported stored field types including Date
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "str_s_stored", "test_string",
+            "num_i_stored", "123",
+            "num_l_stored", "9876543210",
+            "num_f_stored", "1.5",
+            "num_d_stored", "2.5",
+            "date_dt_stored", "2025-12-25T00:00:00Z",
+            "bool_b_stored", "false"));
+    assertU(
+        adoc(
+            "id", "2",
+            "intdv", "2",
+            "str_s_stored", "another_string",
+            "num_i_stored", "456",
+            "num_l_stored", "1234567890",
+            "num_f_stored", "2.5",
+            "num_d_stored", "3.5",
+            "date_dt_stored", "2025-06-15T12:30:00Z",
+            "bool_b_stored", "true"));
+    assertU(commit());
+
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertTrue("Expected successful response", resp.contains("\"status\":0"));
+    assertTrue("Should contain 2 docs", resp.contains("\"numFound\":2"));
+
+    // Verify all field types are present
+    assertTrue("Should contain string field", resp.contains("str_s_stored"));
+    assertTrue("Should contain int field", resp.contains("num_i_stored"));
+    assertTrue("Should contain long field", resp.contains("num_l_stored"));
+    assertTrue("Should contain float field", resp.contains("num_f_stored"));
+    assertTrue("Should contain double field", resp.contains("num_d_stored"));
+    assertTrue("Should contain date field", resp.contains("date_dt_stored"));
+    assertTrue("Should contain boolean field", resp.contains("bool_b_stored"));
+
+    // Verify specific values
+    assertTrue("Should contain string value", resp.contains("test_string"));
+    assertTrue("Should contain int value", resp.contains("123"));
+    assertTrue("Should contain long value", resp.contains("9876543210"));
+    assertTrue("Should contain date value", resp.contains("2025-12-25"));
+  }
 }
