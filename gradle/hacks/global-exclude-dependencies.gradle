@@ -43,15 +43,15 @@ allprojects {prj ->
     exclude group: "ch.qos.logback" // use SLF4j
     exclude group: 'commons-logging', module: 'commons-logging' // use SLF4j
     exclude group: 'com.google.code.findbugs', module: 'jsr305' // Uses GPL license
-    exclude group: 'com.google.code.findbugs', module: 'annotations'
     // Use Spotbugs Annotations as replacement
-    exclude group: 'javax.annotation', module: 'javax.annotation-api'
+    exclude group: 'com.google.code.findbugs', module: 'annotations'
     // Replaced with jakarta.annotation-api
+    exclude group: 'javax.annotation', module: 'javax.annotation-api'
     exclude group: 'org.slf4j', module: 'slf4j-log4j12' // don't include log4j 1.x
     exclude group: 'org.apache.yetus', module: 'audience-annotations' // Don't need annotations
-    exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
     // Don't need annotations
-    exclude group: 'net.jcip', module: 'jcip-annotations' // use com.github.stephenc.jcip instead
+    exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
     // be conservative on what's added here.  Affects all Java project compilation and runtime.
+    exclude group: 'net.jcip', module: 'jcip-annotations' // use com.github.stephenc.jcip instead
   }
 }

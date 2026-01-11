@@ -342,15 +342,19 @@ class RenderJavadocTask extends DefaultTask {
     if (!classpath.isEmpty()) {
       opts << ['-classpath', classpath.asPath]
     }
-    opts <<
-        ['-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>"]
-
-    opts <<
-        ['-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.']
-    opts <<
-        ['-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.']
-    opts <<
-        ['-tag', "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)."]
+    opts << [
+        '-bottom', "<i>Copyright &copy; 2000-${project.buildYear} Apache Software Foundation. All Rights Reserved.</i>"
+    ]
+    opts << [
+        '-tag', 'lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.'
+    ]
+    opts << [
+        '-tag', 'lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.'
+    ]
+    opts << [
+        '-tag',
+        "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service)."
+    ]
 
     opts << ['-doclet', "org.apache.lucene.missingdoclet.MissingDoclet"]
     opts << ['-docletpath', docletpath.asPath]
@@ -381,8 +385,8 @@ class RenderJavadocTask extends DefaultTask {
       findRenderTasksInDependencies()
           .findAll({it.project.path != ':solr:solrj' && it.project.path != ':solr:solrj-zookeeper'}) // split packages
           .sort(false,
-              Comparator.comparing {(it.project.name != 'core') as Boolean}.thenComparing(Comparator
-                  .comparing {it.path}))
+              Comparator.comparing {(it.project.name != 'core') as Boolean}
+                  .thenComparing(Comparator.comparing {it.path}))
           .each {otherTask ->
             def otherProject = otherTask.project
             // For relative links we compute the actual relative link between projects.
