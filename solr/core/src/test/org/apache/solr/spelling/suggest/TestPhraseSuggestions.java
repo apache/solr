@@ -17,19 +17,43 @@
 package org.apache.solr.spelling.suggest;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4Test;
+import org.apache.solr.SolrXpathTestCase;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
-public class TestPhraseSuggestions extends SolrTestCaseJ4 {
+public class TestPhraseSuggestions extends SolrXpathTestCase {
   static final String URI = "/suggest_wfst";
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-phrasesuggest.xml", "schema-phrasesuggest.xml");
-    assertQ(req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
+    // This was part of the SolrTestCaseJ4.setupTestCases method and appears to be needed.  Ugh.
+    // Is this a direction we want, this randomness and need in SolrTestCase?
+    SolrTestCaseJ4Test.newRandomConfig();
+
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule
+        .newCollection()
+        .withConfigSet("../collection1")
+        .withConfigFile("conf/solrconfig-phrasesuggest.xml")
+        .withSchemaFile("conf/schema-phrasesuggest.xml")
+        .create();
+  }
+
+
+  public SolrClient getSolrClient() {
+    return solrTestRule.getSolrClient();
   }
 
   public void test() {
+    assertQ(req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
+
     assertQ(
         req("qt", URI, "q", "the f", SpellingParams.SPELLCHECK_COUNT, "4"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/int[@name='numFound'][.='3']",
