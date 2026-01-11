@@ -456,7 +456,8 @@ class RenderJavadocTask extends DefaultTask {
     }
 
     // append some special table css, prettify css
-    ant.concat(destfile: "${outputDir}/stylesheet.css",
+    ant.concat(
+        destfile: "${outputDir}/stylesheet.css",
         append: "true",
         fixlastline: "true",
         encoding: "UTF-8") {
@@ -465,7 +466,8 @@ class RenderJavadocTask extends DefaultTask {
     }
 
     // append prettify to scripts
-    ant.concat(destfile: "${outputDir}/script.js",
+    ant.concat(
+        destfile: "${outputDir}/script.js",
         append: "true",
         fixlastline: "true",
         encoding: "UTF-8") {
@@ -473,7 +475,8 @@ class RenderJavadocTask extends DefaultTask {
           files: "prettify.min.js inject-javadocs.js")
     }
 
-    ant.fixcrlf(srcdir: outputDir,
+    ant.fixcrlf(
+        srcdir: outputDir,
         includes: "stylesheet.css script.js",
         eol: "lf",
         fixlast: "true",
