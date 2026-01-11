@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -147,7 +149,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
         try {
           iwRef = core.getSolrCoreState().getIndexWriter(core);
-
           IndexWriter iw = iwRef.get();
 
           originalMergePolicy = iw.getConfig().getMergePolicy();
@@ -163,23 +164,19 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
                 getUpdateProcessorChain(core, requestBody.updateChain);
 
             for (LeafReaderContext lrc : leafContexts) {
-              if (shouldUpgradeSegment(lrc)) {
-                numSegmentsEligibleForUpgrade++;
+              if (!shouldUpgradeSegment(lrc)) {
+                continue;
               }
+              numSegmentsEligibleForUpgrade++;
+              processSegment(lrc, updateProcessorChain, core, searcherRef.get(), dvICache);
+              numSegmentsUpgraded++;
             }
+
             if (numSegmentsEligibleForUpgrade == 0) {
               response.core = coreName;
               response.upgradeStatus = CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString();
               response.numSegmentsEligibleForUpgrade = 0;
               return response;
-            }
-
-            for (LeafReaderContext lrc : leafContexts) {
-              if (!shouldUpgradeSegment(lrc)) {
-                continue;
-              }
-              processSegment(lrc, updateProcessorChain, core, searcherRef.get(), dvICache);
-              numSegmentsUpgraded++;
             }
           } catch (Exception e) {
             log.error("Error while processing core: [{}}]", coreName, e);
@@ -258,12 +255,13 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           core.getUpdateProcessingChain(requestedUpdateChain);
       if (resolvedChain != null) {
         return resolvedChain;
-      } else {
-        log.error(
-            "UPGRADECOREINDEX:: Requested update chain {} not found for core {}",
-            requestedUpdateChain,
-            core.getName());
       }
+      throw new SolrException(
+          BAD_REQUEST,
+          "Requested update chain '"
+              + requestedUpdateChain
+              + "' not found for core "
+              + core.getName());
     }
 
     // Try to find chain configured in /update handler
