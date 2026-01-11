@@ -49,13 +49,6 @@ dependencies {
   // Test classes use main classes from this module
   testImplementation project(':solr:solrj-jetty')
 
-  // ZK dependencies for tests
-  testRuntimeOnly project(':solr:solrj-zookeeper')
-  permitTestUnusedDeclared project(':solr:solrj-zookeeper')
-  testRuntimeOnly(libs.apache.zookeeper.zookeeper, {
-    exclude group: "org.apache.yetus", module: "audience-annotations"
-  })
-
   testImplementation libs.apache.lucene.testframework
 
   testImplementation libs.carrotsearch.randomizedtesting.runner
