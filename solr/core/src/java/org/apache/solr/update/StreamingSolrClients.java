@@ -151,8 +151,9 @@ class ErrorReportingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolr
   }
 
   @Override
-  public void onSuccess(Response resp, InputStream respBody) {
-    req.trackRequestResult(resp, respBody, true);
+  public void onSuccess(Object responseMetadata, InputStream respBody) {
+    Response jettyResponse = (Response) responseMetadata;
+    req.trackRequestResult(jettyResponse, respBody, true);
   }
 
   static class Builder extends ConcurrentUpdateJettySolrClient.Builder {

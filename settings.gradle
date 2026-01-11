@@ -38,6 +38,7 @@ includeBuild("build-tools/missing-doclet")
 include ":platform"
 include "solr:api"
 include "solr:solrj"
+include "solr:solrj-jetty"
 include "solr:solrj-zookeeper"
 include "solr:solrj-streaming"
 include "solr:core"

@@ -47,7 +47,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -363,7 +362,7 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void onSuccess(Response resp, InputStream respBody) {
+    public void onSuccess(Object responseMetadata, InputStream respBody) {
       successCounter.incrementAndGet();
     }
 
