@@ -17,7 +17,7 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -26,9 +26,11 @@ import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
@@ -36,7 +38,11 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
+public class TestSpellCheckResponse extends SolrTestCase {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
+
   private static SolrClient client;
 
   @BeforeClass
@@ -45,7 +51,7 @@ public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
 
     solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
-    client = getSolrClient();
+    client = solrTestRule.getSolrClient();
   }
 
   @AfterClass

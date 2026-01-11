@@ -19,7 +19,7 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -28,13 +28,14 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class RootFieldTest extends EmbeddedSolrServerTestBase {
+public class RootFieldTest extends SolrTestCase {
   private static boolean useRootSchema;
   private static final String MESSAGE =
       "Update handler should create and process _root_ field "
@@ -43,6 +44,9 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean expectRoot() {
     return useRootSchema;
   }
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   // not necessary right now but will be once block logic is asserted
   @ClassRule
@@ -62,7 +66,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testLegacyBlockProcessing() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     // Add child free doc
@@ -105,7 +109,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testUpdateWithChildDocs() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     // Add child free doc
