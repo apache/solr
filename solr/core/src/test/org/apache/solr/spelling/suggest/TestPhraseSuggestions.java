@@ -18,14 +18,14 @@ package org.apache.solr.spelling.suggest;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4Test;
-import org.apache.solr.SolrXpathTestCase;
+import org.apache.solr.SolrXPathTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 
-public class TestPhraseSuggestions extends SolrXpathTestCase {
+public class TestPhraseSuggestions extends SolrXPathTestCase {
   static final String URI = "/suggest_wfst";
 
   @ClassRule
