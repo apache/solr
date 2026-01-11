@@ -46,7 +46,6 @@ public class TestPhraseSuggestions extends SolrXpathTestCase {
         .create();
   }
 
-
   public SolrClient getSolrClient() {
     return solrTestRule.getSolrClient();
   }

@@ -1,5 +1,9 @@
 package org.apache.solr;
 
+import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import javax.xml.xpath.XPathExpressionException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -10,10 +14,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.xml.xpath.XPathExpressionException;
-import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 
 public class SolrXpathTestCase extends SolrTestCase {
 
@@ -25,7 +25,6 @@ public class SolrXpathTestCase extends SolrTestCase {
    *
    * @param req the query parameters
    * @param tests XPath expressions to validate against the response
-   *
    * @see SolrTestCaseJ4#assertQ(String, SolrQueryRequest, String...)
    */
   public void assertQ(QueryRequest req, String... tests) {
@@ -89,8 +88,7 @@ public class SolrXpathTestCase extends SolrTestCase {
     return req;
   }
 
-  public SolrClient getSolrClient(){
+  public SolrClient getSolrClient() {
     throw new RuntimeException("This method needs to be overridden");
   }
-
 }
