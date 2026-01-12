@@ -101,19 +101,20 @@ public class ReplicationRecovery {
     public BenchState() {
       // Create docs with substantial content to generate ~100KB per doc
       // This will help us reach ~1GB with 10k docs
+      // Using _s (string) fields instead of _t (text) to avoid analysis overhead
       largeDocs =
           docs()
               .field("id", integers().incrementing())
-              // Multiple large text fields to bulk up document size to ~100KB
-              .field("text1_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text2_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text3_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text4_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text5_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text6_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text7_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text8_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("content_t", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
+              // Multiple large string fields to bulk up document size to ~100KB (no analysis)
+              .field("text1_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text2_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text3_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text4_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text5_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text6_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text7_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text8_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("content_s", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
     }
 
     @Setup(Level.Trial)
