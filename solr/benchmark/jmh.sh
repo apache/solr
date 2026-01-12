@@ -20,23 +20,27 @@ base_dir=$(dirname "$0")
 
 if [ "${base_dir}" == "." ]; then
   gradlew_dir="../.."
+  log4j_config="./log4j2-bench.xml"
+
+  if [ -d "lib" ]; then
+    echo "Using lib directory for classpath..."
+    classpath="lib/*"
+  else
+    echo "Getting classpath from gradle..."
+    # --no-daemon
+    gradleCmd="${gradlew_dir}/gradlew"
+    $gradleCmd -q -p ../../ jar
+    echo "gradle build done"
+    classpath=$($gradleCmd -q echoCp)
+  fi
+elif [ "${base_dir}" == "/opt/benchmark" ]; then
+  # Docker container mode
+  log4j_config="/opt/benchmark/log4j2-bench.xml"
+  classpath="/opt/benchmark/lib/*"
+  echo "Running in Docker container mode..."
 else
   echo "Benchmarks need to be run from the 'solr/benchmark' directory"
-  exit
-fi
-
-
-if [ -d "lib" ]
-then
-  echo "Using lib directory for classpath..."
-  classpath="lib/*:build/classes/java/main"
-else
-  echo "Getting classpath from gradle..."
-  # --no-daemon
-  gradleCmd="${gradlew_dir}/gradlew"
-  $gradleCmd -q -p ../../ jar
-  echo "gradle build done"
-  classpath=$($gradleCmd -q echoCp)
+  exit 1
 fi
 
 # shellcheck disable=SC2145
@@ -54,8 +58,8 @@ echo "running JMH with args: $@"
 jvmArgs="-jvmArgs -Djmh.shutdownTimeout=5 -jvmArgs -Djmh.shutdownTimeout.step=3 -jvmArgs -Djava.security.egd=file:/dev/./urandom -jvmArgs -XX:+UnlockDiagnosticVMOptions -jvmArgs -XX:+DebugNonSafepoints -jvmArgs --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
 gcArgs="-jvmArgs -XX:+UseG1GC -jvmArgs -XX:+ParallelRefProcEnabled"
 
-# -jvmArgs -Dlog4j2.debug 
-loggingArgs="-jvmArgs -Dlog4jConfigurationFile=./log4j2-bench.xml -jvmArgs -Dlog4j2.is.webapp=false -jvmArgs -Dlog4j2.garbagefreeThreadContextMap=true -jvmArgs -Dlog4j2.enableDirectEncoders=true -jvmArgs -Dlog4j2.enable.threadlocals=true"
+# -jvmArgs -Dlog4j2.debug
+loggingArgs="-jvmArgs -Dlog4jConfigurationFile=${log4j_config} -jvmArgs -Dlog4j2.is.webapp=false -jvmArgs -Dlog4j2.garbagefreeThreadContextMap=true -jvmArgs -Dlog4j2.enableDirectEncoders=true -jvmArgs -Dlog4j2.enable.threadlocals=true"
 
 #set -x
 

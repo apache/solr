@@ -65,39 +65,55 @@ public class ReplicationRecovery {
 
     static final String COLLECTION = "replicationTestCollection";
 
-    @Param({"false", "true"})
-    boolean useHttp1;
-
     @Param("12")
     int numShards;
 
     @Param("100")
     int pollIntervalMs;
 
-    // Target ~1GB of data. With docs averaging ~10KB each, we need ~100,000 docs
-    // Adjust this based on actual doc size to achieve ~1GB
-    @Param("100000")
+    // Number of docs to index. Each doc is ~10KB.
+    // Use -p docCount=100000 for ~1GB of data.
+    @Param("1000")
     int docCount;
 
     // Auto commit interval in milliseconds
     @Param("10000")
     int autoCommitMaxTime;
 
+    // Number of threads for parallel indexing (0 = sequential)
+    @Param("4")
+    int indexThreads;
+
+    // Batch size for indexing (docs per request)
+    @Param("1000")
+    int batchSize;
+
+    // Replica type for new replicas: NRT, TLOG, or PULL
+    // PULL replicas just copy segments (fastest for replication)
+    // TLOG replicas replay transaction log
+    // NRT replicas do full local indexing
+    @Param("NRT")
+    String replicaType;
+
     private final Docs largeDocs;
     private String secondNodeUrl;
 
     public BenchState() {
-      // Create docs with substantial content to generate ~10KB per doc
-      // This will help us reach ~1GB with 100k docs
+      // Create docs with substantial content to generate ~100KB per doc
+      // This will help us reach ~1GB with 10k docs
       largeDocs =
           docs()
               .field("id", integers().incrementing())
-              // Multiple large text fields to bulk up document size
-              .field("text1_t", strings().basicLatinAlphabet().multi(50).ofLengthBetween(100, 200))
-              .field("text2_t", strings().basicLatinAlphabet().multi(50).ofLengthBetween(100, 200))
-              .field("text3_t", strings().basicLatinAlphabet().multi(30).ofLengthBetween(80, 150))
-              .field("text4_t", strings().basicLatinAlphabet().multi(30).ofLengthBetween(80, 150))
-              .field("content_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(50, 100));
+              // Multiple large text fields to bulk up document size to ~100KB
+              .field("text1_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text2_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text3_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text4_t", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text5_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text6_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text7_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text8_t", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("content_t", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
     }
 
     @Setup(Level.Trial)
@@ -107,10 +123,6 @@ public class ReplicationRecovery {
       // Set autoCommit.maxTime before starting the cluster
       System.setProperty("autoCommit.maxTime", String.valueOf(autoCommitMaxTime));
       log("Set autoCommit.maxTime to " + autoCommitMaxTime + "ms");
-
-      // Configure HTTP version
-      miniClusterState.setUseHttp1(useHttp1);
-      log("Using HTTP/1.1: " + useHttp1);
 
       // Start cluster with 2 nodes
       miniClusterState.startMiniCluster(2);
@@ -136,10 +148,17 @@ public class ReplicationRecovery {
       miniClusterState.cluster.waitForActiveCollection(
           COLLECTION, 30, TimeUnit.SECONDS, numShards, numShards);
 
-      log("Collection created. Indexing " + docCount + " documents (~1GB of data)...");
+      log("Collection created. Indexing " + docCount + " documents with " + indexThreads + " threads, batch size " + batchSize + "...");
 
       // Index documents
-      miniClusterState.index(COLLECTION, largeDocs, docCount, true);
+      long indexStart = System.currentTimeMillis();
+      if (indexThreads > 0) {
+        miniClusterState.indexParallelBatched(COLLECTION, largeDocs, docCount, indexThreads, batchSize);
+      } else {
+        miniClusterState.index(COLLECTION, largeDocs, docCount, false);
+      }
+      long indexTime = System.currentTimeMillis() - indexStart;
+      log("Indexing completed in " + indexTime + "ms");
 
       // Wait for autoCommit to ensure all data is committed
       log("Waiting for autoCommit (" + autoCommitMaxTime + "ms + buffer)...");
@@ -165,7 +184,9 @@ public class ReplicationRecovery {
     long startTime = System.currentTimeMillis();
     int totalReplicas = state.numShards * 2; // Original + new replicas
 
-    log("Starting replication of " + state.numShards + " shards to second node...");
+    // Parse replica type
+    Replica.Type type = Replica.Type.valueOf(state.replicaType.toUpperCase());
+    log("Starting replication of " + state.numShards + " shards to second node (replica type: " + type + ")...");
 
     // Get the second node name (without http prefix, with underscore) for the replica placement
     String secondNode = state.secondNodeUrl.replace("http://", "").replace("https://", "").replace("/", "_");
@@ -174,7 +195,7 @@ public class ReplicationRecovery {
     for (int i = 1; i <= state.numShards; i++) {
       String shardName = "shard" + i;
       CollectionAdminRequest.AddReplica addReplica =
-          CollectionAdminRequest.addReplicaToShard(BenchState.COLLECTION, shardName);
+          CollectionAdminRequest.addReplicaToShard(BenchState.COLLECTION, shardName, type);
       addReplica.setNode(secondNode);
       // Send request asynchronously to allow parallel recovery
       addReplica.setAsyncId("add-replica-" + shardName);
