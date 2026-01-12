@@ -20,11 +20,18 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ZK_CONNECT_STRING;
 
+import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.SharedMetricRegistries;
 import io.dropwizard.metrics.servlets.MetricsServlet;
 import io.dropwizard.metrics.servlets.ThreadDumpServlet;
+import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
+import io.prometheus.metrics.instrumentation.dropwizard.DropwizardExports;
+import io.prometheus.metrics.instrumentation.dropwizard5.labels.CustomLabelMapper;
+import io.prometheus.metrics.instrumentation.dropwizard5.labels.MapperConfig;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -98,11 +105,23 @@ public class Consumer {
       ServletContextHandler context = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
       context.setContextPath("/");
       server.setHandler(context);
+
       context.addServlet(ThreadDumpServlet.class, "/threads/*");
-      context.addServlet(MetricsServlet.class, "/metrics/*");
+
+      MapperConfig mapperConfig = new MapperConfig("*.*", "crossdc_consumer_${0}_${1}", Map.of());
+      CustomLabelMapper customLabelMapper = new CustomLabelMapper(List.of(mapperConfig));
+      DropwizardExports dropwizardExports =
+          new DropwizardExports(
+              SharedMetricRegistries.getOrCreate(METRICS_REGISTRY),
+              MetricFilter.ALL,
+              customLabelMapper);
+      PrometheusRegistry.defaultRegistry.register(dropwizardExports);
+      context.addServlet(PrometheusMetricsServlet.class, "/metrics/prometheus/*");
+
+      context.addServlet(MetricsServlet.class, "/metrics/json/*");
       context.setAttribute(
-          "com.codahale.metrics.servlets.MetricsServlet.registry",
-          SharedMetricRegistries.getOrCreate(METRICS_REGISTRY));
+          MetricsServlet.METRICS_REGISTRY, SharedMetricRegistries.getOrCreate(METRICS_REGISTRY));
+
       for (ServletMapping mapping : context.getServletHandler().getServletMappings()) {
         if (log.isInfoEnabled()) {
           log.info(" - {}", mapping.getPathSpecs()[0]);

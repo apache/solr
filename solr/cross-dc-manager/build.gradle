@@ -30,6 +30,20 @@ dependencies {
 
   implementation libs.dropwizard.metrics.core
   implementation libs.dropwizard.metrics.servlets
+  implementation libs.prometheus.metrics14.model
+  implementation libs.prometheus.metrics14.exporter.servlet.jakarta
+  implementation (libs.prometheus.metrics14.instrumentation.dropwizard, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-common"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-initializer"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-otel"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-otel-agent"
+  })
+  implementation (libs.prometheus.metrics14.instrumentation.dropwizard5, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-common"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-initializer"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-otel"
+    exclude group: "io.prometheus", module: "prometheus-metrics-tracer-otel-agent"
+  })
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.slf4j.api
