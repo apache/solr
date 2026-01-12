@@ -25,6 +25,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.DeleteNodeRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("cluster/nodes/{nodeName}/clear/")
 public interface DeleteNodeApi {
@@ -33,7 +34,7 @@ public interface DeleteNodeApi {
   @Operation(
       summary = "Delete all replicas off of the specified SolrCloud node",
       tags = {"node"})
-  SolrJerseyResponse deleteNode(
+  SubResponseAccumulatingJerseyResponse deleteNode(
       @Parameter(
               description =
                   "The name of the node to be cleared.  Usually of the form 'host:1234_solr'.",

@@ -50,7 +50,7 @@ public class DeleteAlias extends AdminAPIBase implements DeleteAliasApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteAlias(String aliasName, String asyncId) throws Exception {
+  public SubResponseAccumulatingJerseyResponse deleteAlias(String aliasName, String asyncId) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
 

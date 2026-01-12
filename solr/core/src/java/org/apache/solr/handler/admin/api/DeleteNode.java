@@ -58,7 +58,7 @@ public class DeleteNode extends AdminAPIBase implements DeleteNodeApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
+  public SubResponseAccumulatingJerseyResponse deleteNode(String nodeName, DeleteNodeRequestBody requestBody)
       throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
