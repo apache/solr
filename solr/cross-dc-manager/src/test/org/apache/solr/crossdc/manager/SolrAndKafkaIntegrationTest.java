@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -187,7 +188,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
   public void testMetrics() throws Exception {
     CloudSolrClient client = solrCluster1.getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
-    doc.addField("id", String.valueOf(System.currentTimeMillis()));
+    doc.addField("id", String.valueOf(new Date().getTime()));
     doc.addField("text", "some test");
 
     client.add(COLLECTION, doc);
