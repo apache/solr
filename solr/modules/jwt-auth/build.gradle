@@ -38,6 +38,7 @@ dependencies {
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.junit.junit
+  testImplementation project(':solr:solrj-jetty')
 
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
