@@ -157,7 +157,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
           RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
           try {
-            List<LeafReaderContext> leafContexts = searcherRef.get().getTopReaderContext().leaves();
+            List<LeafReaderContext> leafContexts = searcherRef.get().getRawReader().leaves();
             DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
 
             UpdateRequestProcessorChain updateProcessorChain =
@@ -329,7 +329,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private void doCommit(SolrCore core) throws IOException {
     try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
-      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
+      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false); // optimize=false
       core.getUpdateHandler().commit(cmd);
     } catch (IOException ioEx) {
       log.warn("Error committing on core [{}] during index upgrade", core.getName(), ioEx);
@@ -354,7 +354,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     LeafReader leafReader = FilterLeafReader.unwrap(leafReaderContext.reader());
     SegmentReader segmentReader = (SegmentReader) leafReader;
     final String segmentName = segmentReader.getSegmentName();
-    Bits bits = segmentReader.getLiveDocs();
+    Bits liveDocs = segmentReader.getLiveDocs();
     SolrInputDocument solrDoc = null;
     UpdateRequestProcessor processor = null;
     LocalSolrQueryRequest solrRequest = null;
@@ -368,7 +368,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       processor = processorChain.createProcessor(solrRequest, rsp);
       StoredFields storedFields = segmentReader.storedFields();
       for (int luceneDocId = 0; luceneDocId < segmentReader.maxDoc(); luceneDocId++) {
-        if (bits != null && !bits.get(luceneDocId)) {
+        if (liveDocs != null && !liveDocs.get(luceneDocId)) {
           continue;
         }
 
