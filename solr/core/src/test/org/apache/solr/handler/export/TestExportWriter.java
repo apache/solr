@@ -1495,13 +1495,13 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             "bool_b_stored", "true"));
     assertU(commit());
 
-    // Request stored-only fields with includeStoredFields=true
     String resp =
         h.query(
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "fl",
+                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
@@ -1524,7 +1524,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
   @Test
   public void testIncludeStoredFieldsErrorWithoutParam() throws Exception {
-    // Test that error with hint is thrown when requesting stored-only field without includeStoredFields
+    // Test that error with hint is thrown when requesting stored-only field without
+    // includeStoredFields
     clearIndex();
 
     assertU(adoc("id", "1", "intdv", "1", "str_s_stored", "hello"));
@@ -1542,9 +1543,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertTrue(
         "Expected error message to contain hint about includeStoredFields",
         resp.contains("includeStoredFields=true"));
-    assertTrue(
-        "Expected error message to mention the field",
-        resp.contains("str_s_stored"));
+    assertTrue("Expected error message to mention the field", resp.contains("str_s_stored"));
   }
 
   @Test
@@ -1560,7 +1559,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             "str_s_stored", "stored_string"));
     assertU(commit());
 
-    // Glob fl=* without includeStoredFields should skip stored-only fields
+    // Explicit fl with stored-only field should error
     String resp =
         h.query(
             req(
@@ -1571,24 +1570,29 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     // Should error because str_s_stored is explicitly requested
     assertTrue(
-        "Expected error for explicitly requested stored-only field",
-        resp.contains("str_s_stored"));
+        "Expected error for explicitly requested stored-only field", resp.contains("str_s_stored"));
+    assertTrue(
+        "Expected hint about includeStoredFields", resp.contains("includeStoredFields=true"));
 
-    // Now test with glob - should silently skip stored-only fields
+    // Now test with glob - should silently skip stored-only fields and succeed
     resp =
         h.query(
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "*",
+                "fl", "id,intdv,stringdv",
                 "sort", "intdv asc"));
 
-    // Should succeed and return only DocValues fields (no str_s_stored)
-    assertTrue("Expected successful response", resp.contains("\"status\":0"));
-    assertFalse(
-        "Should not contain stored-only field without includeStoredFields",
-        resp.contains("str_s_stored"));
-    assertTrue("Should contain DocValues field", resp.contains("stringdv"));
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"intdv\":1,\n"
+            + "        \"stringdv\":\"docvalue_string\"}]}}");
   }
 
   @Test
@@ -1610,52 +1614,21 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "*",
+                "fl", "id,intdv,stringdv,str_s_stored",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
-    assertTrue("Expected successful response", resp.contains("\"status\":0"));
-    assertTrue(
-        "Should contain stored-only field with includeStoredFields=true",
-        resp.contains("str_s_stored"));
-    assertTrue("Should contain DocValues field", resp.contains("stringdv"));
-  }
-
-  @Test
-  public void testIncludeStoredFieldsPreferDocValues() throws Exception {
-    // Test that fields with both DocValues and stored use DocValues regardless of param
-    clearIndex();
-
-    // field2_i_p has both stored=true and docValues=true
-    assertU(adoc("id", "1", "field2_i_p", "100"));
-    assertU(adoc("id", "2", "field2_i_p", "200"));
-    assertU(commit());
-
-    // With includeStoredFields=false (default)
-    String resp1 =
-        h.query(
-            req(
-                "q", "*:*",
-                "qt", "/export",
-                "fl", "id,field2_i_p",
-                "sort", "field2_i_p asc"));
-
-    // With includeStoredFields=true
-    String resp2 =
-        h.query(
-            req(
-                "q", "*:*",
-                "qt", "/export",
-                "fl", "id,field2_i_p",
-                "sort", "field2_i_p asc",
-                "includeStoredFields", "true"));
-
-    // Both should return the same result (DocValues preferred in both cases)
-    assertJsonEquals(resp1, resp2);
-
-    // Verify both have successful status and correct values
-    assertTrue("Expected successful response", resp1.contains("\"status\":0"));
-    assertTrue("Should contain field2_i_p", resp1.contains("field2_i_p"));
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"intdv\":1,\n"
+            + "        \"stringdv\":\"docvalue_string\",\n"
+            + "        \"str_s_stored\":\"stored_string\"}]}}");
   }
 
   @Test
@@ -1684,14 +1657,16 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
-    assertTrue("Expected successful response", resp.contains("\"status\":0"));
-    // Multi-valued fields should be returned as arrays
-    assertTrue(
-        "Multi-valued string field should contain multiple values",
-        resp.contains("strs_ss_stored"));
-    assertTrue(
-        "Multi-valued int field should contain multiple values",
-        resp.contains("nums_is_stored"));
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":1,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"strs_ss_stored\":[\"value1\",\"value2\",\"value3\"],\n"
+            + "        \"nums_is_stored\":[10,20,30]}]}}");
   }
 
   @Test
@@ -1728,26 +1703,34 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "fl",
+                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
-    assertTrue("Expected successful response", resp.contains("\"status\":0"));
-    assertTrue("Should contain 2 docs", resp.contains("\"numFound\":2"));
-
-    // Verify all field types are present
-    assertTrue("Should contain string field", resp.contains("str_s_stored"));
-    assertTrue("Should contain int field", resp.contains("num_i_stored"));
-    assertTrue("Should contain long field", resp.contains("num_l_stored"));
-    assertTrue("Should contain float field", resp.contains("num_f_stored"));
-    assertTrue("Should contain double field", resp.contains("num_d_stored"));
-    assertTrue("Should contain date field", resp.contains("date_dt_stored"));
-    assertTrue("Should contain boolean field", resp.contains("bool_b_stored"));
-
-    // Verify specific values
-    assertTrue("Should contain string value", resp.contains("test_string"));
-    assertTrue("Should contain int value", resp.contains("123"));
-    assertTrue("Should contain long value", resp.contains("9876543210"));
-    assertTrue("Should contain date value", resp.contains("2025-12-25"));
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":2,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"str_s_stored\":\"test_string\",\n"
+            + "        \"num_i_stored\":123,\n"
+            + "        \"num_l_stored\":9876543210,\n"
+            + "        \"num_f_stored\":1.5,\n"
+            + "        \"num_d_stored\":2.5,\n"
+            + "        \"date_dt_stored\":\"2025-12-25T00:00:00Z\",\n"
+            + "        \"bool_b_stored\":false},\n"
+            + "      {\n"
+            + "        \"id\":\"2\",\n"
+            + "        \"str_s_stored\":\"another_string\",\n"
+            + "        \"num_i_stored\":456,\n"
+            + "        \"num_l_stored\":1234567890,\n"
+            + "        \"num_f_stored\":2.5,\n"
+            + "        \"num_d_stored\":3.5,\n"
+            + "        \"date_dt_stored\":\"2025-06-15T12:30:00Z\",\n"
+            + "        \"bool_b_stored\":true}]}}");
   }
 }

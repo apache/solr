@@ -504,8 +504,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       throws IOException {
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
     SolrReturnFields solrReturnFields = new SolrReturnFields(fields, req);
-    boolean includeStoredFields =
-        req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
+    boolean includeStoredFields = req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
 
     List<FieldWriter> writers = new ArrayList<>();
     Set<String> docValueFields = new LinkedHashSet<>();
@@ -519,8 +518,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       FieldType fieldType = schemaField.getType();
 
       // Check if field can use DocValues
-      boolean canUseDocValues = schemaField.hasDocValues()
-          && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
+      boolean canUseDocValues =
+          schemaField.hasDocValues()
+              && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
 
       if (canUseDocValues) {
         // Prefer DocValues when available
@@ -543,8 +543,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         // Explicitly requested field that has neither DocValues nor stored
         if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
           throw new IOException(
-              schemaField
-                  + " Must have useDocValuesAsStored='true' to be used with export writer");
+              schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
         } else {
           throw new IOException(schemaField + " must have DocValues to use this feature.");
         }
@@ -552,7 +551,6 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       // Else: glob matched field with neither DocValues nor stored - silently skip
     }
 
-    // Process DocValues fields first
     for (String field : docValueFields) {
       SchemaField schemaField = req.getSchema().getField(field);
       boolean multiValued = schemaField.multiValued();
@@ -612,14 +610,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       writers.add(writer);
     }
 
-    // Add StoredFieldsWriter if there are stored-only fields to process
     if (!storedOnlyFields.isEmpty()) {
-      if (log.isWarnEnabled()) {
-        log.warn(
-            "Export request includes stored-only fields {} which may significantly impact performance. "
-                + "Consider adding docValues to these fields for better export performance.",
-            storedOnlyFields.keySet());
-      }
       writers.add(new StoredFieldsWriter(storedOnlyFields));
     }
 
@@ -953,7 +944,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         var fieldType = schemaField == null ? null : schemaField.getType();
         if (fieldType instanceof BoolField) {
           // Convert "T"/"F" stored value to boolean true/false
-          addField(fieldInfo.name, "T".equals(value));
+          addField(fieldInfo.name, Boolean.valueOf(fieldType.indexedToReadable(value)));
         } else {
           addField(fieldInfo.name, value);
         }
