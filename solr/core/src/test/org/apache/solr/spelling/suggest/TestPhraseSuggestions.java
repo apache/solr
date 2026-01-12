@@ -44,6 +44,10 @@ public class TestPhraseSuggestions extends SolrXPathTestCase {
         .withConfigFile("conf/solrconfig-phrasesuggest.xml")
         .withSchemaFile("conf/schema-phrasesuggest.xml")
         .create();
+
+    assertQ(
+        solrTestRule.getSolrClient(),
+        req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
   }
 
   public SolrClient getSolrClient() {
@@ -51,8 +55,6 @@ public class TestPhraseSuggestions extends SolrXPathTestCase {
   }
 
   public void test() {
-    assertQ(req("qt", URI, "q", "", SpellingParams.SPELLCHECK_BUILD, "true"));
-
     assertQ(
         req("qt", URI, "q", "the f", SpellingParams.SPELLCHECK_COUNT, "4"),
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='the f']/int[@name='numFound'][.='3']",

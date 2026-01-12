@@ -39,15 +39,16 @@ public class SolrXPathTestCase extends SolrTestCase {
    * Executes a query using SolrClient and validates the XML response against XPath expressions.
    * This provides a similar interface to assertQ() in SolrTestCaseJ4 but works with SolrClient.
    *
+   * @param client the SolrClient to use for the request
    * @param req the query parameters
    * @param tests XPath expressions to validate against the response
    * @see SolrTestCaseJ4#assertQ(String, SolrQueryRequest, String...)
    */
-  public void assertQ(QueryRequest req, String... tests) {
+  public static void assertQ(SolrClient client, QueryRequest req, String... tests) {
     try {
 
       // Process request and extract raw response
-      QueryResponse rsp = req.process(getSolrClient());
+      QueryResponse rsp = req.process(client);
       NamedList<Object> rawResponse = rsp.getResponse();
       InputStream stream = (InputStream) rawResponse.get("stream");
       String response = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
@@ -71,6 +72,17 @@ public class SolrXPathTestCase extends SolrTestCase {
       log.error("REQUEST FAILED: {}", req.getParams(), e3);
       throw new RuntimeException("Exception during query", e3);
     }
+  }
+
+  /**
+   * Instance method that delegates to the static assertQ using the instance's SolrClient. This
+   * provides a convenient way to call assertQ from instance test methods.
+   *
+   * @param req the query parameters
+   * @param tests XPath expressions to validate against the response
+   */
+  public void assertQ(QueryRequest req, String... tests) {
+    assertQ(getSolrClient(), req, tests);
   }
 
   /**
