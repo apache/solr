@@ -546,6 +546,8 @@ dependencies {
     // For the SolrJ examples
     testImplementation project(":solr:core")
     testImplementation project(":solr:solrj")
+    testImplementation project(":solr:solrj-jetty")
+    testRuntimeOnly project(":solr:modules:sql")
     testImplementation project(":solr:test-framework")
     testImplementation libs.junit.junit
 }

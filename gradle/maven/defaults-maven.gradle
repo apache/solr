@@ -28,6 +28,7 @@ configure(rootProject) {
         ":solr:cross-dc-manager",
         ":solr:core",
         ":solr:solrj",
+        ":solr:solrj-jetty",
         ":solr:solrj-streaming",
         ":solr:solrj-zookeeper",
         ":solr:test-framework",
