@@ -952,7 +952,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         s.contains("\"status\":400}"));
     assertTrue(
         "Should have a cause when exporting sortabledv_m, it does not have useDocValuesAsStored='true'",
-        s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+        s.contains("includeStoredFields=true"));
 
     s =
         h.query(
@@ -970,7 +970,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         s.contains("\"status\":400}"));
     assertTrue(
         "Should have a cause when exporting sortabledv, it does not have useDocValuesAsStored='true'",
-        s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+        s.contains("includeStoredFields=true"));
   }
 
   private void assertJsonEquals(String actual, String expected) {
@@ -1292,9 +1292,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertTrue("doc doesn't have exception", doc.containsKey(StreamParams.EXCEPTION));
     assertTrue(
         "wrong exception message",
-        doc.get(StreamParams.EXCEPTION)
-            .toString()
-            .contains("Must have useDocValuesAsStored='true'"));
+        doc.get(StreamParams.EXCEPTION).toString().contains("includeStoredFields=true"));
   }
 
   @Test

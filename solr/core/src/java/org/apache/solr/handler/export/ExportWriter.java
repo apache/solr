@@ -521,6 +521,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       boolean canUseDocValues =
           schemaField.hasDocValues()
               && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
+      Set<String> requestFieldNames =
+          solrReturnFields.getRequestedFieldNames() == null
+              ? Set.of()
+              : solrReturnFields.getRequestedFieldNames();
 
       if (canUseDocValues) {
         // Prefer DocValues when available
@@ -529,8 +533,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         // Field is stored-only (no usable DocValues)
         if (includeStoredFields) {
           storedOnlyFields.put(field, schemaField);
-        } else if (solrReturnFields.getRequestedFieldNames() != null
-            && solrReturnFields.getRequestedFieldNames().contains(field)) {
+        } else if (requestFieldNames.contains(field)) {
           // Explicitly requested field without DocValues and includeStoredFields=false
           throw new IOException(
               schemaField
@@ -538,8 +541,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
                   + "Try setting includeStoredFields=true to retrieve this field from stored values.");
         }
         // Else: glob matched stored-only field without includeStoredFields - silently skip
-      } else if (solrReturnFields.getRequestedFieldNames() != null
-          && solrReturnFields.getRequestedFieldNames().contains(field)) {
+      } else if (requestFieldNames.contains(field)) {
         // Explicitly requested field that has neither DocValues nor stored
         if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
           throw new IOException(
