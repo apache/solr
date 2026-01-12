@@ -7,8 +7,8 @@
 <!-- !!! ⚠️ DO NOT MODIFY THIS FILE, YOUR CHANGES WILL BE LOST ⚠️ !!! -->
 
 
-[10.0.0] - 2026-01-02
----------------------
+[10.0.0]
+--------
 
 ### Added (18 changes)
 
@@ -31,7 +31,7 @@
 - Support indexing primitive float[] values for DenseVectorField via JavaBin [SOLR-17948](https://issues.apache.org/jira/browse/SOLR-17948) (Puneet Ahuja) (Noble Paul)
 - Enable MergeOnFlushMergePolicy in Solr [SOLR-17984](https://issues.apache.org/jira/browse/SOLR-17984) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 
-### Changed (30 changes)
+### Changed (31 changes)
 
 - Removing redundant check if field exists in TextToVectorUpdateProcessorFactory [GITHUB#3666](https://github.com/apache/solr/pull/3666) (Renato Haeberli)
 - Minor refactoring of the TextToVectorQParserPlugin [PR#3651](https://github.com/apache/solr/pull/3651) (Ilaria Petreti)
@@ -42,6 +42,7 @@
 - Notify a user if they run healthcheck against standalone Solr that it is a SolrCloud only command. [SOLR-16850](https://issues.apache.org/jira/browse/SOLR-16850) (Eric Pugh)
 - "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. [SOLR-17043](https://issues.apache.org/jira/browse/SOLR-17043) (Jude Muriithi) (Jason Gerlowski)
 - When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. [SOLR-17077](https://issues.apache.org/jira/browse/SOLR-17077) (Pierre Salagnac)
+- Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it. Also makes ConcurrentUpdateBaseSolrClient client independent. [SOLR-17161](https://issues.apache.org/jira/browse/SOLR-17161) (Jan Høydahl) (David Smiley) (Kevin Risden)
 - Switch from Dropwizard to OpenTelemetry. This change provides native Prometheus support on the /admin/metrics API, OTLP support, exemplar support for tracing correlation with OpenMetrics format and native attributes and labels on all metrics. [SOLR-17458](https://issues.apache.org/jira/browse/SOLR-17458) (Matthew Biscocho) (David Smiley) (Sanjay Dutt) (Jude Muriithi) (Luke Kot-Zaniewski) (Carlos Ugarte) (Kevin Liang) (Bryan Jacobowitz) (Adam Quigley)
 - Change Solr CLI delete command to not delete configs by default. Decouple lifecycle of collections from configsets. [SOLR-17495](https://issues.apache.org/jira/browse/SOLR-17495) (Eric Pugh)
 - `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. [SOLR-17516](https://issues.apache.org/jira/browse/SOLR-17516) (James Dyer)
