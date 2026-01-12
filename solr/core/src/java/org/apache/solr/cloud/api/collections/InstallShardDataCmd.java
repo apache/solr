@@ -59,7 +59,8 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
 
   @Override
   @SuppressWarnings("unchecked")
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     final RemoteMessage typedMessage =
         new ObjectMapper().convertValue(message.getProperties(), RemoteMessage.class);
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =

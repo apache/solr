@@ -20,7 +20,6 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.NAME;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 import java.util.Map;
@@ -49,8 +48,7 @@ public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
           DeleteCollection.createRemoteMessage("someCollName", Boolean.TRUE);
       final Map<String, Object> rawMessage = message.getProperties();
       assertEquals(3, rawMessage.size());
-      assertThat(
-          rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME, FOLLOW_ALIASES));
+      assertThat(rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME, FOLLOW_ALIASES));
       assertEquals("delete", rawMessage.get(QUEUE_OPERATION));
       assertEquals("someCollName", rawMessage.get(NAME));
       assertEquals(Boolean.TRUE, rawMessage.get(FOLLOW_ALIASES));

@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -54,13 +53,15 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
    * standard OCP timeout) to prevent large batches of add's from sending a message to the overseer
    * for every document added in RoutedAliasUpdateProcessor.
    */
-  static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String targetCol) throws Exception {
+  static void remoteInvoke(CollectionsHandler collHandler, String aliasName, String targetCol)
+      throws Exception {
     final SolrResponse rsp =
         collHandler.submitCollectionApiCommand(
             new AdminCmdContext(CollectionParams.CollectionAction.MAINTAINROUTEDALIAS),
-            new ZkNodeProps(Map.of(
-                CollectionParams.NAME, aliasName,
-                MaintainRoutedAliasCmd.ROUTED_ALIAS_TARGET_COL, targetCol)));
+            new ZkNodeProps(
+                Map.of(
+                    CollectionParams.NAME, aliasName,
+                    MaintainRoutedAliasCmd.ROUTED_ALIAS_TARGET_COL, targetCol)));
     if (rsp.getException() != null) {
       throw rsp.getException();
     }
@@ -105,8 +106,7 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(
-      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     // ---- PARSE PRIMARY MESSAGE PARAMS
     // important that we use NAME for the alias as that is what the Overseer will get a lock on
@@ -142,7 +142,8 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
                 .execute(
                     () -> {
                       try {
-                        deleteTargetCollection(adminCmdContext, results, aliasName, aliasesManager, action);
+                        deleteTargetCollection(
+                            adminCmdContext, results, aliasName, aliasesManager, action);
                       } catch (Exception e) {
                         log.warn(
                             "Deletion of {} by {} {} failed (this might be ok if two clients were",
@@ -215,6 +216,10 @@ public class MaintainRoutedAliasCmd extends AliasCmd {
             () -> removeCollectionFromAlias(aliasName, aliasesManager, action.targetCollection));
     delProps.put(NAME, action.targetCollection);
     ZkNodeProps messageDelete = new ZkNodeProps(delProps);
-    new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE), messageDelete, results);
+    new DeleteCollectionCmd(ccc)
+        .call(
+            adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE),
+            messageDelete,
+            results);
   }
 }

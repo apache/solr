@@ -45,7 +45,8 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     String sliceName = message.getStr(SHARD_ID_PROP);
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
@@ -114,7 +115,9 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
     try {
       new AddReplicaCmd(ccc)
           .addReplica(
-              adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA, async).withClusterState(clusterState),
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA, async)
+                  .withClusterState(clusterState),
               new ZkNodeProps(addReplicasProps),
               addResult,
               () -> {
@@ -144,7 +147,13 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               });
     } catch (Assign.AssignmentException e) {
       // clean up the slice that we created
-      new DeleteShardCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETE, async).withClusterState(clusterState), new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName), results);
+      new DeleteShardCmd(ccc)
+          .call(
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.DELETE, async)
+                  .withClusterState(clusterState),
+              new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
+              results);
       throw e;
     }
 

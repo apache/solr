@@ -156,7 +156,8 @@ public class OverseerStatusCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     // If Collection API execution is distributed, we're not running on the Overseer node so can't
     // return any Overseer stats.
     if (ccc.getCoreContainer().getZkController().getDistributedCommandRunner().isPresent()) {

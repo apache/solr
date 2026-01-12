@@ -70,7 +70,8 @@ public class DeleteBackupCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     String backupLocation = message.getStr(CoreAdminParams.BACKUP_LOCATION);
     String backupName = message.getStr(NAME);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);

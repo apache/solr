@@ -50,7 +50,8 @@ public class CreateAliasCmd extends AliasCmd {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     final String aliasName = message.getStr(CommonParams.NAME);
     ZkStateReader zkStateReader = ccc.getZkStateReader();
     // make sure we have the latest version of existing aliases
@@ -176,7 +177,8 @@ public class CreateAliasCmd extends AliasCmd {
       String initialCollectionName)
       throws Exception {
     // Create the collection
-    createCollectionAndWait(adminCmdContext, aliasName, aliasProperties, initialCollectionName, ccc);
+    createCollectionAndWait(
+        adminCmdContext, aliasName, aliasProperties, initialCollectionName, ccc);
     validateAllCollectionsExistAndNoDuplicates(
         Collections.singletonList(initialCollectionName), zkStateReader);
   }

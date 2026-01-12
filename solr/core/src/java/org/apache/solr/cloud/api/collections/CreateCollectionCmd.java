@@ -102,7 +102,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
@@ -243,7 +244,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 numReplicas);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ccc).call(adminCmdContext.subRequestContext(DELETE).withClusterState(clusterState), deleteMessage, results);
+        new DeleteCollectionCmd(ccc)
+            .call(
+                adminCmdContext.subRequestContext(DELETE).withClusterState(clusterState),
+                deleteMessage,
+                results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -436,7 +441,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
         // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(adminCmdContext, collectionName, new NamedList<>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(
+            adminCmdContext, collectionName, new NamedList<>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
             ErrorCode.BAD_REQUEST,

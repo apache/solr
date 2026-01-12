@@ -36,7 +36,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -59,11 +58,14 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     moveReplica(adminCmdContext, message, results);
   }
 
-  private void moveReplica(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  private void moveReplica(
+      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     if (log.isDebugEnabled()) {
       log.debug("moveReplica() : {}", Utils.toJSONString(message));
     }
@@ -91,7 +93,10 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     if (!adminCmdContext.getClusterState().getLiveNodes().contains(targetNode)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Target node: " + targetNode + " not in live nodes: " + adminCmdContext.getClusterState().getLiveNodes());
+          "Target node: "
+              + targetNode
+              + " not in live nodes: "
+              + adminCmdContext.getClusterState().getLiveNodes());
     }
     Replica replica = null;
     if (message.containsKey(REPLICA_PROP)) {
@@ -161,14 +166,7 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     } else {
       log.debug("-- moveNormalReplica (inPlaceMove={}, isSharedFS={}", inPlaceMove, isSharedFS);
       moveNormalReplica(
-          adminCmdContext,
-          results,
-          targetNode,
-          coll,
-          replica,
-          slice,
-          timeout,
-          waitForFinalState);
+          adminCmdContext, results, targetNode, coll, replica, slice, timeout, waitForFinalState);
     }
   }
 
@@ -194,7 +192,11 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
       NamedList<Object> deleteResult = new NamedList<>();
       try {
         new DeleteReplicaCmd(ccc)
-            .deleteReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA), removeReplicasProps, deleteResult, null);
+            .deleteReplica(
+                adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA),
+                removeReplicasProps,
+                deleteResult,
+                null);
       } catch (SolrException e) {
         // assume this failed completely so there's nothing to roll back
         deleteResult.add("failure", e.toString());
@@ -253,7 +255,13 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     NamedList<Object> addResult = new NamedList<>();
     try {
       new AddReplicaCmd(ccc)
-          .addReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()), addReplicasProps, addResult, null);
+          .addReplica(
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA)
+                  .withClusterState(ccc.getZkStateReader().getClusterState()),
+              addReplicasProps,
+              addResult,
+              null);
     } catch (Exception e) {
       // fatal error - try rolling back
       String errorString =
@@ -269,7 +277,13 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
       addReplicasProps = addReplicasProps.plus(CoreAdminParams.NODE, replica.getNodeName());
       NamedList<Object> rollback = new NamedList<>();
       new AddReplicaCmd(ccc)
-          .addReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()), addReplicasProps, rollback, null);
+          .addReplica(
+              adminCmdContext
+                  .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA)
+                  .withClusterState(ccc.getZkStateReader().getClusterState()),
+              addReplicasProps,
+              rollback,
+              null);
       if (rollback.get("failure") != null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -297,7 +311,13 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
       NamedList<Object> rollback = new NamedList<>();
       try {
         new AddReplicaCmd(ccc)
-            .addReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()), addReplicasProps, rollback, null);
+            .addReplica(
+                adminCmdContext
+                    .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA)
+                    .withClusterState(ccc.getZkStateReader().getClusterState()),
+                addReplicasProps,
+                rollback,
+                null);
       } catch (Exception e) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
@@ -359,7 +379,13 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ccc.getCloseableToLatchOn());
     ActiveReplicaWatcher watcher = null;
     ZkNodeProps props =
-        new AddReplicaCmd(ccc).addReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA), addReplicasProps, addResult, null).get(0);
+        new AddReplicaCmd(ccc)
+            .addReplica(
+                adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA),
+                addReplicasProps,
+                addResult,
+                null)
+            .get(0);
     log.debug("props {}", props);
     if (replica.equals(slice.getLeader()) || waitForFinalState) {
       watcher =
@@ -418,7 +444,11 @@ public class MoveReplicaCmd implements CollApiCmds.CollectionApiCommand {
     NamedList<Object> deleteResult = new NamedList<>();
     try {
       new DeleteReplicaCmd(ccc)
-          .deleteReplica(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA), removeReplicasProps, deleteResult, null);
+          .deleteReplica(
+              adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA),
+              removeReplicasProps,
+              deleteResult,
+              null);
     } catch (SolrException e) {
       deleteResult.add("failure", e.toString());
     }

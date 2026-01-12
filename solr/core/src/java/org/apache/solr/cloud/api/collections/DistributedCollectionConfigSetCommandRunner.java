@@ -250,9 +250,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    * </ul>
    */
   public OverseerSolrResponse runCollectionCommand(
-      AdminCmdContext adminCmdContext,
-      ZkNodeProps message,
-      long timeoutMs) {
+      AdminCmdContext adminCmdContext, ZkNodeProps message, long timeoutMs) {
     // We refuse new tasks, but will wait for already submitted ones (i.e. those that made it
     // through this method earlier). See stopAndWaitForPendingTasksToComplete() below
     if (shuttingDown) {
@@ -263,7 +261,9 @@ public class DistributedCollectionConfigSetCommandRunner {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "Running Collection API locally for {} asyncId={}", adminCmdContext.getAction().name(), adminCmdContext.getAsyncId());
+          "Running Collection API locally for {} asyncId={}",
+          adminCmdContext.getAction().name(),
+          adminCmdContext.getAsyncId());
     }
 
     // Following the call below returning true, we must eventually cancel or complete the task.
@@ -275,8 +275,7 @@ public class DistributedCollectionConfigSetCommandRunner {
           "Task with the same requestid already exists. (" + adminCmdContext.getAsyncId() + ")");
     }
 
-    CollectionCommandRunner commandRunner =
-        new CollectionCommandRunner(adminCmdContext, message);
+    CollectionCommandRunner commandRunner = new CollectionCommandRunner(adminCmdContext, message);
     final Future<OverseerSolrResponse> taskFuture;
     try {
       taskFuture = commandsExecutor.submit(commandRunner);
@@ -296,12 +295,15 @@ public class DistributedCollectionConfigSetCommandRunner {
         return taskFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
       } catch (TimeoutException te) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " timed out after " + timeoutMs + "ms");
+            SolrException.ErrorCode.SERVER_ERROR,
+            adminCmdContext.getAction() + " timed out after " + timeoutMs + "ms");
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " interrupted", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " interrupted", e);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " failed", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " failed", e);
       }
     } else {
       // Async calls do not wait for the command to finish but get instead back the async id (that
@@ -422,10 +424,13 @@ public class DistributedCollectionConfigSetCommandRunner {
                 message);
           }
 
-          CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(adminCmdContext.getAction());
+          CollApiCmds.CollectionApiCommand command =
+              commandMapper.getActionCommand(adminCmdContext.getAction());
           if (command != null) {
             command.call(
-                adminCmdContext.withClusterState(ccc.getSolrCloudManager().getClusterState()), message, results);
+                adminCmdContext.withClusterState(ccc.getSolrCloudManager().getClusterState()),
+                message,
+                results);
           } else {
             asyncTaskTracker.cancelAsyncId(adminCmdContext.getAsyncId());
             // Seeing this is a bug, not bad user data
@@ -443,7 +448,9 @@ public class DistributedCollectionConfigSetCommandRunner {
           } catch (SolrException se) {
             if (log.isErrorEnabled()) {
               log.error(
-                  "Error when releasing collection locks for operation {}", adminCmdContext.getAction(), se);
+                  "Error when releasing collection locks for operation {}",
+                  adminCmdContext.getAction(),
+                  se);
             }
           }
         }

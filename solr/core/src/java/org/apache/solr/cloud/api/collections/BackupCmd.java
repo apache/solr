@@ -69,7 +69,8 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
 
   @SuppressWarnings("unchecked")
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
 
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -120,7 +121,13 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
             if (incremental) {
               try {
                 incrementalCopyIndexFiles(
-                    adminCmdContext, backupUri, collectionName, message, results, backupProperties, backupMgr);
+                    adminCmdContext,
+                    backupUri,
+                    collectionName,
+                    message,
+                    results,
+                    backupProperties,
+                    backupMgr);
               } catch (SolrException e) {
                 log.error(
                     "Error happened during incremental backup for collection: {}",
@@ -132,7 +139,13 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
               }
             } else {
               copyIndexFiles(
-                  adminCmdContext, backupUri, collectionName, message, results, backupProperties, backupMgr);
+                  adminCmdContext,
+                  backupUri,
+                  collectionName,
+                  message,
+                  results,
+                  backupProperties,
+                  backupMgr);
             }
             break;
           }

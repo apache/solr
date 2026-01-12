@@ -20,16 +20,13 @@ package org.apache.solr.handler.admin.api;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.AliasesApi;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -54,8 +51,7 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
     String aliasName = "deletealiastest_alias";
 
     // Create a collection
-    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1)
-        .process(cloudClient);
+    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).process(cloudClient);
     cluster.waitForActiveCollection(collectionName, 1, 1);
 
     // Create an alias pointing to the collection
@@ -63,7 +59,10 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
 
     // Verify the alias exists
     var clusterStateProvider = cloudClient.getClusterStateProvider();
-    assertEquals("Alias should exist before deletion", collectionName, clusterStateProvider.resolveSimpleAlias(aliasName));
+    assertEquals(
+        "Alias should exist before deletion",
+        collectionName,
+        clusterStateProvider.resolveSimpleAlias(aliasName));
 
     // Delete the alias using the V2 API
     var request = new AliasesApi.DeleteAlias(aliasName);
@@ -72,9 +71,13 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
     assertNull("Expected request to not fail", response.failedSubResponsesByNodeName);
 
     // Verify the alias is gone
-    ZkStateReader.AliasesManager aliasesManager = ((ZkClientClusterStateProvider)clusterStateProvider).getZkStateReader().getAliasesManager();
+    ZkStateReader.AliasesManager aliasesManager =
+        ((ZkClientClusterStateProvider) clusterStateProvider)
+            .getZkStateReader()
+            .getAliasesManager();
     aliasesManager.update();
-    assertFalse("Alias should not exist after deletion", aliasesManager.getAliases().hasAlias(aliasName));
+    assertFalse(
+        "Alias should not exist after deletion", aliasesManager.getAliases().hasAlias(aliasName));
   }
 
   @Test
@@ -84,8 +87,7 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
     String aliasName = "deletealiastest_alias_async";
 
     // Create a collection
-    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1)
-        .process(cloudClient);
+    CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 1).process(cloudClient);
     cluster.waitForActiveCollection(collectionName, 1, 1);
 
     // Create an alias pointing to the collection
@@ -103,7 +105,8 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
     assertNull("Expected request start to not fail", response.failedSubResponsesByNodeName);
 
     // Wait for the async request to complete
-    CollectionAdminRequest.RequestStatusResponse rsp = waitForAsyncClusterRequest(asyncId, Duration.ofSeconds(5));
+    CollectionAdminRequest.RequestStatusResponse rsp =
+        waitForAsyncClusterRequest(asyncId, Duration.ofSeconds(5));
 
     assertEquals(
         "Expected async request to complete successfully",
@@ -111,8 +114,12 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
         rsp.getRequestStatus());
 
     // Verify the alias is gone
-    ZkStateReader.AliasesManager aliasesManager = ((ZkClientClusterStateProvider)clusterStateProvider).getZkStateReader().getAliasesManager();
+    ZkStateReader.AliasesManager aliasesManager =
+        ((ZkClientClusterStateProvider) clusterStateProvider)
+            .getZkStateReader()
+            .getAliasesManager();
     aliasesManager.update();
-    assertFalse("Alias should not exist after deletion", aliasesManager.getAliases().hasAlias(aliasName));
+    assertFalse(
+        "Alias should not exist after deletion", aliasesManager.getAliases().hasAlias(aliasName));
   }
 }

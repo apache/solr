@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.INDEX_BACKUP_STRATEGY;
@@ -30,7 +29,6 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.COMMIT_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.handler.admin.api.CreateCollection.copyPrefixedPropertiesWithoutPrefix;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -42,17 +40,14 @@ import org.apache.solr.client.api.endpoint.CollectionBackupApi;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionBackupResponseBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.jersey.SolrJacksonMapper;
 import org.apache.solr.request.SolrQueryRequest;
@@ -115,10 +110,7 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, backupName, requestBody);
     final SolrResponse remoteResponse =
         submitRemoteMessageAndHandleResponse(
-            response,
-            CollectionParams.CollectionAction.BACKUP,
-            remoteMessage,
-            requestBody.async);
+            response, CollectionParams.CollectionAction.BACKUP, remoteMessage, requestBody.async);
     objectMapper.updateValue(response, remoteResponse.getResponse());
 
     return response;

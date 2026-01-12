@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 
 import java.util.Map;
@@ -46,8 +45,7 @@ public class DeleteCollectionSnapshotAPITest extends SolrTestCaseJ4 {
     assertEquals(false, rawMessageOne.get(FOLLOW_ALIASES));
 
     final ZkNodeProps messageTwo =
-        DeleteCollectionSnapshot.createRemoteMessage(
-            "myCollName", true, "mySnapshotName");
+        DeleteCollectionSnapshot.createRemoteMessage("myCollName", true, "mySnapshotName");
     final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
     assertEquals(4, rawMessageTwo.size());
     assertThat(

@@ -3,12 +3,10 @@ package org.apache.solr.cloud.api.collections;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.StrUtils;
-import java.util.ArrayList;
-import java.util.List;
 
 public class AdminCmdContext {
-  final private CollectionParams.CollectionAction action;
-  final private String asyncId;
+  private final CollectionParams.CollectionAction action;
+  private final String asyncId;
   private String lockId;
   private String callingLockIds;
   private String subRequestCallingLockIds;
@@ -74,7 +72,8 @@ public class AdminCmdContext {
     return subRequestContext(action, asyncId);
   }
 
-  public AdminCmdContext subRequestContext(CollectionParams.CollectionAction action, String asyncId) {
+  public AdminCmdContext subRequestContext(
+      CollectionParams.CollectionAction action, String asyncId) {
     AdminCmdContext nextContext = new AdminCmdContext(action, asyncId);
     nextContext.setCallingLockIds(subRequestCallingLockIds);
     return nextContext.withClusterState(clusterState);

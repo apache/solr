@@ -16,11 +16,8 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -28,12 +25,10 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CollectionSnapshotApis;
 import org.apache.solr.client.api.model.DeleteCollectionSnapshotResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -75,7 +70,8 @@ public class DeleteCollectionSnapshot extends AdminAPIBase
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(String collectionName, boolean followAliases, String snapshotName) {
+  public static ZkNodeProps createRemoteMessage(
+      String collectionName, boolean followAliases, String snapshotName) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
     remoteMessage.put(COLLECTION_PROP, collectionName);

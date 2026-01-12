@@ -35,7 +35,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.cloud.api.collections.CollApiCmds.CollectionApiCommand;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -60,7 +59,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     deleteReplica(adminCmdContext, message, results, null);
   }
 
@@ -102,7 +102,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
           SolrException.ErrorCode.BAD_REQUEST,
           "Invalid shard name : " + shard + " in collection : " + collectionName);
     }
-    deleteCore(adminCmdContext, coll, shard, replicaName, message, results, onComplete, parallel, true);
+    deleteCore(
+        adminCmdContext, coll, shard, replicaName, message, results, onComplete, parallel, true);
   }
 
   /**
@@ -170,7 +171,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       for (String replica : replicas) {
         log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
         // don't verify with the placement plugin - we already did it
-        deleteCore(adminCmdContext, coll, shardId, replica, message, results, onComplete, parallel, false);
+        deleteCore(
+            adminCmdContext, coll, shardId, replica, message, results, onComplete, parallel, false);
       }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);

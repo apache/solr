@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NODE_NAME_PROP;
@@ -25,7 +24,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
@@ -47,7 +45,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
@@ -461,7 +458,9 @@ class RebalanceLeaders {
     String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
     asyncRequests.add(asyncId);
 
-    collectionsHandler.submitCollectionApiCommand(new AdminCmdContext(REBALANCELEADERS, asyncId), new ZkNodeProps(propMap)); // ignore response; we construct our own
+    collectionsHandler.submitCollectionApiCommand(
+        new AdminCmdContext(REBALANCELEADERS, asyncId),
+        new ZkNodeProps(propMap)); // ignore response; we construct our own
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.

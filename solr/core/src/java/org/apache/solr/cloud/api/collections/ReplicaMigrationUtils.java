@@ -112,7 +112,9 @@ public class ReplicaMigrationUtils {
       final ZkNodeProps addedReplica =
           new AddReplicaCmd(ccc)
               .addReplica(
-                  adminCmdContext.subRequestContext(CollectionParams.CollectionAction.ADDREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()),
+                  adminCmdContext
+                      .subRequestContext(CollectionParams.CollectionAction.ADDREPLICA)
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   msg,
                   nl,
                   () -> {
@@ -209,7 +211,9 @@ public class ReplicaMigrationUtils {
         try {
           new DeleteReplicaCmd(ccc)
               .deleteReplica(
-                  adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()),
+                  adminCmdContext
+                      .subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA)
+                      .withClusterState(ccc.getZkStateReader().getClusterState()),
                   createdReplica.plus("parallel", "true"),
                   deleteResult,
                   () -> {
@@ -237,8 +241,7 @@ public class ReplicaMigrationUtils {
 
     // we have reached this far, meaning all replicas should have been recreated.
     // now cleanup the original replicas
-    return cleanupReplicas(
-        results, adminCmdContext, movements.keySet(), ccc);
+    return cleanupReplicas(results, adminCmdContext, movements.keySet(), ccc);
   }
 
   static boolean cleanupReplicas(
@@ -265,7 +268,9 @@ public class ReplicaMigrationUtils {
         ZkNodeProps cmdMessage = sourceReplica.toFullProps();
         new DeleteReplicaCmd(ccc)
             .deleteReplica(
-                adminCmdContext.subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA).withClusterState(ccc.getZkStateReader().getClusterState()),
+                adminCmdContext
+                    .subRequestContext(CollectionParams.CollectionAction.DELETEREPLICA)
+                    .withClusterState(ccc.getZkStateReader().getClusterState()),
                 cmdMessage.plus("parallel", "true"),
                 deleteResult,
                 () -> {

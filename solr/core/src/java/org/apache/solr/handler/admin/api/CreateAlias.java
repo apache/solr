@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CATEGORY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
@@ -30,7 +29,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.START;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -46,7 +44,6 @@ import org.apache.solr.client.api.model.RoutedAliasProperties;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -61,7 +58,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -109,10 +105,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
     }
 
     submitRemoteMessageAndHandleResponse(
-        response,
-        CollectionParams.CollectionAction.CREATEALIAS,
-        remoteMessage,
-        requestBody.async);
+        response, CollectionParams.CollectionAction.CREATEALIAS, remoteMessage, requestBody.async);
     return response;
   }
 

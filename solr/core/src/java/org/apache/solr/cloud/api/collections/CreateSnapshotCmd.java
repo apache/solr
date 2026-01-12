@@ -60,7 +60,8 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
 
@@ -96,7 +97,8 @@ public class CreateSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     Map<String, Slice> shardByCoreName = new HashMap<>();
     ShardHandler shardHandler = ccc.newShardHandler();
 
-    final ShardRequestTracker shardRequestTracker = CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+    final ShardRequestTracker shardRequestTracker =
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     for (Slice slice :
         ccc.getZkStateReader().getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {

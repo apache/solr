@@ -93,7 +93,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     try (RestoreContext restoreContext = new RestoreContext(adminCmdContext, message, ccc)) {
       if (adminCmdContext.getClusterState().hasCollection(restoreContext.restoreCollectionName)) {
         RestoreOnExistingCollection restoreOnExistingCollection =
@@ -130,7 +131,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
       params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
       params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-      shardRequestTracker.sliceCmd(adminCmdContext.getClusterState(), params, null, slice, shardHandler);
+      shardRequestTracker.sliceCmd(
+          adminCmdContext.getClusterState(), params, null, slice, shardHandler);
     }
     shardRequestTracker.processResponses(
         new NamedList<>(), shardHandler, true, "Could not restore core");
@@ -158,7 +160,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     final DocCollection backupCollectionState;
     final ShardHandler shardHandler;
 
-    private RestoreContext(AdminCmdContext adminCmdContext, ZkNodeProps message, CollectionCommandContext ccc)
+    private RestoreContext(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, CollectionCommandContext ccc)
         throws IOException {
       this.adminCmdContext = adminCmdContext;
       this.restoreCollectionName = message.getStr(COLLECTION_PROP);
@@ -256,11 +259,15 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
 
       createSingleReplicaPerShard(
-          results, restoreCollection, rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()), replicaPositions);
+          results,
+          restoreCollection,
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+          replicaPositions);
       Object failures = results.get("failure");
       if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
         log.error("Restore failed to create initial replicas.");
-        CollectionHandlingUtils.cleanupCollection(rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(
+            rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
         return;
       }
 
@@ -276,7 +283,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.repo,
           rc.shardHandler);
       markAllShardsAsActive(restoreCollection);
-      addReplicasToShards(results, restoreCollection, replicaPositions, rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()));
+      addReplicasToShards(
+          results,
+          restoreCollection,
+          replicaPositions,
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()));
       restoringAlias(rc.backupProperties);
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, rc.backupName);
@@ -366,7 +377,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       new CreateCollectionCmd(ccc)
-          .call(adminCmdContext.subRequestContext(CREATE, null), new ZkNodeProps(propMap), new NamedList<>());
+          .call(
+              adminCmdContext.subRequestContext(CREATE, null),
+              new ZkNodeProps(propMap),
+              new NamedList<>());
       // note: when createCollection() returns, the collection exists (no race)
     }
 
@@ -553,7 +567,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
             CollectionHandlingUtils.addPropertyParams(message, propMap);
 
             new AddReplicaCmd(ccc)
-                .addReplica(adminCmdContext.subRequestContext(ADDREPLICA), new ZkNodeProps(propMap), results, null);
+                .addReplica(
+                    adminCmdContext.subRequestContext(ADDREPLICA),
+                    new ZkNodeProps(propMap),
+                    results,
+                    null);
           }
         }
       }
@@ -604,7 +622,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       ClusterState clusterState = rc.zkStateReader.getClusterState();
       DocCollection restoreCollection = clusterState.getCollection(rc.restoreCollectionName);
 
-      enableReadOnly(rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()), restoreCollection);
+      enableReadOnly(
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+          restoreCollection);
       try {
         requestReplicasToRestore(
             results,
@@ -615,7 +635,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
             rc.repo,
             rc.shardHandler);
       } finally {
-        disableReadOnly(rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()), restoreCollection);
+        disableReadOnly(
+            rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+            restoreCollection);
       }
     }
 
@@ -628,7 +650,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
               ZkStateReader.READ_ONLY, null);
       new CollApiCmds.ModifyCollectionCmd(ccc)
-          .call(adminCmdContext.subRequestContext(MODIFYCOLLECTION, null), params, new NamedList<>());
+          .call(
+              adminCmdContext.subRequestContext(MODIFYCOLLECTION, null), params, new NamedList<>());
     }
 
     private void enableReadOnly(AdminCmdContext adminCmdContext, DocCollection restoreCollection)
@@ -640,7 +663,8 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
               ZkStateReader.READ_ONLY, "true");
       new CollApiCmds.ModifyCollectionCmd(ccc)
-          .call(adminCmdContext.subRequestContext(MODIFYCOLLECTION, null), params, new NamedList<>());
+          .call(
+              adminCmdContext.subRequestContext(MODIFYCOLLECTION, null), params, new NamedList<>());
     }
   }
 }

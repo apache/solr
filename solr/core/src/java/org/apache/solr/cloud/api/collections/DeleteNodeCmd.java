@@ -34,11 +34,14 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
-    List<Replica> sourceReplicas = ReplicaMigrationUtils.getReplicasOfNode(node, adminCmdContext.getClusterState());
-    List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, adminCmdContext.getClusterState());
+    List<Replica> sourceReplicas =
+        ReplicaMigrationUtils.getReplicasOfNode(node, adminCmdContext.getClusterState());
+    List<String> singleReplicas =
+        verifyReplicaAvailability(sourceReplicas, adminCmdContext.getClusterState());
     if (!singleReplicas.isEmpty()) {
       results.add(
           "failure",
@@ -47,8 +50,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
               + ": "
               + singleReplicas);
     } else {
-      ReplicaMigrationUtils.cleanupReplicas(
-          results, adminCmdContext, sourceReplicas, ccc);
+      ReplicaMigrationUtils.cleanupReplicas(results, adminCmdContext, sourceReplicas, ccc);
     }
   }
 

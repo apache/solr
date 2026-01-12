@@ -59,10 +59,7 @@ public class CollectionApiLockFactory {
    *     prevent other threads from locking.
    */
   DistributedMultiLock createCollectionApiLock(
-      AdminCmdContext adminCmdContext,
-      String collName,
-      String shardId,
-      String replicaName) {
+      AdminCmdContext adminCmdContext, String collName, String shardId, String replicaName) {
     CollectionParams.LockLevel lockLevel = adminCmdContext.getAction().lockLevel;
     if (lockLevel == CollectionParams.LockLevel.NONE) {
       return new DistributedMultiLock(List.of());
@@ -114,7 +111,7 @@ public class CollectionApiLockFactory {
     List<String> callingLockIdList;
     if (adminCmdContext.getCallingLockIds() == null) {
       callingLockIdList = Collections.emptyList();
-    }  else {
+    } else {
       callingLockIdList = List.of(adminCmdContext.getCallingLockIds().split(","));
     }
 

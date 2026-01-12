@@ -79,8 +79,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
   public void testCreatesValidOverseerMessage() throws Exception {
     final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", false, "async");
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
+    verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
@@ -95,8 +94,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
   @Test
   public void testRequestBodyCanBeOmittedAltogether() throws Exception {
     replaceNodeApi.replaceNode("demoSourceNode", null);
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
+    verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
@@ -109,8 +107,7 @@ public class ReplaceNodeAPITest extends SolrTestCaseJ4 {
   public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
     final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null, null);
     replaceNodeApi.replaceNode("demoSourceNode", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
+    verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();

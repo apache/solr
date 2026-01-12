@@ -75,8 +75,7 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     addReplica(adminCmdContext, message, results, null);
   }
@@ -160,7 +159,10 @@ public class AddReplicaCmd implements CollApiCmds.CollectionApiCommand {
             .map(
                 replicaPosition ->
                     assignReplicaDetails(
-                        ccc.getSolrCloudManager(), adminCmdContext.getClusterState(), message, replicaPosition))
+                        ccc.getSolrCloudManager(),
+                        adminCmdContext.getClusterState(),
+                        message,
+                        replicaPosition))
             .collect(Collectors.toList());
 
     ShardHandler shardHandler = ccc.newShardHandler();

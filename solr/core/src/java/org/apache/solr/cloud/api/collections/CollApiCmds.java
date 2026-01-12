@@ -65,7 +65,6 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.RE
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REPLACENODE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.RESTORE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.SPLITSHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import io.opentelemetry.api.trace.Span;
@@ -262,7 +261,8 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) {
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
@@ -285,8 +285,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(
-        AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -327,8 +326,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(
-        AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message,
@@ -362,8 +360,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(
-        AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
@@ -392,8 +389,7 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(
-        AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
+    public void call(AdminCmdContext clusterState, ZkNodeProps message, NamedList<Object> results)
         throws Exception {
       if (StrUtils.isBlank(message.getStr(COLLECTION_PROP))
           || StrUtils.isBlank(message.getStr(PROPERTY_PROP))) {
@@ -429,7 +425,9 @@ public class CollApiCmds {
     }
 
     @Override
-    public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+    public void call(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+        throws Exception {
       final String collectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
       // the rest of the processing is based on writing cluster state properties
       String configName = (String) message.getProperties().get(COLL_CONF);
@@ -510,7 +508,10 @@ public class CollApiCmds {
       // if switching to/from read-only mode or configName is not null reload the collection
       if (message.keySet().contains(ZkStateReader.READ_ONLY) || configName != null) {
         new ReloadCollectionCmd(ccc)
-            .call(adminCmdContext.subRequestContext(RELOAD, null), new ZkNodeProps(NAME, collectionName), results);
+            .call(
+                adminCmdContext.subRequestContext(RELOAD, null),
+                new ZkNodeProps(NAME, collectionName),
+                results);
       }
     }
   }

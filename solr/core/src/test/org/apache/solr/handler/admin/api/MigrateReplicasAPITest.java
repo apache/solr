@@ -84,8 +84,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
         new MigrateReplicasRequestBody(
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
     migrateReplicasAPI.migrateReplicas(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
+    verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
@@ -102,8 +101,7 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
     migrateReplicasAPI.migrateReplicas(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(any(), messageCapturer.capture(), anyLong());
+    verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();

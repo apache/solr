@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
@@ -113,8 +112,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
     location = getAndValidateBackupLocation(repositoryName, location);
 
     final ZkNodeProps remoteMessage =
-        createRemoteMessage(
-            backupName, null, versionsToRetain, null, location, repositoryName);
+        createRemoteMessage(backupName, null, versionsToRetain, null, location, repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response, CollectionParams.CollectionAction.DELETEBACKUP, remoteMessage, asyncId);
@@ -139,12 +137,7 @@ public class DeleteCollectionBackup extends BackupAPIBase implements DeleteColle
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(
-            backupName,
-            null,
-            null,
-            Boolean.TRUE,
-            requestBody.location,
-            requestBody.repositoryName);
+            backupName, null, null, Boolean.TRUE, requestBody.location, requestBody.repositoryName);
     final var remoteResponse =
         submitRemoteMessageAndHandleResponse(
             response,

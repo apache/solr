@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import java.util.Map;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionProperties;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -84,7 +83,11 @@ abstract class AliasCmd implements CollApiCmds.CollectionApiCommand {
       // CreateCollectionCmd.
       // note: there's doesn't seem to be any point in locking on the collection name, so we don't.
       // We currently should already have a lock on the alias name which should be sufficient.
-      new CreateCollectionCmd(ccc).call(adminCmdContext.subRequestContext(CollectionParams.CollectionAction.CREATE), createMessage, results);
+      new CreateCollectionCmd(ccc)
+          .call(
+              adminCmdContext.subRequestContext(CollectionParams.CollectionAction.CREATE),
+              createMessage,
+              results);
     } catch (SolrException e) {
       // The collection might already exist, and that's okay -- we can adopt it.
       if (!e.getMessage().contains("collection already exists")) {

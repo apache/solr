@@ -308,11 +308,17 @@ public class CollectionHandlingUtils {
   }
 
   static void cleanupCollection(
-      AdminCmdContext adminCmdContext, String collectionName, NamedList<Object> results, CollectionCommandContext ccc)
+      AdminCmdContext adminCmdContext,
+      String collectionName,
+      NamedList<Object> results,
+      CollectionCommandContext ccc)
       throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(adminCmdContext.subRequestContext(DELETE), new ZkNodeProps(NAME, collectionName), results);
+        .call(
+            adminCmdContext.subRequestContext(DELETE),
+            new ZkNodeProps(NAME, collectionName),
+            results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -403,7 +409,8 @@ public class CollectionHandlingUtils {
         asyncRequestTracker(adminCmdContext, ccc);
     for (Slice slice : coll.getSlices()) {
       notLivesReplicas.addAll(
-          shardRequestTracker.sliceCmd(ccc.getZkStateReader().getClusterState(), params, stateMatcher, slice, shardHandler));
+          shardRequestTracker.sliceCmd(
+              ccc.getZkStateReader().getClusterState(), params, stateMatcher, slice, shardHandler));
     }
 
     shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
@@ -561,16 +568,15 @@ public class CollectionHandlingUtils {
     } while (true);
   }
 
-  public static ShardRequestTracker syncRequestTracker(AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
-    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(),ccc);
+  public static ShardRequestTracker syncRequestTracker(
+      AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
+    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
       AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
     return requestTracker(
-        adminCmdContext.getAsyncId(),
-        adminCmdContext.getSubRequestCallingLockIds(),
-        ccc);
+        adminCmdContext.getAsyncId(), adminCmdContext.getSubRequestCallingLockIds(), ccc);
   }
 
   protected static ShardRequestTracker requestTracker(

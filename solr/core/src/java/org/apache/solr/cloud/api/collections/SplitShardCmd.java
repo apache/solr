@@ -100,8 +100,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     split(adminCmdContext, message, results);
   }
@@ -338,7 +337,13 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(SHARD_ID_PROP, subSlice);
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
-              new DeleteShardCmd(ccc).call(adminCmdContext.subRequestContext(DELETESHARD, null).withClusterState(clusterState), m, new NamedList<>());
+              new DeleteShardCmd(ccc)
+                  .call(
+                      adminCmdContext
+                          .subRequestContext(DELETESHARD, null)
+                          .withClusterState(clusterState),
+                      m,
+                      new NamedList<>());
             } catch (Exception e) {
               throw new SolrException(
                   SolrException.ErrorCode.SERVER_ERROR,
@@ -417,7 +422,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           }
         }
         new AddReplicaCmd(ccc)
-            .addReplica(adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState), new ZkNodeProps((MapWriter) propMap), results, null);
+            .addReplica(
+                adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState),
+                new ZkNodeProps((MapWriter) propMap),
+                results,
+                null);
       }
 
       {
@@ -767,7 +776,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t = timings.sub("createCoresForReplicas");
       // 11. now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
-        new AddReplicaCmd(ccc).addReplica(adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState), new ZkNodeProps(replica), results, null);
+        new AddReplicaCmd(ccc)
+            .addReplica(
+                adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState),
+                new ZkNodeProps(replica),
+                results,
+                null);
       }
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
@@ -814,7 +828,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
       if (!success) {
         cleanupAfterFailure(
-            adminCmdContext, zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+            adminCmdContext,
+            zkStateReader,
+            collectionName,
+            parentSlice.getName(),
+            subSlices,
+            offlineSlices);
         unlockForSplit(ccc.getSolrCloudManager(), collectionName, parentSlice.getName());
       }
     }
@@ -989,7 +1008,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       props.put(SHARD_ID_PROP, subSlice);
       ZkNodeProps m = new ZkNodeProps(props);
       try {
-        new DeleteShardCmd(ccc).call(adminCmdContext.subRequestContext(DELETESHARD, null).withClusterState(clusterState), m, new NamedList<>());
+        new DeleteShardCmd(ccc)
+            .call(
+                adminCmdContext.subRequestContext(DELETESHARD, null).withClusterState(clusterState),
+                m,
+                new NamedList<>());
       } catch (Exception e) {
         log.warn(
             "Cleanup failed after failed split of {}/{} : (deleting existing sub shard{})",

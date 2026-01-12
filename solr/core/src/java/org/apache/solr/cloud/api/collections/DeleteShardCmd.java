@@ -57,7 +57,8 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results) throws Exception {
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
+      throws Exception {
     String extCollectionName = message.getStr(ZkStateReader.COLLECTION_PROP);
     String sliceId = message.getStr(ZkStateReader.SHARD_ID_PROP);
 
@@ -127,8 +128,7 @@ public class DeleteShardCmd implements CollApiCmds.CollectionApiCommand {
       List<ZkNodeProps> replicas = getReplicasForSlice(collectionName, slice);
       CountDownLatch cleanupLatch = new CountDownLatch(replicas.size());
       for (ZkNodeProps r : replicas) {
-        final ZkNodeProps replica =
-            r.plus(message.getProperties()).plus("parallel", "true");
+        final ZkNodeProps replica = r.plus(message.getProperties()).plus("parallel", "true");
         if (log.isInfoEnabled()) {
           log.info(
               "Deleting replica for collection={} shard={} on node={}",

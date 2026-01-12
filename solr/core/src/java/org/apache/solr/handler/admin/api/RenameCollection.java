@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.TARGET;
@@ -69,10 +68,7 @@ public class RenameCollection extends AdminAPIBase implements RenameCollectionAp
 
     final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response,
-        CollectionParams.CollectionAction.RENAME,
-        remoteMessage,
-        requestBody.async);
+        response, CollectionParams.CollectionAction.RENAME, remoteMessage, requestBody.async);
     return response;
   }
 

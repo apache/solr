@@ -16,10 +16,7 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
@@ -34,14 +31,12 @@ import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -146,7 +141,11 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
     return response;
   }
 
-  private void modifyAliasProperty(SubResponseAccumulatingJerseyResponse response, String alias, String proertyName, Object value)
+  private void modifyAliasProperty(
+      SubResponseAccumulatingJerseyResponse response,
+      String alias,
+      String proertyName,
+      Object value)
       throws Exception {
     Map<String, Object> props = new HashMap<>();
     // value can be null
@@ -159,7 +158,11 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
   /**
    * @param alias alias
    */
-  private void modifyAliasProperties(SubResponseAccumulatingJerseyResponse response, String alias, Map<String, Object> properties, String async)
+  private void modifyAliasProperties(
+      SubResponseAccumulatingJerseyResponse response,
+      String alias,
+      Map<String, Object> properties,
+      String async)
       throws Exception {
     // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
     // simple and one less case for api-callers to check for.
@@ -170,10 +173,10 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.ALIASPROP,
-        new ZkNodeProps(Map.of(
-            NAME, alias,
-            PROPERTIES, properties
-        )),
+        new ZkNodeProps(
+            Map.of(
+                NAME, alias,
+                PROPERTIES, properties)),
         async);
 
     disableResponseCaching();

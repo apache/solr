@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.NodeApi;
@@ -104,7 +102,8 @@ public class DeleteNodeAPITest extends SolrCloudTestCase {
 
     if (log.isInfoEnabled()) {
       log.info(
-          "####### DocCollection after: {}", cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
+          "####### DocCollection after: {}",
+          cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
     }
 
     if (shouldFail) {
@@ -169,11 +168,13 @@ public class DeleteNodeAPITest extends SolrCloudTestCase {
         response.failedSubResponsesByNodeName);
 
     // Wait for the async request to complete
-    CollectionAdminRequest.RequestStatusResponse rsp = waitForAsyncClusterRequest(asyncId, Duration.ofSeconds(5));
+    CollectionAdminRequest.RequestStatusResponse rsp =
+        waitForAsyncClusterRequest(asyncId, Duration.ofSeconds(5));
 
     if (log.isInfoEnabled()) {
       log.info(
-          "####### DocCollection after: {}", cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
+          "####### DocCollection after: {}",
+          cloudClient.getClusterStateProvider().getClusterState().getCollection(coll));
     }
 
     if (shouldFail) {

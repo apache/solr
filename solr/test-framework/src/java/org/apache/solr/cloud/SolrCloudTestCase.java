@@ -420,7 +420,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
   }
 
-  protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(String asyncId, Duration timeout)
+  protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      String asyncId, Duration timeout)
       throws SolrServerException, IOException, InterruptedException {
     CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus(asyncId);

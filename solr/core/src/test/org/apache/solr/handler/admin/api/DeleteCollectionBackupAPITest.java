@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
@@ -120,12 +119,7 @@ public class DeleteCollectionBackupAPITest extends SolrTestCaseJ4 {
   public void testCreateRemoteMessageAllParams() {
     final var remoteMessage =
         DeleteCollectionBackup.createRemoteMessage(
-                "someBackupName",
-                "someBackupId",
-                123,
-                true,
-                "someLocation",
-                "someRepository")
+                "someBackupName", "someBackupId", 123, true, "someLocation", "someRepository")
             .getProperties();
 
     assertEquals(7, remoteMessage.size());
