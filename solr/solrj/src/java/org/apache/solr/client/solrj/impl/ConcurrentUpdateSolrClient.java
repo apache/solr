@@ -1,9 +1,7 @@
 package org.apache.solr.client.solrj.impl;
 
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.eclipse.jetty.client.InputStreamResponseListener;
 import java.io.IOException;
 
 public class ConcurrentUpdateSolrClient extends ConcurrentUpdateBaseSolrClient {
@@ -11,7 +9,7 @@ public class ConcurrentUpdateSolrClient extends ConcurrentUpdateBaseSolrClient {
   private final HttpSolrClientBase client;
 
   @Override
-  protected InputStreamResponseListener doSendUpdateStream(Update update) throws IOException {
+  protected StreamingResponse doSendUpdateStream(Update update) throws IOException {
     UpdateRequest req = update.request();
     String collection = update.collection();
     try {

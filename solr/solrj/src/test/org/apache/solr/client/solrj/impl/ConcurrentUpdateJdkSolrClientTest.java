@@ -72,10 +72,10 @@ public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClien
     errors.append(" " + ex);
   }
 
-  @Override
-  public void onSuccess(Response resp, InputStream respBody) {
-    successCounter.incrementAndGet();
-  }
+    @Override
+    public void onSuccess(Object responseMetadata, InputStream respBody) {
+      successCounter.incrementAndGet();
+    }
 
   public static class Builder extends ConcurrentUpdateSolrClient.Builder {
     protected final AtomicInteger successCounter;

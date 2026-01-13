@@ -20,7 +20,6 @@ package org.apache.solr.client.solrj.jetty;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClientTestBase;
 import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.eclipse.jetty.client.Response;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -93,7 +92,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
     }
 
     @Override
-    public void onSuccess(Response resp, InputStream respBody) {
+    public void onSuccess(Object responseMetadata, InputStream respBody) {
       successCounter.incrementAndGet();
     }
 

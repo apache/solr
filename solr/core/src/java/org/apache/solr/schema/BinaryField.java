@@ -97,6 +97,11 @@ public class BinaryField extends FieldType {
   }
 
   @Override
+  public Object toObject(SchemaField sf, BytesRef term) {
+    return BytesRef.deepCopyOf(term).bytes;
+  }
+
+  @Override
   public IndexableField createField(SchemaField field, Object val) {
     if (val == null) return null;
     if (!field.stored()) {
