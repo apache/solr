@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
@@ -173,6 +174,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           collectionParams,
           ccc.getCoreContainer().getConfigSetService());
 
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, CREATE.toLower());
+      propMap.putAll(message.getProperties());
+      ZkNodeProps m = new ZkNodeProps(propMap);
+
       // Note that in code below there are two main execution paths: Overseer based cluster state
       // updates and distributed cluster state updates (look for isDistributedStateUpdate()
       // conditions).
@@ -195,8 +201,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
 
         // TODO: Consider doing this for all collections, not just the PRS collections.
         ZkWriteCommand command =
-            new ClusterStateMutator(ccc.getSolrCloudManager())
-                .createCollection(clusterState, message);
+            new ClusterStateMutator(ccc.getSolrCloudManager()).createCollection(clusterState, m);
         byte[] data = Utils.toJSON(Collections.singletonMap(collectionName, command.collection));
         ccc.getZkStateReader().getZkClient().create(collectionPath, data, CreateMode.PERSISTENT);
         clusterState = clusterState.copyWith(collectionName, command.collection);
@@ -209,11 +214,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           ccc.getDistributedClusterStateUpdater()
               .doSingleStateUpdate(
                   DistributedClusterStateUpdater.MutatingCommand.ClusterCreateCollection,
-                  message,
+                  m,
                   ccc.getSolrCloudManager(),
                   ccc.getZkStateReader());
         } else {
-          ccc.offerStateUpdate(Utils.toJSON(message));
+          ccc.offerStateUpdate(m);
         }
 
         // wait for a while until we see the collection
@@ -342,7 +347,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
             scr.record(DistributedClusterStateUpdater.MutatingCommand.SliceAddReplica, props);
           } else {
-            ccc.offerStateUpdate(Utils.toJSON(props));
+            ccc.offerStateUpdate(props);
           }
         }
 

@@ -446,6 +446,10 @@ public class CollApiCmds {
                   collPath, Utils.toJSON(Map.of(ZkStateReader.CONFIGNAME_PROP, configName)), -1);
         }
       }
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, MODIFYCOLLECTION.toLower());
+      propMap.putAll(message.getProperties());
+      ZkNodeProps m = new ZkNodeProps(propMap);
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // Apply the state update right away. The wait will still be useful for the change to be
@@ -453,11 +457,11 @@ public class CollApiCmds {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection,
-                message,
+                m,
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(message);
+        ccc.offerStateUpdate(m);
       }
 
       try {

@@ -19,10 +19,13 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
+import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -76,6 +79,11 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               + "), there must be at least one leader-eligible replica");
     }
 
+    Map<String, Object> propMap = new HashMap<>();
+    propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());
+    propMap.putAll(message.getProperties());
+    ZkNodeProps m = new ZkNodeProps(propMap);
+
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and
       // defines the QUEUE_OPERATION to be CollectionParams.CollectionAction.CREATESHARD. Likely a
@@ -84,13 +92,13 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       ccc.getDistributedClusterStateUpdater()
           .doSingleStateUpdate(
               DistributedClusterStateUpdater.MutatingCommand.CollectionCreateShard,
-              message,
+              m,
               ccc.getSolrCloudManager(),
               ccc.getZkStateReader());
     } else {
       // message contains extCollectionName that might be an alias. Unclear (to me) how this works
       // in that case.
-      ccc.offerStateUpdate(message);
+      ccc.offerStateUpdate(m);
     }
 
     // wait for a while until we see the shard and update the local view of the cluster state
@@ -150,7 +158,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
       new DeleteShardCmd(ccc)
           .call(
               adminCmdContext
-                  .subRequestContext(CollectionParams.CollectionAction.DELETE, async)
+                  .subRequestContext(CollectionParams.CollectionAction.DELETESHARD, async)
                   .withClusterState(clusterState),
               new ZkNodeProps(COLLECTION_PROP, collectionName, SHARD_ID_PROP, sliceName),
               results);
