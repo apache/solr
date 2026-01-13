@@ -34,7 +34,7 @@ import org.junit.Test;
 /** Unit tests for {@link CreateCollectionBackup} */
 public class V2CollectionBackupApiTest extends MockAPITest {
 
-  private CreateCollectionBackup createCollectionBackup;
+  private CreateCollectionBackup api;
   private BackupRepository mockBackupRepository;
 
   @Override
@@ -47,8 +47,7 @@ public class V2CollectionBackupApiTest extends MockAPITest {
     when(mockCoreContainer.newBackupRepository("someRepoName")).thenReturn(mockBackupRepository);
     when(mockCoreContainer.newBackupRepository(null)).thenReturn(mockBackupRepository);
 
-    createCollectionBackup =
-        new CreateCollectionBackup(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new CreateCollectionBackup(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -69,8 +68,7 @@ public class V2CollectionBackupApiTest extends MockAPITest {
         .thenReturn(requestBody.location);
     when(mockBackupRepository.exists(any())).thenReturn(true);
 
-    createCollectionBackup.createCollectionBackup(
-        "someCollectionName", "someBackupName", requestBody);
+    api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -102,8 +100,7 @@ public class V2CollectionBackupApiTest extends MockAPITest {
         .thenReturn(requestBody.location);
     when(mockBackupRepository.exists(any())).thenReturn(true);
 
-    createCollectionBackup.createCollectionBackup(
-        "someCollectionName", "someBackupName", requestBody);
+    api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

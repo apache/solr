@@ -105,10 +105,12 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
     // Populate any 'null' creation parameters that support COLLECTIONPROP defaults.
     populateDefaultsIfNecessary(coreContainer, requestBody);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     final SolrResponse remoteResponse =
         submitRemoteMessageAndHandleResponse(
-            response, CollectionParams.CollectionAction.CREATE, remoteMessage, requestBody.async);
+            response,
+            CollectionParams.CollectionAction.CREATE,
+            createRemoteMessage(requestBody),
+            requestBody.async);
 
     // Even if Overseer does wait for the collection to be created, it sees a different cluster
     // state than this node, so this wait is required to make sure the local node Zookeeper watches

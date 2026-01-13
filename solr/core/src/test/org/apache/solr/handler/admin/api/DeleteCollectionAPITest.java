@@ -35,7 +35,7 @@ import org.mockito.Mockito;
 /** Unit tests for {@link DeleteCollection} */
 public class DeleteCollectionAPITest extends MockAPITest {
 
-  private DeleteCollection deleteCollection;
+  private DeleteCollection api;
 
   @Override
   @Before
@@ -43,14 +43,14 @@ public class DeleteCollectionAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    deleteCollection = new DeleteCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new DeleteCollection(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testConstructsValidOverseerMessage() throws Exception {
     // Only required properties provided
     {
-      deleteCollection.deleteCollection("someCollName", null, null);
+      api.deleteCollection("someCollName", null, null);
       verify(mockCommandRunner)
           .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -67,7 +67,7 @@ public class DeleteCollectionAPITest extends MockAPITest {
     // Optional property 'followAliases' also provided
     {
       Mockito.clearInvocations(mockCommandRunner);
-      deleteCollection.deleteCollection("someCollName", true, "test");
+      api.deleteCollection("someCollName", true, "test");
       verify(mockCommandRunner)
           .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

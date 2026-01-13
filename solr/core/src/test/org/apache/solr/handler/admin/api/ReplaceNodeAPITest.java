@@ -32,7 +32,7 @@ import org.junit.Test;
 /** Unit tests for {@link ReplaceNode} */
 public class ReplaceNodeAPITest extends MockAPITest {
 
-  private ReplaceNode replaceNodeApi;
+  private ReplaceNode api;
 
   @Override
   @Before
@@ -40,13 +40,13 @@ public class ReplaceNodeAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    replaceNodeApi = new ReplaceNode(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new ReplaceNode(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testCreatesValidOverseerMessage() throws Exception {
     final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", false, "async");
-    replaceNodeApi.replaceNode("demoSourceNode", requestBody);
+    api.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -63,7 +63,7 @@ public class ReplaceNodeAPITest extends MockAPITest {
 
   @Test
   public void testRequestBodyCanBeOmittedAltogether() throws Exception {
-    replaceNodeApi.replaceNode("demoSourceNode", null);
+    api.replaceNode("demoSourceNode", null);
     verify(mockCommandRunner).runCollectionCommand(any(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
@@ -75,7 +75,7 @@ public class ReplaceNodeAPITest extends MockAPITest {
   @Test
   public void testOptionalValuesNotAddedToRemoteMessageIfNotProvided() throws Exception {
     final var requestBody = new ReplaceNodeRequestBody("demoTargetNode", null, null);
-    replaceNodeApi.replaceNode("demoSourceNode", requestBody);
+    api.replaceNode("demoSourceNode", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

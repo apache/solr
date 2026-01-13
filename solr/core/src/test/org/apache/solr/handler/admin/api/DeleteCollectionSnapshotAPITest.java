@@ -35,7 +35,7 @@ import org.mockito.Mockito;
 
 public class DeleteCollectionSnapshotAPITest extends MockAPITest {
 
-  private DeleteCollectionSnapshot deleteCollectionSnapshot;
+  private DeleteCollectionSnapshot api;
 
   @Override
   @Before
@@ -43,8 +43,7 @@ public class DeleteCollectionSnapshotAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    deleteCollectionSnapshot =
-        new DeleteCollectionSnapshot(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new DeleteCollectionSnapshot(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -52,7 +51,7 @@ public class DeleteCollectionSnapshotAPITest extends MockAPITest {
     when(mockClusterState.hasCollection("myCollName")).thenReturn(true);
     when(mockSolrZkClient.exists(anyString())).thenReturn(false);
 
-    deleteCollectionSnapshot.deleteCollectionSnapshot("myCollName", "mySnapshotName", false, null);
+    api.deleteCollectionSnapshot("myCollName", "mySnapshotName", false, null);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
     final ZkNodeProps messageOne = messageCapturer.getValue();
@@ -70,8 +69,7 @@ public class DeleteCollectionSnapshotAPITest extends MockAPITest {
     assertNull(context.getAsyncId());
 
     Mockito.clearInvocations(mockCommandRunner);
-    deleteCollectionSnapshot.deleteCollectionSnapshot(
-        "myCollName", "mySnapshotName", true, "testId");
+    api.deleteCollectionSnapshot("myCollName", "mySnapshotName", true, "testId");
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
     final ZkNodeProps messageTwo = messageCapturer.getValue();

@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionParams.NODES;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
@@ -66,7 +65,6 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
       insertIfNotNull(remoteMessage, NODES, requestBody.nodes);
       insertIfNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
     }
-    remoteMessage.put(QUEUE_OPERATION, CollectionAction.BALANCE_REPLICAS.toLower());
 
     return new ZkNodeProps(remoteMessage);
   }

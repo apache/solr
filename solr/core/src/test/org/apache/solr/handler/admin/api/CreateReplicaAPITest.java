@@ -53,7 +53,7 @@ import org.junit.Test;
 /** Unit tests for {@link CreateReplica} */
 public class CreateReplicaAPITest extends MockAPITest {
 
-  private CreateReplica createReplica;
+  private CreateReplica api;
 
   @Override
   @Before
@@ -61,15 +61,14 @@ public class CreateReplicaAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    createReplica = new CreateReplica(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new CreateReplica(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> createReplica.createReplica("someCollName", "someShardName", null));
+            SolrException.class, () -> api.createReplica("someCollName", "someShardName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Required request-body is missing", thrown.getMessage());
@@ -79,8 +78,7 @@ public class CreateReplicaAPITest extends MockAPITest {
   public void testReportsErrorIfCollectionNameMissing() {
     final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
-        expectThrows(
-            SolrException.class, () -> createReplica.createReplica(null, "shardName", requestBody));
+        expectThrows(SolrException.class, () -> api.createReplica(null, "shardName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -91,8 +89,7 @@ public class CreateReplicaAPITest extends MockAPITest {
     final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> createReplica.createReplica("someCollectionName", null, requestBody));
+            SolrException.class, () -> api.createReplica("someCollectionName", null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: shard", thrown.getMessage());
@@ -119,7 +116,7 @@ public class CreateReplicaAPITest extends MockAPITest {
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
-    createReplica.createReplica("someCollectionName", "someShardName", requestBody);
+    api.createReplica("someCollectionName", "someShardName", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

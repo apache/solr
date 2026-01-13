@@ -36,7 +36,7 @@ public class AddReplicaPropertyAPITest extends MockAPITest {
   private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
       new AddReplicaPropertyRequestBody("anyValue");
 
-  private AddReplicaProperty addReplicaPropApi;
+  private AddReplicaProperty api;
 
   @Override
   @Before
@@ -44,7 +44,7 @@ public class AddReplicaPropertyAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    addReplicaPropApi = new AddReplicaProperty(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new AddReplicaProperty(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -55,7 +55,7 @@ public class AddReplicaPropertyAPITest extends MockAPITest {
         expectThrows(
             SolrException.class,
             () -> {
-              addReplicaPropApi.addReplicaProperty(
+              api.addReplicaProperty(
                   "someColl", "someShard", "someReplica", "somePropName", ANY_REQ_BODY);
             });
     assertEquals(400, e.code());
@@ -68,8 +68,7 @@ public class AddReplicaPropertyAPITest extends MockAPITest {
   public void testCreatesValidOverseerMessage() throws Exception {
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    addReplicaPropApi.addReplicaProperty(
-        "someColl", "someShard", "someReplica", "somePropName", ANY_REQ_BODY);
+    api.addReplicaProperty("someColl", "someShard", "someReplica", "somePropName", ANY_REQ_BODY);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

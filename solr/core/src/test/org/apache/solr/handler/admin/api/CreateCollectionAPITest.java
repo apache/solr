@@ -53,7 +53,7 @@ import org.junit.Test;
 /** Unit tests for {@link CreateCollection}. */
 public class CreateCollectionAPITest extends MockAPITest {
 
-  private CreateCollection createCollectionApi;
+  private CreateCollection api;
 
   @Override
   @Before
@@ -61,7 +61,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    createCollectionApi = new CreateCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new CreateCollection(mockCoreContainer, mockQueryRequest, queryResponse);
     when(mockSolrZkClient.getData(eq("properties.json"), any(), any()))
         .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
   }
@@ -69,12 +69,7 @@ public class CreateCollectionAPITest extends MockAPITest {
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateCollection(null, null, null);
-              api.createCollection(null);
-            });
+        expectThrows(SolrException.class, () -> api.createCollection(null));
 
     assertEquals(400, thrown.code());
     assertEquals("Request body is missing but required", thrown.getMessage());
@@ -91,11 +86,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.nrtReplicas = 321;
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals(
@@ -110,11 +101,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.config = "someConfig";
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertTrue(
@@ -132,11 +119,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.shardNames = List.of("good-name", "bad;name");
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertTrue(
@@ -165,7 +148,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.shuffleNodes = false;
 
-    createCollectionApi.createCollection(requestBody);
+    api.createCollection(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -202,7 +185,7 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.createReplicas = false;
     requestBody.async = "someAsyncId";
 
-    createCollectionApi.createCollection(requestBody);
+    api.createCollection(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

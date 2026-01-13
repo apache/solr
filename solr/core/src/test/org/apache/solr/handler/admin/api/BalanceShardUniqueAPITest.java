@@ -37,7 +37,7 @@ import org.junit.Test;
 /** Unit tests for {@link BalanceShardUnique} */
 public class BalanceShardUniqueAPITest extends MockAPITest {
 
-  private BalanceShardUnique balanceShardUnique;
+  private BalanceShardUnique api;
 
   @Override
   @Before
@@ -45,15 +45,13 @@ public class BalanceShardUniqueAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    balanceShardUnique = new BalanceShardUnique(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new BalanceShardUnique(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> balanceShardUnique.balanceShardUnique("someCollectionName", null));
+        expectThrows(SolrException.class, () -> api.balanceShardUnique("someCollectionName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required request body", thrown.getMessage());
@@ -64,8 +62,7 @@ public class BalanceShardUniqueAPITest extends MockAPITest {
     final var requestBody = new BalanceShardUniqueRequestBody();
     requestBody.property = "preferredLeader";
     final SolrException thrown =
-        expectThrows(
-            SolrException.class, () -> balanceShardUnique.balanceShardUnique(null, requestBody));
+        expectThrows(SolrException.class, () -> api.balanceShardUnique(null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -77,8 +74,7 @@ public class BalanceShardUniqueAPITest extends MockAPITest {
     final var requestBody = new BalanceShardUniqueRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> balanceShardUnique.balanceShardUnique("someCollName", requestBody));
+            SolrException.class, () -> api.balanceShardUnique("someCollName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: property", thrown.getMessage());
@@ -92,7 +88,7 @@ public class BalanceShardUniqueAPITest extends MockAPITest {
     requestBody.onlyActiveNodes = Boolean.TRUE;
     requestBody.async = "someAsyncId";
 
-    balanceShardUnique.balanceShardUnique("someCollName", requestBody);
+    api.balanceShardUnique("someCollName", requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 

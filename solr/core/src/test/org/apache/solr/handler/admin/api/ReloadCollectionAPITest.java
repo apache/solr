@@ -17,42 +17,61 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
+import java.util.Map;
 import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReloadCollectionAPI} */
-public class ReloadCollectionAPITest extends SolrTestCaseJ4 {
+public class ReloadCollectionAPITest extends MockAPITest {
+
+  private ReloadCollectionAPI api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new ReloadCollectionAPI(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new ReloadCollectionAPI(null, null, null);
-              api.reloadCollection(null, new ReloadCollectionRequestBody());
-            });
+            () -> api.reloadCollection(null, new ReloadCollectionRequestBody()));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
   }
 
-  // TODO message creation
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new ReloadCollectionRequestBody();
     requestBody.async = "someAsyncId";
-    final var remoteMessage =
-        ReloadCollectionAPI.createRemoteMessage("someCollName", requestBody).getProperties();
 
-    assertEquals(3, remoteMessage.size());
-    assertEquals("reload", remoteMessage.get(QUEUE_OPERATION));
+    api.reloadCollection("someCollName", requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> remoteMessage = createdMessage.getProperties();
+    assertEquals(1, remoteMessage.size());
     assertEquals("someCollName", remoteMessage.get(NAME));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
+
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.RELOAD, context.getAction());
+    assertEquals("someAsyncId", context.getAsyncId());
   }
 }

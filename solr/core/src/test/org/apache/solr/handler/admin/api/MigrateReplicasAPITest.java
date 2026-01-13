@@ -34,7 +34,7 @@ import org.junit.Test;
 /** Unit tests for {@link ReplaceNode} */
 public class MigrateReplicasAPITest extends MockAPITest {
 
-  private MigrateReplicas migrateReplicasAPI;
+  private MigrateReplicas api;
 
   @Override
   @Before
@@ -42,7 +42,7 @@ public class MigrateReplicasAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    migrateReplicasAPI = new MigrateReplicas(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new MigrateReplicas(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -50,7 +50,7 @@ public class MigrateReplicasAPITest extends MockAPITest {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
-    migrateReplicasAPI.migrateReplicas(requestBody);
+    api.migrateReplicas(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -69,7 +69,7 @@ public class MigrateReplicasAPITest extends MockAPITest {
   public void testNoTargetNodes() throws Exception {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
-    migrateReplicasAPI.migrateReplicas(requestBody);
+    api.migrateReplicas(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -87,9 +87,9 @@ public class MigrateReplicasAPITest extends MockAPITest {
     MigrateReplicasRequestBody requestBody1 =
         new MigrateReplicasRequestBody(
             Collections.emptySet(), Set.of("demoTargetNode"), null, null);
-    assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody1));
+    assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody1));
     MigrateReplicasRequestBody requestBody2 =
         new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);
-    assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody2));
+    assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody2));
   }
 }

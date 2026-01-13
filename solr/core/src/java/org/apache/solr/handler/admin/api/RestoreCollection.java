@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
@@ -110,6 +109,7 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
+      createRequestBody.name = collectionName;
       CreateCollection.populateDefaultsIfNecessary(coreContainer, createRequestBody);
       CreateCollection.validateRequestBody(createRequestBody);
       if (Boolean.FALSE.equals(createRequestBody.createReplicas)) {
@@ -128,6 +128,7 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
   public ZkNodeProps createRemoteMessage(
       String backupName, RestoreCollectionRequestBody requestBody) {
     final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
+    remoteMessage.remove(ASYNC);
 
     // If the RESTORE is setup to create a new collection, copy those parameters first
     final var createReqBody = requestBody.createCollectionParams;
@@ -144,7 +145,6 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     }
 
     // Copy restore-specific parameters
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RESTORE.toLower());
     remoteMessage.put(NAME, backupName);
     return new ZkNodeProps(remoteMessage);
   }

@@ -36,7 +36,7 @@ import org.mockito.Mockito;
 
 public class CreateCollectionSnapshotAPITest extends MockAPITest {
 
-  private CreateCollectionSnapshot createCollectionSnapshot;
+  private CreateCollectionSnapshot api;
 
   @Override
   @Before
@@ -44,8 +44,7 @@ public class CreateCollectionSnapshotAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    createCollectionSnapshot =
-        new CreateCollectionSnapshot(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new CreateCollectionSnapshot(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -55,7 +54,7 @@ public class CreateCollectionSnapshotAPITest extends MockAPITest {
 
     CreateCollectionSnapshotRequestBody body = new CreateCollectionSnapshotRequestBody();
     body.followAliases = false;
-    createCollectionSnapshot.createCollectionSnapshot("myCollName", "mySnapshotName", body);
+    api.createCollectionSnapshot("myCollName", "mySnapshotName", body);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
     final ZkNodeProps messageOne = messageCapturer.getValue();
@@ -75,7 +74,7 @@ public class CreateCollectionSnapshotAPITest extends MockAPITest {
     body.followAliases = true;
     body.async = "testId";
     Mockito.clearInvocations(mockCommandRunner);
-    createCollectionSnapshot.createCollectionSnapshot("myCollName", "mySnapshotName", body);
+    api.createCollectionSnapshot("myCollName", "mySnapshotName", body);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
     final ZkNodeProps messageTwo = messageCapturer.getValue();

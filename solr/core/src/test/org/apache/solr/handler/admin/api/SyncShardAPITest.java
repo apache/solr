@@ -17,21 +17,30 @@
 
 package org.apache.solr.handler.admin.api;
 
-import org.apache.solr.SolrTestCaseJ4;
+import static org.mockito.Mockito.when;
+
 import org.apache.solr.common.SolrException;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link SyncShard} */
-public class SyncShardAPITest extends SolrTestCaseJ4 {
+public class SyncShardAPITest extends MockAPITest {
+
+  private SyncShard api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new SyncShard(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfCollectionNameMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new SyncShard(null, null, null);
-              api.syncShard(null, "someShard");
-            });
+        expectThrows(SolrException.class, () -> api.syncShard(null, "someShard"));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -40,12 +49,7 @@ public class SyncShardAPITest extends SolrTestCaseJ4 {
   @Test
   public void testReportsErrorIfShardNameMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new SyncShard(null, null, null);
-              api.syncShard("someCollection", null);
-            });
+        expectThrows(SolrException.class, () -> api.syncShard("someCollection", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: shard", thrown.getMessage());

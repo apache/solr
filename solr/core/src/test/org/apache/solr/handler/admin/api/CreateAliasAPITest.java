@@ -41,7 +41,7 @@ import org.junit.Test;
 /** Unit tests for {@link CreateAlias} */
 public class CreateAliasAPITest extends MockAPITest {
 
-  private CreateAlias createAliasApi;
+  private CreateAlias api;
 
   @Override
   @Before
@@ -49,18 +49,12 @@ public class CreateAliasAPITest extends MockAPITest {
     super.setUp();
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
-    createAliasApi = new CreateAlias(mockCoreContainer, mockQueryRequest, queryResponse);
+    api = new CreateAlias(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
-    final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateAlias(null, null, null);
-              api.createAlias(null);
-            });
+    final SolrException thrown = expectThrows(SolrException.class, () -> api.createAlias(null));
 
     assertEquals(400, thrown.code());
     assertEquals("Request body is required but missing", thrown.getMessage());
@@ -224,7 +218,7 @@ public class CreateAliasAPITest extends MockAPITest {
     requestBody.collections = List.of("validColl1", "validColl2");
     requestBody.async = "someAsyncId";
 
-    createAliasApi.createAlias(requestBody);
+    api.createAlias(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -251,7 +245,7 @@ public class CreateAliasAPITest extends MockAPITest {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    createAliasApi.createAlias(requestBody);
+    api.createAlias(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -284,7 +278,7 @@ public class CreateAliasAPITest extends MockAPITest {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    createAliasApi.createAlias(requestBody);
+    api.createAlias(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
@@ -322,7 +316,7 @@ public class CreateAliasAPITest extends MockAPITest {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    createAliasApi.createAlias(requestBody);
+    api.createAlias(requestBody);
     verify(mockCommandRunner)
         .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
