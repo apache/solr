@@ -33,6 +33,7 @@ import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiBag.ReqHandlerToApi;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.params.CommonParams;
@@ -81,12 +82,12 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
     String path = (String) req.getContext().get("path");
     String key = path.substring(path.lastIndexOf('/') + 1);
-    if ("GET".equals(httpMethod)) {
+    if (SolrRequest.METHOD.GET.equals(httpMethod)) {
       getConf(rsp, key);
-    } else if ("POST".equals(httpMethod)) {
+    } else if (SolrRequest.METHOD.POST.equals(httpMethod)) {
       Object plugin = getPlugin(key);
       doEdit(req, rsp, path, key, plugin);
     }

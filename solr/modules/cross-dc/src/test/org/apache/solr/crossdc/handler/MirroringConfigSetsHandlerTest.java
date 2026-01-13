@@ -91,7 +91,7 @@ public class MirroringConfigSetsHandlerTest extends SolrTestCaseJ4 {
           List.of(new ContentStreamBase.ByteArrayStream(content, configSetName, "application/zip"));
       req.setContentStreams(streams);
     }
-    req.getContext().put("httpMethod", method);
+    req.getContext().put("httpMethod", SolrRequest.METHOD.fromString(method));
     return req;
   }
 

@@ -53,6 +53,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -131,24 +132,30 @@ public class SolrConfigHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    Command command = new Command(req, rsp, httpMethod);
-    if ("POST".equals(httpMethod)) {
-      if (!configEditingEnabled || isImmutableConfigSet) {
-        final String reason =
-            !configEditingEnabled
-                ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
-                : "because ConfigSet is marked immutable";
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
+    Command command = new Command(req, rsp, httpMethod.name());
+    switch (httpMethod) {
+      case SolrRequest.METHOD.POST:
+        if (!configEditingEnabled || isImmutableConfigSet) {
+          final String reason =
+              !configEditingEnabled
+                  ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
+                  : "because ConfigSet is marked immutable";
+          throw new SolrException(
+              SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
+        }
+        try {
+          command.handlePOST();
+        } finally {
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+        }
+        break;
+      case SolrRequest.METHOD.GET:
+        command.handleGET();
+        break;
+      default:
         throw new SolrException(
-            SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
-      }
-      try {
-        command.handlePOST();
-      } finally {
-        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-      }
-    } else {
-      command.handleGET();
+            SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + httpMethod);
     }
   }
 
