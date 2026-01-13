@@ -16,66 +16,33 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
-import org.apache.solr.cloud.OverseerSolrResponse;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.ArgumentCaptor;
 
 /** Unit tests for {@link ReplaceNode} */
-public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
+public class MigrateReplicasAPITest extends MockAPITest {
 
-  private CoreContainer mockCoreContainer;
-  private ZkController mockZkController;
-  private SolrQueryRequest mockQueryRequest;
-  private SolrQueryResponse queryResponse;
-  private MigrateReplicas migrateReplicasAPI;
-  private DistributedCollectionConfigSetCommandRunner mockCommandRunner;
-  private ArgumentCaptor<ZkNodeProps> messageCapturer;
-
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
-  }
+  private MigrateReplicas api;
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
-
-    mockCoreContainer = mock(CoreContainer.class);
-    mockZkController = mock(ZkController.class);
-    mockCommandRunner = mock(DistributedCollectionConfigSetCommandRunner.class);
-    when(mockCoreContainer.getZkController()).thenReturn(mockZkController);
-    when(mockZkController.getDistributedCommandRunner()).thenReturn(Optional.of(mockCommandRunner));
-    when(mockCommandRunner.runCollectionCommand(any(), any(), anyLong()))
-        .thenReturn(new OverseerSolrResponse(new NamedList<>()));
-    mockQueryRequest = mock(SolrQueryRequest.class);
-    queryResponse = new SolrQueryResponse();
-    migrateReplicasAPI = new MigrateReplicas(mockCoreContainer, mockQueryRequest, queryResponse);
-    messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
-
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new MigrateReplicas(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
@@ -83,31 +50,36 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
-    migrateReplicasAPI.migrateReplicas(requestBody);
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+    api.migrateReplicas(requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
+    assertEquals(3, createdMessageProps.size());
     assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
     assertEquals(Set.of("demoTargetNode"), createdMessageProps.get("targetNodes"));
     assertEquals(false, createdMessageProps.get("waitForFinalState"));
-    assertEquals("async", createdMessageProps.get("async"));
-    assertEquals("migrate_replicas", createdMessageProps.get("operation"));
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.MIGRATE_REPLICAS, context.getAction());
+    assertEquals("async", context.getAsyncId());
   }
 
   @Test
   public void testNoTargetNodes() throws Exception {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
-    migrateReplicasAPI.migrateReplicas(requestBody);
-    verify(mockCommandRunner).runCollectionCommand(messageCapturer.capture(), any(), anyLong());
+    api.migrateReplicas(requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
     final ZkNodeProps createdMessage = messageCapturer.getValue();
     final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(2, createdMessageProps.size());
+    assertEquals(1, createdMessageProps.size());
     assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
-    assertEquals("migrate_replicas", createdMessageProps.get("operation"));
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.MIGRATE_REPLICAS, context.getAction());
+    assertNull("There should be no asyncId", context.getAsyncId());
   }
 
   @Test
@@ -115,9 +87,9 @@ public class MigrateReplicasAPITest extends SolrTestCaseJ4 {
     MigrateReplicasRequestBody requestBody1 =
         new MigrateReplicasRequestBody(
             Collections.emptySet(), Set.of("demoTargetNode"), null, null);
-    assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody1));
+    assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody1));
     MigrateReplicasRequestBody requestBody2 =
         new MigrateReplicasRequestBody(null, Set.of("demoTargetNode"), null, null);
-    assertThrows(SolrException.class, () -> migrateReplicasAPI.migrateReplicas(requestBody2));
+    assertThrows(SolrException.class, () -> api.migrateReplicas(requestBody2));
   }
 }

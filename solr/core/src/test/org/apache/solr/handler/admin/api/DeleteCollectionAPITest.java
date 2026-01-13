@@ -17,44 +17,69 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionParams.NAME;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 /** Unit tests for {@link DeleteCollection} */
-public class DeleteCollectionAPITest extends SolrTestCaseJ4 {
+public class DeleteCollectionAPITest extends MockAPITest {
+
+  private DeleteCollection api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new DeleteCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
   @Test
-  public void testConstructsValidOverseerMessage() {
+  public void testConstructsValidOverseerMessage() throws Exception {
     // Only required properties provided
     {
-      final ZkNodeProps message = DeleteCollection.createRemoteMessage("someCollName", null, null);
+      api.deleteCollection("someCollName", null, null);
+      verify(mockCommandRunner)
+          .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+      final ZkNodeProps message = messageCapturer.getValue();
       final Map<String, Object> rawMessage = message.getProperties();
-      assertEquals(2, rawMessage.size());
-      assertThat(rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME));
-      assertEquals("delete", rawMessage.get(QUEUE_OPERATION));
-      assertEquals("someCollName", rawMessage.get(NAME));
+      assertEquals(1, rawMessage.size());
+      assertThat(rawMessage, hasEntry(NAME, "someCollName"));
+
+      AdminCmdContext context = contextCapturer.getValue();
+      assertEquals(CollectionParams.CollectionAction.DELETE, context.getAction());
+      assertNull(context.getAsyncId());
     }
 
-    // Optional properties ('followAliases' and 'async') also provided
+    // Optional property 'followAliases' also provided
     {
-      final ZkNodeProps message =
-          DeleteCollection.createRemoteMessage("someCollName", Boolean.TRUE, "someAsyncId");
+      Mockito.clearInvocations(mockCommandRunner);
+      api.deleteCollection("someCollName", true, "test");
+      verify(mockCommandRunner)
+          .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+      final ZkNodeProps message = messageCapturer.getValue();
       final Map<String, Object> rawMessage = message.getProperties();
-      assertEquals(4, rawMessage.size());
-      assertThat(
-          rawMessage.keySet(), containsInAnyOrder(QUEUE_OPERATION, NAME, ASYNC, FOLLOW_ALIASES));
-      assertEquals("delete", rawMessage.get(QUEUE_OPERATION));
-      assertEquals("someCollName", rawMessage.get(NAME));
-      assertEquals(Boolean.TRUE, rawMessage.get(FOLLOW_ALIASES));
-      assertEquals("someAsyncId", rawMessage.get(ASYNC));
+      assertEquals(2, rawMessage.size());
+      assertThat(rawMessage, hasEntry(NAME, "someCollName"));
+      assertThat(rawMessage, hasEntry(FOLLOW_ALIASES, Boolean.TRUE));
+
+      AdminCmdContext context = contextCapturer.getValue();
+      assertEquals(CollectionParams.CollectionAction.DELETE, context.getAction());
+      assertEquals("test", context.getAsyncId());
     }
   }
 }

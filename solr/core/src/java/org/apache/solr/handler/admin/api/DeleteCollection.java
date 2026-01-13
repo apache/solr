@@ -16,11 +16,8 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -28,11 +25,9 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.DeleteCollectionApi;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -57,42 +52,22 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
   @PermissionName(COLL_EDIT_PERM)
   public SubResponseAccumulatingJerseyResponse deleteCollection(
       String collectionName, Boolean followAliases, String asyncId) throws Exception {
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases, asyncId);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.DELETE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (asyncId != null) {
-      response.requestId = asyncId;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases);
+    submitRemoteMessageAndHandleResponse(
+        response, CollectionParams.CollectionAction.DELETE, remoteMessage, asyncId);
 
     return response;
   }
 
-  public static ZkNodeProps createRemoteMessage(
-      String collectionName, Boolean followAliases, String asyncId) {
+  public static ZkNodeProps createRemoteMessage(String collectionName, Boolean followAliases) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower());
     remoteMessage.put(NAME, collectionName);
     if (followAliases != null) remoteMessage.put(FOLLOW_ALIASES, followAliases);
-    if (asyncId != null) remoteMessage.put(ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

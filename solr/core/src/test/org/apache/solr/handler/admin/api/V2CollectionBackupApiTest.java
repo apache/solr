@@ -16,18 +16,43 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionAdminParams.COPY_FILES_STRATEGY;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.backup.repository.BackupRepository;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollectionBackup} */
-public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
+public class V2CollectionBackupApiTest extends MockAPITest {
+
+  private CreateCollectionBackup api;
+  private BackupRepository mockBackupRepository;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    mockBackupRepository = mock(BackupRepository.class);
+    when(mockCoreContainer.newBackupRepository("someRepoName")).thenReturn(mockBackupRepository);
+    when(mockCoreContainer.newBackupRepository(null)).thenReturn(mockBackupRepository);
+
+    api = new CreateCollectionBackup(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
-  public void testCreateRemoteMessageWithAllProperties() {
+  public void testCreateRemoteMessageWithAllProperties() throws Exception {
+
     final var requestBody = new CreateCollectionBackupRequestBody();
     requestBody.location = "/some/location";
     requestBody.repository = "someRepoName";
@@ -38,12 +63,18 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     requestBody.maxNumBackupPoints = 123;
     requestBody.async = "someId";
 
-    var message =
-        CreateCollectionBackup.createRemoteMessage(
-            "someCollectionName", "someBackupName", requestBody);
-    var messageProps = message.getProperties();
+    when(mockClusterState.hasCollection("someCollectionName")).thenReturn(true);
+    when(mockBackupRepository.getBackupLocation(requestBody.location))
+        .thenReturn(requestBody.location);
+    when(mockBackupRepository.exists(any())).thenReturn(true);
 
-    assertEquals(11, messageProps.size());
+    api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+    var message = messageCapturer.getValue();
+    var messageProps = message.getProperties();
+    assertEquals(messageProps.toString(), 9, messageProps.size());
     assertEquals("someCollectionName", messageProps.get("collection"));
     assertEquals("/some/location", messageProps.get("location"));
     assertEquals("someRepoName", messageProps.get("repository"));
@@ -52,30 +83,45 @@ public class V2CollectionBackupApiTest extends SolrTestCaseJ4 {
     assertEquals("someSnapshotName", messageProps.get("commitName"));
     assertEquals(true, messageProps.get("incremental"));
     assertEquals(123, messageProps.get("maxNumBackupPoints"));
-    assertEquals("someId", messageProps.get("async"));
-    assertEquals("backup", messageProps.get(QUEUE_OPERATION));
     assertEquals("someBackupName", messageProps.get("name"));
+
+    AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.BACKUP, context.getAction());
+    assertEquals("someId", context.getAsyncId());
   }
 
   @Test
-  public void testCreateRemoteMessageOmitsNullValues() {
+  public void testCreateRemoteMessageOmitsNullValues() throws Exception {
     final var requestBody = new CreateCollectionBackupRequestBody();
     requestBody.location = "/some/location";
 
-    var message =
-        CreateCollectionBackup.createRemoteMessage(
-            "someCollectionName", "someBackupName", requestBody);
-    var messageProps = message.getProperties();
+    when(mockClusterState.hasCollection("someCollectionName")).thenReturn(true);
+    when(mockBackupRepository.getBackupLocation(requestBody.location))
+        .thenReturn(requestBody.location);
+    when(mockBackupRepository.exists(any())).thenReturn(true);
 
-    assertEquals(4, messageProps.size());
+    api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+    var message = messageCapturer.getValue();
+    var messageProps = message.getProperties();
+    assertEquals(5, messageProps.size());
     assertEquals("someCollectionName", messageProps.get("collection"));
     assertEquals("/some/location", messageProps.get("location"));
-    assertEquals("backup", messageProps.get(QUEUE_OPERATION));
     assertEquals("someBackupName", messageProps.get("name"));
+    assertEquals(true, messageProps.get("incremental"));
+    assertEquals("copy-files", messageProps.get("indexBackup"));
+
+    AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.BACKUP, context.getAction());
+    assertNull(context.getAsyncId());
   }
 
   @Test
   public void testCanCreateV2RequestBodyFromV1Params() {
+    when(mockClusterState.hasCollection("demoSourceNode")).thenReturn(true);
+
     final var params = new ModifiableSolrParams();
     params.set("collection", "someCollectionName");
     params.set("location", "/some/location");

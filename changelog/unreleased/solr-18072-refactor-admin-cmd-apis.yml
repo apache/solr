@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Refactor CollectionApiCommands to add easily expandable AdminCmdContext argument
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Houston Putman
+    nick: HoustonPutman
+links:
+  - name: SOLR-18072
+    url: https://issues.apache.org/jira/browse/SOLR-18072

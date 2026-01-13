@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.params.CollectionAdminParams.ALIAS;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -101,11 +102,12 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     if (ccc.getZkStateReader().aliasesManager != null) { // not a mock ZkStateReader
       ccc.getZkStateReader().aliasesManager.update();
     }
+    ClusterState clusterState = adminCmdContext.getClusterState();
     final Aliases aliases = ccc.getZkStateReader().getAliases();
     final String collectionName = message.getStr(NAME);
     final boolean waitForFinalState = message.getBool(WAIT_FOR_FINAL_STATE, false);
@@ -151,9 +153,6 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
     final String collectionPath = DocCollection.getCollectionPath(collectionName);
 
     try {
-
-      final String async = message.getStr(ASYNC);
-
       ZkStateReader zkStateReader = ccc.getZkStateReader();
       message.getProperties().put(COLL_CONF, configName);
 
@@ -245,7 +244,11 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
                 numReplicas);
       } catch (Assign.AssignmentException e) {
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ccc).call(clusterState, deleteMessage, results);
+        new DeleteCollectionCmd(ccc)
+            .call(
+                adminCmdContext.subRequestContext(DELETE).withClusterState(clusterState),
+                deleteMessage,
+                results);
         // unwrap the exception
         throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
@@ -256,7 +259,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(async, ccc);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
       if (log.isDebugEnabled()) {
         log.debug(
             formatString(
@@ -355,8 +358,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CoreAdminParams.NEW_COLLECTION, "true");
         params.set(CoreAdminParams.REPLICA_TYPE, replicaPosition.type.name());
 
-        if (async != null) {
-          String coreAdminAsyncId = async + Math.abs(System.nanoTime());
+        if (adminCmdContext.getAsyncId() != null) {
+          String coreAdminAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
           params.add(ASYNC, coreAdminAsyncId);
         }
         CollectionHandlingUtils.addPropertyParams(message, params);
@@ -438,7 +441,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         // Let's cleanup as we hit an exception
         // We shouldn't be passing 'results' here for the cleanup as the response would then contain
         // 'success' element, which may be interpreted by the user as a positive ack
-        CollectionHandlingUtils.cleanupCollection(collectionName, new NamedList<>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(
+            adminCmdContext, collectionName, new NamedList<>(), ccc);
         log.info("Cleaned up artifacts for failed create collection for [{}]", collectionName);
         throw new SolrException(
             ErrorCode.BAD_REQUEST,

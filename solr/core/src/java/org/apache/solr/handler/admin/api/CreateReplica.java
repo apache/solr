@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
@@ -100,7 +99,6 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String shardName, CreateReplicaRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.ADDREPLICA.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(SHARD_ID_PROP, shardName);
     insertIfNotNull(remoteMessage, CoreAdminParams.NAME, requestBody.name);
@@ -119,7 +117,6 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
     insertIfNotNull(remoteMessage, TLOG_REPLICAS, requestBody.tlogReplicas);
     insertIfNotNull(remoteMessage, PULL_REPLICAS, requestBody.pullReplicas);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, requestBody.followAliases);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     if (requestBody.properties != null) {
       requestBody

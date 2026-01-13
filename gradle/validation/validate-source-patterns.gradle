@@ -71,7 +71,7 @@ allprojects {
       extensions.each{
         include "**/*.${it}"
       }
-      
+
       // Don't go into child projects (scanned separately).
       childProjects.keySet().each{
         exclude "${it}/**"
@@ -137,7 +137,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
   ValidateSourcePatternsTask(ProgressLoggerFactory progressLoggerFactory) {
     this.progressLoggerFactory = progressLoggerFactory
   }
-  
+
   @TaskAction
   public void check() {
     def invalidPatterns = [
@@ -203,7 +203,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
 
     def checkMockitoAssume = { f, text ->
-      if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+      if (text.contains("mockito") && !(text.contains("assumeWorkingMockito()") || text.contains("extends MockAPITest"))) {
         reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }

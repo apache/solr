@@ -17,15 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
-import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
-import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -35,7 +33,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,9 +56,9 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public AsyncJerseyResponse installShardData(
+  public SubResponseAccumulatingJerseyResponse installShardData(
       String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {
-    final var response = instantiateJerseyResponse(AsyncJerseyResponse.class);
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
     if (requestBody == null) {
@@ -81,27 +78,17 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     // Only install data to shards which belong to a collection in read-only mode
     final DocCollection dc =
         coreContainer.getZkController().getZkStateReader().getCollection(collName);
-    if (!dc.isReadOnly()) {
+    if (dc.getSlice(shardName).getReplicas().size() > 1 && !dc.isReadOnly()) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Collection must be in readOnly mode before installing data to shard");
+          "Collection must be in readOnly mode before installing data to shard with more than 1 replica");
     }
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collName, shardName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.INSTALLSHARDDATA,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
+    submitRemoteMessageAndHandleResponse(
+        response,
+        CollectionParams.CollectionAction.INSTALLSHARDDATA,
+        createRemoteMessage(collName, shardName, requestBody),
+        requestBody.async);
 
     return response;
   }
@@ -125,7 +112,6 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     if (requestBody != null) {
       messageTyped.location = requestBody.location;
       messageTyped.repository = requestBody.repository;
-      messageTyped.asyncId = requestBody.async;
     }
 
     messageTyped.validate();

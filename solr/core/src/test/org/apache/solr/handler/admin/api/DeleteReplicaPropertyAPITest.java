@@ -17,20 +17,22 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 /**
@@ -40,16 +42,21 @@ import org.junit.Test;
  * here focus primarily on how the v1 code invokes the v2 API and how the v2 API crafts its
  * overseer/Distributed State Processing RPC message.
  */
-public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
+public class DeleteReplicaPropertyAPITest extends MockAPITest {
 
-  @BeforeClass
-  public static void ensureWorkingMockito() {
-    assumeWorkingMockito();
+  private DeleteReplicaProperty api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new DeleteReplicaProperty(mockCoreContainer, mockQueryRequest, queryResponse);
   }
 
   @Test
   public void testV1InvocationThrowsErrorsIfRequiredParametersMissing() {
-    final var api = mock(DeleteReplicaProperty.class);
     final var allParams = new ModifiableSolrParams();
     allParams.add(COLLECTION_PROP, "someColl");
     allParams.add(SHARD_ID_PROP, "someShard");
@@ -62,9 +69,7 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
       final SolrException e =
           expectThrows(
               SolrException.class,
-              () -> {
-                DeleteReplicaProperty.invokeUsingV1Inputs(api, noCollectionParams);
-              });
+              () -> DeleteReplicaProperty.invokeUsingV1Inputs(api, noCollectionParams));
       assertEquals("Missing required parameter: " + COLLECTION_PROP, e.getMessage());
     }
 
@@ -74,9 +79,7 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
       final SolrException e =
           expectThrows(
               SolrException.class,
-              () -> {
-                DeleteReplicaProperty.invokeUsingV1Inputs(api, noShardParams);
-              });
+              () -> DeleteReplicaProperty.invokeUsingV1Inputs(api, noShardParams));
       assertEquals("Missing required parameter: " + SHARD_ID_PROP, e.getMessage());
     }
 
@@ -98,53 +101,55 @@ public class DeleteReplicaPropertyAPITest extends SolrTestCaseJ4 {
       final SolrException e =
           expectThrows(
               SolrException.class,
-              () -> {
-                DeleteReplicaProperty.invokeUsingV1Inputs(api, noPropertyParams);
-              });
+              () -> DeleteReplicaProperty.invokeUsingV1Inputs(api, noPropertyParams));
       assertEquals("Missing required parameter: " + PROPERTY_PROP, e.getMessage());
     }
   }
 
   @Test
   public void testV1InvocationPassesAllProvidedParameters() throws Exception {
-    final var api = mock(DeleteReplicaProperty.class);
+    final var mockApi = mock(DeleteReplicaProperty.class);
     final var allParams = new ModifiableSolrParams();
     allParams.add(COLLECTION_PROP, "someColl");
     allParams.add(SHARD_ID_PROP, "someShard");
     allParams.add(REPLICA_PROP, "someReplica");
     allParams.add(PROPERTY_PROP, "somePropName");
 
-    DeleteReplicaProperty.invokeUsingV1Inputs(api, allParams);
+    DeleteReplicaProperty.invokeUsingV1Inputs(mockApi, allParams);
 
-    verify(api).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
+    verify(mockApi).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
   }
 
   @Test
   public void testV1InvocationTrimsPropertyNamePrefixIfProvided() throws Exception {
-    final var api = mock(DeleteReplicaProperty.class);
+    final var mockApi = mock(DeleteReplicaProperty.class);
     final var allParams = new ModifiableSolrParams();
     allParams.add(COLLECTION_PROP, "someColl");
     allParams.add(SHARD_ID_PROP, "someShard");
     allParams.add(REPLICA_PROP, "someReplica");
     allParams.add(PROPERTY_PROP, "property.somePropName"); // NOTE THE "property." prefix!
 
-    DeleteReplicaProperty.invokeUsingV1Inputs(api, allParams);
+    DeleteReplicaProperty.invokeUsingV1Inputs(mockApi, allParams);
 
-    verify(api).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
+    verify(mockApi).deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
   }
 
   @Test
-  public void testRPCMessageCreation() {
-    final ZkNodeProps message =
-        DeleteReplicaProperty.createRemoteMessage(
-            "someColl", "someShard", "someReplica", "somePropName");
+  public void testRPCMessageCreation() throws Exception {
+    api.deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+    final ZkNodeProps message = messageCapturer.getValue();
     final Map<String, Object> props = message.getProperties();
 
-    assertEquals(5, props.size());
-    assertEquals("deletereplicaprop", props.get(QUEUE_OPERATION));
+    assertEquals(4, props.size());
     assertEquals("someColl", props.get(COLLECTION_PROP));
     assertEquals("someShard", props.get(SHARD_ID_PROP));
     assertEquals("someReplica", props.get(REPLICA_PROP));
     assertEquals("somePropName", props.get(PROPERTY_PROP));
+
+    AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.DELETEREPLICAPROP, context.getAction());
+    assertNull(context.getAsyncId());
   }
 }

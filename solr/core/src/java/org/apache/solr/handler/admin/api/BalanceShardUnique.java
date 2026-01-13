@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY_ACTIVE_NODES;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
@@ -83,13 +82,10 @@ public class BalanceShardUnique extends AdminAPIBase implements BalanceShardUniq
   public static ZkNodeProps createRemoteMessage(
       String collectionName, BalanceShardUniqueRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(
-        QUEUE_OPERATION, CollectionParams.CollectionAction.BALANCESHARDUNIQUE.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(PROPERTY_PROP, requestBody.property);
     insertIfNotNull(remoteMessage, ONLY_ACTIVE_NODES, requestBody.onlyActiveNodes);
     insertIfNotNull(remoteMessage, SHARD_UNIQUE, requestBody.shardUnique);
-    insertIfNotNull(remoteMessage, ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }

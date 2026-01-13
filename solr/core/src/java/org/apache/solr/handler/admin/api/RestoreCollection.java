@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLL_CONF;
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_PARAM;
@@ -29,7 +28,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_ID;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -41,7 +39,6 @@ import org.apache.solr.client.api.endpoint.CollectionBackupApi;
 import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.common.SolrException;
@@ -51,7 +48,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -113,6 +109,7 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
 
     final var createRequestBody = requestBody.createCollectionParams;
     if (createRequestBody != null) {
+      createRequestBody.name = collectionName;
       CreateCollection.populateDefaultsIfNecessary(coreContainer, createRequestBody);
       CreateCollection.validateRequestBody(createRequestBody);
       if (Boolean.FALSE.equals(createRequestBody.createReplicas)) {
@@ -123,31 +120,15 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     }
 
     final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.RESTORE,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-      return response;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    submitRemoteMessageAndHandleResponse(
+        response, CollectionParams.CollectionAction.RESTORE, remoteMessage, requestBody.async);
     return response;
   }
 
   public ZkNodeProps createRemoteMessage(
       String backupName, RestoreCollectionRequestBody requestBody) {
     final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
+    remoteMessage.remove(ASYNC);
 
     // If the RESTORE is setup to create a new collection, copy those parameters first
     final var createReqBody = requestBody.createCollectionParams;
@@ -164,7 +145,6 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
     }
 
     // Copy restore-specific parameters
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.RESTORE.toLower());
     remoteMessage.put(NAME, backupName);
     return new ZkNodeProps(remoteMessage);
   }

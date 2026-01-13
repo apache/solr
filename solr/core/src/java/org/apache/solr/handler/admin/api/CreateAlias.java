@@ -18,7 +18,6 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CATEGORY;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.CREATE_COLLECTION_PREFIX;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTER_TYPE_NAME;
@@ -30,7 +29,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.START;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
 import jakarta.inject.Inject;
@@ -43,10 +41,8 @@ import org.apache.solr.client.api.endpoint.CreateAliasApi;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.RoutedAliasProperties;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.api.collections.RoutedAlias;
@@ -61,7 +57,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -83,9 +78,9 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception {
-    final SubResponseAccumulatingJerseyResponse response =
-        instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+  public SubResponseAccumulatingJerseyResponse createAlias(CreateAliasRequestBody requestBody)
+      throws Exception {
+    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     if (requestBody == null) {
@@ -109,19 +104,8 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
       remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
     }
 
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.CREATEALIAS,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    if (requestBody.async != null) {
-      response.requestId = requestBody.async;
-    }
+    submitRemoteMessageAndHandleResponse(
+        response, CollectionParams.CollectionAction.CREATEALIAS, remoteMessage, requestBody.async);
     return response;
   }
 
@@ -129,19 +113,15 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
       CreateAliasRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
 
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
     remoteMessage.put(NAME, requestBody.name);
     remoteMessage.put("collections", String.join(",", requestBody.collections));
-    remoteMessage.put(ASYNC, requestBody.async);
 
     return new ZkNodeProps(remoteMessage);
   }
 
   public static ZkNodeProps createRemoteMessageForRoutedAlias(CreateAliasRequestBody requestBody) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.CREATEALIAS.toLower());
     remoteMessage.put(NAME, requestBody.name);
-    if (StrUtils.isNotBlank(requestBody.async)) remoteMessage.put(ASYNC, requestBody.async);
 
     if (requestBody.routers.size() > 1) { // Multi-dimensional alias
       for (int i = 0; i < requestBody.routers.size(); i++) {
