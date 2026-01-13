@@ -72,11 +72,7 @@ public abstract class AdminAPIBase extends JerseyResource {
   }
 
   private String resolveAlias(String aliasName) {
-    return coreContainer
-        .getZkController()
-        .getZkStateReader()
-        .getAliases()
-        .resolveSimpleAlias(aliasName);
+    return coreContainer.getAliases().resolveSimpleAlias(aliasName);
   }
 
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {
@@ -94,13 +90,7 @@ public abstract class AdminAPIBase extends JerseyResource {
 
   protected String resolveCollectionName(String collName, boolean followAliases) {
     final String collectionName =
-        followAliases
-            ? coreContainer
-                .getZkController()
-                .getZkStateReader()
-                .getAliases()
-                .resolveSimpleAlias(collName)
-            : collName;
+        followAliases ? coreContainer.getAliases().resolveSimpleAlias(collName) : collName;
 
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     if (!clusterState.hasCollection(collectionName)) {

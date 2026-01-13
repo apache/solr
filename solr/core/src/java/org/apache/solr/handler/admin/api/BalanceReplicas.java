@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.BalanceReplicasApi;
 import org.apache.solr.client.api.model.BalanceReplicasRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
@@ -48,8 +47,8 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse balanceReplicas(BalanceReplicasRequestBody requestBody)
-      throws Exception {
+  public SubResponseAccumulatingJerseyResponse balanceReplicas(
+      BalanceReplicasRequestBody requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
     fetchAndValidateZooKeeperAwareCoreContainer();

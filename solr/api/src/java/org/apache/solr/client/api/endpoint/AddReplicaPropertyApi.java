@@ -24,7 +24,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("/collections/{collName}/shards/{shardName}/replicas/{replicaName}/properties/{propName}")
 public interface AddReplicaPropertyApi {
@@ -33,7 +33,7 @@ public interface AddReplicaPropertyApi {
   @Operation(
       summary = "Adds a property to the specified replica",
       tags = {"replica-properties"})
-  public SolrJerseyResponse addReplicaProperty(
+  public SubResponseAccumulatingJerseyResponse addReplicaProperty(
       @Parameter(
               description = "The name of the collection the replica belongs to.",
               required = true)

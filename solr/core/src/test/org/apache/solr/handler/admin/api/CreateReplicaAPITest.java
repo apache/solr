@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
@@ -35,26 +34,42 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateReplica} */
-public class CreateReplicaAPITest extends SolrTestCaseJ4 {
+public class CreateReplicaAPITest extends MockAPITest {
+
+  private CreateReplica createReplica;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    createReplica = new CreateReplica(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica("someCollName", "someShardName", null);
-            });
+            () -> createReplica.createReplica("someCollName", "someShardName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Required request-body is missing", thrown.getMessage());
@@ -65,11 +80,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica(null, "shardName", requestBody);
-            });
+            SolrException.class, () -> createReplica.createReplica(null, "shardName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -81,17 +92,14 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     final SolrException thrown =
         expectThrows(
             SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica("someCollectionName", null, requestBody);
-            });
+            () -> createReplica.createReplica("someCollectionName", null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: shard", thrown.getMessage());
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new CreateReplicaRequestBody();
     requestBody.name = "someName";
     requestBody.type = "NRT";
@@ -110,12 +118,14 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
-    final var remoteMessage =
-        CreateReplica.createRemoteMessage("someCollectionName", "someShardName", requestBody)
-            .getProperties();
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+    createReplica.createReplica("someCollectionName", "someShardName", requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    assertEquals(20, remoteMessage.size());
-    assertEquals("addreplica", remoteMessage.get(QUEUE_OPERATION));
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> remoteMessage = createdMessage.getProperties();
+    assertEquals(18, remoteMessage.size());
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
     assertEquals("someName", remoteMessage.get(NAME));
@@ -132,9 +142,12 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE, remoteMessage.get(SKIP_NODE_ASSIGNMENT));
     assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
     assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("propVal1", remoteMessage.get("property.propName1"));
     assertEquals("propVal2", remoteMessage.get("property.propName2"));
+
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.ADDREPLICA, context.getAction());
+    assertEquals("someAsyncId", context.getAsyncId());
   }
 
   @Test

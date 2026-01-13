@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
 import static org.apache.solr.common.cloud.DocCollection.CollectionStateProps.SHARDS;
@@ -30,21 +29,42 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollection}. */
-public class CreateCollectionAPITest extends SolrTestCaseJ4 {
+public class CreateCollectionAPITest extends MockAPITest {
+
+  private CreateCollection createCollectionApi;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    createCollectionApi = new CreateCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+    when(mockSolrZkClient.getData(eq("properties.json"), any(), any()))
+        .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
+  }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
@@ -125,7 +145,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.replicationFactor = 123;
@@ -145,9 +165,13 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.shuffleNodes = false;
 
-    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
+    createCollectionApi.createCollection(requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> remoteMessage = createdMessage.getProperties();
+    assertEquals(17, remoteMessage.size());
     assertEquals("true", remoteMessage.get("fromApi"));
     assertEquals("someName", remoteMessage.get(NAME));
     assertEquals(123, remoteMessage.get(REPLICATION_FACTOR));
@@ -161,24 +185,36 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     assertEquals(true, remoteMessage.get(PER_REPLICA_STATE));
     assertEquals("someAliasName", remoteMessage.get(ALIAS));
     assertEquals("propValue", remoteMessage.get("property.propName"));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("someRouterName", remoteMessage.get("router.name"));
     assertEquals("someField", remoteMessage.get("router.field"));
     assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET));
     assertEquals(false, remoteMessage.get(CREATE_NODE_SET_SHUFFLE_PARAM));
+
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.CREATE, context.getAction());
+    assertEquals("someAsyncId", context.getAsyncId());
   }
 
   @Test
-  public void testNoReplicaCreationMessage() {
+  public void testNoReplicaCreationMessage() throws Exception {
     final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.createReplicas = false;
+    requestBody.async = "someAsyncId";
 
-    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
+    createCollectionApi.createCollection(requestBody);
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
+    final ZkNodeProps createdMessage = messageCapturer.getValue();
+    final Map<String, Object> remoteMessage = createdMessage.getProperties();
+
     assertEquals("someName", remoteMessage.get(NAME));
     assertEquals("EMPTY", remoteMessage.get(CREATE_NODE_SET));
+
+    final AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(CollectionParams.CollectionAction.CREATE, context.getAction());
+    assertEquals("someAsyncId", context.getAsyncId());
   }
 
   @Test

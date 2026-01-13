@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.MigrateReplicasApi;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -49,8 +48,8 @@ public class MigrateReplicas extends AdminAPIBase implements MigrateReplicasApi 
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse migrateReplicas(MigrateReplicasRequestBody requestBody)
-      throws Exception {
+  public SubResponseAccumulatingJerseyResponse migrateReplicas(
+      MigrateReplicasRequestBody requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(null, solrQueryRequest);

@@ -27,7 +27,6 @@ import java.util.Map;
 import org.apache.solr.client.api.endpoint.AliasPropertyApis;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
@@ -100,7 +99,7 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse updateAliasProperties(
+  public SubResponseAccumulatingJerseyResponse updateAliasProperties(
       String aliasName, UpdateAliasPropertiesRequestBody requestBody) throws Exception {
 
     if (requestBody == null) {
@@ -116,7 +115,7 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse createOrUpdateAliasProperty(
+  public SubResponseAccumulatingJerseyResponse createOrUpdateAliasProperty(
       String aliasName, String propName, UpdateAliasPropertyRequestBody requestBody)
       throws Exception {
     if (requestBody == null) {
@@ -132,8 +131,8 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse deleteAliasProperty(String aliasName, String propName)
-      throws Exception {
+  public SubResponseAccumulatingJerseyResponse deleteAliasProperty(
+      String aliasName, String propName) throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);

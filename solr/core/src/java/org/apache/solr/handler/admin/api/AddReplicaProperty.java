@@ -31,7 +31,6 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.AddReplicaPropertyApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
@@ -59,7 +58,7 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse addReplicaProperty(
+  public SubResponseAccumulatingJerseyResponse addReplicaProperty(
       String collName,
       String shardName,
       String replicaName,

@@ -26,7 +26,7 @@ import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
 
@@ -56,7 +56,7 @@ public interface AliasPropertyApis {
   @Operation(
       summary = "Update properties for a collection alias.",
       tags = {"alias-properties"})
-  SolrJerseyResponse updateAliasProperties(
+  SubResponseAccumulatingJerseyResponse updateAliasProperties(
       @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
       @RequestBody(description = "Properties that need to be updated", required = true)
           UpdateAliasPropertiesRequestBody requestBody)
@@ -67,7 +67,7 @@ public interface AliasPropertyApis {
   @Operation(
       summary = "Update a specific property for a collection alias.",
       tags = {"alias-properties"})
-  SolrJerseyResponse createOrUpdateAliasProperty(
+  SubResponseAccumulatingJerseyResponse createOrUpdateAliasProperty(
       @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
       @Parameter(description = "Property Name") @PathParam("propName") String propName,
       @RequestBody(description = "Property value that needs to be updated", required = true)
@@ -79,7 +79,7 @@ public interface AliasPropertyApis {
   @Operation(
       summary = "Delete a specific property for a collection alias.",
       tags = {"alias-properties"})
-  SolrJerseyResponse deleteAliasProperty(
+  SubResponseAccumulatingJerseyResponse deleteAliasProperty(
       @Parameter(description = "Alias Name") @PathParam("aliasName") String aliasName,
       @Parameter(description = "Property Name") @PathParam("propName") String propName)
       throws Exception;

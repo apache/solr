@@ -72,12 +72,10 @@ public class CreateCollectionSnapshot extends AdminAPIBase
               + "', no action taken.");
     }
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(collName, requestBody.followAliases, snapshotName);
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.CREATESNAPSHOT,
-        remoteMessage,
+        createRemoteMessage(collName, requestBody.followAliases, snapshotName),
         requestBody.async);
 
     response.collection = collName;

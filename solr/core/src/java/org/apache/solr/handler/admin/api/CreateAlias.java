@@ -41,7 +41,6 @@ import org.apache.solr.client.api.endpoint.CreateAliasApi;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.RoutedAliasProperties;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
 import org.apache.solr.client.solrj.request.RoutedAliasTypes;
@@ -79,7 +78,8 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception {
+  public SubResponseAccumulatingJerseyResponse createAlias(CreateAliasRequestBody requestBody)
+      throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 

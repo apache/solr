@@ -20,7 +20,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("/aliases")
 public interface CreateAliasApi {
@@ -28,5 +28,6 @@ public interface CreateAliasApi {
   @Operation(
       summary = "Create a traditional or 'routed' alias",
       tags = {"aliases"})
-  SolrJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception;
+  SubResponseAccumulatingJerseyResponse createAlias(CreateAliasRequestBody requestBody)
+      throws Exception;
 }

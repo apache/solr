@@ -119,6 +119,7 @@ public class CreateCollectionBackup extends BackupAPIBase implements CollectionB
   public static ZkNodeProps createRemoteMessage(
       String collectionName, String backupName, CreateCollectionBackupRequestBody requestBody) {
     final Map<String, Object> remoteMessage = Utils.reflectToMap(requestBody);
+    remoteMessage.remove(ASYNC);
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(NAME, backupName);
     if (!StringUtils.isBlank(requestBody.backupStrategy)) {

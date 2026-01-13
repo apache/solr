@@ -211,7 +211,7 @@ public class CreateCollection extends AdminAPIBase implements CreateCollectionAp
   private static Integer readIntegerDefaultFromClusterProp(
       CoreContainer coreContainer, String propName) throws IOException {
     final Object defaultValue =
-        new ClusterProperties(coreContainer.getZkController().getZkStateReader().getZkClient())
+        new ClusterProperties(coreContainer.getZkController().getZkClient())
             .getClusterProperty(
                 List.of(CollectionAdminParams.DEFAULTS, CollectionAdminParams.COLLECTION, propName),
                 null);

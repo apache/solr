@@ -22,7 +22,6 @@ import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PER
 import jakarta.inject.Inject;
 import java.util.HashMap;
 import org.apache.solr.client.api.endpoint.InstallShardDataApi;
-import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.InstallShardDataRequestBody;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.cloud.api.collections.InstallShardDataCmd;
@@ -57,7 +56,7 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public AsyncJerseyResponse installShardData(
+  public SubResponseAccumulatingJerseyResponse installShardData(
       String collName, String shardName, InstallShardDataRequestBody requestBody) throws Exception {
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
