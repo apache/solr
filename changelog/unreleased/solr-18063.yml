@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: SOLR-18063 -  NPE when resubmitting to DLQ
+type: fixed
+authors:
+  - name: Andrzej Bialecki
+  - nick: ab
+links:
+  - name: SOLR-18063
+    url: https://issues.apache.org/jira/browse/SOLR-18063
