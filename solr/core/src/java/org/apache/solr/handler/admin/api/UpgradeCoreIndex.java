@@ -345,9 +345,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       DocValuesIteratorCache dvICache)
       throws Exception {
 
-    Exception exceptionToThrow = null;
-    int numDocsProcessed = 0;
-
     String coreName = core.getName();
     IndexSchema indexSchema = core.getLatestSchema();
 
@@ -355,78 +352,38 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     SegmentReader segmentReader = (SegmentReader) leafReader;
     final String segmentName = segmentReader.getSegmentName();
     Bits liveDocs = segmentReader.getLiveDocs();
-    SolrInputDocument solrDoc = null;
-    UpdateRequestProcessor processor = null;
-    LocalSolrQueryRequest solrRequest = null;
     SolrDocumentFetcher docFetcher = solrIndexSearcher.getDocFetcher();
-    try {
-      // Exclude copy field targets to avoid duplicating values on reindex
-      Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
-      solrRequest = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
+    // Exclude copy field targets to avoid duplicating values on reindex
+    Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
+
+    int numDocsProcessed = 0;
+    try (LocalSolrQueryRequest solrRequest =
+        new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       SolrQueryResponse rsp = new SolrQueryResponse();
-      processor = processorChain.createProcessor(solrRequest, rsp);
-      StoredFields storedFields = segmentReader.storedFields();
-      for (int luceneDocId = 0; luceneDocId < segmentReader.maxDoc(); luceneDocId++) {
-        if (liveDocs != null && !liveDocs.get(luceneDocId)) {
-          continue;
-        }
+      UpdateRequestProcessor processor = processorChain.createProcessor(solrRequest, rsp);
+      try {
+        StoredFields storedFields = segmentReader.storedFields();
+        for (int luceneDocId = 0; luceneDocId < segmentReader.maxDoc(); luceneDocId++) {
+          if (liveDocs != null && !liveDocs.get(luceneDocId)) {
+            continue;
+          }
 
-        Document doc = storedFields.document(luceneDocId);
-        solrDoc = toSolrInputDocument(doc, indexSchema);
+          Document doc = storedFields.document(luceneDocId);
+          SolrInputDocument solrDoc = toSolrInputDocument(doc, indexSchema);
 
-        docFetcher.decorateDocValueFields(
-            solrDoc, leafReaderContext.docBase + luceneDocId, nonStoredDVFields, dvICache);
-        solrDoc.removeField("_version_");
-        AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
-        currDocCmd.solrDoc = solrDoc;
-        processor.processAdd(currDocCmd);
-        numDocsProcessed++;
-      }
-    } catch (Exception e) {
-      log.error("Error while processing segment [{}] in core [{}]", segmentName, coreName, e);
-      exceptionToThrow = e;
-    } finally {
-      if (processor != null) {
-        try {
-          processor.finish();
-        } catch (Exception e) {
-          log.error(
-              "Exception during processor.finish() for segment [{}] in core [{}]",
-              segmentName,
-              coreName,
-              e);
-          if (exceptionToThrow == null) {
-            exceptionToThrow = e;
-          } else {
-            exceptionToThrow.addSuppressed(e);
-          }
+          docFetcher.decorateDocValueFields(
+              solrDoc, leafReaderContext.docBase + luceneDocId, nonStoredDVFields, dvICache);
+          solrDoc.removeField("_version_");
+          AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
+          currDocCmd.solrDoc = solrDoc;
+          processor.processAdd(currDocCmd);
+          numDocsProcessed++;
         }
-        try {
-          processor.close();
-        } catch (Exception e) {
-          log.error(
-              "Exception while closing update processor for segment [{}] in core [{}]",
-              segmentName,
-              coreName,
-              e);
-          if (exceptionToThrow == null) {
-            exceptionToThrow = e;
-          } else {
-            exceptionToThrow.addSuppressed(e);
-          }
-        }
-      }
-      if (solrRequest != null) {
-        try {
-          solrRequest.close();
-        } catch (Exception e) {
-          if (exceptionToThrow == null) {
-            exceptionToThrow = e;
-          } else {
-            exceptionToThrow.addSuppressed(e);
-          }
-        }
+      } finally {
+        // finish() must be called before close() to flush pending operations
+        processor.finish();
+        processor.close();
       }
     }
 
@@ -435,10 +392,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         segmentName,
         coreName,
         numDocsProcessed);
-
-    if (exceptionToThrow != null) {
-      throw exceptionToThrow;
-    }
   }
 
   /*
