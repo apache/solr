@@ -55,6 +55,7 @@ public class RestoreCollectionAPITest extends MockAPITest {
   private static RestoreCollection api;
   private BackupRepository mockBackupRepository;
 
+  @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
