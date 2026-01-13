@@ -24,8 +24,15 @@ import static org.hamcrest.Matchers.startsWith;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.lucene.document.LateInteractionField;
+import org.apache.lucene.document.StoredField;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.LateInteractionVectorField;
+import org.apache.solr.schema.SchemaField;
 import org.junit.After;
 import org.junit.Before;
 
@@ -134,8 +141,49 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
     // nocommit: other kinds of decoding errors to check for?
   }
 
-  // nocommit: add whitebox test of createFields
+  /** Low level test of createFields */
+  public void createFields() throws Exception {
+    final Map<String,float[][]> data = Map.of("[[1,2,3,4]]",
+                                              new float[][] { { 1F, 2F, 3F, 4F }},
+                                              "[[1,2,3,4],[5,6,7,8]]",
+                                              new float[][] { { 1F, 2F, 3F, 4F }, { 5F, 6F, 7F, 8F }});
 
+    try (SolrQueryRequest r = req()) {
+      // defaults with stored + doc values
+      for (String input : data.keySet()) {
+        final SchemaField f = r.getSchema().getField("lv_4_def");
+        final float[][] expected = data.get(input);
+        final List<IndexableField> actual = f.getType().createFields(f, input);
+        assertEquals(2, actual.size());
+        
+        if (actual.get(0) instanceof LateInteractionField lif) {
+          assertEquals(expected, lif.getValue());
+        } else {
+          fail("first Field isn't a LIF: " + actual.get(0).getClass());
+        }
+        if (actual.get(1) instanceof StoredField stored) {
+          assertEquals(input, stored.stringValue());
+        } else {
+          fail("second Field isn't stored: " + actual.get(1).getClass());
+        }
+      }
+      
+      // stored=false, only doc values
+      for (String input : data.keySet()) {
+        final SchemaField f = r.getSchema().getField("lv_4_nostored");
+        final float[][] expected = data.get(input);
+        final List<IndexableField> actual = f.getType().createFields(f, input);
+        assertEquals(1, actual.size());
+        
+        if (actual.get(0) instanceof LateInteractionField lif) {
+          assertEquals(expected, lif.getValue());
+        } else {
+          fail("first Field isn't a LIF: " + actual.get(0).getClass());
+        }
+      }
+    }
+  }
+  
   public void testSimpleIndexAndRetrieval() throws Exception {
     // for simplicity, use a single doc, with identical values in several fields
 
@@ -196,8 +244,8 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         "//str[@name='lv_4_cosine'][.='" + d4s + "']",
 
         // dv only non-stored fields
-        "//str[@name='lv_3_nostored'][.='"+d3s+"']", // nocommit: requires SOLR-18033.patch be applied
-        "//str[@name='lv_4_nostored'][.='"+d4s+"']", // nocommit: requires SOLR-18033.patch be applied
+        "//str[@name='lv_3_nostored'][.='"+d3s+"']",
+        "//str[@name='lv_4_nostored'][.='"+d4s+"']",
 
         // function computations
         "//float[@name='euclid_3_def'][.=" + euclid3 + "]",

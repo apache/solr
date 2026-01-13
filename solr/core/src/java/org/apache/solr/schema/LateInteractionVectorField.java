@@ -309,7 +309,7 @@ public class LateInteractionVectorField extends FieldType {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
-        getClass().getSimpleName() + " not supported for function queries.");
+        getClass().getSimpleName() + " not supported for function queries, use lateVector() function.");
   }
 
   /** Not supported */
@@ -317,7 +317,7 @@ public class LateInteractionVectorField extends FieldType {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
-        "nocommit: better error msgs citing value source parser once it exists");
+        getClass().getSimpleName() + " not supported for field queries, use lateVector() function.");
   }
 
   /** Not Supported */
