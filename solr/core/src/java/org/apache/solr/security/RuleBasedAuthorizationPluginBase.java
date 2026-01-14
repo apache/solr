@@ -30,12 +30,14 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ValidatingJsonMap;
@@ -229,6 +231,16 @@ public abstract class RuleBasedAuthorizationPluginBase
     } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
+      if (permissionName == null) {
+        final var errorMessage =
+            String.format(
+                Locale.ROOT,
+                "Unable to find 'predefined' associated with requestHandler [%s] and request [%s %s]",
+                handler.getClass().getName(),
+                context.getHttpMethod(),
+                context.getResource());
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, errorMessage);
+      }
 
       boolean applies =
           permissionName != null && predefinedPermission.name.equals(permissionName.name);
