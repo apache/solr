@@ -37,35 +37,36 @@ class CheckBrokenLinksTask extends DefaultTask {
   @InputDirectory
   @PathSensitive(PathSensitivity.RELATIVE)
   final DirectoryProperty docsDir = project.objects.directoryProperty()
-    .fileProvider(project.providers.provider { project.docroot })
+      .fileProvider(project.providers.provider {project.docroot})
 
   @InputFile
   @PathSensitive(PathSensitivity.RELATIVE)
   File script = project.rootProject.file("dev-tools/scripts/checkJavadocLinks.py")
 
   @OutputFile
-  Provider<RegularFile> outputFile = project.layout.buildDirectory.file('check-broken-links-output.txt')
+  Provider<RegularFile> outputFile = project.layout.buildDirectory.file(
+      'check-broken-links-output.txt')
 
   @TaskAction
   def check() {
     def result
-    outputFile.get().asFile.withOutputStream { output ->
+    outputFile.get().asFile.withOutputStream {output ->
       result = project.exec {
         executable project.externalTool("python3")
         ignoreExitValue = true
         standardOutput = output
         errorOutput = output
         args = [
-          "-B",
-          script.absolutePath,
-          docsDir.get().getAsFile()
+            "-B",
+            script.absolutePath,
+            docsDir.get().getAsFile()
         ]
       }
     }
 
     if (result.getExitValue() != 0) {
       println "Broken links check failed. First lines of the output:"
-      outputFile.get().asFile.readLines().take(20).each { line ->
+      outputFile.get().asFile.readLines().take(20).each {line ->
         println line
       }
       throw new GradleException("Broken links check failed. Command output at: ${outputFile.get()}")

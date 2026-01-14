@@ -23,7 +23,6 @@ plugins {
 
 import com.diffplug.gradle.spotless.JavaExtension
 
-
 description = 'Solrj - Solr Java Client'
 
 dependencies {
