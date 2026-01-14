@@ -20,7 +20,6 @@ import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 import org.apache.lucene.document.Document;
@@ -35,7 +34,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StoredFields;
-import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.api.model.UpgradeCoreIndexRequestBody;
@@ -46,6 +45,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -69,14 +69,12 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Implements the UPGRADECOREINDEX CoreAdmin action, which upgrades an existing core's index
- * in-place by reindexing documents from segments created by older Lucene versions.
- *
- * <p>This action is intended for user-managed or standalone installations when upgrading Solr
- * across major versions.
+ * in-place by reindexing documents from segments belonging to older Lucene versions, so that they
+ * get written into latest version segments.
  *
  * <p>The upgrade process:
  *
- * <ol>
+ * <ul>
  *   <li>Temporarily installs {@link LatestVersionMergePolicy} to prevent older-version segments
  *       from participating in merges during reindexing.
  *   <li>Iterates each segment whose {@code minVersion} is older than the current Lucene major
@@ -85,11 +83,7 @@ import org.slf4j.LoggerFactory;
  *       through Solr's update pipeline.
  *   <li>Commits the changes and validates that no older-format segments remain.
  *   <li>Restores the original merge policy.
- * </ol>
- *
- * <p><strong>Important:</strong> Only fields that are stored or have DocValues enabled can be
- * preserved during upgrade. Fields that are neither stored, nor docValues-enabled or copyField
- * targets, will lose their data.
+ * </ul>
  *
  * @see LatestVersionMergePolicy
  * @see UpgradeCoreIndexRequestBody
@@ -136,101 +130,102 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private UpgradeCoreIndexResponse performUpgrade(
       String coreName, UpgradeCoreIndexRequestBody requestBody, UpgradeCoreIndexResponse response) {
-    {
-      try (SolrCore core = coreContainer.getCore(coreName)) {
 
-        // Set LatestVersionMergePolicy to prevent older segments from
-        // participating in merges while we reindex. This is to prevent any older version
-        // segments from
-        // merging with any newly formed segments created due to reindexing and undoing the work
-        // we are doing.
-        RefCounted<IndexWriter> iwRef = null;
-        MergePolicy originalMergePolicy = null;
-        int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
+    try (SolrCore core = coreContainer.getCore(coreName)) {
+
+      // Set LatestVersionMergePolicy to prevent older segments from
+      // participating in merges while we reindex. This is to prevent any older version
+      // segments from
+      // merging with any newly formed segments created due to reindexing and undoing the work
+      // we are doing.
+      RefCounted<IndexWriter> iwRef = null;
+      MergePolicy originalMergePolicy = null;
+      int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
+      try {
+        iwRef = core.getSolrCoreState().getIndexWriter(core);
+        IndexWriter iw = iwRef.get();
+
+        originalMergePolicy = iw.getConfig().getMergePolicy();
+        iw.getConfig()
+            .setMergePolicy(
+                new LatestVersionMergePolicy(
+                    iw.getConfig().getMergePolicy())); // prevent older segments from merging
+
+        RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
         try {
-          iwRef = core.getSolrCoreState().getIndexWriter(core);
-          IndexWriter iw = iwRef.get();
+          List<LeafReaderContext> leafContexts = searcherRef.get().getRawReader().leaves();
+          DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
 
-          originalMergePolicy = iw.getConfig().getMergePolicy();
-          iw.getConfig()
-              .setMergePolicy(new LatestVersionMergePolicy(iw.getConfig().getMergePolicy()));
+          UpdateRequestProcessorChain updateProcessorChain =
+              getUpdateProcessorChain(core, requestBody.updateChain);
 
-          RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
-          try {
-            List<LeafReaderContext> leafContexts = searcherRef.get().getRawReader().leaves();
-            DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
-
-            UpdateRequestProcessorChain updateProcessorChain =
-                getUpdateProcessorChain(core, requestBody.updateChain);
-
-            for (LeafReaderContext lrc : leafContexts) {
-              if (!shouldUpgradeSegment(lrc)) {
-                continue;
-              }
-              numSegmentsEligibleForUpgrade++;
-              processSegment(lrc, updateProcessorChain, core, searcherRef.get(), dvICache);
-              numSegmentsUpgraded++;
+          for (LeafReaderContext lrc : leafContexts) {
+            if (!shouldUpgradeSegment(lrc)) {
+              continue;
             }
-
-            if (numSegmentsEligibleForUpgrade == 0) {
-              response.core = coreName;
-              response.upgradeStatus = CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString();
-              response.numSegmentsEligibleForUpgrade = 0;
-              return response;
-            }
-          } catch (Exception e) {
-            log.error("Error while processing core: [{}}]", coreName, e);
-            throw new CoreAdminAPIBaseException(e);
-          } finally {
-            // important to decrement searcher ref count after use since we obtained it via the
-            // SolrCore.getSearcher() method
-            searcherRef.decref();
+            numSegmentsEligibleForUpgrade++;
+            processSegment(lrc, updateProcessorChain, core, searcherRef.get(), dvICache);
+            numSegmentsUpgraded++;
           }
 
-          try {
-            doCommit(core);
-          } catch (IOException e) {
-            throw new CoreAdminAPIBaseException(e);
+          if (numSegmentsEligibleForUpgrade == 0) {
+            response.core = coreName;
+            response.upgradeStatus = CoreIndexUpgradeStatus.NO_UPGRADE_NEEDED.toString();
+            response.numSegmentsEligibleForUpgrade = 0;
+            return response;
           }
-
-          boolean indexUpgraded = isIndexUpgraded(core);
-
-          if (!indexUpgraded) {
-            log.error(
-                "Validation failed for core '{}'. Some data is still present in the older (<{}.x) Lucene index format.",
-                coreName,
-                Version.LATEST.major);
-            throw new CoreAdminAPIBaseException(
-                new SolrException(
-                    SolrException.ErrorCode.SERVER_ERROR,
-                    "Validation failed for core '"
-                        + coreName
-                        + "'. Some data is still present in the older (<"
-                        + Version.LATEST.major
-                        + ".x) Lucene index format."));
-          }
-
-          response.core = coreName;
-          response.upgradeStatus = CoreIndexUpgradeStatus.UPGRADE_SUCCESSFUL.toString();
-          response.numSegmentsEligibleForUpgrade = numSegmentsEligibleForUpgrade;
-          response.numSegmentsUpgraded = numSegmentsUpgraded;
-        } catch (Exception ioEx) {
-          throw new CoreAdminAPIBaseException(ioEx);
-
+        } catch (Exception e) {
+          log.error("Error while processing core: [{}}]", coreName, e);
+          throw new CoreAdminAPIBaseException(e);
         } finally {
-          // Restore original merge policy
-          if (iwRef != null) {
-            IndexWriter iw = iwRef.get();
-            if (originalMergePolicy != null) {
-              iw.getConfig().setMergePolicy(originalMergePolicy);
-            }
-            iwRef.decref();
+          // important to decrement searcher ref count after use since we obtained it via the
+          // SolrCore.getSearcher() method
+          searcherRef.decref();
+        }
+
+        try {
+          doCommit(core);
+        } catch (IOException e) {
+          throw new CoreAdminAPIBaseException(e);
+        }
+
+        boolean indexUpgraded = isIndexUpgraded(core);
+
+        if (!indexUpgraded) {
+          log.error(
+              "Validation failed for core '{}'. Some data is still present in the older (<{}.x) Lucene index format.",
+              coreName,
+              Version.LATEST.major);
+          throw new CoreAdminAPIBaseException(
+              new SolrException(
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "Validation failed for core '"
+                      + coreName
+                      + "'. Some data is still present in the older (<"
+                      + Version.LATEST.major
+                      + ".x) Lucene index format."));
+        }
+
+        response.core = coreName;
+        response.upgradeStatus = CoreIndexUpgradeStatus.UPGRADE_SUCCESSFUL.toString();
+        response.numSegmentsEligibleForUpgrade = numSegmentsEligibleForUpgrade;
+        response.numSegmentsUpgraded = numSegmentsUpgraded;
+      } catch (Exception ioEx) {
+        throw new CoreAdminAPIBaseException(ioEx);
+
+      } finally {
+        // Restore original merge policy
+        if (iwRef != null) {
+          IndexWriter iw = iwRef.get();
+          if (originalMergePolicy != null) {
+            iw.getConfig().setMergePolicy(originalMergePolicy);
           }
+          iwRef.decref();
         }
       }
-
-      return response;
     }
+
+    return response;
   }
 
   private boolean shouldUpgradeSegment(LeafReaderContext lrc) {
@@ -292,9 +287,14 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private boolean isIndexUpgraded(SolrCore core) throws IOException {
 
-    try (FSDirectory dir = FSDirectory.open(Path.of(core.getIndexDir()));
-        IndexReader reader = DirectoryReader.open(dir)) {
+    Directory dir =
+        core.getDirectoryFactory()
+            .get(
+                core.getIndexDir(),
+                DirectoryFactory.DirContext.DEFAULT,
+                core.getSolrConfig().indexConfig.lockType);
 
+    try (IndexReader reader = DirectoryReader.open(dir)) {
       List<LeafReaderContext> leaves = reader.leaves();
       if (leaves == null || leaves.isEmpty()) {
         // no segments to process/validate
@@ -324,6 +324,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     } catch (Exception e) {
       log.error("Error while opening segmentInfos for core [{}]", core.getName(), e);
       throw e;
+    } finally {
+      if (dir != null) {
+        core.getDirectoryFactory().release(dir);
+      }
     }
   }
 

@@ -33,7 +33,6 @@ import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.RefCounted;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -43,26 +42,13 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   private static final String DV_FIELD = "dvonly_i_dvo";
 
   private static VarHandle segmentInfoMinVersionHandle;
-  private static String savedDirectoryFactory;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    savedDirectoryFactory = System.getProperty("solr.directoryFactory");
-    // UpgradeCoreIndex currently validates via FSDirectory; use a filesystem-backed factory.
-    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     initCore("solrconfig-nomergepolicyfactory.xml", "schema.xml");
     segmentInfoMinVersionHandle =
         MethodHandles.privateLookupIn(SegmentInfo.class, MethodHandles.lookup())
             .findVarHandle(SegmentInfo.class, "minVersion", Version.class);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    if (savedDirectoryFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedDirectoryFactory);
-    }
   }
 
   @Before
