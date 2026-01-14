@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpConnectTimeoutException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -349,7 +350,9 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       fail();
     } catch (SolrServerException e) {
       if (!(e.getCause() instanceof SocketTimeoutException // not sure if Jetty throws this
-          || e.getCause() instanceof TimeoutException)) { // Jetty throws this
+          || e.getCause() instanceof TimeoutException // Jetty throws this
+          || e.getCause() instanceof HttpConnectTimeoutException // jdk client throws this
+      )) {
         throw e;
       }
       // else test passes

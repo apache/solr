@@ -143,27 +143,34 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
     assert ObjectReleaseTracker.track(this);
   }
 
-  @Override
-  public CompletableFuture<NamedList<Object>> requestAsync(
-      final SolrRequest<?> solrRequest, String collection) {
+  protected CompletableFuture<HttpResponse<InputStream>> requestInputStreamAsync(
+      String overrideBaseUrl, final SolrRequest<?> solrRequest, String collection) {
     try {
-      PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
+      PreparedRequest pReq = prepareRequest(solrRequest, collection, overrideBaseUrl);
       return httpClient
-          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
-          .thenApply(
-              httpResponse -> {
-                try {
-                  return processErrorsAndResponse(
-                      solrRequest, pReq.parserToUse, httpResponse, pReq.url);
-                } catch (SolrServerException e) {
-                  throw new RuntimeException(e);
-                }
-              });
+          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
     } catch (Exception e) {
-      CompletableFuture<NamedList<Object>> cf = new CompletableFuture<>();
+      CompletableFuture<HttpResponse<InputStream>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
       return cf;
     }
+  }
+
+  @Override
+  public CompletableFuture<NamedList<Object>> requestAsync(
+      final SolrRequest<?> solrRequest, String collection) {
+    return requestInputStreamAsync(null, solrRequest, collection)
+        .thenApply(httpResponse -> {
+          try {
+            PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
+            return processErrorsAndResponse(
+                solrRequest, pReq.parserToUse, httpResponse, pReq.url);
+          } catch (SolrServerException e) {
+            throw new RuntimeException(e);
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          }
+        });
   }
 
   @Override
