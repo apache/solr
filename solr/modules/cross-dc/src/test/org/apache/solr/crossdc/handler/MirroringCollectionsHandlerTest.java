@@ -77,7 +77,7 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
     Mockito.when(zkController.getZkClient()).thenReturn(solrZkClient);
     Mockito.doAnswer(inv -> null)
         .when(solrZkClient)
-        .getData(Mockito.anyString(), Mockito.any(), Mockito.any(), Mockito.anyBoolean());
+        .getData(Mockito.anyString(), Mockito.any(), Mockito.any());
     captor = ArgumentCaptor.forClass(MirroredSolrRequest.class);
     Mockito.doNothing().when(sink).submit(captor.capture());
     // make ConfUtil happy

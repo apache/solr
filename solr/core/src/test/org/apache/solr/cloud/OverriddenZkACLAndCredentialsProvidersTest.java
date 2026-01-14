@@ -89,7 +89,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                 "readonlyACLUsername",
                 "readonlyACLPassword")
             .getSolrZkClient(zkServer.getZkHost(), AbstractZkTestCase.TIMEOUT)) {
-      zkClient.makePath("/solr", false, true);
+      zkClient.makePath("/solr", false);
     }
 
     try (SolrZkClient zkClient =
@@ -100,17 +100,13 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                 "readonlyACLPassword")
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
       zkClient.create(
-          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT, false);
+          "/protectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/protectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/protectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.create(
           SecurityAwareZkACLProvider.SECURITY_ZNODE_PATH,
           "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          CreateMode.PERSISTENT);
     }
 
     try (SolrZkClient zkClient =
@@ -123,15 +119,9 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
                     ("connectAndAllACLUsername:connectAndAllACLPassword")
                         .getBytes(DATA_ENCODING)))) {
       zkClient.create(
-          "/unprotectedCreateNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/unprotectedCreateNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
       zkClient.makePath(
-          "/unprotectedMakePathNode",
-          "content".getBytes(DATA_ENCODING),
-          CreateMode.PERSISTENT,
-          false);
+          "/unprotectedMakePathNode", "content".getBytes(DATA_ENCODING), CreateMode.PERSISTENT);
     }
 
     if (log.isInfoEnabled()) {
@@ -153,7 +143,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
     try (SolrZkClient zkClient =
         new SolrZkClientFactoryUsingCompletelyNewProviders(null, null, null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -165,7 +155,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "connectAndAllACLUsername", "connectAndAllACLPasswordWrong", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -176,7 +166,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "connectAndAllACLUsername", "connectAndAllACLPassword", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -188,7 +178,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
         new SolrZkClientFactoryUsingCompletelyNewProviders(
                 "readonlyACLUsername", "readonlyACLPassword", null, null)
             .getSolrZkClient(zkServer.getZkAddress(), AbstractZkTestCase.TIMEOUT)) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }
@@ -204,7 +194,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -220,7 +210,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, false, false, false, false, false, false, false, false, false, false);
     }
   }
@@ -236,7 +226,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, true, true, true, true, true, true, true, true);
     }
   }
@@ -252,7 +242,7 @@ public class OverriddenZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
             new SolrZkClient.Builder()
                 .withUrl(zkServer.getZkAddress())
                 .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS))) {
-      AbstractDigestZkACLAndCredentialsProvidersTestBase.doTest(
+      VMParamsZkACLAndCredentialsProvidersTest.doTest(
           zkClient, true, true, false, false, false, false, false, false, false, false);
     }
   }

@@ -249,7 +249,7 @@ public class AuthTool extends ToolBase {
         if (!updateIncludeFileOnly) {
           echoIfVerbose("Uploading following security.json: " + securityJson);
           try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-            zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8), true);
+            zkClient.setData("/security.json", securityJson.getBytes(StandardCharsets.UTF_8));
           }
         }
 
@@ -309,8 +309,8 @@ public class AuthTool extends ToolBase {
 
   private void checkSecurityJsonExists(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
-    if (zkClient.exists("/security.json", true)) {
-      byte[] oldSecurityBytes = zkClient.getData("/security.json", null, null, true);
+    if (zkClient.exists("/security.json")) {
+      byte[] oldSecurityBytes = zkClient.getData("/security.json", null, null);
       if (!"{}".equals(new String(oldSecurityBytes, StandardCharsets.UTF_8).trim())) {
         CLIO.out(
             "Security is already enabled. You can disable it with 'bin/solr auth disable'. Existing security.json: \n"
@@ -332,7 +332,7 @@ public class AuthTool extends ToolBase {
       echoIfVerbose("Uploading following security.json: {}");
 
       try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8), true);
+        zkClient.setData("/security.json", "{}".getBytes(StandardCharsets.UTF_8));
       }
     }
   }

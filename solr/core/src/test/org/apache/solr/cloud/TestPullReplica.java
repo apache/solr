@@ -38,11 +38,11 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -197,9 +197,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               cluster
                   .getZkClient()
                   .getChildren(
-                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()),
-                      null,
-                      true);
+                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null);
           assertEquals(
               "Unexpected election nodes for Shard: "
                   + s.getName()
@@ -428,6 +426,28 @@ public class TestPullReplica extends SolrCloudTestCase {
   @Test
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
+  }
+
+  @Test
+  public void testNoBufferingInPullIfConstructing() throws Exception {
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
+
+    setSliceState(collectionName, "shard1", Slice.State.CONSTRUCTION);
+
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
+  }
+
+  private void setSliceState(String collectionName, String shardId, Slice.State state)
+      throws Exception {
+    ShardTestUtil.setSliceState(cluster, collectionName, shardId, state);
+    waitForState(
+        "Expected shard " + shardId + " to be in state " + state,
+        collectionName,
+        c -> c.getSlice(shardId).getState() == state);
   }
 
   @Ignore("Ignore until I figure out a way to reliably record state transitions")

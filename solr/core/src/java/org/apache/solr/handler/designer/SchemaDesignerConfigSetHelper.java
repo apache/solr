@@ -62,11 +62,11 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -633,7 +633,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     int currentVersion = -1;
     final String path = getManagedSchemaZkPath(configSet);
     try {
-      Stat stat = cc.getZkController().getZkClient().exists(path, null, true);
+      Stat stat = cc.getZkController().getZkClient().exists(path, null);
       if (stat != null) {
         currentVersion = stat.getVersion();
       }
@@ -855,7 +855,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
     for (String path : toRemoveFiles) {
       try {
-        zkClient.delete(path, -1, false);
+        zkClient.delete(path, -1);
       } catch (KeeperException.NoNodeException nne) {
         // no-op
       } catch (KeeperException | InterruptedException e) {
@@ -921,9 +921,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       for (String path : langFilesToRestore) {
         String copyToPath = path.replace(origPathDir, replacePathDir);
         try {
-          if (!zkClient.exists(copyToPath, true)) {
-            zkClient.makePath(copyToPath, false, true);
-            zkClient.setData(copyToPath, zkClient.getData(path, null, null, true), true);
+          if (!zkClient.exists(copyToPath)) {
+            zkClient.makePath(copyToPath, false);
+            zkClient.setData(copyToPath, zkClient.getData(path, null, null));
           }
         } catch (KeeperException | InterruptedException e) {
           throw new IOException(

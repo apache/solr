@@ -53,15 +53,16 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
-import org.apache.solr.api.ApiBag;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionRequiringSolrRequest;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.SolrErrorWrappingException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -131,24 +132,29 @@ public class SolrConfigHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
 
     RequestHandlerUtils.setWt(req, CommonParams.JSON);
-    String httpMethod = (String) req.getContext().get("httpMethod");
-    Command command = new Command(req, rsp, httpMethod);
-    if ("POST".equals(httpMethod)) {
-      if (!configEditingEnabled || isImmutableConfigSet) {
-        final String reason =
-            !configEditingEnabled
-                ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
-                : "because ConfigSet is marked immutable";
-        throw new SolrException(
-            SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
-      }
-      try {
-        command.handlePOST();
-      } finally {
-        RequestHandlerUtils.addExperimentalFormatWarning(rsp);
-      }
-    } else {
-      command.handleGET();
+    final var httpMethod = (SolrRequest.METHOD) req.getContext().get("httpMethod");
+    Command command = new Command(req, rsp, httpMethod.name());
+    switch (httpMethod) {
+      case SolrRequest.METHOD.POST:
+        if (!configEditingEnabled || isImmutableConfigSet) {
+          final String reason =
+              !configEditingEnabled
+                  ? "due to " + CONFIG_EDITING_ENABLED_ARG + " setting"
+                  : "because ConfigSet is marked immutable";
+          throw new SolrException(
+              SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
+        }
+        try {
+          command.handlePOST();
+        } finally {
+          RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+        }
+        break;
+      case SolrRequest.METHOD.GET:
+        command.handleGET();
+        break;
+      default:
+        throw SchemaHandler.getUnexpectedHttpMethodException(httpMethod.name());
     }
   }
 
@@ -495,7 +501,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       @SuppressWarnings({"rawtypes"})
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
       }
 
@@ -577,7 +583,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         log.error("ERROR:{}", Utils.toJSONString(errs));
-        throw new ApiBag.ExceptionWithErrObject(
+        throw new SolrErrorWrappingException(
             SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
@@ -844,10 +850,10 @@ public class SolrConfigHandler extends RequestHandlerBase
     // course)
     List<PerReplicaCallable> concurrentTasks = new ArrayList<>();
 
-    var http2SolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
+    var httpSolrClient = zkController.getCoreContainer().getDefaultHttpSolrClient();
     for (Replica replica : getActiveReplicas(zkController, collection)) {
       PerReplicaCallable e =
-          new PerReplicaCallable(http2SolrClient, replica, prop, expectedVersion, maxWaitSecs);
+          new PerReplicaCallable(httpSolrClient, replica, prop, expectedVersion, maxWaitSecs);
       concurrentTasks.add(e);
     }
     if (concurrentTasks.isEmpty()) return; // nothing to wait for ...
@@ -957,13 +963,13 @@ public class SolrConfigHandler extends RequestHandlerBase
       case "POST":
         return Name.CONFIG_EDIT_PERM;
       default:
-        return null;
+        throw SchemaHandler.getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
   }
 
   private static class PerReplicaCallable extends CollectionRequiringSolrRequest<SolrResponse>
       implements Callable<Boolean> {
-    private final Http2SolrClient solrClient;
+    private final HttpJettySolrClient solrClient;
     Replica replica;
     String prop;
     int expectedZkVersion;
@@ -971,7 +977,7 @@ public class SolrConfigHandler extends RequestHandlerBase
     int maxWait;
 
     PerReplicaCallable(
-        Http2SolrClient solrClient,
+        HttpJettySolrClient solrClient,
         Replica replica,
         String prop,
         int expectedZkVersion,
@@ -1006,9 +1012,7 @@ public class SolrConfigHandler extends RequestHandlerBase
           Thread.sleep(100);
 
           NamedList<Object> resp =
-              solrClient
-                  .requestWithBaseUrl(replica.getBaseUrl(), replica.getCoreName(), this)
-                  .getResponse();
+              solrClient.requestWithBaseUrl(replica.getBaseUrl(), this, replica.getCoreName());
           if (resp != null) {
             @SuppressWarnings({"rawtypes"})
             Map m = (Map) resp.get(ZNODEVER);

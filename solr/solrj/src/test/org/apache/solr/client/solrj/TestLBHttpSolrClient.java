@@ -32,6 +32,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
@@ -277,10 +278,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return homeDir.toString();
     }
 
-    public String getUrl() {
-      return buildUrl(port) + "/collection1";
-    }
-
     public String getBaseUrl() {
       return buildUrl(port);
     }
@@ -293,10 +290,6 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/schema-replication1.xml";
     }
 
-    public String getConfDir() {
-      return confDir.toString();
-    }
-
     public String getDataDir() {
       return dataDir.toString();
     }
@@ -305,16 +298,10 @@ public class TestLBHttpSolrClient extends SolrTestCaseJ4 {
       return "solrj/solr/collection1/conf/solrconfig-follower1.xml";
     }
 
-    public String getSolrXmlFile() {
-      return "solrj/solr/solr.xml";
-    }
-
     public void setUp() throws Exception {
       Files.createDirectories(homeDir);
       Files.createDirectories(dataDir);
       Files.createDirectories(confDir);
-
-      Files.copy(SolrTestCaseJ4.getFile(getSolrXmlFile()), homeDir.resolve("solr.xml"));
 
       Path f = confDir.resolve("solrconfig.xml");
       Files.copy(SolrTestCaseJ4.getFile(getSolrConfigFile()), f);

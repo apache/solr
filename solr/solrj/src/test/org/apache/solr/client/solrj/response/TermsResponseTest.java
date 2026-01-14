@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj.response;
 
 import java.util.List;
 import org.apache.solr.EmbeddedSolrServerTestBase;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.ExternalPaths;
@@ -32,19 +32,16 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrClientTestRule.startSolr();
+    solrTestRule.startSolr();
 
-    solrClientTestRule
-        .newCollection()
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET.toString())
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
   }
 
   @Before
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    solrClientTestRule.clearIndex();
+    solrTestRule.clearIndex();
   }
 
   @Test

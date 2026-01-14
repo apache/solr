@@ -61,12 +61,12 @@ import org.apache.curator.framework.api.ACLProvider;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
-import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
+import org.apache.solr.client.solrj.jetty.CloudJettySolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.cloud.api.collections.DistributedCollectionConfigSetCommandRunner;
 import org.apache.solr.cloud.overseer.ClusterStateMutator;
@@ -207,7 +207,7 @@ public class ZkController implements Closeable {
   public final ZkStateReader zkStateReader;
   private SolrCloudManager cloudManager;
 
-  private CloudHttp2SolrClient cloudSolrClient;
+  private CloudSolrClient cloudSolrClient;
 
   private final ExecutorService zkConnectionListenerCallbackExecutor =
       ExecutorUtil.newMDCAwareSingleThreadExecutor(
@@ -242,8 +242,6 @@ public class ZkController implements Closeable {
 
   private int leaderVoteWait;
   private int leaderConflictResolveWait;
-
-  private boolean genericCoreNodeNames;
 
   private int clientTimeout;
 
@@ -298,8 +296,6 @@ public class ZkController implements Closeable {
     this.cc = cc;
 
     this.cloudConfig = cloudConfig;
-
-    this.genericCoreNodeNames = cloudConfig.getGenericCoreNodeNames();
 
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = cloudConfig.getSolrHostPort();
@@ -569,25 +565,24 @@ public class ZkController implements Closeable {
    */
   private void checkNoOldClusterstate(final SolrZkClient zkClient) throws InterruptedException {
     try {
-      if (zkClient.exists(UNSUPPORTED_SOLR_XML, true)) {
+      if (zkClient.exists(UNSUPPORTED_SOLR_XML)) {
         String message =
             "solr.xml found in ZooKeeper. Loading solr.xml from ZooKeeper is no longer supported since Solr 10. "
                 + "Cannot start Solr. The file can be removed with command bin/solr zk rm /solr.xml -z host:port";
         log.error(message);
         throw new SolrException(ErrorCode.INVALID_STATE, message);
       }
-      if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, true)) {
+      if (!zkClient.exists(ZkStateReader.UNSUPPORTED_CLUSTER_STATE)) {
         return;
       }
-      final byte[] data =
-          zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null, true);
+      final byte[] data = zkClient.getData(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, null, null);
 
       if (Arrays.equals("{}".getBytes(StandardCharsets.UTF_8), data)) {
         // Empty json. This log will only occur once.
         log.warn(
             "{} no longer supported starting with Solr 9. Found empty file on Zookeeper, deleting it.",
             ZkStateReader.UNSUPPORTED_CLUSTER_STATE);
-        zkClient.delete(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, -1, true);
+        zkClient.delete(ZkStateReader.UNSUPPORTED_CLUSTER_STATE, -1);
       } else {
         // /clusterstate.json not empty: refuse to start but do not automatically delete. A bit of a
         // pain but user shouldn't have older collections at this stage anyway.
@@ -700,8 +695,7 @@ public class ZkController implements Closeable {
                         + "/leader_elect/"
                         + slice
                         + "/election",
-                    null,
-                    true)
+                    null)
                 .size();
         if (children == 0) {
           log.debug(
@@ -963,7 +957,7 @@ public class ZkController implements Closeable {
         return cloudManager;
       }
       cloudSolrClient =
-          new CloudHttp2SolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
+          new CloudJettySolrClient.Builder(new ZkClientClusterStateProvider(zkStateReader))
               .withHttpClient(cc.getDefaultHttpSolrClient())
               .build();
       cloudManager = new SolrClientCloudManager(cloudSolrClient, cc.getObjectCache());
@@ -1035,7 +1029,7 @@ public class ZkController implements Closeable {
 
   private static void repairSecurityJson(SolrZkClient zkClient)
       throws KeeperException, InterruptedException {
-    List<ACL> securityConfAcl = zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null, true);
+    List<ACL> securityConfAcl = zkClient.getACL(ZkStateReader.SOLR_SECURITY_CONF_PATH, null);
     ACLProvider aclProvider = zkClient.getZkACLProvider();
 
     boolean tryUpdate = false;
@@ -1093,7 +1087,7 @@ public class ZkController implements Closeable {
         overseerElector.joinElection(context, false);
       }
 
-      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null, true);
+      Stat stat = zkClient.exists(ZkStateReader.LIVE_NODES_ZKNODE, null);
       if (stat != null && stat.getNumChildren() > 0) {
         publishAndWaitForDownStates();
       }
@@ -1115,7 +1109,7 @@ public class ZkController implements Closeable {
     String nodeName = getNodeName();
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
 
-    if (!zkClient.exists(nodePath, true)) {
+    if (!zkClient.exists(nodePath)) {
       return;
     }
 
@@ -1130,8 +1124,7 @@ public class ZkController implements Closeable {
               if (Watcher.Event.EventType.NodeDeleted.equals(event.getType())) {
                 deletedLatch.countDown();
               }
-            },
-            true);
+            });
 
     if (stat == null) {
       // znode suddenly disappeared but that's okay
@@ -1233,10 +1226,10 @@ public class ZkController implements Closeable {
             .withTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT, TimeUnit.MILLISECONDS)
             .withConnTimeOut(SolrZkClientTimeout.DEFAULT_ZK_CONNECT_TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
-    boolean exists = tmpClient.exists(chrootPath, true);
+    boolean exists = tmpClient.exists(chrootPath);
     if (!exists && create) {
       log.info("creating chroot {}", chrootPath);
-      tmpClient.makePath(chrootPath, false, true);
+      tmpClient.makePath(chrootPath, false);
       exists = true;
     }
     tmpClient.close();
@@ -1286,7 +1279,7 @@ public class ZkController implements Closeable {
     String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Remove node as live in ZooKeeper:{}", nodePath);
     try {
-      zkClient.delete(nodePath, -1, true);
+      zkClient.delete(nodePath, -1);
     } catch (NoNodeException e) {
 
     }
@@ -1295,8 +1288,7 @@ public class ZkController implements Closeable {
         .forEach(
             (role, mode) -> {
               try {
-                zkClient.delete(
-                    NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName, -1, true);
+                zkClient.delete(NodeRoles.getZNodeForRoleMode(role, mode) + "/" + nodeName, -1);
               } catch (KeeperException e) {
 
               } catch (InterruptedException e) {
@@ -1311,7 +1303,7 @@ public class ZkController implements Closeable {
 
   /** Returns true if the path exists */
   public boolean pathExists(String path) throws KeeperException, InterruptedException {
-    return zkClient.exists(path, true);
+    return zkClient.exists(path);
   }
 
   /**
@@ -1698,8 +1690,7 @@ public class ZkController implements Closeable {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps;
       } catch (InterruptedException e) {
@@ -2097,8 +2088,8 @@ public class ZkController implements Closeable {
 
   public String getCoreNodeName(CoreDescriptor descriptor) {
     String coreNodeName = descriptor.getCloudDescriptor().getCoreNodeName();
-    if (coreNodeName == null && !genericCoreNodeNames) {
-      // it's the default
+    if (coreNodeName == null) {
+      // default core naming pattern
       return getNodeName() + "_" + descriptor.getName();
     }
 
@@ -2320,7 +2311,7 @@ public class ZkController implements Closeable {
         // TODO ideally want 8sec connection timeout but can't easily also share the client
         // listeners
         try (SolrClient client =
-            new Http2SolrClient.Builder(leaderBaseUrl)
+            new HttpJettySolrClient.Builder(leaderBaseUrl)
                 .withHttpClient(getCoreContainer().getDefaultHttpSolrClient())
                 .withIdleTimeout(30000, TimeUnit.MILLISECONDS)
                 .build()) {
@@ -2390,7 +2381,7 @@ public class ZkController implements Closeable {
     log.debug("Load collection config from:{}", path);
     byte[] data;
     try {
-      data = zkClient.getData(path, null, null, true);
+      data = zkClient.getData(path, null, null);
     } catch (NoNodeException e) {
       // if there is no node, we will try and create it
       // first try to make in case we are pre-configuring
@@ -2405,7 +2396,7 @@ public class ZkController implements Closeable {
         }
         // if we fail creating, setdata
         // TODO: we should consider using version
-        zkClient.setData(path, Utils.toJSON(props), true);
+        zkClient.setData(path, Utils.toJSON(props));
       }
       return;
     }
@@ -2421,7 +2412,7 @@ public class ZkController implements Closeable {
     }
 
     // TODO: we should consider using version
-    zkClient.setData(path, Utils.toJSON(props), true);
+    zkClient.setData(path, Utils.toJSON(props));
   }
 
   public ZkDistributedQueue getOverseerJobQueue() {
@@ -2527,9 +2518,7 @@ public class ZkController implements Closeable {
           if (electionNode.startsWith(getNodeName())) {
             try {
               zkClient.delete(
-                  Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE + "/" + electionNode,
-                  -1,
-                  true);
+                  Overseer.OVERSEER_ELECT + LeaderElector.ELECTION_NODE + "/" + electionNode, -1);
             } catch (NoNodeException e) {
               // no problem
             } catch (InterruptedException e) {
@@ -2597,7 +2586,7 @@ public class ZkController implements Closeable {
 
   public void checkOverseerDesignate() {
     try {
-      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat(), true);
+      byte[] data = zkClient.getData(ZkStateReader.ROLES, null, new Stat());
       if (data == null) return;
       Map<?, ?> roles = (Map<?, ?>) Utils.fromJSON(data);
       if (roles == null) return;
@@ -2703,7 +2692,7 @@ public class ZkController implements Closeable {
     String errMsg = "Failed to persist resource at {0} - old {1}";
     try {
       try {
-        Stat stat = zkClient.setData(resourceLocation, content, znodeVersion, true);
+        Stat stat = zkClient.setData(resourceLocation, content, znodeVersion);
         // if the set succeeded, it should have incremented the version by one always
         latestVersion = stat.getVersion();
         log.info("Persisted config data to node {} ", resourceLocation);
@@ -2711,12 +2700,12 @@ public class ZkController implements Closeable {
       } catch (NoNodeException e) {
         if (createIfNotExists) {
           try {
-            zkClient.makePath(resourceLocation, content, CreateMode.PERSISTENT, true);
+            zkClient.makePath(resourceLocation, content, CreateMode.PERSISTENT);
             latestVersion = 0; // just created so version must be zero
             touchConfDir(zkLoader);
           } catch (KeeperException.NodeExistsException nee) {
             try {
-              Stat stat = zkClient.exists(resourceLocation, null, true);
+              Stat stat = zkClient.exists(resourceLocation, null);
               if (log.isDebugEnabled()) {
                 log.debug(
                     "failed to set data version in zk is {} and expected version is {} ",
@@ -2739,7 +2728,7 @@ public class ZkController implements Closeable {
 
     } catch (KeeperException.BadVersionException bve) {
       try {
-        zkClient.exists(resourceLocation, null, true);
+        zkClient.exists(resourceLocation, null);
       } catch (Exception e) {
         log.error("Exception during ZooKeeper node checking ", e);
       }
@@ -2863,7 +2852,7 @@ public class ZkController implements Closeable {
 
       Stat stat = null;
       try {
-        stat = zkClient.exists(zkDir, null, true);
+        stat = zkClient.exists(zkDir, null);
       } catch (KeeperException e) {
         // ignore , it is not a big deal
       } catch (InterruptedException e) {
@@ -2917,7 +2906,7 @@ public class ZkController implements Closeable {
 
   private void setConfWatcher(String zkDir, Watcher watcher, Stat stat) {
     try {
-      Stat newStat = zkClient.exists(zkDir, watcher, true);
+      Stat newStat = zkClient.exists(zkDir, watcher);
       if (stat != null && newStat.getVersion() > stat.getVersion()) {
         // a race condition where we missed an event fired
         // so fire the event listeners

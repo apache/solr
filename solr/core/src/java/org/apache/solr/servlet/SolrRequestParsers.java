@@ -25,14 +25,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,9 +43,9 @@ import java.util.Set;
 import org.apache.commons.io.input.CloseShieldInputStream;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.api.V2HttpCall;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -84,8 +82,6 @@ public class SolrRequestParsers {
   public static final String REQUEST_TIMER_SERVLET_ATTRIBUTE = "org.apache.solr.RequestTimer";
 
   private final HashMap<String, SolrRequestParser> parsers = new HashMap<>();
-  private final boolean enableRemoteStreams;
-  private final boolean enableStreamBody;
   private StandardRequestParser standard;
 
   /**
@@ -101,17 +97,10 @@ public class SolrRequestParsers {
     final int multipartUploadLimitKB, formUploadLimitKB;
     if (globalConfig == null) {
       multipartUploadLimitKB = formUploadLimitKB = Integer.MAX_VALUE;
-      enableRemoteStreams = false;
-      enableStreamBody = false;
-
     } else {
       multipartUploadLimitKB = globalConfig.getMultipartUploadLimitKB();
 
       formUploadLimitKB = globalConfig.getFormUploadLimitKB();
-
-      // security risks; disabled by default
-      enableRemoteStreams = Boolean.getBoolean("solr.requests.streaming.remote.enabled");
-      enableStreamBody = Boolean.getBoolean("solr.requests.streaming.body.enabled");
 
       // Let this filter take care of /select?xxx format
 
@@ -120,9 +109,6 @@ public class SolrRequestParsers {
   }
 
   private SolrRequestParsers() {
-    enableRemoteStreams = false;
-    enableStreamBody = false;
-
     init(Integer.MAX_VALUE, Integer.MAX_VALUE);
   }
 
@@ -167,7 +153,12 @@ public class SolrRequestParsers {
     // Handlers and login will want to know the path. If it contains a ':'
     // the handler could use it for RESTful URLs
     sreq.getContext().put(PATH, RequestHandlers.normalize(path));
-    sreq.getContext().put("httpMethod", req.getMethod());
+
+    final var methodStr = req.getMethod();
+    final var parsedMethod =
+        SolrRequest.METHOD.fromString(methodStr); // Throws error if method not recognized
+    sreq.getContext().put("httpMethod", parsedMethod);
+
     return sreq;
   }
 
@@ -196,58 +187,6 @@ public class SolrRequestParsers {
       streams = new ArrayList<>();
     } else if (!(streams instanceof ArrayList)) {
       streams = new ArrayList<>(streams);
-    }
-
-    // The content type will be applied to all streaming content
-    String contentType = params.get(CommonParams.STREAM_CONTENTTYPE);
-
-    // Handle anything with a remoteURL
-    String[] strs = params.getParams(CommonParams.STREAM_URL);
-    if (strs != null) {
-      if (!enableRemoteStreams) {
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Remote Streaming is disabled.");
-      }
-      for (final String url : strs) {
-        ContentStreamBase stream = new ContentStreamBase.URLStream(URI.create(url).toURL());
-        if (contentType != null) {
-          stream.setContentType(contentType);
-        }
-        streams.add(stream);
-      }
-    }
-
-    // Handle streaming files
-    strs = params.getParams(CommonParams.STREAM_FILE);
-    if (strs != null) {
-      if (!enableRemoteStreams) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Remote Streaming is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
-      }
-      for (final String file : strs) {
-        ContentStreamBase stream = new ContentStreamBase.FileStream(Path.of(file));
-        if (contentType != null) {
-          stream.setContentType(contentType);
-        }
-        streams.add(stream);
-      }
-    }
-
-    // Check for streams in the request parameters
-    strs = params.getParams(CommonParams.STREAM_BODY);
-    if (strs != null) {
-      if (!enableStreamBody) {
-        throw new SolrException(
-            ErrorCode.BAD_REQUEST,
-            "Stream Body is disabled. See https://solr.apache.org/guide/solr/latest/configuration-guide/requestdispatcher.html for help");
-      }
-      for (final String body : strs) {
-        ContentStreamBase stream = new ContentStreamBase.StringStream(body);
-        if (contentType != null) {
-          stream.setContentType(contentType);
-        }
-        streams.add(stream);
-      }
     }
 
     final HttpSolrCall httpSolrCall =
@@ -513,10 +452,6 @@ public class SolrRequestParsers {
     throw new SolrException(
         ErrorCode.BAD_REQUEST,
         "URLDecoder: Invalid digit (" + ((char) b) + ") in escape (%) pattern");
-  }
-
-  public boolean isEnableRemoteStreams() {
-    return enableRemoteStreams;
   }
 
   // -----------------------------------------------------------------

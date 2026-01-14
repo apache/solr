@@ -16,8 +16,9 @@
  */
 package org.apache.solr.handler.component;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -26,58 +27,55 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import org.apache.commons.io.file.PathUtils;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class DistributedDebugComponentTest extends SolrJettyTestBase {
+public class DistributedDebugComponentTest extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static SolrClient collection1;
   private static SolrClient collection2;
   private static String shard1;
   private static String shard2;
 
-  private static Path createSolrHome() throws Exception {
-    Path workDir = createTempDir();
-    setupJettyTestHome(workDir, "collection1");
-    PathUtils.copyDirectory(workDir.resolve("collection1"), workDir.resolve("collection2"));
-    return workDir;
-  }
-
   @BeforeClass
   public static void createThings() throws Exception {
     systemSetPropertyEnableUrlAllowList(false);
-    Path solrHome = createSolrHome();
-    createAndStartJetty(solrHome);
-    String url = getBaseUrl();
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir());
 
-    collection1 = getHttpSolrClient(url, "collection1");
-    collection2 = getHttpSolrClient(url, "collection2");
+    solrTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
+    solrTestRule
+        .newCollection("collection2")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
 
-    String urlCollection1 = getBaseUrl() + "/" + "collection1";
-    String urlCollection2 = getBaseUrl() + "/" + "collection2";
+    String urlCollection1 = solrTestRule.getBaseUrl() + "/" + "collection1";
+    String urlCollection2 = solrTestRule.getBaseUrl() + "/" + "collection2";
     shard1 = urlCollection1.replaceAll("https?://", "");
     shard2 = urlCollection2.replaceAll("https?://", "");
-
-    // create second core
-    try (SolrClient nodeClient = getHttpSolrClient(url)) {
-      CoreAdminRequest.Create req = new CoreAdminRequest.Create();
-      req.setCoreName("collection2");
-      req.setConfigSet("collection1");
-      nodeClient.request(req);
-    }
+    collection1 = solrTestRule.getSolrClient("collection1");
+    collection2 = solrTestRule.getSolrClient("collection2");
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
@@ -92,15 +90,9 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
 
   @AfterClass
-  public static void destroyThings() throws Exception {
-    if (null != collection1) {
-      collection1.close();
-      collection1 = null;
-    }
-    if (null != collection2) {
-      collection2.close();
-      collection2 = null;
-    }
+  public static void destroyThings() {
+    collection1 = null;
+    collection2 = null;
     resetExceptionIgnores();
     systemClearPropertySolrEnableUrlAllowList();
   }
@@ -121,7 +113,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
     QueryResponse response = collection1.query(query);
     NamedList<Object> track = (NamedList<Object>) response.getDebugMap().get("track");
     assertNotNull(track);
-    assertNotNull(track.get("rid"));
     assertNotNull(track.get("EXECUTE_QUERY"));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard1));
     assertNotNull(((NamedList<Object>) track.get("EXECUTE_QUERY")).get(shard2));
@@ -171,7 +162,6 @@ public class DistributedDebugComponentTest extends SolrJettyTestBase {
   }
 
   @Test
-  @SuppressWarnings("resource") // Cannot close client in this loop!
   public void testRandom() throws Exception {
     final int NUM_ITERS = atLeast(50);
 

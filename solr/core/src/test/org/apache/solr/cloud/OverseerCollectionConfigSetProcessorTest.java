@@ -452,7 +452,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
 
-    when(solrZkClientMock.setData(anyString(), any(), anyInt(), anyBoolean()))
+    when(solrZkClientMock.setData(anyString(), any(), anyInt()))
         .then(
             invocation -> {
               System.out.println(
@@ -465,7 +465,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return null;
             });
 
-    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.getData(anyString(), any(), any()))
         .thenAnswer(
             invocation -> {
               byte[] data = zkClientData.get(invocation.getArgument(0));
@@ -475,14 +475,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return data;
             });
 
-    when(solrZkClientMock.create(any(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.create(any(), any(), any()))
         .thenAnswer(
             invocation -> {
               zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
               return invocation.getArgument(0);
             });
 
-    when(solrZkClientMock.exists(any(String.class), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class)))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);
@@ -569,7 +569,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         .when(distribStateManagerMock)
         .makePath(anyString());
 
-    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class), isNull()))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);

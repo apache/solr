@@ -54,6 +54,32 @@ For projects built with Gradle, place the following in your `build.gradle`:
 compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-full-version}'
 ----
 
+==== Optional Jetty Module
+
+If you want to use Jetty-based HTTP clients (`HttpJettySolrClient`, `ConcurrentUpdateJettySolrClient`,
+`LBJettySolrClient`, or `CloudJettySolrClient`), you need to add the maven dependency `solr-solrj-jetty`:
+
+[source,xml,subs="verbatim,attributes"]
+----
+<dependency>
+  <groupId>org.apache.solr</groupId>
+  <artifactId>solr-solrj-jetty</artifactId>
+  <version>{solr-full-version}</version>
+</dependency>
+----
+
+For Gradle:
+
+[source,groovy,subs="attributes"]
+----
+compile group: 'org.apache.solr', name: 'solrj-solrj-jetty', version: '{solr-full-version}'
+----
+
+Alternatively, you can use `HttpJdkSolrClient` from the base `solr-solrj` artifact,
+which uses Java's built-in HTTP client and has no additional dependencies.
+
+==== Other Optional Modules
+
 If you want to use `CloudSolrClient` _and_ have it talk directly to ZooKeeper, you will need to add a dependency on the `solr-solrj-zookeeper` artifact.
 
 If you want to build and use xref:query-guide:streaming-expressions.adoc[Streaming Expressions] classes in your Java code, you will need to add a dependency on the `solr-solrj-streaming` artifact.
@@ -95,11 +121,11 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/Http2SolrClient.html[`Http2SolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
+- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBHttp2SolrClient.html[`LBHttp2SolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBSolrClient.html[`LBSolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateHttp2SolrClient.html[`ConcurrentUpdateHttp2SolrClient`] - geared towards indexing-centric workloads.
+- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
 
 === Common Configuration Options
@@ -114,9 +140,9 @@ Unless otherwise specified, SolrJ expects these URLs to point to the root Solr p
 
 A few notable exceptions to this are described below:
 
-- *Http2SolrClient* - Users of `Http2SolrClient` may choose to skip providing a root URL to their client, in favor of specifying the URL as an argument for the `Http2SolrClient.requestWithBaseUrl` method.
-Calling any other `request` methods on a URL-less `Http2SolrClient` will result in an `IllegalArgumentException`.
-- *LBHttp2SolrClient* - Solr's "load balancing" client is frequently used to round-robin requests across a set of replicas or cores.
+- *HttpJettySolrClient* & *HttpJdkSolrClient* - Users of these may choose to skip providing a root URL to their client, in favor of specifying the URL as an argument for the `requestWithBaseUrl` method.
+Calling any other `request` methods on a URL-less client will result in an `IllegalArgumentException`.
+- *LBSolrClient* - Solr's "load balancing" client is frequently used to round-robin requests across a set of replicas or cores.
 URLs are still expected to point to the Solr root (i.e. "/solr"), but to support this use-case the URLs are often supplemented by an additional parameter to specify the targeted core.
 Alternatively, some "load balancing" methods make use of an `Endpoint` abstraction to provide this URL and core information in a more structured way.
 - *CloudSolrClient* - Like many clients, CloudSolrClient accepts a series of URLs pointing to the Solr root path (i.e. "/solr").
@@ -147,7 +173,7 @@ include::example$UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrclient-timeou
 
 When these values are not explicitly provided, SolrJ falls back to using the defaults for the OS/environment is running on.
 
-`ConcurrentUpdateSolrClient` and its counterpart `ConcurrentUpdateHttp2SolrClient` also implement a stall prevention
+`ConcurrentUpdateSolrClient` and its counterpart `ConcurrentUpdateBaseSolrClient` also implement a stall prevention
 timeout that allows requests to non-responsive nodes to fail quicker than waiting for a socket timeout.
 The default value of this timeout is set to 15000 ms and can be adjusted by a system property `solr.cloud.client.stallTime`.
 This value should be smaller than `solr.jetty.http.idleTimeout` (Which is 120000 ms by default) and greater than the

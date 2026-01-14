@@ -38,8 +38,8 @@ import org.apache.commons.exec.ExecuteResultHandler;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.SolrInputDocument;
@@ -69,8 +69,11 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   @AfterClass
-  public static void cleanupDirectoryFactory() {
+  public static void cleanup() {
     System.clearProperty("solr.directoryFactory");
+    System.clearProperty("solr.host.advertise");
+    System.clearProperty("solr.port.listen");
+    System.clearProperty("solr.log.dir");
   }
 
   /**
@@ -124,7 +127,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           if (solrCloudCluster == null) {
             Path logDir = createTempDir("solr_logs");
             System.setProperty("solr.log.dir", logDir.toString());
-            System.setProperty("host", "localhost");
+            System.setProperty("solr.host.advertise", "localhost");
             System.setProperty("solr.port.listen", String.valueOf(port));
             solrCloudCluster = new MiniSolrCloudCluster(1, createTempDir(), solrxml, jettyConfig);
           } else {
@@ -212,7 +215,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       Path solrHomeDir = Path.of(getArg("--solr-home", args));
 
-      System.setProperty("host", "localhost");
+      System.setProperty("solr.host.advertise", "localhost");
       System.setProperty("solr.port.listen", String.valueOf(port));
       System.setProperty("solr.logs.dir", createTempDir("solr_logs").toString());
 
@@ -418,9 +421,9 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
   /**
    * Tests the interactive SolrCloud example; we cannot test the non-interactive because we need
-   * control over the port and can only test with one node since the test relies on setting the host
-   * and solr.port.listen system properties, i.e. there is no test coverage for the --no-prompt
-   * option.
+   * control over the port and can only test with one node since the test relies on setting the
+   * solr.host.advertise and solr.port.listen system properties, i.e. there is no test coverage for
+   * the --no-prompt option.
    */
   @Test
   public void testInteractiveSolrCloudExample() throws Exception {

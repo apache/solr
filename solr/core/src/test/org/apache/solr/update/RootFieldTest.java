@@ -22,7 +22,7 @@ import static org.hamcrest.CoreMatchers.is;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -50,20 +50,14 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
     useRootSchema = random().nextBoolean();
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
-    System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
-    System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
 
-    solrClientTestRule
-        .newCollection()
-        .withConfigSet("../collection1")
-        .withSchemaFile(schema)
-        .create();
+    solrTestRule.newCollection().withConfigSet("../collection1").withSchemaFile(schema).create();
   }
 
   @Test

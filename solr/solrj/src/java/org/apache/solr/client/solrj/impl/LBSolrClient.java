@@ -40,15 +40,16 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.ResponseParser;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -61,6 +62,61 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
+/**
+ * This "LoadBalanced Http Solr Client" is a load balancing wrapper around an Http Solr Client. This
+ * is useful when you have multiple Solr endpoints and requests need to be Load Balanced among them.
+ *
+ * <p>Do <b>NOT</b> use this class for indexing in leader/follower scenarios since documents must be
+ * sent to the correct leader; no inter-node routing is done.
+ *
+ * <p>In SolrCloud (leader/replica) scenarios, it is usually better to use {@link CloudSolrClient},
+ * but this class may be used for updates because the server will forward them to the appropriate
+ * leader.
+ *
+ * <p>It offers automatic failover when a server goes down, and it detects when the server comes
+ * back up.
+ *
+ * <p>Load balancing is done using a simple round-robin on the list of endpoints. Endpoint URLs are
+ * expected to point to the Solr "root" path (i.e. "/solr").
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr"), new LBSolrClient.Endpoint("http://host2:8080/solr"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * Users who wish to balance traffic across a specific set of replicas or cores may specify each
+ * endpoint as a root-URL and core-name pair. For example:
+ *
+ * <blockquote>
+ *
+ * <pre>
+ * SolrClient client = new LBSolrClient.Builder(httpSolrClient,
+ *         new LBSolrClient.Endpoint("http://host1:8080/solr", "coreA"),
+ *         new LBSolrClient.Endpoint("http://host2:8080/solr", "coreB"))
+ *     .build();
+ * </pre>
+ *
+ * </blockquote>
+ *
+ * <p>If a request to an endpoint fails by an IOException due to a connection timeout or read
+ * timeout then the host is taken off the list of live endpoints and moved to a 'dead endpoint list'
+ * and the request is resent to the next live endpoint. This process is continued till it tries all
+ * the live endpoints. If at least one endpoint is alive, the request succeeds, and if not it fails.
+ *
+ * <p>Dead endpoints are periodically healthchecked on a fixed interval controlled by {@code
+ * LBSolrClient.Builder#setAliveCheckInterval(int, TimeUnit)}. The default is set to one minute.
+ *
+ * <p><b>When to use this?</b><br>
+ * This can be used as a software load balancer when you do not wish to set up an external load
+ * balancer. Alternatives to this code are to use a dedicated hardware load balancer or using Apache
+ * httpd with mod_proxy_balancer as a load balancer. See <a
+ * href="http://en.wikipedia.org/wiki/Load_balancing_(computing)">Load balancing on Wikipedia</a>
+ */
 public abstract class LBSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -108,6 +164,54 @@ public abstract class LBSolrClient extends SolrClient {
     // not a top-level request, we are interested only in the server being sent to i.e. it need not
     // distribute our request to further servers
     solrQuery.setDistrib(false);
+  }
+
+  public static class Builder<C extends HttpSolrClientBase> {
+
+    private final C solrClient;
+    private final Endpoint[] solrEndpoints;
+    private long aliveCheckIntervalMillis =
+        TimeUnit.MILLISECONDS.convert(60, TimeUnit.SECONDS); // 1 minute between checks
+    protected String defaultCollection;
+
+    public Builder(C solrClient, Endpoint... endpoints) {
+      this.solrClient = solrClient;
+      this.solrEndpoints = endpoints;
+    }
+
+    /**
+     * LBHttpSolrServer keeps pinging the dead servers at fixed interval to find if it is alive. Use
+     * this to set that interval
+     *
+     * @param aliveCheckInterval how often to ping for aliveness
+     */
+    public Builder<C> setAliveCheckInterval(int aliveCheckInterval, TimeUnit unit) {
+      if (aliveCheckInterval <= 0) {
+        throw new IllegalArgumentException(
+            "Alive check interval must be " + "positive, specified value = " + aliveCheckInterval);
+      }
+      this.aliveCheckIntervalMillis = TimeUnit.MILLISECONDS.convert(aliveCheckInterval, unit);
+      return this;
+    }
+
+    /** Sets a default for core or collection based requests. */
+    public Builder<C> withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return this;
+    }
+
+    public C getSolrClient() {
+      return solrClient;
+    }
+
+    public LBSolrClient build() {
+      return new LBSolrClient(this) {
+        @Override
+        protected SolrClient getClient(Endpoint endpoint) {
+          return solrClient;
+        }
+      };
+    }
   }
 
   /**
@@ -401,7 +505,15 @@ public abstract class LBSolrClient extends SolrClient {
     }
   }
 
-  public LBSolrClient(List<Endpoint> solrEndpoints) {
+  protected LBSolrClient(Builder<?> builder) {
+    this(Arrays.asList(builder.solrEndpoints));
+    this.aliveCheckIntervalMillis = builder.aliveCheckIntervalMillis;
+    this.defaultCollection = builder.defaultCollection;
+    this.requestWriter = builder.solrClient.getRequestWriter();
+    this.parser = builder.solrClient.getParser();
+  }
+
+  protected LBSolrClient(List<Endpoint> solrEndpoints) {
     if (!solrEndpoints.isEmpty()) {
       for (Endpoint s : solrEndpoints) {
         EndpointWrapper wrapper = createServerWrapper(s);
@@ -503,13 +615,11 @@ public abstract class LBSolrClient extends SolrClient {
   private NamedList<Object> doRequest(
       SolrClient solrClient, String baseUrl, String collection, SolrRequest<?> solrRequest)
       throws SolrServerException, IOException {
-    // Some implementations of LBSolrClient.getClient(...) return a Http2SolrClient that may not be
-    // pointed at the desired URL (or any URL for that matter).  We special case that here to ensure
-    // the appropriate URL is provided.
-    if (solrClient instanceof Http2SolrClient httpSolrClient) {
-      return httpSolrClient.requestWithBaseUrl(baseUrl, (c) -> c.request(solrRequest, collection));
-    } else if (solrClient instanceof HttpJdkSolrClient) {
-      return ((HttpJdkSolrClient) solrClient).requestWithBaseUrl(baseUrl, solrRequest, collection);
+    // Some implementations of LBSolrClient.getClient(...) return a HttpSolrClientBase that may not
+    // be pointed at the desired URL (or any URL for that matter).  We special-case that here to
+    // ensure the appropriate URL is provided.
+    if (solrClient instanceof HttpSolrClientBase hasReqWithUrl) {
+      return hasReqWithUrl.requestWithBaseUrl(baseUrl, solrRequest, collection);
     }
 
     // Assume provided client already uses 'baseUrl'
@@ -526,9 +636,10 @@ public abstract class LBSolrClient extends SolrClient {
       if (isZombie) {
         reviveZombieServer(baseUrl);
       }
-    } catch (RemoteExecutionException e) {
-      throw e;
     } catch (SolrException e) {
+      if (!isNonRetryable && e instanceof RemoteSolrException rse) {
+        isNonRetryable = rse.shouldSkipRetry();
+      }
       // we retry on 404 or 403 or 503 or 500
       // unless it's an update - then we only retry on connect exception
       if (!isNonRetryable && RETRY_CODES.contains(e.code())) {

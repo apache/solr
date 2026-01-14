@@ -66,7 +66,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
       UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
       if (null != processor) {
-        // test chain might be empty or short circuited.
+        // test chain might be empty or short-circuited.
         processor.processAdd(cmd);
       }
 
