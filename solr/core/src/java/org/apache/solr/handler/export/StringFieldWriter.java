@@ -59,7 +59,7 @@ class StringFieldWriter extends FieldWriter {
   }
 
   @Override
-  public boolean write(
+  public int write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {
     StringValue stringValue = (StringValue) sortDoc.getSortValue(this.field);
@@ -74,7 +74,7 @@ class StringFieldWriter extends FieldWriter {
 
       if (stringValue.currentOrd == -1) {
         // Null sort value
-        return false;
+        return 0;
       }
 
       if (this.lastOrd == stringValue.currentOrd) {
@@ -89,7 +89,7 @@ class StringFieldWriter extends FieldWriter {
           docValuesCache.getSortedDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals == null) {
-        return false;
+        return 0;
       }
 
       int ord = vals.ordValue();
@@ -102,7 +102,7 @@ class StringFieldWriter extends FieldWriter {
     }
 
     writeBytes(ew, ref, fieldType);
-    return true;
+    return 1;
   }
 
   protected void writeBytes(MapWriter.EntryWriter ew, BytesRef ref, FieldType fieldType)

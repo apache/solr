@@ -22,7 +22,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.common.MapWriter;
 
 abstract class FieldWriter {
-  public abstract boolean write(
+  public abstract int write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
       throws IOException;
 }

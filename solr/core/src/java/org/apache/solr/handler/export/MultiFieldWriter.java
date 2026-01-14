@@ -61,7 +61,7 @@ class MultiFieldWriter extends FieldWriter {
   }
 
   @Override
-  public boolean write(
+  public int write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
       throws IOException {
     if (this.fieldType.isPointField()) {
@@ -69,7 +69,7 @@ class MultiFieldWriter extends FieldWriter {
           docValuesCache.getSortedNumericDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals == null) {
-        return false;
+        return 0;
       }
 
       final SortedNumericDocValues docVals = vals;
@@ -82,13 +82,13 @@ class MultiFieldWriter extends FieldWriter {
                   w.add(bitsToValue.apply(docVals.nextValue()));
                 }
               });
-      return true;
+      return 1;
     } else {
       SortedSetDocValues vals =
           docValuesCache.getSortedSetDocValues(
               sortDoc.docId, readerContext.reader(), readerContext.ord);
       if (vals == null) {
-        return false;
+        return 0;
       }
 
       final SortedSetDocValues docVals = vals;
@@ -105,7 +105,7 @@ class MultiFieldWriter extends FieldWriter {
                   else w.add(fieldType.toObject(f));
                 }
               });
-      return true;
+      return 1;
     }
   }
 

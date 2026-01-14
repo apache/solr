@@ -115,9 +115,9 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final FieldWriter EMPTY_FIELD_WRITER =
       new FieldWriter() {
         @Override
-        public boolean write(
+        public int write(
             SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex) {
-          return false;
+          return 0;
         }
       };
 
@@ -494,9 +494,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     LeafReaderContext context = leaves.get(ord);
     int fieldIndex = 0;
     for (FieldWriter fieldWriter : writers) {
-      if (fieldWriter.write(sortDoc, context, ew, fieldIndex)) {
-        ++fieldIndex;
-      }
+      fieldIndex += fieldWriter.write(sortDoc, context, ew, fieldIndex);
     }
   }
 
@@ -507,8 +505,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     boolean includeStoredFields = req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
 
     List<FieldWriter> writers = new ArrayList<>();
-    Set<String> docValueFields = new LinkedHashSet<>();
-    Map<String, SchemaField> storedOnlyFields = new LinkedHashMap<>();
+    Set<SchemaField> docValueFields = new LinkedHashSet<>();
+    Map<String, SchemaField> storedFields = new LinkedHashMap<>();
 
     for (String field : req.getSearcher().getFieldNames()) {
       if (!solrReturnFields.wantsField(field)) {
@@ -528,11 +526,11 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
       if (canUseDocValues) {
         // Prefer DocValues when available
-        docValueFields.add(field);
+        docValueFields.add(schemaField);
       } else if (schemaField.stored()) {
         // Field is stored-only (no usable DocValues)
         if (includeStoredFields) {
-          storedOnlyFields.put(field, schemaField);
+          storedFields.put(field, schemaField);
         } else if (requestFieldNames.contains(field)) {
           // Explicitly requested field without DocValues and includeStoredFields=false
           throw new IOException(
@@ -553,8 +551,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       // Else: glob matched field with neither DocValues nor stored - silently skip
     }
 
-    for (String field : docValueFields) {
-      SchemaField schemaField = req.getSchema().getField(field);
+    for (SchemaField schemaField : docValueFields) {
+      String field = schemaField.getName();
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
       FieldWriter writer;
@@ -612,8 +610,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       writers.add(writer);
     }
 
-    if (!storedOnlyFields.isEmpty()) {
-      writers.add(new StoredFieldsWriter(storedOnlyFields));
+    if (!storedFields.isEmpty()) {
+      writers.add(new StoredFieldsWriter(storedFields));
     }
 
     return writers;
@@ -910,7 +908,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     @Override
-    public boolean write(
+    public int write(
         SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex)
         throws IOException {
       WeakHashMap<IndexReader.CacheKey, StoredFields> map = storedFieldsMap.get();
@@ -926,8 +924,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       ExportVisitor visitor = new ExportVisitor(out);
       storedFields.document(sortDoc.docId, visitor);
-      visitor.flush();
-      return false;
+      return visitor.flush();
     }
 
     class ExportVisitor extends StoredFieldVisitor {
@@ -935,6 +932,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       final EntryWriter out;
       String lastFieldName;
       List<Object> multiValue = null;
+      int fieldsVisited;
 
       public ExportVisitor(EntryWriter out) {
         this.out = out;
@@ -995,16 +993,19 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
             multiValue = new ArrayList<>();
             lastFieldName = fieldName;
             multiValue.add(value);
+            fieldsVisited++;
           }
         } else {
           out.put(fieldName, value);
+          fieldsVisited++;
         }
       }
 
-      private void flush() throws IOException {
+      private int flush() throws IOException {
         if (lastFieldName != null && multiValue != null && !multiValue.isEmpty()) {
           out.put(lastFieldName, multiValue);
         }
+        return fieldsVisited;
       }
     }
   }

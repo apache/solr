@@ -34,7 +34,7 @@ class DoubleFieldWriter extends FieldWriter {
   }
 
   @Override
-  public boolean write(
+  public int write(
       SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
       throws IOException {
     double val;
@@ -43,7 +43,7 @@ class DoubleFieldWriter extends FieldWriter {
       if (sortValue.isPresent()) {
         val = (double) sortValue.getCurrentValue();
       } else { // empty-value
-        return false;
+        return 0;
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
@@ -53,10 +53,10 @@ class DoubleFieldWriter extends FieldWriter {
       if (vals != null) {
         val = Double.longBitsToDouble(vals.longValue());
       } else {
-        return false;
+        return 0;
       }
     }
     ew.put(this.field, val);
-    return true;
+    return 1;
   }
 }
