@@ -74,8 +74,8 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       int queueSize,
       int threadCount,
       HttpSolrClientBase solrClient,
-      AtomicInteger successCoounter,
-      AtomicInteger failureCoounter,
+      AtomicInteger successCounter,
+      AtomicInteger failureCounter,
       StringBuilder errors);
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
