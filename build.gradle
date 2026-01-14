@@ -33,6 +33,7 @@ plugins {
   alias(libs.plugins.diffplug.spotless) apply false
   alias(libs.plugins.nodegradle.node) apply false
   alias(libs.plugins.openapi.generator) apply false
+  alias(libs.plugins.cyclonedx) apply false
   alias(libs.plugins.logchange)
 }
 
@@ -54,10 +55,10 @@ version = {
 
   // On a release explicitly set release version in one go:
   //  -Dversion.release=x.y.z
-  
+
   // Jenkins can just set just a suffix, overriding SNAPSHOT, e.g. using build id:
   //  -Dversion.suffix=jenkins123
-  
+
   String versionSuffix = propertyOrDefault('version.suffix', 'SNAPSHOT')
   String v = propertyOrDefault('version.release', "${baseVersion}-${versionSuffix}")
   if (v.endsWith("-")) {
@@ -110,8 +111,8 @@ ext {
     logger.info("External tool '${name}' resolved to: ${resolved}")
     return resolved
   }
-  
-  luceneBaseVersionProvider = project.provider { 
+
+  luceneBaseVersionProvider = project.provider {
     def luceneVersion = libs.versions.apache.lucene.get()
     def m = (luceneVersion =~ /^\d+\.\d+\.\d+\b/)
     if (!m) {
