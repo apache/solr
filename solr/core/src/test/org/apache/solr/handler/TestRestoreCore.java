@@ -27,7 +27,6 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
-import org.apache.solr.SolrJettyTestBase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
@@ -41,7 +40,7 @@ import org.junit.Test;
 @SolrTestCaseJ4.SuppressSSL // Currently, unknown why SSL does not work with this test
 // Backups do checksum validation against a footer value not present in 'SimpleText'
 @LuceneTestCase.SuppressCodecs("SimpleText")
-public class TestRestoreCore extends SolrJettyTestBase {
+public class TestRestoreCore extends SolrTestCaseJ4 {
 
   JettySolrRunner leaderJetty;
   ReplicationTestHelper.SolrInstance leader = null;
@@ -53,12 +52,9 @@ public class TestRestoreCore extends SolrJettyTestBase {
 
   private static JettySolrRunner createAndStartJetty(ReplicationTestHelper.SolrInstance instance)
       throws Exception {
-    Files.copy(
-        SolrTestCaseJ4.TEST_HOME().resolve("solr.xml"), Path.of(instance.getHomeDir(), "solr.xml"));
-    Properties nodeProperties = new Properties();
-    nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -180,7 +176,7 @@ public class TestRestoreCore extends SolrJettyTestBase {
     }
   }
 
-  public void testBackupFailsMissingAllowPaths() throws Exception {
+  public void testBackupFailsMissingAllowPaths() {
     final String params =
         "&location=" + URLEncoder.encode(createTempDir().toString(), StandardCharsets.UTF_8);
     Throwable t =

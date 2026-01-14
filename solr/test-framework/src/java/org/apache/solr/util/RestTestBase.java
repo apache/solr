@@ -20,21 +20,31 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Properties;
 import java.util.SortedMap;
 import javax.xml.xpath.XPathExpressionException;
+import org.apache.http.client.HttpClient;
 import org.apache.solr.JSONTestUtil;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.AfterClass;
+import org.junit.ClassRule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-public abstract class RestTestBase extends SolrJettyTestBase {
+public abstract class RestTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   protected static RestTestHarness restTestHarness;
 
   @AfterClass
@@ -57,7 +67,76 @@ public abstract class RestTestBase extends SolrJettyTestBase {
 
     createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
-    restTestHarness = new RestTestHarness(() -> getCoreUrl());
+    restTestHarness = new RestTestHarness(RestTestBase::getCoreUrl);
+  }
+
+  protected static JettySolrRunner createAndStartJetty(
+      Path solrHome,
+      String configFile,
+      String schemaFile,
+      String context,
+      boolean stopAtShutdown,
+      SortedMap<ServletHolder, String> extraServlets)
+      throws Exception {
+    // creates the data dir
+
+    assert context == null || context.equals("/solr"); // deprecated
+
+    JettyConfig jettyConfig =
+        JettyConfig.builder().stopAtShutdown(stopAtShutdown).withServlets(extraServlets).build();
+
+    Properties nodeProps = new Properties();
+    if (configFile != null) nodeProps.setProperty("solrconfig", configFile);
+    if (schemaFile != null) nodeProps.setProperty("schema", schemaFile);
+    if (System.getProperty("solr.data.dir") == null) {
+      nodeProps.setProperty("solr.data.dir", createTempDir().toRealPath().toString());
+    }
+
+    return createAndStartJetty(solrHome, nodeProps, jettyConfig);
+  }
+
+  protected static JettySolrRunner createAndStartJetty(
+      Path solrHome, Properties nodeProperties, JettyConfig jettyConfig) throws Exception {
+
+    Path coresDir = createTempDir().resolve("cores");
+
+    Properties props = new Properties();
+    props.setProperty("name", DEFAULT_TEST_CORENAME);
+    props.setProperty("configSet", "collection1");
+    props.setProperty("config", "${solrconfig:solrconfig.xml}");
+    props.setProperty("schema", "${schema:schema.xml}");
+
+    writeCoreProperties(coresDir.resolve("core"), props, "RestTestBase");
+
+    Properties nodeProps = new Properties(nodeProperties);
+    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
+    nodeProps.setProperty("configSetBaseDir", solrHome.toString());
+
+    solrTestRule.startSolr(solrHome, nodeProps, jettyConfig);
+    return getJetty();
+  }
+
+  protected static JettySolrRunner getJetty() {
+    return solrTestRule.getJetty();
+  }
+
+  /** URL to Solr */
+  protected static String getBaseUrl() {
+    return solrTestRule.getBaseUrl();
+  }
+
+  /** URL to the core */
+  protected static String getCoreUrl() {
+    return getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
+  }
+
+  protected static SolrClient getSolrClient() {
+    return solrTestRule.getSolrClient();
+  }
+
+  protected static HttpClient getHttpClient() {
+    var client = (HttpApacheSolrClient) getSolrClient();
+    return client.getHttpClient();
   }
 
   /** Validates an update XML String is successful */

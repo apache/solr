@@ -79,9 +79,14 @@ public abstract class SolrClientTestRule extends ExternalResource {
         if (configSet.endsWith(confSuffix)) {
           configSet = configSet.substring(0, configSet.length() - confSuffix.length());
         }
+        this.configSet = configSet;
       }
 
-      this.configSet = configSet;
+      return this;
+    }
+
+    public NewCollectionBuilder withConfigSet(Path configSet) {
+      withConfigSet(configSet.toString());
       return this;
     }
 

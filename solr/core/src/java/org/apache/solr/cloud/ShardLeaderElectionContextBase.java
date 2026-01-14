@@ -121,8 +121,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
   }
 
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-      throws KeeperException, InterruptedException {
+  void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
     // register as leader - if an ephemeral is already there, wait to see if it goes away
 
     String parent = ZkMaintenanceUtils.getZkParent(leaderPath);

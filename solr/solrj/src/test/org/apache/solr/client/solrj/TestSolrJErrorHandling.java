@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,27 +37,40 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
-public class TestSolrJErrorHandling extends SolrJettyTestBase {
+public class TestSolrJErrorHandling extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   List<Throwable> unexpected = new CopyOnWriteArrayList<>();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Override
@@ -102,7 +117,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithXml() throws Exception {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(getBaseUrl())
+        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new XMLRequestWriter())
             .build()) {
@@ -114,7 +129,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   @Test
   public void testWithBinary() throws Exception {
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(getBaseUrl())
+        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withRequestWriter(new JavaBinRequestWriter())
             .build()) {
@@ -277,7 +292,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
     // sometimes succeeds with this size, but larger can cause OOM from command line
     String bodyString = getJsonDocs(200000);
 
-    String urlString = getCoreUrl() + "/update";
+    String urlString = solrTestRule.getBaseUrl() + "/update";
 
     HttpURLConnection conn = null;
     URL url = URI.create(urlString).toURL();
@@ -330,7 +345,7 @@ public class TestSolrJErrorHandling extends SolrJettyTestBase {
   public void testRawSocket() throws Exception {
 
     String hostName = "127.0.0.1";
-    int port = getJetty().getLocalPort();
+    int port = solrTestRule.getJetty().getLocalPort();
 
     try (Socket socket = new Socket(hostName, port);
         OutputStream out = new BufferedOutputStream(socket.getOutputStream());

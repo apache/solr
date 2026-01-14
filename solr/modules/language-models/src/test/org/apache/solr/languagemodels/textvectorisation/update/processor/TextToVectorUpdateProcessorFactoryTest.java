@@ -47,7 +47,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLanguageModelBas
 
   @Before
   public void setup() {
-    collection1 = solrClientTestRule.getCoreContainer().getCore("collection1");
+    collection1 = solrTestRule.getCoreContainer().getCore("collection1");
   }
 
   @After

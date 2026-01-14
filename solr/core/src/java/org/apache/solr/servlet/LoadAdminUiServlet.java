@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.servlet.EssentialSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE;
+
 import com.google.common.net.HttpHeaders;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,7 +64,7 @@ public final class LoadAdminUiServlet extends HttpServlet {
 
     // This attribute is set by the SolrDispatchFilter
     String admin = request.getRequestURI().substring(request.getContextPath().length());
-    CoreContainer cores = (CoreContainer) request.getAttribute("org.apache.solr.CoreContainer");
+    CoreContainer cores = (CoreContainer) request.getAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE);
     try (InputStream in = getServletContext().getResourceAsStream(admin)) {
       if (in != null && cores != null) {
         response.setCharacterEncoding("UTF-8");

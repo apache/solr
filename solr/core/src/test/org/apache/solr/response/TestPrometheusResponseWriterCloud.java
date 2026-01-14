@@ -19,10 +19,8 @@ package org.apache.solr.response;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -69,9 +67,7 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     SolrQuery query = new SolrQuery("*:*");
     solrClient.query("collection1", query);
 
-    var req =
-        new GenericSolrRequest(
-            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
+    var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
@@ -101,9 +97,7 @@ public class TestPrometheusResponseWriterCloud extends SolrCloudTestCase {
     solrClient.query("collection1", query);
     solrClient.query("collection2", query);
 
-    var req =
-        new GenericSolrRequest(
-            METHOD.GET, "/admin/metrics", SolrRequestType.ADMIN, SolrParams.of("wt", "prometheus"));
+    var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);

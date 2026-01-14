@@ -17,16 +17,23 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Tests {@link HttpSolrClient}'s response to a variety of bad inputs. */
-public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
+public class HttpSolrClientBadInputTest extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
@@ -34,12 +41,19 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
-    try (SolrClient client = getHttpSolrClient(getBaseUrl(), ANY_COLLECTION)) {
+    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl(), ANY_COLLECTION)) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),
@@ -66,7 +80,7 @@ public class HttpSolrClientBadInputTest extends SolrJettyTestBase {
           });
     }
 
-    try (SolrClient client = getHttpSolrClient(getBaseUrl())) {
+    try (SolrClient client = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

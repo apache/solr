@@ -30,12 +30,13 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -58,12 +59,16 @@ import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
 import org.apache.solr.util.ServletFixtures.SlowStreamServlet;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 
-public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
+public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
 
-  protected static final String DEFAULT_CORE = "foo";
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
+  protected static final String DEFAULT_COLLECTION = DEFAULT_TEST_CORENAME;
   protected static final String SLOW_SERVLET_PATH = "/slow";
   protected static final String SLOW_SERVLET_REGEX = SLOW_SERVLET_PATH + "/*";
   protected static final String DEBUG_SERVLET_PATH = "/debug";
@@ -86,7 +91,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
             .withServlet(new ServletHolder(SlowStreamServlet.class), SLOW_STREAM_SERVLET_REGEX)
             .withSSLConfig(sslConfig.buildServerSSLConfig())
             .build();
-    createAndStartJetty(legacyExampleCollection1SolrHome(), jettyConfig);
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
   @Override
@@ -276,7 +281,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   protected enum WT {
     JAVABIN,
     XML
-  };
+  }
 
   protected void testUpdate(HttpSolrClient client, WT wt, String contentType, String docIdValue)
       throws Exception {
@@ -323,13 +328,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     try {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
-      baseUrlClient.add(COLLECTION_1, doc);
-      baseUrlClient.commit(COLLECTION_1);
+      baseUrlClient.add(DEFAULT_COLLECTION, doc);
+      baseUrlClient.commit(DEFAULT_COLLECTION);
 
       assertEquals(
           1,
           baseUrlClient
-              .query(COLLECTION_1, new SolrQuery("id:collection"))
+              .query(DEFAULT_COLLECTION, new SolrQuery("id:collection"))
               .getResults()
               .getNumFound());
 
@@ -350,8 +355,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     }
   }
 
-  protected void verifyServletState(HttpSolrClient client, SolrRequest<?> request)
-      throws Exception {
+  protected void verifyServletState(HttpSolrClient client, SolrRequest<?> request) {
     // check query String
     Iterator<String> paramNames = request.getParams().getParameterNamesIterator();
     while (paramNames.hasNext()) {
@@ -365,7 +369,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
           assertEquals(
               shouldBeInQueryString,
               DebugServlet.queryString.contains(
-                  name + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8.name())));
+                  name + "=" + URLEncoder.encode(value, StandardCharsets.UTF_8)));
           // in either case, it should be in the parameters
           assertNotNull(DebugServlet.parameters.get(name));
           assertEquals(1, DebugServlet.parameters.get(name).length);
@@ -376,12 +380,12 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
   }
 
   protected void testQueryString() throws Exception {
-    final String clientUrl = getBaseUrl() + DEBUG_SERVLET_PATH;
+    final String clientUrl = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     UpdateRequest req = new UpdateRequest();
 
     try (HttpSolrClient client =
         builder(clientUrl, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT)
-            .withDefaultCollection(DEFAULT_CORE)
+            .withDefaultCollection(DEFAULT_COLLECTION)
             .withTheseParamNamesInTheUrl(Set.of("serverOnly"))
             .build()) {
       // test without request query params
@@ -556,7 +560,7 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
 
   protected void testUpdateAsync() throws Exception {
     ResponseParser rp = new XMLResponseParser();
-    String url = getBaseUrl();
+    String url = solrTestRule.getBaseUrl();
     HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
     int limit = 10;
@@ -565,11 +569,11 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     try (HttpSolrClient client = b.build()) {
 
       // ensure the collection is empty to start
-      client.deleteByQuery(COLLECTION_1, "*:*");
-      client.commit(COLLECTION_1);
+      client.deleteByQuery(DEFAULT_COLLECTION, "*:*");
+      client.commit(DEFAULT_COLLECTION);
       QueryResponse qr =
           client.query(
-              COLLECTION_1,
+              DEFAULT_COLLECTION,
               new MapSolrParams(Collections.singletonMap("q", "*:*")),
               SolrRequest.METHOD.POST);
       assertEquals(0, qr.getResults().getNumFound());
@@ -579,22 +583,22 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
         ur.add("id", "KEY-" + i);
         ur.setMethod(SolrRequest.METHOD.POST);
 
-        client.requestAsync(ur, COLLECTION_1).whenComplete((nl, e) -> latch.countDown());
+        client.requestAsync(ur, DEFAULT_COLLECTION).whenComplete((nl, e) -> latch.countDown());
       }
       latch.await(1, TimeUnit.MINUTES);
-      client.commit(COLLECTION_1);
+      client.commit(DEFAULT_COLLECTION);
 
       // check that the correct number of documents were added
       qr =
           client.query(
-              COLLECTION_1,
+              DEFAULT_COLLECTION,
               new MapSolrParams(Collections.singletonMap("q", "*:*")),
               SolrRequest.METHOD.POST);
       assertEquals(limit, qr.getResults().getNumFound());
 
       // clean up
-      client.deleteByQuery(COLLECTION_1, "*:*");
-      client.commit(COLLECTION_1);
+      client.deleteByQuery(DEFAULT_COLLECTION, "*:*");
+      client.commit(DEFAULT_COLLECTION);
     }
   }
 
@@ -636,13 +640,13 @@ public abstract class HttpSolrClientTestBase extends SolrJettyTestBase {
     ResponseParser rp = new XMLResponseParser();
     DebugServlet.clear();
     DebugServlet.addResponseHeader("Content-Type", "Wrong Content Type!");
-    String url = getBaseUrl() + DEBUG_SERVLET_PATH;
+    String url = solrTestRule.getBaseUrl() + DEBUG_SERVLET_PATH;
     HttpSolrClient.BuilderBase<?, ?> b =
         builder(url, DEFAULT_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT).withResponseParser(rp);
 
     try (HttpSolrClient client = b.build()) {
       QueryRequest query = new QueryRequest(new MapSolrParams(Collections.singletonMap("id", "1")));
-      CompletableFuture<NamedList<Object>> future = client.requestAsync(query, COLLECTION_1);
+      CompletableFuture<NamedList<Object>> future = client.requestAsync(query, DEFAULT_COLLECTION);
       ExecutionException ee = null;
       try {
         future.get(1, TimeUnit.MINUTES);

@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 public class SolrExampleXMLTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Override

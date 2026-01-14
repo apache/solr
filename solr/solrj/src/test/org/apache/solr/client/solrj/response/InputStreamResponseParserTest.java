@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
@@ -30,26 +30,30 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** A test for parsing Solr response from query by InputStreamResponseParser. */
-public class InputStreamResponseParserTest extends SolrJettyTestBase {
+public class InputStreamResponseParserTest extends SolrTestCaseJ4 {
 
   private static InputStream getResponse() {
     return new ByteArrayInputStream("NO-OP test response".getBytes(StandardCharsets.UTF_8));
   }
 
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Before
   public void doBefore() throws IOException, SolrServerException {
     // add document and commit, and ensure it's there
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "1234");
     client.add(doc);
@@ -61,7 +65,7 @@ public class InputStreamResponseParserTest extends SolrJettyTestBase {
   public void testQueryParse() throws Exception {
 
     try (SolrClient client =
-        new HttpApacheSolrClient.Builder(getBaseUrl())
+        new HttpApacheSolrClient.Builder(solrTestRule.getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .withResponseParser(new InputStreamResponseParser("xml"))
             .build()) {

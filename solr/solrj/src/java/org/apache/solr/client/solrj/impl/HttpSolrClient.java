@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * <p>The protected methods can be considered as internal / unstable APIs.
  *
  * @see #builder(String)
- * @see org.apache.solr.client.solrj.jetty.HttpJettySolrClient
+ * @see "org.apache.solr.client.solrj.jetty.HttpJettySolrClient"
  * @see org.apache.solr.client.solrj.impl.HttpJdkSolrClient
  */
 public abstract class HttpSolrClient extends SolrClient {
@@ -412,7 +412,7 @@ public abstract class HttpSolrClient extends SolrClient {
 
   /**
    * Provides a new builder of an {@link HttpSolrClient}. The implementation will try to create a
-   * {@link org.apache.solr.client.solrj.jetty.HttpJettySolrClient} if available, otherwise will
+   * {@code org.apache.solr.client.solrj.jetty.HttpJettySolrClient} if available, otherwise will
    * fall back on {@link HttpJdkSolrClient}.
    *
    * @param baseUrl for {@link BuilderBase#withBaseSolrUrl(String)}.

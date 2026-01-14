@@ -99,7 +99,7 @@ public class ZkConfigSetService extends ConfigSetService {
     String zkPath = CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
     Stat stat;
     try {
-      stat = zkClient.exists(zkPath, null, true);
+      stat = zkClient.exists(zkPath, null);
     } catch (KeeperException e) {
       log.warn("Unexpected exception when getting modification time of {}", zkPath, e);
       return null; // debatable; we'll see an error soon if there's a real problem
@@ -121,7 +121,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public boolean checkConfigExists(String configName) throws IOException {
     try {
-      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName, true);
+      return zkClient.exists(CONFIGS_ZKNODE + "/" + configName);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Error checking whether config exists", SolrZkClient.checkInterrupted(e));
@@ -195,7 +195,7 @@ public class ZkConfigSetService extends ConfigSetService {
                 mimeType));
       } else {
         // if overwriteOnExists is true then zkClient#makePath failOnExists is set to false
-        zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists, true);
+        zkClient.makePath(filePath, data, CreateMode.PERSISTENT, null, !overwriteOnExists);
       }
     } catch (KeeperException.NodeExistsException nodeExistsException) {
       throw new SolrException(
@@ -219,8 +219,7 @@ public class ZkConfigSetService extends ConfigSetService {
           Utils.toJSON(data),
           CreateMode.PERSISTENT,
           null,
-          false,
-          true);
+          false);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error setting config metadata", SolrZkClient.checkInterrupted(e));
     }
@@ -232,7 +231,7 @@ public class ZkConfigSetService extends ConfigSetService {
       @SuppressWarnings("unchecked")
       Map<String, Object> data =
           (Map<String, Object>)
-              Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null, true));
+              Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null));
       return data;
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyMap();
@@ -249,7 +248,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public byte[] downloadFileFromConfig(String configName, String filePath) throws IOException {
     try {
-      return zkClient.getData(CONFIGS_ZKNODE + "/" + configName + "/" + filePath, null, null, true);
+      return zkClient.getData(CONFIGS_ZKNODE + "/" + configName + "/" + filePath, null, null);
     } catch (KeeperException.NoNodeException e) {
       return null;
     } catch (KeeperException | InterruptedException e) {
@@ -260,7 +259,7 @@ public class ZkConfigSetService extends ConfigSetService {
   @Override
   public List<String> listConfigs() throws IOException {
     try {
-      return zkClient.getChildren(CONFIGS_ZKNODE, null, true);
+      return zkClient.getChildren(CONFIGS_ZKNODE, null);
     } catch (KeeperException.NoNodeException e) {
       return Collections.emptyList();
     } catch (KeeperException | InterruptedException e) {
@@ -307,9 +306,9 @@ public class ZkConfigSetService extends ConfigSetService {
 
   private void copyConfigDirFromZk(String fromZkPath, String toZkPath) throws IOException {
     try {
-      List<String> files = zkClient.getChildren(fromZkPath, null, true);
+      List<String> files = zkClient.getChildren(fromZkPath, null);
       for (String file : files) {
-        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null, true);
+        List<String> children = zkClient.getChildren(fromZkPath + "/" + file, null);
         if (children.size() == 0) {
           copyData(fromZkPath + "/" + file, toZkPath + "/" + file);
         } else {
@@ -335,7 +334,7 @@ public class ZkConfigSetService extends ConfigSetService {
           toZkFilePath);
     } else {
       log.debug("Copying zk node {} to {}", fromZkFilePath, toZkFilePath);
-      byte[] data = zkClient.getData(fromZkFilePath, null, null, true);
+      byte[] data = zkClient.getData(fromZkFilePath, null, null);
       if (!FileTypeMagicUtil.isFileForbiddenInConfigset(data)) {
         zkClient.makePath(toZkFilePath, data, true);
       } else {

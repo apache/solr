@@ -50,9 +50,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   @Before
   public void beforeTest() throws Exception {
     Path home = TEST_PATH();
-    // define these properties, they are used in solrconfig.xml
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml =
         Files.readString(home.resolve("solr-metricreporter.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);

@@ -17,8 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -291,7 +289,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty(URL_SCHEME, HTTPS);
+      System.setProperty("urlScheme", "https");
     }
 
     ExecutorUtil.resetThreadLocalProviders();
@@ -325,7 +323,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       System.clearProperty("tests.shardhandler.randomSeed");
       System.clearProperty("solr.index.updatelog.enabled");
       System.clearProperty("useCompoundFile");
-      System.clearProperty(URL_SCHEME);
+      System.clearProperty("urlScheme");
       System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
       System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
@@ -704,10 +702,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
     ignoreException("ignore_exception");
 
-    // other  methods like starting a jetty instance need these too
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
     String configFile = getSolrConfigFile();
     if (configFile != null) {
       createCore();
@@ -807,7 +801,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       CoreContainer cc = h.getCoreContainer();
       if (cc.getNumAllCores() > 0 && cc.isZooKeeperAware()) {
         try {
-          cc.getZkController().getZkClient().exists("/", false);
+          cc.getZkController().getZkClient().exists("/");
         } catch (KeeperException e) {
           log.error("Testing connectivity to ZK by checking for root path failed", e);
           fail("Trying to tear down a ZK aware core container with ZK not reachable");
@@ -2235,10 +2229,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     copyMinConf(dstRoot, null);
   }
 
-  // Creates a minimal conf dir, adding in a core.properties file from the string passed in
-  // the string to write to the core.properties file may be null in which case nothing is done with
-  // it.
-  // propertiesContent may be an empty string, which will actually work.
+  /**
+   * Creates a minimal Solr configuration directory with default solrconfig. Adds in a
+   * core.properties if propertiesContent is provided.
+   *
+   * @param dstRoot the destination directory where conf/ will be created
+   * @param propertiesContent content for core.properties file, or null to skip creating it
+   */
   public static void copyMinConf(Path dstRoot, String propertiesContent) throws IOException {
     copyMinConf(dstRoot, propertiesContent, "solrconfig-minimal.xml");
   }
@@ -2257,19 +2254,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(
         top.resolve("solrconfig.snippet.randomindexconfig.xml"),
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
-  }
-
-  // Creates minimal full setup, including solr.xml
-  public static void copyMinFullSetup(Path dstRoot) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.resolve("solr.xml"));
-    copyMinConf(dstRoot);
-  }
-
-  // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
   }
 
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
@@ -2315,7 +2299,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try {
       Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
       Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
       Path collection1Dir = tempSolrHome.resolve("collection1");

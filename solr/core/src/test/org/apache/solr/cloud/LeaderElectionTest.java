@@ -93,9 +93,8 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStartMs)
-        throws KeeperException, InterruptedException {
-      super.runLeaderProcess(weAreReplacement, pauseBeforeStartMs);
+    void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
+      super.runLeaderProcess(weAreReplacement);
       if (runLeaderDelay > 0) {
         log.info("Sleeping for {}ms to simulate leadership takeover delay", runLeaderDelay);
         Thread.sleep(runLeaderDelay);
@@ -295,8 +294,7 @@ public class LeaderElectionTest extends SolrTestCaseJ4 {
     while (iterCount-- > 0) {
       try {
         byte[] data =
-            zkClient.getData(
-                ZkStateReader.getShardLeadersPath(collection, slice), null, null, true);
+            zkClient.getData(ZkStateReader.getShardLeadersPath(collection, slice), null, null);
         ZkCoreNodeProps leaderProps = new ZkCoreNodeProps(ZkNodeProps.load(data));
         return leaderProps.getCoreUrl();
       } catch (NoNodeException | SessionExpiredException e) {

@@ -236,6 +236,6 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
     UpdateRequest req = new UpdateRequest();
     req.add(document);
     req.setParam("update.chain", updateChain);
-    solrClientTestRule.getSolrClient("collection1").request(req);
+    solrTestRule.getSolrClient("collection1").request(req);
   }
 }

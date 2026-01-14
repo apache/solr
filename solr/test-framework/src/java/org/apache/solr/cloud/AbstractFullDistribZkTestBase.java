@@ -276,10 +276,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     if (schema == null) schema = "schema.xml";
     zkServer.buildZooKeeper(getCloudSolrConfig(), schema);
 
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-
     // ignoreException(".*");
 
     cloudInit = false;
@@ -301,18 +297,14 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
               .create(
                   ZkStateReader.CLUSTER_PROPS,
                   Utils.toJSON(Collections.singletonMap(URL_SCHEME, HTTPS)),
-                  CreateMode.PERSISTENT,
-                  true);
+                  CreateMode.PERSISTENT);
         } catch (KeeperException.NodeExistsException e) {
           ZkNodeProps props =
               ZkNodeProps.load(
-                  zkStateReader
-                      .getZkClient()
-                      .getData(ZkStateReader.CLUSTER_PROPS, null, null, true));
+                  zkStateReader.getZkClient().getData(ZkStateReader.CLUSTER_PROPS, null, null));
           zkStateReader
               .getZkClient()
-              .setData(
-                  ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, HTTPS)), true);
+              .setData(ZkStateReader.CLUSTER_PROPS, Utils.toJSON(props.plus(URL_SCHEME, HTTPS)));
         }
       }
     }
@@ -2211,8 +2203,6 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
           System.clearProperty(ENABLE_UPDATE_LOG);
           System.clearProperty(REMOVE_VERSION_FIELD);
           System.clearProperty("solr.directoryFactory");
-          System.clearProperty("solr.test.sys.prop1");
-          System.clearProperty("solr.test.sys.prop2");
           System.clearProperty(ZOOKEEPER_FORCE_SYNC);
           System.clearProperty(
               MockDirectoryFactory.SOLR_TESTS_ALLOW_READING_FILES_STILL_OPEN_FOR_WRITE);
