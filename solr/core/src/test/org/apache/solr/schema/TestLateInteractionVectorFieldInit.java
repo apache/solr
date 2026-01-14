@@ -48,7 +48,9 @@ public class TestLateInteractionVectorFieldInit extends AbstractBadConfigTestBas
     assertConfigs(
         "solrconfig-basic.xml", "bad-schema-late-vec-field-indexed.xml", "indexed: bad_field");
     assertConfigs(
-        "solrconfig-basic.xml", "bad-schema-late-vec-field-multivalued.xml", "multiValued: bad_field");
+        "solrconfig-basic.xml",
+        "bad-schema-late-vec-field-multivalued.xml",
+        "multiValued: bad_field");
   }
 
   public void test_SchemaFields() throws Exception {

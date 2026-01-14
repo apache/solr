@@ -32,6 +32,7 @@ import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.LateInteractionFloatValuesSource;
+import org.apache.lucene.search.LateInteractionFloatValuesSource.ScoreFunction;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
@@ -52,6 +53,8 @@ public class LateInteractionVectorField extends FieldType {
   public static final String SIMILARITY_FUNCTION = "similarityFunction";
   public static final VectorSimilarityFunction DEFAULT_SIMILARITY =
       VectorSimilarityFunction.EUCLIDEAN;
+  public static final String SCORE_FUNCTION = "scoreFunction";
+  public static final ScoreFunction DEFAULT_SCORE_FUNCTION = ScoreFunction.SUM_MAX_SIM;
 
   private static final int MUST_BE_TRUE = DOC_VALUES;
   private static final int MUST_BE_FALSE = MULTIVALUED | TOKENIZED | INDEXED | UNINVERTIBLE;
@@ -63,10 +66,7 @@ public class LateInteractionVectorField extends FieldType {
 
   private int dimension;
   private VectorSimilarityFunction similarityFunction;
-
-  // nocommit: pre-emptively add ScoreFunction opt?
-  // nocommit: if we don't add it now, write a test to fail if/when new options added to
-  // ScoreFunction enum
+  private ScoreFunction scoreFunction;
 
   public LateInteractionVectorField() {
     super();
@@ -74,31 +74,32 @@ public class LateInteractionVectorField extends FieldType {
 
   @Override
   public void init(IndexSchema schema, Map<String, String> args) {
+
     this.dimension =
-        ofNullable(args.get(VECTOR_DIMENSION))
+        ofNullable(args.remove(VECTOR_DIMENSION))
             .map(Integer::parseInt)
             .orElseThrow(
                 () ->
                     new SolrException(
                         SolrException.ErrorCode.SERVER_ERROR,
                         VECTOR_DIMENSION + " is a mandatory parameter"));
-    args.remove(VECTOR_DIMENSION);
 
-    try {
-      this.similarityFunction =
-          ofNullable(args.get(SIMILARITY_FUNCTION))
-              .map(value -> VectorSimilarityFunction.valueOf(value.toUpperCase(Locale.ROOT)))
-              .orElse(DEFAULT_SIMILARITY);
-    } catch (IllegalArgumentException e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR,
-          SIMILARITY_FUNCTION + " not recognized: " + args.get(SIMILARITY_FUNCTION));
-    }
-    args.remove(SIMILARITY_FUNCTION);
+    this.similarityFunction =
+        optionalEnumArg(
+            SIMILARITY_FUNCTION,
+            args.remove(SIMILARITY_FUNCTION),
+            VectorSimilarityFunction.class,
+            DEFAULT_SIMILARITY);
+    this.scoreFunction =
+        optionalEnumArg(
+            SCORE_FUNCTION,
+            args.remove(SCORE_FUNCTION),
+            ScoreFunction.class,
+            DEFAULT_SCORE_FUNCTION);
 
     // By the time this method is called, FieldType.setArgs has already set "typical" defaults,
     // and parsed the users explicit options.
-    // We need to override those defaults, and error if the user asked for nonesense
+    // We need to override those defaults, and error if the user asked for nonsense
 
     this.properties |= MUST_BE_TRUE;
     this.properties &= ~MUST_BE_FALSE;
@@ -122,11 +123,17 @@ public class LateInteractionVectorField extends FieldType {
     return similarityFunction;
   }
 
+  public ScoreFunction getScoreFunction() {
+    return scoreFunction;
+  }
+
   public DoubleValuesSource getMultiVecSimilarityValueSource(
       final SchemaField f, final String vecStr) throws SyntaxError {
-    // nocommit: use ScoreFunction here if we add it
     return new LateInteractionFloatValuesSource(
-        f.getName(), stringToMultiFloatVector(dimension, vecStr), getSimilarityFunction());
+        f.getName(),
+        stringToMultiFloatVector(dimension, vecStr),
+        getSimilarityFunction(),
+        getScoreFunction());
   }
 
   @Override
@@ -290,7 +297,7 @@ public class LateInteractionVectorField extends FieldType {
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
     writer.writeStr(name, toExternal(f), false);
   }
-  
+
   @Override
   public Object toObject(SchemaField sf, BytesRef term) {
     return multiFloatVectorToString(LateInteractionField.decode(term));
@@ -309,7 +316,8 @@ public class LateInteractionVectorField extends FieldType {
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
-        getClass().getSimpleName() + " not supported for function queries, use lateVector() function.");
+        getClass().getSimpleName()
+            + " not supported for function queries, use lateVector() function.");
   }
 
   /** Not supported */
@@ -317,7 +325,8 @@ public class LateInteractionVectorField extends FieldType {
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
-        getClass().getSimpleName() + " not supported for field queries, use lateVector() function.");
+        getClass().getSimpleName()
+            + " not supported for field queries, use lateVector() function.");
   }
 
   /** Not Supported */
@@ -348,5 +357,24 @@ public class LateInteractionVectorField extends FieldType {
     throw new SolrException(
         SolrException.ErrorCode.BAD_REQUEST,
         getClass().getSimpleName() + " not supported for sorting.");
+  }
+
+  /**
+   * @param key Config option name, used in exception messages
+   * @param value Value specified in configuration, may be <code>null</code>
+   * @param clazz Enum class specifying the return type
+   * @param defaultValue default to use if value is <code>null</code>
+   */
+  private static final <E extends Enum<E>> E optionalEnumArg(
+      final String key, final String value, final Class<E> clazz, final E defaultValue)
+      throws SolrException {
+    try {
+      return ofNullable(value)
+          .map(v -> Enum.valueOf(clazz, v.toUpperCase(Locale.ROOT)))
+          .orElse(defaultValue);
+    } catch (IllegalArgumentException e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, key + " not recognized: " + value);
+    }
   }
 }

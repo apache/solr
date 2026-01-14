@@ -22,16 +22,16 @@ import static org.apache.solr.schema.LateInteractionVectorField.stringToMultiFlo
 import static org.hamcrest.Matchers.startsWith;
 
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import org.apache.lucene.document.LateInteractionField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.VectorSimilarityFunction;
+import org.apache.lucene.search.LateInteractionFloatValuesSource.ScoreFunction;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.LateInteractionVectorField;
 import org.apache.solr.schema.SchemaField;
 import org.junit.After;
 import org.junit.Before;
@@ -48,6 +48,18 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
   public void cleanUp() {
     clearIndex();
     deleteCore();
+  }
+
+  public void testFutureProofAgainstNewScoreFunctions() throws Exception {
+    // if this assert fails, it means there are new value(s) in the ScoreFunction enum,
+    // and we need to add fieldType declarations using those new ScoreFunctions to our test
+    // configs, and confirm the correct score function is used in various tests
+    //
+    // then remove this test method
+    assertEquals(
+        "The ScoreFunction enum in Lucene now has more then value, test needs updated",
+        EnumSet.of(ScoreFunction.SUM_MAX_SIM),
+        EnumSet.allOf(ScoreFunction.class));
   }
 
   public void testStringEncodingAndDecoding() throws Exception {
@@ -143,10 +155,12 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
 
   /** Low level test of createFields */
   public void createFields() throws Exception {
-    final Map<String,float[][]> data = Map.of("[[1,2,3,4]]",
-                                              new float[][] { { 1F, 2F, 3F, 4F }},
-                                              "[[1,2,3,4],[5,6,7,8]]",
-                                              new float[][] { { 1F, 2F, 3F, 4F }, { 5F, 6F, 7F, 8F }});
+    final Map<String, float[][]> data =
+        Map.of(
+            "[[1,2,3,4]]",
+            new float[][] {{1F, 2F, 3F, 4F}},
+            "[[1,2,3,4],[5,6,7,8]]",
+            new float[][] {{1F, 2F, 3F, 4F}, {5F, 6F, 7F, 8F}});
 
     try (SolrQueryRequest r = req()) {
       // defaults with stored + doc values
@@ -155,7 +169,7 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         final float[][] expected = data.get(input);
         final List<IndexableField> actual = f.getType().createFields(f, input);
         assertEquals(2, actual.size());
-        
+
         if (actual.get(0) instanceof LateInteractionField lif) {
           assertEquals(expected, lif.getValue());
         } else {
@@ -167,14 +181,14 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
           fail("second Field isn't stored: " + actual.get(1).getClass());
         }
       }
-      
+
       // stored=false, only doc values
       for (String input : data.keySet()) {
         final SchemaField f = r.getSchema().getField("lv_4_nostored");
         final float[][] expected = data.get(input);
         final List<IndexableField> actual = f.getType().createFields(f, input);
         assertEquals(1, actual.size());
-        
+
         if (actual.get(0) instanceof LateInteractionField lif) {
           assertEquals(expected, lif.getValue());
         } else {
@@ -183,7 +197,7 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
       }
     }
   }
-  
+
   public void testSimpleIndexAndRetrieval() throws Exception {
     // for simplicity, use a single doc, with identical values in several fields
 
@@ -244,8 +258,8 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         "//str[@name='lv_4_cosine'][.='" + d4s + "']",
 
         // dv only non-stored fields
-        "//str[@name='lv_3_nostored'][.='"+d3s+"']",
-        "//str[@name='lv_4_nostored'][.='"+d4s+"']",
+        "//str[@name='lv_3_nostored'][.='" + d3s + "']",
+        "//str[@name='lv_4_nostored'][.='" + d4s + "']",
 
         // function computations
         "//float[@name='euclid_3_def'][.=" + euclid3 + "]",
