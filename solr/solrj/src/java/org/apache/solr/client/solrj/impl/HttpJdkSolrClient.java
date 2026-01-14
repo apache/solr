@@ -147,8 +147,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
       String overrideBaseUrl, final SolrRequest<?> solrRequest, String collection) {
     try {
       PreparedRequest pReq = prepareRequest(solrRequest, collection, overrideBaseUrl);
-      return httpClient
-          .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+      return httpClient.sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
     } catch (Exception e) {
       CompletableFuture<HttpResponse<InputStream>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
@@ -160,17 +159,18 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   public CompletableFuture<NamedList<Object>> requestAsync(
       final SolrRequest<?> solrRequest, String collection) {
     return requestInputStreamAsync(null, solrRequest, collection)
-        .thenApply(httpResponse -> {
-          try {
-            PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
-            return processErrorsAndResponse(
-                solrRequest, pReq.parserToUse, httpResponse, pReq.url);
-          } catch (SolrServerException e) {
-            throw new RuntimeException(e);
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-        });
+        .thenApply(
+            httpResponse -> {
+              try {
+                PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
+                return processErrorsAndResponse(
+                    solrRequest, pReq.parserToUse, httpResponse, pReq.url);
+              } catch (SolrServerException e) {
+                throw new RuntimeException(e);
+              } catch (IOException e) {
+                throw new RuntimeException(e);
+              }
+            });
   }
 
   @Override

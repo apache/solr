@@ -17,12 +17,12 @@
 
 package org.apache.solr.client.solrj.jetty;
 
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClientTestBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClientTestBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 
 public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrClientTestBase {
 
@@ -35,7 +35,8 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
       AtomicInteger successCounter,
       AtomicInteger failureCounter,
       StringBuilder errors) {
-    return new OutcomeCountingConcurrentUpdateJettySolrClient.Builder(serverUrl, (HttpJettySolrClient) solrClient, successCounter, failureCounter, errors)
+    return new OutcomeCountingConcurrentUpdateJettySolrClient.Builder(
+            serverUrl, (HttpJettySolrClient) solrClient, successCounter, failureCounter, errors)
         .withQueueSize(queueSize)
         .withThreadCount(threadCount)
         .setPollQueueTime(0, TimeUnit.MILLISECONDS)
@@ -45,8 +46,8 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
   @Override
   public HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs) {
     var builder = new HttpJettySolrClient.Builder();
-    if(overrideIdleTimeoutMs != null) {
-      builder.withIdleTimeout(overrideIdleTimeoutMs,  TimeUnit.MILLISECONDS);
+    if (overrideIdleTimeoutMs != null) {
+      builder.withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
     }
     return builder.build();
   }
@@ -66,13 +67,14 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
     if (defaultCollection != null) {
       builder.withDefaultCollection(defaultCollection);
     }
-    if(disablePollQueue) {
+    if (disablePollQueue) {
       builder.setPollQueueTime(0, TimeUnit.MILLISECONDS);
     }
     return builder.build();
   }
 
-  public static class OutcomeCountingConcurrentUpdateJettySolrClient extends ConcurrentUpdateJettySolrClient {
+  public static class OutcomeCountingConcurrentUpdateJettySolrClient
+      extends ConcurrentUpdateJettySolrClient {
     private final AtomicInteger successCounter;
     private final AtomicInteger failureCounter;
     private final StringBuilder errors;

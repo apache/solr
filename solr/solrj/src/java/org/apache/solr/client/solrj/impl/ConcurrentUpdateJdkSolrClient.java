@@ -1,13 +1,12 @@
 package org.apache.solr.client.solrj.impl;
 
-import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.common.util.NamedList;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.http.HttpResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 
 public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClient {
 
@@ -22,7 +21,8 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
   protected StreamingResponse doSendUpdateStream(Update update) {
     UpdateRequest req = update.request();
     String collection = update.collection();
-    CompletableFuture<HttpResponse<InputStream>> resp = client.requestInputStreamAsync(basePath, req, collection);
+    CompletableFuture<HttpResponse<InputStream>> resp =
+        client.requestInputStreamAsync(basePath, req, collection);
 
     return new StreamingResponse() {
 
@@ -63,7 +63,8 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
     public Builder(String baseUrl, HttpJdkSolrClient client) {
 
       this(baseUrl, client, false);
-      // The base class uses idle timeout with StreamingResponse#awaitResponse so it needs to be set!
+      // The base class uses idle timeout with StreamingResponse#awaitResponse so it needs to be
+      // set!
       this.idleTimeoutMillis = 1000;
     }
 
@@ -80,5 +81,4 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
       return new ConcurrentUpdateJdkSolrClient(this);
     }
   }
-
 }
