@@ -50,7 +50,6 @@ dependencies {
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
   testImplementation libs.apache.zookeeper.jute
 
   testImplementation libs.apache.lucene.core
