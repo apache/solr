@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 
+/** A ConcurrentUpdate SolrClient using {@link HttpJdkSolrClient}. */
 public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClient {
 
   private final HttpJdkSolrClient client;
