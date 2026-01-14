@@ -1731,4 +1731,56 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             + "        \"date_dt_stored\":\"2025-06-15T12:30:00Z\",\n"
             + "        \"bool_b_stored\":true}]}}");
   }
+
+  @Test
+  public void testIncludeStoredFieldsWithUseDocValuesAsStored() throws Exception {
+    // Test that fields with stored=true AND useDocValuesAsStored=true work correctly
+    // with includeStoredFields=true. The sortabledv_udvas and sortabledv_m_udvas fields
+    // in the schema have stored="true" and useDocValuesAsStored="true"
+    clearIndex();
+
+    // Use values that sort lexicographically in the same order to avoid issues with
+    // DocValues returning values in sorted order
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "sortabledv_udvas", "single value text",
+            "sortabledv_m_udvas", "aaa multi value",
+            "sortabledv_m_udvas", "bbb multi value"));
+    assertU(
+        adoc(
+            "id", "2",
+            "intdv", "2",
+            "sortabledv_udvas", "another single value",
+            "sortabledv_m_udvas", "ccc another multi",
+            "sortabledv_m_udvas", "ddd another multi",
+            "sortabledv_m_udvas", "eee another multi"));
+    assertU(commit());
+
+    // Request with includeStoredFields=true - should retrieve the stored values
+    String resp =
+        h.query(
+            req(
+                "q", "*:*",
+                "qt", "/export",
+                "fl", "id,sortabledv_udvas,sortabledv_m_udvas",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{\n"
+            + "  \"responseHeader\":{\"status\":0},\n"
+            + "  \"response\":{\n"
+            + "    \"numFound\":2,\n"
+            + "    \"docs\":[{\n"
+            + "        \"id\":\"1\",\n"
+            + "        \"sortabledv_udvas\":\"single value text\",\n"
+            + "        \"sortabledv_m_udvas\":[\"aaa multi value\",\"bbb multi value\"]},\n"
+            + "      {\n"
+            + "        \"id\":\"2\",\n"
+            + "        \"sortabledv_udvas\":\"another single value\",\n"
+            + "        \"sortabledv_m_udvas\":[\"ccc another multi\",\"ddd another multi\",\"eee another multi\"]}]}}");
+  }
 }
