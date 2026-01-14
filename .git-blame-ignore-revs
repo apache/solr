@@ -33,3 +33,5 @@ c99af207c761ec34812ef1cc3054eb2804b7448b
 # SOLR-17026 [google java formatter upgrade]
 8b9954317690428b13e1c6c4ed1dbdb743ab389b
 
+# Gradle reformat PR #4037
+2f871134e7071f162dd2ee01c3b9984abe9bede1
