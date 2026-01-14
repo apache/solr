@@ -60,6 +60,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.TimeOut;
@@ -422,21 +423,27 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
       String asyncId, Duration timeout)
-      throws SolrServerException, IOException, InterruptedException {
-    CollectionAdminRequest.RequestStatus requestStatus =
+      throws InterruptedException {
+    final CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus(asyncId);
-    CollectionAdminRequest.RequestStatusResponse rsp = null;
-    TimeOut timeoutCheck = new TimeOut(timeout, TimeSource.NANO_TIME);
-    while (!timeoutCheck.hasTimedOut()) {
-      rsp = requestStatus.process(cluster.getSolrClient());
-      if (rsp.getRequestStatus() == RequestStatusState.FAILED
-          || rsp.getRequestStatus() == RequestStatusState.COMPLETED) {
-        return rsp;
-      }
-      Thread.sleep(50);
-    }
-    fail("Async request " + asyncId + " did not complete within duration: " + timeout.toString());
-    return rsp;
+    final AtomicReference<CollectionAdminRequest.RequestStatusResponse> rsp = new AtomicReference<>();
+    RetryUtil.retryUntil(
+        "Async request " + asyncId + " did not complete within duration: " + timeout,
+        (int)(timeout.toMillis() / 50),
+        50,
+        TimeUnit.MILLISECONDS,
+        () -> {
+          try {
+            rsp.set(requestStatus.process(cluster.getSolrClient()));
+            if (rsp.get().getRequestStatus() == RequestStatusState.FAILED
+                || rsp.get().getRequestStatus() == RequestStatusState.COMPLETED) {
+              return true;
+            }
+          } catch (Exception ignored) {}
+          return false;
+        }
+        );
+    return rsp.get();
   }
 
   @SuppressWarnings({"rawtypes"})
