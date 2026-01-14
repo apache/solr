@@ -43,7 +43,8 @@ import org.junit.BeforeClass;
 import org.mockito.ArgumentCaptor;
 
 /**
- * Abstract test class to setup shared mocks for unit testing v2 API calls that go to the Overseer or the DistributedCollectionConfigSetCommandRunner.
+ * Abstract test class to setup shared mocks for unit testing v2 API calls that go to the Overseer
+ * or the DistributedCollectionConfigSetCommandRunner.
  */
 public abstract class MockAPITest extends SolrTestCaseJ4 {
 

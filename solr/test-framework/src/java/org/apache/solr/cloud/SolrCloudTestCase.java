@@ -61,9 +61,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -422,14 +420,14 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
-      String asyncId, Duration timeout)
-      throws InterruptedException {
+      String asyncId, Duration timeout) throws InterruptedException {
     final CollectionAdminRequest.RequestStatus requestStatus =
         CollectionAdminRequest.requestStatus(asyncId);
-    final AtomicReference<CollectionAdminRequest.RequestStatusResponse> rsp = new AtomicReference<>();
+    final AtomicReference<CollectionAdminRequest.RequestStatusResponse> rsp =
+        new AtomicReference<>();
     RetryUtil.retryUntil(
         "Async request " + asyncId + " did not complete within duration: " + timeout,
-        (int)(timeout.toMillis() / 50),
+        (int) (timeout.toMillis() / 50),
         50,
         TimeUnit.MILLISECONDS,
         () -> {
@@ -439,10 +437,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
                 || rsp.get().getRequestStatus() == RequestStatusState.COMPLETED) {
               return true;
             }
-          } catch (Exception ignored) {}
+          } catch (Exception ignored) {
+          }
           return false;
-        }
-        );
+        });
     return rsp.get();
   }
 
