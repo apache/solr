@@ -67,18 +67,14 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
 - Rename vector search parameters and language model modules [SOLR-17927](https://issues.apache.org/jira/browse/SOLR-17927) (Ishan Chattopadhyaya) (Alessandro Benedetti) (Ilaria Petreti) (Chaitali Rajhans)
 
-### Fixed (10 changes)
+### Fixed (6 changes)
 
-- When using SolrCell with TikaServer, the connection will no longer timeout after 30s idle, such as during OCR processing [PR#3926](https://github.com/apache/solr/pull/3926) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 - Restore actual infoStream logging when infoStream in solrconfig.xml is set to true. [SOLR-11373](https://issues.apache.org/jira/browse/SOLR-11373) (Eric Pugh)
 - ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. [SOLR-17294](https://issues.apache.org/jira/browse/SOLR-17294) (Mark Miller) (Jason Gerlowski)
 - Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. Additionally achieves simplification of CLI tests [SOLR-17772](https://issues.apache.org/jira/browse/SOLR-17772) [SOLR-7962](https://issues.apache.org/jira/browse/SOLR-7962) (Rahul Goswami)
 - Fix TextToVectorUpdateProcessor for Partial Updates [SOLR-17843](https://issues.apache.org/jira/browse/SOLR-17843) (Ilaria Petreti) ([Alessandro Benedetti](https://home.apache.org/phonebook.html?uid=abenedetti))
 - Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES [SOLR-17940](https://issues.apache.org/jira/browse/SOLR-17940) (hossman)
-- Make distributed no-rows queries fast again [SOLR-17985](https://issues.apache.org/jira/browse/SOLR-17985) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 - Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint [SOLR-18004](https://issues.apache.org/jira/browse/SOLR-18004) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (David Smiley)
-- Fix reverse distance sorting on LatLonPointSpatialField and "SRPT" fields when combined with the filter cache. This is a regression since Solr 9.9. [SOLR-18006](https://issues.apache.org/jira/browse/SOLR-18006) [SOLR-18016](https://issues.apache.org/jira/browse/SOLR-18016) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (Umut Saribiyik @umut-sar) (David Smiley)
-- Ensure ParallelHttpShardHandler records submit failures so distributed requests don’t hang [SOLR-17983](https://issues.apache.org/jira/browse/SOLR-17983) (Mark Miller)
 
 ### Removed (54 changes)
 
@@ -137,7 +133,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Remove unused parameter pauseBeforeStart from leader election code [SOLR-18035](https://issues.apache.org/jira/browse/SOLR-18035) (Pierre Salagnac)
 - Remove back compat feature genericCoreNodeNames for Solr Cloud node naming. [SOLR-6953](https://issues.apache.org/jira/browse/SOLR-6953) (Eric Pugh)
 
-### Dependency Upgrades (118 changes)
+### Dependency Upgrades (117 changes)
 
 - Update com.lmax:disruptor to v3.4.4 [PR#1382](https://github.com/apache/solr/pull/1382) (solrbot)
 - Update net.thisptr:jackson-jq to v0.0.13 [PR#1387](https://github.com/apache/solr/pull/1387) (solrbot)
@@ -237,7 +233,6 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Update com.google.j2objc:j2objc-annotations to v3.1 [PR#3481](https://github.com/apache/solr/pull/3481) (solrbot)
 - Update apache.zookeeper to v3.9.4 [PR#3523](https://github.com/apache/solr/pull/3523) (solrbot)
 - Update amazon.awssdk to v2.32.31 [PR#3596](https://github.com/apache/solr/pull/3596) (solrbot)
-- Upgrade Log4j to 2.25.3 !3603 ([Piotr P. Karwasz](https://home.apache.org/phonebook.html?uid=pkarwasz) @ppkarwasz)
 - Update actions/checkout action to v5 [PR#3605](https://github.com/apache/solr/pull/3605) (solrbot)
 - Update actions/setup-java action to v5 [PR#3606](https://github.com/apache/solr/pull/3606) (solrbot)
 - Update netty to v4.2.6.Final [PR#3612](https://github.com/apache/solr/pull/3612) (solrbot)
@@ -299,6 +294,26 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Auto migrate /var/solr/log4j2.xml when starting the 10.x docker image. It will change system property solr.log.dir to solr.logs.dir. [SOLR-18036](https://issues.apache.org/jira/browse/SOLR-18036) (Jan Høydahl)
 - SolrJ: move classes out of .solrj, .impl, .cloud to better homes, like .request and .response. [PR#3889](https://github.com/apache/solr/pull/3889) (David Smiley)
 - Modernize Jetty xml files [SOLR-17770](https://issues.apache.org/jira/browse/SOLR-17770) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+
+
+[9.10.1] - 2026-01-08
+---------------------
+
+### Fixed (5 changes)
+
+- When using SolrCell with TikaServer, the connection will no longer timeout after 30s idle, such as during OCR processing [PR#3926](https://github.com/apache/solr/pull/3926) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
+- Retry creation of ZK lock on transient connection loss. [SOLR-17972](https://issues.apache.org/jira/browse/SOLR-17972) (Pierre Salagnac)
+- Make distributed no-rows queries fast again [SOLR-17985](https://issues.apache.org/jira/browse/SOLR-17985) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+- Fix reverse distance sorting on LatLonPointSpatialField and "SRPT" fields when combined with the filter cache. This is a regression since Solr 9.9. [SOLR-18006](https://issues.apache.org/jira/browse/SOLR-18006) [SOLR-18016](https://issues.apache.org/jira/browse/SOLR-18016) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (Umut Saribiyik @umut-sar) (David Smiley)
+- Ensure ParallelHttpShardHandler records submit failures so distributed requests don’t hang [SOLR-17983](https://issues.apache.org/jira/browse/SOLR-17983) (Mark Miller)
+
+### Dependency Upgrades (1 change)
+
+- Upgrade Log4j to 2.25.3 !3963 ([Piotr P. Karwasz](https://home.apache.org/phonebook.html?uid=pkarwasz) @ppkarwasz)
+
+### Security (1 change)
+
+- Mitigate CVE-2025-54988 by disabling XFA parsing in PDF documents when using SolrCell extraction [SOLR-17888](https://issues.apache.org/jira/browse/SOLR-17888) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 
 
 [9.10.0]

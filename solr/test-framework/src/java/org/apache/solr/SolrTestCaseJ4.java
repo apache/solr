@@ -2256,19 +2256,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  // Creates minimal full setup, including solr.xml
-  public static void copyMinFullSetup(Path dstRoot) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.resolve("solr.xml"));
-    copyMinConf(dstRoot);
-  }
-
-  // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
-  }
-
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
@@ -2312,7 +2299,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try {
       Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
       Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
       Path collection1Dir = tempSolrHome.resolve("collection1");
