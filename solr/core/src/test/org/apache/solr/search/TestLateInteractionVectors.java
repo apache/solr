@@ -57,7 +57,7 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
     //
     // then remove this test method
     assertEquals(
-        "The ScoreFunction enum in Lucene now has more then value, test needs updated",
+        "The Lucene ScoreFunction enum now has more then one value, test needs updated",
         EnumSet.of(ScoreFunction.SUM_MAX_SIM),
         EnumSet.allOf(ScoreFunction.class));
   }
@@ -149,8 +149,6 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
               });
       assertThat(e.getMessage(), startsWith("Unexpected "));
     }
-
-    // nocommit: other kinds of decoding errors to check for?
   }
 
   /** Low level test of createFields */
@@ -250,7 +248,6 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
             "fl", "euclid_4_def:lateVector(lv_4_def,'" + q4s + "')",
             "fl", "euclid_4_nostored:lateVector(lv_4_nostored,'" + q4s + "')",
             "fl", "cosine_4:lateVector(lv_4_cosine,'" + q4s + "')"),
-        "//*[@numFound='1']",
 
         // stored fields
         "//str[@name='lv_3_def'][.='" + d3s + "']",
@@ -268,11 +265,45 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         "//float[@name='euclid_4_nostored'][.=" + euclid4 + "]",
         "//float[@name='cosine_4'][.=" + cosine4 + "]",
 
-        // nocommit: other checks?
-
+        // sanity check
         "//*[@numFound='1']");
   }
 
-  // nocommit: add test using late interaction value source in rescorer
+  public void testReRank() throws Exception {
+    final int numDocs = atLeast(10);
+    // NOTE start at '1' and stop at '<'; we add one more doc after the loop
+    for (int i = 1; i < numDocs; i++) {
+      assertU(
+          add(
+              doc(
+                  "id", "xxx" + i,
+                  "lv_3_def", "[[1,2,3],[4,5,6],[1,1," + i + "]]")));
+    }
+    assertU(
+        add(
+            doc(
+                "id", "yyy",
+                "lv_3_def", "[[1,5,9],[9,9,9],[6,6,6]]")));
+    assertU(commit());
 
+    // match everything, but our xxx* docs should all score higher then yyy
+    final String q = "id:xxx* OR *:*";
+
+    // sanity check our default scores & sort
+    // yyy should not appear in the top N-1 results
+    assertQ(
+        req("q", q, "rows", Integer.toString(numDocs - 1)),
+        "//*[@numFound='" + numDocs + "']",
+        "not(//str[@name='id'][.='yyy'])");
+
+    // same query with smalll rows and reRank to pull yyy to the top spot
+    assertQ(
+        req(
+            "q", q,
+            "rows", "5",
+            "rq", "{!rerank reRankQuery=$rqq reRankDocs=1000 reRankWeight=3}",
+            "rqq", "{!func}lateVector(lv_3_def,'[[9,9,9],[6,7,6]]')"),
+        "//*[@numFound='" + numDocs + "']",
+        "//result/doc[1]/str[@name='id'][.='yyy']");
+  }
 }
