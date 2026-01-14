@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // For Solr, a 'resolve' task is much more complex. There are three folders:
 // lib/
 // test-lib/
@@ -36,7 +35,8 @@
 // I don't know how to untie these two cleanly.
 //
 
-configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:cross-dc-manager" }) {
+configure(allprojects
+    .findAll {project -> project.path.startsWith(":solr:modules:") || project.path == ":solr:cross-dc-manager"}) {
   plugins.withType(JavaPlugin) {
     project.ext {
       packagingDir = file("${buildDir}/packaging")
@@ -74,12 +74,12 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
     task assemblePackaging(type: Sync) {
       from "README.md"
 
-      from (tasks.jar, {
+      from(tasks.jar, {
         into "lib"
       })
 
-      from ({
-        def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
+      from({
+        def externalLibs = configurations.runtimeLibs.copyRecursive {dep ->
           if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
             return !dep.dependencyProject.path.startsWith(":solr")
           } else {
@@ -109,7 +109,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr:modules
       // 2) runtime dependencies
       // What remains is this module's "own" test dependency.
       from({
-        def testRuntimeLibs = configurations.testRuntimeClasspath.copyRecursive { dep ->
+        def testRuntimeLibs = configurations.testRuntimeClasspath.copyRecursive {dep ->
           !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
         }
 

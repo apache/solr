@@ -21,9 +21,9 @@ import java.util.stream.Collectors
 // all projects).
 
 if (propertyOrDefault("task.times", null) != null) {
-  gradle.taskGraph.whenReady { TaskExecutionGraph graph ->
+  gradle.taskGraph.whenReady {TaskExecutionGraph graph ->
     def taskTimes = new ConcurrentHashMap<String, Long>()
-    def measured = graph.allTasks.findAll { task -> true }
+    def measured = graph.allTasks.findAll {task -> true}
 
     graph.addTaskExecutionListener(new TaskExecutionListener() {
       @Override
@@ -39,7 +39,7 @@ if (propertyOrDefault("task.times", null) != null) {
         def stop = System.currentTimeMillis()
         if (measured.contains(task)) {
           if (taskState.didWork) {
-            taskTimes.compute(task.path, { k, v -> stop - v })
+            taskTimes.compute(task.path, {k, v -> stop - v})
           } else {
             taskTimes.remove(task.path)
           }
@@ -52,18 +52,18 @@ if (propertyOrDefault("task.times", null) != null) {
       // Compute aggregate times of all task execution times.
       def aggregates = taskTimes.entrySet().stream()
           .collect(Collectors.groupingBy({e -> e.key.replaceAll(".*:", "")}))
-           .entrySet().stream()
-           .collect(Collectors.toMap(
-               {e -> e.key },
-               {e -> e.value.stream().mapToLong({ entry -> entry.value }).sum() }
-           ))
+          .entrySet().stream()
+          .collect(Collectors.toMap(
+              {e -> e.key},
+              {e -> e.value.stream().mapToLong({entry -> entry.value}).sum()}
+          ))
 
       logger.lifecycle("Aggregate task times (possibly running in parallel!):")
       aggregates.entrySet().stream()
-        .sorted({a, b -> Long.compare(b.value, a.value) })
-        .forEach {v ->
-          logger.lifecycle(String.format(Locale.ROOT, " %6.2f sec.  %s", v.value / 1000.0, v.key))
-        }
+          .sorted({a, b -> Long.compare(b.value, a.value)})
+          .forEach {v ->
+            logger.lifecycle(String.format(Locale.ROOT, " %6.2f sec.  %s", v.value / 1000.0, v.key))
+          }
     }
   }
 }
