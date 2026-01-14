@@ -205,6 +205,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         return Name.CONFIG_READ_PERM;
       }
     }
-    return null;
+
+    throw new SolrException(ErrorCode.BAD_REQUEST, "Required parameter 'action' not provided");
   }
 }
