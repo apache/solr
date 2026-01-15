@@ -557,6 +557,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       FieldType fieldType = schemaField.getType();
       FieldWriter writer;
 
+      if (schemaField.stored() && !storedFields.isEmpty()) {
+        // if we're reading StoredFields *anyway*, then we might as well avoid this extra DV lookup
+        storedFields.put(field, schemaField);
+        continue;
+      }
+
       DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache = dvIterCache.getSupplier(field);
 
       if (docValuesCache == null) {
