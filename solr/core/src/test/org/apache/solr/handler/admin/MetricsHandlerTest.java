@@ -51,7 +51,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.METRIC_NAME_PARAM,
@@ -78,7 +78,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.METRIC_NAME_PARAM,
@@ -103,7 +103,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.METRIC_NAME_PARAM,
@@ -124,7 +124,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.CATEGORY_PARAM,
@@ -154,7 +154,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.CATEGORY_PARAM,
@@ -186,7 +186,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.CORE_PARAM,
@@ -208,7 +208,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.CORE_PARAM,
@@ -243,7 +243,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     handler.handleRequestBody(
         req(
             CommonParams.QT,
-            "/admin/metrics",
+            CommonParams.METRICS_PATH,
             CommonParams.WT,
             MetricsHandler.PROMETHEUS_METRICS_WT,
             MetricsHandler.CATEGORY_PARAM,

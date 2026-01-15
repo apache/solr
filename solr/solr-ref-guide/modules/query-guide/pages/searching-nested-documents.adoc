@@ -315,7 +315,7 @@ N.B. Solr ensures that the knn search for children keeps track of parent metadat
 An example:
 [source,text]
 ?q={!parent which=$allParents score=max v=$children.q}&
-children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]&
+children.q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]&
 allParents=*:* -_nest_path_:*&
 someParents=color_s:RED&
 fl=id,score,vectors,vector,[child fl=vector childFilter=$children.q]
@@ -329,7 +329,7 @@ Let's decompose the query to better explain it:
 This query returns the parent solr documents using the block join parent query parser on a query that filters on the children documents ('children.q'). For each child retrieved, the parent is returned.
 
 [source,text]
-children.q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
+children.q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
 
 This query is a knn vector search on the children documents.
 Specifically it retrieves the top k=3 children documents, filtered by 'someParent' metadata.

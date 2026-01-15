@@ -17,6 +17,7 @@
 package org.apache.solr.languagemodels.textvectorisation.update.processor;
 
 import java.io.IOException;
+import java.util.Map;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -33,7 +34,7 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", false, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", false, false);
   }
 
   @AfterClass
@@ -162,11 +163,79 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         ManagedTextToVectorModelStore.REST_END_POINT + "/exception-throwing-model"); // clean up
   }
 
+  @Test
+  public void processAtomicUpdate_shouldTriggerTheVectorizationAndFetchTheStoredContent()
+      throws Exception {
+    // Verifies that when using a processor chain configured for partial updates
+    // (i.e., the UpdateRequestProcessor is placed before the TextToVector processor),
+    // the system correctly retrieves the stored value of the input field (string_field)
+    // and generates the vector for the document.
+    loadModel("dummy-model.json");
+    assertU(adoc("id", "99", "string_field", "Vegeta is the saiyan prince."));
+    assertU(adoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."));
+    assertU(commit());
+
+    SolrInputDocument atomic_doc = new SolrInputDocument();
+    atomic_doc.setField("id", "99");
+    atomic_doc.setField("vectorised", Map.of("set", "true"));
+    addWithChain(
+        atomic_doc, "textToVectorForPartialUpdates"); // use the chain that supports partial updates
+    assertU(commit());
+
+    final SolrQuery query = getSolrQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='98'",
+        "!/response/docs/[0]/vector==", // no vector field for document 98
+        "/response/docs/[1]/id=='99'",
+        "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
+
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+  }
+
+  @Test
+  public void processAtomicUpdate_shouldReplaceExistingVectorNotAppend() throws Exception {
+    // This test verifies that when a document already contains a vector, and the string_field field
+    // is
+    // modified using an atomic update, the vector is recomputed and replaces the previous one. It
+    // ensures that the system does not append or merge vector values.
+    loadModel("dummy-model.json");
+    addWithChain(
+        sdoc("id", "99", "string_field", "Vegeta is the saiyan prince."),
+        "textToVectorStoredInputField");
+    addWithChain(
+        sdoc("id", "98", "string_field", "Kakaroth is a saiyan grown up on planet Earth."),
+        "textToVectorStoredInputField");
+    assertU(commit());
+
+    SolrInputDocument atomic_doc = new SolrInputDocument();
+    atomic_doc.setField("id", "99");
+    atomic_doc.setField(
+        "string_field", Map.of("set", "Vegeta is the saiyan prince from the Dragon Ball series."));
+    addWithChain(
+        atomic_doc, "textToVectorForPartialUpdates"); // use the chain that supports partial updates
+    assertU(commit());
+
+    final SolrQuery query = getSolrQuery();
+
+    assertJQ(
+        "/query" + query.toQueryString(),
+        "/response/numFound==2]",
+        "/response/docs/[0]/id=='99'",
+        "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
+        "/response/docs/[1]/id=='98'",
+        "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
+
+    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1");
+  }
+
   void addWithChain(SolrInputDocument document, String updateChain)
       throws SolrServerException, IOException {
     UpdateRequest req = new UpdateRequest();
     req.add(document);
     req.setParam("update.chain", updateChain);
-    solrClientTestRule.getSolrClient("collection1").request(req);
+    solrTestRule.getSolrClient("collection1").request(req);
   }
 }

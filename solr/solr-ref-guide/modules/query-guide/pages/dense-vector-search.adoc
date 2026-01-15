@@ -455,10 +455,24 @@ Our recommendation is to rely on the default value and change this parameter onl
 +
 This parameter must be used together with `saturationThreshold`; either specify both to customize the behavior, or omit both to rely on the default values.
 
+`efSearchScaleFactor`::
++
+[%autowidth,frame=none]
+|===
+|Optional | Default: `1.0`
+|===
++
+(advanced) Multiplier factor for calculating how many candidates the HNSW algorithm examines during search.
++
+The effective `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Lower values fetch fewer candidates for faster performance but may miss some good matches. Higher values fetch more candidates, improving recall but slowing down the search.
++
+Accepted values:
+Any float >= 1.0.
+
 Here's an example of a `knn` search using the early termination with input parameters:
 
 [source,text]
-?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 earlyTermination=true saturationThreshold=0.989 patience=10 efSearchScaleFactor=3.0}[1.0, 2.0, 3.0, 4.0]
 
 `seedQuery`::
 +
@@ -500,7 +514,51 @@ The `filteredSearchThreshold` regulates this behavior. If the percentage of docu
 Here is an example of a `knn` search using a `filteredSearchThreshold`:
 
 [source,text]
-?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]
+?q={!knn f=vector topK=10 filteredSearchThreshold=60}[1.0, 2.0, 3.0, 4.0]&fq=section:0
+
+`childrenOf`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|Mandatory if using 'parents.preFilter' parameter|Default: none
+|===
++
+A query that matches the set of ALL possible parent documents.
++
+This parameter is required to enable documents diversification per parent (to return maximum one document per parent).
++
+If you use it you can also add the 'parents.preFilter' parameter.
+
+Here is an example of a `knn` search using a `childrenOf`:
+
+[source,text]
+?q={!knn f=vector topK=3 childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'childrenOf' parameter must return all valid parents to guarantee the correct functioning of the query.
+
+`parents.preFilter`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
+This parameter is meant to be a filter query on parent document metadata.
+The knn search returns the top-k nearest children documents that satisfy the filter on the parent.
++
+Only one child per distinct parent is returned.
++
+When using it, you need to also specify the `childrenOf` param.
+
+Here is an example of a `knn` search using a `parents.preFilter`:
+
+[source,text]
+?q={!knn f=vector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
 
 `childrenOf`::
 +
@@ -749,6 +807,7 @@ This is feature is currently experimental.
 
 Building HNSW graphs, esp. with high dimensions and cardinality, is usually slow. If you have a NVIDIA GPU, then building HNSW based indexes can be sped up manifold. This is powered by the https://github.com/rapidsai/cuvs-lucene[cuVS-Lucene] library, a pluggable vectors format for Apache Lucene. It uses the state of the art https://arxiv.org/abs/2308.15136[CAGRA algorithm] for quickly building a fixed degree connected graph, which is then serialized into a HNSW graph. https://developer.nvidia.com/cuda-downloads[CUDA 13.0+] and https://jdk.java.net/archive/[JDK 22] are required to use this feature.
 
+You can know more about Nvidia's cuVS library here: https://developer.nvidia.com/cuvs
 
 To try this out, first copy the module jar files (found in the regular Solr tarball, not the slim one) before starting Solr.
 
@@ -761,21 +820,14 @@ Define the `fieldType` in the schema, with knnAlgorithm set to `cagra_hnsw`:
 
 [source,xml]
 ----
-<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" />
+<fieldType name="knn_vector" class="solr.DenseVectorField" vectorDimension="8" knnAlgorithm="cagra_hnsw" similarityFunction="cosine" cuvsWriterThreads="32" cuvsIntGraphDegree="128" cuvsGraphDegree="64" cuvsHnswLayers="1" cuvsHnswM="16" cuvsHnswEfConstruction="100"/>
 ----
 
 Define the xref:configuration-guide:codec-factory.adoc[codecFactory] in xref:configuration-guide:configuring-solrconfig-xml.adoc[solrconfig.xml]
 
 [source,xml]
 ----
-<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-    <str name="cuvsWriterThreads">8</str>
-    <str name="intGraphDegree">128</str>
-    <str name="graphDegree">64</str>
-    <str name="hnswLayers">1</str>
-    <str name="hnswM">16</str>
-    <str name="hnswEfConstruction">100</str>
-</codecFactory>
+<codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 ----
 
 Where:
@@ -788,9 +840,9 @@ Where:
 
 * `cuvsHnswLayers` - Number of HNSW graph layers to construct while building the HNSW index
 
-* `hnswM` - hnswM parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswM` - cuvsHnswM parameter passed to the fallback Lucene99HnswVectorsWriter
 
-* `hnswEfConstruction` - hnswEfConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
+* `cuvsHnswEfConstruction` - cuvsHnswEfConstruction parameter passed to the fallback Lucene99HnswVectorsWriter
 
 === Example
 
@@ -923,14 +975,7 @@ cat > cuvs_configset/conf/solrconfig.xml << 'EOF'
         </autoSoftCommit>
     </updateHandler>
 
-    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory">
-        <str name="cuvsWriterThreads">32</str>
-        <str name="intGraphDegree">128</str>
-        <str name="graphDegree">64</str>
-        <str name="hnswLayers">1</str>
-        <str name="hnswM">16</str>
-        <str name="hnswEfConstruction">100</str>
-    </codecFactory>
+    <codecFactory name="CuVSCodecFactory" class="org.apache.solr.cuvs.CuVSCodecFactory"/>
 
     <requestHandler name="/select" class="solr.SearchHandler">
         <lst name="defaults">
@@ -959,7 +1004,7 @@ cat > cuvs_configset/conf/managed-schema << 'EOF'
                cuvsGraphDegree="64"
                cuvsHnswLayers="1"
                cuvsHnswM="16"
-               cuvsHNSWEfConstruction="100"/>
+               cuvsHnswEfConstruction="100"/>
     <fieldType name="plong" class="solr.LongPointField" useDocValuesAsStored="false"/>
 
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>

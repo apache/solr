@@ -22,9 +22,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.SolrZkClientTimeout;
+import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
@@ -37,16 +41,13 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.logging.MDCSnapshot;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
-import org.apache.solr.servlet.DirectSolrConnection;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 
 /**
@@ -59,7 +60,6 @@ import org.apache.solr.update.UpdateShardHandlerConfig;
 public class TestHarness extends BaseTestHarness {
   public String coreName;
   protected volatile CoreContainer container;
-  public UpdateRequestHandler updater;
 
   /**
    * Creates a SolrConfig object for the specified coreName assuming it follows the basic
@@ -67,22 +67,11 @@ public class TestHarness extends BaseTestHarness {
    * ${solrHome}/${coreName}/conf/${confFile}</code>
    */
   public static SolrConfig createConfig(Path solrHome, String coreName, String confFile) {
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
       return new SolrConfig(solrHome.resolve(coreName), confFile);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }
-  }
-
-  /**
-   * Creates a SolrConfig object for the default test core using {@link
-   * #createConfig(Path,String,String)}
-   */
-  public static SolrConfig createConfig(Path solrHome, String confFile) {
-    return createConfig(solrHome, SolrTestCaseJ4.DEFAULT_TEST_CORENAME, confFile);
   }
 
   public TestHarness(CoreContainer coreContainer) {
@@ -124,7 +113,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   /**
-   * Helper method to let us do some home sys prop check in delegated construtor. in "real" code
+   * Helper method to let us do some home sys prop check in delegated constructor. in "real" code
    * SolrDispatchFilter takes care of checking this sys prop when building NodeConfig/CoreContainer
    */
   private static Path checkAndReturnSolrHomeSysProp() {
@@ -179,8 +168,6 @@ public class TestHarness extends BaseTestHarness {
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
     container = new CoreContainer(config, coresLocator);
     container.load();
-    updater = new UpdateRequestHandler();
-    updater.init(null);
   }
 
   public static NodeConfig buildTestNodeConfig(Path solrHome) {
@@ -188,7 +175,7 @@ public class TestHarness extends BaseTestHarness {
         (null == System.getProperty("zkHost"))
             ? null
             : new CloudConfig.CloudConfigBuilder(
-                    System.getProperty("host"), Integer.getInteger("hostPort", 8983))
+                    System.getProperty("solr.host.advertise"), Integer.getInteger("hostPort", 8983))
                 .setZkClientTimeout(SolrZkClientTimeout.DEFAULT_ZK_CLIENT_TIMEOUT)
                 .setZkHost(System.getProperty("zkHost"))
                 .build();
@@ -271,17 +258,22 @@ public class TestHarness extends BaseTestHarness {
    */
   @Override
   public String update(String xml) {
-    try (var mdcSnap = MDCSnapshot.create();
-        SolrCore core = getCoreInc()) {
+    try (var mdcSnap = MDCSnapshot.create()) {
       assert null != mdcSnap; // prevent compiler warning of unused var
-      DirectSolrConnection connection = new DirectSolrConnection(core);
-      SolrRequestHandler handler = core.getRequestHandler("/update");
-      // prefer the handler mapped to /update, but use our generic backup handler
-      // if that lookup fails
-      if (handler == null) {
-        handler = updater;
-      }
-      return connection.request(handler, null, xml);
+
+      EmbeddedSolrServer server = new EmbeddedSolrServer(getCoreContainer(), getCore().getName());
+      ContentStreamUpdateRequest xmlRequest = new ContentStreamUpdateRequest("/update");
+      xmlRequest.addContentStream(new ContentStreamBase.StringStream(xml, "text/xml"));
+
+      // Request XML response format and use InputStreamResponseParser
+      xmlRequest.getParams().add("wt", "xml");
+      xmlRequest.setResponseParser(new InputStreamResponseParser("xml"));
+      NamedList<Object> response = server.request(xmlRequest);
+      server.close();
+
+      // Extract the XML string from the response
+      return InputStreamResponseParser.consumeResponseToString(response);
+
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -421,7 +413,7 @@ public class TestHarness extends BaseTestHarness {
      *       the "qtype", "start", "limit", and "args" properties of this factory are ignored.</b>
      * </ul>
      *
-     * TODO: this isn't really safe in the presense of core reloads! Perhaps the best we could do is
+     * TODO: this isn't really safe in the presence of core reloads! Perhaps the best we could do is
      * increment the core reference count and decrement it in the request close() method?
      */
     @SuppressWarnings({"unchecked"})

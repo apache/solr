@@ -22,10 +22,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -51,11 +51,9 @@ public class ClientUtils {
       final String str, final String contentType) {
     if (str == null) return null;
 
-    ArrayList<ContentStream> streams = new ArrayList<>(1);
     ContentStreamBase ccc = new ContentStreamBase.StringStream(str);
     ccc.setContentType(contentType);
-    streams.add(ccc);
-    return streams;
+    return List.of(ccc);
   }
 
   /**

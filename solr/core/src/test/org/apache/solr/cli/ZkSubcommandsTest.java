@@ -103,7 +103,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
             .withUrl(zkServer.getZkAddress())
             .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
             .build();
-    zkClient.makePath("/solr", false, true);
+    zkClient.makePath("/solr", false);
 
     if (log.isInfoEnabled()) {
       log.info("####SETUP_END {}", getTestName());
@@ -125,7 +125,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
-        zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
+        zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
 
     // test re-put to existing
     data = "my data deux";
@@ -138,7 +138,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     assertArrayEquals(
-        zkClient.getData("/data.txt", null, null, true), data.getBytes(StandardCharsets.UTF_8));
+        zkClient.getData("/data.txt", null, null), data.getBytes(StandardCharsets.UTF_8));
   }
 
   @Test
@@ -217,8 +217,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
-    String fromZk =
-        new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
+    String fromZk = new String(zkClient.getData("/foo.xml", null, null), StandardCharsets.UTF_8);
     Path localFile = SOLR_HOME.resolve("solr-stress-new.xml");
     String fromLocalFile = Files.readString(localFile);
     assertEquals("Should get back what we put in ZK", fromZk, fromLocalFile);
@@ -238,8 +237,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
-    String fromZk =
-        new String(zkClient.getData("/foo.xml", null, null, true), StandardCharsets.UTF_8);
+    String fromZk = new String(zkClient.getData("/foo.xml", null, null), StandardCharsets.UTF_8);
     Path localFile = SOLR_HOME.resolve("solr-stress-new.xml");
     String fromLocalFile = Files.readString(localFile);
     assertEquals("Should get back what we put in ZK", fromZk, fromLocalFile);
@@ -345,11 +343,11 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     assertEquals(0, CLITestHelper.runTool(args, ConfigSetUploadTool.class));
 
-    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, true));
+    assertTrue(zkClient.exists(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname));
     final Path confDir = ExternalPaths.TECHPRODUCTS_CONFIGSET;
 
     List<String> zkFiles =
-        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+        zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null);
 
     try (Stream<Path> filesStream = Files.list(confDir)) {
       assertEquals(
@@ -372,7 +370,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     ZkNodeProps collectionProps =
         ZkNodeProps.load(
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null, true));
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/collection1", null, null));
     assertTrue(collectionProps.containsKey("configName"));
     assertEquals(confsetname, collectionProps.getStr("configName"));
 
@@ -398,8 +396,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     try (Stream<Path> filesStream = Files.list(destDir.resolve("conf"))) {
       List<Path> files = filesStream.toList();
-      zkFiles =
-          zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null, true);
+      zkFiles = zkClient.getChildren(ZkConfigSetService.CONFIGS_ZKNODE + "/" + confsetname, null);
       assertEquals(
           "Comparing original conf files that were to be uploaded to what is in ZK",
           files.size(),
@@ -443,14 +440,14 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     assertEquals(0, CLITestHelper.runTool(args, ZkRmTool.class));
 
-    assertEquals(0, zkClient.getChildren("/configs", null, true).size());
+    assertEquals(0, zkClient.getChildren("/configs", null).size());
   }
 
   @Test
   public void testGet() throws Exception {
     String getNode = "/getNode";
     byte[] data = "getNode-data".getBytes(StandardCharsets.UTF_8);
-    zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, data, CreateMode.PERSISTENT);
 
     Path localFile = Files.createTempFile("temp", ".data");
 
@@ -478,7 +475,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         random().nextBoolean()
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
-    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT);
 
     Path localFile = Files.createTempFile("temp", ".data");
 
@@ -496,7 +493,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     String getNode = "/getFileNode";
     byte[] data = "getFileNode-data".getBytes(StandardCharsets.UTF_8);
-    zkClient.create(getNode, data, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, data, CreateMode.PERSISTENT);
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -519,7 +516,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
         random().nextBoolean()
             ? zLibCompressor.compressBytes(data)
             : zLibCompressor.compressBytes(data, data.length / 10);
-    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT, true);
+    zkClient.create(getNode, compressedData, CreateMode.PERSISTENT);
 
     Path file =
         tmpDir.resolve("solrtest-getfile-" + this.getClass().getName() + "-" + System.nanoTime());
@@ -607,7 +604,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
             .withTimeout(
                 AbstractFullDistribZkTestBase.DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
             .build()) {
-      zkClient.getData("/", null, null, true);
+      zkClient.getData("/", null, null);
     } catch (KeeperException.NoAuthException e) {
       excepted = true;
     }

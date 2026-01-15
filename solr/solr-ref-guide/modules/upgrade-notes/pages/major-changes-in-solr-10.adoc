@@ -73,7 +73,7 @@ That no longer happens in Solr 10.  It is only used to load a configuration as a
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
 
-* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`.
+* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`. To use them from your application, you need to include the new `solr-solrj-jetty` artifact.
 The following classes were renamed with some refactorings: `Http2SolrClient` to `HttpJettySolrClient`, `ConcurrentUpdateHttp2SolrClient` to `ConcurrentUpdateJettySolrClient`, `LBHttp2SolrClient` to `LBJettySolrClient`.
 `CloudHttp2SolrClient.Builder` has moved to `CloudSolrClient`; users should generally have no need to refer to `CloudHttp2SolrClient` or any class/member with "http2" in it.
 The builder will check if Jetty `HttpClient` is available and use that, otherwise fallback on a JDK based `HttpClient`.
@@ -136,6 +136,10 @@ If only one node is exposed to a client, and if the client uses the bin/solr exp
 Solr now lets you access models encoded in ONNX format, commonly sourced from HuggingFace.
 The DocumentCategorizerUpdateProcessorFactorythat lets you perform sentiment and other classification tasks on fields.
 It is available as part of the `analysis-extras` module.
+
+=== Vector Search Enhancements
+
+* The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
 === Deprecation removals
 
@@ -209,9 +213,13 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * The deprecated `LowerCaseTokenizer` and `LowerCaseTokenizerFactory` have been removed. These classes were deprecated in Solr 8 and can be replaced by combining `LetterTokenizerFactory` with `LowerCaseFilterFactory`.
 
+* The deprecated 'solrcore.properties` configuration method has been removed.  The ability to configure a core via a custom properties file using the `core.proprties` "property" setting remains.
+
 === Security
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
+
+* Use of `stream.file`, `stream.url`, and `stream.body` params in http requests have been removed.
 
 === Upgrade to Jetty 12.x and Jakarta namespace
 

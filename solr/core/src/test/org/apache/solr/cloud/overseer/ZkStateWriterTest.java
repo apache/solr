@@ -322,11 +322,11 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
             (Map<?, ?>)
                 Utils.fromJSON(
                     zkClient.getData(
-                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true));
+                        ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null));
         assertNotNull(map.get("c1"));
 
         Stat stat = new Stat();
-        zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat, false);
+        zkClient.getData(ZkStateReader.getCollectionPath("c1"), null, stat);
         assertEquals(
             Instant.ofEpochMilli(stat.getCtime()),
             clusterState.getCollection("c1").getCreationTime());
@@ -379,15 +379,15 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         int c2Version = state.getCollection("c2").getZNodeVersion();
 
         // Simulate an external modification to /collections/c2/state.json
-        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null, true);
-        zkClient.setData(DocCollection.getCollectionPath("c2"), data, true);
+        byte[] data = zkClient.getData(DocCollection.getCollectionPath("c2"), null, null);
+        zkClient.setData(DocCollection.getCollectionPath("c2"), data);
 
         // get the most up-to-date state
         reader.forceUpdateCollection("c2");
         state = reader.getClusterState();
 
         Stat stat = new Stat();
-        zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, stat, false);
+        zkClient.getData(ZkStateReader.getCollectionPath("c2"), null, stat);
         assertEquals(
             Instant.ofEpochMilli(stat.getCtime()), state.getCollection("c2").getCreationTime());
 
@@ -472,7 +472,7 @@ public class ZkStateWriterTest extends SolrTestCaseJ4 {
         writer.writePendingUpdates();
 
         byte[] data =
-            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null, true);
+            zkClient.getData(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", null, null);
         Map<?, ?> map = (Map<?, ?>) Utils.fromJSON(data);
         assertNotNull(map.get("c1"));
       }

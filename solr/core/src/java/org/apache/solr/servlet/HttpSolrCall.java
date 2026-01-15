@@ -49,10 +49,12 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -98,7 +100,6 @@ import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
-import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.client.HttpClient;
@@ -153,13 +154,14 @@ public class HttpSolrCall {
     this.requestType = RequestType.UNKNOWN;
     this.userAgentSolrVersion = parseUserAgentSolrVersion();
     this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
-    this.path = ServletUtils.getPathAfterContext(req);
+    normalizeAndSetPath(ServletUtils.getPathAfterContext(req));
 
     req.setAttribute(HttpSolrCall.class.getName(), this);
-    // set a request timer which can be reused by requests if needed
-    req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
-    // put the core container in request attribute
-    req.setAttribute("org.apache.solr.CoreContainer", cores);
+  }
+
+  @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
+  protected void normalizeAndSetPath(String unnormalizedPath) {
+    this.path = StringUtils.stripEnd(unnormalizedPath, "/");
   }
 
   public String getPath() {
@@ -216,7 +218,7 @@ public class HttpSolrCall {
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
       if (core != null) {
-        path = path.substring(idx);
+        normalizeAndSetPath(path.substring(idx));
       } else {
         // extra mem barriers, so don't look at this before trying to get core
         if (cores.isCoreLoading(origCorename)) {
@@ -225,7 +227,7 @@ public class HttpSolrCall {
         // the core may have just finished loading
         core = cores.getCore(origCorename);
         if (core != null) {
-          path = path.substring(idx);
+          normalizeAndSetPath(path.substring(idx));
         } else {
           if (!cores.isZooKeeperAware()) {
             core = cores.getCore("");
@@ -254,14 +256,14 @@ public class HttpSolrCall {
         core = getCoreByCollection(collectionName, isPreferLeader);
         if (core != null) {
           if (idx > 0) {
-            path = path.substring(idx);
+            normalizeAndSetPath(path.substring(idx));
           }
         } else {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             extractRemotePath(collectionName);
             if (action == REMOTEPROXY) {
-              path = path.substring(idx);
+              normalizeAndSetPath(path.substring(idx));
               return;
             }
           }
@@ -399,7 +401,7 @@ public class HttpSolrCall {
                 .getZkController()
                 .zkStateReader
                 .getZkClient()
-                .exists(DocCollection.getCollectionPath(collectionName), true)) {
+                .exists(DocCollection.getCollectionPath(collectionName))) {
           // no change and such a collection does not exist. go back
           return;
         }
@@ -1110,6 +1112,19 @@ public class HttpSolrCall {
 
   protected Map<String, JsonSchemaValidator> getValidators() {
     return Collections.emptyMap();
+  }
+
+  /**
+   * The URL to this core, e.g. {@code http://localhost:8983/solr}.
+   *
+   * @see ZkController#getBaseUrl()
+   */
+  public String getThisNodeUrl() {
+    String scheme = getReq().getScheme();
+    String host = getReq().getServerName();
+    int port = getReq().getServerPort();
+    String context = getReq().getContextPath();
+    return String.format(Locale.ROOT, "%s://%s:%d%s", scheme, host, port, context);
   }
 
   /** A faster method for randomly picking items when you do not need to consume all items. */
