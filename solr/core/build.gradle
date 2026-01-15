@@ -61,7 +61,7 @@ dependencies {
   permitUnusedDeclared libs.jersey.containers.jettyhttp
   implementation libs.jersey.inject.hk2
   permitUnusedDeclared libs.jersey.inject.hk2
-  implementation (libs.jersey.media.jsonjackson, {
+  implementation(libs.jersey.media.jsonjackson, {
     exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
   })
   permitUnusedDeclared libs.jersey.media.jsonjackson
@@ -92,7 +92,6 @@ dependencies {
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
-
   // Collections & lang utilities
   implementation libs.google.guava
   implementation libs.apache.commons.lang3
@@ -100,7 +99,7 @@ dependencies {
   implementation libs.commonsio.commonsio
   implementation libs.carrotsearch.hppc
 
-  implementation(libs.benmanes.caffeine) { transitive = false }
+  implementation(libs.benmanes.caffeine) {transitive = false}
 
   implementation libs.commonscodec.commonscodec
 
@@ -136,7 +135,7 @@ dependencies {
   implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
-  testImplementation variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }
+  testImplementation variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}
 
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly libs.xerial.snappy.java
