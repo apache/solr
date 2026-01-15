@@ -20,8 +20,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/** Response from /node/system */
+/** Response from /node/info/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
   @JsonProperty public String mode;
@@ -42,6 +43,7 @@ public class NodeSystemResponse extends SolrJerseyResponse {
   public String environmentColor;
 
   @JsonProperty public String node;
+  @JsonProperty public Core core;
   @JsonProperty public Lucene lucene;
   @JsonProperty public JVM jvm;
   @JsonProperty public Security security;
@@ -54,8 +56,8 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public String authenticationPlugin;
     @JsonProperty public String authorizationPlugin;
     @JsonProperty public String username;
-    @JsonProperty public List<String> roles;
-    @JsonProperty public List<String> permissions;
+    @JsonProperty public Set<String> roles;
+    @JsonProperty public Set<String> permissions;
   }
 
   /** /node/system/lucene */
@@ -121,6 +123,22 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public boolean available;
     @JsonProperty public long count;
     @JsonProperty public MemoryRaw memory;
-    @JsonProperty Map<String, Object> devices;
+    @JsonProperty public Map<String, Object> devices;
+  }
+
+  public static class Core {
+    @JsonProperty public String schema;
+    @JsonProperty public String host;
+    @JsonProperty public Date now;
+    @JsonProperty public Date start;
+    @JsonProperty public Directory directory;
+  }
+
+  public static class Directory {
+    @JsonProperty public String cwd;
+    @JsonProperty public String instance;
+    @JsonProperty public String data;
+    @JsonProperty public String dirimpl;
+    @JsonProperty public String index;
   }
 }
