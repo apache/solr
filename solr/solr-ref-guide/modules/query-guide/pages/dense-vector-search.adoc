@@ -560,46 +560,6 @@ Here is an example of a `knn` search using a `parents.preFilter`:
 
 The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
 
-`childrenOf`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-This parameter is meant to be a filter query on parent document metadata.
-The knn search returns the top-k nearest children documents that satify the filter on the parent.
-+
-Only one child per distinct parent is returned.
-
-Here is an example of a `knn` search using a `childrenOf`:
-
-[source,text]
-?q={!knn f=vector topK=3 childrenOf=$someParents allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
-&allParents=*:* -_nest_path_:*
-&someParents=color_s:RED
-
-The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. Only the documents with a parent that satisfy the 'color_s:RED' condition are considered candidates for the ANN search.
-
-`allParents`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|Mandatory if using 'childrenOf' parameter|Default: none
-|===
-+
-A query that matches ALL parents.
-It's required to work with the 'childrenOf' parameter.
-
-
-Here is an example of a `knn` search using a `allParents`:
-
-[source,text]
-?q={!knn f=vector topK=3 allParents=$allParents}[1.0, 2.0, 3.0, 4.0]
-&allParents=*:* -_nest_path_:*
-
-The search results retrieved are the k=3 nearest documents to the vector in input `[1.0, 2.0, 3.0, 4.0]`, each of them with a different parent. The 'allParents' parameter must return all parents to guarantee the correct functioning of the query.
-
 === knn_text_to_vector Query Parser
 
 The `knn_text_to_vector` query parser encode a textual query to a vector using a dedicated Large Language Model(fine tuned for the task of encoding text to vector for sentence similarity) and matches k-nearest neighbours documents to such query vector.

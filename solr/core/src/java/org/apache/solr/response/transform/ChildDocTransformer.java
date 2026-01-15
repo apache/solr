@@ -72,7 +72,6 @@ class ChildDocTransformer extends DocTransformer {
   private final SolrReturnFields childReturnFields;
   private final String[] extraRequestedFields;
 
-
   ChildDocTransformer(
       String name,
       BitSetProducer parentsFilter,

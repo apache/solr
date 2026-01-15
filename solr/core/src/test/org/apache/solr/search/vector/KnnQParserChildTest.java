@@ -17,7 +17,6 @@
 package org.apache.solr.search.vector;
 
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 import org.apache.lucene.tests.index.BaseKnnVectorsFormatTestCase;
 import org.apache.lucene.tests.util.TestUtil;

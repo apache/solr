@@ -156,13 +156,6 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
 
   @Test
   public void
-      parentRetrievalByte_topKWithChildTransformer_shouldReturnAllChildren() { // new transformer
-    // all vectors
-    //super.parentRetrievalByte_topKWithChildTransformer_shouldReturnAllChildren(VECTOR_BYTE_FIELD);
-  }
-
-  @Test
-  public void
   parentRetrievalFloat_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
     assertQ(
         req(
