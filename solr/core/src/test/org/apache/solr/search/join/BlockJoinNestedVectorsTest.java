@@ -107,8 +107,7 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
 
   @Test
   public void childrenRetrievalByte_filteringByParentMetadata_shouldReturnKnnChildren() {
-    super.childrenRetrieval_filteringByParentMetadata_shouldReturnKnnChildren(
-        VECTOR_BYTE_FIELD);
+    super.childrenRetrieval_filteringByParentMetadata_shouldReturnKnnChildren(VECTOR_BYTE_FIELD);
   }
 
   @Test
@@ -151,11 +150,8 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
   }
 
   @Test
-  public void
-      parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnAllChildren() {
-    super
-        .parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(
-            VECTOR_FIELD);
+  public void parentRetrievalFloat_topKWithChildTransformerWithFilter_shouldReturnAllChildren() {
+    super.parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(VECTOR_FIELD);
   }
 
   @Test

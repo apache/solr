@@ -156,17 +156,17 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
 
   @Test
   public void
-  parentRetrievalFloat_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+      parentRetrievalFloat_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
     assertQ(
         req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,"+VECTOR_FIELD+", [child fl="+ VECTOR_FIELD + " childFilter=$children.q]",
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id," + VECTOR_FIELD + ", [child fl=" + VECTOR_FIELD + " childFilter=$children.q]",
             "children.q",
-            "{!knn f="
-                + VECTOR_FIELD
-                + " topK=3 allParents=$allParents}"
-                + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "{!knn f=" + VECTOR_FIELD + " topK=3 allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
         "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr/float[1][.='2.0']",
@@ -189,14 +189,14 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
   public void parentRetrievalFloat_ChildTransformer_shouldFlattenAndReturnAllChildren() {
     assertQ(
         req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,"+VECTOR_FIELD+", [child fl="+ VECTOR_FIELD + " ]",
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id," + VECTOR_FIELD + ", [child fl=" + VECTOR_FIELD + " ]",
             "children.q",
-            "{!knn f="
-                + VECTOR_FIELD
-                + " topK=3 allParents=$allParents}"
-                + FLOAT_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "{!knn f=" + VECTOR_FIELD + " topK=3 allParents=$allParents}" + FLOAT_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
         "//result/doc[1]/arr[@name='" + VECTOR_FIELD + "']/arr[1]/float[1][.='4.0']",
@@ -241,17 +241,21 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
 
   @Test
   public void
-  parentRetrievalByte_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
+      parentRetrievalByte_ChildTransformerWithChildFilter_shouldFlattenAndReturnBestChild() {
     assertQ(
         req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,"+VECTOR_BYTE_FIELD+", [child fl="+ VECTOR_BYTE_FIELD + " childFilter=$children.q]",
-            "children.q",
-            "{!knn f="
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id,"
                 + VECTOR_BYTE_FIELD
-                + " topK=3 allParents=$allParents}"
-                + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+                + ", [child fl="
+                + VECTOR_BYTE_FIELD
+                + " childFilter=$children.q]",
+            "children.q",
+            "{!knn f=" + VECTOR_BYTE_FIELD + " topK=3 allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
         "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr/int[1][.='2']",
@@ -274,14 +278,14 @@ public class BlockJoinMultiValuedVectorsTest extends BlockJoinNestedVectorsParen
   public void parentRetrievalByte_ChildTransformer_shouldFlattenAndReturnAllChildren() {
     assertQ(
         req(
-            "q", "{!parent which=$allParents score=max v=$children.q}",
-            "fl", "id,"+VECTOR_BYTE_FIELD+", [child fl="+ VECTOR_BYTE_FIELD + " ]",
+            "q",
+            "{!parent which=$allParents score=max v=$children.q}",
+            "fl",
+            "id," + VECTOR_BYTE_FIELD + ", [child fl=" + VECTOR_BYTE_FIELD + " ]",
             "children.q",
-            "{!knn f="
-                + VECTOR_BYTE_FIELD
-                + " topK=3 allParents=$allParents}"
-                + BYTE_QUERY_VECTOR,
-            "allParents", "parent_s:[* TO *]"),
+            "{!knn f=" + VECTOR_BYTE_FIELD + " topK=3 allParents=$allParents}" + BYTE_QUERY_VECTOR,
+            "allParents",
+            "parent_s:[* TO *]"),
         "//*[@numFound='3']",
         "//result/doc[1]/str[@name='id'][.='10']",
         "//result/doc[1]/arr[@name='" + VECTOR_BYTE_FIELD + "']/arr[1]/int[1][.='4']",

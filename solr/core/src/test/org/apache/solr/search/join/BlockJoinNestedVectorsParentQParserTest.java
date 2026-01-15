@@ -169,9 +169,8 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
         "//result/doc[2]/str[@name='id'][.='2']");
   }
 
-  protected void
-  parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(
-          String vectorField) {
+  protected void parentRetrievalFloat_topKWithChildTransformer_shouldReturnAllChildren(
+      String vectorField) {
     assertQ(
         req(
             "q", "{!parent which=$allParents score=max v=$children.q}",

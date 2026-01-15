@@ -17,6 +17,8 @@
 
 package org.apache.solr.update.processor;
 
+import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,8 +32,6 @@ import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
-
-import static org.apache.solr.schema.IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME;
 
 /**
  * Adds fields to nested documents to support some nested search requirements. It can even generate
