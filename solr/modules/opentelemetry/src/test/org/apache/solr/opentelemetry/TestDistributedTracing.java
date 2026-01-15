@@ -17,7 +17,7 @@
 
 package org.apache.solr.opentelemetry;
 
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
+import static org.apache.solr.metrics.MetricsUtil.PROMETHEUS_METRICS_WT;
 
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.TracerProvider;
