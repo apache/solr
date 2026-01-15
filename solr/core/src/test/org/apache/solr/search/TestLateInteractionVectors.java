@@ -33,10 +33,11 @@ import org.apache.lucene.search.LateInteractionFloatValuesSource.ScoreFunction;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrFloatLateInteractionVectorField;
 import org.junit.After;
 import org.junit.Before;
 
-// nocommit: jdocs
+/** Basic tests of {@link StrFloatLateInteractionVectorField} FieldType */
 public class TestLateInteractionVectors extends SolrTestCaseJ4 {
 
   @Before

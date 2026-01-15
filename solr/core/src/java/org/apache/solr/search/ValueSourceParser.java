@@ -1361,7 +1361,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
     addParser("childfield", new ChildFieldValueSourceParser());
 
-    // nocommit: Better name?
     addParser(
         "lateVector",
         new ValueSourceParser() {

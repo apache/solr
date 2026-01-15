@@ -46,7 +46,13 @@ import org.apache.solr.uninverting.UninvertingReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** nocommit: jdocs */
+/**
+ * An implementation of {@link LateInteractionVectorField} backed by {@link LateInteractionField}
+ * that externally represents all <code>float[][]</code> values (both field values and query values)
+ * encoded as a (single) String.
+ *
+ * <p>Example: <code>[[1.1,-2.2,3],[4.0,5,-6.6],[7,8,99.99]]</code>
+ */
 public class StrFloatLateInteractionVectorField extends FieldType
     implements LateInteractionVectorField {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -129,7 +135,7 @@ public class StrFloatLateInteractionVectorField extends FieldType
     return scoreFunction;
   }
 
-  // nocommit: jdocs
+  @Override
   public DoubleValuesSource parseLateInteractionValuesSource(
       final String fieldName, final FunctionQParser fp) throws SyntaxError {
     final String vecStr = fp.parseArg();
@@ -211,8 +217,11 @@ public class StrFloatLateInteractionVectorField extends FieldType
   }
 
   /**
-   * nocommit: jdocs, note input must not be null, dimension must be positive
+   * Converts a String representation of 1 or more float vectors of the specified <code>dimension
+   * </code> into a <code>float[][]</code>
    *
+   * @param dimension must be a positive integer
+   * @param input String value to be parsed, must not be null
    * @lucene.experimental
    */
   public static float[][] stringToMultiFloatVector(final int dimension, final String input)
@@ -260,8 +269,13 @@ public class StrFloatLateInteractionVectorField extends FieldType
   }
 
   /**
-   * nocommit: jdocs, note input must not be null(s), dimensions must be positive
+   * Formats a non empty <code>float[][]</code> representing vectors into a string for external
+   * representation.
    *
+   * <p>NOTE: no validation is done to confirm that the individual <code>float[]</code> values have
+   * consistent length.
+   *
+   * @param input String value to be parsed, must not be null
    * @lucene.experimental
    */
   public static String multiFloatVectorToString(final float[][] input) {
