@@ -1578,7 +1578,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "id,intdv,stringdv",
+                "fl", "intdv,*",
                 "sort", "intdv asc"));
 
     assertJsonEquals(
@@ -1612,7 +1612,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
             req(
                 "q", "*:*",
                 "qt", "/export",
-                "fl", "id,intdv,stringdv,str_s_stored",
+                "fl", "*",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
