@@ -1382,7 +1382,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
-                "Field name is not defined in schema as a LateInteractionVectorField: "
+                "Field name is not defined in schema as a StrFloatLateInteractionVectorField: "
                     + fieldName);
           }
         });

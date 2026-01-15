@@ -17,8 +17,8 @@
 package org.apache.solr.search;
 
 import static org.apache.lucene.search.LateInteractionFloatValuesSource.ScoreFunction.SUM_MAX_SIM;
-import static org.apache.solr.schema.LateInteractionVectorField.multiFloatVectorToString;
-import static org.apache.solr.schema.LateInteractionVectorField.stringToMultiFloatVector;
+import static org.apache.solr.schema.StrFloatLateInteractionVectorField.multiFloatVectorToString;
+import static org.apache.solr.schema.StrFloatLateInteractionVectorField.stringToMultiFloatVector;
 import static org.hamcrest.Matchers.startsWith;
 
 import java.util.Arrays;
@@ -62,7 +62,7 @@ public class TestLateInteractionVectors extends SolrTestCaseJ4 {
         EnumSet.allOf(ScoreFunction.class));
   }
 
-  public void testStringEncodingAndDecoding() throws Exception {
+  public void testStringFloatEncodingAndDecoding() throws Exception {
     final int DIMENSIONS = 4;
 
     // some basic whitespace and int/float equivilences...

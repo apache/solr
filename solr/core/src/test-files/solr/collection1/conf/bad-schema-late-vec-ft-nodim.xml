@@ -18,7 +18,7 @@
 
 <schema name="bad-schema" version="1.7">
   
-  <fieldType name="bad_ft" class="solr.LateInteractionVectorField" />
+  <fieldType name="bad_ft" class="solr.StrFloatLateInteractionVectorField" />
 
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   

@@ -20,7 +20,7 @@
   
   <field name="bad_field" type="late" docValues="false" />
   
-  <fieldType name="late" class="solr.LateInteractionVectorField" vectorDimension="4" />
+  <fieldType name="late" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" />
   <fieldType name="string" class="solr.StrField" multiValued="true"/>
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <uniqueKey>id</uniqueKey>

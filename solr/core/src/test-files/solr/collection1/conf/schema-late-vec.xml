@@ -18,11 +18,11 @@
 
 <schema name="late-vec-schema" version="1.7">
   
-  <fieldType name="late_vec_3_defaults" class="solr.LateInteractionVectorField" vectorDimension="3" />
-  <fieldType name="late_vec_4_defaults" class="solr.LateInteractionVectorField" vectorDimension="4" />
+  <fieldType name="late_vec_3_defaults" class="solr.StrFloatLateInteractionVectorField" vectorDimension="3" />
+  <fieldType name="late_vec_4_defaults" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" />
   
-  <fieldType name="late_vec_4_cosine" class="solr.LateInteractionVectorField" vectorDimension="4" similarityFunction="cosine" />
-  <fieldType name="late_vec_4_nostored" class="solr.LateInteractionVectorField" vectorDimension="4" stored="false" />
+  <fieldType name="late_vec_4_cosine" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" similarityFunction="cosine" />
+  <fieldType name="late_vec_4_nostored" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" stored="false" />
 
   <field name="lv_3_def" type="late_vec_3_defaults" />
   <field name="lv_4_def" type="late_vec_4_defaults" />

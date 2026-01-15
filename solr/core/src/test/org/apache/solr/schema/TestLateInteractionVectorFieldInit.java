@@ -20,18 +20,21 @@ import java.util.Arrays;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 
-/** Basic tests of {@link LateInteractionVectorField} FieldType &amp; SchemaField initialization */
+/**
+ * Basic tests of {@link StrFloatLateInteractionVectorField} FieldType &amp; SchemaField
+ * initialization
+ */
 public class TestLateInteractionVectorFieldInit extends AbstractBadConfigTestBase {
 
   public void test_bad_ft_opts() throws Exception {
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-late-vec-ft-nodim.xml",
-        LateInteractionVectorField.VECTOR_DIMENSION);
+        StrFloatLateInteractionVectorField.VECTOR_DIMENSION);
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-late-vec-ft-sim.xml",
-        LateInteractionVectorField.SIMILARITY_FUNCTION);
+        StrFloatLateInteractionVectorField.SIMILARITY_FUNCTION);
     assertConfigs(
         "solrconfig-basic.xml",
         "bad-schema-late-vec-ft-nodv.xml",
@@ -68,17 +71,19 @@ public class TestLateInteractionVectorFieldInit extends AbstractBadConfigTestBas
       for (SchemaField sf : Arrays.asList(def3, def4, cosine4, nostored3, nostored4)) {
         assertNotNull(sf.getName(), sf);
         assertNotNull(sf.getName(), sf.getType());
-        assertNotNull(sf.getName(), sf.getType() instanceof LateInteractionVectorField);
+        assertNotNull(sf.getName(), sf.getType() instanceof StrFloatLateInteractionVectorField);
         assertTrue(sf.getName(), sf.hasDocValues());
         assertFalse(sf.getName(), sf.multiValued());
         assertFalse(sf.getName(), sf.indexed());
       }
 
       for (SchemaField sf : Arrays.asList(def3, nostored3)) {
-        assertEquals(sf.getName(), 3, ((LateInteractionVectorField) sf.getType()).getDimension());
+        assertEquals(
+            sf.getName(), 3, ((StrFloatLateInteractionVectorField) sf.getType()).getDimension());
       }
       for (SchemaField sf : Arrays.asList(def4, cosine4, nostored4)) {
-        assertEquals(sf.getName(), 4, ((LateInteractionVectorField) sf.getType()).getDimension());
+        assertEquals(
+            sf.getName(), 4, ((StrFloatLateInteractionVectorField) sf.getType()).getDimension());
       }
       for (SchemaField sf : Arrays.asList(def3, def4, cosine4)) {
         assertTrue(sf.getName(), sf.stored());
@@ -89,14 +94,14 @@ public class TestLateInteractionVectorFieldInit extends AbstractBadConfigTestBas
       for (SchemaField sf : Arrays.asList(def3, def4, nostored3, nostored4)) {
         assertEquals(
             sf.getName(),
-            LateInteractionVectorField.DEFAULT_SIMILARITY,
-            ((LateInteractionVectorField) sf.getType()).getSimilarityFunction());
+            StrFloatLateInteractionVectorField.DEFAULT_SIMILARITY,
+            ((StrFloatLateInteractionVectorField) sf.getType()).getSimilarityFunction());
       }
 
       assertEquals(
           cosine4.getName(),
           VectorSimilarityFunction.COSINE,
-          ((LateInteractionVectorField) cosine4.getType()).getSimilarityFunction());
+          ((StrFloatLateInteractionVectorField) cosine4.getType()).getSimilarityFunction());
 
     } finally {
       deleteCore();
