@@ -68,7 +68,7 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
 
       @Override
       public void close() throws IOException {
-        getInputStream().close();
+        // No-op: InputStream is managed by java.net.http.HttpClient
       }
     };
   }
