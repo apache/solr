@@ -33,7 +33,6 @@
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
   <!-- points to the root document of a block of nested documents -->
-  <field name="_root_" type="string" indexed="true" stored="true"/>
   <!-- for nested documents (relationship tracking) -->
   <field name="_nest_path_" type="_nest_path_" />
 

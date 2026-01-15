@@ -174,12 +174,9 @@ For more details, refer to the official https://arxiv.org/pdf/1603.09320[2018 pa
 Accepted values:
 Any integer.
 
-`DenseVectorField` supports the attributes: `indexed`, `stored`.
+`DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
 
-[NOTE]
-currently multivalue is not supported
-
-Here's how a `DenseVectorField` should be indexed:
+Here's how a `DenseVectorField` should be indexed when single valued:
 
 [tabs#densevectorfield-index]
 ======
@@ -239,6 +236,46 @@ d2.setField("id", "2");
 d2.setField("vector", Arrays.asList(1.5f, 5.5f, 6.7f, 65.1f));
 
 client.add(Arrays.asList(d1, d2));
+----
+====
+======
+
+Here's how a `DenseVectorField` should be indexed when multi-valued:
+
+[tabs#densevectorfield-index]
+======
+JSON::
++
+====
+[source,json]
+----
+[<TO ADD>
+]
+----
+====
+
+XML::
++
+====
+[source,xml]
+----
+<add>
+<doc>
+<TO ADD>
+</doc>
+</add>
+----
+====
+
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+TO ADD
+
 ----
 ====
 ======
@@ -592,6 +629,43 @@ Here's an example of a simple `knn_text_to_vector` search:
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 
 For more details on how to work with vectorise text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
+
+=== Handle multivalued vector fields at query time
+Behind the scenes a multivalued vector field is handled by Solr as nested documents with a single vector each (see the parameters for the knn query parser that deal with nested vectors 'parents.preFilter' and 'childrenOf').
+
+So you should query a multivalued vector fields following the same syntax:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}
+&children.q={!knn f=multivaluedvector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+In terms of rendering the results, you need the child transformer if you want to output them flat (you can choose to only return the best vector per result or all vectors):
+
+All Children
+[source,text]
+fl=id,multivaluedvector,[child fl="multivaluedvector"]
+
+====
+[source,json]
+----
+[<TO ADD>
+]
+----
+====
+
+Best Child
+[source,text]
+fl=id,multivaluedvector,[child fl="multivaluedvector" childFilter=$children.q]
+
+====
+[source,json]
+----
+[<TO ADD>
+]
+----
+====
+
 
 === vectorSimilarity Query Parser
 
