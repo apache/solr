@@ -1376,10 +1376,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
                   SolrException.ErrorCode.BAD_REQUEST,
                   "Invalid number of arguments. Please provide both a field name, and a (String) multi-vector.");
             }
-            final SchemaField sf = fp.getReq().getSchema().getField(fieldName);
-            if (sf.getType() instanceof LateInteractionVectorField lif) {
+            final FieldType ft = fp.getReq().getSchema().getFieldType(fieldName);
+            if (ft instanceof LateInteractionVectorField lift) {
               return ValueSource.fromDoubleValuesSource(
-                  lif.getMultiVecSimilarityValueSource(sf, vecStr));
+                  lift.getMultiVecSimilarityValueSource(fieldName, vecStr));
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,

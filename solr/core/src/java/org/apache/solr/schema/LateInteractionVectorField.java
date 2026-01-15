@@ -128,9 +128,9 @@ public class LateInteractionVectorField extends FieldType {
   }
 
   public DoubleValuesSource getMultiVecSimilarityValueSource(
-      final SchemaField f, final String vecStr) throws SyntaxError {
+      final String fieldName, final String vecStr) throws SyntaxError {
     return new LateInteractionFloatValuesSource(
-        f.getName(),
+        fieldName,
         stringToMultiFloatVector(dimension, vecStr),
         getSimilarityFunction(),
         getScoreFunction());
