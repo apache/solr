@@ -112,10 +112,6 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
       }
     }
 
-    private void setParameters(HttpServletRequest req) {
-      parameters = req.getParameterMap();
-    }
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
@@ -137,7 +133,6 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
 
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       setHeaders(req);
-      setParameters(req);
       if (null != errorCode) {
         try {
           resp.sendError(errorCode);
