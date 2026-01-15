@@ -169,7 +169,7 @@ public class BlockJoinNestedVectorsTest extends BlockJoinNestedVectorsParentQPar
             "children.q",
             "{!knn f="
                 + VECTOR_FIELD
-                + " topK=3 childrenOf=$someParents allParents=$allParents}"
+                + " topK=3 parents.preFilter=$someParents childrenOf=$allParents}"
                 + FLOAT_QUERY_VECTOR,
             "allParents",
             "parent_s:[* TO *]",

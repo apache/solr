@@ -151,8 +151,9 @@ class ChildDocTransformer extends DocTransformer {
       Set<String> multiValuedByteVectorFields =
           this.getMultiValuedVectorFields(
               searcher.getSchema(), childReturnFields, VectorEncoding.BYTE);
-      if ((multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size())
-          != childReturnFields.getExplicitlyRequestedFieldNames().size()) {
+      if ((multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size()) > 0 &&
+          (multiValuedFLoatVectorFields.size() + multiValuedByteVectorFields.size())
+              != childReturnFields.getExplicitlyRequestedFieldNames().size()) {
         throw new SolrException(
             SolrException.ErrorCode.BAD_REQUEST,
             "When using the Child transformer to flatten nested vectors, all 'fl' must be "
