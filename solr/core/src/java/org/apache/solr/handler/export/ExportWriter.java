@@ -545,7 +545,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
           throw new IOException(
               schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
         } else {
-          throw new IOException(schemaField + " must have DocValues to use this feature.");
+          throw new IOException(schemaField + " must have DocValues or be stored to use this feature.");
         }
       }
       // Else: glob matched field with neither DocValues nor stored - silently skip
