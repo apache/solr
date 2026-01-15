@@ -113,7 +113,7 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
     }
 
     private void setParameters(HttpServletRequest req) {
-      // parameters = req.getParameterMap();
+      parameters = req.getParameterMap();
     }
 
     @Override
