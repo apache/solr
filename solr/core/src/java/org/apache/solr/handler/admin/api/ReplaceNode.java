@@ -20,7 +20,6 @@ import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CollectionParams.SOURCE_NODE;
 import static org.apache.solr.common.params.CollectionParams.TARGET_NODE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 
@@ -82,7 +81,6 @@ public class ReplaceNode extends AdminAPIBase implements ReplaceNodeApi {
     remoteMessage.put(SOURCE_NODE, nodeName);
     if (requestBody != null) {
       insertIfValueNotNull(remoteMessage, TARGET_NODE, requestBody.targetNodeName);
-      insertIfValueNotNull(remoteMessage, WAIT_FOR_FINAL_STATE, requestBody.waitForFinalState);
       insertIfValueNotNull(remoteMessage, ASYNC, requestBody.async);
     }
     remoteMessage.put(QUEUE_OPERATION, CollectionAction.REPLACENODE.toLower());

@@ -28,7 +28,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CollectionAdminParams.SKIP_NODE_ASSIGNMENT;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.INSTANCE_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
@@ -105,7 +104,6 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.node = "node3";
     requestBody.skipNodeAssignment = Boolean.TRUE;
-    requestBody.waitForFinalState = true;
     requestBody.followAliases = true;
     requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
@@ -114,7 +112,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
         CreateReplica.createRemoteMessage("someCollectionName", "someShardName", requestBody)
             .getProperties();
 
-    assertEquals(20, remoteMessage.size());
+    assertEquals(19, remoteMessage.size());
     assertEquals("addreplica", remoteMessage.get(QUEUE_OPERATION));
     assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
     assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
@@ -130,7 +128,6 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
     assertEquals("node3", remoteMessage.get(NODE));
     assertEquals(Boolean.TRUE, remoteMessage.get(SKIP_NODE_ASSIGNMENT));
-    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
     assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
     assertEquals("someAsyncId", remoteMessage.get(ASYNC));
     assertEquals("propVal1", remoteMessage.get("property.propName1"));
@@ -154,7 +151,6 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     v1Params.add(CREATE_NODE_SET_PARAM, "node1,node2");
     v1Params.add(NODE, "node3");
     v1Params.set(SKIP_NODE_ASSIGNMENT, true);
-    v1Params.set(WAIT_FOR_FINAL_STATE, true);
     v1Params.set(FOLLOW_ALIASES, true);
     v1Params.add(ASYNC, "someAsyncId");
     v1Params.add("property.propName1", "propVal1");
@@ -174,7 +170,6 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     assertEquals(List.of("node1", "node2"), requestBody.nodeSet);
     assertEquals("node3", requestBody.node);
     assertEquals(Boolean.TRUE, requestBody.skipNodeAssignment);
-    assertEquals(Boolean.TRUE, requestBody.waitForFinalState);
     assertEquals(Boolean.TRUE, requestBody.followAliases);
     assertEquals("someAsyncId", requestBody.async);
     assertEquals("propVal1", requestBody.properties.get("propName1"));

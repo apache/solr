@@ -135,7 +135,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       throws Exception {
     final String asyncId = message.getStr(ASYNC);
 
-    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
+    boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, true);
     String methodStr =
         message.getStr(
             CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());

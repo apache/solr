@@ -149,7 +149,7 @@ public class BalanceReplicasTest extends SolrCloudTestCase {
         cluster.getSolrClient(),
         "/api/cluster/replicas/balance",
         Utils.getReflectWriter(
-            new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), true, null)));
+            new BalanceReplicasRequestBody(new HashSet<>(l.subList(1, 4)), null)));
 
     collection = cloudClient.getClusterState().getCollectionOrNull(coll, false);
     log.debug("### After balancing: {}", collection);

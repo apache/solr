@@ -19,10 +19,12 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.PerReplicaStates;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -45,6 +47,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
   private final List<Replica> activeReplicas = new ArrayList<>();
 
   private int lastZkVersion = -1;
+  private PerReplicaStates lastPrs;
 
   private SolrCloseableLatch latch;
 
@@ -150,11 +153,13 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
       log.debug("-- already done, exiting...");
       return true;
     }
-    if (collectionState.getZNodeVersion() == lastZkVersion) {
+    if (collectionState.getZNodeVersion() == lastZkVersion
+        && Objects.equals(lastPrs, collectionState.getPerReplicaStates())) {
       log.debug("-- spurious call with already seen zkVersion= {}, ignoring...", lastZkVersion);
       return false;
     }
     lastZkVersion = collectionState.getZNodeVersion();
+    lastPrs = collectionState.getPerReplicaStates();
 
     for (Slice slice : collectionState.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
