@@ -16,14 +16,13 @@
  */
 package org.apache.solr.crossdc.manager.messageprocessor;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+
+import io.prometheus.metrics.core.datapoints.Timer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -40,6 +39,7 @@ import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
 import org.apache.solr.crossdc.common.SolrExceptionUtil;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -57,16 +57,15 @@ public class SolrMessageProcessor extends MessageProcessor
     implements IQueueHandler<MirroredSolrRequest<?>> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final MetricRegistry metrics =
-      SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
-
+  final ConsumerMetrics metrics;
   final Supplier<CloudSolrClient> clientSupplier;
 
   private static final String VERSION_FIELD = "_version_";
 
-  public SolrMessageProcessor(
+  public SolrMessageProcessor(ConsumerMetrics metrics,
       Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
     super(resubmitBackoffPolicy);
+    this.metrics = metrics;
     this.clientSupplier = clientSupplier;
   }
 
@@ -145,7 +144,7 @@ public class SolrMessageProcessor extends MessageProcessor
       sleepTimeMs = Math.max(1, Long.parseLong(backoffTimeSuggested));
     }
     log.info("Consumer backoff. sleepTimeMs={}", sleepTimeMs);
-    metrics.meter(MetricRegistry.name(request.getType().name(), "backoff")).mark(sleepTimeMs);
+    metrics.recordOutputBackoffSize(request.getType(), sleepTimeMs);
     uncheckedSleep(sleepTimeMs);
   }
 
@@ -197,11 +196,14 @@ public class SolrMessageProcessor extends MessageProcessor
     }
     Result<MirroredSolrRequest<?>> result;
     SolrResponseBase response;
-    Timer.Context ctx = metrics.timer(MetricRegistry.name(type.name(), "outputTime")).time();
+    ConsumerMetrics.ConsumerTimer timer = metrics.startOutputTimeTimer(type.name());
     try {
       response = (SolrResponseBase) request.process(clientSupplier.get());
     } finally {
-      ctx.stop();
+      // unit tests might not care
+      if (timer != null) {
+        timer.close();
+      }
     }
 
     int status = response.getStatus();
@@ -211,7 +213,7 @@ public class SolrMessageProcessor extends MessageProcessor
     }
 
     if (status != 0) {
-      metrics.counter(MetricRegistry.name(type.name(), "outputErrors")).inc();
+      metrics.incrementOutputCounter(type.name(), "solrError");
       throw new SolrException(SolrException.ErrorCode.getErrorCode(status), "response=" + response);
     }
 
@@ -306,9 +308,7 @@ public class SolrMessageProcessor extends MessageProcessor
     if (mirroredSolrRequest.getAttempt() == 1) {
       final long latency = System.nanoTime() - mirroredSolrRequest.getSubmitTimeNanos();
       log.debug("First attempt latency = {} ns", latency);
-      metrics
-          .timer(MetricRegistry.name(mirroredSolrRequest.getType().name(), "outputLatency"))
-          .update(latency, TimeUnit.NANOSECONDS);
+      metrics.recordOutputFirstAttemptSize(mirroredSolrRequest.getType(), latency);
     }
   }
 
@@ -377,7 +377,7 @@ public class SolrMessageProcessor extends MessageProcessor
     if (result.status().equals(ResultStatus.FAILED_RESUBMIT)) {
       final long backoffMs = getResubmitBackoffPolicy().getBackoffTimeMs(result.getItem());
       if (backoffMs > 0L) {
-        metrics.meter(MetricRegistry.name(type.name(), "backoff")).mark(backoffMs);
+        metrics.recordOutputBackoffSize(type, backoffMs);
         try {
           Thread.sleep(backoffMs);
         } catch (final InterruptedException ex) {

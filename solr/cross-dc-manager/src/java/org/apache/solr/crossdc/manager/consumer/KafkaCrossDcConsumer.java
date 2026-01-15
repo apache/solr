@@ -16,8 +16,6 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
 import java.util.Arrays;
@@ -73,9 +71,6 @@ import org.slf4j.LoggerFactory;
 public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final MetricRegistry metrics =
-      SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
-
   private final KafkaConsumer<String, MirroredSolrRequest<?>> kafkaConsumer;
   private final CountDownLatch startLatch;
   KafkaMirroringSink kafkaMirroringSink;
@@ -86,6 +81,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final CrossDcConf.CollapseUpdates collapseUpdates;
   private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
+  protected PrometheusMetrics metrics;
 
   protected SolrClientSupplier solrClientSupplier;
 
@@ -164,6 +160,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
    * @param startLatch To inform the caller when the Consumer has started
    */
   public KafkaCrossDcConsumer(KafkaCrossDcConf conf, CountDownLatch startLatch) {
+    this.metrics = new PrometheusMetrics();
 
     this.topicNames = conf.get(KafkaCrossDcConf.TOPIC_NAME).split(",");
     this.maxAttempts = conf.getInt(KafkaCrossDcConf.MAX_ATTEMPTS);
@@ -239,7 +236,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   }
 
   protected SolrMessageProcessor createSolrMessageProcessor() {
-    return new SolrMessageProcessor(solrClientSupplier, resubmitRequest -> 0L);
+    return new SolrMessageProcessor(metrics, solrClientSupplier, resubmitRequest -> 0L);
   }
 
   public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(Properties properties) {
@@ -345,7 +342,10 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
             MirroredSolrRequest<?> req = requestRecord.value();
             SolrRequest<?> solrReq = req.getSolrRequest();
             MirroredSolrRequest.Type type = req.getType();
-            metrics.counter(MetricRegistry.name(type.name(), "input")).inc();
+            if (type != MirroredSolrRequest.Type.UPDATE) {
+              metrics.incrementInputCounter(type.name(), solrReq.getPath());
+            }
+
             ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
             if (log.isTraceEnabled()) {
               log.trace("-- picked type={}, params={}", req.getType(), params);
@@ -398,7 +398,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 if (collapseUpdates == CrossDcConf.CollapseUpdates.PARTIAL && hasDeletes) {
                   throw new RuntimeException("Can't collapse requests with deletions.");
                 }
-                metrics.counter(MetricRegistry.name(type.name(), "collapsed")).inc();
+                metrics.incrementCollapsedCounter();
                 currentCollapsed++;
               }
               UpdateRequest update = (UpdateRequest) solrReq;
@@ -408,19 +408,19 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               List<SolrInputDocument> docs = update.getDocuments();
               if (docs != null) {
                 updateReqBatch.add(docs);
-                metrics.counter(MetricRegistry.name(type.name(), "add")).inc(docs.size());
+                metrics.incrementInputCounter(type.name(), "add");
               }
               List<String> deletes = update.getDeleteById();
               if (deletes != null) {
                 updateReqBatch.deleteById(deletes);
-                metrics.counter(MetricRegistry.name(type.name(), "dbi")).inc(deletes.size());
+                metrics.incrementInputCounter(type.name(), "dbi");
               }
               List<String> deleteByQuery = update.getDeleteQuery();
               if (deleteByQuery != null) {
                 for (String delByQuery : deleteByQuery) {
                   updateReqBatch.deleteByQuery(delByQuery);
                 }
-                metrics.counter(MetricRegistry.name(type.name(), "dbq")).inc(deleteByQuery.size());
+                metrics.incrementInputCounter(type.name(), "dbq", deleteByQuery.size());
               }
             } else {
               // non-update requests should be sent immediately
@@ -505,6 +505,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                 final IQueueHandler.Result<MirroredSolrRequest<?>> result =
                     messageProcessor.handleItem(mirroredSolrRequest);
 
+                metrics.recordOutputBatchSize(type, solrReqBatch);
                 processResult(type, result);
               } catch (MirroringException e) {
                 // We don't really know what to do here
@@ -532,10 +533,10 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               "Sending message to dead letter queue because of max attempts limit with current value = {}",
               attempt);
           kafkaMirroringSink.submitToDlq(item);
-          metrics.counter(MetricRegistry.name(type.name(), "failed-dlq")).inc();
+          metrics.incrementOutputCounter(type.name(), "failed-dlq");
         } else {
           kafkaMirroringSink.submit(item);
-          metrics.counter(MetricRegistry.name(type.name(), "failed-resubmit")).inc();
+          metrics.incrementOutputCounter(type.name(), "failed-resubmit");
         }
         break;
       case HANDLED:
@@ -543,18 +544,18 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         if (log.isTraceEnabled()) {
           log.trace("result=handled");
         }
-        metrics.counter(MetricRegistry.name(type.name(), "handled")).inc();
+        metrics.incrementOutputCounter(type.name(), "handled");
         break;
       case NOT_HANDLED_SHUTDOWN:
         if (log.isTraceEnabled()) {
           log.trace("result=nothandled_shutdown");
         }
-        metrics.counter(MetricRegistry.name(type.name(), "nothandled_shutdown")).inc();
+        metrics.incrementOutputCounter(type.name(), "nothandled_shutdown");
         break;
       case FAILED_RETRY:
         log.error(
             "Unexpected response while processing request. We never expect {}.", result.status());
-        metrics.counter(MetricRegistry.name(type.name(), "failed-retry")).inc();
+        metrics.incrementOutputCounter(type.name(), "failed-retry");
         break;
       default:
         if (log.isTraceEnabled()) {
@@ -585,7 +586,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     } catch (Exception e) {
       log.warn("Exception closing Solr client on shutdown", e);
     } finally {
-      Util.logMetrics(metrics);
+      Util.logMetrics(metrics.getRegistry());
     }
   }
 }

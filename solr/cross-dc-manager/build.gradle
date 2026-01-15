@@ -28,8 +28,10 @@ dependencies {
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
 
-  implementation libs.dropwizard.metrics.core
-  implementation libs.dropwizard.metrics.servlets
+  implementation libs.prometheus.metrics.core
+  implementation libs.prometheus.metrics.exporter.servlet.jakarta
+  implementation libs.prometheus.metrics.expositionformats
+  implementation libs.prometheus.metrics.model
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.slf4j.api

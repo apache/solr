@@ -16,16 +16,16 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Histogram;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Set;
+
+import io.prometheus.metrics.expositionformats.ExpositionFormats;
+import io.prometheus.metrics.model.registry.PrometheusRegistry;
+import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.AdminClientConfig;
 import org.apache.kafka.clients.admin.ListTopicsOptions;
@@ -42,32 +42,14 @@ public class Util {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @SuppressWarnings("rawtypes")
-  public static void logMetrics(MetricRegistry metricRegistry) {
-    log.info("Metrics Registry:");
-    for (Map.Entry<String, Gauge> entry : metricRegistry.getGauges().entrySet()) {
-      if (log.isInfoEnabled()) {
-        log.info("Gauge {}: {}", entry.getKey(), entry.getValue().getValue());
-      }
-    }
-    for (Map.Entry<String, Counter> entry : metricRegistry.getCounters().entrySet()) {
-      if (log.isInfoEnabled()) {
-        log.info("Counter {}: {}", entry.getKey(), entry.getValue().getCount());
-      }
-    }
-    for (Map.Entry<String, Histogram> entry : metricRegistry.getHistograms().entrySet()) {
-      if (log.isInfoEnabled()) {
-        log.info("Histogram {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
-      }
-    }
-    for (Map.Entry<String, Meter> entry : metricRegistry.getMeters().entrySet()) {
-      if (log.isInfoEnabled()) {
-        log.info("Meter {}: {}", entry.getKey(), entry.getValue().getCount());
-      }
-    }
-    for (Map.Entry<String, Timer> entry : metricRegistry.getTimers().entrySet()) {
-      if (log.isInfoEnabled()) {
-        log.info("Timer {}: {}", entry.getKey(), entry.getValue().getSnapshot().toString());
-      }
+  public static void logMetrics(PrometheusRegistry registry) {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    MetricSnapshots snapshots = registry.scrape();
+    try {
+      ExpositionFormats.init().getPrometheusTextFormatWriter().write(baos, snapshots);
+      log.info(baos.toString(StandardCharsets.UTF_8));
+    } catch (IOException e) {
+      log.error("Error while logging metrics", e);
     }
   }
 
