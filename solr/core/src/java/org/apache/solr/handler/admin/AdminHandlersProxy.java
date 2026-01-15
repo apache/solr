@@ -65,7 +65,10 @@ public class AdminHandlersProxy {
 
     // Check if response format is Prometheus/OpenMetrics
     String wt = params.get("wt");
-    boolean isPrometheusFormat = "prometheus".equals(wt) || "openmetrics".equals(wt);
+    boolean isPrometheusFormat =
+        "prometheus".equals(wt)
+            || "openmetrics".equals(wt)
+            || (wt == null && pathStr.endsWith("/metrics"));
 
     if (isPrometheusFormat) {
       // Prometheus format: use singular 'node' parameter for single-node proxy
@@ -141,7 +144,9 @@ public class AdminHandlersProxy {
 
     // Set response parser based on wt parameter to ensure correct format is used
     String wt = params.get("wt");
-    if ("prometheus".equals(wt) || "openmetrics".equals(wt)) {
+    if ("prometheus".equals(wt)
+        || "openmetrics".equals(wt)
+        || (wt == null && uriPath.endsWith("/metrics"))) {
       proxyReq.setResponseParser(new InputStreamResponseParser(wt));
     }
 
