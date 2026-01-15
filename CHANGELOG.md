@@ -33,6 +33,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Added efSearch parameter to knn query, exposed efSearchScaleFactor that is used to calculate efSearch internally #17928 [SOLR-17928](https://issues.apache.org/jira/browse/SOLR-17928) (Puneet Ahuja) (Elia Porciani)
 - Support indexing primitive float[] values for DenseVectorField via JavaBin [SOLR-17948](https://issues.apache.org/jira/browse/SOLR-17948) (Puneet Ahuja) (Noble Paul)
 - Enable MergeOnFlushMergePolicy in Solr [SOLR-17984](https://issues.apache.org/jira/browse/SOLR-17984) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+- Add support for stored-only fields in ExportWriter with includeStoredFields=true. [SOLR-18071](https://issues.apache.org/jira/browse/SOLR-18071) (Luke Kot-Zaniewski)
 
 ### Changed (30 changes)
 
