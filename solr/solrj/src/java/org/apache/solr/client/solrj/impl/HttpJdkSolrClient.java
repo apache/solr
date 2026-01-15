@@ -144,10 +144,10 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   protected CompletableFuture<HttpResponse<InputStream>> requestInputStreamAsync(
-      String overrideBaseUrl, final SolrRequest<?> solrRequest, String collection) {
+      String baseUrl, final SolrRequest<?> solrRequest, String collection) {
     try {
-      PreparedRequest pReq = prepareRequest(solrRequest, collection, overrideBaseUrl);
-      return httpClient.sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
+      HttpRequest httpRequest = prepareRequest(baseUrl, solrRequest, collection).reqb.build();
+      return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofInputStream());
     } catch (Exception e) {
       CompletableFuture<HttpResponse<InputStream>> cf = new CompletableFuture<>();
       cf.completeExceptionally(e);
@@ -159,7 +159,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   public CompletableFuture<NamedList<Object>> requestAsync(
       final SolrRequest<?> solrRequest, String collection) {
     try {
-      PreparedRequest pReq = prepareRequest(solrRequest, collection, null);
+      PreparedRequest pReq = prepareRequest(null, solrRequest, collection);
       return httpClient
           .sendAsync(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream())
           .thenApply(
@@ -182,7 +182,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   public NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
-    PreparedRequest pReq = prepareRequest(solrRequest, collection, baseUrl);
+    PreparedRequest pReq = prepareRequest(baseUrl, solrRequest, collection);
     HttpResponse<InputStream> response = null;
     try {
       response = httpClient.send(pReq.reqb.build(), HttpResponse.BodyHandlers.ofInputStream());
@@ -221,7 +221,7 @@ public class HttpJdkSolrClient extends HttpSolrClientBase {
   }
 
   protected PreparedRequest prepareRequest(
-      SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+      String overrideBaseUrl, SolrRequest<?> solrRequest, String collection)
       throws SolrServerException, IOException {
     checkClosed();
     if (ClientUtils.shouldApplyDefaultCollection(collection, solrRequest)) {
