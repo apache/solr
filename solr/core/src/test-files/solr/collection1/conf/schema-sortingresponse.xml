@@ -128,7 +128,7 @@
    <dynamicField name="*_dt_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
    <dynamicField name="*_dts_ni_t"   type="date"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
 
-   <!-- Stored-only fields (no DocValues) for testing includeStoredFields parameter -->
+   <!-- Stored-only fields (no DocValues) -->
    <dynamicField name="*_s_stored"    type="string"  indexed="false"  stored="true" docValues="false" multiValued="false"/>
    <dynamicField name="*_ss_stored"   type="string"  indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_i_stored"    type="pint"    indexed="false"  stored="true" docValues="false" multiValued="false"/>
