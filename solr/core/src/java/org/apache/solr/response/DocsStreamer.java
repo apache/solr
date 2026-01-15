@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.schema.FieldType.ExternalizeStoredValuesAsObjects;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -55,7 +57,22 @@ import org.apache.solr.search.SolrReturnFields;
 
 /** This streams SolrDocuments from a DocList and applies transformer */
 public class DocsStreamer implements Iterator<SolrDocument> {
-  public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
+  /**
+   * A hardcoded list of known Solr field types that will be trusted to control their own conversion
+   * of stored field values into external Objects (via {@link FieldType#toObject}) when returning
+   * {@link SolrDocument} instances to clients.
+   *
+   * <p>For historic reasons, this Set is consulted using an <em>equality</em> basis, so subclasses
+   * of these "known" types are not given the same level of trust.
+   *
+   * <p>Any field type not found in this list will have stored values externalized as
+   * <em>Strings</em> using {@link FieldType#toExternal} unless they implement {@link
+   * ExternalizeStoredValuesAsObjects}
+   *
+   * @deprecated new field types should not be added to this list, instead use {@link
+   *     ExternalizeStoredValuesAsObjects}
+   */
+  @Deprecated public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
   private final org.apache.solr.response.ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
@@ -200,7 +217,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
         return f.stringValue();
       }
     } else {
-      if (KNOWN_TYPES.contains(ft.getClass())) {
+      if (KNOWN_TYPES.contains(ft.getClass())
+          || ft instanceof FieldType.ExternalizeStoredValuesAsObjects) {
         return ft.toObject(f);
       } else {
         return ft.toExternal(f);
@@ -209,6 +227,9 @@ public class DocsStreamer implements Iterator<SolrDocument> {
   }
 
   static {
+    // DO NOT ADD TO THIS SET ! ! ! !
+    // SEE JAVADOCS FOR KNOWN_TYPES !
+
     KNOWN_TYPES.add(BoolField.class);
     KNOWN_TYPES.add(StrField.class);
     KNOWN_TYPES.add(TextField.class);
@@ -229,5 +250,8 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     KNOWN_TYPES.add(DatePointField.class);
     // We do not add UUIDField because UUID object is not a supported type in JavaBinCodec
     // and if we write UUIDField.toObject, we wouldn't know how to handle it in the client side
+
+    // DO NOT ADD TO THIS SET ! ! ! !
+    // SEE JAVADOCS FOR KNOWN_TYPES !
   }
 }
