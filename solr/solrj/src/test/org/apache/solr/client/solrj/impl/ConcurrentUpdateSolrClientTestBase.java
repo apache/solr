@@ -282,8 +282,8 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
                 http2Client,
                 solrTestRule.getBaseUrl(),
                 null,
-                cussThreadCount,
                 cussQueueSize,
+                cussThreadCount,
                 false)) {
 
       SolrInputDocument doc = new SolrInputDocument();
@@ -305,8 +305,8 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
                 http2Client,
                 solrTestRule.getBaseUrl(),
                 DEFAULT_TEST_CORENAME,
-                cussThreadCount,
                 cussQueueSize,
+                cussThreadCount,
                 false)) {
 
       assertEquals(
@@ -329,8 +329,8 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
                 http2Client,
                 solrTestRule.getBaseUrl(),
                 null,
-                cussThreadCount,
                 cussQueueSize,
+                cussThreadCount,
                 true)) {
 
       // ensure it doesn't block where there's nothing to do yet
@@ -368,8 +368,8 @@ public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 
                 http2Client,
                 solrTestRule.getBaseUrl(),
                 DEFAULT_TEST_CORENAME,
-                cussThreadCount,
                 cussQueueSize,
+                cussThreadCount,
                 false)) {
 
       assertEquals(
