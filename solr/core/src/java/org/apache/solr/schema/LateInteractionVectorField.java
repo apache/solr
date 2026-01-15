@@ -38,6 +38,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.search.FunctionQParser;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.StrParser;
 import org.apache.solr.search.SyntaxError;
@@ -127,8 +128,15 @@ public class LateInteractionVectorField extends FieldType {
     return scoreFunction;
   }
 
-  public DoubleValuesSource getMultiVecSimilarityValueSource(
-      final String fieldName, final String vecStr) throws SyntaxError {
+  // nocommit: jdocs
+  public DoubleValuesSource parseLateInteractionValuesSource(
+      final String fieldName, final FunctionQParser fp) throws SyntaxError {
+    final String vecStr = fp.parseArg();
+    if (null == vecStr || fp.hasMoreArguments()) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid number of arguments. Please provide both a field name, and a (String) multi-vector.");
+    }
     return new LateInteractionFloatValuesSource(
         fieldName,
         stringToMultiFloatVector(dimension, vecStr),

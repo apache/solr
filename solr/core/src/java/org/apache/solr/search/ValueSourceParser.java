@@ -1370,16 +1370,15 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           public ValueSource parse(final FunctionQParser fp) throws SyntaxError {
 
             final String fieldName = fp.parseArg();
-            final String vecStr = fp.parseArg();
-            if (null == fieldName || null == vecStr || fp.hasMoreArguments()) {
+            if (null == fieldName) {
               throw new SolrException(
                   SolrException.ErrorCode.BAD_REQUEST,
-                  "Invalid number of arguments. Please provide both a field name, and a (String) multi-vector.");
+                  "Invalid arguments. First argument must be a field name");
             }
             final FieldType ft = fp.getReq().getSchema().getFieldType(fieldName);
             if (ft instanceof LateInteractionVectorField lift) {
               return ValueSource.fromDoubleValuesSource(
-                  lift.getMultiVecSimilarityValueSource(fieldName, vecStr));
+                  lift.parseLateInteractionValuesSource(fieldName, fp));
             }
             throw new SolrException(
                 SolrException.ErrorCode.BAD_REQUEST,
