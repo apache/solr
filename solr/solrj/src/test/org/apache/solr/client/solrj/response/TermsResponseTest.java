@@ -17,18 +17,23 @@
 package org.apache.solr.client.solrj.response;
 
 import java.util.List;
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 /** Test for TermComponent's response in Solrj */
-public class TermsResponseTest extends EmbeddedSolrServerTestBase {
+public class TermsResponseTest extends SolrTestCase {
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -38,7 +43,6 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
   }
 
   @Before
-  @Override
   public void setUp() throws Exception {
     super.setUp();
     solrTestRule.clearIndex();
@@ -49,8 +53,8 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
     doc.setField("terms_s", "samsung");
-    getSolrClient().add(doc);
-    getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().add(doc);
+    solrTestRule.getSolrClient().commit(true, true);
 
     SolrQuery query = new SolrQuery();
     query.setRequestHandler("/terms");
@@ -62,7 +66,8 @@ public class TermsResponseTest extends EmbeddedSolrServerTestBase {
     query.setTermsMinCount(1);
 
     QueryRequest request = new QueryRequest(query);
-    List<Term> terms = request.process(getSolrClient()).getTermsResponse().getTerms("terms_s");
+    List<Term> terms =
+        request.process(solrTestRule.getSolrClient()).getTermsResponse().getTerms("terms_s");
 
     assertNotNull(terms);
     assertEquals(terms.size(), 1);
