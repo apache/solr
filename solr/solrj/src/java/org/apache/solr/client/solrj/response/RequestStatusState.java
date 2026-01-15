@@ -26,24 +26,26 @@ import java.util.Locale;
 public enum RequestStatusState {
 
   /** The request was completed. */
-  COMPLETED("completed"),
+  COMPLETED("completed", false),
 
   /** The request has failed. */
-  FAILED("failed"),
+  FAILED("failed", false),
 
   /** The request is in progress. */
-  RUNNING("running"),
+  RUNNING("running", true),
 
   /** The request was submitted, but has not yet started. */
-  SUBMITTED("submitted"),
+  SUBMITTED("submitted", true),
 
   /** The request was not found. */
-  NOT_FOUND("notfound");
+  NOT_FOUND("notfound", false);
 
   private final String key;
+  private final boolean shouldRefresh;
 
-  private RequestStatusState(String key) {
+  RequestStatusState(String key, boolean shouldRefresh) {
     this.key = key;
+    this.shouldRefresh = shouldRefresh;
   }
 
   /**
@@ -52,6 +54,11 @@ public enum RequestStatusState {
    */
   public String getKey() {
     return key;
+  }
+
+  /** Returns whether the request status should be refreshed given the current state. */
+  public boolean shouldRefresh() {
+    return shouldRefresh;
   }
 
   /**
