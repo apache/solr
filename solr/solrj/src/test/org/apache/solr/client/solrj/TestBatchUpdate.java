@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.Iterator;
 import org.apache.solr.SolrTestCaseJ4;
@@ -27,6 +29,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -45,6 +48,9 @@ public class TestBatchUpdate extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
     solrTestRule.startSolr(createTempDir());
     solrTestRule
         .newCollection("collection1")

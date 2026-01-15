@@ -16,6 +16,8 @@
  */
 package org.apache.solr.servlet;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,6 +28,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -46,6 +49,8 @@ public class HideStackTraceTest extends SolrTestCaseJ4 {
 
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
+    EnvUtils.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
+
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(
