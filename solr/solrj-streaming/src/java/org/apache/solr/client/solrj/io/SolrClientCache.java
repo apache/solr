@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBuilderBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.AlreadyClosedException;
@@ -50,7 +49,7 @@ public class SolrClientCache implements Closeable {
   protected String basicAuthCredentials = null; // Only support with the httpJettySolrClient
 
   private final Map<String, SolrClient> solrClients = new HashMap<>();
-  private final HttpSolrClientBase httpSolrClient;
+  private final HttpSolrClient httpSolrClient;
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
   private final AtomicReference<String> defaultZkHost = new AtomicReference<>();
 
@@ -58,7 +57,7 @@ public class SolrClientCache implements Closeable {
     this.httpSolrClient = null;
   }
 
-  public SolrClientCache(HttpSolrClientBase httpSolrClient) {
+  public SolrClientCache(HttpSolrClient httpSolrClient) {
     this.httpSolrClient = httpSolrClient;
   }
 
@@ -97,7 +96,7 @@ public class SolrClientCache implements Closeable {
   }
 
   protected CloudSolrClient newCloudSolrClient(
-      String zkHost, HttpSolrClientBase httpSolrClient, boolean canUseACLs) {
+      String zkHost, HttpSolrClient httpSolrClient, boolean canUseACLs) {
     final List<String> hosts = List.of(zkHost);
     var builder = new CloudSolrClient.Builder(hosts, Optional.empty());
     builder.canUseZkACLs(canUseACLs);
@@ -132,8 +131,8 @@ public class SolrClientCache implements Closeable {
     return client;
   }
 
-  protected HttpSolrClientBuilderBase<?, ?> newHttpSolrClientBuilder(
-      String url, HttpSolrClientBase httpSolrClient) {
+  protected HttpSolrClient.BuilderBase<?, ?> newHttpSolrClientBuilder(
+      String url, HttpSolrClient httpSolrClient) {
     final var builder =
         (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
             ? new HttpJettySolrClient.Builder(url)

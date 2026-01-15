@@ -68,8 +68,7 @@ import org.slf4j.MDC;
  * between UpdateRequests a new HTTP request is started.
  *
  * <p>Although any SolrClient request can be made with this implementation, it is only recommended
- * to use ConcurrentUpdateSolrClient with /update requests. The class {@link HttpSolrClient} is
- * better suited for the query interface.
+ * to use ConcurrentUpdateSolrClient with /update requests.
  *
  * @deprecated Please use {@link ConcurrentUpdateBaseSolrClient}
  */
@@ -77,7 +76,7 @@ import org.slf4j.MDC;
 public class ConcurrentUpdateSolrClient extends SolrClient {
   private static final long serialVersionUID = 1L;
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private HttpSolrClient client;
+  private HttpApacheSolrClient client;
   final BlockingQueue<Update> queue;
   final ExecutorService scheduler;
   final Queue<Runner> runners;
@@ -106,8 +105,8 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.internalHttpClient = (builder.httpClient == null);
     final var httpSolrClientBuilder =
         (URLUtil.isBaseUrl(builder.baseSolrUrl))
-            ? new HttpSolrClient.Builder(builder.baseSolrUrl)
-            : new HttpSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
+            ? new HttpApacheSolrClient.Builder(builder.baseSolrUrl)
+            : new HttpApacheSolrClient.Builder(URLUtil.extractBaseUrl(builder.baseSolrUrl))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(builder.baseSolrUrl));
     this.client =
         httpSolrClientBuilder
@@ -344,7 +343,7 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
           method.setConfig(requestConfigBuilder.build());
 
           method.setEntity(template);
-          method.addHeader("User-Agent", HttpSolrClient.USER_AGENT);
+          method.addHeader("User-Agent", HttpApacheSolrClient.USER_AGENT);
           method.addHeader("Content-Type", contentType);
 
           response =

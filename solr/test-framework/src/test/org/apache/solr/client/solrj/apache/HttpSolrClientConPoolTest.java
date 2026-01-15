@@ -60,13 +60,13 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
     CloseableHttpClient httpClient =
         HttpClientUtil.createClient(
             new ModifiableSolrParams(), pool, false /* let client shutdown it*/);
-    final HttpSolrClient clientFoo =
-        new HttpSolrClient.Builder(fooUrl)
+    final var clientFoo =
+        new HttpApacheSolrClient.Builder(fooUrl)
             .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .withHttpClient(httpClient)
             .build();
-    final HttpSolrClient clientBar =
-        new HttpSolrClient.Builder(barUrl)
+    final var clientBar =
+        new HttpApacheSolrClient.Builder(barUrl)
             .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .withHttpClient(httpClient)
             .build();
@@ -103,7 +103,7 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
       PoolStats stats = pool.getTotalStats();
       assertEquals("oh " + stats, 2, stats.getAvailable());
     } finally {
-      for (HttpSolrClient c : new HttpSolrClient[] {clientFoo, clientBar}) {
+      for (var c : new HttpApacheSolrClient[] {clientFoo, clientBar}) {
         HttpClientUtil.close(c.getHttpClient());
         c.close();
       }

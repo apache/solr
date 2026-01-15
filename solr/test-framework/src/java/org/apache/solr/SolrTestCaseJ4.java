@@ -79,8 +79,8 @@ import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -2599,7 +2599,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   @Deprecated // We are migrating away from Apache HttpClient.
   public static HttpClient getHttpClient(String url) {
-    return new HttpSolrClient.Builder(url).build().getHttpClient();
+    return new HttpApacheSolrClient.Builder(url).build().getHttpClient();
   }
 
   /**
@@ -2609,12 +2609,12 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    *
    * @param url the base URL for a Solr node. Should not contain a core or collection name.
    */
-  public static HttpSolrClient getHttpSolrClient(String url) {
-    return new HttpSolrClient.Builder(url).build();
+  public static HttpApacheSolrClient getHttpSolrClient(String url) {
+    return new HttpApacheSolrClient.Builder(url).build();
   }
 
   /** Create a basic HttpSolrClient pointed at the specified replica */
-  public static HttpSolrClient getHttpSolrClient(Replica replica) {
+  public static HttpApacheSolrClient getHttpSolrClient(Replica replica) {
     return getHttpSolrClient(replica.getBaseUrl(), replica.getCoreName());
   }
 
@@ -2627,8 +2627,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @param defaultCoreName the name of a core that the created client should default to when making
    *     core-aware requests
    */
-  public static HttpSolrClient getHttpSolrClient(String url, String defaultCoreName) {
-    return new HttpSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
+  public static HttpApacheSolrClient getHttpSolrClient(String url, String defaultCoreName) {
+    return new HttpApacheSolrClient.Builder(url).withDefaultCollection(defaultCoreName).build();
   }
 
   /**

@@ -27,7 +27,7 @@ import org.apache.http.client.HttpClient;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.embedded.JettyConfig;
@@ -135,7 +135,7 @@ public abstract class RestTestBase extends SolrTestCaseJ4 {
   }
 
   protected static HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    var client = (HttpApacheSolrClient) getSolrClient();
     return client.getHttpClient();
   }
 

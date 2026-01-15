@@ -30,8 +30,8 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -43,7 +43,7 @@ import org.junit.Test;
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    var client = (HttpApacheSolrClient) getSolrClient();
     return client.getHttpClient();
   }
 
@@ -127,8 +127,8 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
   @Override
   public SolrClient createNewSolrClient() {
-    HttpSolrClient.Builder httpSolrClientBuilder =
-        new HttpSolrClient.Builder(getBaseUrl())
+    var httpSolrClientBuilder =
+        new HttpApacheSolrClient.Builder(getBaseUrl())
             .withDefaultCollection(DEFAULT_TEST_CORENAME)
             .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {

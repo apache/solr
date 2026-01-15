@@ -20,8 +20,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.junit.Test;
 
@@ -42,7 +42,7 @@ public class SolrExceptionTest extends SolrTestCase {
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
       try (SolrClient client =
-          new HttpSolrClient.Builder("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/")
+          new HttpApacheSolrClient.Builder("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/")
               .withHttpClient(httpClient)
               .withConnectionTimeout(1, TimeUnit.MILLISECONDS)
               .build()) {

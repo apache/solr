@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.common.util.TimeSource;
@@ -821,11 +821,11 @@ public class JettySolrRunner {
   }
 
   public SolrClient newClient() {
-    return new HttpSolrClient.Builder(getBaseUrl().toString()).build();
+    return new HttpApacheSolrClient.Builder(getBaseUrl().toString()).build();
   }
 
   public SolrClient newClient(int connectionTimeoutMillis, int socketTimeoutMillis) {
-    return new HttpSolrClient.Builder(getBaseUrl().toString())
+    return new HttpApacheSolrClient.Builder(getBaseUrl().toString())
         .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
         .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)
         .build();

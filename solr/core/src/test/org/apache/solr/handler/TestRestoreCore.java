@@ -29,7 +29,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -62,7 +62,7 @@ public class TestRestoreCore extends SolrTestCaseJ4 {
   private static SolrClient createNewSolrClient(int port) {
 
     final String baseUrl = buildUrl(port);
-    return new HttpSolrClient.Builder(baseUrl)
+    return new HttpApacheSolrClient.Builder(baseUrl)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();

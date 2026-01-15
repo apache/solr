@@ -20,15 +20,17 @@ package org.apache.solr.client.solrj.impl;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Constructor;
 import java.net.MalformedURLException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -46,21 +48,23 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.NamedList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
- * Utility/base functionality for direct HTTP client implementations.
+ * A simple/direct {@link SolrClient} using HTTP.
  *
- * @lucene.internal
+ * <p>The protected methods can be considered as internal / unstable APIs.
+ *
+ * @see #builder(String)
+ * @see "org.apache.solr.client.solrj.jetty.HttpJettySolrClient"
+ * @see org.apache.solr.client.solrj.impl.HttpJdkSolrClient
  */
-public abstract class HttpSolrClientBase extends SolrClient {
-
-  protected static final String DEFAULT_PATH = ClientUtils.DEFAULT_PATH;
+public abstract class HttpSolrClient extends SolrClient {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
-  private static final List<String> errPath = Arrays.asList("metadata", "error-class");
 
-  /** The URL of the Solr server. */
-  protected final String serverBaseUrl;
-
+  protected final String baseUrl;
   protected final long requestTimeoutMillis;
 
   protected final Set<String> urlParamNames;
@@ -74,19 +78,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected final String basicAuthAuthorizationStr;
 
-  protected HttpSolrClientBase(String serverBaseUrl, HttpSolrClientBuilderBase<?, ?> builder) {
-    if (serverBaseUrl != null) {
-      if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
-        serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
-      }
-
-      if (serverBaseUrl.startsWith("//")) {
-        serverBaseUrl = serverBaseUrl.substring(1, serverBaseUrl.length());
-      }
-      this.serverBaseUrl = serverBaseUrl;
-    } else {
-      this.serverBaseUrl = null;
-    }
+  protected HttpSolrClient(String serverBaseUrl, BuilderBase<?, ?> builder) {
+    this.baseUrl = extractBaseUrl(serverBaseUrl);
     this.requestTimeoutMillis = builder.getRequestTimeoutMillis();
     this.basicAuthAuthorizationStr = builder.basicAuthAuthorizationStr;
     if (builder.requestWriter != null) {
@@ -103,7 +96,24 @@ public abstract class HttpSolrClientBase extends SolrClient {
     }
   }
 
-  public abstract HttpSolrClientBuilderBase<?, ?> builder();
+  private static String extractBaseUrl(String serverBaseUrl) {
+    if (serverBaseUrl == null) {
+      return null;
+    }
+    if (!serverBaseUrl.equals("/") && serverBaseUrl.endsWith("/")) {
+      serverBaseUrl = serverBaseUrl.substring(0, serverBaseUrl.length() - 1);
+    }
+
+    if (serverBaseUrl.startsWith("//")) {
+      serverBaseUrl = serverBaseUrl.substring(1);
+    }
+    return serverBaseUrl;
+  }
+
+  /** Typically looks like {@code http://localhost:8983/solr} (no core or collection) */
+  public String getBaseURL() {
+    return baseUrl;
+  }
 
   /**
    * @lucene.internal
@@ -112,7 +122,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   protected String getRequestUrl(SolrRequest<?> solrRequest, String collection)
       throws MalformedURLException {
-    return ClientUtils.buildRequestUrl(solrRequest, serverBaseUrl, collection);
+    return ClientUtils.buildRequestUrl(solrRequest, getBaseURL(), collection);
   }
 
   protected ResponseParser responseParser(SolrRequest<?> solrRequest) {
@@ -327,7 +337,7 @@ public abstract class HttpSolrClientBase extends SolrClient {
    * @param collection an optional collection or core name used to override the client's "default
    *     collection". May be 'null' for any requests that don't require a collection or wish to rely
    *     on the client's default
-   * @see SolrRequest#processWithBaseUrl(HttpSolrClientBase, String, String)
+   * @see SolrRequest#processWithBaseUrl(HttpSolrClient, String, String)
    */
   public abstract NamedList<Object> requestWithBaseUrl(
       String baseUrl, SolrRequest<?> solrRequest, String collection)
@@ -359,12 +369,8 @@ public abstract class HttpSolrClientBase extends SolrClient {
     return requestAsync(request, null);
   }
 
-  public boolean isV2ApiRequest(final SolrRequest<?> request) {
+  protected boolean isV2ApiRequest(final SolrRequest<?> request) {
     return request.getApiVersion() == SolrRequest.ApiVersion.V2;
-  }
-
-  public String getBaseURL() {
-    return serverBaseUrl;
   }
 
   public ResponseParser getParser() {
@@ -373,5 +379,314 @@ public abstract class HttpSolrClientBase extends SolrClient {
 
   public Set<String> getUrlParamNames() {
     return urlParamNames;
+  }
+
+  /**
+   * @lucene.internal
+   */
+  protected abstract BuilderBase<?, ?> toBuilder(String baseUrl);
+
+  // If the Jetty-based HttpJettySolrClient builder is on the classpath, this will be its no-arg
+  // constructor; otherwise it will be null and we will fall back to the JDK HTTP client.
+  private static final Constructor<? extends BuilderBase<?, ?>> HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR;
+
+  static {
+    Constructor<? extends HttpSolrClient.BuilderBase<?, ?>> ctor = null;
+    try {
+      @SuppressWarnings("unchecked")
+      Class<? extends HttpSolrClient.BuilderBase<?, ?>> builderClass =
+          (Class<? extends HttpSolrClient.BuilderBase<?, ?>>)
+              Class.forName("org.apache.solr.client.solrj.jetty.HttpJettySolrClient$Builder");
+      ctor = builderClass.getDeclaredConstructor();
+      ctor.newInstance(); // perhaps fails because Jetty libs aren't on the classpath
+    } catch (Throwable t) {
+      // Class not present or incompatible; leave ctor as null to indicate unavailability
+      if (log.isTraceEnabled()) {
+        log.trace(
+            "HttpJettySolrClient$Builder not available on classpath; will use HttpJdkSolrClient",
+            t);
+      }
+    }
+    HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR = ctor;
+  }
+
+  /**
+   * Provides a new builder of an {@link HttpSolrClient}. The implementation will try to create a
+   * {@code org.apache.solr.client.solrj.jetty.HttpJettySolrClient} if available, otherwise will
+   * fall back on {@link HttpJdkSolrClient}.
+   *
+   * @param baseUrl for {@link BuilderBase#withBaseSolrUrl(String)}.
+   */
+  public static BuilderBase<?, ?> builder(String baseUrl) {
+    HttpSolrClient.BuilderBase<?, ?> builder;
+    if (HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR != null) {
+      try {
+        log.debug("Using HttpJettySolrClient as the delegate http client");
+        builder = HTTP_JETTY_SOLR_CLIENT_BUILDER_CTOR.newInstance();
+      } catch (RuntimeException e) {
+        throw e;
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+    } else {
+      log.debug("Using HttpJdkSolrClient as the delegate http client");
+      builder = new HttpJdkSolrClient.Builder();
+    }
+    return builder.withBaseSolrUrl(baseUrl);
+  }
+
+  public abstract static class BuilderBase<B extends BuilderBase<?, ?>, C extends HttpSolrClient> {
+
+    protected Long idleTimeoutMillis;
+    protected Long connectionTimeoutMillis;
+    protected Long requestTimeoutMillis;
+    protected String basicAuthAuthorizationStr;
+    protected Boolean followRedirects;
+    protected String baseSolrUrl;
+    protected RequestWriter requestWriter;
+    protected ResponseParser responseParser;
+    protected String defaultCollection;
+    protected Set<String> urlParamNames;
+    protected Integer maxConnectionsPerHost;
+    protected ExecutorService executor;
+    protected final boolean defaultUseHttp1_1 = Boolean.getBoolean("solr.http1");
+    protected Boolean useHttp1_1;
+    protected String proxyHost;
+    protected int proxyPort;
+    protected boolean proxyIsSocks4;
+    protected boolean proxyIsSecure;
+
+    public abstract C build();
+
+    /**
+     * Provide a seed HttpSolrClient for the builder values, values can still be overridden by using
+     * builder methods
+     */
+    @SuppressWarnings("unchecked")
+    public B withHttpClient(C httpSolrClient) {
+      if (this.basicAuthAuthorizationStr == null) {
+        this.basicAuthAuthorizationStr = httpSolrClient.basicAuthAuthorizationStr;
+      }
+      if (this.requestTimeoutMillis == null) {
+        this.requestTimeoutMillis = httpSolrClient.requestTimeoutMillis;
+      }
+      if (this.requestWriter == null) {
+        this.requestWriter = httpSolrClient.requestWriter;
+      }
+      if (this.responseParser == null) {
+        this.responseParser = httpSolrClient.parser;
+      }
+      if (this.urlParamNames == null) {
+        this.urlParamNames = httpSolrClient.urlParamNames;
+      }
+      return (B) (this);
+    }
+
+    /** Provides the Base Solr Url. */
+    @SuppressWarnings("unchecked")
+    public B withBaseSolrUrl(String baseSolrUrl) {
+      this.baseSolrUrl = baseSolrUrl;
+      return (B) this;
+    }
+
+    /** Provides a {@link RequestWriter} for created clients to use when handing requests. */
+    @SuppressWarnings("unchecked")
+    public B withRequestWriter(RequestWriter requestWriter) {
+      this.requestWriter = requestWriter;
+      return (B) this;
+    }
+
+    /** Provides a {@link ResponseParser} for created clients to use when handling requests. */
+    @SuppressWarnings("unchecked")
+    public B withResponseParser(ResponseParser responseParser) {
+      this.responseParser = responseParser;
+      return (B) this;
+    }
+
+    /** Sets a default for core or collection based requests. */
+    @SuppressWarnings("unchecked")
+    public B withDefaultCollection(String defaultCoreOrCollection) {
+      this.defaultCollection = defaultCoreOrCollection;
+      return (B) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public B withFollowRedirects(boolean followRedirects) {
+      this.followRedirects = followRedirects;
+      return (B) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public B withExecutor(ExecutorService executor) {
+      this.executor = executor;
+      return (B) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    public B withBasicAuthCredentials(String user, String pass) {
+      if (user != null || pass != null) {
+        if (user == null || pass == null) {
+          throw new IllegalStateException(
+              "Invalid Authentication credentials. Either both username and password or none must be provided");
+        }
+      }
+      this.basicAuthAuthorizationStr = basicAuthCredentialsToAuthorizationString(user, pass);
+      return (B) this;
+    }
+
+    /**
+     * Expert Method
+     *
+     * @param urlParamNames set of param keys that are only sent via the query string. Note that the
+     *     param will be sent as a query string if the key is part of this Set or the SolrRequest's
+     *     query params.
+     * @see SolrRequest#getQueryParams
+     */
+    @SuppressWarnings("unchecked")
+    public B withTheseParamNamesInTheUrl(Set<String> urlParamNames) {
+      this.urlParamNames = urlParamNames;
+      return (B) this;
+    }
+
+    /**
+     * Set maxConnectionsPerHost for http1 connections, maximum number http2 connections is limited
+     * to 4
+     */
+    @SuppressWarnings("unchecked")
+    public B withMaxConnectionsPerHost(int max) {
+      this.maxConnectionsPerHost = max;
+      return (B) this;
+    }
+
+    /**
+     * The max time a connection can be idle (that is, without traffic of bytes in either
+     * direction). Sometimes called a "socket timeout". Note: not applicable to the JDK HttpClient.
+     */
+    @SuppressWarnings("unchecked")
+    public B withIdleTimeout(long idleConnectionTimeout, TimeUnit unit) {
+      this.idleTimeoutMillis = TimeUnit.MILLISECONDS.convert(idleConnectionTimeout, unit);
+      return (B) this;
+    }
+
+    public long getIdleTimeoutMillis() {
+      return idleTimeoutMillis != null && idleTimeoutMillis > 0
+          ? idleTimeoutMillis
+          : SolrHttpConstants.DEFAULT_SO_TIMEOUT;
+    }
+
+    /** The max time a connection can take to connect to destinations. */
+    @SuppressWarnings("unchecked")
+    public B withConnectionTimeout(long connectionTimeout, TimeUnit unit) {
+      this.connectionTimeoutMillis = TimeUnit.MILLISECONDS.convert(connectionTimeout, unit);
+      return (B) this;
+    }
+
+    public long getConnectionTimeoutMillis() {
+      return connectionTimeoutMillis != null && connectionTimeoutMillis > 0
+          ? connectionTimeoutMillis
+          : SolrHttpConstants.DEFAULT_CONNECT_TIMEOUT;
+    }
+
+    /** Set a timeout for requests to receive a response. */
+    @SuppressWarnings("unchecked")
+    public B withRequestTimeout(long requestTimeout, TimeUnit unit) {
+      this.requestTimeoutMillis = TimeUnit.MILLISECONDS.convert(requestTimeout, unit);
+      return (B) this;
+    }
+
+    public long getRequestTimeoutMillis() {
+      return requestTimeoutMillis != null && requestTimeoutMillis > 0
+          ? requestTimeoutMillis
+          : getIdleTimeoutMillis();
+    }
+
+    /**
+     * If true, prefer http1.1 over http2. If not set, the default is determined by system property
+     * 'solr.http1'. Otherwise, false.
+     *
+     * @param useHttp1_1 prefer http1.1?
+     * @return this Builder
+     */
+    @SuppressWarnings("unchecked")
+    public B useHttp1_1(boolean useHttp1_1) {
+      this.useHttp1_1 = useHttp1_1;
+      return (B) this;
+    }
+
+    /**
+     * Return whether the HttpSolrClient built will prefer http1.1 over http2.
+     *
+     * @return whether to prefer http1.1
+     */
+    public boolean shouldUseHttp1_1() {
+      return useHttp1_1 != null ? useHttp1_1 : defaultUseHttp1_1;
+    }
+
+    /**
+     * Setup a proxy
+     *
+     * @param host The proxy host
+     * @param port The proxy port
+     * @param isSocks4 If true creates an SOCKS 4 proxy, otherwise creates an HTTP proxy
+     * @param isSecure If true enables the secure flag on the proxy
+     * @return this Builder
+     */
+    @SuppressWarnings("unchecked")
+    public B withProxyConfiguration(String host, int port, boolean isSocks4, boolean isSecure) {
+      this.proxyHost = host;
+      this.proxyPort = port;
+      this.proxyIsSocks4 = isSocks4;
+      this.proxyIsSecure = isSecure;
+      return (B) this;
+    }
+
+    /**
+     * Setup basic authentication from a string formatted as username:password. If the string is
+     * Null then it doesn't do anything.
+     *
+     * @param credentials The username and password formatted as username:password
+     * @return this Builder
+     */
+    @SuppressWarnings("unchecked")
+    public B withOptionalBasicAuthCredentials(String credentials) {
+      if (credentials != null) {
+        if (credentials.indexOf(':') == -1) {
+          throw new IllegalStateException(
+              "Invalid Authentication credential formatting. Provide username and password in the 'username:password' format.");
+        }
+        String username = credentials.substring(0, credentials.indexOf(':'));
+        String password = credentials.substring(credentials.indexOf(':') + 1, credentials.length());
+        withBasicAuthCredentials(username, password);
+      }
+      return (B) this;
+    }
+
+    public Integer getMaxConnectionsPerHost() {
+      return maxConnectionsPerHost;
+    }
+
+    public Boolean getFollowRedirects() {
+      return followRedirects;
+    }
+
+    public String getProxyHost() {
+      return proxyHost;
+    }
+
+    public int getProxyPort() {
+      return proxyPort;
+    }
+
+    public boolean isProxyIsSocks4() {
+      return proxyIsSocks4;
+    }
+
+    public boolean isProxyIsSecure() {
+      return proxyIsSecure;
+    }
+
+    public ExecutorService getExecutor() {
+      return executor;
+    }
   }
 }

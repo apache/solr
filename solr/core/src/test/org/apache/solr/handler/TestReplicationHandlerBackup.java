@@ -40,7 +40,7 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.After;
@@ -75,7 +75,7 @@ public class TestReplicationHandlerBackup extends SolrTestCaseJ4 {
   }
 
   private static SolrClient createNewSolrClient(JettySolrRunner jetty) {
-    return new HttpSolrClient.Builder(jetty.getBaseUrl().toString())
+    return new HttpApacheSolrClient.Builder(jetty.getBaseUrl().toString())
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
         .build();

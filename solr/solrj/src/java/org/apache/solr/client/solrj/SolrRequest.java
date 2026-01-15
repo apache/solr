@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.client.solrj.response.StreamingResponseCallback;
@@ -321,7 +321,7 @@ public abstract class SolrRequest<T> implements Serializable {
    * @throws IOException if there is a communication error
    * @lucene.experimental
    */
-  public final T processWithBaseUrl(HttpSolrClientBase client, String baseUrl, String collection)
+  public final T processWithBaseUrl(HttpSolrClient client, String baseUrl, String collection)
       throws SolrServerException, IOException {
     // duplicative with process(), except for requestWithBaseUrl
     long startNanos = System.nanoTime();

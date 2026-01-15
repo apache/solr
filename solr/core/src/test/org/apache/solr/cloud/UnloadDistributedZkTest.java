@@ -30,7 +30,7 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Unload;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -87,7 +87,7 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
    * @param url a Solr node base URL. Should <em>not</em> contain a core or collection name.
    */
   private SolrClient newSolrClient(String url) {
-    return new HttpSolrClient.Builder(url)
+    return new HttpApacheSolrClient.Builder(url)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withSocketTimeout(30000, TimeUnit.MILLISECONDS)
         .build();
@@ -277,7 +277,7 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     TestInjection.skipIndexWriterCommitOnClose = true;
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
             .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -318,7 +318,7 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
 
     try (SolrClient addClient =
-        new HttpSolrClient.Builder(jettys.get(1).getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(jettys.get(1).getBaseUrl().toString())
             .withDefaultCollection("unloadcollection_shard1_replica2")
             .withConnectionTimeout(30000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
@@ -383,7 +383,7 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
     }
 
     try (SolrClient adminClient =
-        new HttpSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(jettys.get(2).getBaseUrl().toString())
             .withDefaultCollection("unloadcollection_shard1_replica3")
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(30000, TimeUnit.MILLISECONDS)

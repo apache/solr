@@ -44,7 +44,7 @@ import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
@@ -699,7 +699,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     for (SolrClient client : clients) {
       assertEquals(
           "unexpected pre-commitWithin document count on node: "
-              + ((HttpSolrClient) client).getBaseURL(),
+              + ((HttpApacheSolrClient) client).getBaseURL(),
           before,
           client.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
@@ -1041,7 +1041,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testStopAndStartCoresInOneInstance() throws Exception {
     JettySolrRunner jetty = jettys.get(0);
-    try (final SolrClient httpSolrClient = (HttpSolrClient) jetty.newClient(15000, 60000)) {
+    try (final SolrClient httpSolrClient = (HttpApacheSolrClient) jetty.newClient(15000, 60000)) {
       ThreadPoolExecutor executor = null;
       try {
         executor =
@@ -1150,7 +1150,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     CollectionAdminResponse res = new CollectionAdminResponse();
     if (client == null) {
-      final String baseUrl = ((HttpSolrClient) clients.get(clientIndex)).getBaseURL();
+      final String baseUrl = ((HttpApacheSolrClient) clients.get(clientIndex)).getBaseURL();
 
       try (SolrClient aClient = createNewSolrClient("", baseUrl)) {
         res.setResponse(aClient.request(request));
@@ -1260,7 +1260,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
   private void testNumberOfCommitsWithCommitAfterAdd() throws SolrServerException, IOException {
     log.info("### STARTING testNumberOfCommitsWithCommitAfterAdd");
-    long startCommits = getNumCommits((HttpSolrClient) clients.get(0));
+    long startCommits = getNumCommits((HttpApacheSolrClient) clients.get(0));
 
     NamedList<Object> result =
         clients
@@ -1271,14 +1271,15 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
                     .setCommitWithin(900000)
                     .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true));
 
-    long endCommits = getNumCommits((HttpSolrClient) clients.get(0));
+    long endCommits = getNumCommits((HttpApacheSolrClient) clients.get(0));
     assertEquals(startCommits + 1L, endCommits);
   }
 
-  private Long getNumCommits(HttpSolrClient sourceClient) throws SolrServerException, IOException {
+  private Long getNumCommits(HttpApacheSolrClient sourceClient)
+      throws SolrServerException, IOException {
     String collection = sourceClient.getDefaultCollection();
     try (SolrClient client =
-        new HttpSolrClient.Builder(sourceClient.getBaseURL())
+        new HttpApacheSolrClient.Builder(sourceClient.getBaseURL())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1382,7 +1383,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
 
     // now test that unloading a core gets us a new leader
     try (SolrClient unloadClient =
-        new HttpSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(jettys.get(0).getBaseUrl().toString())
             .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
             .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
@@ -1434,7 +1435,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testSearchByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testSearchByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
+    final String baseUrl = ((HttpApacheSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1448,7 +1449,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
   private void testUpdateByCollectionName() throws SolrServerException, IOException {
     log.info("### STARTING testUpdateByCollectionName");
     SolrClient client = clients.get(0);
-    final String baseUrl = ((HttpSolrClient) client).getBaseURL();
+    final String baseUrl = ((HttpApacheSolrClient) client).getBaseURL();
 
     // the cores each have different names, but if we add the collection name to the url
     // we should get mapped to the right core
@@ -1694,7 +1695,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       String collection, String baseUrl, int connectionTimeoutMillis, int socketTimeoutMillis) {
 
     SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
+        new HttpApacheSolrClient.Builder(baseUrl)
             .withDefaultCollection(collection)
             .withConnectionTimeout(connectionTimeoutMillis, TimeUnit.MILLISECONDS)
             .withSocketTimeout(socketTimeoutMillis, TimeUnit.MILLISECONDS)

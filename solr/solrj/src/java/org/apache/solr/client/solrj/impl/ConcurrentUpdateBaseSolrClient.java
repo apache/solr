@@ -54,7 +54,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final Update END_UPDATE = new Update(null, null);
 
-  private HttpSolrClientBase client;
+  private HttpSolrClient client;
   protected final String basePath;
   protected final CustomBlockingQueue<Update> queue;
   private final ExecutorService scheduler;
@@ -618,7 +618,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   /** Constructs {@link ConcurrentUpdateBaseSolrClient} instances from provided configuration. */
   public abstract static class Builder {
     protected long idleTimeoutMillis;
-    protected HttpSolrClientBase client;
+    protected HttpSolrClient client;
     protected String baseSolrUrl;
     protected String defaultCollection;
     protected int queueSize = 10;
@@ -646,7 +646,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
      *     internally. Callers are responsible for closing the provided client (after closing any
      *     clients created by this builder)
      */
-    public Builder(String baseSolrUrl, HttpSolrClientBase client) {
+    public Builder(String baseSolrUrl, HttpSolrClient client) {
       this(baseSolrUrl, client, false);
     }
 
@@ -670,7 +670,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
      *     ConcurrentUpdateBaseSolrClient should assume responsibility for closing the provided
      *     'client'
      */
-    public Builder(String baseSolrUrl, HttpSolrClientBase client, boolean closeHttpClient) {
+    public Builder(String baseSolrUrl, HttpSolrClient client, boolean closeHttpClient) {
       this.baseSolrUrl = baseSolrUrl;
       this.client = client;
       this.closeHttpClient = closeHttpClient;
@@ -768,7 +768,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
      */
     public abstract ConcurrentUpdateBaseSolrClient build();
 
-    public HttpSolrClientBase getClient() {
+    public HttpSolrClient getClient() {
       return client;
     }
   }

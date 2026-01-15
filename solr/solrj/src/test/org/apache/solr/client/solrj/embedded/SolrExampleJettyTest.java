@@ -30,8 +30,8 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
@@ -55,7 +55,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
   public void testBadSetup() {
     String url = "http" + (isSSLMode() ? "s" : "") + "://127.0.0.1/?core=xxx";
     // This test does NOT fail for HttpJettySolrClient
-    expectThrows(Exception.class, () -> new HttpSolrClient.Builder(url).build());
+    expectThrows(Exception.class, () -> new HttpApacheSolrClient.Builder(url).build());
   }
 
   @Test

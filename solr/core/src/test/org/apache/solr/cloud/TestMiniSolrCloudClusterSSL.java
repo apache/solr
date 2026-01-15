@@ -35,8 +35,8 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -434,7 +434,7 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
     // would prevent us from finding bugs with regular HttpSolrClient instantiation.
     // This test fails if you return a HttpJettySolrClient
     if (random().nextBoolean()) {
-      return (new HttpSolrClient.Builder(url)).build();
+      return (new HttpApacheSolrClient.Builder(url)).build();
     } // else...
     return getHttpSolrClient(url);
   }

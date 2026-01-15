@@ -29,7 +29,7 @@ import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -70,7 +70,7 @@ public abstract class CacheHeaderTestBase extends SolrTestCaseJ4 {
   }
 
   protected HttpClient getHttpClient() {
-    HttpSolrClient client = (HttpSolrClient) solrTestRule.getSolrClient();
+    var client = (HttpApacheSolrClient) solrTestRule.getSolrClient();
     return client.getHttpClient();
   }
 

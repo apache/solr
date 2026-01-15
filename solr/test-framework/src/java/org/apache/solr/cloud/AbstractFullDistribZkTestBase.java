@@ -57,7 +57,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpApacheSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -394,7 +394,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
     }
 
     controlClient =
-        new HttpSolrClient.Builder(controlJetty.getBaseUrl().toString())
+        new HttpApacheSolrClient.Builder(controlJetty.getBaseUrl().toString())
             .withDefaultCollection("control_collection")
             .build();
     if (sliceCount <= 0) {
@@ -961,7 +961,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
       // we find out state by simply matching ports...
       for (Slice slice : coll.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
-          int port = new URI(((HttpSolrClient) client).getBaseURL()).getPort();
+          int port = new URI(((HttpApacheSolrClient) client).getBaseURL()).getPort();
 
           if (replica.getBaseUrl().contains(":" + port)) {
             CloudSolrServerClient csc = new CloudSolrServerClient();
@@ -2044,7 +2044,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
         Map<String, Replica> theShards = slice.getValue().getReplicasMap();
         for (Map.Entry<String, Replica> shard : theShards.entrySet()) {
           String shardName =
-              new URI(((HttpSolrClient) client.solrClient).getBaseURL()).getPort() + "_solr_";
+              new URI(((HttpApacheSolrClient) client.solrClient).getBaseURL()).getPort() + "_solr_";
           if (verbose && shard.getKey().endsWith(shardName)) {
             System.err.println("shard:" + slice.getKey());
             System.err.println(shard.getValue());
@@ -2478,7 +2478,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected SolrClient createNewSolrClient(String coreName, int port) {
     String baseUrl = buildUrl(port);
-    return new HttpSolrClient.Builder(baseUrl)
+    return new HttpApacheSolrClient.Builder(baseUrl)
         .withDefaultCollection(coreName)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
@@ -3008,7 +3008,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected long getIndexVersion(Replica replica) throws IOException {
     try (SolrClient client =
-        new HttpSolrClient.Builder(replica.getBaseUrl())
+        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
@@ -3058,7 +3058,7 @@ public abstract class AbstractFullDistribZkTestBase extends BaseDistributedSearc
 
   protected void logReplicationDetails(Replica replica, StringBuilder builder) throws IOException {
     try (SolrClient client =
-        new HttpSolrClient.Builder(replica.getBaseUrl())
+        new HttpApacheSolrClient.Builder(replica.getBaseUrl())
             .withDefaultCollection(replica.getCoreName())
             .build()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
