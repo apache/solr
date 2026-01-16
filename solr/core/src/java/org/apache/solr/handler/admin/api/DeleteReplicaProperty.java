@@ -60,7 +60,7 @@ public class DeleteReplicaProperty extends AdminAPIBase implements DeleteReplica
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
-    submitRemoteMessageAndHandleResponse(
+    submitRemoteMessageAndHandleException(
         response,
         CollectionParams.CollectionAction.DELETEREPLICAPROP,
         createRemoteMessage(collName, shardName, replicaName, propertyName));

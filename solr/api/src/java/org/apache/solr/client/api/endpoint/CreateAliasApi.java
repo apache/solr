@@ -19,8 +19,8 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 
 @Path("/aliases")
 public interface CreateAliasApi {
@@ -28,6 +28,5 @@ public interface CreateAliasApi {
   @Operation(
       summary = "Create a traditional or 'routed' alias",
       tags = {"aliases"})
-  SubResponseAccumulatingJerseyResponse createAlias(CreateAliasRequestBody requestBody)
-      throws Exception;
+  AsyncJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception;
 }

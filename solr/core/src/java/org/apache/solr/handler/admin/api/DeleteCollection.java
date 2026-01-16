@@ -56,9 +56,11 @@ public class DeleteCollection extends AdminAPIBase implements DeleteCollectionAp
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, followAliases);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.DELETE, remoteMessage, asyncId);
+        response,
+        CollectionParams.CollectionAction.DELETE,
+        createRemoteMessage(collectionName, followAliases),
+        asyncId);
 
     return response;
   }

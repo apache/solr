@@ -38,10 +38,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.CreateAliasApi;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.RoutedAliasProperties;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
 import org.apache.solr.client.solrj.request.RoutedAliasTypes;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
@@ -78,9 +78,8 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse createAlias(CreateAliasRequestBody requestBody)
-      throws Exception {
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+  public AsyncJerseyResponse createAlias(CreateAliasRequestBody requestBody) throws Exception {
+    final var response = instantiateJerseyResponse(AsyncJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
     if (requestBody == null) {
@@ -104,7 +103,7 @@ public class CreateAlias extends AdminAPIBase implements CreateAliasApi {
       remoteMessage = createRemoteMessageForRoutedAlias(requestBody);
     }
 
-    submitRemoteMessageAndHandleResponse(
+    submitRemoteMessageAndHandleAsync(
         response, CollectionParams.CollectionAction.CREATEALIAS, remoteMessage, requestBody.async);
     return response;
   }

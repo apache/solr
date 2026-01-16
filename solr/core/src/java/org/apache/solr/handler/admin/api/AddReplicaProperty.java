@@ -31,7 +31,7 @@ import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.AddReplicaPropertyApi;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.cloud.overseer.SliceMutator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -58,7 +58,7 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SubResponseAccumulatingJerseyResponse addReplicaProperty(
+  public SolrJerseyResponse addReplicaProperty(
       String collName,
       String shardName,
       String replicaName,
@@ -68,14 +68,14 @@ public class AddReplicaProperty extends AdminAPIBase implements AddReplicaProper
     if (requestBody == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing required request body");
     }
-    final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
+    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collName, solrQueryRequest);
 
     final ZkNodeProps remoteMessage =
         createRemoteMessage(collName, shardName, replicaName, propertyName, requestBody);
-    submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.ADDREPLICAPROP, remoteMessage, null);
+    submitRemoteMessageAndHandleException(
+        response, CollectionParams.CollectionAction.ADDREPLICAPROP, remoteMessage);
 
     disableResponseCaching();
     return response;

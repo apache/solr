@@ -89,9 +89,11 @@ public class CreateShard extends AdminAPIBase implements CreateShardApi {
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
     ensureCollectionUsesImplicitRouter(resolvedCollectionName);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(resolvedCollectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.CREATESHARD, remoteMessage, requestBody.async);
+        response,
+        CollectionParams.CollectionAction.CREATESHARD,
+        createRemoteMessage(resolvedCollectionName, requestBody),
+        requestBody.async);
     return response;
   }
 
