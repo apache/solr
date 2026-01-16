@@ -23,8 +23,10 @@ import hashlib
 import http.client
 import os
 import platform
+import random
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import textwrap
@@ -716,17 +718,25 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   testChangelogMd('.', version)
 
 
-def find_available_port(start_port=8983, max_attempts=100):
-    """Find an available port starting from start_port."""
-    import socket
-    for port in range(start_port, start_port + max_attempts):
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            try:
-                s.bind(('localhost', port))
-                return port
-            except OSError:
-                continue
-    raise RuntimeError('Could not find an available port after %d attempts starting from %d' % (max_attempts, start_port))
+def find_available_port(max_attempts=100):
+  """Find an available port by randomly selecting from range 8901-8999.
+  Ensures both the port and port+1000 are available."""
+  for _ in range(max_attempts):
+    port = random.randint(8901, 8999)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+      try:
+        s.bind(('localhost', port))
+        # Check if port+1000 is also available
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+          try:
+            s2.bind(('localhost', port + 1000))
+            return port
+          except OSError:
+            continue
+      except OSError:
+        continue
+  raise RuntimeError('Could not find an available port after %d attempts in range 8901-8999' % max_attempts)
+
 
 def testSolrExample(binaryDistPath, javaPath, isSlim):
   # test solr using some examples it comes with
