@@ -15,37 +15,18 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.jetty;
+package org.apache.solr.client.solrj.impl;
 
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClientTestBase;
-import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 
-public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrClientTestBase {
-
-  @Override
-  public ConcurrentUpdateBaseSolrClient outcomeCountingConcurrentClient(
-      String serverUrl,
-      int queueSize,
-      int threadCount,
-      HttpSolrClientBase solrClient,
-      AtomicInteger successCounter,
-      AtomicInteger failureCounter,
-      StringBuilder errors) {
-    return new OutcomeCountingConcurrentUpdateJettySolrClient.Builder(
-            serverUrl, (HttpJettySolrClient) solrClient, successCounter, failureCounter, errors)
-        .withQueueSize(queueSize)
-        .withThreadCount(threadCount)
-        .setPollQueueTime(0, TimeUnit.MILLISECONDS)
-        .build();
-  }
+public class ConcurrentUpdateJdkSolrClientTest extends ConcurrentUpdateSolrClientTestBase {
 
   @Override
   public HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs) {
-    var builder = new HttpJettySolrClient.Builder();
+    var builder =
+        new HttpJdkSolrClient.Builder().withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT);
     if (overrideIdleTimeoutMs != null) {
       builder.withIdleTimeout(overrideIdleTimeoutMs, TimeUnit.MILLISECONDS);
     }
@@ -61,7 +42,7 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
       int threadCount,
       boolean disablePollQueue) {
     var builder =
-        new ConcurrentUpdateJettySolrClient.Builder(baseUrl, (HttpJettySolrClient) solrClient)
+        new ConcurrentUpdateJdkSolrClient.Builder(baseUrl, (HttpJdkSolrClient) solrClient)
             .withQueueSize(queueSize)
             .withThreadCount(threadCount);
     if (defaultCollection != null) {
@@ -73,14 +54,31 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
     return builder.build();
   }
 
-  public static class OutcomeCountingConcurrentUpdateJettySolrClient
-      extends ConcurrentUpdateJettySolrClient {
+  @Override
+  public ConcurrentUpdateBaseSolrClient outcomeCountingConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClientBase solrClient,
+      AtomicInteger successCounter,
+      AtomicInteger failureCounter,
+      StringBuilder errors) {
+    return new OutcomeCountingConcurrentUpdateSolrClient.Builder(
+            serverUrl, (HttpJdkSolrClient) solrClient, successCounter, failureCounter, errors)
+        .withQueueSize(queueSize)
+        .withThreadCount(threadCount)
+        .setPollQueueTime(0, TimeUnit.MILLISECONDS)
+        .build();
+  }
+
+  public static class OutcomeCountingConcurrentUpdateSolrClient
+      extends ConcurrentUpdateJdkSolrClient {
     private final AtomicInteger successCounter;
     private final AtomicInteger failureCounter;
     private final StringBuilder errors;
 
-    public OutcomeCountingConcurrentUpdateJettySolrClient(
-        OutcomeCountingConcurrentUpdateJettySolrClient.Builder builder) {
+    public OutcomeCountingConcurrentUpdateSolrClient(
+        OutcomeCountingConcurrentUpdateSolrClient.Builder builder) {
       super(builder);
       this.successCounter = builder.successCounter;
       this.failureCounter = builder.failureCounter;
@@ -98,14 +96,14 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
       successCounter.incrementAndGet();
     }
 
-    public static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
+    public static class Builder extends ConcurrentUpdateJdkSolrClient.Builder {
       protected final AtomicInteger successCounter;
       protected final AtomicInteger failureCounter;
       protected final StringBuilder errors;
 
       public Builder(
           String baseSolrUrl,
-          HttpJettySolrClient http2Client,
+          HttpJdkSolrClient http2Client,
           AtomicInteger successCounter,
           AtomicInteger failureCounter,
           StringBuilder errors) {
@@ -116,8 +114,8 @@ public class ConcurrentUpdateJettySolrClientTest extends ConcurrentUpdateSolrCli
       }
 
       @Override
-      public OutcomeCountingConcurrentUpdateJettySolrClient build() {
-        return new OutcomeCountingConcurrentUpdateJettySolrClient(this);
+      public OutcomeCountingConcurrentUpdateSolrClient build() {
+        return new OutcomeCountingConcurrentUpdateSolrClient(this);
       }
     }
   }

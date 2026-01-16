@@ -197,6 +197,14 @@ grant {
   permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
 
+  // for java.net.http.HttpClient.  See ConcurrentUpdateJdkSolrClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+
   // Needed by TestCoreDiscovery
   permission java.lang.RuntimePermission "accessUserInformation";
 };
