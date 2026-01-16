@@ -20,10 +20,13 @@ package org.apache.solr.handler.admin.api;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.opentelemetry.api.trace.Span;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.ZkController;
@@ -34,6 +37,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
@@ -88,5 +92,32 @@ public abstract class MockV2APITest extends SolrTestCaseJ4 {
     queryResponse = new SolrQueryResponse();
     messageCapturer = ArgumentCaptor.forClass(ZkNodeProps.class);
     contextCapturer = ArgumentCaptor.forClass(AdminCmdContext.class);
+  }
+
+  protected void validateRunCommand(
+      CollectionParams.CollectionAction action,
+      String asyncId,
+      Consumer<Map<String, Object>> messageValidator) {
+    AdminCmdContext context = validateRunCommandInternal(action, messageValidator);
+    assertEquals("Wrong asyncId for command", asyncId, context.getAsyncId());
+  }
+
+  protected void validateRunCommand(
+      CollectionParams.CollectionAction action, Consumer<Map<String, Object>> messageValidator) {
+    AdminCmdContext context = validateRunCommandInternal(action, messageValidator);
+    assertNull("Command should have no asyncId", context.getAsyncId());
+  }
+
+  private AdminCmdContext validateRunCommandInternal(
+      CollectionParams.CollectionAction action, Consumer<Map<String, Object>> messageValidator) {
+    verify(mockCommandRunner)
+        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
+
+    var message = messageCapturer.getValue();
+    messageValidator.accept(message.getProperties());
+
+    AdminCmdContext context = contextCapturer.getValue();
+    assertEquals(action, context.getAction());
+    return context;
   }
 }

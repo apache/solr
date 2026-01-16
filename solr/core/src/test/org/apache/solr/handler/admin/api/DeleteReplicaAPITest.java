@@ -26,15 +26,10 @@ import static org.apache.solr.common.params.CollectionAdminParams.REPLICA;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.client.api.model.ScaleCollectionRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
@@ -104,48 +99,42 @@ public class DeleteReplicaAPITest extends MockV2APITest {
         false,
         true,
         "someAsyncId");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps message = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = message.getProperties();
-    assertEquals(8, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals("someReplicaName", remoteMessage.get(REPLICA));
-    assertEquals(Boolean.TRUE, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_INSTANCE_DIR));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_DATA_DIR));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_INDEX));
-    assertEquals(Boolean.TRUE, remoteMessage.get(ONLY_IF_DOWN));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEREPLICA, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEREPLICA,
+        "someAsyncId",
+        message -> {
+          assertEquals(8, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals("someReplicaName", message.get(REPLICA));
+          assertEquals(Boolean.TRUE, message.get(FOLLOW_ALIASES));
+          assertEquals(Boolean.FALSE, message.get(DELETE_INSTANCE_DIR));
+          assertEquals(Boolean.TRUE, message.get(DELETE_DATA_DIR));
+          assertEquals(Boolean.FALSE, message.get(DELETE_INDEX));
+          assertEquals(Boolean.TRUE, message.get(ONLY_IF_DOWN));
+        });
   }
 
   @Test
   public void testCreateRemoteMessageByCount() throws Exception {
     api.deleteReplicasByCount(
         "someCollName", "someShardName", 123, true, false, true, false, true, "someAsyncId");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps message = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = message.getProperties();
-    assertEquals(8, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals(123, remoteMessage.get(COUNT_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_INSTANCE_DIR));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_DATA_DIR));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_INDEX));
-    assertEquals(Boolean.TRUE, remoteMessage.get(ONLY_IF_DOWN));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEREPLICA, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEREPLICA,
+        "someAsyncId",
+        message -> {
+          assertEquals(8, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals(123, message.get(COUNT_PROP));
+          assertEquals(Boolean.TRUE, message.get(FOLLOW_ALIASES));
+          assertEquals(Boolean.FALSE, message.get(DELETE_INSTANCE_DIR));
+          assertEquals(Boolean.TRUE, message.get(DELETE_DATA_DIR));
+          assertEquals(Boolean.FALSE, message.get(DELETE_INDEX));
+          assertEquals(Boolean.TRUE, message.get(ONLY_IF_DOWN));
+        });
   }
 
   @Test
@@ -156,40 +145,34 @@ public class DeleteReplicaAPITest extends MockV2APITest {
     body.deleteIndex = true;
     body.onlyIfDown = false;
     body.async = "someAsyncId";
+
     api.deleteReplicasByCountAllShards("someCollName", body);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps message = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = message.getProperties();
-    assertEquals(5, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals(123, remoteMessage.get(COUNT_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INDEX));
-    assertEquals(Boolean.FALSE, remoteMessage.get(ONLY_IF_DOWN));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEREPLICA, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEREPLICA,
+        "someAsyncId",
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals(123, message.get(COUNT_PROP));
+          assertEquals(Boolean.TRUE, message.get(FOLLOW_ALIASES));
+          assertEquals(Boolean.TRUE, message.get(DELETE_INDEX));
+          assertEquals(Boolean.FALSE, message.get(ONLY_IF_DOWN));
+        });
   }
 
   @Test
   public void testMissingValuesExcludedFromRemoteMessage() throws Exception {
     api.deleteReplicaByName(
         "someCollName", "someShardName", "someReplicaName", null, null, null, null, null, null);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps message = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = message.getProperties();
-    assertEquals(3, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals("someReplicaName", remoteMessage.get(REPLICA));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEREPLICA, context.getAction());
-    assertNull("AsyncId should be null", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEREPLICA,
+        message -> {
+          assertEquals(3, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals("someReplicaName", message.get(REPLICA));
+        });
   }
 }

@@ -29,10 +29,8 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
@@ -40,9 +38,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.RestoreCollectionRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -129,22 +125,18 @@ public class RestoreCollectionAPITest extends MockV2APITest {
 
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
     api.restoreCollection("someBackupName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(5, remoteMessage.size());
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(BACKUP_ID));
-    assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.RESTORE, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.RESTORE,
+        requestBody.async,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals(Integer.valueOf(123), message.get(BACKUP_ID));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+          assertEquals("someBackupName", message.get(NAME));
+        });
   }
 
   @Test
@@ -166,29 +158,25 @@ public class RestoreCollectionAPITest extends MockV2APITest {
 
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
     api.restoreCollection("someBackupName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(12, remoteMessage.size());
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(BACKUP_ID));
-    assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertEquals("someConfig", remoteMessage.get(COLL_CONF));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(NRT_REPLICAS));
-    assertEquals(Integer.valueOf(123), remoteMessage.get(REPLICATION_FACTOR));
-    assertEquals(Integer.valueOf(456), remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(Integer.valueOf(789), remoteMessage.get(PULL_REPLICAS));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals("bar", remoteMessage.get("property.foo"));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.RESTORE, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.RESTORE,
+        requestBody.async,
+        message -> {
+          assertEquals(12, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals(Integer.valueOf(123), message.get(BACKUP_ID));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+          assertEquals("someBackupName", message.get(NAME));
+          assertEquals("someConfig", message.get(COLL_CONF));
+          assertEquals(Integer.valueOf(123), message.get(NRT_REPLICAS));
+          assertEquals(Integer.valueOf(123), message.get(REPLICATION_FACTOR));
+          assertEquals(Integer.valueOf(456), message.get(TLOG_REPLICAS));
+          assertEquals(Integer.valueOf(789), message.get(PULL_REPLICAS));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals("bar", message.get("property.foo"));
+        });
   }
 
   @Test

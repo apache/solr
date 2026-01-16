@@ -21,15 +21,10 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ONLY
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.SHARD_UNIQUE;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COLLECTION;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.client.api.model.BalanceShardUniqueRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
@@ -89,20 +84,16 @@ public class BalanceShardUniqueAPITest extends MockV2APITest {
     requestBody.async = "someAsyncId";
 
     api.balanceShardUnique("someCollName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(4, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someProperty", remoteMessage.get(PROPERTY_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(SHARD_UNIQUE));
-    assertEquals(Boolean.TRUE, remoteMessage.get(ONLY_ACTIVE_NODES));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.BALANCESHARDUNIQUE, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.BALANCESHARDUNIQUE,
+        requestBody.async,
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someProperty", message.get(PROPERTY_PROP));
+          assertEquals(Boolean.TRUE, message.get(SHARD_UNIQUE));
+          assertEquals(Boolean.TRUE, message.get(ONLY_ACTIVE_NODES));
+        });
   }
 }

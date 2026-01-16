@@ -19,7 +19,7 @@ package org.apache.solr.handler.admin.api;
 
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.AliasesApi;
@@ -66,9 +66,8 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
 
     // Delete the alias using the V2 API
     var request = new AliasesApi.DeleteAlias(aliasName);
-    SubResponseAccumulatingJerseyResponse response = request.process(cloudClient);
+    AsyncJerseyResponse response = request.process(cloudClient);
     assertNotNull(response);
-    assertNull("Expected request to not fail", response.failedSubResponsesByNodeName);
 
     // Verify the alias is gone
     ZkStateReader.AliasesManager aliasesManager =
@@ -102,7 +101,6 @@ public class DeleteAliasAPITest extends SolrCloudTestCase {
     request.setAsync(asyncId);
     var response = request.process(cloudClient);
     assertNotNull(response);
-    assertNull("Expected request start to not fail", response.failedSubResponsesByNodeName);
 
     // Wait for the async request to complete
     CollectionAdminRequest.RequestStatusResponse rsp =

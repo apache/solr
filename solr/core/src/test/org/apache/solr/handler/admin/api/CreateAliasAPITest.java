@@ -19,20 +19,15 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.RoutedAliasProperties;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
@@ -219,18 +214,15 @@ public class CreateAliasAPITest extends MockV2APITest {
     requestBody.async = "someAsyncId";
 
     api.createAlias(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(2, remoteMessage.size());
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("validColl1,validColl2", remoteMessage.get(COLLECTIONS));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATEALIAS, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        requestBody.async,
+        message -> {
+          assertEquals(2, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("validColl1,validColl2", message.get(COLLECTIONS));
+        });
   }
 
   @Test
@@ -246,21 +238,17 @@ public class CreateAliasAPITest extends MockV2APITest {
     requestBody.collCreationParameters = createParams;
 
     api.createAlias(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(5, remoteMessage.size());
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("category", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATEALIAS, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("category", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   @Test
@@ -279,24 +267,20 @@ public class CreateAliasAPITest extends MockV2APITest {
     requestBody.collCreationParameters = createParams;
 
     api.createAlias(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(8, remoteMessage.size());
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("time", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals("NOW/HOUR", remoteMessage.get("router.start"));
-    assertEquals("+1MONTH", remoteMessage.get("router.interval"));
-    assertEquals(Long.valueOf(123456L), remoteMessage.get("router.maxFutureMs"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATEALIAS, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(8, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("time", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals("NOW/HOUR", message.get("router.start"));
+          assertEquals("+1MONTH", message.get("router.interval"));
+          assertEquals(Long.valueOf(123456L), message.get("router.maxFutureMs"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   @Test
@@ -317,26 +301,22 @@ public class CreateAliasAPITest extends MockV2APITest {
     requestBody.collCreationParameters = createParams;
 
     api.createAlias(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(10, remoteMessage.size());
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("time", remoteMessage.get("router.0.name"));
-    assertEquals("someField", remoteMessage.get("router.0.field"));
-    assertEquals("NOW/HOUR", remoteMessage.get("router.0.start"));
-    assertEquals("+1MONTH", remoteMessage.get("router.0.interval"));
-    assertEquals(Long.valueOf(123456L), remoteMessage.get("router.0.maxFutureMs"));
-    assertEquals("category", remoteMessage.get("router.1.name"));
-    assertEquals("someField", remoteMessage.get("router.1.field"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATEALIAS, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(10, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("time", message.get("router.0.name"));
+          assertEquals("someField", message.get("router.0.field"));
+          assertEquals("NOW/HOUR", message.get("router.0.start"));
+          assertEquals("+1MONTH", message.get("router.0.interval"));
+          assertEquals(Long.valueOf(123456L), message.get("router.0.maxFutureMs"));
+          assertEquals("category", message.get("router.1.name"));
+          assertEquals("someField", message.get("router.1.field"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   private CreateAliasRequestBody requestBodyWithProvidedRouter(RoutedAliasProperties router) {

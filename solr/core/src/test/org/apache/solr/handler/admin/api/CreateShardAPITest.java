@@ -28,20 +28,16 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.CreateShardRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -126,28 +122,24 @@ public class CreateShardAPITest extends MockV2APITest {
         .thenReturn(Map.of(CommonParams.NAME, ImplicitDocRouter.NAME));
 
     api.createShard("someCollectionName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(11, remoteMessage.size());
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals(123, remoteMessage.get(REPLICATION_FACTOR));
-    assertEquals(123, remoteMessage.get(NRT_REPLICAS));
-    assertEquals(456, remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(789, remoteMessage.get(PULL_REPLICAS));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
-    assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals("propVal1", remoteMessage.get("property.propName1"));
-    assertEquals("propVal2", remoteMessage.get("property.propName2"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATESHARD, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATESHARD,
+        requestBody.async,
+        message -> {
+          assertEquals(11, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals(123, message.get(REPLICATION_FACTOR));
+          assertEquals(123, message.get(NRT_REPLICAS));
+          assertEquals(456, message.get(TLOG_REPLICAS));
+          assertEquals(789, message.get(PULL_REPLICAS));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals(true, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(FOLLOW_ALIASES));
+          assertEquals("propVal1", message.get("property.propName1"));
+          assertEquals("propVal2", message.get("property.propName2"));
+        });
   }
 
   @Test
