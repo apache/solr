@@ -506,7 +506,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    *     from the server
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
+   * @deprecated The waitFlush parameter has no actual effect on the server side and is removed in
+   *     Solr 11.
    */
+  @Deprecated(since = "10.1")
   public UpdateResponse commit(
       String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
