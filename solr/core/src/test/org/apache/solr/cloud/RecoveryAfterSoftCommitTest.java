@@ -91,7 +91,7 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
     // soft-commit so searchers are open on un-committed but flushed segment files
     AbstractUpdateRequest request =
-        new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true, true);
+        new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
     cloudClient.request(request);
 
     Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);

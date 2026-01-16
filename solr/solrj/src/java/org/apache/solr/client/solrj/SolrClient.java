@@ -407,7 +407,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>waitSearcher=true to be inline with the defaults for plain HTTP access
    *
    * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
    * and WILL impact Solr performance when executed too often or too close together. Instead,
@@ -421,13 +421,15 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse commit(String collection) throws SolrServerException, IOException {
-    return commit(collection, true, true);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.COMMIT, true, true)
+        .process(this, collection);
   }
 
   /**
    * Performs an explicit commit, causing pending documents to be committed for indexing
    *
-   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>waitSearcher=true to be inline with the defaults for plain HTTP access
    *
    * <p>Be very careful when triggering commits from the client side. Commits are heavy operations
    * and WILL impact Solr performance when executed too often or too close together. Instead,
@@ -440,7 +442,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse commit() throws SolrServerException, IOException {
-    return commit(null, true, true);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.COMMIT, true, true)
+        .process(this, null);
   }
 
   /**
@@ -452,7 +456,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    * 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
-   * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
@@ -460,10 +463,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(String collection, boolean waitFlush, boolean waitSearcher)
+  public UpdateResponse commit(String collection, boolean waitSearcher)
       throws SolrServerException, IOException {
     return new UpdateRequest()
-        .setAction(UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher)
+        .setAction(UpdateRequest.ACTION.COMMIT, true, waitSearcher)
         .process(this, collection);
   }
 
@@ -475,7 +478,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    * consider using 'commitWithin' when adding documents or rely on your core's/collection's
    * 'autoCommit' settings.
    *
-   * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
@@ -483,9 +485,8 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(boolean waitFlush, boolean waitSearcher)
-      throws SolrServerException, IOException {
-    return commit(null, waitFlush, waitSearcher);
+  public UpdateResponse commit(boolean waitSearcher) throws SolrServerException, IOException {
+    return commit(null, waitSearcher);
   }
 
   /**
@@ -497,7 +498,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    * 'autoCommit' settings.
    *
    * @param collection the Solr collection to send the commit to
-   * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @param softCommit makes index changes visible while neither fsync-ing index files nor writing a
@@ -507,11 +507,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(
-      String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
+  public UpdateResponse commit(String collection, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
     return new UpdateRequest()
-        .setAction(UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher, softCommit)
+        .setAction(UpdateRequest.ACTION.COMMIT, true, waitSearcher, softCommit)
         .process(this, collection);
   }
 
@@ -523,7 +522,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    * consider using 'commitWithin' when adding documents or rely on your core's/collection's
    * 'autoCommit' settings.
    *
-   * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @param softCommit makes index changes visible while neither fsync-ing index files nor writing a
@@ -533,9 +531,11 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse commit(boolean waitFlush, boolean waitSearcher, boolean softCommit)
+  public UpdateResponse commit(boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
-    return commit(null, waitFlush, waitSearcher, softCommit);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.COMMIT, true, waitSearcher, softCommit)
+        .process(this, null);
   }
 
   /**
@@ -552,13 +552,15 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse optimize(String collection) throws SolrServerException, IOException {
-    return optimize(collection, true, true, 1);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.OPTIMIZE, true, true, 1)
+        .process(this, collection);
   }
 
   /**
    * Performs an explicit optimize, causing a merge of all segments to one.
    *
-   * <p>waitFlush=true and waitSearcher=true to be inline with the defaults for plain HTTP access
+   * <p>waitSearcher=true to be inline with the defaults for plain HTTP access
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
@@ -568,7 +570,9 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse optimize() throws SolrServerException, IOException {
-    return optimize(null, true, true, 1);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.OPTIMIZE, true, true, 1)
+        .process(this, null);
   }
 
   /**
@@ -577,7 +581,6 @@ public abstract class SolrClient implements Serializable, Closeable {
    * <p>Note: In most cases it is not required to do explicit optimize
    *
    * @param collection the Solr collection to send the optimize command to
-   * @param waitFlush block until index changes are flushed to disk
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
@@ -585,49 +588,10 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse optimize(String collection, boolean waitFlush, boolean waitSearcher)
-      throws SolrServerException, IOException {
-    return optimize(collection, waitFlush, waitSearcher, 1);
-  }
-
-  /**
-   * Performs an explicit optimize, causing a merge of all segments to one.
-   *
-   * <p>Note: In most cases it is not required to do explicit optimize
-   *
-   * @param waitFlush block until index changes are flushed to disk
-   * @param waitSearcher block until a new searcher is opened and registered as the main query
-   *     searcher, making the changes visible
-   * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *     from the server
-   * @throws IOException If there is a low-level I/O error.
-   * @throws SolrServerException if there is an error on the server
-   */
-  public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher)
-      throws SolrServerException, IOException {
-    return optimize(null, waitFlush, waitSearcher);
-  }
-
-  /**
-   * Performs an explicit optimize, causing a merge of all segments to one.
-   *
-   * <p>Note: In most cases it is not required to do explicit optimize
-   *
-   * @param collection the Solr collection to send the optimize command to
-   * @param waitFlush block until index changes are flushed to disk
-   * @param waitSearcher block until a new searcher is opened and registered as the main query
-   *     searcher, making the changes visible
-   * @param maxSegments optimizes down to at most this number of segments
-   * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
-   *     from the server
-   * @throws IOException If there is a low-level I/O error.
-   * @throws SolrServerException if there is an error on the server
-   */
-  public UpdateResponse optimize(
-      String collection, boolean waitFlush, boolean waitSearcher, int maxSegments)
+  public UpdateResponse optimize(String collection, boolean waitSearcher)
       throws SolrServerException, IOException {
     return new UpdateRequest()
-        .setAction(UpdateRequest.ACTION.OPTIMIZE, waitFlush, waitSearcher, maxSegments)
+        .setAction(UpdateRequest.ACTION.OPTIMIZE, true, waitSearcher, 1)
         .process(this, collection);
   }
 
@@ -636,7 +600,23 @@ public abstract class SolrClient implements Serializable, Closeable {
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
-   * @param waitFlush block until index changes are flushed to disk
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
+   *     from the server
+   * @throws IOException If there is a low-level I/O error.
+   * @throws SolrServerException if there is an error on the server
+   */
+  public UpdateResponse optimize(boolean waitSearcher) throws SolrServerException, IOException {
+    return optimize(null, waitSearcher);
+  }
+
+  /**
+   * Performs an explicit optimize, causing a merge of all segments to one.
+   *
+   * <p>Note: In most cases it is not required to do explicit optimize
+   *
+   * @param collection the Solr collection to send the optimize command to
    * @param waitSearcher block until a new searcher is opened and registered as the main query
    *     searcher, making the changes visible
    * @param maxSegments optimizes down to at most this number of segments
@@ -645,9 +625,31 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws IOException If there is a low-level I/O error.
    * @throws SolrServerException if there is an error on the server
    */
-  public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher, int maxSegments)
+  public UpdateResponse optimize(String collection, boolean waitSearcher, int maxSegments)
       throws SolrServerException, IOException {
-    return optimize(null, waitFlush, waitSearcher, maxSegments);
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.OPTIMIZE, true, waitSearcher, maxSegments)
+        .process(this, collection);
+  }
+
+  /**
+   * Performs an explicit optimize, causing a merge of all segments to one.
+   *
+   * <p>Note: In most cases it is not required to do explicit optimize
+   *
+   * @param waitSearcher block until a new searcher is opened and registered as the main query
+   *     searcher, making the changes visible
+   * @param maxSegments optimizes down to at most this number of segments
+   * @return an {@link org.apache.solr.client.solrj.response.UpdateResponse} containing the response
+   *     from the server
+   * @throws IOException If there is a low-level I/O error.
+   * @throws SolrServerException if there is an error on the server
+   */
+  public UpdateResponse optimize(boolean waitSearcher, int maxSegments)
+      throws SolrServerException, IOException {
+    return new UpdateRequest()
+        .setAction(UpdateRequest.ACTION.OPTIMIZE, true, waitSearcher, maxSegments)
+        .process(this, null);
   }
 
   /**

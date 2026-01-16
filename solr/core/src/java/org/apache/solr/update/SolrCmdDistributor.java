@@ -295,7 +295,7 @@ public class SolrCmdDistributor implements Closeable {
     if (cmd == null) return;
     ureq.setAction(
         cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE : AbstractUpdateRequest.ACTION.COMMIT,
-        false,
+        true, // waitFlush - ignored
         cmd.waitSearcher,
         cmd.maxOptimizeSegments,
         cmd.softCommit,

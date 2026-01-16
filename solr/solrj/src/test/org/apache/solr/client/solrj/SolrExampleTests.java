@@ -326,7 +326,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     // System.out.println( "COMMIT:"+upres.getResponse() );
     assertEquals(0, upres.getStatus());
 
-    upres = client.optimize(true, true);
+    upres = client.optimize(true);
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     assertEquals(0, upres.getStatus());
 
@@ -371,7 +371,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     // System.out.println( "COMMIT:"+upres.getResponse() );
     assertEquals(0, upres.getStatus());
 
-    upres = client.optimize(true, true);
+    upres = client.optimize(true);
     // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     assertEquals(0, upres.getStatus());
 

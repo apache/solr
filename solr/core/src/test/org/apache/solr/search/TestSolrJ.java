@@ -179,7 +179,7 @@ public class TestSolrJ extends SolrTestCaseJ4 {
         SolrInputDocument doc = new SolrInputDocument();
         doc.addField("id", Integer.toString(i % 13));
         client.add(doc);
-        client.commit(true, true, true);
+        client.commit(true, true);
       }
 
       System.out.println("TIME: " + timer.getTime());

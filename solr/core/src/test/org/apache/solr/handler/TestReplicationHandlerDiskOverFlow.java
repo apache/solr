@@ -242,7 +242,7 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     for (int i = 0; i < totalDocs; i++)
       ReplicationTestHelper.index(
           client, "id", i + start, "name", TestUtil.randomSimpleString(random(), 1000, 5000));
-    client.commit(true, true);
+    client.commit(true, false);  // hard commit (softCommit=false) needed for replication
     QueryResponse response =
         client.query(
             new SolrQuery()

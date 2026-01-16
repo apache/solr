@@ -306,9 +306,7 @@ public class CommitStream extends TupleStream implements Expressible {
   private void sendCommit() throws IOException {
 
     try {
-      clientCache
-          .getCloudSolrClient(zkHost)
-          .commit(collection, waitFlush, waitSearcher, softCommit);
+      clientCache.getCloudSolrClient(zkHost).commit(collection, waitSearcher, softCommit);
     } catch (SolrServerException | IOException e) {
       log.warn(
           String.format(

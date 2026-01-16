@@ -46,7 +46,7 @@ public class StoppableCommitThread extends StoppableThread {
     log.debug("StoppableCommitThread started");
     while (!stop) {
       try {
-        cloudClient.commit(false, false, softCommits);
+        cloudClient.commit(false, softCommits);
         numCommits.incrementAndGet();
       } catch (Exception e) {
         numFails.incrementAndGet();

@@ -1026,7 +1026,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // load sample docs from blob store
     CloudSolrClient cloudSolrClient = cloudClient();
     cloudSolrClient.deleteByQuery(collectionName, "*:*", 1);
-    cloudSolrClient.optimize(collectionName, true, true, 1);
+    cloudSolrClient.optimize(collectionName, true, 1);
 
     final int commitWithin = 100;
     final int numDocs = docs.size();
@@ -1060,7 +1060,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       }
     }
 
-    cloudSolrClient.commit(collectionName, true, true, true);
+    cloudSolrClient.commit(collectionName, true, true);
 
     if (!errorsDuringIndexing.isEmpty()) {
       return errorsDuringIndexing;
@@ -1084,7 +1084,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       // wait up to 5 seconds for this to occur
       final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
       do {
-        cloudSolrClient.commit(collectionName, true, true, true);
+        cloudSolrClient.commit(collectionName, true, true);
         queryResponse = cloudSolrClient.query(collectionName, query);
         numFound = queryResponse.getResults().getNumFound();
         if (numFound >= numAdded) {

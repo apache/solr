@@ -246,7 +246,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Optimize the index.
-      leaderClient.optimize(true, true, 1);
+      leaderClient.optimize(true, 1);
 
       // After invoking optimize command, verify that the index directory contains multiple commits
       // (including the one we snapshotted earlier).
@@ -278,7 +278,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
       }
 
       // Optimize the index.
-      leaderClient.optimize(true, true, 1);
+      leaderClient.optimize(true, 1);
 
       // Verify that the index directory contains only 1 index commit (which is not the same as the
       // snapshotted commit).
