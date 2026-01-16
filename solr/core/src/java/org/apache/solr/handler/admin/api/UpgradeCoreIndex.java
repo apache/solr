@@ -352,23 +352,20 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     String coreName = core.getName();
     IndexSchema indexSchema = core.getLatestSchema();
 
-    LeafReader leafReader = FilterLeafReader.unwrap(leafReaderContext.reader());
-    SegmentReader segmentReader = (SegmentReader) leafReader;
-    final String segmentName = segmentReader.getSegmentName();
-    Bits liveDocs = segmentReader.getLiveDocs();
+    LeafReader leafReader = leafReaderContext.reader();
+    Bits liveDocs = leafReader.getLiveDocs();
     SolrDocumentFetcher docFetcher = solrIndexSearcher.getDocFetcher();
 
     // Exclude copy field targets to avoid duplicating values on reindex
     Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
 
-    int numDocsProcessed = 0;
     try (LocalSolrQueryRequest solrRequest =
         new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
       SolrQueryResponse rsp = new SolrQueryResponse();
       UpdateRequestProcessor processor = processorChain.createProcessor(solrRequest, rsp);
       try {
-        StoredFields storedFields = segmentReader.storedFields();
-        for (int luceneDocId = 0; luceneDocId < segmentReader.maxDoc(); luceneDocId++) {
+        StoredFields storedFields = leafReader.storedFields();
+        for (int luceneDocId = 0; luceneDocId < leafReader.maxDoc(); luceneDocId++) {
           if (liveDocs != null && !liveDocs.get(luceneDocId)) {
             continue;
           }
@@ -382,7 +379,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
           currDocCmd.solrDoc = solrDoc;
           processor.processAdd(currDocCmd);
-          numDocsProcessed++;
         }
       } finally {
         // finish() must be called before close() to flush pending operations
@@ -390,12 +386,6 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         processor.close();
       }
     }
-
-    log.info(
-        "End processing segment : {}, core: {} docs processed: {}",
-        segmentName,
-        coreName,
-        numDocsProcessed);
   }
 
   /*
