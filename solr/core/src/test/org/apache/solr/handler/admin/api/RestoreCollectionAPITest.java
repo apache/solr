@@ -50,7 +50,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link RestoreCollection} */
-public class RestoreCollectionAPITest extends MockAPITest {
+public class RestoreCollectionAPITest extends MockV2APITest {
 
   private static RestoreCollection api;
   private BackupRepository mockBackupRepository;

@@ -33,7 +33,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class DeleteCollectionSnapshotAPITest extends MockAPITest {
+public class DeleteCollectionSnapshotAPITest extends MockV2APITest {
 
   private DeleteCollectionSnapshot api;
 

@@ -174,10 +174,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
           collectionParams,
           ccc.getCoreContainer().getConfigSetService());
 
-      Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, CREATE.toLower());
-      propMap.putAll(message.getProperties());
-      ZkNodeProps m = new ZkNodeProps(propMap);
+      ZkNodeProps m = cloneZkPropsWithOperation(message, CREATE);
 
       // Note that in code below there are two main execution paths: Overseer based cluster state
       // updates and distributed cluster state updates (look for isDistributedStateUpdate()

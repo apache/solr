@@ -51,7 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateReplica} */
-public class CreateReplicaAPITest extends MockAPITest {
+public class CreateReplicaAPITest extends MockV2APITest {
 
   private CreateReplica api;
 

@@ -35,7 +35,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link BalanceShardUnique} */
-public class BalanceShardUniqueAPITest extends MockAPITest {
+public class BalanceShardUniqueAPITest extends MockV2APITest {
 
   private BalanceShardUnique api;
 

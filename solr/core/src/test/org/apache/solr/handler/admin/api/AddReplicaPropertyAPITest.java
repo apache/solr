@@ -31,7 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link AddReplicaProperty} */
-public class AddReplicaPropertyAPITest extends MockAPITest {
+public class AddReplicaPropertyAPITest extends MockV2APITest {
 
   private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
       new AddReplicaPropertyRequestBody("anyValue");

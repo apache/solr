@@ -34,7 +34,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class CreateCollectionSnapshotAPITest extends MockAPITest {
+public class CreateCollectionSnapshotAPITest extends MockV2APITest {
 
   private CreateCollectionSnapshot api;
 

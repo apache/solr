@@ -40,7 +40,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteReplica} */
-public class DeleteReplicaAPITest extends MockAPITest {
+public class DeleteReplicaAPITest extends MockV2APITest {
 
   private DeleteReplica api;
 

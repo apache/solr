@@ -39,7 +39,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateAlias} */
-public class CreateAliasAPITest extends MockAPITest {
+public class CreateAliasAPITest extends MockV2APITest {
 
   private CreateAlias api;
 

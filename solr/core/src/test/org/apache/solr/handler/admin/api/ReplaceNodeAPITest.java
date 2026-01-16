@@ -30,7 +30,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReplaceNode} */
-public class ReplaceNodeAPITest extends MockAPITest {
+public class ReplaceNodeAPITest extends MockV2APITest {
 
   private ReplaceNode api;
 

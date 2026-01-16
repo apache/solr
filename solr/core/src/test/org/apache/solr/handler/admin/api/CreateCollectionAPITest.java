@@ -51,7 +51,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollection}. */
-public class CreateCollectionAPITest extends MockAPITest {
+public class CreateCollectionAPITest extends MockV2APITest {
 
   private CreateCollection api;
 

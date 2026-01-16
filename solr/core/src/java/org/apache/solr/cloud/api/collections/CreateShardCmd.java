@@ -22,10 +22,8 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
-import org.apache.solr.cloud.Overseer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -79,10 +77,7 @@ public class CreateShardCmd implements CollApiCmds.CollectionApiCommand {
               + "), there must be at least one leader-eligible replica");
     }
 
-    Map<String, Object> propMap = new HashMap<>();
-    propMap.put(Overseer.QUEUE_OPERATION, CREATESHARD.toLower());
-    propMap.putAll(message.getProperties());
-    ZkNodeProps m = new ZkNodeProps(propMap);
+    ZkNodeProps m = cloneZkPropsWithOperation(message, CREATESHARD);
 
     if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
       // The message has been crafted by CollectionsHandler.CollectionOperation.CREATESHARD_OP and

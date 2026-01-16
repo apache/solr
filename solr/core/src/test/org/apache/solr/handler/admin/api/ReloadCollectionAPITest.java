@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReloadCollectionAPI} */
-public class ReloadCollectionAPITest extends MockAPITest {
+public class ReloadCollectionAPITest extends MockV2APITest {
 
   private ReloadCollectionAPI api;
 

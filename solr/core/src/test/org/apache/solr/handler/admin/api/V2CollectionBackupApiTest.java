@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollectionBackup} */
-public class V2CollectionBackupApiTest extends MockAPITest {
+public class V2CollectionBackupApiTest extends MockV2APITest {
 
   private CreateCollectionBackup api;
   private BackupRepository mockBackupRepository;

@@ -37,7 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteShard} */
-public class DeleteShardAPITest extends MockAPITest {
+public class DeleteShardAPITest extends MockV2APITest {
 
   private DeleteShard api;
 

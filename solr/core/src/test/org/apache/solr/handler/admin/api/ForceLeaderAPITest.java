@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ForceLeader} */
-public class ForceLeaderAPITest extends MockAPITest {
+public class ForceLeaderAPITest extends MockV2APITest {
 
   private ForceLeader api;
 

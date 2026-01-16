@@ -42,7 +42,7 @@ import org.junit.Test;
  * here focus primarily on how the v1 code invokes the v2 API and how the v2 API crafts its
  * overseer/Distributed State Processing RPC message.
  */
-public class DeleteReplicaPropertyAPITest extends MockAPITest {
+public class DeleteReplicaPropertyAPITest extends MockV2APITest {
 
   private DeleteReplicaProperty api;
 

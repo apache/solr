@@ -41,7 +41,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteCollectionBackup} */
-public class DeleteCollectionBackupAPITest extends MockAPITest {
+public class DeleteCollectionBackupAPITest extends MockV2APITest {
 
   private DeleteCollectionBackup api;
   private BackupRepository mockBackupRepository;

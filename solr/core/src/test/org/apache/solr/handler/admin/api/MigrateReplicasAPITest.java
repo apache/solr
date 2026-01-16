@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReplaceNode} */
-public class MigrateReplicasAPITest extends MockAPITest {
+public class MigrateReplicasAPITest extends MockV2APITest {
 
   private MigrateReplicas api;
 

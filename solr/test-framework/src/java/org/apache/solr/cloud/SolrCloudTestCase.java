@@ -59,7 +59,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -420,14 +419,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
 
   protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
       String asyncId, Duration timeout) throws Exception {
-    final var requestStatus = CollectionAdminRequest.requestStatus(asyncId);
-    return RetryUtil.retryUntil(
-        "Async request " + asyncId + " did not complete within duration: " + timeout,
-        (int) (timeout.toMillis() / 50),
-        50,
-        TimeUnit.MILLISECONDS,
-        () -> requestStatus.process(cluster.getSolrClient()),
-        rsp -> !rsp.getRequestStatus().shouldRefresh());
+    return waitForAsyncClusterRequest(cluster.getSolrClient(), asyncId, timeout);
   }
 
   @SuppressWarnings({"rawtypes"})

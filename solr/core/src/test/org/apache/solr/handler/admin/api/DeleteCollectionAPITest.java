@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 /** Unit tests for {@link DeleteCollection} */
-public class DeleteCollectionAPITest extends MockAPITest {
+public class DeleteCollectionAPITest extends MockV2APITest {
 
   private DeleteCollection api;
 
