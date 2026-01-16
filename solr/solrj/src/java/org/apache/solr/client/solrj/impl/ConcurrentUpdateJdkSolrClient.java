@@ -83,7 +83,7 @@ public class ConcurrentUpdateJdkSolrClient extends ConcurrentUpdateBaseSolrClien
       this(baseUrl, client, false);
       // The base class uses idle timeout with StreamingResponse#awaitResponse so it needs to be
       // set!
-      this.idleTimeoutMillis = 600_000;
+      this.idleTimeoutMillis = SolrHttpConstants.DEFAULT_SO_TIMEOUT;
     }
 
     /**
