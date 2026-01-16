@@ -118,8 +118,7 @@ public class SchemaHandler extends RequestHandlerBase
         handleGET(req, rsp);
         break;
       default:
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + httpMethod);
+        throw getUnexpectedHttpMethodException(httpMethod.name());
     }
   }
 
@@ -133,8 +132,14 @@ public class SchemaHandler extends RequestHandlerBase
       case "POST":
         return PermissionNameProvider.Name.SCHEMA_EDIT_PERM;
       default:
-        return null;
+        throw getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
+  }
+
+  public static SolrException getUnexpectedHttpMethodException(String methodName)
+      throws SolrException {
+    return new SolrException(
+        SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + methodName);
   }
 
   private void handleGET(SolrQueryRequest req, SolrQueryResponse rsp) {

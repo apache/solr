@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-
 // Maven publications and configuration.
 //
 // the 'published' list contains an explicit list of all projects
@@ -28,6 +27,7 @@ configure(rootProject) {
         ":solr:cross-dc-manager",
         ":solr:core",
         ":solr:solrj",
+        ":solr:solrj-jetty",
         ":solr:solrj-streaming",
         ":solr:solrj-zookeeper",
         ":solr:test-framework",
@@ -37,7 +37,7 @@ configure(rootProject) {
   }
 }
 
-configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
+configure(subprojects.findAll {it.path in rootProject.published}) {prj ->
   apply plugin: 'maven-publish'
   apply plugin: 'signing'
 
@@ -148,6 +148,38 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
           artifact javadocJar
 
           pom(configurePom)
+
+          // Remove the internal :platform dependency from dependencyManagement in POMs
+          pom.withXml {
+            def root = asNode()
+            def depMgmt = root.dependencyManagement
+            if (depMgmt) {
+              depMgmt.each { dmNode ->
+                def deps = dmNode.dependencies
+                if (deps) {
+                  deps.each { depsNode ->
+                    // Collect dependencies to remove (can't modify while iterating)
+                    def toRemove = []
+                    depsNode.dependency.each { dep ->
+                      def groupId = dep.groupId?.text()
+                      def artifactId = dep.artifactId?.text()
+                      if (groupId == 'org.apache' && artifactId == 'platform') {
+                        toRemove.add(dep)
+                      }
+                    }
+                    // Remove the collected dependencies
+                    toRemove.each { dep ->
+                      depsNode.remove(dep)
+                    }
+                    // Remove dependencyManagement section if it's now empty
+                    if (depsNode.dependency.isEmpty()) {
+                      root.remove(dmNode)
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
     }
@@ -165,7 +197,7 @@ configure(subprojects.findAll { it.path in rootProject.published }) { prj ->
         if (project(":solr:distribution").ext.useGpgForSigning) {
           useGpgCmd()
         }
-        required { project(":solr:distribution").ext.withSignedArtifacts }
+        required {project(":solr:distribution").ext.withSignedArtifacts}
         sign publishing.publications.jars
       }
     }

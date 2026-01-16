@@ -154,8 +154,7 @@ public class SolrConfigHandler extends RequestHandlerBase
         command.handleGET();
         break;
       default:
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unexpected HTTP method: " + httpMethod);
+        throw SchemaHandler.getUnexpectedHttpMethodException(httpMethod.name());
     }
   }
 
@@ -964,7 +963,7 @@ public class SolrConfigHandler extends RequestHandlerBase
       case "POST":
         return Name.CONFIG_EDIT_PERM;
       default:
-        return null;
+        throw SchemaHandler.getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
   }
 

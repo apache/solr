@@ -43,6 +43,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.RequestHandlerUtils;
+import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.admin.api.GetAuthenticationConfigAPI;
 import org.apache.solr.handler.admin.api.GetAuthorizationConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyNoAuthPluginSecurityConfigAPI;
@@ -75,7 +76,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
       case "POST":
         return PermissionNameProvider.Name.SECURITY_EDIT_PERM;
       default:
-        return null;
+        throw SchemaHandler.getUnexpectedHttpMethodException(ctx.getHttpMethod());
     }
   }
 

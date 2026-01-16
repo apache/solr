@@ -73,7 +73,7 @@ That no longer happens in Solr 10.  It is only used to load a configuration as a
 
 * Starting in 10, the Maven POM for SolrJ does not refer to SolrJ modules like ZooKeeper.  If you require such functionality, you need to add additional dependencies.
 
-* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`.
+* Classes using Jetty HttpClient have been moved to a new package `org.apache.solr.solrj.jetty`. To use them from your application, you need to include the new `solr-solrj-jetty` artifact.
 The following classes were renamed with some refactorings: `Http2SolrClient` to `HttpJettySolrClient`, `ConcurrentUpdateHttp2SolrClient` to `ConcurrentUpdateJettySolrClient`, `LBHttp2SolrClient` to `LBJettySolrClient`.
 `CloudHttp2SolrClient.Builder` has moved to `CloudSolrClient`; users should generally have no need to refer to `CloudHttp2SolrClient` or any class/member with "http2" in it.
 The builder will check if Jetty `HttpClient` is available and use that, otherwise fallback on a JDK based `HttpClient`.
