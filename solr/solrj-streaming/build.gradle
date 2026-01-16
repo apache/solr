@@ -39,5 +39,6 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
-  permitTestUsedUndeclared project(':solr:solrj-streaming') // duh!
+  // cutterslade requires we state the obvious
+  testImplementation project(':solr:solrj-streaming')
 }
