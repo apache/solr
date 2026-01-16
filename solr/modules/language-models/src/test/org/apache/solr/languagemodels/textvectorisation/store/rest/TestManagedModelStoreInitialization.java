@@ -29,15 +29,18 @@ public class TestManagedModelStoreInitialization extends TestLanguageModelBase {
 
   @Test
   public void managedModelStore_shouldBeInitialized_whenUrpComponentConfigured() throws Exception {
-    setupTest("solrconfig-language-models-urp-only.xml", "schema-language-models.xml", false, false);
+    setupTest(
+        "solrconfig-language-models-urp-only.xml", "schema-language-models.xml", false, false);
 
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
   }
 
   @Test
-  public void managedModelStore_shouldBeInitialized_whenQParserComponentConfigured() throws Exception {
-    setupTest("solrconfig-language-models-qparser-only.xml", "schema-language-models.xml", false, false);
+  public void managedModelStore_shouldBeInitialized_whenQParserComponentConfigured()
+      throws Exception {
+    setupTest(
+        "solrconfig-language-models-qparser-only.xml", "schema-language-models.xml", false, false);
 
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
     assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
@@ -45,11 +48,17 @@ public class TestManagedModelStoreInitialization extends TestLanguageModelBase {
 
   @Test
   public void managedModelStore_shouldNotBeInitialized_whenNoLLMComponents() throws Exception {
-    setupTest("solrconfig-language-models-no-llm-components.xml", "schema-language-models.xml", false, false);
+    setupTest(
+        "solrconfig-language-models-no-llm-components.xml",
+        "schema-language-models.xml",
+        false,
+        false);
 
     assertJQ(
         ManagedTextToVectorModelStore.REST_END_POINT,
         "/responseHeader/status==400",
-        "/error/msg=='No REST managed resource registered for path " + ManagedTextToVectorModelStore.REST_END_POINT + "'");
+        "/error/msg=='No REST managed resource registered for path "
+            + ManagedTextToVectorModelStore.REST_END_POINT
+            + "'");
   }
 }
