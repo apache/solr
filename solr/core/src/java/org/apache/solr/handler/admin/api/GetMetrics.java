@@ -24,7 +24,6 @@ import jakarta.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -114,7 +113,6 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
   }
 
   private boolean proxyToNodes() {
-    // TODO: validate if V1 only?
     try {
       if (coreContainer != null
           && AdminHandlersProxy.maybeProxyToNodes(
@@ -154,17 +152,6 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
       public void write(OutputStream output) throws IOException, WebApplicationException {
         PrometheusResponseWriter writer = new PrometheusResponseWriter();
         writer.writeMetricSnapshots(output, solrQueryRequest, snapshots);
-        output.flush();
-      }
-    };
-  }
-
-  private StreamingOutput writeException(Exception exception) {
-    byte[] bytes = exception.toString().getBytes(StandardCharsets.UTF_8);
-    return new StreamingOutput() {
-      @Override
-      public void write(OutputStream output) throws IOException, WebApplicationException {
-        output.write(bytes);
         output.flush();
       }
     };
