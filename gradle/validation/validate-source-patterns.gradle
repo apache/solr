@@ -209,7 +209,7 @@ class ValidateSourcePatternsTask extends DefaultTask {
     }
 
     def checkMockitoAssume = {f, text ->
-      if (text.contains("mockito") && !text.contains("assumeWorkingMockito()")) {
+      if (text.contains("mockito") && !(text.contains("assumeWorkingMockito()") || text.contains("extends MockV2APITest"))) {
         reportViolation(f, 'File uses Mockito but has no assumeWorkingMockito() call')
       }
     }
