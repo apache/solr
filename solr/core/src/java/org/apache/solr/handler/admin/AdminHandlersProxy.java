@@ -144,10 +144,11 @@ public class AdminHandlersProxy {
 
     // Set response parser based on wt parameter to ensure correct format is used
     String wt = params.get("wt");
-    if ("prometheus".equals(wt)
-        || "openmetrics".equals(wt)
-        || (wt == null && uriPath.endsWith("/metrics"))) {
+    if ("prometheus".equals(wt) || "openmetrics".equals(wt)) {
       proxyReq.setResponseParser(new InputStreamResponseParser(wt));
+    }
+    if (wt == null && uriPath.endsWith("/metrics")) {
+      proxyReq.setResponseParser(new InputStreamResponseParser("prometheus"));
     }
 
     try {

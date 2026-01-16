@@ -31,7 +31,7 @@ public interface MetricsApi {
 
   @GET
   @Operation(
-      summary = "Retrieve all the metrics gathered by Solr.",
+      summary = "Retrieve metrics gathered by Solr.",
       tags = {"metrics"},
       extensions = {
         @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})

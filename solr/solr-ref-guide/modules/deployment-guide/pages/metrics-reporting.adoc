@@ -132,7 +132,12 @@ Metrics collection for index merges can be configured in the `<metrics>` section
 
 == Metrics API
 
-The `/admin/metrics` endpoint natively provides access to all metrics in Prometheus format by default. You can also specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics format. More information on the data models is provided in the sections below.
+The `/metrics` endpoint natively provides access to all metrics in Prometheus format by default. You can also specify `wt=prometheus` as a parameter for Prometheus format or `wt=openmetrics` for OpenMetrics format. More information on the data models is provided in the sections below.
+
+[NOTE]
+====
+The V1 `/admin/metrics` endpoint is deprecated and will be removed in a future version.
+====
 
 === Prometheus
 
@@ -148,14 +153,14 @@ The `prometheus-config.yml` file needs to be configured for a Prometheus server 
 ----
 scrape_configs:
   - job_name: 'solr'
-    metrics_path: "/solr/admin/metrics"
+    metrics_path: "/api/metrics"
     static_configs:
       - targets: ['localhost:8983', 'localhost:7574']
 ----
 
 === OpenMetrics
 
-OpenMetrics format is available from the `/admin/metrics` endpoint by providing the `wt=openmetrics` parameter or by passing the Accept header `application/openmetrics-text;version=1.0.0`. OpenMetrics is an extension of the Prometheus format that adds additional metadata and exemplars.
+OpenMetrics format is available from the `/metrics` endpoint by providing the `wt=openmetrics` parameter or by passing the Accept header `application/openmetrics-text;version=1.0.0`. OpenMetrics is an extension of the Prometheus format that adds additional metadata and exemplars.
 
 See https://prometheus.io/docs/specs/om/open_metrics_spec/[OpenMetrics Spec] documentation for more information.
 
@@ -173,7 +178,7 @@ A basic `prometheus-config.yml` configuration for a Prometheus server in SolrClo
 ----
 scrape_configs:
   - job_name: 'solr'
-    metrics_path: "/solr/admin/metrics"
+    metrics_path: "/api/metrics"
     static_configs:
       - targets: ['localhost:8983', 'localhost:7574']
     params:
@@ -256,26 +261,26 @@ The replica type to filter on. Valid values are NRT, TLOG, or PULL. This attribu
 Request only metrics from the `foobar` collection:
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?collection=foobar
+http://localhost:8983/api/metrics?collection=foobar
 
 Request only the metrics with a category label of QUERY or UPDATE:
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?category=QUERY,UPDATE
+http://localhost:8983/api/metrics?category=QUERY,UPDATE
 
 Request only `solr_core_requests_total` metrics from the `foobar_shard1_replica_n1` core:
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?name=solr_core_requests_total&core=foobar_shard1_replica_n1
+http://localhost:8983/api/metrics?name=solr_core_requests_total&core=foobar_shard1_replica_n1
 
 Request only the core index size `solr_core_index_size_bytes` metrics from collections labeled `foo` and `bar`:
 
 [source,text]
-http://localhost:8983/solr/admin/metrics?name=solr_core_index_size_bytes&collection=foo,bar
+http://localhost:8983/api/metrics?name=solr_core_index_size_bytes&collection=foo,bar
 
 == OTLP
 
-For users who do not use or support pulling metrics in Prometheus format with the `/admin/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP.
+For users who do not use or support pulling metrics in Prometheus format with the `/metrics` API, Solr also supports pushing metrics natively with https://opentelemetry.io/docs/specs/otlp/[OTLP], which is a vendor-agnostic protocol for pushing metrics via gRPC or HTTP.
 
 OTLP is widely supported by many tools, vendors, and pipelines. See the OpenTelemetry https://opentelemetry.io/ecosystem/vendors/[vendors list] for more details on available and compatible options.
 
@@ -339,7 +344,7 @@ Endpoint to send OTLP metrics to using the HTTP protocol.
 
 === OpenTelemetry Collector setup
 
-The https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] is a powerful process that allows users to decouple their metrics pipeline and route to their preferred backend. It natively supports metrics being pushed to it via OTLP and/or scraping the `/admin/metrics` Prometheus endpoint supported by Solr. You can push both metrics and traces to the collector via OTLP as a single pipeline.
+The https://opentelemetry.io/docs/collector/[OpenTelemetry Collector] is a powerful process that allows users to decouple their metrics pipeline and route to their preferred backend. It natively supports metrics being pushed to it via OTLP and/or scraping the `/metrics` Prometheus endpoint supported by Solr. You can push both metrics and traces to the collector via OTLP as a single pipeline.
 
 A simple setup to route metrics from Solr -> OpenTelemetry Collector -> Prometheus can be configured with the following OpenTelemetry Collector configuration file:
 

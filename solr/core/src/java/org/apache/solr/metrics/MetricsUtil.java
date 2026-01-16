@@ -144,6 +144,27 @@ public class MetricsUtil {
     return labelFilters;
   }
 
+  /** Add label filters to the filters map */
+  public static void addLabelFilters(String value, Map<String, Set<String>> filters) {
+    labelFilterKeys.forEach(
+        (paramName) -> {
+          Set<String> filterValues = paramValueAsSet(value);
+          if (!filterValues.isEmpty()) {
+            filters.put(paramName, filterValues);
+          }
+        });
+  }
+
+  /** Split the coma-separated param values into a set */
+  public static Set<String> paramValueAsSet(String paramValue) {
+    String[] values = paramValue.split(",");
+    List<String> valuesSet = new ArrayList<>();
+    for (String value : values) {
+      valuesSet.add(value);
+    }
+    return Set.copyOf(valuesSet);
+  }
+
   /**
    * Read Solr parameters as a Set.
    *

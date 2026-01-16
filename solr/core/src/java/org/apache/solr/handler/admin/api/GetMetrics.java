@@ -72,13 +72,30 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
   @PermissionName(PermissionNameProvider.Name.METRICS_READ_PERM)
   public StreamingOutput getMetrics() {
 
+    validateRequest();
+
+    if (proxyToNodes()) {
+      return null;
+    }
+
+    SolrParams params = solrQueryRequest.getParams();
+
+    Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
+    SortedMap<String, Set<String>> labelFilters = MetricsUtil.labelFilters(params);
+
+    return doGetMetrics(metricNames, labelFilters);
+  }
+
+  private void validateRequest() {
+
+    if (!enabled) {
+      throw new SolrException(
+          SolrException.ErrorCode.INVALID_STATE, "Metrics collection is disabled");
+    }
+
     if (metricManager == null) {
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
-    }
-
-    if (!enabled) {
-      return writeException(new Exception("Error: Metrics collection is disabled"));
     }
 
     SolrParams params = solrQueryRequest.getParams();
@@ -94,24 +111,28 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
           "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
               + format);
     }
+  }
 
+  private boolean proxyToNodes() {
     // TODO: validate if V1 only?
     try {
       if (coreContainer != null
           && AdminHandlersProxy.maybeProxyToNodes(
               solrQueryRequest, solrQueryResponse, coreContainer)) {
-        return null; // Request was proxied to other node
+        return true; // Request was proxied to other node
       }
     } catch (Exception e) {
       log.warn("Exception proxying to other node", e);
     }
+    return false;
+  }
+
+  private StreamingOutput doGetMetrics(
+      Set<String> metricNames, SortedMap<String, Set<String>> labelFilters) {
 
     List<MetricSnapshot> snapshots = new ArrayList<>();
 
-    Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
-    SortedMap<String, Set<String>> labelFilters = MetricsUtil.labelFilters(params);
-
-    if (metricNames.isEmpty() && labelFilters.isEmpty()) {
+    if ((metricNames == null || metricNames.isEmpty()) && labelFilters.isEmpty()) {
       snapshots.addAll(
           metricManager.getPrometheusMetricReaders().values().stream()
               .flatMap(r -> r.collect().stream())

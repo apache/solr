@@ -863,7 +863,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         new ModifiableSolrParams()
             .add("key", indexSizeMetricName)
             .add("key", freeDiskSpaceMetricName);
-    // TODO: Metrics returns a "prometheus" format, not a NamedList.  Use SolrMetricManager??
+    // TODO: SOLR-17955
     SolrResponse rsp = new MetricsRequest(params).process(cloudManager.getSolrClient());
     if (rsp == null) {
       log.warn("No Solr response available from parent shard leader.");

@@ -17,15 +17,15 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.client.solrj.response.InputStreamResponse;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /** Request to "/admin/metrics" */
-public class MetricsRequest extends SolrRequest<SolrResponse> {
+public class MetricsRequest extends SolrRequest<InputStreamResponse> {
 
   private static final long serialVersionUID = 1L;
 
@@ -42,6 +42,11 @@ public class MetricsRequest extends SolrRequest<SolrResponse> {
   public MetricsRequest(SolrParams params) {
     super(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN);
     this.params = params;
+    if ("openmetrics".equals(params.get(CommonParams.WT))) {
+      setResponseParser(new InputStreamResponseParser("openmetrics"));
+    } else {
+      setResponseParser(new InputStreamResponseParser("prometheus"));
+    }
   }
 
   @Override
@@ -50,8 +55,7 @@ public class MetricsRequest extends SolrRequest<SolrResponse> {
   }
 
   @Override
-  protected SolrResponse createResponse(NamedList<Object> namedList) {
-    SolrResponseBase resp = new SolrResponseBase();
-    return (SolrResponse) resp;
+  protected InputStreamResponse createResponse(NamedList<Object> namedList) {
+    return new InputStreamResponse();
   }
 }

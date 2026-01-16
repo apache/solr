@@ -19,20 +19,16 @@ package org.apache.solr.handler.admin;
 
 import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.function.BiConsumer;
-import java.util.regex.Pattern;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetMetrics;
@@ -44,13 +40,9 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /** Request handler to return metrics */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   final SolrMetricManager metricManager;
 
   public static final String COMPACT_PARAM = "compact";
@@ -65,10 +57,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   public static final String ALL = "all";
 
-  private static final Pattern KEY_SPLIT_REGEX =
-      Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private final CoreContainer cc;
-  private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
   private final boolean enabled;
 
   public MetricsHandler(CoreContainer coreContainer) {
@@ -98,7 +87,6 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
-    log.info("MetricsHandler response writer: {}", req.getResponseWriter().getClass().getName());
 
     SolrParams params = req.getParams();
     String format = params.get(CommonParams.WT);

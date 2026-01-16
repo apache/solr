@@ -24,11 +24,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
@@ -54,11 +57,6 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     SolrTestCaseJ4.teardownTestCases();
-    try {
-      Files.delete(outputPath);
-    } catch (IOException e) {
-      // oh, well...
-    }
   }
 
   @Test
