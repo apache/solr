@@ -20,7 +20,6 @@ base_dir=$(dirname "$0")
 
 if [ "${base_dir}" == "." ]; then
   gradlew_dir="../.."
-  log4j_config="./log4j2-bench.xml"
 
   if [ -d "lib" ]; then
     echo "Using lib directory for classpath..."
@@ -33,11 +32,6 @@ if [ "${base_dir}" == "." ]; then
     echo "gradle build done"
     classpath=$($gradleCmd -q echoCp)
   fi
-elif [ "${base_dir}" == "/opt/benchmark" ]; then
-  # Docker container mode
-  log4j_config="/opt/benchmark/log4j2-bench.xml"
-  classpath="/opt/benchmark/lib/*"
-  echo "Running in Docker container mode..."
 else
   echo "Benchmarks need to be run from the 'solr/benchmark' directory"
   exit 1
@@ -59,7 +53,7 @@ jvmArgs="-jvmArgs -Djmh.shutdownTimeout=5 -jvmArgs -Djmh.shutdownTimeout.step=3 
 gcArgs="-jvmArgs -XX:+UseG1GC -jvmArgs -XX:+ParallelRefProcEnabled"
 
 # -jvmArgs -Dlog4j2.debug
-loggingArgs="-jvmArgs -Dlog4jConfigurationFile=${log4j_config} -jvmArgs -Dlog4j2.is.webapp=false -jvmArgs -Dlog4j2.garbagefreeThreadContextMap=true -jvmArgs -Dlog4j2.enableDirectEncoders=true -jvmArgs -Dlog4j2.enable.threadlocals=true"
+loggingArgs="-jvmArgs -Dlog4jConfigurationFile=./log4j2-bench.xml -jvmArgs -Dlog4j2.is.webapp=false -jvmArgs -Dlog4j2.garbagefreeThreadContextMap=true -jvmArgs -Dlog4j2.enableDirectEncoders=true -jvmArgs -Dlog4j2.enable.threadlocals=true"
 
 #set -x
 
