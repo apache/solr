@@ -54,6 +54,32 @@ For projects built with Gradle, place the following in your `build.gradle`:
 compile group: 'org.apache.solr', name: 'solr-solrj', version: '{solr-full-version}'
 ----
 
+==== Optional Jetty Module
+
+If you want to use Jetty-based HTTP clients (`HttpJettySolrClient`, `ConcurrentUpdateJettySolrClient`,
+`LBJettySolrClient`, or `CloudJettySolrClient`), you need to add the maven dependency `solr-solrj-jetty`:
+
+[source,xml,subs="verbatim,attributes"]
+----
+<dependency>
+  <groupId>org.apache.solr</groupId>
+  <artifactId>solr-solrj-jetty</artifactId>
+  <version>{solr-full-version}</version>
+</dependency>
+----
+
+For Gradle:
+
+[source,groovy,subs="attributes"]
+----
+compile group: 'org.apache.solr', name: 'solrj-solrj-jetty', version: '{solr-full-version}'
+----
+
+Alternatively, you can use `HttpJdkSolrClient` from the base `solr-solrj` artifact,
+which uses Java's built-in HTTP client and has no additional dependencies.
+
+==== Other Optional Modules
+
 If you want to use `CloudSolrClient` _and_ have it talk directly to ZooKeeper, you will need to add a dependency on the `solr-solrj-zookeeper` artifact.
 
 If you want to build and use xref:query-guide:streaming-expressions.adoc[Streaming Expressions] classes in your Java code, you will need to add a dependency on the `solr-solrj-streaming` artifact.
@@ -95,12 +121,13 @@ Requests are sent in the form of {solr-javadocs}/solrj/org/apache/solr/client/so
 
 `SolrClient` has a few concrete implementations, each geared towards a different usage-pattern or resiliency model:
 
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
+- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/HttpJettySolrClient.html[`HttpJettySolrClient`] - a general purpose client based on Jetty HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Most used & tested.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/HttpJdkSolrClient.html[`HttpJdkSolrClient`] - a general purpose client based on JDK HttpClient.  Supports HTTP/2 and HTTP/1.1, async, non-blocking.  Has no dependencies.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/LBSolrClient.html[`LBSolrClient`] - an internal client that delegates to other clients pointed at different URLs for fail-over/availability.  Adjusts the list of "in-service" nodes based on node health.
 - {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/CloudSolrClient.html[`CloudSolrClient`] - the ideal client for SolrCloud.  Using the "cluster state", it routes requests to the optimal nodes, including splitting out the documents in an UpdateRequest to different nodes.
-- {solr-javadocs}/solrj/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
+- {solr-javadocs}/solrj-jetty/org/apache/solr/client/solrj/jetty/ConcurrentUpdateJettySolrClient.html[`ConcurrentUpdateJettySolrClient`] - geared towards indexing-centric workloads.
 Buffers documents internally before sending larger batches to Solr.
+- {solr-javadocs}/solrj/org/apache/solr/client/solrj/impl/ConcurrentUpdateJdkSolrClient.html[`ConcurrentUpdateJdkSolrClient`] - similar to `ConcurrentUpdateJettySolrClient` but delegates to `HttpJdkSolrClient` and has no dependencies.
 
 === Common Configuration Options
 

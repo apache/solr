@@ -66,9 +66,9 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
     @Override
     protected PreparedRequest prepareRequest(
-        SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+        String overrideBaseUrl, SolrRequest<?> solrRequest, String collection)
         throws SolrServerException, IOException {
-      var pr = super.prepareRequest(solrRequest, collection, overrideBaseUrl);
+      var pr = super.prepareRequest(overrideBaseUrl, solrRequest, collection);
       pr.reqb.header("User-Agent", userAgent);
       return pr;
     }

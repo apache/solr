@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -320,13 +321,17 @@ public class CollectionHandlingUtils {
   }
 
   static void cleanupCollection(
-      String collectionName, NamedList<Object> results, CollectionCommandContext ccc)
+      AdminCmdContext adminCmdContext,
+      String collectionName,
+      NamedList<Object> results,
+      CollectionCommandContext ccc)
       throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
-    Map<String, Object> props =
-        Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), null, results);
+        .call(
+            adminCmdContext.subRequestContext(DELETE),
+            new ZkNodeProps(NAME, collectionName),
+            results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -385,17 +390,6 @@ public class CollectionHandlingUtils {
     new DeleteBackupCmd(ccc).keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
-  static List<ZkNodeProps> addReplica(
-      ClusterState clusterState,
-      ZkNodeProps message,
-      NamedList<Object> results,
-      Runnable onComplete,
-      CollectionCommandContext ccc)
-      throws Exception {
-
-    return new AddReplicaCmd(ccc).addReplica(clusterState, message, results, onComplete);
-  }
-
   static void validateConfigOrThrowSolrException(
       ConfigSetService configSetService, String configName) throws IOException {
     boolean isValid = configSetService.checkConfigExists(configName);
@@ -412,24 +406,26 @@ public class CollectionHandlingUtils {
    * @return List of replicas which is not live for receiving the request
    */
   static List<Replica> collectionCmd(
+      AdminCmdContext adminCmdContext,
       ZkNodeProps message,
       ModifiableSolrParams params,
       NamedList<Object> results,
       Replica.State stateMatcher,
-      String asyncId,
       Set<String> okayExceptions,
-      CollectionCommandContext ccc,
-      ClusterState clusterState) {
-    log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
+      CollectionCommandContext ccc) {
+    if (log.isInfoEnabled()) {
+      log.info("Executing Collection Cmd={}, asyncId={}", params, adminCmdContext.getAsyncId());
+    }
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = ccc.newShardHandler();
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = ccc.getZkStateReader().getClusterState().getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =
-        asyncRequestTracker(asyncId, ccc);
+        asyncRequestTracker(adminCmdContext, ccc);
     for (Slice slice : coll.getSlices()) {
       notLivesReplicas.addAll(
-          shardRequestTracker.sliceCmd(clusterState, params, stateMatcher, slice, shardHandler));
+          shardRequestTracker.sliceCmd(
+              ccc.getZkStateReader().getClusterState(), params, stateMatcher, slice, shardHandler));
     }
 
     shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
@@ -626,14 +622,22 @@ public class CollectionHandlingUtils {
     } while (true);
   }
 
-  public static ShardRequestTracker syncRequestTracker(CollectionCommandContext ccc) {
-    return asyncRequestTracker(null, ccc);
+  public static ShardRequestTracker syncRequestTracker(
+      AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
+    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
-      String asyncId, CollectionCommandContext ccc) {
+      AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
+    return requestTracker(
+        adminCmdContext.getAsyncId(), adminCmdContext.getSubRequestCallingLockIds(), ccc);
+  }
+
+  protected static ShardRequestTracker requestTracker(
+      String asyncId, String lockIds, CollectionCommandContext ccc) {
     return new ShardRequestTracker(
         asyncId,
+        lockIds,
         ccc.getAdminPath(),
         ccc.getZkStateReader(),
         ccc.newShardHandler().getShardHandlerFactory());
@@ -647,6 +651,7 @@ public class CollectionHandlingUtils {
 
   public static class ShardRequestTracker {
     private final String asyncId;
+    private final String lockIdList;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
     private final ShardHandlerFactory shardHandlerFactory;
@@ -654,10 +659,12 @@ public class CollectionHandlingUtils {
 
     public ShardRequestTracker(
         String asyncId,
+        String lockIdList,
         String adminPath,
         ZkStateReader zkStateReader,
         ShardHandlerFactory shardHandlerFactory) {
       this.asyncId = asyncId;
+      this.lockIdList = lockIdList;
       this.adminPath = adminPath;
       this.zkStateReader = zkStateReader;
       this.shardHandlerFactory = shardHandlerFactory;
@@ -736,6 +743,9 @@ public class CollectionHandlingUtils {
       sreq.nodeName = nodeName;
       sreq.coreName = coreName;
       sreq.params = params;
+      if (lockIdList != null && !lockIdList.isBlank()) {
+        sreq.headers = Map.of(CALLING_LOCK_IDS_HEADER, lockIdList);
+      }
 
       shardHandler.submit(sreq, replica, sreq.params);
     }

@@ -34,10 +34,10 @@ allprojects {
     // Create a [sourceSetName]EcjLint task for each source set
     // with a non-empty java.srcDirs. These tasks are then
     // attached to project's "ecjLint" task.
-    def lintTasks = sourceSets.collect { sourceSet ->
-      def srcDirs = sourceSet.java.srcDirs.findAll { dir -> dir.exists() }
+    def lintTasks = sourceSets.collect {sourceSet ->
+      def srcDirs = sourceSet.java.srcDirs.findAll {dir -> dir.exists()}
 
-      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {task ->
+      tasks.create(sourceSet.getTaskName("ecjLint", null), JavaExec, {
         // This dependency is on a configuration; technically it causes
         // all dependencies to be resolved before this task executes
         // (this includes scheduling tasks that compile the
@@ -62,18 +62,18 @@ allprojects {
         def tmpDst = getTemporaryDir()
         workingDir tmpDst
 
-        args += [ "-d", "none" ]
+        args += ["-d", "none"]
 
         assert project.java.sourceCompatibility == project.java.targetCompatibility
 
         // Compilation environment.
-        args += [ "-source", project.java.sourceCompatibility ]
-        args += [ "-target", project.java.targetCompatibility ]
-        args += [ "-encoding", "UTF-8"]
-        args += [ "-proc:none" ]
-        args += [ "-nowarn" ]
-        args += [ "-enableJavadoc" ]
-        args += [ "-properties", file("${resources}/ecj.javadocs.prefs").absolutePath ]
+        args += ["-source", project.java.sourceCompatibility]
+        args += ["-target", project.java.targetCompatibility]
+        args += ["-encoding", "UTF-8"]
+        args += ["-proc:none"]
+        args += ["-nowarn"]
+        args += ["-enableJavadoc"]
+        args += ["-properties", file("${resources}/ecj.javadocs.prefs").absolutePath]
 
         doFirst {
           tmpDst.mkdirs()
@@ -81,7 +81,7 @@ allprojects {
           // Add classpath locations at execution time (can't resolve the
           // configuration at evaluation time). Filter out non-existing entries
           // (output folders for non-existing input source dirs like resources).
-          def cpath = sourceSet.compileClasspath.filter { p -> p.exists() }
+          def cpath = sourceSet.compileClasspath.filter {p -> p.exists()}
           if (!cpath.isEmpty()) {
             args += ["-classpath", cpath.asPath]
           }

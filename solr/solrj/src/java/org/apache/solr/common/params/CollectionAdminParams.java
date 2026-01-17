@@ -125,5 +125,5 @@ public interface CollectionAdminParams {
 
   String PER_REPLICA_STATE = CollectionStateProps.PER_REPLICA_STATE;
 
-  String CALLING_LOCK_ID = "callingLockId";
+  String CALLING_LOCK_IDS_HEADER = "callingLockIds";
 }

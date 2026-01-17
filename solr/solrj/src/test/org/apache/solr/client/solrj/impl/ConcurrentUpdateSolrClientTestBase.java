@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.jetty;
+package org.apache.solr.client.solrj.impl;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -28,6 +28,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpConnectTimeoutException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
@@ -47,16 +48,35 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.eclipse.jetty.client.Response;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
+public abstract class ConcurrentUpdateSolrClientTestBase extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public abstract HttpSolrClientBase solrClient(Integer overrideIdleTimeoutMs);
+
+  public abstract ConcurrentUpdateBaseSolrClient concurrentClient(
+      HttpSolrClientBase solrClient,
+      String baseUrl,
+      String defaultCollection,
+      int queueSize,
+      int threadCount,
+      boolean disablePollQueue);
+
+  public abstract ConcurrentUpdateBaseSolrClient outcomeCountingConcurrentClient(
+      String serverUrl,
+      int queueSize,
+      int threadCount,
+      HttpSolrClientBase solrClient,
+      AtomicInteger successCounter,
+      AtomicInteger failureCounter,
+      StringBuilder errors);
 
   /** Mock endpoint where the CUSS being tested in this class sends requests. */
   public static class TestServlet extends HttpServlet
@@ -92,10 +112,6 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
       }
     }
 
-    private void setParameters(HttpServletRequest req) {
-      // parameters = req.getParameterMap();
-    }
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp)
         throws ServletException, IOException {
@@ -117,7 +133,6 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
 
     private void recordRequest(HttpServletRequest req, HttpServletResponse resp) {
       setHeaders(req);
-      setParameters(req);
       if (null != errorCode) {
         try {
           resp.sendError(errorCode);
@@ -179,6 +194,9 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
   }
 
+  @AfterClass
+  public static void afterTest() throws Exception {}
+
   @Test
   public void testConcurrentUpdate() throws Exception {
     TestServlet.clear();
@@ -193,14 +211,16 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     final AtomicInteger errorCounter = new AtomicInteger(0);
     final StringBuilder errors = new StringBuilder();
 
-    try (var http2Client = new HttpJettySolrClient.Builder().build();
+    try (var http2Client = solrClient(null);
         var concurrentClient =
-            new OutcomeCountingConcurrentUpdateSolrClient.Builder(
-                    serverUrl, http2Client, successCounter, errorCounter, errors)
-                .withQueueSize(cussQueueSize)
-                .withThreadCount(cussThreadCount)
-                .setPollQueueTime(0, TimeUnit.MILLISECONDS)
-                .build()) {
+            outcomeCountingConcurrentClient(
+                serverUrl,
+                cussQueueSize,
+                cussThreadCount,
+                http2Client,
+                successCounter,
+                errorCounter,
+                errors)) {
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
@@ -251,12 +271,15 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     int cussThreadCount = 2;
     int cussQueueSize = 10;
 
-    try (var http2Client = new HttpJettySolrClient.Builder().build();
+    try (var http2Client = solrClient(null);
         var concurrentClient =
-            (new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client))
-                .withQueueSize(cussQueueSize)
-                .withThreadCount(cussThreadCount)
-                .build()) {
+            concurrentClient(
+                http2Client,
+                solrTestRule.getBaseUrl(),
+                null,
+                cussQueueSize,
+                cussThreadCount,
+                false)) {
 
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", "collection");
@@ -271,13 +294,15 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
               .getNumFound());
     }
 
-    try (var http2Client = new HttpJettySolrClient.Builder().build();
+    try (var http2Client = solrClient(null);
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
-                .withDefaultCollection(DEFAULT_TEST_CORENAME)
-                .withQueueSize(cussQueueSize)
-                .withThreadCount(cussThreadCount)
-                .build()) {
+            concurrentClient(
+                http2Client,
+                solrTestRule.getBaseUrl(),
+                DEFAULT_TEST_CORENAME,
+                cussQueueSize,
+                cussThreadCount,
+                false)) {
 
       assertEquals(
           1, concurrentClient.query(new SolrQuery("id:collection")).getResults().getNumFound());
@@ -293,13 +318,15 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
     int numRunnables = 5;
     int expected = numDocs * numRunnables;
 
-    try (var http2Client = new HttpJettySolrClient.Builder().build();
+    try (var http2Client = solrClient(null);
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
-                .withQueueSize(cussQueueSize)
-                .withThreadCount(cussThreadCount)
-                .setPollQueueTime(0, TimeUnit.MILLISECONDS)
-                .build()) {
+            concurrentClient(
+                http2Client,
+                solrTestRule.getBaseUrl(),
+                null,
+                cussQueueSize,
+                cussThreadCount,
+                true)) {
 
       // ensure it doesn't block where there's nothing to do yet
       concurrentClient.blockUntilFinished();
@@ -330,64 +357,18 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
       concurrentClient.shutdownNow();
     }
 
-    try (var http2Client = new HttpJettySolrClient.Builder().build();
+    try (var http2Client = solrClient(null);
         var concurrentClient =
-            new ConcurrentUpdateJettySolrClient.Builder(solrTestRule.getBaseUrl(), http2Client)
-                .withDefaultCollection(DEFAULT_TEST_CORENAME)
-                .withQueueSize(cussQueueSize)
-                .withThreadCount(cussThreadCount)
-                .build()) {
+            concurrentClient(
+                http2Client,
+                solrTestRule.getBaseUrl(),
+                DEFAULT_TEST_CORENAME,
+                cussQueueSize,
+                cussThreadCount,
+                false)) {
 
       assertEquals(
           expected, concurrentClient.query(new SolrQuery("*:*")).getResults().getNumFound());
-    }
-  }
-
-  static class OutcomeCountingConcurrentUpdateSolrClient extends ConcurrentUpdateJettySolrClient {
-    private final AtomicInteger successCounter;
-    private final AtomicInteger failureCounter;
-    private final StringBuilder errors;
-
-    public OutcomeCountingConcurrentUpdateSolrClient(
-        OutcomeCountingConcurrentUpdateSolrClient.Builder builder) {
-      super(builder);
-      this.successCounter = builder.successCounter;
-      this.failureCounter = builder.failureCounter;
-      this.errors = builder.errors;
-    }
-
-    @Override
-    public void handleError(Throwable ex) {
-      failureCounter.incrementAndGet();
-      errors.append(" " + ex);
-    }
-
-    @Override
-    public void onSuccess(Response resp, InputStream respBody) {
-      successCounter.incrementAndGet();
-    }
-
-    static class Builder extends ConcurrentUpdateJettySolrClient.Builder {
-      protected final AtomicInteger successCounter;
-      protected final AtomicInteger failureCounter;
-      protected final StringBuilder errors;
-
-      public Builder(
-          String baseSolrUrl,
-          HttpJettySolrClient http2Client,
-          AtomicInteger successCounter,
-          AtomicInteger failureCounter,
-          StringBuilder errors) {
-        super(baseSolrUrl, http2Client);
-        this.successCounter = successCounter;
-        this.failureCounter = failureCounter;
-        this.errors = errors;
-      }
-
-      @Override
-      public OutcomeCountingConcurrentUpdateSolrClient build() {
-        return new OutcomeCountingConcurrentUpdateSolrClient(this);
-      }
     }
   }
 
@@ -399,23 +380,27 @@ public class ConcurrentUpdateJettySolrClientTest extends SolrTestCaseJ4 {
   public void testSocketTimeoutOnCommit() throws IOException, SolrServerException {
     InetAddress localHost = InetAddress.getLocalHost();
     try (ServerSocket server = new ServerSocket(0, 1, localHost);
-        var http2Client =
-            new HttpJettySolrClient.Builder().withIdleTimeout(1, TimeUnit.MILLISECONDS).build();
+        var http2Client = solrClient(1);
         var client =
-            new ConcurrentUpdateJettySolrClient.Builder(
-                    "http://"
-                        + localHost.getHostAddress()
-                        + ":"
-                        + server.getLocalPort()
-                        + "/noOneThere",
-                    http2Client)
-                .build()) {
+            concurrentClient(
+                http2Client,
+                "http://"
+                    + localHost.getHostAddress()
+                    + ":"
+                    + server.getLocalPort()
+                    + "/noOneThere",
+                null,
+                10,
+                1,
+                false)) {
       // Expecting an exception
       client.commit();
       fail();
     } catch (SolrServerException e) {
       if (!(e.getCause() instanceof SocketTimeoutException // not sure if Jetty throws this
-          || e.getCause() instanceof TimeoutException)) { // Jetty throws this
+          || e.getCause() instanceof TimeoutException // Jetty throws this
+          || e.getCause() instanceof HttpConnectTimeoutException // jdk client throws this
+      )) {
         throw e;
       }
       // else test passes

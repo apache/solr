@@ -17,15 +17,12 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
@@ -41,8 +38,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
 
   @SuppressWarnings({"unchecked"})
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     Set<String> nodes;
     Object nodesRaw = message.get(CollectionParams.NODES);
@@ -61,7 +57,6 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
               + nodesRaw.getClass().getName());
     }
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
-    String async = message.getStr(ASYNC);
     int timeout = message.getInt("timeout", 10 * 60); // 10 minutes
     boolean parallel = message.getBool("parallel", false);
 
@@ -80,7 +75,7 @@ public class BalanceReplicasCmd implements CollApiCmds.CollectionApiCommand {
 
     boolean migrationSuccessful =
         ReplicaMigrationUtils.migrateReplicas(
-            ccc, replicaMovements, parallel, waitForFinalState, timeout, async, results);
+            ccc, adminCmdContext, replicaMovements, parallel, waitForFinalState, timeout, results);
     if (migrationSuccessful) {
       results.add(
           "success",

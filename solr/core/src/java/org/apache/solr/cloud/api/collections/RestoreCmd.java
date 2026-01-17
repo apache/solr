@@ -21,10 +21,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.INSTALLSHARDDATA;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MODIFYCOLLECTION;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.Closeable;
@@ -93,11 +94,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    try (RestoreContext restoreContext = new RestoreContext(message, lockId, ccc)) {
-      if (state.hasCollection(restoreContext.restoreCollectionName)) {
+    try (RestoreContext restoreContext = new RestoreContext(adminCmdContext, message, ccc)) {
+      if (adminCmdContext.getClusterState().hasCollection(restoreContext.restoreCollectionName)) {
         RestoreOnExistingCollection restoreOnExistingCollection =
             new RestoreOnExistingCollection(restoreContext);
         restoreOnExistingCollection.process(restoreContext, results);
@@ -113,18 +113,16 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   private void requestShardsToRestore(
       NamedList<Object> results,
       DocCollection restoreCollection,
+      AdminCmdContext adminCmdContext,
       BackupProperties backupProperties,
       URI backupPath,
       String repo,
-      ShardHandler shardHandler,
-      String asyncId,
-      String lockId) {
+      ShardHandler shardHandler) {
     ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, "/admin/collections", ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, "/admin/collections", ccc);
     // Copy data from backed up index to each replica
     for (Slice slice : restoreCollection.getSlices()) {
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set(CollectionAdminParams.CALLING_LOCK_ID, lockId);
       params.set(CollectionAdminParams.COLLECTION, slice.getCollection());
       params.set(CollectionAdminParams.SHARD, slice.getName());
       params.set(CoreAdminParams.ACTION, INSTALLSHARDDATA.toString());
@@ -159,10 +157,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
   /** Encapsulates the parsing and access for common parameters restore parameters and values */
   private static class RestoreContext implements Closeable {
 
+    final AdminCmdContext adminCmdContext;
     final String restoreCollectionName;
     final String backupName;
     final String backupCollection;
-    final String asyncId;
     final String repo;
     final String restoreConfigName;
     final int backupId;
@@ -179,15 +177,15 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     final DocCollection backupCollectionState;
     final ShardHandler shardHandler;
 
-    private RestoreContext(ZkNodeProps message, String lockId, CollectionCommandContext ccc)
+    private RestoreContext(
+        AdminCmdContext adminCmdContext, ZkNodeProps message, CollectionCommandContext ccc)
         throws IOException {
+      this.adminCmdContext = adminCmdContext;
       this.restoreCollectionName = message.getStr(COLLECTION_PROP);
       this.backupName = message.getStr(NAME); // of backup
-      this.asyncId = message.getStr(ASYNC);
       this.repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
       this.backupId = message.getInt(CoreAdminParams.BACKUP_ID, -1);
 
-      this.lockId = lockId;
       this.container = ccc.getCoreContainer();
       this.repository = this.container.newBackupRepository(repo);
 
@@ -258,11 +256,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           rc.backupName,
           rc.location);
       createCoreLessCollection(
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
           rc.restoreCollectionName,
           rc.restoreConfigName,
-          rc.backupCollectionState,
-          rc.zkStateReader.getClusterState(),
-          rc.lockId);
+          rc.backupCollectionState);
       // note: when createCollection() returns, the collection exists (no race)
 
       // Restore collection properties
@@ -271,8 +268,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       DocCollection restoreCollection =
           rc.zkStateReader.getClusterState().getCollection(rc.restoreCollectionName);
       markAllShardsAsConstruction(restoreCollection);
-      // TODO how do we leverage the RULE / SNITCH logic in createCollection?
-      ClusterState clusterState = rc.zkStateReader.getClusterState();
 
       List<String> sliceNames = new ArrayList<>();
       restoreCollection.getSlices().forEach(x -> sliceNames.add(x.getName()));
@@ -281,11 +276,15 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           getReplicaPositions(rc.restoreCollectionName, rc.nodeList, sliceNames);
 
       createSingleReplicaPerShard(
-          results, restoreCollection, rc.asyncId, clusterState, replicaPositions);
+          results,
+          restoreCollection,
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+          replicaPositions);
       Object failures = results.get("failure");
       if (failures != null && ((SimpleOrderedMap<?>) failures).size() > 0) {
         log.error("Restore failed to create initial replicas.");
-        CollectionHandlingUtils.cleanupCollection(rc.restoreCollectionName, new NamedList<>(), ccc);
+        CollectionHandlingUtils.cleanupCollection(
+            rc.adminCmdContext, rc.restoreCollectionName, new NamedList<>(), ccc);
         return;
       }
 
@@ -295,14 +294,17 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       requestShardsToRestore(
           results,
           restoreCollection,
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
           rc.backupProperties,
           rc.backupPath,
           rc.repo,
-          rc.shardHandler,
-          rc.asyncId,
-          rc.lockId);
+          rc.shardHandler);
       markAllShardsAsActive(restoreCollection);
-      addReplicasToShards(results, clusterState, restoreCollection, replicaPositions, rc.asyncId);
+      addReplicasToShards(
+          results,
+          restoreCollection,
+          replicaPositions,
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()));
       restoringAlias(rc.backupProperties);
 
       log.info("Completed restoring collection={} backupName={}", restoreCollection, rc.backupName);
@@ -333,11 +335,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     private void createCoreLessCollection(
+        AdminCmdContext adminCmdContext,
         String restoreCollectionName,
         String restoreConfigName,
-        DocCollection backupCollectionState,
-        ClusterState clusterState,
-        String lockId)
+        DocCollection backupCollectionState)
         throws Exception {
       Map<String, Object> propMap = new HashMap<>();
       propMap.put(Overseer.QUEUE_OPERATION, CREATE.toString());
@@ -393,7 +394,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       }
 
       new CreateCollectionCmd(ccc)
-          .call(clusterState, new ZkNodeProps(propMap), lockId, new NamedList<>());
+          .call(
+              adminCmdContext.subRequestContext(CREATE, null),
+              new ZkNodeProps(propMap),
+              new NamedList<>());
       // note: when createCollection() returns, the collection exists (no race)
     }
 
@@ -436,8 +440,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     private void createSingleReplicaPerShard(
         NamedList<Object> results,
         DocCollection restoreCollection,
-        String asyncId,
-        ClusterState clusterState,
+        AdminCmdContext adminCmdContext,
         List<ReplicaPosition> replicaPositions)
         throws Exception {
       CountDownLatch countDownLatch = new CountDownLatch(restoreCollection.getSlices().size());
@@ -463,15 +466,11 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
           }
         }
 
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
         CollectionHandlingUtils.addPropertyParams(message, propMap);
         final NamedList<Object> addReplicaResult = new NamedList<>();
         new AddReplicaCmd(ccc)
             .addReplica(
-                clusterState,
+                adminCmdContext.subRequestContext(ADDREPLICA),
                 new ZkNodeProps(propMap),
                 addReplicaResult,
                 () -> {
@@ -533,10 +532,9 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
 
     private void addReplicasToShards(
         NamedList<Object> results,
-        ClusterState clusterState,
         DocCollection restoreCollection,
         List<ReplicaPosition> replicaPositions,
-        String asyncId)
+        AdminCmdContext adminCmdContext)
         throws Exception {
       int totalReplicasPerShard = numReplicas.total();
       if (totalReplicasPerShard > 1) {
@@ -583,14 +581,14 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               }
             }
 
-            // add async param
-            if (asyncId != null) {
-              propMap.put(ASYNC, asyncId);
-            }
             CollectionHandlingUtils.addPropertyParams(message, propMap);
 
             new AddReplicaCmd(ccc)
-                .addReplica(clusterState, new ZkNodeProps(propMap), results, null);
+                .addReplica(
+                    adminCmdContext.subRequestContext(ADDREPLICA),
+                    new ZkNodeProps(propMap),
+                    results,
+                    null);
           }
         }
       }
@@ -641,24 +639,26 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
       ClusterState clusterState = rc.zkStateReader.getClusterState();
       DocCollection restoreCollection = clusterState.getCollection(rc.restoreCollectionName);
 
-      enableReadOnly(clusterState, restoreCollection, rc.lockId);
+      enableReadOnly(
+          rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+          restoreCollection);
       try {
         requestShardsToRestore(
             results,
             restoreCollection,
+            rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
             rc.backupProperties,
             rc.backupPath,
             rc.repo,
-            rc.shardHandler,
-            rc.asyncId,
-            rc.lockId);
+            rc.shardHandler);
       } finally {
-        disableReadOnly(clusterState, restoreCollection, rc.lockId);
+        disableReadOnly(
+            rc.adminCmdContext.withClusterState(rc.zkStateReader.getClusterState()),
+            restoreCollection);
       }
     }
 
-    private void disableReadOnly(
-        ClusterState clusterState, DocCollection restoreCollection, String lockId)
+    private void disableReadOnly(AdminCmdContext adminCmdContext, DocCollection restoreCollection)
         throws Exception {
       ZkNodeProps params =
           new ZkNodeProps(
@@ -667,11 +667,10 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
               ZkStateReader.READ_ONLY, null);
       new CollApiCmds.ModifyCollectionCmd(ccc)
-          .call(clusterState, params, lockId, new NamedList<>());
+          .call(adminCmdContext.subRequestContext(MODIFYCOLLECTION), params, new NamedList<>());
     }
 
-    private void enableReadOnly(
-        ClusterState clusterState, DocCollection restoreCollection, String lockId)
+    private void enableReadOnly(AdminCmdContext adminCmdContext, DocCollection restoreCollection)
         throws Exception {
       ZkNodeProps params =
           new ZkNodeProps(
@@ -680,7 +679,7 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
               ZkStateReader.COLLECTION_PROP, restoreCollection.getName(),
               ZkStateReader.READ_ONLY, "true");
       new CollApiCmds.ModifyCollectionCmd(ccc)
-          .call(clusterState, params, lockId, new NamedList<>());
+          .call(adminCmdContext.subRequestContext(MODIFYCOLLECTION), params, new NamedList<>());
     }
   }
 }

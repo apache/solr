@@ -65,7 +65,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // hierarchy)
     DistributedMultiLock collLock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
+            COLLECTION_NAME,
+            null,
+            null);
     assertTrue("Collection should have been acquired", collLock.isAcquired());
     assertEquals(
         "Lock at collection level expected to need one distributed lock",
@@ -76,7 +79,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // above
     DistributedMultiLock shard1Lock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, null, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.SPLITSHARD),
+            COLLECTION_NAME,
+            SHARD1_NAME,
+            null);
     assertFalse("Shard1 should not have been acquired", shard1Lock.isAcquired());
     assertEquals(
         "Lock at shard level expected to need two distributed locks",
@@ -87,7 +93,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // collection lock above
     DistributedMultiLock shard2Lock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD2_NAME, null, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.SPLITSHARD),
+            COLLECTION_NAME,
+            SHARD2_NAME,
+            null);
     assertFalse("Shard2 should not have been acquired", shard2Lock.isAcquired());
 
     assertTrue("Collection should still be acquired", collLock.isAcquired());
@@ -104,7 +113,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // Request a lock on replica of shard1
     DistributedMultiLock replicaShard1Lock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, REPLICA_NAME, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK),
+            COLLECTION_NAME,
+            SHARD1_NAME,
+            REPLICA_NAME);
     assertFalse(
         "replicaShard1Lock should not have been acquired, shard1 is locked",
         replicaShard1Lock.isAcquired());
@@ -112,7 +124,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // Now ask for a new lock on the collection
     collLock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
+            COLLECTION_NAME,
+            null,
+            null);
 
     assertFalse(
         "Collection should not have been acquired, shard1 and shard2 locks preventing it",
@@ -131,7 +146,10 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // Request a lock on replica of shard2
     DistributedMultiLock replicaShard2Lock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD2_NAME, REPLICA_NAME, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK),
+            COLLECTION_NAME,
+            SHARD2_NAME,
+            REPLICA_NAME);
     assertFalse(
         "replicaShard2Lock should not have been acquired, shard2 is locked",
         replicaShard2Lock.isAcquired());
@@ -158,13 +176,19 @@ public class CollectionApiLockingTest extends SolrTestCaseJ4 {
     // Lock on collection...
     DistributedMultiLock collLock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.COLLECTION, COLLECTION_NAME, null, null, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.CREATE),
+            COLLECTION_NAME,
+            null,
+            null);
     assertTrue("Collection should have been acquired", collLock.isAcquired());
 
     // ...blocks a lock on replica from being acquired
     final DistributedMultiLock replicaShard1Lock =
         apiLockingHelper.createCollectionApiLock(
-            CollectionParams.LockLevel.SHARD, COLLECTION_NAME, SHARD1_NAME, REPLICA_NAME, null);
+            new AdminCmdContext(CollectionParams.CollectionAction.MOCK_REPLICA_TASK),
+            COLLECTION_NAME,
+            SHARD1_NAME,
+            REPLICA_NAME);
     assertFalse(
         "replicaShard1Lock should not have been acquired, because collection is locked",
         replicaShard1Lock.isAcquired());

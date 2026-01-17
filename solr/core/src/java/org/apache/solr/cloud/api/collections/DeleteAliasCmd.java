@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
@@ -32,8 +31,7 @@ public class DeleteAliasCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(
-      ClusterState state, ZkNodeProps message, String lockId, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String aliasName = message.getStr(NAME);
 
