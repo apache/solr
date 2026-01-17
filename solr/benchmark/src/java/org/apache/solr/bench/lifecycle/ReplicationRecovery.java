@@ -106,15 +106,15 @@ public class ReplicationRecovery {
           docs()
               .field("id", integers().incrementing())
               // Multiple large string fields to bulk up document size to ~100KB (no analysis)
-              .field("text1_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text2_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text3_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text4_s", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text5_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text6_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text7_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("text8_s", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("content_s", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
+              .field("text1_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text2_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text3_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text4_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field("text5_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text6_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text7_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("text8_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
+              .field("content_ss", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
     }
 
     @Setup(Level.Trial)
