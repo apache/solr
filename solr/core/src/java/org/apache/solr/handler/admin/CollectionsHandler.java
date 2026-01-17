@@ -101,7 +101,6 @@ import static org.apache.solr.common.params.CommonParams.TIMING;
 import static org.apache.solr.common.params.CommonParams.VALUE_LONG;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
-import static org.apache.solr.common.params.CoreAdminParams.SHARD_BACKUP_ID;
 import static org.apache.solr.common.util.StrUtils.formatString;
 
 import java.lang.invoke.MethodHandles;
@@ -118,7 +117,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
@@ -166,6 +164,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
@@ -248,7 +247,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     if (action == null) return PermissionNameProvider.Name.COLL_READ_PERM;
     CollectionParams.CollectionAction collectionAction =
         CollectionParams.CollectionAction.get(action);
-    if (collectionAction == null) return null;
+    if (collectionAction == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown action: " + action);
+    }
     return collectionAction.isWrite
         ? PermissionNameProvider.Name.COLL_EDIT_PERM
         : PermissionNameProvider.Name.COLL_READ_PERM;
@@ -369,7 +370,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       if (adminCmdContext.getAsyncId() != null && !adminCmdContext.getAsyncId().isBlank()) {
         additionalProps.put(ASYNC, adminCmdContext.getAsyncId());
       }
-      if (StringUtils.isNotBlank(adminCmdContext.getCallingLockIds())) {
+      if (StrUtils.isNotBlank(adminCmdContext.getCallingLockIds())) {
         additionalProps.put(CALLING_LOCK_IDS_HEADER, adminCmdContext.getCallingLockIds());
       }
       m = m.plus(additionalProps);
@@ -1069,8 +1070,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           reqBody.async = req.getParams().get(ASYNC);
           reqBody.repository = req.getParams().get(BACKUP_REPOSITORY);
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
-          reqBody.name = req.getParams().get(NAME);
-          reqBody.shardBackupId = req.getParams().get(SHARD_BACKUP_ID);
 
           final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =
