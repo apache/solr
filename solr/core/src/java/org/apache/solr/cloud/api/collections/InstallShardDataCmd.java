@@ -109,10 +109,6 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
 
     @JsonProperty public String location;
 
-    @JsonProperty public String name = "";
-
-    @JsonProperty public String shardBackupId;
-
     @JsonProperty(ASYNC)
     public String asyncId;
 
