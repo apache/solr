@@ -24,13 +24,14 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.PREP
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.PrepareCoreRecoveryPayload;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -57,7 +58,7 @@ public class PrepareCoreRecoveryAPI {
   @Command(name = V2_PREP_RECOVERY_CMD)
   public void prepareCoreForRecovery(PayloadObj<PrepareCoreRecoveryPayload> obj) throws Exception {
     final PrepareCoreRecoveryPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, PREPRECOVERY.name().toLowerCase(Locale.ROOT));
     v1Params.put(CORE, obj.getRequest().getPathTemplateValues().get("core"));
 

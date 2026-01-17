@@ -1,5 +1,5 @@
 title: SOLR 17600 - Replace MapSerializable with MapWriter
-type: changed
+type: other
 authors:
   - name: Ivan Šarić
 links:

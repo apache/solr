@@ -24,13 +24,14 @@ import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.REJO
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RejoinLeaderElectionPayload;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -56,7 +57,7 @@ public class RejoinLeaderElectionAPI {
   public void rejoinLeaderElection(PayloadObj<RejoinLeaderElectionPayload> payload)
       throws Exception {
     final RejoinLeaderElectionPayload v2Body = payload.get();
-    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, REJOINLEADERELECTION.name().toLowerCase(Locale.ROOT));
     if (v2Body.coreNodeName != null) {
       v1Params.remove("coreNodeName");

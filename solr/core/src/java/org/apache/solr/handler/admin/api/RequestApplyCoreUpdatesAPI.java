@@ -24,13 +24,14 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RequestApplyCoreUpdatesPayload;
-import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -58,7 +59,7 @@ public class RequestApplyCoreUpdatesAPI {
   public void requestApplyCoreUpdates(PayloadObj<RequestApplyCoreUpdatesPayload> obj)
       throws Exception {
     final RequestApplyCoreUpdatesPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = new SimpleOrderedMap<>(v2Body);
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, REQUESTAPPLYUPDATES.name().toLowerCase(Locale.ROOT));
     v1Params.put(NAME, obj.getRequest().getPathTemplateValues().get("core"));
 
