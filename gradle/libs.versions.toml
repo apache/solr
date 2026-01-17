@@ -62,7 +62,7 @@ bouncycastle = "1.81"
 # @keep Browserify version used in ref-guide
 browserify = "17.0.0"
 bytebuddy = "1.18.3"
-carrot2-core = "4.8.1"
+carrot2-core = "4.8.4"
 carrotsearch-hppc = "0.10.0"
 carrotsearch-randomizedtesting = "2.8.3"
 # @keep for version alignment
