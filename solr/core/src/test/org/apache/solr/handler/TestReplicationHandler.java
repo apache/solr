@@ -265,11 +265,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // Expect the same test to pass now.
     System.setProperty(
         TEST_URL_ALLOW_LIST, leaderJetty.getBaseUrl() + "," + followerJetty.getBaseUrl());
-    try {
-      doTestDetails();
-    } finally {
-      System.clearProperty(TEST_URL_ALLOW_LIST);
-    }
+    doTestDetails();
   }
 
   @Test

@@ -24,7 +24,6 @@ public class TestReloadAndDeleteDocs extends SolrTestCaseJ4 {
 
   @After
   public void after() {
-    System.clearProperty("solr.index.updatelog.enabled");
     deleteCore();
   }
 
