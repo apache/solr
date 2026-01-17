@@ -21,15 +21,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.PROPERTY_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
@@ -42,7 +38,7 @@ import org.junit.Test;
  * here focus primarily on how the v1 code invokes the v2 API and how the v2 API crafts its
  * overseer/Distributed State Processing RPC message.
  */
-public class DeleteReplicaPropertyAPITest extends MockAPITest {
+public class DeleteReplicaPropertyAPITest extends MockV2APITest {
 
   private DeleteReplicaProperty api;
 
@@ -137,19 +133,15 @@ public class DeleteReplicaPropertyAPITest extends MockAPITest {
   @Test
   public void testRPCMessageCreation() throws Exception {
     api.deleteReplicaProperty("someColl", "someShard", "someReplica", "somePropName");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
-    final ZkNodeProps message = messageCapturer.getValue();
-    final Map<String, Object> props = message.getProperties();
 
-    assertEquals(4, props.size());
-    assertEquals("someColl", props.get(COLLECTION_PROP));
-    assertEquals("someShard", props.get(SHARD_ID_PROP));
-    assertEquals("someReplica", props.get(REPLICA_PROP));
-    assertEquals("somePropName", props.get(PROPERTY_PROP));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEREPLICAPROP, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEREPLICAPROP,
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someColl", message.get(COLLECTION_PROP));
+          assertEquals("someShard", message.get(SHARD_ID_PROP));
+          assertEquals("someReplica", message.get(REPLICA_PROP));
+          assertEquals("somePropName", message.get(PROPERTY_PROP));
+        });
   }
 }

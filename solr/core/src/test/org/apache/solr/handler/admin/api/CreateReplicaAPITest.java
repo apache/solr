@@ -34,24 +34,20 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateReplica} */
-public class CreateReplicaAPITest extends MockAPITest {
+public class CreateReplicaAPITest extends MockV2APITest {
 
   private CreateReplica api;
 
@@ -116,35 +112,33 @@ public class CreateReplicaAPITest extends MockAPITest {
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
+
     api.createReplica("someCollectionName", "someShardName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(18, remoteMessage.size());
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals("NRT", remoteMessage.get(REPLICA_TYPE));
-    assertEquals("/some/dir1", remoteMessage.get(INSTANCE_DIR));
-    assertEquals("/some/dir2", remoteMessage.get(DATA_DIR));
-    assertEquals("/some/dir3", remoteMessage.get(ULOG_DIR));
-    assertEquals("someRoute", remoteMessage.get(_ROUTE_));
-    assertEquals(123, remoteMessage.get(NRT_REPLICAS));
-    assertEquals(456, remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(789, remoteMessage.get(PULL_REPLICAS));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals("node3", remoteMessage.get(NODE));
-    assertEquals(Boolean.TRUE, remoteMessage.get(SKIP_NODE_ASSIGNMENT));
-    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
-    assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals("propVal1", remoteMessage.get("property.propName1"));
-    assertEquals("propVal2", remoteMessage.get("property.propName2"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.ADDREPLICA, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.ADDREPLICA,
+        requestBody.async,
+        message -> {
+          assertEquals(18, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals("someName", message.get(NAME));
+          assertEquals("NRT", message.get(REPLICA_TYPE));
+          assertEquals("/some/dir1", message.get(INSTANCE_DIR));
+          assertEquals("/some/dir2", message.get(DATA_DIR));
+          assertEquals("/some/dir3", message.get(ULOG_DIR));
+          assertEquals("someRoute", message.get(_ROUTE_));
+          assertEquals(123, message.get(NRT_REPLICAS));
+          assertEquals(456, message.get(TLOG_REPLICAS));
+          assertEquals(789, message.get(PULL_REPLICAS));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals("node3", message.get(NODE));
+          assertEquals(Boolean.TRUE, message.get(SKIP_NODE_ASSIGNMENT));
+          assertEquals(true, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(FOLLOW_ALIASES));
+          assertEquals("propVal1", message.get("property.propName1"));
+          assertEquals("propVal2", message.get("property.propName2"));
+        });
   }
 
   @Test

@@ -21,6 +21,7 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -116,38 +117,7 @@ public abstract class AdminAPIBase extends JerseyResource {
     solrQueryResponse.setHttpCaching(false);
   }
 
-  protected SolrResponse submitRemoteMessageAndHandleResponse(
-      SubResponseAccumulatingJerseyResponse response,
-      CollectionParams.CollectionAction action,
-      ZkNodeProps remoteMessage,
-      String asyncId)
-      throws Exception {
-    var remoteResponse =
-        submitRemoteMessageAndHandleResponse(
-            response, new AdminCmdContext(action, asyncId), remoteMessage);
-
-    if (asyncId != null) {
-      response.requestId = asyncId;
-    }
-
-    // Values fetched from remoteResponse may be null
-    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
-    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
-    response.warning = (String) remoteResponse.getResponse().get("warning");
-
-    return remoteResponse;
-  }
-
-  protected SolrResponse submitRemoteMessageAndHandleResponse(
-      SolrJerseyResponse response,
-      CollectionParams.CollectionAction action,
-      ZkNodeProps remoteMessage)
-      throws Exception {
-    return submitRemoteMessageAndHandleResponse(
-        response, new AdminCmdContext(action, null), remoteMessage);
-  }
-
-  protected SolrResponse submitRemoteMessageAndHandleResponse(
+  protected SolrResponse submitRemoteMessageAndHandleException(
       SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
       throws Exception {
     final SolrResponse remoteResponse =
@@ -159,6 +129,53 @@ public abstract class AdminAPIBase extends JerseyResource {
     if (remoteResponse.getException() != null) {
       throw remoteResponse.getException();
     }
+    return remoteResponse;
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleException(
+      SolrJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage)
+      throws Exception {
+    return submitRemoteMessageAndHandleException(
+        response, new AdminCmdContext(action, null), remoteMessage);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleAsync(
+      AsyncJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    var remoteResponse =
+        submitRemoteMessageAndHandleException(
+            response, new AdminCmdContext(action, asyncId), remoteMessage);
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+    }
+
+    return remoteResponse;
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleResponse(
+      SubResponseAccumulatingJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    var remoteResponse =
+        submitRemoteMessageAndHandleAsync(response, action, remoteMessage, asyncId);
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+    }
+
+    // Values fetched from remoteResponse may be null
+    response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
+    response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    response.warning = (String) remoteResponse.getResponse().get("warning");
+
     return remoteResponse;
   }
 

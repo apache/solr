@@ -18,21 +18,16 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.client.api.model.ReloadCollectionRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReloadCollectionAPI} */
-public class ReloadCollectionAPITest extends MockAPITest {
+public class ReloadCollectionAPITest extends MockV2APITest {
 
   private ReloadCollectionAPI api;
 
@@ -62,16 +57,13 @@ public class ReloadCollectionAPITest extends MockAPITest {
     requestBody.async = "someAsyncId";
 
     api.reloadCollection("someCollName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(1, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(NAME));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.RELOAD, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.RELOAD,
+        requestBody.async,
+        message -> {
+          assertEquals(1, message.size());
+          assertEquals("someCollName", message.get(NAME));
+        });
   }
 }

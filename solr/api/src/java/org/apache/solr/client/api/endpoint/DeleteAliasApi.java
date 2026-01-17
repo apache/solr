@@ -23,7 +23,7 @@ import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 
 @Path("/aliases/{aliasName}")
 public interface DeleteAliasApi {
@@ -32,7 +32,7 @@ public interface DeleteAliasApi {
   @Operation(
       summary = "Deletes an alias by its name",
       tags = {"aliases"})
-  SubResponseAccumulatingJerseyResponse deleteAlias(
+  AsyncJerseyResponse deleteAlias(
       @Parameter(description = "The name of the alias to delete", required = true)
           @PathParam("aliasName")
           String aliasName,

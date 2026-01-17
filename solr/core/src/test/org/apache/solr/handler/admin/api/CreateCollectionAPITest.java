@@ -32,9 +32,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.nio.charset.StandardCharsets;
@@ -42,16 +40,14 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollection}. */
-public class CreateCollectionAPITest extends MockAPITest {
+public class CreateCollectionAPITest extends MockV2APITest {
 
   private CreateCollection api;
 
@@ -149,33 +145,30 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.shuffleNodes = false;
 
     api.createCollection(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(17, remoteMessage.size());
-    assertEquals("true", remoteMessage.get("fromApi"));
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals(123, remoteMessage.get(REPLICATION_FACTOR));
-    assertEquals("someConfig", remoteMessage.get(COLL_CONF));
-    assertEquals(456, remoteMessage.get(NUM_SLICES));
-    assertEquals("shard1,shard2", remoteMessage.get(SHARDS));
-    assertEquals(789, remoteMessage.get(PULL_REPLICAS));
-    assertEquals(987, remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(123, remoteMessage.get(NRT_REPLICAS)); // replicationFactor value used
-    assertEquals(false, remoteMessage.get(WAIT_FOR_FINAL_STATE));
-    assertEquals(true, remoteMessage.get(PER_REPLICA_STATE));
-    assertEquals("someAliasName", remoteMessage.get(ALIAS));
-    assertEquals("propValue", remoteMessage.get("property.propName"));
-    assertEquals("someRouterName", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET));
-    assertEquals(false, remoteMessage.get(CREATE_NODE_SET_SHUFFLE_PARAM));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATE, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATE,
+        requestBody.async,
+        message -> {
+          assertEquals(17, message.size());
+          assertEquals("true", message.get("fromApi"));
+          assertEquals("someName", message.get(NAME));
+          assertEquals(123, message.get(REPLICATION_FACTOR));
+          assertEquals("someConfig", message.get(COLL_CONF));
+          assertEquals(456, message.get(NUM_SLICES));
+          assertEquals("shard1,shard2", message.get(SHARDS));
+          assertEquals(789, message.get(PULL_REPLICAS));
+          assertEquals(987, message.get(TLOG_REPLICAS));
+          assertEquals(123, message.get(NRT_REPLICAS)); // replicationFactor value used
+          assertEquals(false, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(PER_REPLICA_STATE));
+          assertEquals("someAliasName", message.get(ALIAS));
+          assertEquals("propValue", message.get("property.propName"));
+          assertEquals("someRouterName", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET));
+          assertEquals(false, message.get(CREATE_NODE_SET_SHUFFLE_PARAM));
+        });
   }
 
   @Test
@@ -186,18 +179,14 @@ public class CreateCollectionAPITest extends MockAPITest {
     requestBody.async = "someAsyncId";
 
     api.createCollection(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals("EMPTY", remoteMessage.get(CREATE_NODE_SET));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.CREATE, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATE,
+        requestBody.async,
+        message -> {
+          assertEquals("someName", message.get(NAME));
+          assertEquals("EMPTY", message.get(CREATE_NODE_SET));
+        });
   }
 
   @Test

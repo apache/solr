@@ -79,8 +79,7 @@ public class DeleteShard extends AdminAPIBase implements DeleteShardApi {
             deleteInstanceDir,
             deleteDataDir,
             deleteIndex,
-            followAliases,
-            asyncId);
+            followAliases);
     submitRemoteMessageAndHandleResponse(
         response, CollectionParams.CollectionAction.DELETESHARD, remoteMessage, asyncId);
     return response;
@@ -92,8 +91,7 @@ public class DeleteShard extends AdminAPIBase implements DeleteShardApi {
       Boolean deleteInstanceDir,
       Boolean deleteDataDir,
       Boolean deleteIndex,
-      Boolean followAliases,
-      String asyncId) {
+      Boolean followAliases) {
     final Map<String, Object> remoteMessage = new HashMap<>();
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(SHARD_ID_PROP, shardName);

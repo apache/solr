@@ -69,11 +69,10 @@ public class BalanceShardUnique extends AdminAPIBase implements BalanceShardUniq
     fetchAndValidateZooKeeperAwareCoreContainer();
     recordCollectionForLogAndTracing(collectionName, solrQueryRequest);
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(collectionName, requestBody);
     submitRemoteMessageAndHandleResponse(
         response,
         CollectionParams.CollectionAction.BALANCESHARDUNIQUE,
-        remoteMessage,
+        createRemoteMessage(collectionName, requestBody),
         requestBody.async);
 
     return response;

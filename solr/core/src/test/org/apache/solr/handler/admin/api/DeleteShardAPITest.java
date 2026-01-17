@@ -23,21 +23,16 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_DATA_DIR;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INDEX;
 import static org.apache.solr.common.params.CoreAdminParams.DELETE_INSTANCE_DIR;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteShard} */
-public class DeleteShardAPITest extends MockAPITest {
+public class DeleteShardAPITest extends MockV2APITest {
 
   private DeleteShard api;
 
@@ -76,41 +71,32 @@ public class DeleteShardAPITest extends MockAPITest {
   public void testCreateRemoteMessageAllProperties() throws Exception {
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
     api.deleteShard("someCollName", "someShardName", true, false, true, false, "someAsyncId");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(6, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INSTANCE_DIR));
-    assertEquals(Boolean.FALSE, remoteMessage.get(DELETE_DATA_DIR));
-    assertEquals(Boolean.TRUE, remoteMessage.get(DELETE_INDEX));
-    assertEquals(Boolean.FALSE, remoteMessage.get(FOLLOW_ALIASES));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETESHARD, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESHARD,
+        "someAsyncId",
+        message -> {
+          assertEquals(6, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals(Boolean.TRUE, message.get(DELETE_INSTANCE_DIR));
+          assertEquals(Boolean.FALSE, message.get(DELETE_DATA_DIR));
+          assertEquals(Boolean.TRUE, message.get(DELETE_INDEX));
+          assertEquals(Boolean.FALSE, message.get(FOLLOW_ALIASES));
+        });
   }
 
   @Test
   public void testMissingValuesExcludedFromRemoteMessage() throws Exception {
     when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
     api.deleteShard("someCollName", "someShardName", null, null, null, null, null);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-
-    assertEquals(2, remoteMessage.size());
-    assertEquals("someCollName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETESHARD, context.getAction());
-    assertNull("There should be no asyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESHARD,
+        message -> {
+          assertEquals(2, message.size());
+          assertEquals("someCollName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+        });
   }
 }

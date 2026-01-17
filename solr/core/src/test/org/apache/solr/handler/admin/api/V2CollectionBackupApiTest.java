@@ -18,13 +18,10 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.common.params.CollectionAdminParams.COPY_FILES_STRATEGY;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import org.apache.solr.client.api.model.CreateCollectionBackupRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
@@ -32,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollectionBackup} */
-public class V2CollectionBackupApiTest extends MockAPITest {
+public class V2CollectionBackupApiTest extends MockV2APITest {
 
   private CreateCollectionBackup api;
   private BackupRepository mockBackupRepository;
@@ -69,25 +66,22 @@ public class V2CollectionBackupApiTest extends MockAPITest {
     when(mockBackupRepository.exists(any())).thenReturn(true);
 
     api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    var message = messageCapturer.getValue();
-    var messageProps = message.getProperties();
-    assertEquals(messageProps.toString(), 9, messageProps.size());
-    assertEquals("someCollectionName", messageProps.get("collection"));
-    assertEquals("/some/location", messageProps.get("location"));
-    assertEquals("someRepoName", messageProps.get("repository"));
-    assertEquals(true, messageProps.get("followAliases"));
-    assertEquals("copy-files", messageProps.get("indexBackup"));
-    assertEquals("someSnapshotName", messageProps.get("commitName"));
-    assertEquals(true, messageProps.get("incremental"));
-    assertEquals(123, messageProps.get("maxNumBackupPoints"));
-    assertEquals("someBackupName", messageProps.get("name"));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.BACKUP, context.getAction());
-    assertEquals("someId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.BACKUP,
+        requestBody.async,
+        message -> {
+          assertEquals(message.toString(), 9, message.size());
+          assertEquals("someCollectionName", message.get("collection"));
+          assertEquals("/some/location", message.get("location"));
+          assertEquals("someRepoName", message.get("repository"));
+          assertEquals(true, message.get("followAliases"));
+          assertEquals("copy-files", message.get("indexBackup"));
+          assertEquals("someSnapshotName", message.get("commitName"));
+          assertEquals(true, message.get("incremental"));
+          assertEquals(123, message.get("maxNumBackupPoints"));
+          assertEquals("someBackupName", message.get("name"));
+        });
   }
 
   @Test
@@ -101,21 +95,17 @@ public class V2CollectionBackupApiTest extends MockAPITest {
     when(mockBackupRepository.exists(any())).thenReturn(true);
 
     api.createCollectionBackup("someCollectionName", "someBackupName", requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    var message = messageCapturer.getValue();
-    var messageProps = message.getProperties();
-    assertEquals(5, messageProps.size());
-    assertEquals("someCollectionName", messageProps.get("collection"));
-    assertEquals("/some/location", messageProps.get("location"));
-    assertEquals("someBackupName", messageProps.get("name"));
-    assertEquals(true, messageProps.get("incremental"));
-    assertEquals("copy-files", messageProps.get("indexBackup"));
-
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.BACKUP, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.BACKUP,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someCollectionName", message.get("collection"));
+          assertEquals("/some/location", message.get("location"));
+          assertEquals("someBackupName", message.get("name"));
+          assertEquals(true, message.get("incremental"));
+          assertEquals("copy-files", message.get("indexBackup"));
+        });
   }
 
   @Test

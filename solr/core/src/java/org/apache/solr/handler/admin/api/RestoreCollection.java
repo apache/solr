@@ -119,9 +119,11 @@ public class RestoreCollection extends BackupAPIBase implements CollectionBackup
       }
     }
 
-    final ZkNodeProps remoteMessage = createRemoteMessage(backupName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.RESTORE, remoteMessage, requestBody.async);
+        response,
+        CollectionParams.CollectionAction.RESTORE,
+        createRemoteMessage(backupName, requestBody),
+        requestBody.async);
     return response;
   }
 

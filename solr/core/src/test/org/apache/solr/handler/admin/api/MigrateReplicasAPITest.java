@@ -16,23 +16,18 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.api.model.MigrateReplicasRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link ReplaceNode} */
-public class MigrateReplicasAPITest extends MockAPITest {
+public class MigrateReplicasAPITest extends MockV2APITest {
 
   private MigrateReplicas api;
 
@@ -50,36 +45,33 @@ public class MigrateReplicasAPITest extends MockAPITest {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(
             Set.of("demoSourceNode"), Set.of("demoTargetNode"), false, "async");
-    api.migrateReplicas(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(3, createdMessageProps.size());
-    assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
-    assertEquals(Set.of("demoTargetNode"), createdMessageProps.get("targetNodes"));
-    assertEquals(false, createdMessageProps.get("waitForFinalState"));
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.MIGRATE_REPLICAS, context.getAction());
-    assertEquals("async", context.getAsyncId());
+    api.migrateReplicas(requestBody);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.MIGRATE_REPLICAS,
+        "async",
+        message -> {
+          assertEquals(3, message.size());
+          assertEquals(Set.of("demoSourceNode"), message.get("sourceNodes"));
+          assertEquals(Set.of("demoTargetNode"), message.get("targetNodes"));
+          assertEquals(false, message.get("waitForFinalState"));
+        });
   }
 
   @Test
   public void testNoTargetNodes() throws Exception {
     MigrateReplicasRequestBody requestBody =
         new MigrateReplicasRequestBody(Set.of("demoSourceNode"), null, null, null);
-    api.migrateReplicas(requestBody);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(1, createdMessageProps.size());
-    assertEquals(Set.of("demoSourceNode"), createdMessageProps.get("sourceNodes"));
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.MIGRATE_REPLICAS, context.getAction());
-    assertNull("There should be no asyncId", context.getAsyncId());
+    api.migrateReplicas(requestBody);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.MIGRATE_REPLICAS,
+        message -> {
+          assertEquals(1, message.size());
+          assertEquals(Set.of("demoSourceNode"), message.get("sourceNodes"));
+        });
   }
 
   @Test

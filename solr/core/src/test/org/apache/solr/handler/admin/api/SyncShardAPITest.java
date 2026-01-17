@@ -24,7 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link SyncShard} */
-public class SyncShardAPITest extends MockAPITest {
+public class SyncShardAPITest extends MockV2APITest {
 
   private SyncShard api;
 

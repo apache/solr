@@ -114,6 +114,14 @@ public class CollApiCmds {
   protected interface CollectionApiCommand {
     void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
         throws Exception;
+
+    default ZkNodeProps cloneZkPropsWithOperation(
+        ZkNodeProps original, CollectionParams.CollectionAction collectionAction) {
+      Map<String, Object> propMap = new HashMap<>();
+      propMap.put(Overseer.QUEUE_OPERATION, collectionAction.toLower());
+      propMap.putAll(original.getProperties());
+      return new ZkNodeProps(propMap);
+    }
   }
 
   /**
@@ -335,10 +343,7 @@ public class CollApiCmds {
           REPLICA_PROP,
           PROPERTY_PROP,
           PROPERTY_VALUE_PROP);
-      Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, ADDREPLICAPROP.toLower());
-      propMap.putAll(message.getProperties());
-      ZkNodeProps m = new ZkNodeProps(propMap);
+      ZkNodeProps m = cloneZkPropsWithOperation(message, ADDREPLICAPROP);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -364,10 +369,7 @@ public class CollApiCmds {
         throws Exception {
       CollectionHandlingUtils.checkRequired(
           message, COLLECTION_PROP, SHARD_ID_PROP, REPLICA_PROP, PROPERTY_PROP);
-      Map<String, Object> propMap = new HashMap<>();
-      propMap.put(Overseer.QUEUE_OPERATION, DELETEREPLICAPROP.toLower());
-      propMap.putAll(message.getProperties());
-      ZkNodeProps m = new ZkNodeProps(propMap);
+      ZkNodeProps m = cloneZkPropsWithOperation(message, DELETEREPLICAPROP);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
@@ -401,18 +403,16 @@ public class CollApiCmds {
                 + PROPERTY_PROP
                 + "' parameters are required for the BALANCESHARDUNIQUE operation, no action taken");
       }
-      Map<String, Object> m = new HashMap<>();
-      m.put(Overseer.QUEUE_OPERATION, BALANCESHARDUNIQUE.toLower());
-      m.putAll(message.getProperties());
+      ZkNodeProps m = cloneZkPropsWithOperation(message, BALANCESHARDUNIQUE);
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.BalanceShardsUnique,
-                new ZkNodeProps(m),
+                m,
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(Utils.toJSON(m));
+        ccc.offerStateUpdate(m);
       }
     }
   }
@@ -446,6 +446,7 @@ public class CollApiCmds {
                   collPath, Utils.toJSON(Map.of(ZkStateReader.CONFIGNAME_PROP, configName)), -1);
         }
       }
+      ZkNodeProps m = cloneZkPropsWithOperation(message, MODIFYCOLLECTION);
 
       if (ccc.getDistributedClusterStateUpdater().isDistributedStateUpdate()) {
         // Apply the state update right away. The wait will still be useful for the change to be
@@ -453,11 +454,11 @@ public class CollApiCmds {
         ccc.getDistributedClusterStateUpdater()
             .doSingleStateUpdate(
                 DistributedClusterStateUpdater.MutatingCommand.CollectionModifyCollection,
-                message,
+                m,
                 ccc.getSolrCloudManager(),
                 ccc.getZkStateReader());
       } else {
-        ccc.offerStateUpdate(message);
+        ccc.offerStateUpdate(m);
       }
 
       try {
@@ -495,12 +496,14 @@ public class CollApiCmds {
                 });
       } catch (TimeoutException | InterruptedException e) {
         SolrZkClient.checkInterrupted(e);
-        log.debug(
-            "modifyCollection(ClusterState={}, ZkNodeProps={}, NamedList={})",
-            adminCmdContext.getClusterState(),
-            message,
-            results,
-            e);
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "modifyCollection(ClusterState={}, ZkNodeProps={}, NamedList={})",
+              ccc.getZkStateReader().getClusterState(),
+              message,
+              results,
+              e);
+        }
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Failed to modify collection", e);
       }

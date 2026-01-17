@@ -44,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,12 +79,14 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -102,6 +105,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -2500,6 +2504,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /** Returns <code>likely</code> most (1/10) of the time, otherwise <code>unlikely</code> */
   public static Object skewed(Object likely, Object unlikely) {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
+  }
+
+  public static CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      SolrClient solrClient, String asyncId, Duration timeout) throws Exception {
+    final var requestStatus = CollectionAdminRequest.requestStatus(asyncId);
+    return RetryUtil.retryUntil(
+        "Async request " + asyncId + " did not complete within duration: " + timeout,
+        (int) (timeout.toMillis() / 50),
+        50,
+        TimeUnit.MILLISECONDS,
+        () -> requestStatus.process(solrClient),
+        rsp -> rsp.getRequestStatus().isFinal());
   }
 
   /**

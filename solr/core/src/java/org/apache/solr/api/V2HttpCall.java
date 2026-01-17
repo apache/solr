@@ -171,7 +171,8 @@ public class V2HttpCall extends HttpSolrCall {
             if (action == REMOTEPROXY) {
               action = ADMIN_OR_REMOTEPROXY;
               coreUrl = coreUrl.replace("/solr/", "/solr/____v2/c/");
-              this.path = path = path.substring(prefix.length() + collectionName.length() + 2);
+              normalizeAndSetPath(path.substring(prefix.length() + collectionName.length() + 2));
+              path = this.path;
               return;
             }
           }
@@ -189,7 +190,8 @@ public class V2HttpCall extends HttpSolrCall {
       }
 
       Thread.currentThread().setContextClassLoader(core.getResourceLoader().getClassLoader());
-      this.path = path = path.substring(prefix.length() + pathSegments.get(1).length() + 2);
+      normalizeAndSetPath(path.substring(prefix.length() + pathSegments.get(1).length() + 2));
+      path = this.path;
       // Core-level API, so populate "collection" template val
       parts.put(COLLECTION_PROP, origCorename);
       Api apiInfo = getApiInfo(core.getRequestHandlers(), path, req.getMethod(), fullPath, parts);

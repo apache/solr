@@ -19,21 +19,16 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-public class DeleteCollectionSnapshotAPITest extends MockAPITest {
+public class DeleteCollectionSnapshotAPITest extends MockV2APITest {
 
   private DeleteCollectionSnapshot api;
 
@@ -52,38 +47,33 @@ public class DeleteCollectionSnapshotAPITest extends MockAPITest {
     when(mockSolrZkClient.exists(anyString())).thenReturn(false);
 
     api.deleteCollectionSnapshot("myCollName", "mySnapshotName", false, null);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
-    final ZkNodeProps messageOne = messageCapturer.getValue();
-    final Map<String, Object> rawMessageOne = messageOne.getProperties();
-    assertEquals(3, rawMessageOne.size());
-    assertThat(
-        rawMessageOne.keySet(),
-        containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
-    assertEquals("myCollName", rawMessageOne.get(COLLECTION_PROP));
-    assertEquals("mySnapshotName", rawMessageOne.get(CoreAdminParams.COMMIT_NAME));
-    assertEquals(false, rawMessageOne.get(FOLLOW_ALIASES));
 
-    AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETESNAPSHOT, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        message -> {
+          assertEquals(3, message.size());
+          assertThat(
+              message.keySet(),
+              containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
+          assertEquals("myCollName", message.get(COLLECTION_PROP));
+          assertEquals("mySnapshotName", message.get(CoreAdminParams.COMMIT_NAME));
+          assertEquals(false, message.get(FOLLOW_ALIASES));
+        });
 
     Mockito.clearInvocations(mockCommandRunner);
     api.deleteCollectionSnapshot("myCollName", "mySnapshotName", true, "testId");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
-    final ZkNodeProps messageTwo = messageCapturer.getValue();
-    final Map<String, Object> rawMessageTwo = messageTwo.getProperties();
-    assertEquals(3, rawMessageTwo.size());
-    assertThat(
-        rawMessageTwo.keySet(),
-        containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
-    assertEquals("myCollName", rawMessageTwo.get(COLLECTION_PROP));
-    assertEquals("mySnapshotName", rawMessageTwo.get(CoreAdminParams.COMMIT_NAME));
-    assertEquals(true, rawMessageTwo.get(FOLLOW_ALIASES));
 
-    context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETESNAPSHOT, context.getAction());
-    assertEquals("testId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETESNAPSHOT,
+        "testId",
+        message -> {
+          assertEquals(3, message.size());
+          assertThat(
+              message.keySet(),
+              containsInAnyOrder(COLLECTION_PROP, CoreAdminParams.COMMIT_NAME, FOLLOW_ALIASES));
+          assertEquals("myCollName", message.get(COLLECTION_PROP));
+          assertEquals("mySnapshotName", message.get(CoreAdminParams.COMMIT_NAME));
+          assertEquals(true, message.get(FOLLOW_ALIASES));
+        });
   }
 }

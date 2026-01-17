@@ -51,9 +51,11 @@ public class BalanceReplicas extends AdminAPIBase implements BalanceReplicasApi 
     final var response = instantiateJerseyResponse(SubResponseAccumulatingJerseyResponse.class);
     recordCollectionForLogAndTracing(null, solrQueryRequest);
     fetchAndValidateZooKeeperAwareCoreContainer();
-    final ZkNodeProps remoteMessage = createRemoteMessage(requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionAction.BALANCE_REPLICAS, remoteMessage, requestBody.async);
+        response,
+        CollectionAction.BALANCE_REPLICAS,
+        createRemoteMessage(requestBody),
+        requestBody.async);
 
     disableResponseCaching();
     return response;

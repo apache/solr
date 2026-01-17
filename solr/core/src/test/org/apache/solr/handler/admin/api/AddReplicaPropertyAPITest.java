@@ -17,21 +17,16 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Map;
 import org.apache.solr.client.api.model.AddReplicaPropertyRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link AddReplicaProperty} */
-public class AddReplicaPropertyAPITest extends MockAPITest {
+public class AddReplicaPropertyAPITest extends MockV2APITest {
 
   private static final AddReplicaPropertyRequestBody ANY_REQ_BODY =
       new AddReplicaPropertyRequestBody("anyValue");
@@ -69,20 +64,16 @@ public class AddReplicaPropertyAPITest extends MockAPITest {
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
 
     api.addReplicaProperty("someColl", "someShard", "someReplica", "somePropName", ANY_REQ_BODY);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> createdMessageProps = createdMessage.getProperties();
-    assertEquals(5, createdMessageProps.size());
-    assertEquals("someColl", createdMessageProps.get("collection"));
-    assertEquals("someShard", createdMessageProps.get("shard"));
-    assertEquals("someReplica", createdMessageProps.get("replica"));
-    assertEquals("somePropName", createdMessageProps.get("property"));
-    assertEquals("anyValue", createdMessageProps.get("property.value"));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.ADDREPLICAPROP, context.getAction());
-    assertNull("asyncId should be null", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.ADDREPLICAPROP,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someColl", message.get("collection"));
+          assertEquals("someShard", message.get("shard"));
+          assertEquals("someReplica", message.get("replica"));
+          assertEquals("somePropName", message.get("property"));
+          assertEquals("anyValue", message.get("property.value"));
+        });
   }
 }

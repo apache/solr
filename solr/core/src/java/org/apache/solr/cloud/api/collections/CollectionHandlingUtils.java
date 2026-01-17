@@ -400,7 +400,9 @@ public class CollectionHandlingUtils {
       Replica.State stateMatcher,
       Set<String> okayExceptions,
       CollectionCommandContext ccc) {
-    log.info("Executing Collection Cmd={}, asyncId={}", params, adminCmdContext.getAsyncId());
+    if (log.isInfoEnabled()) {
+      log.info("Executing Collection Cmd={}, asyncId={}", params, adminCmdContext.getAsyncId());
+    }
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = ccc.newShardHandler();
     DocCollection coll = ccc.getZkStateReader().getClusterState().getCollection(collectionName);

@@ -23,25 +23,20 @@ import static org.apache.solr.common.params.CoreAdminParams.BACKUP_LOCATION;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_PURGE_UNUSED;
 import static org.apache.solr.common.params.CoreAdminParams.BACKUP_REPOSITORY;
 import static org.apache.solr.common.params.CoreAdminParams.MAX_NUM_BACKUP_POINTS;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
-import java.util.Map;
 import org.apache.solr.client.api.model.PurgeUnusedFilesRequestBody;
-import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link DeleteCollectionBackup} */
-public class DeleteCollectionBackupAPITest extends MockAPITest {
+public class DeleteCollectionBackupAPITest extends MockV2APITest {
 
   private DeleteCollectionBackup api;
   private BackupRepository mockBackupRepository;
@@ -139,39 +134,32 @@ public class DeleteCollectionBackupAPITest extends MockAPITest {
   public void testCreateRemoteMessageSingle() throws Exception {
     api.deleteSingleBackupById(
         "someBackupName", "someBackupId", "someLocation", "someRepository", "someAsyncId");
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(4, remoteMessage.size());
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertEquals("someBackupId", remoteMessage.get(BACKUP_ID));
-    assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEBACKUP, context.getAction());
-    assertEquals("someAsyncId", context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEBACKUP,
+        "someAsyncId",
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someBackupName", message.get(NAME));
+          assertEquals("someBackupId", message.get(BACKUP_ID));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+        });
   }
 
   @Test
   public void testCreateRemoteMessageMultiple() throws Exception {
     api.deleteMultipleBackupsByRecency("someBackupName", 2, "someLocation", "someRepository", null);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(4, remoteMessage.size());
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertEquals(2, remoteMessage.get(MAX_NUM_BACKUP_POINTS));
-    assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEBACKUP, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEBACKUP,
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someBackupName", message.get(NAME));
+          assertEquals(2, message.get(MAX_NUM_BACKUP_POINTS));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+        });
   }
 
   @Test
@@ -179,20 +167,17 @@ public class DeleteCollectionBackupAPITest extends MockAPITest {
     PurgeUnusedFilesRequestBody body = new PurgeUnusedFilesRequestBody();
     body.location = "someLocation";
     body.repositoryName = "someRepository";
+
     api.garbageCollectUnusedBackupFiles("someBackupName", body);
-    verify(mockCommandRunner)
-        .runCollectionCommand(contextCapturer.capture(), messageCapturer.capture(), anyLong());
 
-    final ZkNodeProps createdMessage = messageCapturer.getValue();
-    final Map<String, Object> remoteMessage = createdMessage.getProperties();
-    assertEquals(4, remoteMessage.size());
-    assertEquals("someBackupName", remoteMessage.get(NAME));
-    assertEquals(Boolean.TRUE, remoteMessage.get(BACKUP_PURGE_UNUSED));
-    assertEquals("someLocation", remoteMessage.get(BACKUP_LOCATION));
-    assertEquals("someRepository", remoteMessage.get(BACKUP_REPOSITORY));
-
-    final AdminCmdContext context = contextCapturer.getValue();
-    assertEquals(CollectionParams.CollectionAction.DELETEBACKUP, context.getAction());
-    assertNull(context.getAsyncId());
+    validateRunCommand(
+        CollectionParams.CollectionAction.DELETEBACKUP,
+        message -> {
+          assertEquals(4, message.size());
+          assertEquals("someBackupName", message.get(NAME));
+          assertEquals(Boolean.TRUE, message.get(BACKUP_PURGE_UNUSED));
+          assertEquals("someLocation", message.get(BACKUP_LOCATION));
+          assertEquals("someRepository", message.get(BACKUP_REPOSITORY));
+        });
   }
 }

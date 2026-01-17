@@ -89,10 +89,11 @@ public class CreateReplica extends AdminAPIBase implements CreateReplicaApi {
         resolveAndValidateAliasIfEnabled(
             collectionName, Boolean.TRUE.equals(requestBody.followAliases));
 
-    final ZkNodeProps remoteMessage =
-        createRemoteMessage(resolvedCollectionName, shardName, requestBody);
     submitRemoteMessageAndHandleResponse(
-        response, CollectionParams.CollectionAction.ADDREPLICA, remoteMessage, requestBody.async);
+        response,
+        CollectionParams.CollectionAction.ADDREPLICA,
+        createRemoteMessage(resolvedCollectionName, shardName, requestBody),
+        requestBody.async);
     return response;
   }
 
