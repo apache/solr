@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -463,7 +464,8 @@ public abstract class SolrClient implements Serializable, Closeable {
   public UpdateResponse commit(String collection, boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
     return new UpdateRequest()
-        .setAction(UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher)
+        .setAction(
+            UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(waitSearcher))
         .process(this, collection);
   }
 
@@ -511,7 +513,9 @@ public abstract class SolrClient implements Serializable, Closeable {
       String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
     return new UpdateRequest()
-        .setAction(UpdateRequest.ACTION.COMMIT, waitFlush, waitSearcher, softCommit)
+        .setAction(
+            UpdateRequest.ACTION.COMMIT,
+            new CommitOptions().waitSearcher(waitSearcher).softCommit(softCommit))
         .process(this, collection);
   }
 

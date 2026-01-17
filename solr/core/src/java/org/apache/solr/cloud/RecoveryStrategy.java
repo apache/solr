@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -46,7 +47,6 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
@@ -302,8 +302,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       // Why do we need to open searcher if "onlyLeaderIndexes"?
-      ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
+      ureq.setAction(
+              AbstractUpdateRequest.ACTION.COMMIT,
+              CommitOptions.hardCommit().openSearcher(false).waitSearcher(true))
+          .process(client);
     }
   }
 
