@@ -4,7 +4,6 @@ type: changed # added, changed, fixed, deprecated, removed, dependency_update, s
 authors:
   - name: Houston Putman
     nick: HoustonPutman
-    url: https://home.apache.org/phonebook.html?uid=houston
 links:
   - name: SOLR-18011
     url: https://issues.apache.org/jira/browse/SOLR-18011
