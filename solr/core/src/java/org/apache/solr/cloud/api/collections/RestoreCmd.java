@@ -168,7 +168,6 @@ public class RestoreCmd implements CollApiCmds.CollectionApiCommand {
     final URI backupPath;
     final List<String> nodeList;
 
-    final String lockId;
     final CoreContainer container;
     final BackupRepository repository;
     final ZkStateReader zkStateReader;

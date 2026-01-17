@@ -1073,7 +1073,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           reqBody.location = req.getParams().get(BACKUP_LOCATION);
           reqBody.name = req.getParams().get(NAME);
           reqBody.shardBackupId = req.getParams().get(SHARD_BACKUP_ID);
-          reqBody.callingLockId = req.getParams().get(CALLING_LOCK_ID);
 
           final InstallShardData installApi = new InstallShardData(h.coreContainer, req, rsp);
           final SolrJerseyResponse installResponse =

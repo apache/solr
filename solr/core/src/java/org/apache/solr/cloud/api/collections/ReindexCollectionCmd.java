@@ -595,8 +595,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
             chkCollection,
             daemonReplica,
             targetCollection,
-            createdTarget,
-            lockId);
+            createdTarget);
         if (exc != null) {
           results.add("error", exc.toString());
         }
@@ -891,8 +890,7 @@ public class ReindexCollectionCmd implements CollApiCmds.CollectionApiCommand {
       String chkCollection,
       Replica daemonReplica,
       String daemonName,
-      boolean createdTarget,
-      String lockId)
+      boolean createdTarget)
       throws Exception {
     log.info("## Cleaning up after abort or error");
     // 1. kill the daemon

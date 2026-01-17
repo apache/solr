@@ -624,29 +624,36 @@ public class CollectionHandlingUtils {
 
   public static ShardRequestTracker syncRequestTracker(
       AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
-    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), ccc);
+    return syncRequestTracker(adminCmdContext, ccc.getAdminPath(), ccc);
+  }
+
+  public static ShardRequestTracker syncRequestTracker(
+      AdminCmdContext adminCmdContext, String adminPath, CollectionCommandContext ccc) {
+    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), adminPath, ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
       AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
-    return requestTracker(
-        adminCmdContext.getAsyncId(), adminCmdContext.getSubRequestCallingLockIds(), ccc);
-  }
-
-  protected static ShardRequestTracker requestTracker(
-      String asyncId, String lockIds, CollectionCommandContext ccc) {
-    return new ShardRequestTracker(
-        asyncId,
-        lockIds,
-        ccc.getAdminPath(),
-        ccc.getZkStateReader(),
-        ccc.newShardHandler().getShardHandlerFactory());
+    return asyncRequestTracker(adminCmdContext, ccc.getAdminPath(), ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
-      String asyncId, String adminPath, CollectionCommandContext ccc) {
+      AdminCmdContext adminCmdContext, String adminPath, CollectionCommandContext ccc) {
+    return requestTracker(
+        adminCmdContext.getAsyncId(),
+        adminCmdContext.getSubRequestCallingLockIds(),
+        adminPath,
+        ccc);
+  }
+
+  protected static ShardRequestTracker requestTracker(
+      String asyncId, String lockIds, String adminPath, CollectionCommandContext ccc) {
     return new ShardRequestTracker(
-        asyncId, adminPath, ccc.getZkStateReader(), ccc.newShardHandler().getShardHandlerFactory());
+        asyncId,
+        lockIds,
+        adminPath,
+        ccc.getZkStateReader(),
+        ccc.newShardHandler().getShardHandlerFactory());
   }
 
   public static class ShardRequestTracker {

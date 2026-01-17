@@ -910,8 +910,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       String collectionName,
       String parentShard,
       List<String> subSlices,
-      Set<String> offlineSlices,
-      String lockId) {
+      Set<String> offlineSlices) {
     log.info("Cleaning up after a failed split of {}/{}", collectionName, parentShard);
     // get the latest state
     try {
