@@ -75,11 +75,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   public static void tearDownCluster() {
     proxies = null;
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
-    System.clearProperty("distribUpdateSoTimeout");
-    System.clearProperty("distribUpdateConnTimeout");
   }
 
   @Before

@@ -24,7 +24,6 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -64,13 +63,6 @@ public class RestartWhileUpdatingTest extends AbstractFullDistribZkTestBase {
     System.setProperty("solr.autoSoftCommit.maxTime", "3000");
     // SOLR-13212 // TestInjection.nonGracefullClose = "true:60";
     // SOLR-13189 // TestInjection.failReplicaRequests = "true:03";
-  }
-
-  @AfterClass
-  public static void afterRestartWhileUpdatingTest() {
-    System.clearProperty("leaderVoteWait");
-    System.clearProperty("solr.autoCommit.maxTime");
-    System.clearProperty("solr.autoSoftCommit.maxTime");
   }
 
   @Test

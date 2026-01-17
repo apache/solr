@@ -120,12 +120,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     if (propertyValue != null) {
       System.setProperty("tests.COMPRESSION_MODE", propertyValue);
     }
-    try {
-      reloadCoreAndRecreateIndex();
-      assertCompressionMode(expectedModeString, h.getCore());
-    } finally {
-      System.clearProperty("tests.COMPRESSION_MODE");
-    }
+    reloadCoreAndRecreateIndex();
+    assertCompressionMode(expectedModeString, h.getCore());
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core)
@@ -186,7 +182,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertQ(req("q", "text:foo"), "//*[@numFound='3']");
     assertU(optimize("maxSegments", "1"));
     assertCompressionMode("BEST_SPEED", h.getCore());
-    System.clearProperty("tests.COMPRESSION_MODE");
   }
 
   public void testBadCompressionMode() {

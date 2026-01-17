@@ -372,8 +372,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
       zkClient.printLayoutToStream(System.out);
     }
 
-    System.clearProperty("solr.zookeeper.client.timeout");
-
     if (null != server) {
       server.shutdown();
     }

@@ -59,7 +59,6 @@ public class DistributedUpdateProcessorTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     ExecutorUtil.shutdownAndAwaitTermination(executor);
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   @Test
