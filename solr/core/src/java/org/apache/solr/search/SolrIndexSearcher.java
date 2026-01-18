@@ -289,17 +289,30 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     if (cmd.getSegmentTerminateEarly()) {
       final Sort cmdSort = cmd.getSort();
       final int cmdLen = cmd.getLen();
+
+      final Sort indexOrMergeSort;
       final Sort mergeSort = core.getSolrCoreState().getMergePolicySort();
+      final Sort indexSort;
+      {
+        final String indexSortStr = core.getSolrConfig().indexConfig.indexSort;
+        if (indexSortStr != null) {
+          indexSort = SortSpecParsing.parseSortSpec(indexSortStr, core.getLatestSchema()).getSort();
+          indexOrMergeSort = indexSort;
+        } else {
+          indexSort = null;
+          indexOrMergeSort = mergeSort;
+        }
+      }
 
       if (cmdSort == null
           || cmdLen <= 0
-          || mergeSort == null
-          || !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, mergeSort)) {
+          || indexOrMergeSort == null
+          || !EarlyTerminatingSortingCollector.canEarlyTerminate(cmdSort, indexOrMergeSort)) {
         log.warn(
-            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} mergeSort={}",
+            "unsupported combination: segmentTerminateEarly=true cmdSort={} cmdLen={} indexOrMergeSort={}",
             cmdSort,
             cmdLen,
-            mergeSort);
+            indexOrMergeSort);
       } else {
         collector =
             earlyTerminatingSortingCollector =
