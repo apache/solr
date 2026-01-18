@@ -24,7 +24,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -38,7 +38,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
   protected volatile ExecutorService executorService;
 
-  protected volatile Http2SolrClient httpSolrClient;
+  protected volatile HttpJettySolrClient httpSolrClient;
 
   @Override
   public void merge(ResponseBuilder rb, ShardRequest sreq) {
@@ -104,7 +104,7 @@ public abstract class IterativeMergeStrategy implements MergeStrategy {
 
     @Override
     public CallBack call() throws Exception {
-      response = httpSolrClient.requestWithBaseUrl(shardBaseUrl, shardCoreName, req);
+      response = req.processWithBaseUrl(httpSolrClient, shardBaseUrl, shardCoreName);
       return this;
     }
   }

@@ -1047,8 +1047,6 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
       throws Exception {
 
     try (LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args)) {
-      // TODO: stop using locally defined streams once stream.file and
-      // stream.body work everywhere
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);

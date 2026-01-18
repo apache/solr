@@ -28,10 +28,10 @@ import org.apache.commons.cli.Options;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.noggit.CharArr;
@@ -105,8 +105,8 @@ public class DeleteTool extends ToolBase {
   }
 
   protected void deleteCollection(CommandLine cli) throws Exception {
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder()
+    var builder =
+        new HttpJettySolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
@@ -114,7 +114,7 @@ public class DeleteTool extends ToolBase {
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
 
     String zkHost = CLIUtils.getZkHost(cli);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
+    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
       cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);

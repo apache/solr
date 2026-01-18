@@ -18,8 +18,8 @@ package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
-import org.apache.solr.client.solrj.impl.XMLResponseParser;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.junit.BeforeClass;
 
 /**
@@ -30,7 +30,7 @@ import org.junit.BeforeClass;
 public class SolrExampleXMLTest extends SolrExampleTests {
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Override

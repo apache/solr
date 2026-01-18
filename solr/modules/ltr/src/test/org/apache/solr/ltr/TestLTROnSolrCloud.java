@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -472,6 +472,5 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 }

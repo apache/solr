@@ -20,7 +20,6 @@ import static java.util.Collections.singletonMap;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +42,6 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.AffinityPlacementConfig;
@@ -52,13 +50,12 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Tests using fromIndex that points to a collection in SolrCloud mode. */
 // @LogLevel("org.apache.solr.schema.IndexSchema=TRACE")
-public class ShardToShardJoinAbstract extends SolrCloudTestCase {
+public abstract class ShardToShardJoinAbstract extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -68,25 +65,17 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
   protected static String toColl = "parent";
   protected static String fromColl = "children";
 
-  @BeforeClass
-  public static void setPropos() {
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-  }
-
   public static void setupCluster(
       Consumer<CollectionAdminRequest.Create> fromDecorator,
       Consumer<CollectionAdminRequest.Create> parentDecorator,
       Function<String, SolrInputDocument> parentDocFactory,
       BiFunction<String, String, SolrInputDocument> childDocFactory)
       throws Exception {
-    final Path configDir = TEST_COLL1_CONF();
 
     String configName = "_default"; // "solrCloudCollectionConfig";
     int nodeCount = 5;
-    final MiniSolrCloudCluster cloudCluster =
-        configureCluster(nodeCount) // .addConfig(configName, configDir)
-            .configure();
+
+    configureCluster(nodeCount).configure();
 
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
@@ -151,8 +140,6 @@ public class ShardToShardJoinAbstract extends SolrCloudTestCase {
 
   @AfterClass
   public static void shutdown() {
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
     log.info("logic complete ... deleting the {} and {} collections", toColl, fromColl);
 
     // try to clean up

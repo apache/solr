@@ -20,13 +20,10 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
-import org.apache.http.client.HttpClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -36,7 +33,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class AdminHandlersProxyTest extends SolrCloudTestCase {
-  private HttpClient httpClient;
   private CloudSolrClient solrClient;
 
   @BeforeClass
@@ -50,19 +46,14 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     solrClient = cluster.getSolrClient();
-    httpClient = ((CloudLegacySolrClient) solrClient).getHttpClient();
   }
 
   @Test
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
-    GenericSolrRequest req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/admin/info/system",
-            SolrRequest.SolrRequestType.ADMIN,
-            params);
-    SimpleSolrResponse rsp = req.process(solrClient, null);
+
+    SystemInfoRequest req = new SystemInfoRequest(params);
+    SystemInfoResponse rsp = req.process(solrClient, null);
     NamedList<Object> nl = rsp.getResponse();
     assertEquals(3, nl.size());
     assertTrue(nl.getName(1).endsWith("_solr"));
@@ -75,13 +66,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   public void proxySystemInfoHandlerNonExistingNode() throws IOException, SolrServerException {
     MapSolrParams params =
         new MapSolrParams(Collections.singletonMap("nodes", "example.com:1234_solr"));
-    GenericSolrRequest req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET,
-            "/admin/info/system",
-            SolrRequest.SolrRequestType.ADMIN,
-            params);
-    SimpleSolrResponse rsp = req.process(solrClient, null);
+    SystemInfoRequest req = new SystemInfoRequest(params);
+    SystemInfoResponse rsp = req.process(solrClient, null);
   }
 
   @Test
@@ -91,22 +77,16 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     nodes.forEach(
         node -> {
           MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", node));
-          GenericSolrRequest req =
-              new GenericSolrRequest(
-                  SolrRequest.METHOD.GET,
-                  "/admin/info/system",
-                  SolrRequest.SolrRequestType.ADMIN,
-                  params);
-          SimpleSolrResponse rsp = null;
+          SystemInfoRequest req = new SystemInfoRequest(params);
           try {
-            rsp = req.process(solrClient, null);
+            SystemInfoResponse rsp = req.process(solrClient, null);
+            NamedList<Object> nl = rsp.getResponse();
+            assertEquals(2, nl.size());
+            assertEquals("solrcloud", rsp.getMode());
+            assertEquals(nl.getName(1), rsp.getNode());
           } catch (Exception e) {
             fail("Exception while proxying request to node " + node);
           }
-          NamedList<Object> nl = rsp.getResponse();
-          assertEquals(2, nl.size());
-          assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
-          assertEquals(nl.getName(1), ((NamedList) nl.get(nl.getName(1))).get("node"));
         });
   }
 }

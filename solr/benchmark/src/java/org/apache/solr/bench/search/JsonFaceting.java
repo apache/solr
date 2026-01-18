@@ -193,10 +193,7 @@ public class JsonFaceting {
     final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
     NamedList<Object> result =
-        miniClusterState
-            .client
-            .requestWithBaseUrl(url, state.collection, queryRequest)
-            .getResponse();
+        miniClusterState.client.requestWithBaseUrl(url, queryRequest, state.collection);
 
     // MiniClusterState.log("result: " + result);
 

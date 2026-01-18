@@ -19,9 +19,9 @@ package org.apache.solr.client.solrj;
 
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.junit.BeforeClass;
 
 /**
@@ -33,12 +33,12 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome());
+    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
   }
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new Http2SolrClient.Builder(getBaseUrl())
+    return new HttpJettySolrClient.Builder(getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_CORENAME)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withRequestWriter(new JavaBinRequestWriter())

@@ -34,7 +34,7 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.CreateSnapshot;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.DeleteSnapshot;
@@ -49,7 +49,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,13 +74,6 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
-  }
-
-  @AfterClass
-  public static void teardownClass() {
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test
@@ -110,7 +102,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 
@@ -204,7 +196,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     try (SolrClient adminClient =
             getHttpSolrClient(cluster.getJettySolrRunners().get(0).getBaseUrl().toString());
         SolrClient leaderClient =
-            new Http2SolrClient.Builder(replica.getBaseUrl())
+            new HttpJettySolrClient.Builder(replica.getBaseUrl())
                 .withDefaultCollection(replica.getCoreName())
                 .build()) {
 

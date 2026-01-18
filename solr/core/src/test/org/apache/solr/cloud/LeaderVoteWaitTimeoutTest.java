@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,6 +42,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -75,11 +75,6 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
   public static void tearDownCluster() {
     proxies = null;
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
-    System.clearProperty("distribUpdateSoTimeout");
-    System.clearProperty("distribUpdateConnTimeout");
   }
 
   @Before
@@ -280,7 +275,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
       List<String> children =
           zkClient()
               .getChildren(
-                  "/collections/" + collectionName + "/leader_elect/shard1/election", null, true);
+                  "/collections/" + collectionName + "/leader_elect/shard1/election", null);
       log.info("{} election nodes:{}", collectionName, children);
       throw e;
     }

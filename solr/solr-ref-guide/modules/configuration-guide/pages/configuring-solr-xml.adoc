@@ -44,8 +44,6 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
     <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
 
-    <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
-
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
     <int name="distribUpdateConnTimeout">${distribUpdateConnTimeout:60000}</int>
@@ -218,15 +216,6 @@ This attribute does not need to be set.
 If used, this attribute should be set to the FQN (fully qualified name) of a class that implements `CoreSorter`, and you must provide a constructor with one parameter of type `org.apache.solr.core.CoreContainer`.
 This service is used when Solr is starting to prioritize which cores should be loaded first.
 For example, `<str name="coresLocator">com.myorg.CustomCoresLocator</str>` would configure a custom core sorter.
-
-`managementPath`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Currently non-operational.
 
 `sharedLib`::
 +
@@ -435,16 +424,6 @@ It is used with SolrCloud.
 |===
 +
 In SolrCloud mode, the URL of the ZooKeeper host that Solr should use for cluster state information.
-
-`genericCoreNodeNames`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-If `true`, node names are not based on the address of the node, but on a generic name that identifies the core.
-When a different machine takes over serving that core things will be much easier to understand.
 
 `zkCredentialsProvider`, `zkACLProvider` & `zkCredentialsInjector`::
 +

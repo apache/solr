@@ -30,7 +30,7 @@ import java.util.regex.Pattern;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.JacksonContentWriter;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.NamedList;
@@ -87,8 +87,6 @@ public class TestManagedSchema extends AbstractBadConfigTestBase {
   @After
   public void afterClass() {
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("solr.index.updatelog.enabled");
   }
 
   public void testUpgrade() throws Exception {

@@ -832,20 +832,24 @@ public class QueryComponent extends SearchComponent {
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
+    int shardRows;
     if (rb.shards_rows > -1) {
       // if the client set shards.rows set this explicity
-      sreq.params.set(CommonParams.ROWS, rb.shards_rows);
+      shardRows = rb.shards_rows;
     } else {
-      // what if rows<0 as it is allowed for grouped request??
-      sreq.params.set(
-          CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+      shardRows = rb.getSortSpec().getCount();
+      // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
+      if (shardRows > 0) {
+        shardRows += rb.getSortSpec().getOffset();
+      }
     }
+    sreq.params.set(CommonParams.ROWS, shardRows);
 
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES, "true");
 
     boolean shardQueryIncludeScore =
         (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-            || rb.getSortSpec().includesScore();
+            || (shardRows != 0 && rb.getSortSpec().includesScore());
     StringBuilder additionalFL = new StringBuilder();
     boolean additionalAdded = false;
     if (rb.onePassDistributedQuery) {
@@ -903,6 +907,67 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
+  protected abstract static class ShardDocQueue {
+    public abstract boolean push(ShardDoc shardDoc);
+
+    public abstract Map<Object, ShardDoc> resultIds(int offset);
+  }
+  ;
+
+  protected ShardDocQueue newShardDocQueue(
+      SolrIndexSearcher searcher, SortField[] sortFields, Integer size) {
+    return new ShardDocQueue() {
+
+      // id to shard mapping, to eliminate any accidental dups
+      private final HashMap<Object, String> uniqueDoc = new HashMap<>();
+
+      private final ShardFieldSortedHitQueue queue =
+          new ShardFieldSortedHitQueue(sortFields, size, searcher);
+
+      @Override
+      public boolean push(ShardDoc shardDoc) {
+        final String prevShard = uniqueDoc.put(shardDoc.id, shardDoc.shard);
+        if (prevShard != null) {
+          // duplicate detected
+
+          // For now, just always use the first encountered since we can't currently
+          // remove the previous one added to the priority queue.  If we switched
+          // to the Java5 PriorityQueue, this would be easier.
+          return false;
+          // make which duplicate is used deterministic based on shard
+          // if (prevShard.compareTo(shardDoc.shard) >= 0) {
+          //  TODO: remove previous from priority queue
+          //  return false;
+          // }
+        }
+
+        queue.insertWithOverflow(shardDoc);
+        return true;
+      }
+
+      @Override
+      public Map<Object, ShardDoc> resultIds(int offset) {
+        final Map<Object, ShardDoc> resultIds = new HashMap<>();
+
+        // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
+        // So we want to pop the last documents off the queue to get
+        // the docs offset -> queuesize
+        int resultSize = queue.size() - offset;
+        resultSize = Math.max(0, resultSize); // there may not be any docs in range
+
+        for (int i = resultSize - 1; i >= 0; i--) {
+          ShardDoc shardDoc = queue.pop();
+          shardDoc.positionInResponse = i;
+          // Need the toString() for correlation with other lists that must
+          // be strings (like keys in highlighting, explain, etc)
+          resultIds.put(shardDoc.id.toString(), shardDoc);
+        }
+
+        return resultIds;
+      }
+    };
+  }
+
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
@@ -945,14 +1010,10 @@ public class QueryComponent extends SearchComponent {
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
 
-    // id to shard mapping, to eliminate any accidental dups
-    HashMap<Object, String> uniqueDoc = new HashMap<>();
-
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
-    final ShardFieldSortedHitQueue queue =
-        new ShardFieldSortedHitQueue(
-            sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+    final ShardDocQueue shardDocQueue =
+        newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1123,23 +1184,6 @@ public class QueryComponent extends SearchComponent {
       for (int i = 0; i < docs.size(); i++) {
         SolrDocument doc = docs.get(i);
         Object id = doc.getFieldValue(uniqueKeyField.getName());
-
-        String prevShard = uniqueDoc.put(id, srsp.getShard());
-        if (prevShard != null) {
-          // duplicate detected
-          numFound--;
-
-          // For now, just always use the first encountered since we can't currently
-          // remove the previous one added to the priority queue.  If we switched
-          // to the Java5 PriorityQueue, this would be easier.
-          continue;
-          // make which duplicate is used deterministic based on shard
-          // if (prevShard.compareTo(srsp.shard) >= 0) {
-          //  TODO: remove previous from priority queue
-          //  continue;
-          // }
-        }
-
         ShardDoc shardDoc = new ShardDoc();
         shardDoc.id = id;
         shardDoc.shard = srsp.getShard();
@@ -1158,42 +1202,18 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-        queue.insertWithOverflow(shardDoc);
+        if (!shardDocQueue.push(shardDoc)) {
+          numFound--;
+        }
       } // end for-each-doc-in-response
     } // end for-each-response
-
-    // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
-    // So we want to pop the last documents off the queue to get
-    // the docs offset -> queuesize
-    int resultSize = queue.size() - ss.getOffset();
-    resultSize = Math.max(0, resultSize); // there may not be any docs in range
-
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
-    for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = queue.pop();
-      shardDoc.positionInResponse = i;
-      // Need the toString() for correlation with other lists that must
-      // be strings (like keys in highlighting, explain, etc)
-      resultIds.put(shardDoc.id.toString(), shardDoc);
-    }
 
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
     rb.rsp.addToLog("hits", numFound);
 
-    SolrDocumentList responseDocs = new SolrDocumentList();
-    if (maxScore != null) responseDocs.setMaxScore(maxScore);
-    responseDocs.setNumFound(numFound);
-    responseDocs.setNumFoundExact(hitCountIsExact);
-    responseDocs.setStart(ss.getOffset());
-    // size appropriately
-    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
-
-    // save these results in a private area so we can access them
-    // again when retrieving stored fields.
-    // TODO: use ResponseBuilder (w/ comments) or the request context?
-    rb.resultIds = resultIds;
-    rb.setResponseDocs(responseDocs);
+    setResultIdsAndResponseDocs(
+        rb, shardDocQueue, maxScore, numFound, hitCountIsExact, ss.getOffset());
 
     populateNextCursorMarkFromMergedShards(rb);
 
@@ -1237,6 +1257,30 @@ public class QueryComponent extends SearchComponent {
                 SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
+  }
+
+  protected void setResultIdsAndResponseDocs(
+      ResponseBuilder rb,
+      ShardDocQueue shardDocQueue,
+      Float maxScore,
+      long numFound,
+      boolean hitCountIsExact,
+      int offset) {
+    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+
+    final SolrDocumentList responseDocs = new SolrDocumentList();
+    if (maxScore != null) responseDocs.setMaxScore(maxScore);
+    responseDocs.setNumFound(numFound);
+    responseDocs.setNumFoundExact(hitCountIsExact);
+    responseDocs.setStart(offset);
+    // size appropriately
+    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
+
+    // save these results in a private area so we can access them
+    // again when retrieving stored fields.
+    // TODO: use ResponseBuilder (w/ comments) or the request context?
+    rb.resultIds = resultIds;
+    rb.setResponseDocs(responseDocs);
   }
 
   /**
