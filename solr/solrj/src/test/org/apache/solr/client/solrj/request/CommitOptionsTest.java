@@ -70,7 +70,7 @@ public class CommitOptionsTest {
     // Optimize
     CommitOptions optimize = CommitOptions.optimize();
     assertTrue(optimize.getExpungeDeletes());
-    assertEquals(Integer.MAX_VALUE, optimize.getMaxOptimizeSegments());
+    assertEquals(1, optimize.getMaxOptimizeSegments());
 
     // Optimize with max segments
     CommitOptions optimizeWithMaxSegments = CommitOptions.optimize(3);

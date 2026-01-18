@@ -141,11 +141,12 @@ public class CommitOptions {
 
   /**
    * Creates CommitOptions for optimization with default settings.
+   * Optimizes down to 1 segment and expunges deletes.
    *
    * @return CommitOptions suitable for optimize operations
    */
   public static CommitOptions optimize() {
-    return new CommitOptions().expungeDeletes(true);
+    return new CommitOptions().expungeDeletes(true).maxOptimizeSegments(1);
   }
 
   /**
