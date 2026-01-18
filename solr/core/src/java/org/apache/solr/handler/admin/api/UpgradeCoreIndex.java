@@ -153,7 +153,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
         RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
         try {
-          List<LeafReaderContext> leafContexts = searcherRef.get().getRawReader().leaves();
+          List<LeafReaderContext> leafContexts = searcherRef.get().getIndexReader().leaves();
           DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
 
           UpdateRequestProcessorChain updateProcessorChain =
@@ -178,8 +178,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           log.error("Error while processing core: [{}}]", coreName, e);
           throw new CoreAdminAPIBaseException(e);
         } finally {
-          // important to decrement searcher ref count after use since we obtained it via the
-          // SolrCore.getSearcher() method
+          // important to decrement searcher ref count after use since we obtained it via
+          // SolrCore.getSearcher()
           searcherRef.decref();
         }
 
@@ -388,9 +388,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     }
   }
 
-  /*
-   * Convert a lucene Document to a SolrInputDocument
-   */
+  /** Convert a lucene Document to a SolrInputDocument */
   protected SolrInputDocument toSolrInputDocument(
       org.apache.lucene.document.Document doc, IndexSchema schema) {
     SolrInputDocument out = new SolrInputDocument();
