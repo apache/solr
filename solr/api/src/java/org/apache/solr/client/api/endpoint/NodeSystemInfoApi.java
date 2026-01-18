@@ -19,7 +19,10 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.NodeSystemResponse;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+import org.apache.solr.client.api.model.NodeSystemInfoResponse;
 
 /** V2 API definition to fetch node system info, analogous to the v1 /admin/info/system. */
 @Path("/node/info/system")
@@ -29,5 +32,5 @@ public interface NodeSystemInfoApi {
   @Operation(
       summary = "Retrieve node system info.",
       tags = {"system"})
-  NodeSystemResponse getNodeSystemInfo();
+  NodeSystemInfoResponse getNodeSystemInfo();
 }

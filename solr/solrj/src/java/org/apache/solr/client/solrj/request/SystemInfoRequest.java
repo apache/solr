@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -38,7 +39,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
 
   /**
    * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
+   *     or V2 "/node/info/system"
    */
   public SystemInfoRequest(String path) {
     this(path, new ModifiableSolrParams());
@@ -53,11 +54,14 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
 
   /**
    * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or V2 "/node/system"
+   *     or V2 "/node/info/system"
    * @param params query parameter names and values for making this request.
    */
   public SystemInfoRequest(String path, SolrParams params) {
     super(METHOD.GET, path, SolrRequestType.ADMIN);
+    if (!path.endsWith("/system")) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported request path: " + path);
+    }
     this.params = params;
   }
 
@@ -77,7 +81,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
       // (/solr) /admin/info/system
       return ApiVersion.V1;
     }
-    // Ref. org.apache.solr.handler.admin.api.NodeSystemInfoAPI : /node/system
+    // Ref. org.apache.solr.client.api.endpoint.NodeSystemInfoApi : /node/info/system
     return ApiVersion.V2;
   }
 }

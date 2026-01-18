@@ -46,8 +46,11 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.api.model.NodeSystemResponse;
+import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemInfoResponse.NodeSystemInfo;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
@@ -63,13 +66,19 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Used by SystemInfoHandler and NodeSystemInfo */
+/** Used by GetNodeSystemInfo, and indirectly by SystemInfoHandler */
 public class NodeSystemInfoProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrQueryRequest req;
+  private SolrParams params;
   private CoreContainer cc;
-  private String hostname = null;
+
+  // on some platforms, resolving canonical hostname can cause the thread
+  // to block for several seconds if nameservices aren't available
+  // so resolve this once per provider instance
+  // (ie: not static, so core reload will refresh)
+  private String hostname;
 
   private static final long ONE_KB = 1024;
   private static final long ONE_MB = ONE_KB * ONE_KB;
@@ -94,55 +103,68 @@ public class NodeSystemInfoProvider {
    * BeanInfo instance for future calls.
    */
   private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
-
+  
   public NodeSystemInfoProvider(SolrQueryRequest request) {
     req = request;
+    params = request.getParams();
     cc = request.getCoreContainer();
     initHostname();
   }
+  
+  public void getNodeSystemInfo(NodeSystemInfoResponse response) {
+    Map<String, NodeSystemInfo> nodes = new HashMap<>();
+    NodeSystemInfo info = getNodeInfo();  
+    String key = info.node != null ? info.node : hostname; // should allow null key ?
+    nodes.put(key, info);
+    response.nodesInfo = nodes;
+  }
 
-  public NodeSystemResponse getNodeSystemInfo() {
-    NodeSystemResponse resp = new NodeSystemResponse();
+  private NodeSystemInfoResponse.NodeSystemInfo getNodeInfo() {  
+    NodeSystemInfo info = new NodeSystemInfo();
+
     SolrCore core = req.getCore();
-    if (core != null) resp.core = getCoreInfo(core, req.getSchema());
-    boolean solrCloudMode = cc.isZooKeeperAware();
-    resp.mode = solrCloudMode ? "solrcloud" : "std";
-    if (solrCloudMode) {
-      resp.zkHost = cc.getZkController().getZkServerAddress();
-    }
+    if (core != null) info.core = getCoreInfo(core, req.getSchema());
+    
     if (cc != null) {
-      resp.solrHome = cc.getSolrHome().toString();
-      resp.coreRoot = cc.getCoreRootDirectory().toString();
+      info.solrHome = cc.getSolrHome().toString();
+      info.coreRoot = cc.getCoreRootDirectory().toString();
     }
-
-    resp.lucene = getLuceneInfo();
-    NodeConfig nodeConfig = cc.getNodeConfig();
-    resp.jvm = getJvmInfo(nodeConfig);
-    resp.security = getSecurityInfo(req);
-    resp.system = getSystemInfo();
-
-    resp.gpu = getGpuInfo();
+    
+    boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
+    info.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
-      resp.node = cc.getZkController().getNodeName();
+      info.zkHost = cc.getZkController().getZkServerAddress();
+      info.node = cc.getZkController().getNodeName();
     }
+
+    info.lucene = getLuceneInfo();
+    
+    NodeConfig nodeConfig =  cc != null ? cc.getNodeConfig() : null;
+    info.jvm = getJvmInfo(nodeConfig);
+    
+    info.security = getSecurityInfo(req);
+    info.system = getSystemInfo();
+    info.gpu = getGpuInfo();
+
     SolrEnvironment env =
         SolrEnvironment.getFromSyspropOrClusterprop(
             solrCloudMode ? cc.getZkController().zkStateReader : null);
     if (env.isDefined()) {
-      resp.environment = env.getCode();
+      info.environment = env.getCode();
       if (env.getLabel() != null) {
-        resp.environmentLabel = env.getLabel();
+        info.environmentLabel = env.getLabel();
       }
       if (env.getColor() != null) {
-        resp.environmentColor = env.getColor();
+        info.environmentColor = env.getColor();
       }
     }
-    return resp;
+    
+    return info;
   }
 
   /** Get system info */
-  private NodeSystemResponse.Core getCoreInfo(SolrCore core, IndexSchema schema) {
-    NodeSystemResponse.Core info = new NodeSystemResponse.Core();
+  private NodeSystemInfoResponse.Core getCoreInfo(SolrCore core, IndexSchema schema) {
+    NodeSystemInfoResponse.Core info = new NodeSystemInfoResponse.Core();
 
     info.schema = schema != null ? schema.getSchemaName() : "no schema!";
 
@@ -156,7 +178,7 @@ public class NodeSystemInfoProvider {
     info.start = core.getStartTimeStamp();
 
     // Solr Home
-    NodeSystemResponse.Directory dirs = new NodeSystemResponse.Directory();
+    NodeSystemInfoResponse.Directory dirs = new NodeSystemInfoResponse.Directory();
     dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
     dirs.instance = core.getInstancePath().toString();
     try {
@@ -198,8 +220,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get JVM Info - including memory info */
-  private NodeSystemResponse.JVM getJvmInfo(NodeConfig nodeConfig) {
-    NodeSystemResponse.JVM jvm = new NodeSystemResponse.JVM();
+  private NodeSystemInfoResponse.JVM getJvmInfo(NodeConfig nodeConfig) {
+    NodeSystemInfoResponse.JVM jvm = new NodeSystemInfoResponse.JVM();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
     final String javaVendor = System.getProperty("java.specification.vendor", "unknown");
@@ -215,18 +237,18 @@ public class NodeSystemInfoProvider {
     jvm.name = jreVendor + " " + vmName;
 
     // details
-    NodeSystemResponse.Vendor spec = new NodeSystemResponse.Vendor();
+    NodeSystemInfoResponse.Vendor spec = new NodeSystemInfoResponse.Vendor();
     spec.vendor = javaVendor;
     spec.name = javaName;
     spec.version = javaVersion;
     jvm.spec = spec;
 
-    NodeSystemResponse.Vendor jre = new NodeSystemResponse.Vendor();
+    NodeSystemInfoResponse.Vendor jre = new NodeSystemInfoResponse.Vendor();
     jre.vendor = jreVendor;
     jre.version = jreVersion;
     jvm.jre = jre;
 
-    NodeSystemResponse.Vendor vm = new NodeSystemResponse.Vendor();
+    NodeSystemInfoResponse.Vendor vm = new NodeSystemInfoResponse.Vendor();
     vm.vendor = vmVendor;
     vm.name = vmName;
     vm.version = vmVersion;
@@ -238,8 +260,8 @@ public class NodeSystemInfoProvider {
     // not thread safe, but could be thread local
     DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
-    NodeSystemResponse.JvmMemory mem = new NodeSystemResponse.JvmMemory();
-    NodeSystemResponse.JvmMemoryRaw raw = new NodeSystemResponse.JvmMemoryRaw();
+    NodeSystemInfoResponse.JvmMemory mem = new NodeSystemInfoResponse.JvmMemory();
+    NodeSystemInfoResponse.JvmMemoryRaw raw = new NodeSystemInfoResponse.JvmMemoryRaw();
     long free = runtime.freeMemory();
     long max = runtime.maxMemory();
     long total = runtime.totalMemory();
@@ -259,7 +281,7 @@ public class NodeSystemInfoProvider {
     jvm.memory = mem;
 
     // JMX properties
-    NodeSystemResponse.JvmJmx jmx = new NodeSystemResponse.JvmJmx();
+    NodeSystemInfoResponse.JvmJmx jmx = new NodeSystemInfoResponse.JvmJmx();
     try {
       RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
       if (mx.isBootClassPathSupported()) {
@@ -282,8 +304,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get Security Info */
-  private NodeSystemResponse.Security getSecurityInfo(SolrQueryRequest req) {
-    NodeSystemResponse.Security info = new NodeSystemResponse.Security();
+  private NodeSystemInfoResponse.Security getSecurityInfo(SolrQueryRequest req) {
+    NodeSystemInfoResponse.Security info = new NodeSystemInfoResponse.Security();
 
     if (cc != null) {
       if (cc.getAuthenticationPlugin() != null) {
@@ -300,7 +322,7 @@ public class NodeSystemInfoProvider {
       info.username = req.getUserPrincipal().getName();
 
       // Mapped roles for this principal
-      @SuppressWarnings("resource")
+      //@SuppressWarnings("resource")
       AuthorizationPlugin auth = cc == null ? null : cc.getAuthorizationPlugin();
       if (auth instanceof RuleBasedAuthorizationPluginBase rbap) {
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
@@ -324,13 +346,15 @@ public class NodeSystemInfoProvider {
     return info;
   }
 
-  private NodeSystemResponse.Lucene getLuceneInfo() {
-    NodeSystemResponse.Lucene info = new NodeSystemResponse.Lucene();
+  private NodeSystemInfoResponse.Lucene getLuceneInfo() {
+    NodeSystemInfoResponse.Lucene info = new NodeSystemInfoResponse.Lucene();
 
     Package p = SolrCore.class.getPackage();
-
-    info.solrSpecVersion = p.getSpecificationVersion();
-    info.solrImplVersion = p.getImplementationVersion();
+    String specVersion = p.getSpecificationVersion();
+    String implVersion = p.getImplementationVersion();
+    // non-null mostly for testing
+    info.solrSpecVersion = specVersion== null ? SolrVersion.LATEST_STRING : specVersion;
+    info.solrImplVersion = implVersion == null ? SolrVersion.LATEST.getPrereleaseVersion()  : implVersion;
 
     info.luceneSpecVersion = Version.LATEST.toString();
     info.luceneImplVersion = Version.getPackageImplementationVersion();
@@ -338,8 +362,8 @@ public class NodeSystemInfoProvider {
     return info;
   }
 
-  private NodeSystemResponse.GPU getGpuInfo() {
-    NodeSystemResponse.GPU gpuInfo = new NodeSystemResponse.GPU();
+  private NodeSystemInfoResponse.GPU getGpuInfo() {
+    NodeSystemInfoResponse.GPU gpuInfo = new NodeSystemInfoResponse.GPU();
     gpuInfo.available = false; // set below if available
 
     try {
@@ -359,7 +383,7 @@ public class NodeSystemInfoProvider {
         long gpuMemoryFree = provider.getGpuMemoryFree();
 
         if (gpuMemoryTotal > 0) {
-          NodeSystemResponse.MemoryRaw memory = new NodeSystemResponse.MemoryRaw();
+          NodeSystemInfoResponse.MemoryRaw memory = new NodeSystemInfoResponse.MemoryRaw();
           memory.total = gpuMemoryTotal;
           memory.used = gpuMemoryUsed;
           memory.free = gpuMemoryFree;
@@ -380,7 +404,7 @@ public class NodeSystemInfoProvider {
   }
 
   /** Return good default units based on byte size. */
-  private static String humanReadableUnits(long bytes, DecimalFormat df) {
+  private String humanReadableUnits(long bytes, DecimalFormat df) {
     String newSizeAndUnits;
 
     if (bytes / ONE_GB > 0) {
@@ -396,12 +420,12 @@ public class NodeSystemInfoProvider {
     return newSizeAndUnits;
   }
 
-  private static List<String> getInputArgumentsRedacted(NodeConfig nodeConfig, RuntimeMXBean mx) {
+  private List<String> getInputArgumentsRedacted(NodeConfig nodeConfig, RuntimeMXBean mx) {
     List<String> list = new ArrayList<>();
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('=')))) {
+          && (nodeConfig != null && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('='))))) {
         list.add(
             String.format(
                 Locale.ROOT,
@@ -425,7 +449,7 @@ public class NodeSystemInfoProvider {
    * @param consumer consumer for each property name and value
    * @param <T> formal type
    */
-  private static <T extends PlatformManagedObject> void forEachGetterValue(
+  private <T extends PlatformManagedObject> void forEachGetterValue(
       T obj, String[] interfaces, BiConsumer<String, Object> consumer) {
     for (String clazz : interfaces) {
       try {
@@ -447,7 +471,8 @@ public class NodeSystemInfoProvider {
    * @param consumer consumer for each property name and value
    * @param <T> formal type
    */
-  private static <T extends PlatformManagedObject> void forEachGetterValue(
+  // protected & static : ref. test in NodeSystemInfoProviderTest
+  protected static <T extends PlatformManagedObject> void forEachGetterValue(
       T obj, Class<? extends T> intf, BiConsumer<String, Object> consumer) {
     if (intf.isInstance(obj)) {
       BeanInfo beanInfo =
@@ -497,23 +522,24 @@ public class NodeSystemInfoProvider {
     RTimer timer = new RTimer();
     try {
       InetAddress addr = InetAddress.getLocalHost();
-      hostname = addr.getCanonicalHostName();
+      hostname =  addr.getCanonicalHostName();
     } catch (Exception e) {
       log.warn(
           "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
           REVERSE_DNS_OF_LOCALHOST_SYSPROP,
           e);
       hostname = null;
-      return;
-    }
-    timer.stop();
-
-    if (15000D < timer.getTime()) {
-      String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
-      log.warn(
-          "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
-          readableTime,
-          REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+      return ;
+    } finally {
+      timer.stop();
+  
+      if (15000D < timer.getTime()) {
+        String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
+        log.warn(
+            "Resolving canonical hostname for local host took {} seconds, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
+            readableTime,
+            REVERSE_DNS_OF_LOCALHOST_SYSPROP);
+      }
     }
   }
 }

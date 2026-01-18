@@ -19,18 +19,17 @@ package org.apache.solr.client.solrj.response;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
-import org.apache.solr.client.api.model.NodeSystemResponse;
+import org.apache.solr.client.api.model.NodeSystemInfoResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 
-/** This class holds the response from V1 "/admin/info/system" or V2 "/node/system" */
+/** This class holds the response from V1 "/admin/info/system" or V2 "/node/info/system" */
 public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
-  private final Map<String, NodeSystemResponse> nodesInfo = new HashMap<>();
+  private final Map<String, NodeSystemInfoResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
 
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
@@ -45,33 +44,37 @@ public class SystemInfoResponse extends SolrResponseBase {
       assert response.equals(getResponse());
       return;
     }
+    
+    NodeSystemInfoResponse fullResp = JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+        getResponse(), NodeSystemInfoResponse.class);
+    nodesInfo.putAll(fullResp.nodesInfo);
 
-    if (getResponse().get("node") == null) {
-      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
-      for (Entry<String, Object> node : response) {
-        if (node.getKey().endsWith("_solr")) {
-          nodesInfo.put(
-              node.getKey(),
-              JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                  node.getValue(), NodeSystemResponse.class));
-        }
-      }
-
-      // If no node was found, that's very likely Solr runs in standalone mode.
-      // Add a single node info instance with null key (no node name is available).
-      if (nodesInfo.isEmpty()) {
-        nodesInfo.put(
-            null,
-            JacksonContentWriter.DEFAULT_MAPPER.convertValue(response, NodeSystemResponse.class));
-      }
-
-    } else {
-      // single-node response
-      nodesInfo.put(
-          response.get("node").toString(),
-          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              getResponse(), NodeSystemResponse.class));
-    }
+//    if (getResponse().get("node") == null) {
+//      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
+//      for (Entry<String, Object> node : response) {
+//        if (node.getKey().endsWith("_solr")) {
+//          nodesInfo.put(
+//              node.getKey(),
+//              JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+//                  node.getValue(), NodeSystemInfoResponse.NodeSystemInfo.class));
+//        }
+//      }
+//
+//      // If no node was found, that's very likely Solr runs in standalone mode.
+//      // Add a single node info instance with null key (no node name is available).
+//      if (nodesInfo.isEmpty()) {
+//        nodesInfo.put(
+//            null,
+//            JacksonContentWriter.DEFAULT_MAPPER.convertValue(response, NodeSystemInfoResponse.NodeSystemInfo.class));
+//      }
+//
+//    } else {
+//      // single-node response
+//      nodesInfo.put(
+//          response.get("node").toString(),
+//          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+//              getResponse(), NodeSystemInfoResponse.NodeSystemInfo.class));
+//    }
   }
 
   /** Get the mode from a single node system info */
@@ -195,8 +198,8 @@ public class SystemInfoResponse extends SolrResponseBase {
         .get();
   }
 
-  /** Get the {@code NodeSystemResponse} for a single node */
-  public NodeSystemResponse getNodeResponse() {
+  /** Get the {@code NodeSystemResponse.NodeSystemInfo} for a single node */
+  public NodeSystemInfoResponse.NodeSystemInfo getNodeResponse() {
     if (nodesInfo.size() == 1) {
       return nodesInfo.values().stream().findFirst().get();
     } else {
@@ -205,13 +208,13 @@ public class SystemInfoResponse extends SolrResponseBase {
     }
   }
 
-  /** Get all {@code NodeSystemResponse}s */
-  public Map<String, NodeSystemResponse> getAllNodeResponses() {
+  /** Get all {@code NodeSystemResponse.NodeSystemInfo}s */
+  public Map<String, NodeSystemInfoResponse.NodeSystemInfo> getAllNodeResponses() {
     return nodesInfo;
   }
 
-  /** Get the {@code NodeSystemResponse} for the given node name */
-  public NodeSystemResponse getNodeResponseForNode(String node) {
+  /** Get the {@code NodeSystemResponse.NodeSystemInfo} for the given node name */
+  public NodeSystemInfoResponse.NodeSystemInfo getNodeResponseForNode(String node) {
     return nodesInfo.get(node);
   }
 

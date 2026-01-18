@@ -54,7 +54,7 @@ public class NodeSystemInfoAPI {
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    log.warn("Request to deprecated solr.api.Endpoint: /node/system.  Please use /node/info/system");
+    log.warn("Request to deprecated endpoint: /node/system.  Please use /node/info/system");
     handler.handleRequestBody(req, rsp);
   }
 }

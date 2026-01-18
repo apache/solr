@@ -20,7 +20,10 @@ import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
-import org.apache.solr.client.api.model.NodeSystemResponse;
+import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse.ResponseHeader;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.handler.admin.NodeSystemInfoProvider;
 import org.apache.solr.handler.api.V2ApiUtils;
@@ -46,22 +49,26 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
-  public NodeSystemResponse getNodeSystemInfo() {
+  public NodeSystemInfoResponse getNodeSystemInfo() {
     solrQueryResponse.setHttpCaching(false);
-    // TODO: AdminHandlersProxy is only V1 or also V2?
+
+    // TODO? nodes=all is ignored
     try {
-      if (solrQueryRequest.getCoreContainer() != null
-          && AdminHandlersProxy.maybeProxyToNodes(
+      if (AdminHandlersProxy.maybeProxyToNodes(
               solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
         return null;
       }
     } catch (Exception e) {
-      log.warn("Exception proxying to other node", e);
+      log.warn("Error occurred while proxying to other node", e);
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
-    NodeSystemResponse response = provider.getNodeSystemInfo();
-    V2ApiUtils.squashIntoSolrResponseWithHeader(solrQueryResponse, response);
-    return provider.getNodeSystemInfo();
+    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
+    provider.getNodeSystemInfo(response);
+    log.info("Found {} nodes.", response == null ? "NO" : response.nodesInfo.size());
+    if(response != null) {
+      response.nodesInfo.entrySet().forEach(e -> log.info("Node {}, core root: {}", e.getKey(), e.getValue().coreRoot));
+    }
+    return response;
   }
 }
