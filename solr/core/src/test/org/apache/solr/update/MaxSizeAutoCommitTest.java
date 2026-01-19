@@ -99,7 +99,6 @@ public class MaxSizeAutoCommitTest extends SolrTestCaseJ4 {
       monitor.clear();
     }
     super.tearDown();
-    System.clearProperty("solr.ulog");
     deleteCore();
   }
 

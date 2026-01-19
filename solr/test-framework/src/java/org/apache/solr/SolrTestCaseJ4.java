@@ -17,8 +17,6 @@
 package org.apache.solr;
 
 import static java.util.Objects.requireNonNull;
-import static org.apache.solr.common.cloud.ZkStateReader.HTTPS;
-import static org.apache.solr.common.cloud.ZkStateReader.URL_SCHEME;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -46,6 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -80,12 +79,14 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.IpTables;
@@ -104,6 +105,7 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
@@ -291,7 +293,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     HttpJettySolrClient.setDefaultSSLConfig(sslConfig.buildClientSSLConfig());
     if (isSSLMode()) {
       // SolrCloud tests should usually clear this
-      System.setProperty(URL_SCHEME, HTTPS);
+      System.setProperty("urlScheme", "https");
     }
 
     ExecutorUtil.resetThreadLocalProviders();
@@ -320,14 +322,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } finally {
       TestInjection.reset();
       initCoreDataDir = null;
-      System.clearProperty("zookeeper.forceSync");
-      System.clearProperty("jetty.testMode");
-      System.clearProperty("tests.shardhandler.randomSeed");
-      System.clearProperty("solr.index.updatelog.enabled");
-      System.clearProperty("useCompoundFile");
-      System.clearProperty(URL_SCHEME);
-      System.clearProperty("solr.cloud.wait-for-updates-with-stale-state-pause");
-      System.clearProperty("solr.zkclienttmeout");
       HttpClientUtil.resetHttpClientBuilder();
       HttpJettySolrClient.resetSslContextFactory();
 
@@ -407,8 +401,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
       savedFactory = null;
-    } else {
-      System.clearProperty("solr.directoryFactory");
     }
   }
 
@@ -813,8 +805,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
       h.close();
     }
-
-    System.clearProperty("solr.directoryFactory");
 
     if (System.getProperty(UPDATELOG_SYSPROP) != null) {
       // clears the updatelog system property at the end of the test run
@@ -2258,19 +2248,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
         subHome.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
-  // Creates minimal full setup, including solr.xml
-  public static void copyMinFullSetup(Path dstRoot) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"), dstRoot.resolve("solr.xml"));
-    copyMinConf(dstRoot);
-  }
-
-  // Just copies the file indicated to the tmp home directory naming it "solr.xml"
-  public static void copyXmlToHome(Path dstRoot, String fromFile) throws IOException {
-    Files.createDirectories(dstRoot);
-    Files.copy(SolrTestCaseJ4.TEST_PATH().resolve(fromFile), dstRoot.resolve("solr.xml"));
-  }
-
   // Creates a consistent configuration, _including_ solr.xml at dstRoot. Creates collection1/conf
   // and copies the stock files in there.
 
@@ -2314,7 +2291,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     try {
       Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
       Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-      Files.copy(serverSolr.resolve("solr.xml"), tempSolrHome.resolve("solr.xml"));
 
       Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
       Path collection1Dir = tempSolrHome.resolve("collection1");
@@ -2516,6 +2492,18 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   /** Returns <code>likely</code> most (1/10) of the time, otherwise <code>unlikely</code> */
   public static Object skewed(Object likely, Object unlikely) {
     return (0 == TestUtil.nextInt(random(), 0, 9)) ? unlikely : likely;
+  }
+
+  public static CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      SolrClient solrClient, String asyncId, Duration timeout) throws Exception {
+    final var requestStatus = CollectionAdminRequest.requestStatus(asyncId);
+    return RetryUtil.retryUntil(
+        "Async request " + asyncId + " did not complete within duration: " + timeout,
+        (int) (timeout.toMillis() / 50),
+        50,
+        TimeUnit.MILLISECONDS,
+        () -> requestStatus.process(solrClient),
+        rsp -> rsp.getRequestStatus().isFinal());
   }
 
   /**
@@ -2774,19 +2762,13 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     System.setProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY, value);
   }
 
-  protected static void systemClearPropertySolrTestsMergePolicyFactory() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
-  }
-
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
   protected static void systemSetPropertyEnableUrlAllowList(boolean value) {
     System.setProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST, String.valueOf(value));
   }
 
   @Deprecated // For backwards compatibility only. Please do not use in new tests.
-  protected static void systemClearPropertySolrEnableUrlAllowList() {
-    System.clearProperty(AllowListUrlChecker.ENABLE_URL_ALLOW_LIST);
-  }
+  protected static void systemClearPropertySolrEnableUrlAllowList() {}
 
   @SafeVarargs
   protected static <T> T pickRandom(T... options) {
@@ -2905,11 +2887,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    */
   private static void clearNumericTypesProperties() {
     org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
-    System.clearProperty("solr.tests.numeric.points");
-    System.clearProperty("solr.tests.numeric.points.dv");
-    for (Class<?> c : RANDOMIZED_NUMERIC_FIELDTYPES.keySet()) {
-      System.clearProperty("solr.tests." + c.getSimpleName() + "FieldType");
-    }
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
   }
 

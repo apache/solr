@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -152,10 +151,5 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
     ZkNodeProps props = cluster.getZkStateReader().getLeaderRetry(collection, "shard1", 30000);
 
     return props.getStr(ZkStateReader.NODE_NAME_PROP);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 }

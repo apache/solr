@@ -20,12 +20,14 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +35,11 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
+public abstract class LargeVolumeTestBase extends SolrTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
 
   // for real load testing, make these numbers bigger
   static final int numdocs = 100; // 1000 * 1000;
@@ -42,7 +47,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testMultiThreaded() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     DocThread[] threads = new DocThread[threadCount];
@@ -66,7 +71,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
   }
 
   private void query(int count) throws SolrServerException, IOException {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = client.query(query);
     assertEquals(0, response.getStatus());
@@ -79,7 +84,7 @@ public abstract class LargeVolumeTestBase extends EmbeddedSolrServerTestBase {
     final String name;
 
     public DocThread(String name) {
-      client = getSolrClient();
+      client = solrTestRule.getSolrClient();
       this.name = name;
     }
 

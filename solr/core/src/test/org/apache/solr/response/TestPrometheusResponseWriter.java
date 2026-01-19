@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -25,13 +26,13 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -48,11 +49,11 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
     solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
-    var cc = solrTestRule.getCoreContainer();
-    cc.waitForLoadingCoresToFinish(30000);
 
     // Populate request metrics on both cores
     ModifiableSolrParams queryParams = new ModifiableSolrParams();
@@ -88,7 +89,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
                         seenTypeInfo.add(line));
                     return false;
                   })
-              .collect(Collectors.toList());
+              .toList();
       filteredResponse.forEach(
           (actualMetric) -> {
             String actualValue;

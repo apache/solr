@@ -13,7 +13,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */ 
+ */
 
 // See LUCENE-9471. We redirect temporary location for gradle
 // so that it doesn't pollute user's tmp. Wipe it during a clean though.
@@ -33,7 +33,7 @@ allprojects {
 
     task wipeTaskTemp() {
       doLast {
-        temps.each { temp ->
+        temps.each {temp ->
           project.delete fileTree(temp).matching {
             include "jar_extract*"
           }

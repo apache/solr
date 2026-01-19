@@ -48,7 +48,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -77,11 +76,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   public static void createCluster() throws Exception {
     docsSeed = random().nextLong();
     System.setProperty("solr.security.allow.paths", "*");
-  }
-
-  @AfterClass
-  public static void afterClass() throws Exception {
-    System.clearProperty("solr.security.allow.paths");
   }
 
   /**
@@ -115,7 +109,6 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
     replFactor = TestUtil.nextInt(random(), 1, 2);
     numTlogReplicas = TestUtil.nextInt(random(), 0, 1);
     numPullReplicas = TestUtil.nextInt(random(), 0, 1);
-    int backupReplFactor = replFactor + numPullReplicas + numTlogReplicas;
 
     CollectionAdminRequest.Create create =
         isImplicit
