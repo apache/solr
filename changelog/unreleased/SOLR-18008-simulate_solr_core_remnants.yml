@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Enhance existing setting for removing unknown cores at startup to also apply when creating collections and adding replicas and remnant core files already exist.
+title: Add solr.cloud.delete.unknown.cores.enabled setting for removing unknown but existing core data when a core is created in SolrCloud mode.
 type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
