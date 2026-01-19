@@ -306,7 +306,7 @@ public class TestPackages extends SolrCloudTestCase {
     ur.add(new SolrInputDocument("id", "1"));
     ur.setParam("processor", "myurp");
     ur.process(cluster.getSolrClient(), COLLECTION_NAME);
-    cluster.getSolrClient().commit(COLLECTION_NAME, true, true);
+    cluster.getSolrClient().commit(COLLECTION_NAME);
 
     QueryResponse result = cluster.getSolrClient().query(COLLECTION_NAME, new SolrQuery("id:1"));
 
@@ -397,7 +397,7 @@ public class TestPackages extends SolrCloudTestCase {
     ur.add(new SolrInputDocument("id", "2"));
     ur.setParam("processor", "myurp");
     ur.process(cluster.getSolrClient(), COLLECTION_NAME);
-    cluster.getSolrClient().commit(COLLECTION_NAME, true, true);
+    cluster.getSolrClient().commit(COLLECTION_NAME);
 
     result = cluster.getSolrClient().query(COLLECTION_NAME, new SolrQuery("id:2"));
 

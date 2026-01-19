@@ -70,7 +70,7 @@ public class GetByIdTest extends SolrTestCase {
                     "term2_s",
                     "id separator escape test document 2")));
 
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
   }
 
   @Test

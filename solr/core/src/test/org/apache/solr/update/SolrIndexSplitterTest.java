@@ -295,8 +295,8 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       final EmbeddedSolrServer server1 = new EmbeddedSolrServer(h.getCoreContainer(), "split1");
       @SuppressWarnings("resource")
       final EmbeddedSolrServer server2 = new EmbeddedSolrServer(h.getCoreContainer(), "split2");
-      server1.commit(true, true);
-      server2.commit(true, true);
+      server1.commit();
+      server2.commit();
       assertEquals(
           "id:dorothy should be present in split index1",
           1,
@@ -555,8 +555,8 @@ public class SolrIndexSplitterTest extends SolrTestCaseJ4 {
       final EmbeddedSolrServer server1 = new EmbeddedSolrServer(h.getCoreContainer(), "split1");
       @SuppressWarnings("resource")
       final EmbeddedSolrServer server2 = new EmbeddedSolrServer(h.getCoreContainer(), "split2");
-      server1.commit(true, true);
-      server2.commit(true, true);
+      server1.commit();
+      server2.commit();
       assertEquals(
           "should be  2 docs in index2",
           2,

@@ -601,7 +601,6 @@ public abstract class SolrClient implements Serializable, Closeable {
   public UpdateResponse optimize() throws SolrServerException, IOException {
     return optimize(null, CommitOptions.optimize(1).waitSearcher(true));
   }
-  ;
 
   /**
    * Performs an explicit optimize, configured using {@link CommitOptions} settings. *

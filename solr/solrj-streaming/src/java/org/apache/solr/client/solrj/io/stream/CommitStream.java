@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -298,7 +299,9 @@ public class CommitStream extends TupleStream implements Expressible {
   private void sendCommit() throws IOException {
 
     try {
-      clientCache.getCloudSolrClient(zkHost).commit(collection, waitSearcher, softCommit);
+      clientCache
+          .getCloudSolrClient(zkHost)
+          .commit(collection, CommitOptions.commit(softCommit).waitSearcher(waitSearcher));
     } catch (SolrServerException | IOException e) {
       log.warn(
           String.format(

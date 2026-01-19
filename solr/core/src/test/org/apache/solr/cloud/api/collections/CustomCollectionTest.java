@@ -92,7 +92,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
             .getNumFound());
 
     cluster.getSolrClient().deleteByQuery(collection, "*:*");
-    cluster.getSolrClient().commit(collection, true, true);
+    cluster.getSolrClient().commit(collection);
     assertEquals(
         0,
         cluster.getSolrClient().query(collection, new SolrQuery("*:*")).getResults().getNumFound());
