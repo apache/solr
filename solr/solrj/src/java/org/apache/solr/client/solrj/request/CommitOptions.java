@@ -122,6 +122,19 @@ public class CommitOptions {
   // Convenience factory methods
 
   /**
+   * Creates CommitOptions with type based on property.
+   *
+   * @return CommitOptions configured for soft commit
+   */
+  public static CommitOptions commit(boolean softCommit) {
+    if (softCommit) {
+      return softCommit();
+    } else {
+      return hardCommit();
+    }
+  }
+
+  /**
    * Creates CommitOptions for a standard hard commit.
    *
    * @return CommitOptions with default settings for hard commit
