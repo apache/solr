@@ -566,7 +566,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse commit(boolean waitFlush, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
-    return commit(null, CommitOptions.commit(softCommit).waitSearcher(true));
+    return commit(null, CommitOptions.commit(softCommit).waitSearcher(waitSearcher));
   }
 
   /**
@@ -603,7 +603,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
-   * Performs an explicit optimize, configured using {@link CommitOptions} settings. *
+   * Performs an explicit optimize, configured using {@link CommitOptions} settings.
    *
    * <p>Note: In most cases it is not required to do explicit optimize
    *
