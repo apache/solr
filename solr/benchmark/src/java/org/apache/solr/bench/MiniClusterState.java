@@ -372,8 +372,7 @@ public class MiniClusterState {
         log("committing data ...");
         UpdateRequest commitRequest = new UpdateRequest();
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
-        commitRequest.setAction(
-            UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit());
+        commitRequest.setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit());
         client.requestWithBaseUrl(url, commitRequest, collection);
         log("done committing data");
       } else {
