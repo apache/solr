@@ -36,7 +36,7 @@ public class PrometheusMetrics implements ConsumerMetrics {
   protected Histogram outputFirstAttemptHistogram;
 
   public PrometheusMetrics() {
-    register(new PrometheusRegistry());
+    register(PrometheusRegistry.defaultRegistry);
   }
 
   protected void register(PrometheusRegistry registry) {
@@ -116,7 +116,7 @@ public class PrometheusMetrics implements ConsumerMetrics {
 
   @Override
   public void incrementOutputCounter(String type, String result, int delta) {
-    input.labelValues(type, result).inc(delta);
+    output.labelValues(type, result).inc(delta);
   }
 
   @Override

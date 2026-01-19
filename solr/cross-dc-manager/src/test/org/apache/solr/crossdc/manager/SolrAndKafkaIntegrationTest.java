@@ -22,9 +22,11 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -32,6 +34,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -40,15 +43,20 @@ import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
@@ -101,7 +109,6 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     uceh = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(
         (t, e) -> log.error("Uncaught exception in thread {}", t, e));
-    System.setProperty(PORT, "-1");
     consumer = new Consumer();
     Properties config = new Properties();
 
@@ -330,6 +337,39 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
     // Check if these documents are correctly reflected in the second cluster
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 5000);
+  }
+
+  @Test
+  @SuppressWarnings({"unchecked"})
+  public void testMetrics() throws Exception {
+    CloudSolrClient client = solrCluster1.getSolrClient();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField("id", String.valueOf(new Date().getTime()));
+    doc.addField("text", "some test");
+
+    client.add(COLLECTION, doc);
+
+    client.commit(COLLECTION);
+
+    System.out.println("Sent producer record");
+
+    assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 1);
+
+    String baseUrl = "http://localhost:" + KafkaCrossDcConf.DEFAULT_PORT;
+    HttpJettySolrClient httpJettySolrClient =
+        new HttpJettySolrClient.Builder(baseUrl).useHttp1_1(true).build();
+    try {
+      GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/metrics");
+      req.setResponseParser(new InputStreamResponseParser("test/plain"));
+      NamedList<Object> rsp = httpJettySolrClient.request(req);
+      String content =
+          IOUtils.toString(
+              (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
+      assertTrue(content.contains("consumer_output_total{result=\"handled\",type=\"UPDATE\"} 1.0"));
+    } finally {
+      httpJettySolrClient.close();
+      client.close();
+    }
   }
 
   private void assertCluster2EventuallyHasDocs(String collection, String query, int expectedNumDocs)

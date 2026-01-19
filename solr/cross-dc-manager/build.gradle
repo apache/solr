@@ -51,6 +51,7 @@ dependencies {
   testImplementation project(':solr:solrj-jetty')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.carrotsearch.randomizedtesting.runner
+  testImplementation libs.commonsio.commonsio
   testImplementation libs.junit.junit
   // The explicit dependency on bytebuddy is required for Java 25 support
   // Once Mockito upgrades its dependency on ByteBuddy to 1.16.1, we should
