@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrHttpConstants;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.URLUtil;
@@ -131,15 +130,18 @@ public class SolrClientCache implements Closeable {
     return client;
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   protected HttpSolrClient.BuilderBase<?, ?> newHttpSolrClientBuilder(
       String url, HttpSolrClient httpSolrClient) {
     final var builder =
         (url == null || URLUtil.isBaseUrl(url)) // URL may be null here and set by caller
-            ? new HttpJettySolrClient.Builder(url)
-            : new HttpJettySolrClient.Builder(URLUtil.extractBaseUrl(url))
+            ? HttpSolrClient.builder(url)
+            : HttpSolrClient.builder(URLUtil.extractBaseUrl(url))
                 .withDefaultCollection(URLUtil.extractCoreFromCoreUrl(url));
     if (httpSolrClient != null) {
-      builder.withHttpClient((HttpJettySolrClient) httpSolrClient); // TODO support JDK
+      // this generics hack works around the fact that we can't guarantee that the new client and
+      // the existing passed-in client are compatible  Oh well; tough luck, best-effort.
+      ((HttpSolrClient.BuilderBase) builder).withHttpClient(httpSolrClient);
       // cannot set connection timeout
     } else {
       builder.withConnectionTimeout(minConnTimeout, TimeUnit.MILLISECONDS);
