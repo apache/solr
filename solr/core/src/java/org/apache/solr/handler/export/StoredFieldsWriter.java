@@ -120,27 +120,28 @@ class StoredFieldsWriter extends FieldWriter {
     }
 
     private <T> void addField(String fieldName, T value) throws IOException {
+      if (fieldName.equals(lastFieldName)) {
+        // assume adding another value to a multi-value field
+        multiValue.add(value);
+        return;
+      }
+      // new/different field...
+      flush(); // completes the previous field if there's something to do
+      fieldsVisited++;
+      lastFieldName = fieldName;
+
       if (fields.get(fieldName).multiValued()) {
-        if (fieldName.equals(lastFieldName)) {
-          multiValue.add(value);
-        } else {
-          if (multiValue != null) {
-            out.put(lastFieldName, multiValue);
-          }
-          multiValue = new ArrayList<>();
-          lastFieldName = fieldName;
-          multiValue.add(value);
-          fieldsVisited++;
-        }
+        multiValue = new ArrayList<>();
+        multiValue.add(value);
       } else {
         out.put(fieldName, value);
-        fieldsVisited++;
       }
     }
 
     private int flush() throws IOException {
-      if (lastFieldName != null && multiValue != null && !multiValue.isEmpty()) {
+      if (multiValue != null) {
         out.put(lastFieldName, multiValue);
+        multiValue = null;
       }
       return fieldsVisited;
     }
