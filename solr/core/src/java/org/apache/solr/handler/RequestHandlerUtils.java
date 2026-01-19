@@ -47,7 +47,7 @@ public class RequestHandlerUtils {
 
   /**
    * Check the request parameters and decide if it should commit or optimize. If it does, it will
-   * check other related parameters such as "waitFlush" and "waitSearcher"
+   * check other related parameters such as "waitSearcher".
    */
   public static boolean handleCommit(
       SolrQueryRequest req, UpdateRequestProcessor processor, SolrParams params, boolean force)
