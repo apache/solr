@@ -283,18 +283,16 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     return segmentsAfter.iterator().next();
   }
 
-  private Set<String> listSegmentNames(SolrCore core) {
-    RefCounted<org.apache.solr.search.SolrIndexSearcher> searcherRef = core.getSearcher();
-    try {
-      final Set<String> segmentNames = new HashSet<>();
-      for (LeafReaderContext ctx : searcherRef.get().getTopReaderContext().leaves()) {
-        SegmentReader segmentReader = (SegmentReader) FilterLeafReader.unwrap(ctx.reader());
-        segmentNames.add(segmentReader.getSegmentName());
-      }
-      return segmentNames;
-    } finally {
-      searcherRef.decref();
-    }
+  private Set<String> listSegmentNames(SolrCore core) throws Exception {
+    return core.withSearcher(
+        searcher -> {
+          final Set<String> segmentNames = new HashSet<>();
+          for (LeafReaderContext ctx : searcher.getTopReaderContext().leaves()) {
+            SegmentReader segmentReader = (SegmentReader) FilterLeafReader.unwrap(ctx.reader());
+            segmentNames.add(segmentReader.getSegmentName());
+          }
+          return segmentNames;
+        });
   }
 
   private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion)
