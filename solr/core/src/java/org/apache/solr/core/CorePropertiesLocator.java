@@ -244,7 +244,7 @@ public class CorePropertiesLocator implements CoresLocator {
   }
 
   protected void checkForExistingCore(CoreDescriptor cd) {
-    if (Files.exists(cd.getInstanceDir())) {
+    if (cd.getCloudDescriptor() != null && Files.exists(cd.getInstanceDir())) {
       final boolean deleteUnknownCores =
           EnvUtils.getPropertyAsBool("solr.cloud.delete.unknown.cores.enabled", false);
       if (deleteUnknownCores) {
