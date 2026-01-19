@@ -140,8 +140,8 @@ public class CommitOptions {
   }
 
   /**
-   * Creates CommitOptions for optimization with default settings.
-   * Optimizes down to 1 segment and expunges deletes.
+   * Creates CommitOptions for optimization with default settings. Optimizes down to 1 segment and
+   * expunges deletes.
    *
    * @return CommitOptions suitable for optimize operations
    */
