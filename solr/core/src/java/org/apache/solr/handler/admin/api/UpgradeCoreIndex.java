@@ -369,13 +369,12 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
           if (liveDocs != null && !liveDocs.get(luceneDocId)) {
             continue;
           }
-
           Document doc = storedFields.document(luceneDocId);
           SolrInputDocument solrDoc = toSolrInputDocument(doc, indexSchema);
 
           docFetcher.decorateDocValueFields(
               solrDoc, leafReaderContext.docBase + luceneDocId, nonStoredDVFields, dvICache);
-          solrDoc.removeField("_version_");
+
           AddUpdateCommand currDocCmd = new AddUpdateCommand(solrRequest);
           currDocCmd.solrDoc = solrDoc;
           processor.processAdd(currDocCmd);
