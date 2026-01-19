@@ -44,7 +44,11 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
    * @param builder a {@link CloudSolrClient.Builder} with the options used to create the client.
    */
   protected CloudHttp2SolrClient(Builder builder) {
-    super(builder.shardLeadersOnly, builder.parallelUpdates, builder.directUpdatesToLeadersOnly);
+    super(
+        builder.shardLeadersOnly,
+        builder.parallelUpdates,
+        builder.directUpdatesToLeadersOnly,
+        builder.parallelCacheRefreshesLocks);
     this.clientIsInternal = builder.httpClient == null;
     try {
       this.myClient = builder.createOrGetHttpClient();
@@ -65,10 +69,6 @@ public class CloudHttp2SolrClient extends CloudSolrClient {
 
     this.collectionStateCache.timeToLiveMs =
         TimeUnit.MILLISECONDS.convert(builder.timeToLiveSeconds, TimeUnit.SECONDS);
-
-    //  If caches are expired then they are refreshed after acquiring a lock. Set the number of
-    // locks.
-    this.locks = objectList(builder.parallelCacheRefreshesLocks);
   }
 
   private ClusterStateProvider createClusterStateProvider(Builder builder) {

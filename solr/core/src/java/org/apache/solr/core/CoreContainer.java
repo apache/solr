@@ -434,6 +434,7 @@ public class CoreContainer {
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     allowPathBuilder.addPath(cfg.getSolrHome());
     allowPathBuilder.addPath(cfg.getCoreRootDirectory());
+    allowPathBuilder.addPath(cfg.getConfigSetBaseDirectory());
     if (cfg.getSolrDataHome() != null) {
       allowPathBuilder.addPath(cfg.getSolrDataHome());
     }
@@ -1484,6 +1485,10 @@ public class CoreContainer {
         log.warn(msg);
         throw new SolrException(ErrorCode.CONFLICT, msg);
       }
+
+      // Validate 'instancePath' prior to instantiating CoreDescriptor, as CD construction attempts
+      // to read properties from 'instancePath'
+      assertPathAllowed(instancePath);
       CoreDescriptor cd =
           new CoreDescriptor(
               coreName, instancePath, parameters, getContainerProperties(), getZkController());
@@ -1498,7 +1503,6 @@ public class CoreContainer {
       }
 
       // Validate paths are relative to known locations to avoid path traversal
-      assertPathAllowed(cd.getInstanceDir());
       assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
@@ -1569,6 +1573,8 @@ public class CoreContainer {
       }
     }
   }
+
+  public static final String ALLOW_PATHS_SYSPROP = "solr.security.allow.paths";
 
   /**
    * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one

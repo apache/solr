@@ -32,9 +32,6 @@ public class DateFieldTest extends SolrTestCaseJ4 {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     SolrConfig config =
         new SolrConfig(testInstanceDir, testConfHome.resolve("solrconfig.xml").toString());
     IndexSchema schema =

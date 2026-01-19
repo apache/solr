@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
@@ -31,7 +30,6 @@ import java.util.Set;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
@@ -60,7 +58,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String extCollectionName = message.getStr(COLLECTION_PROP);
     boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
@@ -71,7 +69,6 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
       collectionName = extCollectionName;
     }
     String commitName = message.getStr(CoreAdminParams.COMMIT_NAME);
-    String asyncId = message.getStr(ASYNC);
     NamedList<Object> shardRequestResults = new NamedList<>();
     ShardHandler shardHandler = ccc.newShardHandler();
     SolrZkClient zkClient = ccc.getZkStateReader().getZkClient();
@@ -101,7 +98,7 @@ public class DeleteSnapshotCmd implements CollApiCmds.CollectionApiCommand {
     }
 
     final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     log.info(
         "Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
     for (Slice slice :

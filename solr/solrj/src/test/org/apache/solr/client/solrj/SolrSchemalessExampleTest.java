@@ -42,6 +42,11 @@ import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
 
+  protected HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
+  }
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path tempSolrHome = createTempDir();
@@ -56,22 +61,13 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
-    OutputStreamWriter writer = null;
-    try {
-      writer =
-          new OutputStreamWriter(
-              PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
-              StandardCharsets.UTF_8);
+    try (OutputStreamWriter writer =
+        new OutputStreamWriter(
+            PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
+            StandardCharsets.UTF_8)) {
       props.store(writer, null);
-    } finally {
-      if (writer != null) {
-        try {
-          writer.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
-    createAndStartJetty(tempSolrHome);
+    solrTestRule.startSolr(tempSolrHome);
   }
 
   @Test

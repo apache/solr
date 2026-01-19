@@ -82,12 +82,11 @@ public class TestLanguageModelBase extends RestTestBase {
       restTestHarness.close();
       restTestHarness = null;
     }
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (null != tmpSolrHome) {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 
   public static void loadModel(String fileName, String status) throws Exception {

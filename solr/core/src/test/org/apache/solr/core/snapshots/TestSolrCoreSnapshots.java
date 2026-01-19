@@ -49,7 +49,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaData;
 import org.apache.solr.handler.BackupRestoreUtils;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,13 +74,6 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
     docsSeed = random().nextLong();
-  }
-
-  @AfterClass
-  public static void teardownClass() {
-    System.clearProperty("test.build.data");
-    System.clearProperty("test.cache.data");
-    System.clearProperty("solr.security.allow.paths");
   }
 
   @Test

@@ -27,7 +27,6 @@ import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,12 +74,6 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
             PERSIST_FALSE);
 
     h.getCore().setLatestSchema(schema);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("documentCache.enabled");
-    System.clearProperty("enableLazyFieldLoading");
   }
 
   @Test

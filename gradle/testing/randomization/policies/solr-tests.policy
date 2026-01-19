@@ -32,9 +32,6 @@ grant {
   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
 
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
-  // DirectoryFactoryTest messes with these (wtf?)
-  permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
-  permission java.io.FilePermission "/path/to/myinst/conf/solrcore.properties", "read";
   // TestConfigSets messes with these (wtf?)
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
 
@@ -199,6 +196,14 @@ grant {
   permission "java.net.URLPermission" "http://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "https://[::1]:*/solr/-", "HEAD,GET,PUT,POST:*";
   permission "java.net.URLPermission" "socket://[::1]:*", "CONNECT:*";
+
+  // for java.net.http.HttpClient.  See ConcurrentUpdateJdkSolrClientTest
+  permission "java.net.URLPermission" "http://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://127.0.0.1:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://localhost:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "http://[::1]:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
+  permission "java.net.URLPermission" "https://[::1]:*/noOneThere/-", "HEAD,GET,PUT,POST:*";
 
   // Needed by TestCoreDiscovery
   permission java.lang.RuntimePermission "accessUserInformation";

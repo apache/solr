@@ -20,35 +20,42 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.SolrStream;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
+public class TestSQLHandlerNonCloud extends SolrTestCaseJ4 {
+
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private static Path createSolrHome() throws Exception {
-    Path workDir = createTempDir();
-    setupJettyTestHome(workDir, DEFAULT_TEST_COLLECTION_NAME);
+    Path workDir = createTempDir().toRealPath();
+    Path collectionDirectory = workDir.resolve(DEFAULT_TEST_COLLECTION_NAME);
+
+    copyMinConf(collectionDirectory, "name=" + DEFAULT_TEST_COLLECTION_NAME + "\n");
+
     return workDir;
   }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
     Path solrHome = createSolrHome();
-    createAndStartJetty(solrHome);
+    solrTestRule.startSolr(solrHome);
   }
 
   @Test
   public void testSQLHandler() throws Exception {
     String sql = "select id, field_i, str_s from " + DEFAULT_TEST_COLLECTION_NAME + " limit 10";
     SolrParams sParams = params(CommonParams.QT, "/sql", "stmt", sql);
-    String url = getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
+    String url = solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
     IOException ex = expectThrows(IOException.class, () -> getTuples(solrStream));

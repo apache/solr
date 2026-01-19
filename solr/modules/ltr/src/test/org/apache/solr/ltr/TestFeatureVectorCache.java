@@ -45,7 +45,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     loadFeatures("featurevectorcache_features.json");
     loadModels("featurevectorcache_linear_model.json");
 
-    core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME);
+    core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME);
   }
 
   @After

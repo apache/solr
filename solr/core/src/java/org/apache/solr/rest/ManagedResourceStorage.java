@@ -234,7 +234,6 @@ public abstract class ManagedResourceStorage {
 
     protected SolrZkClient zkClient;
     protected String znodeBase;
-    protected boolean retryOnConnLoss = true;
 
     public ZooKeeperStorageIO(SolrZkClient zkClient, String znodeBase) {
       this.zkClient = zkClient;
@@ -246,8 +245,8 @@ public abstract class ManagedResourceStorage {
         throws SolrException {
       // validate connectivity and the configured znode base
       try {
-        if (!zkClient.exists(znodeBase, retryOnConnLoss)) {
-          zkClient.makePath(znodeBase, retryOnConnLoss);
+        if (!zkClient.exists(znodeBase)) {
+          zkClient.makePath(znodeBase);
         }
       } catch (Exception exc) {
         String errMsg =
@@ -264,7 +263,7 @@ public abstract class ManagedResourceStorage {
     public boolean exists(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
       try {
-        return zkClient.exists(znodePath, retryOnConnLoss);
+        return zkClient.exists(znodePath);
       } catch (Exception e) {
         if (e instanceof IOException) {
           throw (IOException) e;
@@ -279,8 +278,8 @@ public abstract class ManagedResourceStorage {
       final String znodePath = getZnodeForResource(storedResourceId);
       byte[] znodeData = null;
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
-          znodeData = zkClient.getData(znodePath, null, null, retryOnConnLoss);
+        if (zkClient.exists(znodePath)) {
+          znodeData = zkClient.getData(znodePath, null, null);
         }
       } catch (Exception e) {
         if (e instanceof IOException) {
@@ -303,18 +302,17 @@ public abstract class ManagedResourceStorage {
     @Override
     public OutputStream openOutputStream(String storedResourceId) throws IOException {
       final String znodePath = getZnodeForResource(storedResourceId);
-      final boolean retryOnConnLoss = this.retryOnConnLoss;
       ByteArrayOutputStream baos =
           new ByteArrayOutputStream() {
             @Override
             public void close() {
               byte[] znodeData = toByteArray();
               try {
-                if (zkClient.exists(znodePath, retryOnConnLoss)) {
-                  zkClient.setData(znodePath, znodeData, retryOnConnLoss);
+                if (zkClient.exists(znodePath)) {
+                  zkClient.setData(znodePath, znodeData);
                   log.info("Wrote {} bytes to existing znode {}", znodeData.length, znodePath);
                 } else {
-                  zkClient.makePath(znodePath, znodeData, retryOnConnLoss);
+                  zkClient.makePath(znodePath, znodeData);
                   log.info("Wrote {} bytes to new znode {}", znodeData.length, znodePath);
                 }
               } catch (Exception e) {
@@ -346,10 +344,10 @@ public abstract class ManagedResourceStorage {
 
       // this might be overkill for a delete operation
       try {
-        if (zkClient.exists(znodePath, retryOnConnLoss)) {
+        if (zkClient.exists(znodePath)) {
           log.debug("Attempting to delete znode {}", znodePath);
-          zkClient.delete(znodePath, -1, retryOnConnLoss);
-          wasDeleted = zkClient.exists(znodePath, retryOnConnLoss);
+          zkClient.delete(znodePath, -1);
+          wasDeleted = zkClient.exists(znodePath);
 
           if (wasDeleted) {
             log.info("Deleted znode {}", znodePath);

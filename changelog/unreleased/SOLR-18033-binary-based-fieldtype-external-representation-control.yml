@@ -1,0 +1,7 @@
+title: Solr response writing now correctly delegates to FieldType implementations to determine how internal binary field values are represented externally
+type: fixed
+authors:
+- name: hossman
+links:
+- name: SOLR-18033
+  url: https://issues.apache.org/jira/browse/SOLR-18033
