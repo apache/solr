@@ -20,15 +20,17 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 
 /**
- * An HTTP servlets which outputs a {@code text/plain} dump of all threads in
- * the VM. Only responds to {@code GET} requests.
- * <p>Copy of the code from <code>https://github.com/dropwizard/metrics/blob/release/5.0.x/metrics-jakarta-servlets/src/main/java/io/dropwizard/metrics5/servlets/ThreadDumpServlet.java</code></p>
+ * An HTTP servlets which outputs a {@code text/plain} dump of all threads in the VM. Only responds
+ * to {@code GET} requests.
+ *
+ * <p>Copy of the code from <code>
+ * https://github.com/dropwizard/metrics/blob/release/5.0.x/metrics-jakarta-servlets/src/main/java/io/dropwizard/metrics5/servlets/ThreadDumpServlet.java
+ * </code>
  */
 public class ThreadDumpServlet extends HttpServlet {
 
@@ -48,8 +50,8 @@ public class ThreadDumpServlet extends HttpServlet {
   }
 
   @Override
-  protected void doGet(HttpServletRequest req,
-                       HttpServletResponse resp) throws ServletException, IOException {
+  protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+      throws ServletException, IOException {
     final boolean includeMonitors = getParam(req.getParameter("monitors"), true);
     final boolean includeSynchronizers = getParam(req.getParameter("synchronizers"), true);
 

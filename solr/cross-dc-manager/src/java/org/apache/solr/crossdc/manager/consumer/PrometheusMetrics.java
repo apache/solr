@@ -41,46 +41,53 @@ public class PrometheusMetrics implements ConsumerMetrics {
 
   protected void register(PrometheusRegistry registry) {
     this.registry = registry;
-    input = Counter.builder()
-        .name("consumer_input_total")
-        .help("Total number of input messages")
-        .labelNames("type", "subtype")
-        .register(registry);
+    input =
+        Counter.builder()
+            .name("consumer_input_total")
+            .help("Total number of input messages")
+            .labelNames("type", "subtype")
+            .register(registry);
 
-    collapsed = Counter.builder()
-        .name("consumer_collapsed_total")
-        .help("Total number of collapsed messages")
-        .register(registry);
+    collapsed =
+        Counter.builder()
+            .name("consumer_collapsed_total")
+            .help("Total number of collapsed messages")
+            .register(registry);
 
-    output = Counter.builder()
-        .name("consumer_output_total")
-        .help("Total number of output requests")
-        .labelNames("type", "result")
-        .register(registry);
+    output =
+        Counter.builder()
+            .name("consumer_output_total")
+            .help("Total number of output requests")
+            .labelNames("type", "result")
+            .register(registry);
 
-    outputBatchSizeHistogram = Histogram.builder()
-        .name("consumer_output_batch_size_histogram")
-        .help("Histogram of output batch sizes")
-        .labelNames("type", "subtype")
-        .register(registry);
+    outputBatchSizeHistogram =
+        Histogram.builder()
+            .name("consumer_output_batch_size_histogram")
+            .help("Histogram of output batch sizes")
+            .labelNames("type", "subtype")
+            .register(registry);
 
-    outputBackoffHistogram = Histogram.builder()
-        .name("consumer_output_backoff_histogram")
-        .help("Histogram of output backoff sleep times")
-        .labelNames("type")
-        .register(registry);
+    outputBackoffHistogram =
+        Histogram.builder()
+            .name("consumer_output_backoff_histogram")
+            .help("Histogram of output backoff sleep times")
+            .labelNames("type")
+            .register(registry);
 
-    outputTimeHistogram = Histogram.builder()
-        .name("consumer_output_time_histogram")
-        .help("Histogram of output request times")
-        .labelNames("type")
-        .register(registry);
+    outputTimeHistogram =
+        Histogram.builder()
+            .name("consumer_output_time_histogram")
+            .help("Histogram of output request times")
+            .labelNames("type")
+            .register(registry);
 
-    outputFirstAttemptHistogram = Histogram.builder()
-        .name("consumer_output_first_attempt_histogram")
-        .help("Histogram of first attempt request times")
-        .labelNames("type")
-        .register(registry);
+    outputFirstAttemptHistogram =
+        Histogram.builder()
+            .name("consumer_output_first_attempt_histogram")
+            .help("Histogram of first attempt request times")
+            .labelNames("type")
+            .register(registry);
   }
 
   public PrometheusRegistry getRegistry() {

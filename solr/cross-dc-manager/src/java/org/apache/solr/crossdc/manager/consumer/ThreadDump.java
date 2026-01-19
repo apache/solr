@@ -28,7 +28,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * A convenience class for getting a thread dump.
  *
- * <p>Copy of the code in <code>https://github.com/dropwizard/metrics/blob/release/5.0.x/metrics-jvm/src/main/java/io/dropwizard/metrics5/jvm/ThreadDump.java</code></p>
+ * <p>Copy of the code in <code>
+ * https://github.com/dropwizard/metrics/blob/release/5.0.x/metrics-jvm/src/main/java/io/dropwizard/metrics5/jvm/ThreadDump.java
+ * </code>
  */
 public class ThreadDump {
   private final ThreadMXBean threadMXBean;
@@ -47,40 +49,38 @@ public class ThreadDump {
   }
 
   /**
-   * Dumps all of the threads' current information, optionally including synchronization, to an output stream.
+   * Dumps all of the threads' current information, optionally including synchronization, to an
+   * output stream.
    *
-   * Having control over including synchronization info allows using this method (and its wrappers, i.e.
-   * ThreadDumpServlet) in environments where getting object monitor and/or ownable synchronizer usage is not
-   * supported. It can also speed things up.
+   * <p>Having control over including synchronization info allows using this method (and its
+   * wrappers, i.e. ThreadDumpServlet) in environments where getting object monitor and/or ownable
+   * synchronizer usage is not supported. It can also speed things up.
    *
-   * See {@link ThreadMXBean#dumpAllThreads(boolean, boolean)}
+   * <p>See {@link ThreadMXBean#dumpAllThreads(boolean, boolean)}
    *
    * @param lockedMonitors dump all locked monitors if true
    * @param lockedSynchronizers dump all locked ownable synchronizers if true
    * @param out an output stream
    */
   public void dump(boolean lockedMonitors, boolean lockedSynchronizers, OutputStream out) {
-    final ThreadInfo[] threads = this.threadMXBean.dumpAllThreads(lockedMonitors, lockedSynchronizers);
+    final ThreadInfo[] threads =
+        this.threadMXBean.dumpAllThreads(lockedMonitors, lockedSynchronizers);
     final PrintWriter writer = new PrintWriter(new OutputStreamWriter(out, StandardCharsets.UTF_8));
 
     for (int ti = threads.length - 1; ti >= 0; ti--) {
       final ThreadInfo t = threads[ti];
-      writer.printf("\"%s\" id=%d state=%s",
-          t.getThreadName(),
-          t.getThreadId(),
-          t.getThreadState());
+      writer.printf(
+          "\"%s\" id=%d state=%s", t.getThreadName(), t.getThreadId(), t.getThreadState());
       final LockInfo lock = t.getLockInfo();
       if (lock != null && t.getThreadState() != Thread.State.BLOCKED) {
-        writer.printf("%n    - waiting on <0x%08x> (a %s)",
-            lock.getIdentityHashCode(),
-            lock.getClassName());
-        writer.printf("%n    - locked <0x%08x> (a %s)",
-            lock.getIdentityHashCode(),
-            lock.getClassName());
+        writer.printf(
+            "%n    - waiting on <0x%08x> (a %s)", lock.getIdentityHashCode(), lock.getClassName());
+        writer.printf(
+            "%n    - locked <0x%08x> (a %s)", lock.getIdentityHashCode(), lock.getClassName());
       } else if (lock != null && t.getThreadState() == Thread.State.BLOCKED) {
-        writer.printf("%n    - waiting to lock <0x%08x> (a %s)",
-            lock.getIdentityHashCode(),
-            lock.getClassName());
+        writer.printf(
+            "%n    - waiting to lock <0x%08x> (a %s)",
+            lock.getIdentityHashCode(), lock.getClassName());
       }
 
       if (t.isSuspended()) {
@@ -124,5 +124,4 @@ public class ThreadDump {
     writer.println();
     writer.flush();
   }
-
 }

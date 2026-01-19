@@ -1,6 +1,5 @@
 package org.apache.solr.crossdc.manager.consumer;
 
-import io.prometheus.metrics.core.datapoints.Timer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 

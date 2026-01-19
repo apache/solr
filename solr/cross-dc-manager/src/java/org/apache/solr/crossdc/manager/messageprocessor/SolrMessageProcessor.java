@@ -19,10 +19,7 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-
-import io.prometheus.metrics.core.datapoints.Timer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -38,7 +35,6 @@ import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
 import org.apache.solr.crossdc.common.SolrExceptionUtil;
-import org.apache.solr.crossdc.manager.consumer.Consumer;
 import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,8 +58,10 @@ public class SolrMessageProcessor extends MessageProcessor
 
   private static final String VERSION_FIELD = "_version_";
 
-  public SolrMessageProcessor(ConsumerMetrics metrics,
-      Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
+  public SolrMessageProcessor(
+      ConsumerMetrics metrics,
+      Supplier<CloudSolrClient> clientSupplier,
+      ResubmitBackoffPolicy resubmitBackoffPolicy) {
     super(resubmitBackoffPolicy);
     this.metrics = metrics;
     this.clientSupplier = clientSupplier;

@@ -81,7 +81,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final CrossDcConf.CollapseUpdates collapseUpdates;
   private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
-  protected PrometheusMetrics metrics;
+  protected ConsumerMetrics metrics;
 
   protected SolrClientSupplier solrClientSupplier;
 
@@ -586,7 +586,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     } catch (Exception e) {
       log.warn("Exception closing Solr client on shutdown", e);
     } finally {
-      Util.logMetrics(metrics.getRegistry());
+      if (metrics instanceof PrometheusMetrics) {
+        Util.logMetrics(((PrometheusMetrics) metrics).getRegistry());
+      }
     }
   }
 }
