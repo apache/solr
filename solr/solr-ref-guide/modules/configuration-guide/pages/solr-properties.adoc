@@ -46,7 +46,7 @@ NOTE: Properties marked with "!" indicate inverted meaning between pre Solr 10 a
 
 |solr.cloud.startup.delete.unknown.cores.enabled|solr.deleteUnknownCores|false|Controls whether unknown cores are deleted at startup in SolrCloud mode.
 
-|solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data during core creation in SolrCloud mode.
+|solr.cloud.delete.unknown.cores.enabled| |false|Controls deletion of preexisting core data when a core is created in SolrCloud mode.
 
 |solr.cloud.wait.for.zk.seconds|waitForZk|30|Specifies the number of seconds to wait for ZooKeeper connection in SolrCloud mode.
 
