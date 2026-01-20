@@ -17,40 +17,36 @@
 package org.apache.solr.client.api.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.apache.solr.client.api.util.ReflectWritable;
 
 /** Response from /node/info/system */
 public class NodeSystemInfoResponse extends SolrJerseyResponse {
 
   @JsonProperty public Map<String, NodeSystemInfo> nodesInfo;
-  
+
   public static class NodeSystemInfo {
 
     @JsonProperty public String node;
     @JsonProperty public String mode;
     @JsonProperty public String zkHost;
-  
+
     @JsonProperty("solr_home")
     public String solrHome;
-  
+
     @JsonProperty("core_root")
     public String coreRoot;
-  
+
     @JsonProperty public String environment;
-  
+
     @JsonProperty(value = "environment_label")
     public String environmentLabel;
-  
+
     @JsonProperty(value = "environment_color")
     public String environmentColor;
-  
+
     @JsonProperty public Core core;
     @JsonProperty public Lucene lucene;
     @JsonProperty public JVM jvm;
