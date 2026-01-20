@@ -29,11 +29,10 @@ import org.slf4j.LoggerFactory;
 public abstract class CoreContainerAwareHttpFilter extends HttpFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private CoreContainerProvider containerProvider;
+  private volatile CoreContainerProvider containerProvider;
 
   @Override
   public void init(FilterConfig config) throws ServletException {
-    super.init(config);
     containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
     if (log.isTraceEnabled()) {
       log.trace("{}.init(): {}", this.getClass().getName(), this.getClass().getClassLoader());
@@ -46,14 +45,5 @@ public abstract class CoreContainerAwareHttpFilter extends HttpFilter {
    */
   public CoreContainer getCores() throws UnavailableException {
     return containerProvider.getCoreContainer();
-  }
-
-  // TODO: not fond of having these here, but RateLimiter initialization can be sorted out later
-  RateLimitManager getRateLimitManager() {
-    return containerProvider.getRateLimitManager();
-  }
-
-  void replaceRateLimitManager(RateLimitManager rlm) {
-    containerProvider.setRateLimitManager(rlm);
   }
 }
