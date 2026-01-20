@@ -615,12 +615,26 @@ public class SolrConfigHandler extends RequestHandlerBase
         CommandOperation op, ConfigOverlay overlay, String typ) {
       String name = op.getStr(CommandOperation.ROOT_OBJ);
       if (op.hasError()) return overlay;
+
+      // Check if it exists in the overlay
       if (overlay.getNamedPlugins(typ).containsKey(name)) {
         return overlay.deleteNamedPlugin(name, typ);
-      } else {
-        op.addError(formatString("NO such {0} ''{1}'' ", typ, name));
-        return overlay;
       }
+
+      // Check if it's an implicit handler (for requestHandler type)
+      if (SolrRequestHandler.TYPE.equals(typ)) {
+        List<PluginInfo> implicitHandlers = req.getCore().getImplicitHandlers();
+        for (PluginInfo pluginInfo : implicitHandlers) {
+          if (name.equals(pluginInfo.name)) {
+            // It's an implicit handler, so we can delete it by adding a tombstone marker
+            return overlay.deleteNamedPlugin(name, typ);
+          }
+        }
+      }
+
+      // Not found anywhere
+      op.addError(formatString("NO such {0} ''{1}'' ", typ, name));
+      return overlay;
     }
 
     private ConfigOverlay updateNamedPlugin(
@@ -663,6 +677,11 @@ public class SolrConfigHandler extends RequestHandlerBase
 
     private boolean pluginExists(
         SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
+      // Don't consider deleted plugins as existing
+      if (overlay.isPluginDeleted(info.getCleanTag(), name)) {
+        return false;
+      }
+
       List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
       for (PluginInfo pluginInfo : l) if (name.equals(pluginInfo.name)) return true;
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
