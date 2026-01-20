@@ -20,14 +20,13 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ZK_CONNECT_STRING;
 
+import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
