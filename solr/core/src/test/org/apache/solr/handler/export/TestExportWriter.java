@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -1496,8 +1497,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl",
                     "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
                 "sort", "intdv asc",
@@ -1505,19 +1506,21 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     assertJsonEquals(
         resp,
-        "{\n"
-            + "  \"responseHeader\":{\"status\":0},\n"
-            + "  \"response\":{\n"
-            + "    \"numFound\":1,\n"
-            + "    \"docs\":[{\n"
-            + "        \"id\":\"1\",\n"
-            + "        \"str_s_stored\":\"hello\",\n"
-            + "        \"num_i_stored\":42,\n"
-            + "        \"num_l_stored\":1234567890123,\n"
-            + "        \"num_f_stored\":3.14,\n"
-            + "        \"num_d_stored\":2.71828,\n"
-            + "        \"date_dt_stored\":\"2024-01-15T10:30:00Z\",\n"
-            + "        \"bool_b_stored\":true}]}}");
+        """
+            {
+              "responseHeader":{"status":0},
+              "response":{
+                "numFound":1,
+                "docs":[{
+                    "id":"1",
+                    "str_s_stored":"hello",
+                    "num_i_stored":42,
+                    "num_l_stored":1234567890123,
+                    "num_f_stored":3.14,
+                    "num_d_stored":2.71828,
+                    "date_dt_stored":"2024-01-15T10:30:00Z",
+                    "bool_b_stored":true}]}}
+            """);
   }
 
   @Test
@@ -1533,8 +1536,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl", "id,str_s_stored",
                 "sort", "intdv asc"));
 
@@ -1561,8 +1564,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl", "id,intdv,stringdv,str_s_stored",
                 "sort", "intdv asc"));
 
@@ -1576,21 +1579,23 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl", "intdv,*",
                 "sort", "intdv asc"));
 
     assertJsonEquals(
         resp,
-        "{\n"
-            + "  \"responseHeader\":{\"status\":0},\n"
-            + "  \"response\":{\n"
-            + "    \"numFound\":1,\n"
-            + "    \"docs\":[{\n"
-            + "        \"id\":\"1\",\n"
-            + "        \"intdv\":1,\n"
-            + "        \"stringdv\":\"docvalue_string\"}]}}");
+        """
+            {
+              "responseHeader":{"status":0},
+              "response":{
+                "numFound":1,
+                "docs":[{
+                    "id":"1",
+                    "intdv":1,
+                    "stringdv":"docvalue_string"}]}}
+            """);
   }
 
   @Test
@@ -1610,23 +1615,25 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl", "*",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
     assertJsonEquals(
         resp,
-        "{\n"
-            + "  \"responseHeader\":{\"status\":0},\n"
-            + "  \"response\":{\n"
-            + "    \"numFound\":1,\n"
-            + "    \"docs\":[{\n"
-            + "        \"intdv\":1,\n"
-            + "        \"stringdv\":\"docvalue_string\",\n"
-            + "        \"id\":\"1\",\n"
-            + "        \"str_s_stored\":\"stored_string\"}]}}");
+        """
+            {
+              "responseHeader":{"status":0},
+              "response":{
+                "numFound":1,
+                "docs":[{
+                    "intdv":1,
+                    "stringdv":"docvalue_string",
+                    "id":"1",
+                    "str_s_stored":"stored_string"}]}}
+            """);
   }
 
   @Test
@@ -1649,22 +1656,24 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl", "id,strs_ss_stored,nums_is_stored",
                 "sort", "intdv asc",
                 "includeStoredFields", "true"));
 
     assertJsonEquals(
         resp,
-        "{\n"
-            + "  \"responseHeader\":{\"status\":0},\n"
-            + "  \"response\":{\n"
-            + "    \"numFound\":1,\n"
-            + "    \"docs\":[{\n"
-            + "        \"id\":\"1\",\n"
-            + "        \"strs_ss_stored\":[\"value1\",\"value2\",\"value3\"],\n"
-            + "        \"nums_is_stored\":[10,20,30]}]}}");
+        """
+            {
+              "responseHeader":{"status":0},
+              "response":{
+                "numFound":1,
+                "docs":[{
+                    "id":"1",
+                    "strs_ss_stored":["value1","value2","value3"],
+                    "nums_is_stored":[10,20,30]}]}}
+            """);
   }
 
   @Test
@@ -1699,8 +1708,8 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     String resp =
         h.query(
             req(
-                "q", "*:*",
                 "qt", "/export",
+                "q", "*:*",
                 "fl",
                     "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
                 "sort", "intdv asc",
@@ -1708,27 +1717,59 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     assertJsonEquals(
         resp,
-        "{\n"
-            + "  \"responseHeader\":{\"status\":0},\n"
-            + "  \"response\":{\n"
-            + "    \"numFound\":2,\n"
-            + "    \"docs\":[{\n"
-            + "        \"id\":\"1\",\n"
-            + "        \"str_s_stored\":\"test_string\",\n"
-            + "        \"num_i_stored\":123,\n"
-            + "        \"num_l_stored\":9876543210,\n"
-            + "        \"num_f_stored\":1.5,\n"
-            + "        \"num_d_stored\":2.5,\n"
-            + "        \"date_dt_stored\":\"2025-12-25T00:00:00Z\",\n"
-            + "        \"bool_b_stored\":false},\n"
-            + "      {\n"
-            + "        \"id\":\"2\",\n"
-            + "        \"str_s_stored\":\"another_string\",\n"
-            + "        \"num_i_stored\":456,\n"
-            + "        \"num_l_stored\":1234567890,\n"
-            + "        \"num_f_stored\":2.5,\n"
-            + "        \"num_d_stored\":3.5,\n"
-            + "        \"date_dt_stored\":\"2025-06-15T12:30:00Z\",\n"
-            + "        \"bool_b_stored\":true}]}}");
+        """
+            {
+              "responseHeader":{"status":0},
+              "response":{
+                "numFound":2,
+                "docs":[{
+                    "id":"1",
+                    "str_s_stored":"test_string",
+                    "num_i_stored":123,
+                    "num_l_stored":9876543210,
+                    "num_f_stored":1.5,
+                    "num_d_stored":2.5,
+                    "date_dt_stored":"2025-12-25T00:00:00Z",
+                    "bool_b_stored":false},
+                  {
+                    "id":"2",
+                    "str_s_stored":"another_string",
+                    "num_i_stored":456,
+                    "num_l_stored":1234567890,
+                    "num_f_stored":2.5,
+                    "num_d_stored":3.5,
+                    "date_dt_stored":"2025-06-15T12:30:00Z",
+                    "bool_b_stored":true}]}}
+            """);
+  }
+
+  @Test
+  public void testSortOnSortableTextFieldWithoutDocValues() throws Exception {
+    // Test that sorting on a SortableTextField with stored=true but docValues=false
+    // produces an appropriate error message
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "sortable_stored_nodv", "test value"));
+    assertU(commit());
+
+    // Attempting to sort on a field without DocValues should fail
+    SolrException ex =
+        expectThrows(
+            SolrException.class,
+            () ->
+                h.query(
+                    req(
+                        "qt", "/export",
+                        "q", "*:*",
+                        "fl", "id",
+                        "sort", "sortable_stored_nodv asc")));
+
+    assertTrue(
+        "Error message should mention DocValues requirement",
+        ex.getMessage().contains("DocValues") || ex.getMessage().contains("docValues"));
   }
 }

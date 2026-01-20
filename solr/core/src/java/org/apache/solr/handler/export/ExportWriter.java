@@ -511,13 +511,10 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       boolean canUseDocValues =
           schemaField.hasDocValues()
               // Special handling for SortableTextField: unlike other field types, it requires
-              // useDocValuesAsStored=true to be included via glob patterns in /export. This matches
-              // the
-              // behavior of /select (which requires useDocValuesAsStored=true for all globbed
-              // fields) and
-              // avoids performance issues. The requirement cannot be extended to other field types
-              // in
-              // /export for backward compatibility reasons.
+              // useDocValuesAsStored=true to be included via glob patterns in /export. This
+              // matches the behavior of /select (which requires useDocValuesAsStored=true for
+              // all globbed fields) and avoids performance issues. The requirement cannot be
+              // extended to other field types in /export for backward compatibility reasons.
               && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
       Set<String> requestFieldNames =
           solrReturnFields.getRequestedFieldNames() == null
