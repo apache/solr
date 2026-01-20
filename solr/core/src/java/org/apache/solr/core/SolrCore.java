@@ -3621,7 +3621,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @return an unmodifiable list of PluginInfo objects for request handlers
    * @throws NullPointerException if requestHandlers section is missing
    */
-  private static List<PluginInfo> parseImplicitPlugins(Map<String, ?> implicitPluginsInfo) {
+  static List<PluginInfo> parseImplicitPlugins(Map<String, ?> implicitPluginsInfo) {
     @SuppressWarnings("unchecked")
     Map<String, Map<String, Object>> requestHandlers =
         (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
@@ -3645,11 +3645,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
     private static volatile List<PluginInfo> INSTANCE = null;
 
     static List<PluginInfo> getInstance(SolrCore core) {
-      log.info("\n\nABOUT TO LOAD FIRST PART\n\n");
       if (INSTANCE == null) {
         synchronized (ImplicitHolder.class) {
           if (INSTANCE == null) {
-            System.out.println("\nGOING TO load implicic plugins\n");
             INSTANCE = loadImplicitPlugins(core);
           }
         }
