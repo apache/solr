@@ -1091,7 +1091,8 @@ public class TestSolrConfigHandler extends RestTestBase {
       // We need to look inside the "overlay" key
       Map<?, ?> overlayData = (Map<?, ?>) m.get("overlay");
       if (overlayData == null) {
-        log.info("No overlay key found in response. Keys: {}", m.keySet());
+        var keys = m.keySet();
+        log.info("No overlay key found in response. Keys: {}", keys);
         Thread.sleep(100);
         continue;
       }
