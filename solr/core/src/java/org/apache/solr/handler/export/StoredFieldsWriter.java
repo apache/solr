@@ -36,9 +36,9 @@ import org.apache.solr.schema.SchemaField;
 
 class StoredFieldsWriter extends FieldWriter {
 
-  private final Map<String, SchemaField> schemaFields;
   private static final ThreadLocal<WeakHashMap<IndexReader.CacheKey, StoredFields>>
       STORED_FIELDS_MAP = ThreadLocal.withInitial(WeakHashMap::new);
+  private final Map<String, SchemaField> schemaFields;
 
   public StoredFieldsWriter(Map<String, SchemaField> fieldsToRead) {
     this.schemaFields = fieldsToRead;

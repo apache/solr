@@ -132,7 +132,7 @@
    <!-- Stored-only fields (no DocValues) -->
    <dynamicField name="*_s_stored"    type="string"  indexed="false"  stored="true" docValues="false" multiValued="false"/>
    <dynamicField name="*_ss_stored"   type="string"  indexed="false"  stored="true" docValues="false" multiValued="true"/>
-   <dynamicField name="*_i_stored"    type="pint"    indexed="false"  stored="true" docValues="false" multiValued="false"/>
+   <dynamicField name="*_i_stored"    type="pint"    indexed="true"   stored="true" docValues="false" multiValued="false" uninvertible="true"/>
    <dynamicField name="*_is_stored"   type="pint"    indexed="false"  stored="true" docValues="false" multiValued="true"/>
    <dynamicField name="*_l_stored"    type="plong"   indexed="false"  stored="true" docValues="false" multiValued="false"/>
    <dynamicField name="*_ls_stored"   type="plong"   indexed="false"  stored="true" docValues="false" multiValued="true"/>

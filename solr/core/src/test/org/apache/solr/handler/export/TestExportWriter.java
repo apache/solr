@@ -17,6 +17,7 @@
 package org.apache.solr.handler.export;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.StreamParams;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -1744,32 +1744,30 @@ public class TestExportWriter extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testSortOnSortableTextFieldWithoutDocValues() throws Exception {
-    // Test that sorting on a SortableTextField with stored=true but docValues=false
-    // produces an appropriate error message
+  public void testSortingWithoutDocValues() throws Exception {
+    // Attempting to sort on a field without DocValues should fail
     clearIndex();
 
     assertU(
         adoc(
             "id", "1",
-            "intdv", "1",
-            "sortable_stored_nodv", "test value"));
+            "sorted_i_stored", "0"));
     assertU(commit());
 
-    // Attempting to sort on a field without DocValues should fail
-    SolrException ex =
+    IOException ex =
         expectThrows(
-            SolrException.class,
+            IOException.class,
             () ->
                 h.query(
                     req(
                         "qt", "/export",
                         "q", "*:*",
                         "fl", "id",
-                        "sort", "sortable_stored_nodv asc")));
+                        "sort", "sorted_i_stored asc",
+                        "includeStoredFields", "true")));
 
     assertTrue(
         "Error message should mention DocValues requirement",
-        ex.getMessage().contains("DocValues") || ex.getMessage().contains("docValues"));
+        ex.getMessage().contains("DocValues"));
   }
 }
