@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
 import java.util.Arrays;
-
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
@@ -32,7 +31,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 
 public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema.xml");
@@ -56,17 +55,18 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
       assertEquals(info.get(p), info2.get(p));
     }
   }
-  
+
   public void testGetNodeSystemInfo() {
     SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams()) {};
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
     NodeSystemInfoResponse response = new NodeSystemInfoResponse();
     provider.getNodeSystemInfo(response);
-    
+
     Assert.assertNotNull(response.nodesInfo);
     Assert.assertEquals(1, response.nodesInfo.size());
-    
-    NodeSystemInfoResponse.NodeSystemInfo info = response.nodesInfo.values().stream().findFirst().get();
+
+    NodeSystemInfoResponse.NodeSystemInfo info =
+        response.nodesInfo.values().stream().findFirst().get();
     // these can be validated
     Assert.assertEquals(h.getCoreContainer().getSolrHome().toString(), info.solrHome);
     Assert.assertEquals(h.getCoreContainer().getCoreRootDirectory().toString(), info.coreRoot);

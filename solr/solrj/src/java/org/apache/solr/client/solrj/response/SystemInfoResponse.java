@@ -44,37 +44,39 @@ public class SystemInfoResponse extends SolrResponseBase {
       assert response.equals(getResponse());
       return;
     }
-    
-    NodeSystemInfoResponse fullResp = JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-        getResponse(), NodeSystemInfoResponse.class);
+
+    NodeSystemInfoResponse fullResp =
+        JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+            getResponse(), NodeSystemInfoResponse.class);
     nodesInfo.putAll(fullResp.nodesInfo);
 
-//    if (getResponse().get("node") == null) {
-//      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
-//      for (Entry<String, Object> node : response) {
-//        if (node.getKey().endsWith("_solr")) {
-//          nodesInfo.put(
-//              node.getKey(),
-//              JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-//                  node.getValue(), NodeSystemInfoResponse.NodeSystemInfo.class));
-//        }
-//      }
-//
-//      // If no node was found, that's very likely Solr runs in standalone mode.
-//      // Add a single node info instance with null key (no node name is available).
-//      if (nodesInfo.isEmpty()) {
-//        nodesInfo.put(
-//            null,
-//            JacksonContentWriter.DEFAULT_MAPPER.convertValue(response, NodeSystemInfoResponse.NodeSystemInfo.class));
-//      }
-//
-//    } else {
-//      // single-node response
-//      nodesInfo.put(
-//          response.get("node").toString(),
-//          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-//              getResponse(), NodeSystemInfoResponse.NodeSystemInfo.class));
-//    }
+    //    if (getResponse().get("node") == null) {
+    //      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
+    //      for (Entry<String, Object> node : response) {
+    //        if (node.getKey().endsWith("_solr")) {
+    //          nodesInfo.put(
+    //              node.getKey(),
+    //              JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+    //                  node.getValue(), NodeSystemInfoResponse.NodeSystemInfo.class));
+    //        }
+    //      }
+    //
+    //      // If no node was found, that's very likely Solr runs in standalone mode.
+    //      // Add a single node info instance with null key (no node name is available).
+    //      if (nodesInfo.isEmpty()) {
+    //        nodesInfo.put(
+    //            null,
+    //            JacksonContentWriter.DEFAULT_MAPPER.convertValue(response,
+    // NodeSystemInfoResponse.NodeSystemInfo.class));
+    //      }
+    //
+    //    } else {
+    //      // single-node response
+    //      nodesInfo.put(
+    //          response.get("node").toString(),
+    //          JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+    //              getResponse(), NodeSystemInfoResponse.NodeSystemInfo.class));
+    //    }
   }
 
   /** Get the mode from a single node system info */

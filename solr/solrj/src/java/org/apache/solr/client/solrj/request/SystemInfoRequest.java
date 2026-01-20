@@ -60,7 +60,8 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   public SystemInfoRequest(String path, SolrParams params) {
     super(METHOD.GET, path, SolrRequestType.ADMIN);
     if (!path.endsWith("/system")) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported request path: " + path);
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Unsupported request path: " + path);
     }
     this.params = params;
   }

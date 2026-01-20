@@ -17,10 +17,8 @@
 package org.apache.solr.handler.admin.api;
 
 import java.io.InputStream;
-import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.util.Map;
-
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -40,29 +38,29 @@ import org.junit.Ignore;
 
 /** Test {@link GetNodeSystemInfo}. */
 public class GetNodeSystemInfoTest extends SolrCloudTestCase {
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-minimal.xml", "schema-minimal.xml");
   }
-  
+
   public void testGetNodeInfo() throws Exception {
     SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams()) {};
     SolrQueryResponse resp = new SolrQueryResponse();
-    
+
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
-    
+
     NodeSystemInfoResponse response = getter.getNodeSystemInfo();
     Assert.assertNotNull(response.nodesInfo);
     Assert.assertEquals(1, response.nodesInfo.size());
-    
-    NodeSystemInfoResponse.NodeSystemInfo info = response.nodesInfo.values().stream().findFirst().orElseThrow();
+
+    NodeSystemInfoResponse.NodeSystemInfo info =
+        response.nodesInfo.values().stream().findFirst().orElseThrow();
     Assert.assertTrue(info.coreRoot != null);
     Assert.assertEquals(h.getCoreContainer().getCoreRootDirectory().toString(), info.coreRoot);
     // other validations in NodeSystemInfoProviderTest
   }
-  
-  
+
   @Ignore
   public void testGetAllNodesInfo() throws Exception {
     // SystemInfoRequestTest ?? SolrJ
@@ -72,26 +70,34 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     URL baseUrl = cluster.getJettySolrRunner(0).getBaseURLV2();
     // test
-    HttpGet get = new HttpGet(baseUrl.toString()+ "/node/info/system");
-    try(CloseableHttpClient client = HttpClientBuilder.create().build();
+    HttpGet get = new HttpGet(baseUrl.toString() + "/node/info/system");
+    try (CloseableHttpClient client = HttpClientBuilder.create().build();
         CloseableHttpResponse response = client.execute(get)) {
-      try(InputStream in = response.getEntity().getContent()){
-        NamedList<Object> nl = InputStreamResponseParser.createInputStreamNamedList(response.getStatusLine().getStatusCode(), in);
+      try (InputStream in = response.getEntity().getContent()) {
+        NamedList<Object> nl =
+            InputStreamResponseParser.createInputStreamNamedList(
+                response.getStatusLine().getStatusCode(), in);
       }
     }
-    
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams(Map.of("nodes", new String[] {"all"}))) {};
+
+    SolrQueryRequest req =
+        new SolrQueryRequestBase(
+            h.getCore(), new ModifiableSolrParams(Map.of("nodes", new String[] {"all"}))) {};
     SolrQueryResponse resp = new SolrQueryResponse();
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
-    
+
     NodeSystemInfoResponse response = getter.getNodeSystemInfo();
     Assert.assertNotNull(response.nodesInfo);
     Assert.assertEquals(2, response.nodesInfo.size());
-    
-    response.nodesInfo.entrySet().forEach(e -> {
-      String key = e.getKey();
-      NodeSystemInfoResponse.NodeSystemInfo info = e.getValue();
-      Assert.assertEquals(key, info.node);
-    });
+
+    response
+        .nodesInfo
+        .entrySet()
+        .forEach(
+            e -> {
+              String key = e.getKey();
+              NodeSystemInfoResponse.NodeSystemInfo info = e.getValue();
+              Assert.assertEquals(key, info.node);
+            });
   }
 }

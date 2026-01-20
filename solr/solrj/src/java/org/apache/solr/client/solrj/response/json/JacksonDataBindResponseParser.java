@@ -53,7 +53,9 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
   // TODO it'd be nice if the ResponseParser could receive the mime type so it can parse
   //  accordingly, maybe json, cbor, smile
 
-  /** Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}. */
+  /**
+   * Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}.
+   */
   @Override
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
     // TODO SOLR-17549 for error handling, implying a significant ResponseParser API change
@@ -66,10 +68,10 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
     } else {
       parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
     }
-    
+
     return SimpleOrderedMap.of("response", parsedVal);
   }
-  
+
   /** Parse the Json {@code stream} to the expected Java type. */
   public T processToType(InputStream stream, String encoding) throws IOException {
     // TODO SOLR-17549 for error handling, implying a significant ResponseParser API change
@@ -91,7 +93,7 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
         parsedVal = mapper.convertValue(new InputStreamReader(stream, encoding), typeParam);
       }
     }
-    
+
     return parsedVal;
   }
 }

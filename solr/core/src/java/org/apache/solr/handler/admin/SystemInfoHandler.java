@@ -16,59 +16,21 @@
  */
 package org.apache.solr.handler.admin;
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.PlatformManagedObject;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.nio.file.Path;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-import org.apache.lucene.util.Version;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.NodeConfig;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeSystemInfo;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
-import org.apache.solr.security.AuthorizationPlugin;
-import org.apache.solr.security.PKIAuthenticationPlugin;
-import org.apache.solr.security.RuleBasedAuthorizationPluginBase;
-import org.apache.solr.util.RTimer;
-import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +60,11 @@ public class SystemInfoHandler extends RequestHandlerBase {
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-    
+
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, rsp);
     NodeSystemInfoResponse response = getter.getNodeSystemInfo();
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-    
+
     return;
   }
 
@@ -110,7 +72,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
     CoreContainer coreContainer = req.getCoreContainer();
     return coreContainer == null ? cc : coreContainer;
   }
-  
+
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
   @Override
@@ -127,7 +89,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   public Collection<Api> getApis() {
     return AnnotatedApi.getApis(new NodeSystemInfoAPI(this));
   }
-  
+
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
     return Set.of(GetNodeSystemInfo.class);

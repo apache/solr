@@ -103,33 +103,33 @@ public class NodeSystemInfoProvider {
    * BeanInfo instance for future calls.
    */
   private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
-  
+
   public NodeSystemInfoProvider(SolrQueryRequest request) {
     req = request;
     params = request.getParams();
     cc = request.getCoreContainer();
     initHostname();
   }
-  
+
   public void getNodeSystemInfo(NodeSystemInfoResponse response) {
     Map<String, NodeSystemInfo> nodes = new HashMap<>();
-    NodeSystemInfo info = getNodeInfo();  
+    NodeSystemInfo info = getNodeInfo();
     String key = info.node != null ? info.node : hostname; // should allow null key ?
     nodes.put(key, info);
     response.nodesInfo = nodes;
   }
 
-  private NodeSystemInfoResponse.NodeSystemInfo getNodeInfo() {  
+  private NodeSystemInfoResponse.NodeSystemInfo getNodeInfo() {
     NodeSystemInfo info = new NodeSystemInfo();
 
     SolrCore core = req.getCore();
     if (core != null) info.core = getCoreInfo(core, req.getSchema());
-    
+
     if (cc != null) {
       info.solrHome = cc.getSolrHome().toString();
       info.coreRoot = cc.getCoreRootDirectory().toString();
     }
-    
+
     boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
     info.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
@@ -138,10 +138,10 @@ public class NodeSystemInfoProvider {
     }
 
     info.lucene = getLuceneInfo();
-    
-    NodeConfig nodeConfig =  cc != null ? cc.getNodeConfig() : null;
+
+    NodeConfig nodeConfig = cc != null ? cc.getNodeConfig() : null;
     info.jvm = getJvmInfo(nodeConfig);
-    
+
     info.security = getSecurityInfo(req);
     info.system = getSystemInfo();
     info.gpu = getGpuInfo();
@@ -158,7 +158,7 @@ public class NodeSystemInfoProvider {
         info.environmentColor = env.getColor();
       }
     }
-    
+
     return info;
   }
 
@@ -322,7 +322,7 @@ public class NodeSystemInfoProvider {
       info.username = req.getUserPrincipal().getName();
 
       // Mapped roles for this principal
-      //@SuppressWarnings("resource")
+      // @SuppressWarnings("resource")
       AuthorizationPlugin auth = cc == null ? null : cc.getAuthorizationPlugin();
       if (auth instanceof RuleBasedAuthorizationPluginBase rbap) {
         Set<String> roles = rbap.getUserRoles(req.getUserPrincipal());
@@ -353,8 +353,9 @@ public class NodeSystemInfoProvider {
     String specVersion = p.getSpecificationVersion();
     String implVersion = p.getImplementationVersion();
     // non-null mostly for testing
-    info.solrSpecVersion = specVersion== null ? SolrVersion.LATEST_STRING : specVersion;
-    info.solrImplVersion = implVersion == null ? SolrVersion.LATEST.getPrereleaseVersion()  : implVersion;
+    info.solrSpecVersion = specVersion == null ? SolrVersion.LATEST_STRING : specVersion;
+    info.solrImplVersion =
+        implVersion == null ? SolrVersion.LATEST.getPrereleaseVersion() : implVersion;
 
     info.luceneSpecVersion = Version.LATEST.toString();
     info.luceneImplVersion = Version.getPackageImplementationVersion();
@@ -425,7 +426,8 @@ public class NodeSystemInfoProvider {
     for (String arg : mx.getInputArguments()) {
       if (arg.startsWith("-D")
           && arg.contains("=")
-          && (nodeConfig != null && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('='))))) {
+          && (nodeConfig != null
+              && nodeConfig.isSysPropHidden(arg.substring(2, arg.indexOf('='))))) {
         list.add(
             String.format(
                 Locale.ROOT,
@@ -522,17 +524,17 @@ public class NodeSystemInfoProvider {
     RTimer timer = new RTimer();
     try {
       InetAddress addr = InetAddress.getLocalHost();
-      hostname =  addr.getCanonicalHostName();
+      hostname = addr.getCanonicalHostName();
     } catch (Exception e) {
       log.warn(
           "Unable to resolve canonical hostname for local host, possible DNS misconfiguration. Set the '{}' sysprop to false on startup to prevent future lookups if DNS can not be fixed.",
           REVERSE_DNS_OF_LOCALHOST_SYSPROP,
           e);
       hostname = null;
-      return ;
+      return;
     } finally {
       timer.stop();
-  
+
       if (15000D < timer.getTime()) {
         String readableTime = String.format(Locale.ROOT, "%.3f", (timer.getTime() / 1000));
         log.warn(
