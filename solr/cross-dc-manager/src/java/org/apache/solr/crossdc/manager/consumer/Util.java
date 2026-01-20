@@ -46,7 +46,9 @@ public class Util {
     MetricSnapshots snapshots = registry.scrape();
     try {
       ExpositionFormats.init().getPrometheusTextFormatWriter().write(baos, snapshots);
-      log.info(baos.toString(StandardCharsets.UTF_8));
+      if (log.isInfoEnabled()) {
+        log.info("### Final Consumer metrics:\n{}", baos.toString(StandardCharsets.UTF_8));
+      }
     } catch (IOException e) {
       log.error("Error while logging metrics", e);
     }
