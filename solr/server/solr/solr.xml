@@ -35,6 +35,7 @@
   <str name="allowUrls">${solr.security.allow.urls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
   <int name="indexSearcherExecutorThreads">${solr.searchThreads:0}</int>
+  <str name="implicitPluginsFile">${solr.implicitPluginsFile:}</str>
 
   <solrcloud>
 

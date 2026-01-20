@@ -60,6 +60,9 @@ teardown() {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
 
+  # Pre-check
+  timeout || skip "timeout utility is not available"
+  
   # Set a timeout duration (in seconds)
   TIMEOUT_DURATION=2
 
@@ -106,4 +109,37 @@ teardown() {
   
   # Verify the techproducts configset was uploaded
   config_exists "techproducts"
+}
+
+@test "start with custom implicit plugins" {
+  # Create custom implicit plugins file inline
+  local custom_plugins_file="${SOLR_HOME}/custom-implicit-plugins.json"
+  
+  cat > "${custom_plugins_file}" <<EOF
+  {
+    "requestHandler": {
+      "/custom-select": {
+        "useParams":"_UPDATE",
+        "class": "solr.SearchHandler"
+      }
+    }
+  }
+EOF
+
+  # Start Solr with custom implicit plugins configuration
+  solr start -Dsolr.implicitPluginsFile=custom-implicit-plugins.json
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  
+  
+  # Create a collection to test the custom handlers
+  solr create -c custom_plugins_test
+  
+  # Verify the custom handler is available and default handlers like /update are not
+  run curl -s "http://localhost:${SOLR_PORT}/solr/custom_plugins_test/custom-select"
+  assert_output --partial '"status":0'
+  
+  run curl -s "http://localhost:${SOLR_PORT}/solr/custom_plugins_test/update"
+  assert_output --partial 'Searching for Solr'
+  
+  
 }

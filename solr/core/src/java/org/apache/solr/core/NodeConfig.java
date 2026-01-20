@@ -121,6 +121,8 @@ public class NodeConfig {
 
   private final String defaultZkHost;
 
+  private final String implicitPluginsFile;
+
   private NodeConfig(
       String nodeName,
       Path coreRootDirectory,
@@ -153,6 +155,7 @@ public class NodeConfig {
       PluginInfo tracerConfig,
       PluginInfo[] clusterPlugins,
       String defaultZkHost,
+      String implicitPluginsFile,
       Set<Path> allowPaths,
       List<String> allowUrls,
       boolean hideStackTraces,
@@ -191,6 +194,7 @@ public class NodeConfig {
     this.tracerConfig = tracerConfig;
     this.clusterPlugins = clusterPlugins;
     this.defaultZkHost = defaultZkHost;
+    this.implicitPluginsFile = implicitPluginsFile;
     this.allowPaths = allowPaths;
     this.allowUrls = allowUrls;
     this.hideStackTraces = hideStackTraces;
@@ -370,6 +374,10 @@ public class NodeConfig {
 
   public String getConfigSetsHandlerClass() {
     return configSetsHandlerClass;
+  }
+
+  public String getImplicitPluginsFile() {
+    return implicitPluginsFile;
   }
 
   public boolean hasSchemaCache() {
@@ -599,6 +607,7 @@ public class NodeConfig {
     private PluginInfo tracerConfig;
     private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
+    private String implicitPluginsFile;
     private Set<Path> allowPaths = Collections.emptySet();
     private List<String> allowUrls = Collections.emptyList();
     private boolean hideStackTrace =
@@ -760,6 +769,11 @@ public class NodeConfig {
       return this;
     }
 
+    public NodeConfigBuilder setImplicitPluginsFile(String implicitPluginsFile) {
+      this.implicitPluginsFile = implicitPluginsFile;
+      return this;
+    }
+
     public NodeConfigBuilder setSolrProperties(Properties solrProperties) {
       this.solrProperties = solrProperties;
       return this;
@@ -894,6 +908,7 @@ public class NodeConfig {
           tracerConfig,
           clusterPlugins,
           defaultZkHost,
+          implicitPluginsFile,
           allowPaths,
           allowUrls,
           hideStackTrace,

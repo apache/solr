@@ -38,6 +38,7 @@ The default `solr.xml` file is found in `$SOLR_TIP/server/solr/solr.xml` and loo
   <str name="allowPaths">${solr.security.allow.paths:}</str>
   <str name="allowUrls">${solr.security.allow.urls:}</str>
   <str name="hideStackTrace">${solr.hideStackTrace:false}</str>
+  <str name="implicitPluginsFile">${solr.implicitPluginsFile}</str>
 
   <solrcloud>
 
@@ -338,6 +339,16 @@ or via the `SOLR_HIDDEN_SYS_PROPS` environment variable.
 +
 By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It will also hide any sysProp that contains
 "password" or "secret" in it.
+
+`implicitPluginsFile`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+The path relative to `$SOLR_HOME` for a custom implicit plugins file that lets you control exactly which endpoints are registerd for all cores. 
+By default Solr ships with a `ImplicitPlugins.json` file that describes all the request handlers that every core contains.  
 
 === The <solrcloud> Element
 

@@ -3614,32 +3614,114 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
+  /**
+   * Parses implicit plugin definitions from a JSON map and converts them to PluginInfo objects.
+   *
+   * @param implicitPluginsInfo the parsed JSON map containing plugin definitions
+   * @return an unmodifiable list of PluginInfo objects for request handlers
+   * @throws NullPointerException if requestHandlers section is missing
+   */
+  private static List<PluginInfo> parseImplicitPlugins(Map<String, ?> implicitPluginsInfo) {
+    @SuppressWarnings("unchecked")
+    Map<String, Map<String, Object>> requestHandlers =
+        (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
+
+    if (requestHandlers == null) {
+      throw new NullPointerException("No requestHandler section found in implicit plugins");
+    }
+
+    List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
+    for (Map.Entry<String, Map<String, Object>> entry : requestHandlers.entrySet()) {
+      Map<String, Object> info = entry.getValue();
+      info.put(CommonParams.NAME, entry.getKey());
+      implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+    }
+    return Collections.unmodifiableList(implicits);
+  }
+
   private static final class ImplicitHolder {
     private ImplicitHolder() {}
 
-    private static final List<PluginInfo> INSTANCE;
+    private static volatile List<PluginInfo> INSTANCE = null;
 
-    static {
+    static List<PluginInfo> getInstance(SolrCore core) {
+      log.info("\n\nABOUT TO LOAD FIRST PART\n\n");
+      if (INSTANCE == null) {
+        synchronized (ImplicitHolder.class) {
+          if (INSTANCE == null) {
+            System.out.println("\nGOING TO load implicic plugins\n");
+            INSTANCE = loadImplicitPlugins(core);
+          }
+        }
+      }
+      return INSTANCE;
+    }
+
+    private static List<PluginInfo> loadImplicitPlugins(SolrCore core) {
+      // Check for custom implicit plugins file from solr.xml (global configuration)
+      String customPluginsFile = core.getCoreContainer().getConfig().getImplicitPluginsFile();
+      if (customPluginsFile != null && !customPluginsFile.isEmpty()) {
+        try {
+          // Resolve path similar to solr.xml - support both absolute and relative paths
+          Path customPluginsPath = Path.of(customPluginsFile);
+          if (!customPluginsPath.isAbsolute()) {
+            // Resolve relative paths against SOLR_HOME
+            Path solrHome = core.getCoreContainer().getSolrHome();
+            customPluginsPath = solrHome.resolve(customPluginsFile);
+          }
+
+          if (!Files.exists(customPluginsPath)) {
+            log.warn(
+                "Custom implicit plugins file does not exist: {} (from solr.xml). Falling back to default.",
+                customPluginsPath);
+          } else {
+            if (log.isInfoEnabled()) {
+              log.info(
+                  "Loading custom implicit plugins from {} (configured in solr.xml)",
+                  customPluginsPath);
+            }
+
+            // Load the custom plugins file directly from the filesystem
+            try (InputStream is = Files.newInputStream(customPluginsPath)) {
+              @SuppressWarnings("unchecked")
+              Map<String, ?> implicitPluginsInfo = (Map<String, ?>) Utils.fromJSON(is);
+              List<PluginInfo> customHandlers = parseImplicitPlugins(implicitPluginsInfo);
+
+              if (log.isInfoEnabled()) {
+                log.info(
+                    "Loaded {} custom implicit handlers from {}",
+                    customHandlers.size(),
+                    customPluginsPath);
+              }
+              return customHandlers;
+            }
+          }
+        } catch (NullPointerException e) {
+          log.warn(
+              "No requestHandler section found in custom implicit plugins file: {} (from solr.xml)",
+              customPluginsFile);
+        } catch (Exception e) {
+          log.warn(
+              "Failed to load custom implicit plugins file: {} (from solr.xml). Falling back to default.",
+              customPluginsFile,
+              e);
+        }
+      }
+
+      // Fall back to default classpath resource
+      if (log.isInfoEnabled()) {
+        log.info("Loading default implicit plugins from classpath ImplicitPlugins.json");
+      }
       @SuppressWarnings("unchecked")
       Map<String, ?> implicitPluginsInfo =
           (Map<String, ?>)
               Utils.fromJSONResource(SolrCore.class.getClassLoader(), "ImplicitPlugins.json");
-      @SuppressWarnings("unchecked")
-      Map<String, Map<String, Object>> requestHandlers =
-          (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
-
-      List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
-      for (Map.Entry<String, Map<String, Object>> entry : requestHandlers.entrySet()) {
-        Map<String, Object> info = entry.getValue();
-        info.put(CommonParams.NAME, entry.getKey());
-        implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
-      }
-      INSTANCE = Collections.unmodifiableList(implicits);
+      return parseImplicitPlugins(implicitPluginsInfo);
     }
   }
 
   public List<PluginInfo> getImplicitHandlers() {
-    return ImplicitHolder.INSTANCE;
+    return ImplicitHolder.getInstance(this);
   }
 
   public CancellableQueryTracker getCancellableQueryTracker() {
