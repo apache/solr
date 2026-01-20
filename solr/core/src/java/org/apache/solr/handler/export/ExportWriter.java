@@ -109,9 +109,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
   private static final FieldWriter EMPTY_FIELD_WRITER =
       new FieldWriter() {
         @Override
-        public int write(
-            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex) {
-          return 0;
+        public void write(SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out) {
+          // do nothing
         }
       };
 
@@ -486,9 +485,8 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
-    int fieldIndex = 0;
     for (FieldWriter fieldWriter : writers) {
-      fieldIndex += fieldWriter.write(sortDoc, context, ew, fieldIndex);
+      fieldWriter.write(sortDoc, context, ew);
     }
   }
 
@@ -512,6 +510,14 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       // Check if field can use DocValues
       boolean canUseDocValues =
           schemaField.hasDocValues()
+              // Special handling for SortableTextField: unlike other field types, it requires
+              // useDocValuesAsStored=true to be included via glob patterns in /export. This matches
+              // the
+              // behavior of /select (which requires useDocValuesAsStored=true for all globbed
+              // fields) and
+              // avoids performance issues. The requirement cannot be extended to other field types
+              // in
+              // /export for backward compatibility reasons.
               && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
       Set<String> requestFieldNames =
           solrReturnFields.getRequestedFieldNames() == null

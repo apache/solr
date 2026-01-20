@@ -36,23 +36,18 @@ import org.apache.solr.schema.SchemaField;
 
 class StoredFieldsWriter extends FieldWriter {
 
-  private final Map<String, SchemaField> fields;
-  private final ThreadLocal<WeakHashMap<IndexReader.CacheKey, StoredFields>> storedFieldsMap =
-      new ThreadLocal<>();
+  private final Map<String, SchemaField> schemaFields;
+  private static final ThreadLocal<WeakHashMap<IndexReader.CacheKey, StoredFields>>
+      STORED_FIELDS_MAP = ThreadLocal.withInitial(WeakHashMap::new);
 
   public StoredFieldsWriter(Map<String, SchemaField> fieldsToRead) {
-    this.fields = fieldsToRead;
+    this.schemaFields = fieldsToRead;
   }
 
   @Override
-  public int write(
-      SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex)
+  public void write(SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out)
       throws IOException {
-    WeakHashMap<IndexReader.CacheKey, StoredFields> map = storedFieldsMap.get();
-    if (map == null) {
-      map = new WeakHashMap<>();
-      storedFieldsMap.set(map);
-    }
+    WeakHashMap<IndexReader.CacheKey, StoredFields> map = STORED_FIELDS_MAP.get();
     LeafReader reader = readerContext.reader();
     StoredFields storedFields = map.get(reader.getReaderCacheHelper().getKey());
     if (storedFields == null) {
@@ -61,7 +56,7 @@ class StoredFieldsWriter extends FieldWriter {
     }
     ExportVisitor visitor = new ExportVisitor(out);
     storedFields.document(sortDoc.docId, visitor);
-    return visitor.flush();
+    visitor.flush();
   }
 
   class ExportVisitor extends StoredFieldVisitor {
@@ -77,7 +72,7 @@ class StoredFieldsWriter extends FieldWriter {
 
     @Override
     public void stringField(FieldInfo fieldInfo, String value) throws IOException {
-      var schemaField = fields.get(fieldInfo.name);
+      var schemaField = schemaFields.get(fieldInfo.name);
       var fieldType = schemaField == null ? null : schemaField.getType();
       if (fieldType instanceof BoolField) {
         // Convert "T"/"F" stored value to boolean true/false
@@ -94,7 +89,7 @@ class StoredFieldsWriter extends FieldWriter {
 
     @Override
     public void longField(FieldInfo fieldInfo, long value) throws IOException {
-      var schemaField = fields.get(fieldInfo.name);
+      var schemaField = schemaFields.get(fieldInfo.name);
       var fieldType = schemaField == null ? null : schemaField.getType();
       if (fieldType instanceof DateValueFieldType) {
         Date date = new Date(value);
@@ -116,7 +111,7 @@ class StoredFieldsWriter extends FieldWriter {
 
     @Override
     public Status needsField(FieldInfo fieldInfo) {
-      return fields.containsKey(fieldInfo.name) ? Status.YES : Status.NO;
+      return schemaFields.containsKey(fieldInfo.name) ? Status.YES : Status.NO;
     }
 
     private <T> void addField(String fieldName, T value) throws IOException {
@@ -130,7 +125,7 @@ class StoredFieldsWriter extends FieldWriter {
       fieldsVisited++;
       lastFieldName = fieldName;
 
-      if (fields.get(fieldName).multiValued()) {
+      if (schemaFields.get(fieldName).multiValued()) {
         multiValue = new ArrayList<>();
         multiValue.add(value);
       } else {
@@ -138,12 +133,11 @@ class StoredFieldsWriter extends FieldWriter {
       }
     }
 
-    private int flush() throws IOException {
+    private void flush() throws IOException {
       if (multiValue != null) {
         out.put(lastFieldName, multiValue);
         multiValue = null;
       }
-      return fieldsVisited;
     }
   }
 }

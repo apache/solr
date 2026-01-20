@@ -22,7 +22,15 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.solr.common.MapWriter;
 
 abstract class FieldWriter {
-  public abstract int write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out, int fieldIndex)
+  /**
+   * Writes field values from the document to the output.
+   *
+   * @param sortDoc the document being exported
+   * @param readerContext the leaf reader context for accessing field values
+   * @param out the output writer to write field values to
+   * @throws IOException if an I/O error occurs while reading or writing field values
+   */
+  public abstract void write(
+      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out)
       throws IOException;
 }

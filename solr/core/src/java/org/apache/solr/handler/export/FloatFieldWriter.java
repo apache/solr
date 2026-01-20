@@ -34,8 +34,7 @@ class FloatFieldWriter extends FieldWriter {
   }
 
   @Override
-  public int write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
+  public void write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew)
       throws IOException {
     float val;
     SortValue sortValue = sortDoc.getSortValue(this.field);
@@ -43,7 +42,7 @@ class FloatFieldWriter extends FieldWriter {
       if (sortValue.isPresent()) {
         val = (float) sortValue.getCurrentValue();
       } else { // empty-value
-        return 0;
+        return;
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
@@ -53,10 +52,9 @@ class FloatFieldWriter extends FieldWriter {
       if (vals != null) {
         val = Float.intBitsToFloat((int) vals.longValue());
       } else {
-        return 0;
+        return;
       }
     }
     ew.put(this.field, val);
-    return 1;
   }
 }
