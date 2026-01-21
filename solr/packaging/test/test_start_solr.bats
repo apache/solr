@@ -138,8 +138,8 @@ EOF
   run curl -s "http://localhost:${SOLR_PORT}/solr/custom_plugins_test/custom-select"
   assert_output --partial '"status":0'
   
-  run curl -s "http://localhost:${SOLR_PORT}/solr/custom_plugins_test/update"
-  assert_output --partial 'Searching for Solr'
+  run curl -s -o /dev/null -w "%{http_code}" "http://localhost:${SOLR_PORT}/solr/custom_plugins_test/update"
+  assert_output "404"
   
   
 }

@@ -3658,10 +3658,12 @@ public class SolrCore implements SolrInfoBean, Closeable {
     private static List<PluginInfo> loadImplicitPlugins(SolrCore core) {
       // Check for custom implicit plugins file from solr.xml (global configuration)
       String customPluginsFile = core.getCoreContainer().getConfig().getImplicitPluginsFile();
+      
       if (customPluginsFile != null && !customPluginsFile.isEmpty()) {
         try {
           // Resolve path similar to solr.xml - support both absolute and relative paths
           Path customPluginsPath = Path.of(customPluginsFile);
+          core.getCoreContainer().assertPathAllowed(customPluginsPath);
           if (!customPluginsPath.isAbsolute()) {
             // Resolve relative paths against SOLR_HOME
             Path solrHome = core.getCoreContainer().getSolrHome();
