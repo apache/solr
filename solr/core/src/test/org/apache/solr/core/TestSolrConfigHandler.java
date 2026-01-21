@@ -1133,4 +1133,66 @@ public class TestSolrConfigHandler extends RestTestBase {
     payload = "{\n" + "'delete-requesthandler' : '/admin/ping'" + "}";
     runConfigCommand(harness, "/config", payload);
   }
+
+  public void testDeleteDefaultResponseWriter() throws Exception {
+    RestTestHarness harness = restTestHarness;
+    
+    // Verify the default response writer "xml" exists in DEFAULT_RESPONSE_WRITERS
+    // We can't directly test if it works without making a query, but we can verify
+    // the deletion marker is added to the overlay
+    
+    // Delete the default "xml" response writer
+    String payload = "{\n" + "'delete-queryresponsewriter' : 'xml'" + "}";
+    runConfigCommand(harness, "/config", payload);
+    
+    // Verify it's in the deleted list in the overlay
+    boolean success = false;
+    long startTime = System.nanoTime();
+    int maxTimeoutSeconds = 10;
+    while (TimeUnit.SECONDS.convert(System.nanoTime() - startTime, TimeUnit.NANOSECONDS)
+        < maxTimeoutSeconds) {
+      String uri = "/config/overlay";
+      Map<?, ?> m = getRespMap(uri, harness);
+      
+      // The overlay response has structure: {responseHeader: {...}, overlay: {...}}
+      Map<?, ?> overlayData = (Map<?, ?>) m.get("overlay");
+      if (overlayData == null) {
+        Thread.sleep(100);
+        continue;
+      }
+      
+      Object deletedObj = overlayData.get("deleted");
+      
+      if (deletedObj instanceof List) {
+        List<?> deleted = (List<?>) deletedObj;
+        if (deleted.contains("queryResponseWriter:xml")) {
+          success = true;
+          break;
+        }
+      }
+      Thread.sleep(100);
+    }
+    assertTrue("Default response writer should be marked as deleted in overlay", success);
+    
+    // Try to recreate the deleted writer - should succeed since it's now deleted
+    payload = "{\n"
+        + "'create-queryresponsewriter' : { 'name' : 'xml', "
+        + "'class': 'solr.XMLResponseWriter' }\n"
+        + "}";
+    runConfigCommand(harness, "/config", payload);
+    
+    // Verify the writer was recreated in the overlay
+    testForResponseElement(
+        harness,
+        null,
+        "/config/overlay",
+        null,
+        asList("overlay", "queryResponseWriter", "xml", "class"),
+        "solr.XMLResponseWriter",
+        TIMEOUT_S);
+    
+    // Clean up - delete the recreated writer
+    payload = "{\n" + "'delete-queryresponsewriter' : 'xml'" + "}";
+    runConfigCommand(harness, "/config", payload);
+  }
 }

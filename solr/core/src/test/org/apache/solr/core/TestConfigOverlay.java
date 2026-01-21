@@ -133,17 +133,64 @@ public class TestConfigOverlay extends SolrTestCase {
 
   public void testDeleteSamePluginTwice() {
     ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
-
+    
     // Delete a plugin
     overlay = overlay.deleteNamedPlugin("/update/json", "requestHandler");
     assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
     assertEquals(1, overlay.getDeletedPlugins().size());
-
+    
     // Delete the same plugin again
     overlay = overlay.deleteNamedPlugin("/update/json", "requestHandler");
-
+    
     // Should still only have one entry
     assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
     assertEquals(1, overlay.getDeletedPlugins().size());
+  }
+
+  public void testDeleteResponseWriter() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+    
+    // Initially, no writers should be deleted
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "json"));
+    
+    // Delete a response writer
+    overlay = overlay.deleteNamedPlugin("xml", "queryResponseWriter");
+    
+    // Verify the writer is marked as deleted
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    Set<String> deleted = overlay.getDeletedPlugins();
+    assertEquals(1, deleted.size());
+    assertTrue(deleted.contains("queryResponseWriter:xml"));
+    
+    // Delete another writer
+    overlay = overlay.deleteNamedPlugin("csv", "queryResponseWriter");
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "csv"));
+    assertEquals(2, overlay.getDeletedPlugins().size());
+    
+    // Verify both are still deleted
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "csv"));
+  }
+
+  public void testDeleteMixedPluginTypes() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+    
+    // Delete different plugin types
+    overlay = overlay.deleteNamedPlugin("/update", "requestHandler");
+    overlay = overlay.deleteNamedPlugin("json", "queryResponseWriter");
+    overlay = overlay.deleteNamedPlugin("mycomponent", "searchComponent");
+    
+    // Verify all are marked as deleted
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update"));
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "json"));
+    assertTrue(overlay.isPluginDeleted("searchComponent", "mycomponent"));
+    
+    // Verify the count
+    assertEquals(3, overlay.getDeletedPlugins().size());
+    
+    // Verify they don't interfere with each other
+    assertFalse(overlay.isPluginDeleted("requestHandler", "json"));
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "/update"));
   }
 }
