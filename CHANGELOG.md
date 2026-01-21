@@ -10,8 +10,12 @@
 This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
 
 
-[9.10.1] - 2026-01-08
+[9.10.1] - 2026-01-20
 ---------------------
+
+### Changed (1 change)
+
+- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 
 ### Fixed (5 changes)
 
@@ -30,8 +34,8 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Mitigate CVE-2025-54988 by disabling XFA parsing in PDF documents when using SolrCell extraction [SOLR-17888](https://issues.apache.org/jira/browse/SOLR-17888) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 
 
-[9.10.0]
---------
+[9.10.0] - 2025-11-06
+---------------------
 
 ### Added (4 changes)
 
