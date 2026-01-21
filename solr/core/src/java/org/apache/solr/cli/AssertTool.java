@@ -213,22 +213,64 @@ public class AssertTool extends ToolBase {
     message = cli.getOptionValue(MESSAGE_OPTION);
     timeoutMs = cli.getParsedOptionValue(TIMEOUT_OPTION, timeoutMs);
     useExitCode = cli.hasOption(EXIT_CODE_OPTION);
+    final String existsDirectory = cli.getOptionValue(DIRECTORY_EXISTS_OPTION);
+    final String notExistsDirectory = cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION);
 
     int ret = 0;
-    if (cli.hasOption(IS_ROOT_OPTION)) {
-      ret += assertRootUser();
+    if (cli.hasOption(IS_ROOT_OPTION) && !currentUser().equals("root")) {
+      if (useExitCode) {
+        ret += 1;
+      } else {
+        throw new AssertionFailureException(message != null ? message : "Must run as root user");
+      }
     }
-    if (cli.hasOption(IS_NOT_ROOT_OPTION)) {
-      ret += assertNotRootUser();
+    if (cli.hasOption(IS_NOT_ROOT_OPTION) && currentUser().equals("root")) {
+      if (useExitCode) {
+        ret += 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null ? message : "Not allowed to run as root user");
+      }
     }
-    if (cli.hasOption(DIRECTORY_EXISTS_OPTION)) {
-      ret += assertFileExists(cli.getOptionValue(DIRECTORY_EXISTS_OPTION));
+    if (cli.hasOption(DIRECTORY_EXISTS_OPTION) && !Files.exists(Path.of(existsDirectory))) {
+      if (useExitCode) {
+        ret += 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null ? message : "Directory " + existsDirectory + " does not exist.");
+      }
     }
-    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION)) {
-      ret += assertFileNotExists(cli.getOptionValue(DIRECTORY_NOT_EXISTS_OPTION));
+    if (cli.hasOption(DIRECTORY_NOT_EXISTS_OPTION) && Files.exists(Path.of(notExistsDirectory))) {
+      if (useExitCode) {
+        ret += 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null ? message : "Directory " + notExistsDirectory + " should not exist.");
+      }
     }
     if (cli.hasOption(SAME_USER_OPTION)) {
-      ret += sameUser(cli.getOptionValue(SAME_USER_OPTION));
+      if (Files.exists(Path.of(cli.getOptionValue(SAME_USER_OPTION)))) {
+        String userForDir = userForDir(Path.of(cli.getOptionValue(SAME_USER_OPTION)));
+        if (!currentUser().equals(userForDir)) {
+          if (useExitCode) {
+            ret += 1;
+          } else {
+            throw new AssertionFailureException(
+                message != null
+                    ? message
+                    : "Must run as user " + userForDir + ". We are " + currentUser());
+          }
+        }
+      } else {
+        if (useExitCode) {
+          ret += 1;
+        } else {
+          throw new AssertionFailureException(
+              message != null
+                  ? message
+                  : "Directory " + cli.getOptionValue(SAME_USER_OPTION) + " does not exist.");
+        }
+      }
     }
     if (cli.hasOption(IS_RUNNING_ON_OPTION)) {
       ret +=
@@ -265,12 +307,18 @@ public class AssertTool extends ToolBase {
       if (CLIUtils.exceptionIsAuthRelated(se)) {
         throw se;
       }
-      return exitOrException(
-          "Solr is not running on url "
-              + url
-              + " after "
-              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
-              + " seconds");
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null
+                ? message
+                : "Solr is not running on url "
+                    + url
+                    + " after "
+                    + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+                    + " seconds");
+      }
     }
     return 0;
   }
@@ -300,85 +348,77 @@ public class AssertTool extends ToolBase {
         if (CLIUtils.exceptionIsAuthRelated(se)) {
           throw se;
         }
-        return exitOrException(se.getMessage());
+        if (useExitCode) {
+          return 1;
+        } else {
+          throw new AssertionFailureException(message != null ? message : se.getMessage());
+        }
       }
     }
-    return exitOrException(
-        "Solr is still running at "
-            + url
-            + " after "
-            + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
-            + " seconds");
+    if (useExitCode) {
+      return 1;
+    } else {
+      throw new AssertionFailureException(
+          message != null
+              ? message
+              : "Solr is still running at "
+                  + url
+                  + " after "
+                  + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+                  + " seconds");
+    }
   }
 
   public int assertSolrRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
-      return exitOrException(
-          "Solr is not running on url "
-              + url
-              + " after "
-              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
-              + " seconds");
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null
+                ? message
+                : "Solr is not running on url "
+                    + url
+                    + " after "
+                    + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+                    + " seconds");
+      }
     }
 
     if (!runningSolrIsCloud(url, credentials)) {
-      return exitOrException("Solr is not running in cloud mode on " + url);
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null ? message : "Solr is not running in cloud mode on " + url);
+      }
     }
     return 0;
   }
 
   public int assertSolrNotRunningInCloudMode(String url, String credentials) throws Exception {
     if (!isSolrRunningOn(url, credentials)) {
-      return exitOrException(
-          "Solr is not running on url "
-              + url
-              + " after "
-              + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
-              + " seconds");
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null
+                ? message
+                : "Solr is not running on url "
+                    + url
+                    + " after "
+                    + TimeUnit.SECONDS.convert(timeoutMs, TimeUnit.MILLISECONDS)
+                    + " seconds");
+      }
     }
 
     if (runningSolrIsCloud(url, credentials)) {
-      return exitOrException("Solr is not running in standalone mode on " + url);
-    }
-    return 0;
-  }
-
-  public static int sameUser(String directory) throws Exception {
-    if (Files.exists(Path.of(directory))) {
-      String userForDir = userForDir(Path.of(directory));
-      if (!currentUser().equals(userForDir)) {
-        return exitOrException("Must run as user " + userForDir + ". We are " + currentUser());
+      if (useExitCode) {
+        return 1;
+      } else {
+        throw new AssertionFailureException(
+            message != null ? message : "Solr is not running in standalone mode on " + url);
       }
-    } else {
-      return exitOrException("Directory " + directory + " does not exist.");
-    }
-    return 0;
-  }
-
-  public static int assertFileExists(String directory) throws Exception {
-    if (!Files.exists(Path.of(directory))) {
-      return exitOrException("Directory " + directory + " does not exist.");
-    }
-    return 0;
-  }
-
-  public static int assertFileNotExists(String directory) throws Exception {
-    if (Files.exists(Path.of(directory))) {
-      return exitOrException("Directory " + directory + " should not exist.");
-    }
-    return 0;
-  }
-
-  public static int assertRootUser() throws Exception {
-    if (!currentUser().equals("root")) {
-      return exitOrException("Must run as root user");
-    }
-    return 0;
-  }
-
-  public static int assertNotRootUser() throws Exception {
-    if (currentUser().equals("root")) {
-      return exitOrException("Not allowed to run as root user");
     }
     return 0;
   }
@@ -394,14 +434,6 @@ public class AssertTool extends ToolBase {
       return ownerAttributeView.getOwner().getName();
     } catch (IOException e) {
       return "N/A";
-    }
-  }
-
-  private static int exitOrException(String msg) throws AssertionFailureException {
-    if (useExitCode) {
-      return 1;
-    } else {
-      throw new AssertionFailureException(message != null ? message : msg);
     }
   }
 
