@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -173,7 +174,7 @@ public class SyncStrategy {
       String shardId,
       boolean peerSyncOnlyWithActive)
       throws Exception {
-    List<ZkCoreNodeProps> nodes =
+    List<Replica> replicas =
         zkController
             .getZkStateReader()
             .getReplicaProps(
@@ -186,13 +187,13 @@ public class SyncStrategy {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    if (nodes == null) {
+    if (replicas == null) {
       // I have no replicas
       return PeerSync.PeerSyncResult.success();
     }
 
-    List<String> syncWith = new ArrayList<>(nodes.size());
-    for (ZkCoreNodeProps node : nodes) {
+    List<String> syncWith = new ArrayList<>(replicas.size());
+    for (Replica node : replicas) {
       syncWith.add(node.getCoreUrl());
     }
 
@@ -230,11 +231,11 @@ public class SyncStrategy {
 
     // sync everyone else
     // TODO: we should do this in parallel at least
-    List<ZkCoreNodeProps> nodes =
+    List<Replica> replicas =
         zkController
             .getZkStateReader()
             .getReplicaProps(collection, shardId, cd.getCloudDescriptor().getCoreNodeName());
-    if (nodes == null) {
+    if (replicas == null) {
       if (log.isInfoEnabled()) {
         log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));
       }
@@ -242,20 +243,36 @@ public class SyncStrategy {
     }
 
     ZkCoreNodeProps zkLeader = new ZkCoreNodeProps(leaderProps);
-    for (ZkCoreNodeProps node : nodes) {
+    ZkShardTerms shardTerms = zkController.getShardTerms(collection, shardId);
+    for (Replica replica : replicas) {
       try {
+        if (shardTerms.registered(replica.getName())
+            && !shardTerms.canBecomeLeader(replica.getName())) {
+          if (log.isInfoEnabled()) {
+            log.info(
+                "{}: do NOT ask {} to sync, as it is not of the same shardTerm. Issue a recovery instead.",
+                ZkCoreNodeProps.getCoreUrl(leaderProps),
+                replica.getCoreUrl());
+          }
+          RecoveryRequest rr = new RecoveryRequest();
+          rr.leaderProps = leaderProps;
+          rr.baseUrl = replica.getBaseUrl();
+          rr.coreName = replica.getCoreName();
+          recoveryRequests.add(rr);
+          continue;
+        }
         if (log.isInfoEnabled()) {
           log.info(
               "{}: try and ask {} to sync",
               ZkCoreNodeProps.getCoreUrl(leaderProps),
-              node.getCoreUrl());
+              replica.getCoreUrl());
         }
 
         requestSync(
-            node.getBaseUrl(),
-            node.getCoreUrl(),
+            replica.getBaseUrl(),
+            replica.getCoreUrl(),
             zkLeader.getCoreUrl(),
-            node.getCoreName(),
+            replica.getCoreName(),
             nUpdates);
 
       } catch (Exception e) {
