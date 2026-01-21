@@ -9789,8 +9789,3 @@ sample syntax.)
 - Added Solr/Lucene versions to "Info" page (hossman)
 - Explicitly set mime-type of .xsl files in web.xml to application/xslt+xml (hossman)
 
-
-
-
-
-
