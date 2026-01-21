@@ -275,8 +275,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
         {
           final ShardRequestTracker shardRequestTracker =
               CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
-          shardRequestTracker.sendShardRequest(
-              parentShardLeader.getNodeName(), params, shardHandler);
+          shardRequestTracker.sendShardRequest(parentShardLeader, params, shardHandler);
           SimpleOrderedMap<Object> getRangesResults = new SimpleOrderedMap<>();
           String msgOnError = "SPLITSHARD failed to invoke SPLIT.getRanges core admin command";
           shardRequestTracker.processResponses(getRangesResults, shardHandler, true, msgOnError);
@@ -459,7 +458,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           cmd.setOnlyIfLeader(true);
 
           ModifiableSolrParams p = new ModifiableSolrParams(cmd.getParams());
-          shardRequestTracker.sendShardRequest(nodeName, p, shardHandler);
+          shardRequestTracker.sendShardRequest(nodeName, subShardName, p, shardHandler);
         }
 
         String msgOnError = "SPLITSHARD timed out waiting for subshard leaders to come up";
@@ -498,7 +497,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       {
         final ShardRequestTracker shardRequestTracker =
             CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
-        shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
+        shardRequestTracker.sendShardRequest(parentShardLeader, params, shardHandler);
 
         String msgOnError = "SPLITSHARD failed to invoke SPLIT core admin command";
         shardRequestTracker.processResponses(results, shardHandler, true, msgOnError);
@@ -527,7 +526,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
               CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
           params.set(CoreAdminParams.NAME, subShardName);
 
-          shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+          shardRequestTracker.sendShardRequest(nodeName, subShardName, params, shardHandler);
         }
 
         String msgOnError =
