@@ -18,14 +18,15 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import org.apache.lucene.document.FloatField;
 import org.apache.lucene.document.FloatPoint;
+import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -109,27 +110,54 @@ public class FloatPointField extends PointField implements FloatValueFieldType {
   }
 
   @Override
-  protected Query getExactQuery(SchemaField field, String externalVal) {
-    return FloatPoint.newExactQuery(
-        field.getName(), parseFloatFromUser(field.getName(), externalVal));
-  }
-
-  @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
-    assert externalVal.size() > 0;
-    if (!field.indexed()) {
-      return super.getSetQuery(parser, field, externalVal);
-    }
-    float[] values = new float[externalVal.size()];
-    int i = 0;
-    for (String val : externalVal) {
-      values[i] = parseFloatFromUser(field.getName(), val);
-      i++;
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    assert externalVals.size() > 0;
+    Query indexQuery = null;
+    float[] values = null;
+    if (hasIndexedTerms(field)) {
+      indexQuery = super.getSetQuery(parser, field, externalVals);
+    } else if (field.indexed()) {
+      values = new float[externalVals.size()];
+      int i = 0;
+      for (String val : externalVals) {
+        values[i++] = parseFloatFromUser(field.getName(), val);
+      }
+      indexQuery = FloatPoint.newSetQuery(field.getName(), values);
     }
     if (field.hasDocValues()) {
-      return FloatField.newSetQuery(field.getName(), values);
+      long[] points = new long[externalVals.size()];
+      if (values != null) {
+        if (field.multiValued()) {
+          for (int i = 0; i < values.length; i++) {
+            points[i] = NumericUtils.floatToSortableInt(values[i]);
+          }
+        } else {
+          for (int i = 0; i < values.length; i++) {
+            points[i] = Float.floatToIntBits(values[i]);
+          }
+        }
+      } else {
+        int i = 0;
+        if (field.multiValued()) {
+          for (String val : externalVals) {
+            points[i++] = NumericUtils.floatToSortableInt(parseFloatFromUser(field.getName(), val));
+          }
+        } else {
+          for (String val : externalVals) {
+            points[i++] = Float.floatToIntBits(parseFloatFromUser(field.getName(), val));
+          }
+        }
+      }
+      Query docValuesQuery = NumericDocValuesField.newSlowSetQuery(field.getName(), points);
+      if (indexQuery != null) {
+        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
+      } else {
+        return docValuesQuery;
+      }
+    } else if (indexQuery != null) {
+      return indexQuery;
     } else {
-      return FloatPoint.newSetQuery(field.getName(), values);
+      return super.getSetQuery(parser, field, externalVals);
     }
   }
 

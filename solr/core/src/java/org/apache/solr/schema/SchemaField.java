@@ -103,6 +103,10 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return (properties & INDEXED) != 0;
   }
 
+  public boolean enhancedIndex() {
+    return (properties & ENHANCED_INDEX) != 0 && indexed();
+  }
+
   @Override
   public boolean stored() {
     return (properties & STORED) != 0;
