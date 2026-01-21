@@ -347,7 +347,7 @@ By default, Solr will hide all basicAuth, AWS, ZK or SSL secret sysProps. It wil
 |Optional |Default: none
 |===
 +
-The path relative to `$SOLR_HOME` for a custom implicit plugins file that lets you control exactly which endpoints are registerd for all cores. 
+The path to a custom implicit plugins file that lets you control exactly which endpoints are registered for all cores. If the path is relative, it is resolved against `$SOLR_HOME`; absolute paths are also supported.
 By default Solr ships with a `ImplicitPlugins.json` file that describes all the request handlers that every core contains.  
 
 === The <solrcloud> Element
