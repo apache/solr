@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,18 +27,22 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.jetty.LBJettySolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -243,6 +248,39 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testConnectTimeoutExceptionMarksServerAsZombie() throws Exception {
+    try (ConnectTimeoutZombieTestContext ctx = new ConnectTimeoutZombieTestContext()) {
+      LBSolrClient.Req lbReq = ctx.createQueryRequest();
+
+      try {
+        ctx.lbClient.request(lbReq);
+      } catch (Exception e) {
+      }
+
+      ctx.assertZombieState();
+    }
+  }
+
+  public void testConnectTimeoutExceptionMarksServerAsZombieAsyncRequest() throws Exception {
+    try (ConnectTimeoutZombieTestContext ctx = new ConnectTimeoutZombieTestContext()) {
+      LBSolrClient.Req lbReq = ctx.createQueryRequest();
+
+      ctx.lbClient.requestAsync(lbReq).exceptionally(e -> null).get();
+
+      ctx.assertZombieState();
+    }
+  }
+
+  public void testConnectTimeoutExceptionMarksServerAsZombieAsyncUpdate() throws Exception {
+    try (ConnectTimeoutZombieTestContext ctx = new ConnectTimeoutZombieTestContext()) {
+      LBSolrClient.Req lbReq = ctx.createUpdateRequest();
+
+      ctx.lbClient.requestAsync(lbReq).exceptionally(e -> null).get();
+
+      ctx.assertZombieState();
+    }
+  }
+
   private LBSolrClient.Endpoint[] bootstrapBaseSolrEndpoints(int max) {
     LBSolrClient.Endpoint[] solrUrls = new LBSolrClient.Endpoint[max];
     for (int i = 0; i < max; i++) {
@@ -408,6 +446,77 @@ public class LB2SolrClientTest extends SolrTestCaseJ4 {
       } catch (IOException ioe) {
 
       }
+    }
+  }
+
+  private class ConnectTimeoutZombieTestContext implements AutoCloseable {
+    final ServerSocket ss;
+    final Socket connector;
+    final LBSolrClient.Endpoint nonRoutableEndpoint;
+    final LBAsyncSolrClient lbClient;
+    final HttpJdkSolrClient delegateClient;
+
+    ConnectTimeoutZombieTestContext() throws Exception {
+      // Create a server socket with a backlog of 1 and occupy that slot to trigger a connect
+      // timeout.
+      ss = new ServerSocket(0, 1);
+      int port = ss.getLocalPort();
+      connector = new Socket("127.0.0.1", port);
+
+      nonRoutableEndpoint = new LBSolrClient.Endpoint("http://127.0.0.1:" + port + "/solr");
+      delegateClient =
+          new HttpJdkSolrClient.Builder(nonRoutableEndpoint.getBaseUrl())
+              .withConnectionTimeout(1, TimeUnit.MILLISECONDS)
+              .build();
+
+      lbClient =
+          new LBAsyncSolrClient(
+              new LBSolrClient.Builder<>(delegateClient, nonRoutableEndpoint)
+                  .withDefaultCollection(solr[0].getDefaultCollection())) {
+            @Override
+            protected CompletableFuture<NamedList<Object>> requestAsyncWithUrl(
+                SolrClient client, String baseUrl, SolrRequest<?> request)
+                throws SolrServerException, IOException {
+              return ((HttpJdkSolrClient) client).requestAsync(request, null);
+            }
+          };
+    }
+
+    LBSolrClient.Req createQueryRequest() {
+      SolrQuery solrQuery = new SolrQuery("*:*");
+      QueryRequest queryRequest = new QueryRequest(solrQuery);
+
+      List<LBSolrClient.Endpoint> endpoints =
+          List.of(
+              new LBSolrClient.Endpoint(
+                  nonRoutableEndpoint.getBaseUrl(), solr[0].getDefaultCollection()));
+      return new LBSolrClient.Req(queryRequest, endpoints);
+    }
+
+    LBSolrClient.Req createUpdateRequest() {
+      UpdateRequest updateRequest = new UpdateRequest();
+      updateRequest.add(new SolrInputDocument());
+
+      List<LBSolrClient.Endpoint> endpoints =
+          List.of(
+              new LBSolrClient.Endpoint(
+                  nonRoutableEndpoint.getBaseUrl(), solr[0].getDefaultCollection()));
+      return new LBSolrClient.Req(updateRequest, endpoints);
+    }
+
+    void assertZombieState() {
+      assertTrue(
+          "Endpoint should be marked as zombie due to connect timeout",
+          lbClient.zombieServers.containsKey(
+              nonRoutableEndpoint.getBaseUrl() + "/" + solr[0].getDefaultCollection()));
+    }
+
+    @Override
+    public void close() throws IOException {
+      lbClient.close();
+      delegateClient.close();
+      connector.close();
+      ss.close();
     }
   }
 }

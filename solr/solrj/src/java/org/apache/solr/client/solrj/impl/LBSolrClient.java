@@ -23,6 +23,7 @@ import java.lang.ref.WeakReference;
 import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpConnectTimeoutException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -669,7 +670,7 @@ public abstract class LBSolrClient extends SolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
-      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+      } else if (isNonRetryable && isConnectException(rootCause)) {
         ex = (!isZombie) ? makeServerAZombie(baseUrl, e) : e;
       } else {
         throw e;
@@ -679,6 +680,13 @@ public abstract class LBSolrClient extends SolrClient {
     }
 
     return ex;
+  }
+
+  protected boolean isConnectException(Throwable t) {
+    if (t instanceof ConnectException || t instanceof HttpConnectTimeoutException) {
+      return true;
+    }
+    return t != null && t.getClass().getName().endsWith("ConnectTimeoutException");
   }
 
   protected abstract SolrClient getClient(Endpoint endpoint);

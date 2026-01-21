@@ -21,6 +21,8 @@ import java.net.ConnectException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.RemoteSolrException;
@@ -180,6 +182,9 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       boolean isNonRetryable,
       boolean isZombie,
       RetryListener listener) {
+    if (oe instanceof CompletionException) {
+      oe = oe.getCause();
+    }
     try {
       throw (Exception) oe;
     } catch (SolrException e) {
@@ -214,7 +219,13 @@ public abstract class LBAsyncSolrClient extends LBSolrClient {
       if (!isNonRetryable
           && (rootCause instanceof IOException || rootCause instanceof TimeoutException)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
-      } else if (isNonRetryable && rootCause instanceof ConnectException) {
+      } else if (isNonRetryable && isConnectException(rootCause)) {
+        listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
+      } else {
+        listener.onFailure(e, false);
+      }
+    } catch (IOException e) {
+      if (!isNonRetryable || isConnectException(e)) {
         listener.onFailure((!isZombie) ? makeServerAZombie(endpoint, e) : e, true);
       } else {
         listener.onFailure(e, false);
