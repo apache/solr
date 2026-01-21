@@ -86,7 +86,8 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
     Replica leader = shard1.getLeader();
     Replica replica = shard1.getReplicas(r -> !r.isLeader()).getFirst();
     List<Replica> recoveryReplicas =
-        shard1.getReplicas(r -> r.getType().leaderEligible && (r != leader && r != replica));
+        shard1.getReplicas(
+            r -> r.getType().leaderEligible && !(r.equals(leader) || r.equals(replica)));
 
     ZkShardTerms shardTerms =
         jetty.getCoreContainer().getZkController().getShardTerms(COLLECTION, shard);
