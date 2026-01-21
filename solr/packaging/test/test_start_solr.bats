@@ -58,7 +58,7 @@ teardown() {
 
 @test "check stop command doesn't hang" {
   # for start/stop/restart we parse the args separate from picking the command
-  # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
+  # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop command.
 
   # Pre-check
   timeout || skip "timeout utility is not available"
