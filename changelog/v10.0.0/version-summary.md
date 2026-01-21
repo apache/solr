@@ -31,7 +31,7 @@
 - Support indexing primitive float[] values for DenseVectorField via JavaBin [SOLR-17948](https://issues.apache.org/jira/browse/SOLR-17948) (Puneet Ahuja) (Noble Paul)
 - Enable MergeOnFlushMergePolicy in Solr [SOLR-17984](https://issues.apache.org/jira/browse/SOLR-17984) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 
-### Changed (31 changes)
+### Changed (30 changes)
 
 - Removing redundant check if field exists in TextToVectorUpdateProcessorFactory [GITHUB#3666](https://github.com/apache/solr/pull/3666) (Renato Haeberli)
 - Minor refactoring of the TextToVectorQParserPlugin [PR#3651](https://github.com/apache/solr/pull/3651) (Ilaria Petreti)
