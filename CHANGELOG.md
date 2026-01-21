@@ -45,6 +45,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Notify a user if they run healthcheck against standalone Solr that it is a SolrCloud only command. [SOLR-16850](https://issues.apache.org/jira/browse/SOLR-16850) (Eric Pugh)
 - "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. [SOLR-17043](https://issues.apache.org/jira/browse/SOLR-17043) (Jude Muriithi) (Jason Gerlowski)
 - When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. [SOLR-17077](https://issues.apache.org/jira/browse/SOLR-17077) (Pierre Salagnac)
+- Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it. Also makes ConcurrentUpdateBaseSolrClient client independent. [SOLR-17161](https://issues.apache.org/jira/browse/SOLR-17161) (Jan Høydahl) (David Smiley) (Kevin Risden)
 - Switch from Dropwizard to OpenTelemetry. This change provides native Prometheus support on the /admin/metrics API, OTLP support, exemplar support for tracing correlation with OpenMetrics format and native attributes and labels on all metrics. [SOLR-17458](https://issues.apache.org/jira/browse/SOLR-17458) (Matthew Biscocho) (David Smiley) (Sanjay Dutt) (Jude Muriithi) (Luke Kot-Zaniewski) (Carlos Ugarte) (Kevin Liang) (Bryan Jacobowitz) (Adam Quigley)
 - Change Solr CLI delete command to not delete configs by default. Decouple lifecycle of collections from configsets. [SOLR-17495](https://issues.apache.org/jira/browse/SOLR-17495) (Eric Pugh)
 - `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. [SOLR-17516](https://issues.apache.org/jira/browse/SOLR-17516) (James Dyer)
@@ -61,7 +62,6 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. [SOLR-17926](https://issues.apache.org/jira/browse/SOLR-17926) (Andrzej Bialecki) (hossman)
 - MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now also be configured with a single plugin. [SOLR-17930](https://issues.apache.org/jira/browse/SOLR-17930) 
 - `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. [SOLR-17943](https://issues.apache.org/jira/browse/SOLR-17943) (James Dyer)
-- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 - Return structured error information in responses, parse correctly in SolrJ to give useful SolrExceptions [SOLR-17998](https://issues.apache.org/jira/browse/SOLR-17998) [PR#1382](https://github.com/apache/solr/pull/1382) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 - PropertiesInputStream overrides bulk read method, and rename it to IndexInputInputStream to match symmetrical class IndexOutputOutputStream. [SOLR-18029](https://issues.apache.org/jira/browse/SOLR-18029) (Pierre Salagnac)
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
@@ -296,8 +296,12 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Modernize Jetty xml files [SOLR-17770](https://issues.apache.org/jira/browse/SOLR-17770) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 
 
-[9.10.1] - 2026-01-08
+[9.10.1] - 2026-01-20
 ---------------------
+
+### Changed (1 change)
+
+- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 
 ### Fixed (5 changes)
 
@@ -316,8 +320,8 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Mitigate CVE-2025-54988 by disabling XFA parsing in PDF documents when using SolrCell extraction [SOLR-17888](https://issues.apache.org/jira/browse/SOLR-17888) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 
 
-[9.10.0]
---------
+[9.10.0] - 2025-11-06
+---------------------
 
 ### Added (4 changes)
 
