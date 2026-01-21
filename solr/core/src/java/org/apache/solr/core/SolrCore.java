@@ -3627,7 +3627,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
         (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
 
     if (requestHandlers == null) {
-      throw new NullPointerException("No requestHandler section found in implicit plugins");
+      throw new IllegalArgumentException("No requestHandler section found in implicit plugins");
     }
 
     List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
@@ -3658,7 +3658,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     private static List<PluginInfo> loadImplicitPlugins(SolrCore core) {
       // Check for custom implicit plugins file from solr.xml (global configuration)
       String customPluginsFile = core.getCoreContainer().getConfig().getImplicitPluginsFile();
-      
+
       if (customPluginsFile != null && !customPluginsFile.isEmpty()) {
         try {
           // Resolve path similar to solr.xml - support both absolute and relative paths
