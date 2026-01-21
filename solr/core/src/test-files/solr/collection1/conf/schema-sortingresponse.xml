@@ -81,7 +81,6 @@
   <field name="booleandv" type="boolean" indexed="false" stored="false" docValues="true"/>
   <field name="sortabledv" type="text_gen_sort" indexed="true" stored="true" multiValued="false" />
   <field name="sortabledv_udvas" type="text_gen_sort" indexed="true" stored="true" multiValued="false" useDocValuesAsStored="true" />
-  <field name="sortable_stored_nodv" type="text_gen_sort" indexed="true" stored="true" docValues="false" multiValued="false" />
 
   <dynamicField name="*_s_dv"   type="string"    indexed="true"  stored="true" multiValued="false" docValues="true"/>
 
