@@ -18,9 +18,13 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
+import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import java.io.IOException;
+import java.util.Map;
+import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.CollectionPropertyApi;
+import org.apache.solr.client.api.model.ListCollectionPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
 import org.apache.solr.common.SolrException;
@@ -31,18 +35,38 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API implementations for modifying collection-level properties.
+ * V2 API implementations for managing collection-level properties.
  *
- * <p>These APIs (PUT and DELETE /api/collections/collName/properties/propName) are analogous to the
- * v1 /admin/collections?action=COLLECTIONPROP command.
+ * <p>These APIs are analogous to the v1 /admin/collections?action=COLLECTIONPROP command.
  */
 public class CollectionProperty extends AdminAPIBase implements CollectionPropertyApi {
 
+  @Inject
   public CollectionProperty(
       CoreContainer coreContainer,
       SolrQueryRequest solrQueryRequest,
       SolrQueryResponse solrQueryResponse) {
     super(coreContainer, solrQueryRequest, solrQueryResponse);
+  }
+
+  @Override
+  @PermissionName(COLL_READ_PERM)
+  public ListCollectionPropertiesResponse listCollectionProperties(String collName)
+      throws Exception {
+    final var response = instantiateJerseyResponse(ListCollectionPropertiesResponse.class);
+    ensureRequiredParameterProvided("collName", collName);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collName, solrQueryRequest);
+
+    String resolvedCollection = coreContainer.getAliases().resolveSimpleAlias(collName);
+    CollectionProperties cp =
+        new CollectionProperties(coreContainer.getZkController().getZkClient());
+    Map<String, String> properties = cp.getCollectionProperties(resolvedCollection);
+
+    // Handle null case - return empty map instead of null
+    response.properties = (properties != null) ? properties : Map.of();
+
+    return response;
   }
 
   @Override
