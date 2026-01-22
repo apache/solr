@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 
@@ -37,6 +38,8 @@ public class MetricsUtil {
 
   public static final String PROMETHEUS_METRICS_WT = "prometheus";
   public static final String OPEN_METRICS_WT = "openmetrics";
+
+  public static final String NODE_PARAM = "node";
 
   public static final String CATEGORY_PARAM = "category";
   public static final String CORE_PARAM = "core";
@@ -177,10 +180,10 @@ public class MetricsUtil {
       return Set.of();
     }
 
-    List<String> paramSet = new ArrayList<>();
+    Set<String> paramSet = new TreeSet<>();
     for (String param : paramValues) {
-      paramSet.addAll(StrUtils.splitSmart(param, ','));
+      if (param != null && param.length() > 0) paramSet.addAll(StrUtils.splitSmart(param, ','));
     }
-    return Set.copyOf(paramSet);
+    return paramSet;
   }
 }

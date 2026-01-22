@@ -26,11 +26,13 @@ import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import org.apache.solr.client.api.endpoint.MetricsApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
@@ -69,46 +71,71 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
 
   @Override
   @PermissionName(PermissionNameProvider.Name.METRICS_READ_PERM)
-  public StreamingOutput getMetrics() {
+  public StreamingOutput getMetrics(
+      String acceptHeader,
+      String node,
+      String name,
+      String category,
+      String core,
+      String collection,
+      String shard,
+      String replicaType) {
 
-    validateRequest();
+    // Convert request params into SolrParams, to reuse existing code.
+    ModifiableSolrParams params =
+        new ModifiableSolrParams(
+            Map.of(
+                MetricsUtil.NODE_PARAM, new String[] {node},
+                MetricsUtil.METRIC_NAME_PARAM, new String[] {name},
+                MetricsUtil.CATEGORY_PARAM, new String[] {category},
+                MetricsUtil.CORE_PARAM, new String[] {core},
+                MetricsUtil.COLLECTION_PARAM, new String[] {collection},
+                MetricsUtil.SHARD_PARAM, new String[] {shard},
+                MetricsUtil.REPLICA_TYPE_PARAM, new String[] {replicaType}));
 
-    if (proxyToNodes()) {
-      return null;
-    }
+    solrQueryRequest.setParams(params);
 
-    SolrParams params = solrQueryRequest.getParams();
+    validateRequest(acceptHeader);
 
+    // TODO: fix AdminHandlersProxy to support V2
+    // if (proxyToNodes()) {
+    //  return null;
+    // }
+
+    // Using the same logic, same methods, as in MetricsHandler.handleRequest
     Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
     SortedMap<String, Set<String>> labelFilters = MetricsUtil.labelFilters(params);
 
     return doGetMetrics(metricNames, labelFilters);
   }
 
-  private void validateRequest() {
-
+  private void validateRequest(String acceptHeader) {
     if (!enabled) {
+      log.info("Metrics not enabled");
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "Metrics collection is disabled");
     }
 
     if (metricManager == null) {
+      log.info("SolrMetricManager instance not initialized");
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
-    SolrParams params = solrQueryRequest.getParams();
-    String format = params.get(CommonParams.WT);
-
-    if (format == null) {
+    // Should handle 'Accept' header only, but a lot of code still expects 'wt'.
+    if (acceptHeader == null) {
+      log.info("Set default wt=prometheus");
       solrQueryRequest.setParams(
-          SolrParams.wrapDefaults(params, SolrParams.of("wt", "prometheus")));
-    } else if (!MetricsUtil.PROMETHEUS_METRICS_WT.equals(format)
-        && !MetricsUtil.OPEN_METRICS_WT.equals(format)) {
+          SolrParams.wrapDefaults(
+              solrQueryRequest.getParams(),
+              SolrParams.of(CommonParams.WT, MetricsUtil.PROMETHEUS_METRICS_WT)));
+    } else if (!PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS.equals(acceptHeader)
+        && !PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS.equals(acceptHeader)) {
+      log.info("Unsupported format requested");
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
-              + format);
+              + acceptHeader);
     }
   }
 

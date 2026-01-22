@@ -136,7 +136,8 @@ The `/metrics` endpoint natively provides access to all metrics in Prometheus fo
 
 [NOTE]
 ====
-The V1 `/admin/metrics` endpoint is deprecated and will be removed in a future version.
+The V2 `/metrics` endpoint is equivalent to the V1 `/admin/metrics` endpoint.
+Examples on this page show only the V2 endpoint.
 ====
 
 === Prometheus

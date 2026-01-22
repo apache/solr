@@ -32,7 +32,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -107,9 +107,9 @@ public class V2ApiUtils {
       case FILE_STREAM:
         return RawResponseWriter.CONTENT_TYPE;
       case "prometheus":
-        return QueryResponseWriter.CONTENT_TYPE_PROMETHEUS;
+        return PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS;
       case "openmetrics":
-        return QueryResponseWriter.CONTENT_TYPE_OPEN_METRICS;
+        return PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS;
       default:
         return defaultMediaType;
     }

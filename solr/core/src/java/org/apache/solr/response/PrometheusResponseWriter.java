@@ -36,6 +36,10 @@ import org.apache.solr.request.SolrQueryRequest;
 public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
 
+  public static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
+  public static final String CONTENT_TYPE_OPEN_METRICS =
+      "application/openmetrics-text; version=1.0.0; charset=utf-8";
+
   @Override
   public void write(
       OutputStream out, SolrQueryRequest request, SolrQueryResponse response, String contentType)
@@ -65,7 +69,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
     writeMetricSnapshots(out, request, snapshots);
   }
 
-  /** Write MetricSnapshots in Prometheus or OpenMertics format */
+  /** Write MetricSnapshots in Prometheus or OpenMetrics format */
   public void writeMetricSnapshots(
       OutputStream out, SolrQueryRequest request, MetricSnapshots snapshots) throws IOException {
     if (writeOpenMetricsFormat(request)) {
