@@ -43,10 +43,10 @@ public interface ConsumerMetrics {
             MirroredSolrRequest.Type type, SolrRequest<?> solrRequest) {}
 
         @Override
-        public void recordOutputBackoffSize(MirroredSolrRequest.Type type, long backoffTimeMs) {}
+        public void recordOutputBackoffTime(MirroredSolrRequest.Type type, long backoffTimeMs) {}
 
         @Override
-        public void recordOutputFirstAttemptSize(
+        public void recordOutputFirstAttemptTime(
             MirroredSolrRequest.Type type, long firstAttemptTimeNs) {}
 
         @Override
@@ -75,9 +75,9 @@ public interface ConsumerMetrics {
 
   void recordOutputBatchSize(MirroredSolrRequest.Type type, SolrRequest<?> solrRequest);
 
-  void recordOutputBackoffSize(MirroredSolrRequest.Type type, long backoffTimeMs);
+  void recordOutputBackoffTime(MirroredSolrRequest.Type type, long backoffTimeMs);
 
-  void recordOutputFirstAttemptSize(MirroredSolrRequest.Type type, long firstAttemptTimeNs);
+  void recordOutputFirstAttemptTime(MirroredSolrRequest.Type type, long firstAttemptTimeNs);
 
   ConsumerTimer startOutputTimeTimer(String requestType);
 }

@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.crossdc.common.CrossDcConstants;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
@@ -142,7 +143,7 @@ public class SolrMessageProcessor extends MessageProcessor
       sleepTimeMs = Math.max(1, Long.parseLong(backoffTimeSuggested));
     }
     log.info("Consumer backoff. sleepTimeMs={}", sleepTimeMs);
-    metrics.recordOutputBackoffSize(request.getType(), sleepTimeMs);
+    metrics.recordOutputBackoffTime(request.getType(), sleepTimeMs);
     uncheckedSleep(sleepTimeMs);
   }
 
@@ -304,9 +305,10 @@ public class SolrMessageProcessor extends MessageProcessor
     // submitting on the primary side until the request is eligible to be consumed on the buddy side
     // (or vice versa).
     if (mirroredSolrRequest.getAttempt() == 1) {
-      final long latency = System.nanoTime() - mirroredSolrRequest.getSubmitTimeNanos();
+      final long latency =
+          TimeSource.CURRENT_TIME.getTimeNs() - mirroredSolrRequest.getSubmitTimeNanos();
       log.debug("First attempt latency = {} ns", latency);
-      metrics.recordOutputFirstAttemptSize(mirroredSolrRequest.getType(), latency);
+      metrics.recordOutputFirstAttemptTime(mirroredSolrRequest.getType(), latency);
     }
   }
 
@@ -375,7 +377,7 @@ public class SolrMessageProcessor extends MessageProcessor
     if (result.status().equals(ResultStatus.FAILED_RESUBMIT)) {
       final long backoffMs = getResubmitBackoffPolicy().getBackoffTimeMs(result.getItem());
       if (backoffMs > 0L) {
-        metrics.recordOutputBackoffSize(type, backoffMs);
+        metrics.recordOutputBackoffTime(type, backoffMs);
         try {
           Thread.sleep(backoffMs);
         } catch (final InterruptedException ex) {

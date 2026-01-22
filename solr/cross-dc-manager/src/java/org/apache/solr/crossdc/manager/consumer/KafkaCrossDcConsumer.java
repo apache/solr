@@ -408,19 +408,19 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               List<SolrInputDocument> docs = update.getDocuments();
               if (docs != null) {
                 updateReqBatch.add(docs);
-                metrics.incrementInputCounter(type.name(), "add");
+                metrics.incrementInputCounter(type.name(), "add", docs.size());
               }
               List<String> deletes = update.getDeleteById();
               if (deletes != null) {
                 updateReqBatch.deleteById(deletes);
-                metrics.incrementInputCounter(type.name(), "dbi");
+                metrics.incrementInputCounter(type.name(), "delete_by_id", deletes.size());
               }
               List<String> deleteByQuery = update.getDeleteQuery();
               if (deleteByQuery != null) {
                 for (String delByQuery : deleteByQuery) {
                   updateReqBatch.deleteByQuery(delByQuery);
                 }
-                metrics.incrementInputCounter(type.name(), "dbq", deleteByQuery.size());
+                metrics.incrementInputCounter(type.name(), "delete_by_query", deleteByQuery.size());
               }
             } else {
               // non-update requests should be sent immediately

@@ -87,7 +87,7 @@ public class OtelMetrics implements ConsumerMetrics {
         metricsContext.longHistogram(
             NAME_PREFIX + "output_first_attempt_time",
             "Histogram of first attempt request times",
-            OtelUnit.MILLISECONDS);
+            OtelUnit.NANOSECONDS);
   }
 
   protected static final String KEY_SEPARATOR = "#";
@@ -158,12 +158,12 @@ public class OtelMetrics implements ConsumerMetrics {
   }
 
   @Override
-  public void recordOutputBackoffSize(MirroredSolrRequest.Type type, long backoffTimeMs) {
+  public void recordOutputBackoffTime(MirroredSolrRequest.Type type, long backoffTimeMs) {
     outputBackoffHistogram.record(backoffTimeMs, attr(ATTR_TYPE, type.name()));
   }
 
   @Override
-  public void recordOutputFirstAttemptSize(MirroredSolrRequest.Type type, long firstAttemptTimeNs) {
+  public void recordOutputFirstAttemptTime(MirroredSolrRequest.Type type, long firstAttemptTimeNs) {
     outputFirstAttemptHistogram.record(firstAttemptTimeNs, attr(ATTR_TYPE, type.name()));
   }
 

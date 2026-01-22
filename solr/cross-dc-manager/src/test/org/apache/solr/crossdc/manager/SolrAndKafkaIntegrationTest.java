@@ -192,7 +192,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
     client.commit(COLLECTION);
 
-    System.out.println("Sent producer record");
+    log.info("Sent producer record");
 
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 1);
   }
@@ -351,7 +351,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
     client.commit(COLLECTION);
 
-    System.out.println("Sent producer record");
+    log.info("Sent producer record");
 
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 1);
 
