@@ -22,6 +22,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
+import org.apache.solr.client.api.model.GetCollectionPropertyResponse;
 import org.apache.solr.client.api.model.ListCollectionPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -34,6 +35,15 @@ public interface CollectionPropertyApi {
       summary = "List all properties for the specified collection",
       tags = {"collection-properties"})
   ListCollectionPropertiesResponse listCollectionProperties(@PathParam("collName") String collName)
+      throws Exception;
+
+  @GET
+  @Path("/{propName}")
+  @Operation(
+      summary = "Get the value of a specific collection property",
+      tags = {"collection-properties"})
+  GetCollectionPropertyResponse getCollectionProperty(
+      @PathParam("collName") String collName, @PathParam("propName") String propName)
       throws Exception;
 
   @PUT

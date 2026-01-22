@@ -565,6 +565,15 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertEquals(2, allProperties.size());
     assertEquals("prop1Val", allProperties.get(propName+"1"));
     assertEquals("prop2Val", allProperties.get(propName+"2"));
+
+    // Test GET single property API
+    final var prop1Response = new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName+"1")
+        .process(cluster.getSolrClient());
+    assertEquals("prop1Val", prop1Response.value);
+
+    final var prop2Response = new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName+"2")
+        .process(cluster.getSolrClient());
+    assertEquals("prop2Val", prop2Response.value);
   }
 
   private void checkCollectionProperty(String collection, String propertyName, String propertyValue)

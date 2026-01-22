@@ -20,10 +20,11 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
+import jakarta.inject.Inject;
 import java.io.IOException;
 import java.util.Map;
-import jakarta.inject.Inject;
 import org.apache.solr.client.api.endpoint.CollectionPropertyApi;
+import org.apache.solr.client.api.model.GetCollectionPropertyResponse;
 import org.apache.solr.client.api.model.ListCollectionPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateCollectionPropertyRequestBody;
@@ -65,6 +66,32 @@ public class CollectionProperty extends AdminAPIBase implements CollectionProper
 
     // Handle null case - return empty map instead of null
     response.properties = (properties != null) ? properties : Map.of();
+
+    return response;
+  }
+
+  @Override
+  @PermissionName(COLL_READ_PERM)
+  public GetCollectionPropertyResponse getCollectionProperty(String collName, String propName)
+      throws Exception {
+    final var response = instantiateJerseyResponse(GetCollectionPropertyResponse.class);
+    ensureRequiredParameterProvided("collName", collName);
+    ensureRequiredParameterProvided("propName", propName);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    recordCollectionForLogAndTracing(collName, solrQueryRequest);
+
+    String resolvedCollection = coreContainer.getAliases().resolveSimpleAlias(collName);
+    CollectionProperties cp =
+        new CollectionProperties(coreContainer.getZkController().getZkClient());
+    Map<String, String> properties = cp.getCollectionProperties(resolvedCollection);
+
+    if (properties != null && properties.containsKey(propName)) {
+      response.value = properties.get(propName);
+    } else {
+      throw new SolrException(
+          SolrException.ErrorCode.NOT_FOUND,
+          "Property '" + propName + "' not found for collection '" + collName + "'");
+    }
 
     return response;
   }
