@@ -129,8 +129,8 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.CborResponseWriter;
+import org.apache.solr.response.CSVResponseWriter;
 import org.apache.solr.response.GeoJSONResponseWriter;
 import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
@@ -3088,9 +3088,59 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
   private final PluginBag<QueryResponseWriter> responseWriters =
       new PluginBag<>(QueryResponseWriter.class, this);
+
+  /**
+   * Minimal set of response writers for admin/container-level requests.
+   *
+   * <p>Admin requests have no associated SolrCore and cannot use the core's response writer
+   * registry loaded from ImplicitPlugins.json. This map provides only the essential formats needed
+   * by admin APIs:
+   *
+   * <ul>
+   *   <li><b>javabin</b> - Required by SolrJ clients (the primary programmatic API)
+   *   <li><b>json</b> - Required by Admin UI and most REST API consumers
+   *   <li><b>xml</b> - Occasionally used, provides backward compatibility
+   *   <li><b>prometheus/openmetrics</b> - Required by metrics endpoint
+   * </ul>
+   *
+   * <p>Core-specific requests use the full response writer registry loaded from
+   * ImplicitPlugins.json where ConfigOverlay deletions and customizations are respected.
+   *
+   */
+  private static final Map<String, QueryResponseWriter> ADMIN_RESPONSE_WRITERS;
+
+  /**
+   * Complete set of default response writers, maintained for backward compatibility.
+   *
+   * <p>Response writers for core-specific requests are now loaded from ImplicitPlugins.json. This
+   * static map is maintained for:
+   *
+   * <ul>
+   *   <li>External code that may reference this map directly
+   *   <li>Backward compatibility with plugins that expect these to exist
+   * </ul>
+   *
+   * <p><b>Note:</b> Admin/container-level requests should use {@link
+   * #getAdminResponseWriter(String)} instead, as they only need a minimal subset of formats.
+   *
+   * @deprecated Most internal code should use core-specific writers loaded from
+   *     ImplicitPlugins.json, or {@link #getAdminResponseWriter(String)} for admin requests.
+   */
+  @Deprecated
   public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
 
   static {
+    // Minimal set for admin/container requests (no core available)
+    HashMap<String, QueryResponseWriter> adminWriters = new HashMap<>(6, 1);
+    adminWriters.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
+    adminWriters.put(CommonParams.JSON, new JacksonJsonWriter());
+    adminWriters.put("standard", adminWriters.get(CommonParams.JSON)); // Alias for JSON
+    adminWriters.put("xml", new XMLResponseWriter());
+    adminWriters.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
+    adminWriters.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
+    ADMIN_RESPONSE_WRITERS = Collections.unmodifiableMap(adminWriters);
+
+    // Complete set for backward compatibility
     HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
     m.put(CommonParams.JSON, new JacksonJsonWriter());
@@ -3148,11 +3198,54 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Configure the query response writers. There will always be a default writer; additional writers
-   * may also be configured.
+   * Gets a response writer suitable for admin/container-level requests. Only provides essential
+   * formats (javabin, json, xml, prometheus, openmetrics).
+   *
+   * <p>This method should be used for admin/container requests that have no associated SolrCore.
+   * For core-specific requests, use {@link SolrCore#getQueryResponseWriter(String)} which loads
+   * from ImplicitPlugins.json and respects ConfigOverlay settings.
+   *
+   * @param writerName the writer name, or null for default
+   * @return the response writer, never null (returns "standard"/json if not found)
+   */
+  public static QueryResponseWriter getAdminResponseWriter(String writerName) {
+    if (writerName == null || writerName.isEmpty()) {
+      return ADMIN_RESPONSE_WRITERS.get("standard");
+    }
+    return ADMIN_RESPONSE_WRITERS.getOrDefault(writerName, ADMIN_RESPONSE_WRITERS.get("standard"));
+  }
+
+  /**
+   * Initializes query response writers. Response writers from {@code ImplicitPlugins.json} may also
+   * be configured.
    */
   private void initWriters() {
-    responseWriters.init(DEFAULT_RESPONSE_WRITERS, this);
+    // Build default writers map from implicit plugins
+    Map<String, QueryResponseWriter> defaultWriters = new HashMap<>();
+
+    // Load writers from ImplicitPlugins.json
+    List<PluginInfo> implicitWriters = getImplicitResponseWriters();
+    for (PluginInfo info : implicitWriters) {
+      try {
+        QueryResponseWriter writer =
+            createInstance(
+                info.className,
+                QueryResponseWriter.class,
+                "queryResponseWriter",
+                null,
+                getResourceLoader());
+        defaultWriters.put(info.name, writer);
+      } catch (Exception e) {
+        log.warn("Failed to load implicit response writer: {}", info.name, e);
+      }
+    }
+
+    // Add special filestream writer (custom implementation)
+    defaultWriters.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
+
+    // Initialize with the built defaults
+    responseWriters.init(defaultWriters, this);
+
     // configure the default response writer; this one should never be null
     if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
   }
@@ -3614,32 +3707,49 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
   }
 
-  private static final class ImplicitHolder {
-    private ImplicitHolder() {}
+  private static final class ImplicitPluginsHolder {
+    private ImplicitPluginsHolder() {}
 
-    private static final List<PluginInfo> INSTANCE;
+    private static final Map<String, List<PluginInfo>> ALL_IMPLICIT_PLUGINS;
 
     static {
       @SuppressWarnings("unchecked")
       Map<String, ?> implicitPluginsInfo =
           (Map<String, ?>)
               Utils.fromJSONResource(SolrCore.class.getClassLoader(), "ImplicitPlugins.json");
-      @SuppressWarnings("unchecked")
-      Map<String, Map<String, Object>> requestHandlers =
-          (Map<String, Map<String, Object>>) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
 
-      List<PluginInfo> implicits = new ArrayList<>(requestHandlers.size());
-      for (Map.Entry<String, Map<String, Object>> entry : requestHandlers.entrySet()) {
-        Map<String, Object> info = entry.getValue();
-        info.put(CommonParams.NAME, entry.getKey());
-        implicits.add(new PluginInfo(SolrRequestHandler.TYPE, info));
+      Map<String, List<PluginInfo>> plugins = new HashMap<>();
+
+      // Load all plugin types from the JSON
+      for (Map.Entry<String, ?> entry : implicitPluginsInfo.entrySet()) {
+        String pluginType = entry.getKey();
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> pluginConfigs =
+            (Map<String, Map<String, Object>>) entry.getValue();
+
+        List<PluginInfo> pluginInfos = new ArrayList<>(pluginConfigs.size());
+        for (Map.Entry<String, Map<String, Object>> plugin : pluginConfigs.entrySet()) {
+          Map<String, Object> info = plugin.getValue();
+          info.put(CommonParams.NAME, plugin.getKey());
+          pluginInfos.add(new PluginInfo(pluginType, info));
+        }
+        plugins.put(pluginType, Collections.unmodifiableList(pluginInfos));
       }
-      INSTANCE = Collections.unmodifiableList(implicits);
+
+      ALL_IMPLICIT_PLUGINS = Collections.unmodifiableMap(plugins);
+    }
+
+    public static List<PluginInfo> getImplicitPlugins(String type) {
+      return ALL_IMPLICIT_PLUGINS.getOrDefault(type, Collections.emptyList());
     }
   }
 
   public List<PluginInfo> getImplicitHandlers() {
-    return ImplicitHolder.INSTANCE;
+    return ImplicitPluginsHolder.getImplicitPlugins(SolrRequestHandler.TYPE);
+  }
+
+  public List<PluginInfo> getImplicitResponseWriters() {
+    return ImplicitPluginsHolder.getImplicitPlugins("queryResponseWriter");
   }
 
   public CancellableQueryTracker getCancellableQueryTracker() {

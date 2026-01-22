@@ -735,8 +735,9 @@ public class HttpSolrCall {
             solrResp.getToLogAsString("[admin]"));
       }
     }
+    // Admin requests have no core, use minimal admin-specific writers
     QueryResponseWriter respWriter =
-        SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
+        SolrCore.getAdminResponseWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit()) {

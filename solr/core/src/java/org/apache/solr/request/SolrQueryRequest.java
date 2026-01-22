@@ -195,16 +195,29 @@ public interface SolrQueryRequest extends AutoCloseable {
     return getCore().getCoreDescriptor().getCloudDescriptor();
   }
 
-  /** The writer to use for this request, considering {@link CommonParams#WT}. Never null. */
+  /**
+   * The writer to use for this request, considering {@link CommonParams#WT}. Never null.
+   *
+   * <p>If a core is available, uses the core's response writer registry (loaded from
+   * ImplicitPlugins.json with ConfigOverlay support). If no core is available (e.g., for
+   * admin/container requests), uses a minimal set of admin-appropriate writers.
+   */
   default QueryResponseWriter getResponseWriter() {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
     SolrCore core = getCore();
     String wt = getParams().get(CommonParams.WT);
     if (core != null) {
+      // Core-specific request: use full ImplicitPlugins.json registry
       return core.getQueryResponseWriter(wt);
     } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+      // Admin/container request: use minimal admin writers
+      // return SolrCore.getAdminResponseWriter(wt);
+      QueryResponseWriter qw = SolrCore.getAdminResponseWriter(wt);
+      if (qw == null) {
+        // not sure this is needed.
+        qw = SolrCore.getAdminResponseWriter("standard");
+      }
+      return qw;
     }
   }
 
