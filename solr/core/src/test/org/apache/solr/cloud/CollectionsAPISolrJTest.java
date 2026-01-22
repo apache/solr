@@ -557,22 +557,27 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     checkCollectionProperty(collectionName, propName, null);
 
     // Test that "list-properties" returns all properties
-    CollectionAdminRequest.setCollectionProperty(collectionName, propName+"1", "prop1Val")
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "1", "prop1Val")
         .process(cluster.getSolrClient());
-    CollectionAdminRequest.setCollectionProperty(collectionName, propName+"2", "prop2Val")
+    CollectionAdminRequest.setCollectionProperty(collectionName, propName + "2", "prop2Val")
         .process(cluster.getSolrClient());
-    final var allProperties = new CollectionPropertiesApi.ListCollectionProperties(collectionName).process(cluster.getSolrClient()).properties;
+    final var allProperties =
+        new CollectionPropertiesApi.ListCollectionProperties(collectionName)
+            .process(cluster.getSolrClient())
+            .properties;
     assertEquals(2, allProperties.size());
-    assertEquals("prop1Val", allProperties.get(propName+"1"));
-    assertEquals("prop2Val", allProperties.get(propName+"2"));
+    assertEquals("prop1Val", allProperties.get(propName + "1"));
+    assertEquals("prop2Val", allProperties.get(propName + "2"));
 
     // Test GET single property API
-    final var prop1Response = new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName+"1")
-        .process(cluster.getSolrClient());
+    final var prop1Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "1")
+            .process(cluster.getSolrClient());
     assertEquals("prop1Val", prop1Response.value);
 
-    final var prop2Response = new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName+"2")
-        .process(cluster.getSolrClient());
+    final var prop2Response =
+        new CollectionPropertiesApi.GetCollectionProperty(collectionName, propName + "2")
+            .process(cluster.getSolrClient());
     assertEquals("prop2Val", prop2Response.value);
   }
 
