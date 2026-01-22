@@ -45,11 +45,6 @@ public class SolrKafkaTestsIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // Prometheus Scheduler doesn't provide any method to shut down its worker threads
-    if (t.isDaemon()) {
-      return true;
-    }
-
     return false;
   }
 }

@@ -17,10 +17,8 @@
 package org.apache.solr.crossdc.manager.consumer;
 
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.PORT;
-import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 import static org.apache.solr.crossdc.common.KafkaCrossDcConf.ZK_CONNECT_STRING;
 
-import io.prometheus.metrics.exporter.servlet.jakarta.PrometheusMetricsServlet;
 import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.Map;
@@ -80,11 +78,10 @@ public class Consumer {
 
     ConfUtil.verifyProperties(properties);
 
-    String bootstrapServers = (String) properties.get(KafkaCrossDcConf.BOOTSTRAP_SERVERS);
-    String topicName = (String) properties.get(TOPIC_NAME);
+    OtelMetrics metrics = new OtelMetrics();
 
     KafkaCrossDcConf conf = new KafkaCrossDcConf(properties);
-    crossDcConsumer = getCrossDcConsumer(conf, startLatch);
+    crossDcConsumer = getCrossDcConsumer(conf, metrics, startLatch);
 
     // jetty endpoint for /metrics
     int port = conf.getInt(PORT);
@@ -96,7 +93,10 @@ public class Consumer {
       server.setHandler(context);
 
       context.addServlet(ThreadDumpServlet.class, "/threads/*");
-      context.addServlet(PrometheusMetricsServlet.class, "/metrics/*");
+      context.setAttribute(
+          MetricsServlet.SOLR_METRICS_MANAGER_ATTRIBUTE, metrics.getMetricManager());
+      context.addServlet(MetricsServlet.class, "/metrics/*");
+
       for (ServletMapping mapping : context.getServletHandler().getServletMappings()) {
         if (log.isInfoEnabled()) {
           log.info(" - {}", mapping.getPathSpecs()[0]);
@@ -147,8 +147,9 @@ public class Consumer {
     }
   }
 
-  protected CrossDcConsumer getCrossDcConsumer(KafkaCrossDcConf conf, CountDownLatch startLatch) {
-    return new KafkaCrossDcConsumer(conf, startLatch);
+  protected CrossDcConsumer getCrossDcConsumer(
+      KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+    return new KafkaCrossDcConsumer(conf, metrics, startLatch);
   }
 
   public static void main(String[] args) {

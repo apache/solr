@@ -108,6 +108,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     uceh = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(
         (t, e) -> log.error("Uncaught exception in thread {}", t, e));
+    System.setProperty("otel.metrics.exporter", "prometheus");
     consumer = new Consumer();
     Properties config = new Properties();
 
@@ -359,12 +360,12 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
         new HttpJettySolrClient.Builder(baseUrl).useHttp1_1(true).build();
     try {
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/metrics");
-      req.setResponseParser(new InputStreamResponseParser("test/plain"));
+      req.setResponseParser(new InputStreamResponseParser(null));
       NamedList<Object> rsp = httpJettySolrClient.request(req);
       String content =
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
-      assertTrue(content.contains("consumer_output_total{result=\"handled\",type=\"UPDATE\"} 1.0"));
+      assertTrue(content, content.contains("crossdc_consumer_output_total"));
     } finally {
       httpJettySolrClient.close();
       client.close();

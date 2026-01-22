@@ -27,7 +27,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
-import org.apache.solr.crossdc.manager.consumer.PrometheusMetrics;
+import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -53,7 +53,7 @@ public class SimpleSolrIntegrationTest extends SolrCloudTestCase {
 
     CloudSolrClient cloudClient1 = cluster1.getSolrClient();
 
-    processor = new SolrMessageProcessor(mock(PrometheusMetrics.class), () -> cloudClient1, null);
+    processor = new SolrMessageProcessor(mock(OtelMetrics.class), () -> cloudClient1, null);
 
     CollectionAdminRequest.Create create =
         CollectionAdminRequest.createCollection(COLLECTION, 1, 1);

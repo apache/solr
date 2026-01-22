@@ -27,11 +27,22 @@ dependencies {
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
+  implementation project(':solr:modules:opentelemetry')
 
-  implementation libs.prometheus.metrics.core
-  implementation libs.prometheus.metrics.exporter.servlet.jakarta
-  implementation libs.prometheus.metrics.expositionformats
+  implementation platform(libs.opentelemetry.bom)
+  implementation libs.opentelemetry.api
+  implementation libs.opentelemetry.sdk
+  implementation libs.opentelemetry.sdk.metrics
+  implementation libs.opentelemetry.sdk.extension.autoconfigure
+  implementation libs.opentelemetry.exporter.otlp
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false
+  }
   implementation libs.prometheus.metrics.model
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.slf4j.api

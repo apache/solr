@@ -39,7 +39,7 @@ import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
 import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
-import org.apache.solr.crossdc.manager.consumer.PrometheusMetrics;
+import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -72,7 +72,7 @@ public class TestMessageProcessor {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    ConsumerMetrics metrics = Mockito.mock(PrometheusMetrics.class);
+    ConsumerMetrics metrics = Mockito.mock(OtelMetrics.class);
     processor = Mockito.spy(new SolrMessageProcessor(metrics, () -> solrClient, backoffPolicy));
     Mockito.doNothing().when(processor).uncheckedSleep(anyLong());
   }

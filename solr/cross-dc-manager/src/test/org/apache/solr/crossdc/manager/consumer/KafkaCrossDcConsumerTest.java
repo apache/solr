@@ -111,7 +111,7 @@ public class KafkaCrossDcConsumerTest {
     // Set necessary configurations
 
     kafkaCrossDcConsumer =
-        new KafkaCrossDcConsumer(conf, new CountDownLatch(0)) {
+        new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(0)) {
           @Override
           public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
               Properties properties) {
@@ -182,7 +182,7 @@ public class KafkaCrossDcConsumerTest {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer kafkaCrossDcConsumer =
         spy(
-            new KafkaCrossDcConsumer(conf, startLatch) {
+            new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, startLatch) {
               @Override
               public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
                   Properties properties) {
@@ -457,7 +457,7 @@ public class KafkaCrossDcConsumerTest {
         .handleItem(any());
     KafkaCrossDcConsumer spyConsumer =
         spy(
-            new KafkaCrossDcConsumer(conf, new CountDownLatch(1)) {
+            new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(1)) {
               @Override
               public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
                   Properties properties) {
@@ -551,7 +551,7 @@ public class KafkaCrossDcConsumerTest {
   private KafkaCrossDcConsumer createCrossDcConsumerSpy(
       KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer) {
     return spy(
-        new KafkaCrossDcConsumer(conf, new CountDownLatch(1)) {
+        new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(1)) {
           @Override
           public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
               Properties properties) {

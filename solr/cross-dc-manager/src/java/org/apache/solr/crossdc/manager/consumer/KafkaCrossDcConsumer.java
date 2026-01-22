@@ -81,7 +81,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final CrossDcConf.CollapseUpdates collapseUpdates;
   private final int maxCollapseRecords;
   private final SolrMessageProcessor messageProcessor;
-  protected ConsumerMetrics metrics;
+  protected final ConsumerMetrics metrics;
 
   protected SolrClientSupplier solrClientSupplier;
 
@@ -159,9 +159,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
    * @param conf The Kafka consumer configuration
    * @param startLatch To inform the caller when the Consumer has started
    */
-  public KafkaCrossDcConsumer(KafkaCrossDcConf conf, CountDownLatch startLatch) {
-    this.metrics = new PrometheusMetrics();
-
+  public KafkaCrossDcConsumer(
+      KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+    this.metrics = metrics;
     this.topicNames = conf.get(KafkaCrossDcConf.TOPIC_NAME).split(",");
     this.maxAttempts = conf.getInt(KafkaCrossDcConf.MAX_ATTEMPTS);
     this.collapseUpdates =
@@ -586,8 +586,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
     } catch (Exception e) {
       log.warn("Exception closing Solr client on shutdown", e);
     } finally {
-      if (metrics instanceof PrometheusMetrics) {
-        Util.logMetrics(((PrometheusMetrics) metrics).getRegistry());
+      if (metrics instanceof OtelMetrics) {
+        Util.logMetrics(((OtelMetrics) metrics).getMetricManager());
       }
     }
   }

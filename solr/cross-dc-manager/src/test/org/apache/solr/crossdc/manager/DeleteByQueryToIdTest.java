@@ -42,6 +42,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.apache.solr.crossdc.manager.consumer.KafkaCrossDcConsumer;
 import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
@@ -160,8 +161,8 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
         new Consumer() {
           @Override
           protected CrossDcConsumer getCrossDcConsumer(
-              KafkaCrossDcConf conf, CountDownLatch startLatch) {
-            return new KafkaCrossDcConsumer(conf, startLatch) {
+              KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+            return new KafkaCrossDcConsumer(conf, metrics, startLatch) {
               @Override
               protected SolrMessageProcessor createSolrMessageProcessor() {
                 return new SolrMessageProcessor(

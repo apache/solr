@@ -16,13 +16,15 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
-import io.prometheus.metrics.expositionformats.ExpositionFormats;
-import io.prometheus.metrics.model.registry.PrometheusRegistry;
+// import io.prometheus.metrics.expositionformats.ExpositionFormats;
+// import io.prometheus.metrics.model.registry.PrometheusRegistry;
+// import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
+import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -34,24 +36,29 @@ import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.crossdc.common.MirroredSolrRequestSerializer;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class Util {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  @SuppressWarnings("rawtypes")
-  public static void logMetrics(PrometheusRegistry registry) {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    MetricSnapshots snapshots = registry.scrape();
+  public static void logMetrics(SolrMetricManager metricManager) {
+    List<MetricSnapshot> snapshotList =
+        metricManager.getPrometheusMetricReaders().values().stream()
+            .flatMap(r -> r.collect().stream())
+            .toList();
+    MetricSnapshots snapshots = MetricSnapshots.of(snapshotList.toArray(new MetricSnapshot[0]));
+    String output;
     try {
-      ExpositionFormats.init().getPrometheusTextFormatWriter().write(baos, snapshots);
-      if (log.isInfoEnabled()) {
-        log.info("### Final Consumer metrics:\n{}", baos.toString(StandardCharsets.UTF_8));
-      }
-    } catch (IOException e) {
-      log.error("Error while logging metrics", e);
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      new PrometheusTextFormatWriter(false).write(baos, snapshots);
+      output = baos.toString();
+    } catch (Exception e) {
+      log.error("Error while writing final metrics", e);
+      output = snapshots.toString();
     }
+    log.info("#### Consumer Metrics: ####\n{}", output);
   }
 
   public static void printKafkaInfo(String host, String groupId) {
