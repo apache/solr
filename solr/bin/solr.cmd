@@ -917,7 +917,6 @@ IF ERRORLEVEL 1 (
   set "SERVEROPT=-server"
 )
 
-IF NOT "%ZK_HOST%"=="" set SOLR_MODE=solrcloud
 IF "%SOLR_MODE%"=="" set SOLR_MODE=solrcloud
 
 IF "%SOLR_MODE%"=="solrcloud" (
