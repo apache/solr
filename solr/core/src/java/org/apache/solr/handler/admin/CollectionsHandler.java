@@ -322,8 +322,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
     }
 
     AdminCmdContext adminCmdContext =
-        new AdminCmdContext(operation.action, req.getParams().get(ASYNC));
-    adminCmdContext.setCallingLockIds((String) req.getContext().get(CALLING_LOCK_IDS_HEADER));
+        new AdminCmdContext(operation.action, req.getParams().get(ASYNC), req);
 
     ZkNodeProps zkProps = new ZkNodeProps(props);
     final SolrResponse overseerResponse;

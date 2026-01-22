@@ -23,6 +23,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.LEADER_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_AT_ONCE_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.MAX_WAIT_SECONDS_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.REBALANCELEADERS;
 
 import java.lang.invoke.MethodHandles;
@@ -458,9 +459,8 @@ class RebalanceLeaders {
     String asyncId = REBALANCELEADERS.toLower() + "_" + core + "_" + Math.abs(System.nanoTime());
     asyncRequests.add(asyncId);
 
-    collectionsHandler.submitCollectionApiCommand(
-        new AdminCmdContext(REBALANCELEADERS, asyncId),
-        new ZkNodeProps(propMap)); // ignore response; we construct our own
+    // ignore response; we construct our own
+    collectionsHandler.submitCollectionApiCommand(new AdminCmdContext(REBALANCELEADERS, asyncId, req), new ZkNodeProps(propMap));
   }
 
   // maxWaitSecs - How long are we going to wait? Defaults to 30 seconds.
