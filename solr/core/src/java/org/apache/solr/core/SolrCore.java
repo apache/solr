@@ -129,17 +129,10 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.CborResponseWriter;
-import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.GeoJSONResponseWriter;
-import org.apache.solr.response.GraphMLResponseWriter;
 import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
-import org.apache.solr.response.SchemaXmlResponseWriter;
-import org.apache.solr.response.SmileResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -3105,29 +3098,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *
    * <p>Core-specific requests use the full response writer registry loaded from
    * ImplicitPlugins.json where ConfigOverlay deletions and customizations are respected.
-   *
    */
   private static final Map<String, QueryResponseWriter> ADMIN_RESPONSE_WRITERS;
-
-  /**
-   * Complete set of default response writers, maintained for backward compatibility.
-   *
-   * <p>Response writers for core-specific requests are now loaded from ImplicitPlugins.json. This
-   * static map is maintained for:
-   *
-   * <ul>
-   *   <li>External code that may reference this map directly
-   *   <li>Backward compatibility with plugins that expect these to exist
-   * </ul>
-   *
-   * <p><b>Note:</b> Admin/container-level requests should use {@link
-   * #getAdminResponseWriter(String)} instead, as they only need a minimal subset of formats.
-   *
-   * @deprecated Most internal code should use core-specific writers loaded from
-   *     ImplicitPlugins.json, or {@link #getAdminResponseWriter(String)} for admin requests.
-   */
-  @Deprecated
-  public static final Map<String, QueryResponseWriter> DEFAULT_RESPONSE_WRITERS;
 
   static {
     // Minimal set for admin/container requests (no core available)
@@ -3139,24 +3111,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     adminWriters.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
     adminWriters.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
     ADMIN_RESPONSE_WRITERS = Collections.unmodifiableMap(adminWriters);
-
-    // Complete set for backward compatibility
-    HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
-    m.put("xml", new XMLResponseWriter());
-    m.put(CommonParams.JSON, new JacksonJsonWriter());
-    m.put("standard", m.get(CommonParams.JSON));
-    m.put("geojson", new GeoJSONResponseWriter());
-    m.put("graphml", new GraphMLResponseWriter());
-    m.put("raw", new RawResponseWriter());
-    m.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
-    m.put("cbor", new CborResponseWriter());
-    m.put("csv", new CSVResponseWriter());
-    m.put("schema.xml", new SchemaXmlResponseWriter());
-    m.put("smile", new SmileResponseWriter());
-    m.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    m.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
-    m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
-    DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
   }
 
   private static JavaBinResponseWriter getFileStreamWriter() {

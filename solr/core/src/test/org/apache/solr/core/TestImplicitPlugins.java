@@ -121,7 +121,8 @@ public class TestImplicitPlugins extends SolrTestCaseJ4 {
   @Test
   public void testAdminResponseWritersMinimalSet() {
     // Admin requests have no SolrCore, so they use ADMIN_RESPONSE_WRITERS
-    // which contains only the essential formats: javabin, json, xml, prometheus, openmetrics, standard
+    // which contains only the essential formats: javabin, json, xml, prometheus, openmetrics,
+    // standard
 
     // Verify all admin writers exist
     assertNotNull(
@@ -212,35 +213,5 @@ public class TestImplicitPlugins extends SolrTestCaseJ4 {
     QueryResponseWriter adminXmlWriter = SolrCore.getAdminResponseWriter("xml");
     assertNotNull("Core xml writer should not be null", coreXmlWriter);
     assertNotNull("Admin xml writer should not be null", adminXmlWriter);
-  }
-
-  // ========== Backward Compatibility Tests ==========
-
-  @Test
-  public void testDefaultResponseWritersBackwardCompatibility() {
-    // Verify the deprecated DEFAULT_RESPONSE_WRITERS map still exists for external code
-    assertNotNull(
-        "DEFAULT_RESPONSE_WRITERS should still exist for backward compatibility",
-        SolrCore.DEFAULT_RESPONSE_WRITERS);
-    assertFalse(
-        "DEFAULT_RESPONSE_WRITERS should not be empty",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.isEmpty());
-
-    // Verify it contains all the expected writers (both core and admin formats)
-    assertTrue(
-        "Should have json in DEFAULT_RESPONSE_WRITERS",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey(CommonParams.JSON));
-    assertTrue(
-        "Should have xml in DEFAULT_RESPONSE_WRITERS",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey("xml"));
-    assertTrue(
-        "Should have csv in DEFAULT_RESPONSE_WRITERS",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey("csv"));
-    assertTrue(
-        "Should have geojson in DEFAULT_RESPONSE_WRITERS",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey("geojson"));
-    assertTrue(
-        "Should have javabin in DEFAULT_RESPONSE_WRITERS",
-        SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey(CommonParams.JAVABIN));
   }
 }
