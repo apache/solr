@@ -126,12 +126,25 @@ task assemblePackaging(type: Sync) {
     into "lib/ext"
   })
 
+  // Add BouncyCastle from bootstrap module (needed for SSL certificate generation)
+  dependsOn ':solr:bootstrap:exportBouncyCastle'
+  from(file("${rootDir}/solr/bootstrap/build/bouncycastle")) {
+    include "*.jar"
+    into "lib/ext"
+  }
+
   from(configurations.serverLib - configurations.libExt - configurations.solrCore, {
     into "lib/"
   })
 
   from {project.configurations.startJar.singleFile} {
     rename {file -> 'start.jar'}
+  }
+
+  // SIP-6: Copy solr-start.jar from bootstrap module (to server root, like start.jar)
+  dependsOn ':solr:bootstrap:jar'
+  from({ project(':solr:bootstrap').tasks.jar.archiveFile }) {
+    rename { file -> 'solr-start.jar' }
   }
 
   dependsOn configurations.webapp
