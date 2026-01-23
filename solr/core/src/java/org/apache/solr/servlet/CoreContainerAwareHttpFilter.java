@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 public abstract class CoreContainerAwareHttpFilter extends HttpFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private volatile CoreContainerProvider containerProvider;
+  private CoreContainerProvider containerProvider;
 
   @Override
   public void init(FilterConfig config) throws ServletException {
