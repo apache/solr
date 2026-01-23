@@ -249,21 +249,13 @@ JSON::
 ====
 [source,json]
 ----
-[<TO ADD>
+[{ "id": "1",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+},
+{ "id": "2",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+}
 ]
-----
-====
-
-XML::
-+
-====
-[source,xml]
-----
-<add>
-<doc>
-<TO ADD>
-</doc>
-</add>
 ----
 ====
 
@@ -274,7 +266,22 @@ SolrJ::
 ----
 final SolrClient client = getSolrClient();
 
-TO ADD
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+List<List<Float>> floatVectors1 = new ArrayList<>(2);
+floatVectors1.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors1.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d1.setField("vector_multivalued", floatVectors1);
+
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+List<List<Float>> floatVectors2 = new ArrayList<>(2);
+floatVectors2.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors2.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d2.setField("vector_multivalued", floatVectors2);
+
+client.add(Arrays.asList(d1, d2));
 
 ----
 ====
@@ -636,7 +643,7 @@ Behind the scenes a multivalued vector field is handled by Solr as nested docume
 So you should query a multivalued vector fields following the same syntax:
 [source,text]
 ?q={!parent which=$allParents score=max v=$children.q}
-&children.q={!knn f=multivaluedvector topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&children.q={!knn f=vector_multivalued topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
 &allParents=*:* -_nest_path_:*
 &someParents=color_s:RED
 
@@ -644,25 +651,61 @@ In terms of rendering the results, you need the child transformer if you want to
 
 All Children
 [source,text]
-fl=id,multivaluedvector,[child fl="multivaluedvector"]
+fl=id,vector_multivalued,[child fl="vector_multivalued"]
 
 ====
 [source,json]
 ----
-[<TO ADD>
-]
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      },
+      {
+        "id":"2",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      }]
 ----
 ====
 
 Best Child
 [source,text]
-fl=id,multivaluedvector,[child fl="multivaluedvector" childFilter=$children.q]
+fl=id,vector_multivalued,[child fl="vector_multivalued" childFilter=$children.q]
 
 ====
 [source,json]
 ----
-[<TO ADD>
-]
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+        [
+          1.0,2.0, 3.0, 4.0
+        ]
+      ]
+    },
+    {
+      "id":"2",
+      "vector_multivalued":[
+      [
+        1.0,2.0, 3.0, 4.0
+      ]
+    ]
+  }]
 ----
 ====
 
