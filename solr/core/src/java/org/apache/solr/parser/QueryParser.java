@@ -3,6 +3,7 @@
 package org.apache.solr.parser;
 
 import java.io.StringReader;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -18,9 +19,14 @@ import org.apache.solr.search.QParser;
 
 import org.apache.lucene.queryparser.charstream.CharStream;
 import org.apache.lucene.queryparser.charstream.FastCharStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Generated("JavaCC")
 public class QueryParser extends SolrQueryParserBase implements QueryParserConstants {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   /** The default operator for parsing queries.
    */
   static public enum Operator { OR, AND }
@@ -31,6 +37,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
    public QueryParser(String defaultField, QParser parser) {
     this(new FastCharStream(new StringReader("")));
     init(defaultField, parser);
+    log.warn("hey buddy");
   }
 
   /**
@@ -62,7 +69,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                                  SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
-    // Don't auto-quote graph-aware field queries 
+    // Don't auto-quote graph-aware field queries
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
     return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false,
@@ -71,7 +78,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
 
 // *   Query  ::= ( Clause )*
 // *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
-  final public 
+  final public
 int Conjunction() throws ParseException {int ret = CONJ_NONE;
     switch ((jj_ntk==-1)?jj_ntk_f():jj_ntk) {
     case AND:
@@ -1011,7 +1018,7 @@ if (splitOnWhitespace == false) {
        p = p.next;
      }
 
-     p.gen = jj_gen + xla - jj_la; 
+     p.gen = jj_gen + xla - jj_la;
      p.first = token;
      p.arg = xla;
   }
