@@ -1,0 +1,7 @@
+title: Update io.netty:netty-tcnative* to v2.0.74.Final (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4025
+  url: https://github.com/apache/solr/pull/4025
