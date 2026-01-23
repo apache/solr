@@ -75,18 +75,6 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
             "Removing {} leader as leader, since its term is no longer the highest. This will initiate recovery",
             coreNodeName);
         coreContainer.getZkController().giveupLeadership(coreDescriptor);
-        coreContainer
-            .getZkController()
-            .getZkStateReader()
-            .waitForState(
-                coreDescriptor.getCollectionName(),
-                20,
-                TimeUnit.SECONDS,
-                dc -> {
-                  Replica leader = dc.getLeader(coreDescriptor.getCloudDescriptor().getShardId());
-                  return leader == null || !leader.getCoreName().equals(coreDescriptor.getName());
-                });
-        return true;
       } else if (lastRecoveryTerm < newTerm) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Replica leaderReplica =
@@ -108,10 +96,12 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
               .getSolrCoreState()
               .doRecovery(solrCore.getCoreContainer(), solrCore.getCoreDescriptor());
         } else {
-          log.info(
-              "Defer recovery on {} because leader-election will happen soon, old leader {}",
-              coreNodeName,
-              leaderReplica.getName());
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Defer recovery on {} because leader-election will happen soon, old leader: {}",
+                coreNodeName,
+                leaderReplica == null ? null : leaderReplica.getName());
+          }
         }
       }
     } catch (Exception e) {

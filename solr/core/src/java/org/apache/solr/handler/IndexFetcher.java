@@ -494,7 +494,7 @@ public class IndexFetcher {
 
       // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no
       // side-car indexes)
-      IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
+      IndexCommit commit = solrCore.getDeletionPolicy().getAndSaveLatestCommit();
       if (commit == null) {
         // Presumably the IndexWriter hasn't been opened yet, and hence the deletion policy hasn't
         // been updated with commit points

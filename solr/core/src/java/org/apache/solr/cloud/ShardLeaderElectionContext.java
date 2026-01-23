@@ -507,7 +507,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
-    log.info("There may be a better leader candidate than us - rejoin the election");
+    log.info("There may be a better leader candidate than us - rejoining the election");
 
     cancelElection();
 

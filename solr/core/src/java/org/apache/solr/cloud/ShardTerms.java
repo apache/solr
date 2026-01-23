@@ -128,7 +128,7 @@ public class ShardTerms implements MapWriter {
     long newMaxTerm = maxTerm + 1;
     boolean keyFound = false;
     HashMap<String, Long> newValues = new HashMap<>(values);
-    long nextHighestTerm = 0;
+    long nextHighestTerm = -1;
     for (String key : values.keySet()) {
       if (highestTermKeys.contains(key)) {
         newValues.put(key, newMaxTerm);

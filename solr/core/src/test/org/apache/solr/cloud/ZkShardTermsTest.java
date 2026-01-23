@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -327,6 +328,38 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
     leaderTerms.close();
     replicaTerms.close();
+  }
+
+  public void testSetHighestTerms() throws InterruptedException {
+    String collection = "setHighestTerms";
+    ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    ZkShardTerms replica1Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    ZkShardTerms replica2Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    ZkShardTerms replica3Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
+    leaderTerms.registerTerm("leader");
+    replica1Terms.registerTerm("replica1");
+    replica2Terms.registerTerm("replica2");
+    replica3Terms.registerTerm("replica3");
+
+    leaderTerms.ensureHighestTerms(Set.of("leader", "replica1"));
+    waitFor(true, () -> leaderTerms.canBecomeLeader("leader"));
+    waitFor(true, () -> replica1Terms.canBecomeLeader("replica1"));
+    waitFor(false, () -> replica2Terms.canBecomeLeader("replica2"));
+    waitFor(false, () -> replica3Terms.canBecomeLeader("replica3"));
+    waitFor(false, () -> leaderTerms.skipSendingUpdatesTo("replica1"));
+    waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica2"));
+    waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica3"));
+
+    leaderTerms.ensureHighestTerms(Set.of("replica2", "replica3"));
+    waitFor(false, () -> leaderTerms.canBecomeLeader("leader"));
+    waitFor(false, () -> replica1Terms.canBecomeLeader("replica1"));
+    waitFor(true, () -> replica2Terms.canBecomeLeader("replica2"));
+    waitFor(true, () -> replica3Terms.canBecomeLeader("replica3"));
+
+    leaderTerms.close();
+    replica1Terms.close();
+    replica2Terms.close();
+    replica3Terms.close();
   }
 
   private <T> void waitFor(T expected, Supplier<T> supplier) throws InterruptedException {

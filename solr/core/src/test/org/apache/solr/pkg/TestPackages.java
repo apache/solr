@@ -107,7 +107,6 @@ public class TestPackages extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    System.clearProperty("solr.packages.enabled");
 
     super.tearDown();
   }

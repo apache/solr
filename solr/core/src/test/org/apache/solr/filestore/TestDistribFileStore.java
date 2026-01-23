@@ -55,7 +55,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -69,11 +68,6 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   @Before
   public void setup() {
     System.setProperty("solr.packages.enabled", "true");
-  }
-
-  @After
-  public void teardown() {
-    System.clearProperty("solr.packages.enabled");
   }
 
   @Test
