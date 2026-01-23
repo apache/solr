@@ -536,7 +536,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           if (dc != null) {
             // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
             // state to render correctly for the UI?
-            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
+            Map<String, Object> collectionState = Utils.convertToMap(dc, new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
               if (page.matchesStatusFilter(collectionState, liveNodes)) {

@@ -19,12 +19,12 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
-import java.util.LinkedHashMap;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.util.InfoStream;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
@@ -162,10 +162,10 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     assertNull("non-null mergedSegmentWarmer", iwc.getMergedSegmentWarmer());
 
-    final int numDefaultsMapped = sic.toMap(new LinkedHashMap<>()).size();
+    final int numDefaultsMapped = new SimpleOrderedMap<>(sic).size();
     assertEquals(
         "numDefaultsTested vs. numDefaultsMapped+numNullDefaults ="
-            + sic.toMap(new LinkedHashMap<>()).keySet(),
+            + new SimpleOrderedMap<>(sic).keySet(),
         numDefaultsTested,
         numDefaultsMapped + numNullDefaults);
   }

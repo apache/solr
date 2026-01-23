@@ -32,6 +32,7 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
@@ -115,6 +116,6 @@ public class InstallShardData extends AdminAPIBase implements InstallShardDataAp
     }
 
     messageTyped.validate();
-    return new ZkNodeProps(messageTyped.toMap(new HashMap<>()));
+    return new ZkNodeProps(Utils.convertToMap(messageTyped, new HashMap<>()));
   }
 }

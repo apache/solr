@@ -19,8 +19,8 @@ package org.apache.solr.common;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.noggit.JSONWriter;
 
 /** Interface to help do push writing to an array */
@@ -76,7 +76,7 @@ public interface IteratorWriter extends JSONWriter.Writable {
           new ItemWriter() {
             @Override
             public ItemWriter add(Object o) throws IOException {
-              if (o instanceof MapWriter) o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+              if (o instanceof MapWriter) o = new SimpleOrderedMap<>((MapWriter) o);
               if (o instanceof IteratorWriter) o = ((IteratorWriter) o).toList(new ArrayList<>());
               l.add(o);
               return this;

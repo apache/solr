@@ -1,0 +1,7 @@
+title: SOLR 17600 - Replace MapSerializable with MapWriter
+type: other
+authors:
+  - name: Ivan Šarić
+links:
+  - name: SOLR-17600
+    url: https://issues.apache.org/jira/browse/SOLR-17600
