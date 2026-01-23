@@ -27,7 +27,6 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.SolrMetricTestUtils;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,11 +44,6 @@ public class RequestHandlerMetricsTest extends SolrCloudTestCase {
   public void setUp() throws Exception {
     super.setUp();
     cluster.deleteAllCollections();
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("metricsEnabled");
   }
 
   @Test
