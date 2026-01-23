@@ -16,15 +16,13 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -151,16 +149,13 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     }
     Assert.assertEquals(200, response.getStatus());
 
-    Path tmpFile = createTempFile("test", "GetMetricsDefault");
-    writeMaxOut(tmpFile, response.getContent());
-    String str = readOutput(tmpFile);
+    String str = readMaxOut(response.getContent());
     System.out.println("testGetMetricsDefault: " + str);
     Assert.assertTrue(str.contains("# HELP"));
     Assert.assertTrue(str.contains("# TYPE"));
   }
 
   @Test
-  @Ignore
   public void testGetMetricsPrometheus()
       throws IOException, InterruptedException, TimeoutException, ExecutionException {
     ContentResponse response = null;
@@ -188,7 +183,6 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  @Ignore
   public void testGetMetricsOpenMetrics()
       throws IOException, InterruptedException, TimeoutException, ExecutionException {
     ContentResponse response = null;
@@ -245,9 +239,7 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     }
     Assert.assertEquals(200, response.getStatus());
 
-    Path tmpFile = createTempFile("test", "GetMetricsCategoryParams");
-    writeMaxOut(tmpFile, response.getContent());
-    String str = readOutput(tmpFile);
+    String str = readMaxOut(response.getContent());
     System.out.println("testGetMetricsCategoryParams: " + str);
     Assert.assertTrue(str.contains(expected.trim()));
     Assert.assertFalse(str.contains("category=\"CORE\""));
@@ -292,24 +284,12 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     Assert.assertEquals(200, response.getStatus());
   }
 
-  private static void writeMaxOut(Path tmpFile, byte[] bytes) throws IOException {
+  private static String readMaxOut(byte[] bytes) throws IOException {
     int max = bytes.length > MAX_OUTPUT ? MAX_OUTPUT : bytes.length;
-    try (BufferedOutputStream tmpOut =
-        new BufferedOutputStream(
-            Files.newOutputStream(
-                tmpFile,
-                StandardOpenOption.CREATE,
-                StandardOpenOption.TRUNCATE_EXISTING,
-                StandardOpenOption.WRITE))) {
-      tmpOut.write(bytes, 0, max);
-    }
-  }
-
-  private String readOutput(Path tmpFile) throws IOException {
     String str = "";
-    try (InputStream tmpIn = Files.newInputStream(tmpFile, StandardOpenOption.READ)) {
-      byte[] bytes = tmpIn.readAllBytes();
-      str = new String(bytes, StandardCharsets.UTF_8);
+    try (ByteArrayOutputStream out = new ByteArrayOutputStream(max); ) {
+      out.write(bytes, 0, max);
+      str = out.toString(StandardCharsets.UTF_8);
     }
     return str;
   }
