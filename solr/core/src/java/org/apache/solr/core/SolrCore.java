@@ -17,8 +17,6 @@
 package org.apache.solr.core;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 import static org.apache.solr.metrics.SolrCoreMetricManager.COLLECTION_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.CORE_ATTR;
 import static org.apache.solr.metrics.SolrCoreMetricManager.REPLICA_TYPE_ATTR;
@@ -129,12 +127,9 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.JacksonJsonWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
-import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.ManagedResourceStorage;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
@@ -3082,37 +3077,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters =
       new PluginBag<>(QueryResponseWriter.class, this);
 
-  /**
-   * Minimal set of response writers for admin/container-level requests.
-   *
-   * <p>Admin requests have no associated SolrCore and cannot use the core's response writer
-   * registry loaded from ImplicitPlugins.json. This map provides only the essential formats needed
-   * by admin APIs:
-   *
-   * <ul>
-   *   <li><b>javabin</b> - Required by SolrJ clients (the primary programmatic API)
-   *   <li><b>json</b> - Required by Admin UI and most REST API consumers
-   *   <li><b>xml</b> - Occasionally used, provides backward compatibility
-   *   <li><b>prometheus/openmetrics</b> - Required by metrics endpoint
-   * </ul>
-   *
-   * <p>Core-specific requests use the full response writer registry loaded from
-   * ImplicitPlugins.json where ConfigOverlay deletions and customizations are respected.
-   */
-  private static final Map<String, QueryResponseWriter> ADMIN_RESPONSE_WRITERS;
-
-  static {
-    // Minimal set for admin/container requests (no core available)
-    HashMap<String, QueryResponseWriter> adminWriters = new HashMap<>(6, 1);
-    adminWriters.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
-    adminWriters.put(CommonParams.JSON, new JacksonJsonWriter());
-    adminWriters.put("standard", adminWriters.get(CommonParams.JSON)); // Alias for JSON
-    adminWriters.put("xml", new XMLResponseWriter());
-    adminWriters.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    adminWriters.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
-    ADMIN_RESPONSE_WRITERS = Collections.unmodifiableMap(adminWriters);
-  }
-
   private static JavaBinResponseWriter getFileStreamWriter() {
     return new JavaBinResponseWriter() {
       @Override
@@ -3152,21 +3116,16 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Gets a response writer suitable for admin/container-level requests. Only provides essential
-   * formats (javabin, json, xml, prometheus, openmetrics).
-   *
-   * <p>This method should be used for admin/container requests that have no associated SolrCore.
-   * For core-specific requests, use {@link SolrCore#getQueryResponseWriter(String)} which loads
-   * from ImplicitPlugins.json and respects ConfigOverlay settings.
+   * Gets a response writer suitable for admin/container-level requests.
    *
    * @param writerName the writer name, or null for default
-   * @return the response writer, never null (returns "standard"/json if not found)
+   * @return the response writer, never null
+   * @deprecated Use {@link
+   *     org.apache.solr.response.BuiltInResponseWriterRegistry#getWriter(String)} instead.
    */
+  @Deprecated
   public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    if (writerName == null || writerName.isEmpty()) {
-      return ADMIN_RESPONSE_WRITERS.get("standard");
-    }
-    return ADMIN_RESPONSE_WRITERS.getOrDefault(writerName, ADMIN_RESPONSE_WRITERS.get("standard"));
+    return org.apache.solr.response.BuiltInResponseWriterRegistry.getWriter(writerName);
   }
 
   /**

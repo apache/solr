@@ -30,6 +30,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.response.BuiltInResponseWriterRegistry;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -117,7 +118,7 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** The index searcher associated with this request */
   SolrIndexSearcher getSearcher();
 
-  /** The solr core (coordinator, etc) associated with this request */
+  /** The solr core (coordinator, etc.) associated with this request */
   SolrCore getCore();
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
@@ -206,18 +207,11 @@ public interface SolrQueryRequest extends AutoCloseable {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
     SolrCore core = getCore();
     String wt = getParams().get(CommonParams.WT);
+    // Use core writers if available, otherwise fall back to built-in writers
     if (core != null) {
-      // Core-specific request: use full ImplicitPlugins.json registry
       return core.getQueryResponseWriter(wt);
     } else {
-      // Admin/container request: use minimal admin writers
-      // return SolrCore.getAdminResponseWriter(wt);
-      QueryResponseWriter qw = SolrCore.getAdminResponseWriter(wt);
-      if (qw == null) {
-        // not sure this is needed.
-        qw = SolrCore.getAdminResponseWriter("standard");
-      }
-      return qw;
+      return BuiltInResponseWriterRegistry.getWriter(wt);
     }
   }
 
