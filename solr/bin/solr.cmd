@@ -510,6 +510,7 @@ goto parse_args
 
 :set_cloud_mode
 set SOLR_MODE=solrcloud
+set "PASS_TO_RUN_EXAMPLE=--cloud !PASS_TO_RUN_EXAMPLE!"
 REM Notify user in 9.x about the default mode change if cloud flag is used.
 @echo Solr will start in SolrCloud mode by default in version 10, and you will no longer need to pass in -c or --cloud flag.
 SHIFT
