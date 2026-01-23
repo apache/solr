@@ -487,10 +487,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse commit(String collection, boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
-    return new UpdateRequest()
-        .setAction(
-            UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(waitSearcher))
-        .process(this, collection);
+    return commit(collection, CommitOptions.hardCommit().waitSearcher(waitSearcher));
   }
 
   /**
@@ -538,11 +535,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   public UpdateResponse commit(
       String collection, boolean waitFlush, boolean waitSearcher, boolean softCommit)
       throws SolrServerException, IOException {
-    return new UpdateRequest()
-        .setAction(
-            UpdateRequest.ACTION.COMMIT,
-            new CommitOptions().waitSearcher(waitSearcher).softCommit(softCommit))
-        .process(this, collection);
+    return commit(collection, CommitOptions.commit(softCommit).waitSearcher(waitSearcher));
   }
 
   /**

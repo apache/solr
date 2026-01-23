@@ -63,7 +63,7 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
    * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
    *     ignored.
    */
-  @Deprecated(since = "10.0")
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher) {
     return setAction(action, waitFlush, waitSearcher, 1);
   }
