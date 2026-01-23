@@ -24,12 +24,12 @@ import io.prometheus.metrics.model.snapshots.MetricSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.StrUtils;
 
@@ -180,7 +180,7 @@ public class MetricsUtil {
       return Set.of();
     }
 
-    Set<String> paramSet = new TreeSet<>();
+    Set<String> paramSet = new HashSet<>();
     for (String param : paramValues) {
       if (param != null && param.length() > 0) paramSet.addAll(StrUtils.splitSmart(param, ','));
     }

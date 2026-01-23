@@ -98,9 +98,9 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     validateRequest(acceptHeader);
 
     // TODO: fix AdminHandlersProxy to support V2
-    // if (proxyToNodes()) {
-    //  return null;
-    // }
+    if (proxyToNodes()) {
+      return null;
+    }
 
     // Using the same logic, same methods, as in MetricsHandler.handleRequest
     Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
@@ -143,7 +143,7 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     try {
       if (coreContainer != null
           && AdminHandlersProxy.maybeProxyToNodes(
-              solrQueryRequest, solrQueryResponse, coreContainer)) {
+              "V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
         return true; // Request was proxied to other node
       }
     } catch (Exception e) {
