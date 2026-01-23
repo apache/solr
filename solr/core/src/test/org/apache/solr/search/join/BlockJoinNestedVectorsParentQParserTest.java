@@ -77,7 +77,10 @@ public class BlockJoinNestedVectorsParentQParserTest extends SolrTestCaseJ4 {
             "fl",
             "id,score",
             "children.q",
-            "{!knn f=" + vectorField + " topK=3 parents.preFilter=$someParents}" + FLOAT_QUERY_VECTOR,
+            "{!knn f="
+                + vectorField
+                + " topK=3 parents.preFilter=$someParents}"
+                + FLOAT_QUERY_VECTOR,
             "allParents",
             "parent_s:[* TO *]",
             "someParents",
