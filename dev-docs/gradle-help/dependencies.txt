@@ -255,3 +255,28 @@ file as a URL under a <license> tag if there is no reference to a repository
 in Maven Central, or in the artifact downloaded by maven when the library
 is added as a dependency (in IntelliJ IDEA the libraries can be found
 in the project view under External Libraries at the bottom).
+
+Gradle analyzeDependencies and analyzeTestDependencies
+-----------------------------------------
+
+We use the "cutterslade.analyze" build plugin to help maintain good dependency hygiene.
+It tries to identify when a dependency is needlessly declared, and then fail the build to complain.
+Unfortunately, it also requires us to add declarations that Gradle would otherwise deem unnecessary,
+ since the plugin isn't aware of the semantics of "api" scope.
+
+Since the plugin is imperfect, there are rare scenarios where we need to use one of its many special
+ gradle configurations, such as permitUnusedDeclared and permitTestUnusedDeclared.
+Please avoid them by finding alternatives (if possible) -- get peer review.
+
+For example, did you declare something as implementation (or testImplementation) but it's not needed at compile time?
+Remove it.
+If it's needed at runtime, then add as runtimeOnly (or testRuntimeOnly), *if* it otherwise
+doesn't come transitively as such.
+Let passing tests be your guide.
+Try to be minimalist, omitting dependency declarations unless a failing build requires that you add them.
+
+At each iteration of experimentation doing any dependency change in a build, write the gradle dependency locks.
+*Then* run checks or otherwise evaluate the results.
+A failure due to dependency locks is generally a failure to remember to write locks; it usually doesn't mean your build edits are flawed.
+
+For more info: https://github.com/gradle-dependency-analyze/gradle-dependency-analyze
