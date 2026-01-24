@@ -66,7 +66,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     up.setParam("collection", COLLECTION_NAME);
     up.addFile(getFile("solrj/techproducts.xml"), "application/xml");
     up.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     UpdateResponse updateResponse = up.process(cluster.getSolrClient());
     assertEquals(0, updateResponse.getStatus());
   }

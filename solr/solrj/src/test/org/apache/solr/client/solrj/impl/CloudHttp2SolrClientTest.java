@@ -364,7 +364,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
             .add(id, "0", "a_t", "hello1")
             .add(id, "2", "a_t", "hello2")
             .setAction(
-                AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+                AbstractUpdateRequest.ACTION.COMMIT,
+                CommitOptions.forHardCommit().waitSearcher(true));
 
     // Test single threaded routed updates for UpdateRequest
     NamedList<Object> response = getRandomClient().request(request, "routing_collection");

@@ -268,7 +268,7 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
       doc.addField("cat", "foocat");
       req.add(doc);
     }
-    req.setAction(ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+    req.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     req.process(client);
 
     // Make sure it ran OK

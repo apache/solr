@@ -92,7 +92,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
       UpdateRequest ur = new UpdateRequest();
       ur.setAction(
-          AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+          AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
       int docCount = 1000;
 
       for (int i = 0; i < docCount; i++) {
@@ -197,7 +197,7 @@ public class TestExportTool extends SolrCloudTestCase {
         int bsz = 10000;
         UpdateRequest ur = new UpdateRequest();
         ur.setAction(
-            AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+            AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
         for (int i = 0; i < bsz; i++) {
           ur.add(
               "id",

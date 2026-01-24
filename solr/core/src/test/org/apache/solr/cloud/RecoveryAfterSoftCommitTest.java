@@ -94,7 +94,8 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
     AbstractUpdateRequest request =
         new UpdateRequest()
             .setAction(
-                AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.softCommit().waitSearcher(true));
+                AbstractUpdateRequest.ACTION.COMMIT,
+                CommitOptions.forSoftCommit().waitSearcher(true));
     cloudClient.request(request);
 
     Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);

@@ -372,7 +372,7 @@ public class MiniClusterState {
         log("committing data ...");
         UpdateRequest commitRequest = new UpdateRequest();
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
-        commitRequest.setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit());
+        commitRequest.setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
         client.requestWithBaseUrl(url, commitRequest, collection);
         log("done committing data");
       } else {
@@ -504,7 +504,7 @@ public class MiniClusterState {
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
         optimizeRequest.setAction(
             UpdateRequest.ACTION.OPTIMIZE,
-            CommitOptions.optimize(maxMergeSegments).waitSearcher(true));
+            CommitOptions.forOptimize(maxMergeSegments).waitSearcher(true));
         client.requestWithBaseUrl(url, optimizeRequest, collection);
       }
     }

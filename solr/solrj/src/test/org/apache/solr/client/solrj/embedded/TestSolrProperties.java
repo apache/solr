@@ -35,7 +35,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   public void testProperties() throws Exception {
 
     UpdateRequest up = new UpdateRequest();
-    up.setAction(ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+    up.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     up.deleteByQuery("*:*");
     up.process(getSolrCore0());
     up.process(getSolrCore1());

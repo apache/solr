@@ -46,14 +46,14 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
   public AbstractUpdateRequest setAction(ACTION action, CommitOptions options) {
     if (action == ACTION.OPTIMIZE) {
       params.set(UpdateParams.OPTIMIZE, "true");
-      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, options.getMaxOptimizeSegments());
+      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, options.maxOptimizeSegments());
     } else if (action == ACTION.COMMIT) {
       params.set(UpdateParams.COMMIT, "true");
-      params.set(UpdateParams.SOFT_COMMIT, String.valueOf(options.getSoftCommit()));
+      params.set(UpdateParams.SOFT_COMMIT, String.valueOf(options.softCommit()));
     }
-    params.set(UpdateParams.WAIT_SEARCHER, String.valueOf(options.getWaitSearcher()));
-    params.set(UpdateParams.OPEN_SEARCHER, String.valueOf(options.getOpenSearcher()));
-    params.set(UpdateParams.EXPUNGE_DELETES, String.valueOf(options.getExpungeDeletes()));
+    params.set(UpdateParams.WAIT_SEARCHER, String.valueOf(options.waitSearcher()));
+    params.set(UpdateParams.OPEN_SEARCHER, String.valueOf(options.openSearcher()));
+    params.set(UpdateParams.EXPUNGE_DELETES, String.valueOf(options.expungeDeletes()));
     return this;
   }
 

@@ -422,7 +422,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse commit(String collection) throws SolrServerException, IOException {
-    return commit(collection, CommitOptions.hardCommit().waitSearcher(true));
+    return commit(collection, CommitOptions.forHardCommit().waitSearcher(true));
   }
 
   /**
@@ -464,7 +464,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse commit() throws SolrServerException, IOException {
-    return commit(null, CommitOptions.hardCommit().waitSearcher(true));
+    return commit(null, CommitOptions.forHardCommit().waitSearcher(true));
   }
 
   /**
@@ -487,7 +487,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse commit(String collection, boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
-    return commit(collection, CommitOptions.hardCommit().waitSearcher(waitSearcher));
+    return commit(collection, CommitOptions.forHardCommit().waitSearcher(waitSearcher));
   }
 
   /**
@@ -509,7 +509,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse commit(boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
-    return commit(null, CommitOptions.hardCommit().waitSearcher(waitSearcher));
+    return commit(null, CommitOptions.forHardCommit().waitSearcher(waitSearcher));
   }
 
   /**
@@ -576,7 +576,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse optimize(String collection) throws SolrServerException, IOException {
-    return optimize(collection, CommitOptions.optimize(1).waitSearcher(true));
+    return optimize(collection, CommitOptions.forOptimize(1).waitSearcher(true));
   }
 
   /**
@@ -592,7 +592,7 @@ public abstract class SolrClient implements Serializable, Closeable {
    * @throws SolrServerException if there is an error on the server
    */
   public UpdateResponse optimize() throws SolrServerException, IOException {
-    return optimize(null, CommitOptions.optimize(1).waitSearcher(true));
+    return optimize(null, CommitOptions.forOptimize(1).waitSearcher(true));
   }
 
   /**
@@ -631,7 +631,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse optimize(String collection, boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
-    return optimize(collection, CommitOptions.optimize(1).waitSearcher(waitSearcher));
+    return optimize(collection, CommitOptions.forOptimize(1).waitSearcher(waitSearcher));
   }
 
   /**
@@ -650,7 +650,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher)
       throws SolrServerException, IOException {
-    return optimize(null, CommitOptions.optimize(1).waitSearcher(waitSearcher));
+    return optimize(null, CommitOptions.forOptimize(1).waitSearcher(waitSearcher));
   }
 
   /**
@@ -672,7 +672,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   public UpdateResponse optimize(
       String collection, boolean waitFlush, boolean waitSearcher, int maxSegments)
       throws SolrServerException, IOException {
-    return optimize(collection, CommitOptions.optimize(maxSegments).waitSearcher(waitSearcher));
+    return optimize(collection, CommitOptions.forOptimize(maxSegments).waitSearcher(waitSearcher));
   }
 
   /**
@@ -692,7 +692,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   @Deprecated(since = "10.1")
   public UpdateResponse optimize(boolean waitFlush, boolean waitSearcher, int maxSegments)
       throws SolrServerException, IOException {
-    return optimize(null, CommitOptions.optimize(maxSegments).waitSearcher(waitSearcher));
+    return optimize(null, CommitOptions.forOptimize(maxSegments).waitSearcher(waitSearcher));
   }
 
   /**

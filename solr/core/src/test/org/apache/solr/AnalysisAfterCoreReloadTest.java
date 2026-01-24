@@ -58,7 +58,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
     // default stopwords - stopworda and stopwordb
 
     UpdateRequest up = new UpdateRequest();
-    up.setAction(ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+    up.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     up.add(doc);
     up.process(getSolrCore());
 

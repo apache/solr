@@ -1061,7 +1061,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       }
     }
 
-    cloudSolrClient.commit(collectionName, CommitOptions.softCommit());
+    cloudSolrClient.commit(collectionName, CommitOptions.forSoftCommit());
     if (!errorsDuringIndexing.isEmpty()) {
       return errorsDuringIndexing;
     }
@@ -1084,7 +1084,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       // wait up to 5 seconds for this to occur
       final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
       do {
-        cloudSolrClient.commit(collectionName, CommitOptions.softCommit().waitSearcher(true));
+        cloudSolrClient.commit(collectionName, CommitOptions.forSoftCommit().waitSearcher(true));
         queryResponse = cloudSolrClient.query(collectionName, query);
         numFound = queryResponse.getResults().getNumFound();
         if (numFound >= numAdded) {

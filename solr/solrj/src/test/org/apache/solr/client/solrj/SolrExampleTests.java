@@ -971,7 +971,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     }
 
     up.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     NamedList<Object> result = client.request(up);
     assertNotNull("Couldn't upload books.csv", result);
 
@@ -996,7 +996,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
             new StreamingUpdateRequest("/update", getFile("solrj/books.csv"), "application/csv")
                 .setAction(
                     AbstractUpdateRequest.ACTION.COMMIT,
-                    CommitOptions.hardCommit().waitSearcher(true)));
+                    CommitOptions.forHardCommit().waitSearcher(true)));
     assertNotNull("Couldn't upload books.csv", result);
     rsp = client.query(new SolrQuery("*:*"));
     assertEquals(10, rsp.getResults().getNumFound());
@@ -1021,7 +1021,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     MultiContentWriterRequest up =
         new MultiContentWriterRequest(SolrRequest.METHOD.POST, "/update", docs.iterator());
     up.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     NamedList<Object> result = client.request(up);
     System.out.println(result.jsonStr());
     rsp = client.query(new SolrQuery("*:*"));
@@ -1048,7 +1048,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     up.setParam("a", "\u1234");
     up.setParam(CommonParams.HEADER_ECHO_PARAMS, CommonParams.EchoParamStyle.ALL.toString());
     up.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     NamedList<Object> result = client.request(up);
     assertEquals(
         "\u1234", ((NamedList) ((NamedList) result.get("responseHeader")).get("params")).get("a"));
@@ -2353,7 +2353,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     doc.addField("text", "北京医科大学");
     req.add(doc);
 
-    req.setAction(ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true));
+    req.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     req.process(client);
 
     // Beijing university should match:

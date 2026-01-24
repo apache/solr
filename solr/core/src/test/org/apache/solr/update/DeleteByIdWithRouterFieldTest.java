@@ -105,7 +105,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
         0,
         new UpdateRequest()
             .deleteByQuery("*:*")
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(solrClient)
             .getStatus());
   }
@@ -176,7 +177,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     assertEquals(
         0,
         add100Docs()
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(getRandomSolrClient())
             .getStatus());
     assertEquals(100, getRandomSolrClient().query(params("q", "*:*")).getResults().getNumFound());
@@ -186,7 +188,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
         0,
         new UpdateRequest()
             .deleteById("06", RVAL_PRE + "6")
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(getRandomSolrClient())
             .getStatus());
     assertEquals(99, getRandomSolrClient().query(params("q", "*:*")).getResults().getNumFound());
@@ -199,7 +202,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
         new UpdateRequest()
             .deleteById("17", RVAL_PRE + "7")
             .deleteById("18", RVAL_PRE + "8")
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(getRandomSolrClient())
             .getStatus());
     assertEquals(97, getRandomSolrClient().query(params("q", "*:*")).getResults().getNumFound());
@@ -213,7 +217,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
             .deleteById("29")
             .deleteById("39")
             .withRoute(RVAL_PRE + "9")
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(getRandomSolrClient())
             .getStatus());
     assertEquals(95, getRandomSolrClient().query(params("q", "*:*")).getResults().getNumFound());
@@ -241,7 +246,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
           new UpdateRequest()
               .deleteById("48", RVAL_PRE + "8", v48)
               .deleteById("49", RVAL_PRE + "9", v49)
-              .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+              .setAction(
+                  UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
               .process(getRandomSolrClient())
               .getStatus());
     }
@@ -272,7 +278,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
               .deleteById("58", v58)
               .deleteById("68", v68)
               .withRoute(RVAL_PRE + "8")
-              .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+              .setAction(
+                  UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
               .process(getRandomSolrClient())
               .getStatus());
     }
@@ -284,7 +291,8 @@ public class DeleteByIdWithRouterFieldTest extends SolrCloudTestCase {
     assertEquals(
         0,
         del100Docs()
-            .setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.hardCommit().waitSearcher(true))
+            .setAction(
+                UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true))
             .process(getRandomSolrClient())
             .getStatus());
     assertEquals(0, getRandomSolrClient().query(params("q", "*:*")).getResults().getNumFound());

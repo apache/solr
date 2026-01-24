@@ -249,7 +249,7 @@ public class CollectionHandlingUtils {
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.softCommit().waitSearcher(true));
+        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forSoftCommit().waitSearcher(true));
     return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 

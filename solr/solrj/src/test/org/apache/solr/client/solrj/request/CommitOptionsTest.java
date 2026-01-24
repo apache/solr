@@ -31,51 +31,51 @@ public class CommitOptionsTest {
   @Test
   public void testDefaultOptions() {
     CommitOptions options = new CommitOptions();
-    assertTrue(options.getWaitSearcher());
-    assertTrue(options.getOpenSearcher());
-    assertFalse(options.getSoftCommit());
-    assertFalse(options.getExpungeDeletes());
-    assertEquals(Integer.MAX_VALUE, options.getMaxOptimizeSegments());
+    assertTrue(options.waitSearcher());
+    assertTrue(options.openSearcher());
+    assertFalse(options.softCommit());
+    assertFalse(options.expungeDeletes());
+    assertEquals(Integer.MAX_VALUE, options.maxOptimizeSegments());
   }
 
   @Test
   public void testFluentAPI() {
     CommitOptions options =
         new CommitOptions()
-            .waitSearcher(false)
-            .openSearcher(false)
-            .softCommit(true)
-            .expungeDeletes(true)
-            .maxOptimizeSegments(5);
+            .withWaitSearcher(false)
+            .withOpenSearcher(false)
+            .withSoftCommit(true)
+            .withExpungeDeletes(true)
+            .withMaxOptimizeSegments(5);
 
-    assertFalse(options.getWaitSearcher());
-    assertFalse(options.getOpenSearcher());
-    assertTrue(options.getSoftCommit());
-    assertTrue(options.getExpungeDeletes());
-    assertEquals(5, options.getMaxOptimizeSegments());
+    assertFalse(options.waitSearcher());
+    assertFalse(options.openSearcher());
+    assertTrue(options.softCommit());
+    assertTrue(options.expungeDeletes());
+    assertEquals(5, options.maxOptimizeSegments());
   }
 
   @Test
   public void testFactoryMethods() {
     // Hard commit
-    CommitOptions hardCommit = CommitOptions.hardCommit();
-    assertFalse(hardCommit.getSoftCommit());
-    assertTrue(hardCommit.getWaitSearcher());
+    CommitOptions hardCommit = CommitOptions.forHardCommit();
+    assertFalse(hardCommit.softCommit());
+    assertTrue(hardCommit.waitSearcher());
 
     // Soft commit
-    CommitOptions softCommit = CommitOptions.softCommit();
-    assertTrue(softCommit.getSoftCommit());
-    assertTrue(softCommit.getWaitSearcher());
+    CommitOptions softCommit = CommitOptions.forSoftCommit();
+    assertTrue(softCommit.softCommit());
+    assertTrue(softCommit.waitSearcher());
 
     // Optimize
-    CommitOptions optimize = CommitOptions.optimize();
-    assertTrue(optimize.getExpungeDeletes());
-    assertEquals(1, optimize.getMaxOptimizeSegments());
+    CommitOptions optimize = CommitOptions.forOptimize();
+    assertTrue(optimize.expungeDeletes());
+    assertEquals(1, optimize.maxOptimizeSegments());
 
     // Optimize with max segments
-    CommitOptions optimizeWithMaxSegments = CommitOptions.optimize(3);
-    assertTrue(optimizeWithMaxSegments.getExpungeDeletes());
-    assertEquals(3, optimizeWithMaxSegments.getMaxOptimizeSegments());
+    CommitOptions optimizeWithMaxSegments = CommitOptions.forOptimize(3);
+    assertTrue(optimizeWithMaxSegments.expungeDeletes());
+    assertEquals(3, optimizeWithMaxSegments.maxOptimizeSegments());
   }
 
   @Test
@@ -83,22 +83,22 @@ public class CommitOptionsTest {
     CommitOptions options = new CommitOptions();
 
     // Valid values should work
-    options.maxOptimizeSegments(1);
-    assertEquals(1, options.getMaxOptimizeSegments());
+    options = options.withMaxOptimizeSegments(1);
+    assertEquals(1, options.maxOptimizeSegments());
 
-    options.maxOptimizeSegments(100);
-    assertEquals(100, options.getMaxOptimizeSegments());
+    options = options.withMaxOptimizeSegments(100);
+    assertEquals(100, options.maxOptimizeSegments());
 
     // Invalid values should throw exception
     try {
-      options.maxOptimizeSegments(0);
+      options.withMaxOptimizeSegments(0);
       fail("Expected IllegalArgumentException for maxOptimizeSegments = 0");
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("maxOptimizeSegments must be >= 1"));
     }
 
     try {
-      options.maxOptimizeSegments(-1);
+      options.withMaxOptimizeSegments(-1);
       fail("Expected IllegalArgumentException for maxOptimizeSegments = -1");
     } catch (IllegalArgumentException e) {
       assertTrue(e.getMessage().contains("maxOptimizeSegments must be >= 1"));
@@ -107,14 +107,16 @@ public class CommitOptionsTest {
 
   @Test
   public void testEqualsAndHashCode() {
+    // While Records automatically generate equals() and hashCode(), we test them here
+    // to verify the behavior and catch any regressions
     CommitOptions options1 =
-        new CommitOptions().waitSearcher(false).softCommit(true).maxOptimizeSegments(5);
+        new CommitOptions().withWaitSearcher(false).withSoftCommit(true).withMaxOptimizeSegments(5);
 
     CommitOptions options2 =
-        new CommitOptions().waitSearcher(false).softCommit(true).maxOptimizeSegments(5);
+        new CommitOptions().withWaitSearcher(false).withSoftCommit(true).withMaxOptimizeSegments(5);
 
     CommitOptions options3 =
-        new CommitOptions().waitSearcher(true).softCommit(true).maxOptimizeSegments(5);
+        new CommitOptions().withWaitSearcher(true).withSoftCommit(true).withMaxOptimizeSegments(5);
 
     assertEquals(options1, options2);
     assertEquals(options1.hashCode(), options2.hashCode());
@@ -125,12 +127,14 @@ public class CommitOptionsTest {
 
   @Test
   public void testToString() {
+    // While Records automatically generate toString(), we test the format here
+    // for documentation and regression testing purposes
     CommitOptions options =
         new CommitOptions()
-            .waitSearcher(false)
-            .softCommit(true)
-            .expungeDeletes(true)
-            .maxOptimizeSegments(3);
+            .withWaitSearcher(false)
+            .withSoftCommit(true)
+            .withExpungeDeletes(true)
+            .withMaxOptimizeSegments(3);
 
     String str = options.toString();
     assertTrue(str.contains("waitSearcher=false"));
@@ -144,7 +148,8 @@ public class CommitOptionsTest {
     UpdateRequest updateRequest = new UpdateRequest();
 
     // Test with hard commit
-    CommitOptions hardCommit = CommitOptions.hardCommit().waitSearcher(false).openSearcher(true);
+    CommitOptions hardCommit =
+        CommitOptions.forHardCommit().withWaitSearcher(false).withOpenSearcher(true);
 
     updateRequest.setAction(AbstractUpdateRequest.ACTION.COMMIT, hardCommit);
 
@@ -155,7 +160,8 @@ public class CommitOptionsTest {
 
     // Test with optimize
     UpdateRequest optimizeRequest = new UpdateRequest();
-    CommitOptions optimize = CommitOptions.optimize(5).waitSearcher(true).expungeDeletes(false);
+    CommitOptions optimize =
+        CommitOptions.forOptimize(5).withWaitSearcher(true).withExpungeDeletes(false);
 
     optimizeRequest.setAction(AbstractUpdateRequest.ACTION.OPTIMIZE, optimize);
 
