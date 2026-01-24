@@ -115,18 +115,20 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
    * A Java system property to set the initial HTTP/2 session receive window size (in bytes). Only
    * applies when using HTTP/2 transport.
    */
-  public static final String HTTP2_SESSION_RECV_WINDOW_SYSPROP = "solr.http2.initialSessionRecvWindow";
+  public static final String HTTP2_SESSION_RECV_WINDOW_SYSPROP =
+      "solr.http2.initialSessionRecvWindow";
 
   /**
    * A Java system property to set the initial HTTP/2 stream receive window size (in bytes). Only
    * applies when using HTTP/2 transport.
    */
-  public static final String HTTP2_STREAM_RECV_WINDOW_SYSPROP = "solr.http2.initialStreamRecvWindow";
+  public static final String HTTP2_STREAM_RECV_WINDOW_SYSPROP =
+      "solr.http2.initialStreamRecvWindow";
 
   /**
    * A Java system property to enable the simple flow control strategy for HTTP/2. When set to
-   * "true", uses {@link SimpleFlowControlStrategy} instead of the default buffering
-   * strategy. Only applies when using HTTP/2 transport.
+   * "true", uses {@link SimpleFlowControlStrategy} instead of the default buffering strategy. Only
+   * applies when using HTTP/2 transport.
    */
   public static final String HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP = "solr.http2.useSimpleFlowControl";
 
@@ -295,7 +297,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     HttpClient httpClient;
     HttpClientTransport transport;
     if (builder.shouldUseHttp1_1()) {
-      log.info("Create HttpJettySolrClient with HTTP/1.1 transport (solr.http1={})", System.getProperty("solr.http1"));
+      log.info(
+          "Create HttpJettySolrClient with HTTP/1.1 transport (solr.http1={})",
+          System.getProperty("solr.http1"));
 
       transport = new HttpClientTransportOverHTTP(clientConnector);
       httpClient = new HttpClient(transport);
@@ -303,7 +307,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
         httpClient.setMaxConnectionsPerDestination(builder.getMaxConnectionsPerHost());
       }
     } else {
-      log.info("Create HttpJettySolrClient with HTTP/2 transport (solr.http1={})", System.getProperty("solr.http1"));
+      log.info(
+          "Create HttpJettySolrClient with HTTP/2 transport (solr.http1={})",
+          System.getProperty("solr.http1"));
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
       configureHttp2FlowControl(http2client);

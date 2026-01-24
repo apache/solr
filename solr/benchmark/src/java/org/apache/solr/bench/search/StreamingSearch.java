@@ -102,7 +102,8 @@ public class StreamingSearch {
       Docs docGen = createDocsWithTargetSize(docSizeBytes, numTextFields);
 
       if (indexThreads > 0) {
-        miniClusterState.indexParallelBatched(collection, docGen, docCount, indexThreads, batchSize);
+        miniClusterState.indexParallelBatched(
+            collection, docGen, docCount, indexThreads, batchSize);
       } else {
         miniClusterState.index(collection, docGen, docCount, false);
       }
@@ -151,7 +152,10 @@ public class StreamingSearch {
       for (int i = 1; i <= numFields; i++) {
         docGen.field(
             "text" + i + "_ts",
-            strings().basicLatinAlphabet().multi(wordsPerField).ofLengthBetween(minWordLength, maxWordLength));
+            strings()
+                .basicLatinAlphabet()
+                .multi(wordsPerField)
+                .ofLengthBetween(minWordLength, maxWordLength));
       }
 
       docGen.field("int1_i_dv", integers().all());

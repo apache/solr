@@ -106,15 +106,21 @@ public class ReplicationRecovery {
           docs()
               .field("id", integers().incrementing())
               // Multiple large string fields to bulk up document size to ~100KB (no analysis)
-              .field("text1_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text2_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text3_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
-              .field("text4_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field(
+                  "text1_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field(
+                  "text2_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field(
+                  "text3_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
+              .field(
+                  "text4_ss", strings().basicLatinAlphabet().multi(100).ofLengthBetween(200, 400))
               .field("text5_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
               .field("text6_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
               .field("text7_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
               .field("text8_ss", strings().basicLatinAlphabet().multi(80).ofLengthBetween(150, 300))
-              .field("content_ss", strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
+              .field(
+                  "content_ss",
+                  strings().basicLatinAlphabet().multi(200).ofLengthBetween(100, 200));
     }
 
     @Setup(Level.Trial)
@@ -140,7 +146,12 @@ public class ReplicationRecovery {
       // Force all replicas to be created on the first node
       // Node name format is host:port_solr (with underscore, not slash)
       String firstNode =
-          miniClusterState.nodes.get(0).replace("http://", "").replace("https://", "").replace("/", "_");
+          miniClusterState
+              .nodes
+              .get(0)
+              .replace("http://", "")
+              .replace("https://", "")
+              .replace("/", "_");
       log("First node name for createNodeSet: " + firstNode);
       createRequest.setCreateNodeSet(firstNode);
       miniClusterState.client.requestWithBaseUrl(
@@ -149,12 +160,20 @@ public class ReplicationRecovery {
       miniClusterState.cluster.waitForActiveCollection(
           COLLECTION, 30, TimeUnit.SECONDS, numShards, numShards);
 
-      log("Collection created. Indexing " + docCount + " documents with " + indexThreads + " threads, batch size " + batchSize + "...");
+      log(
+          "Collection created. Indexing "
+              + docCount
+              + " documents with "
+              + indexThreads
+              + " threads, batch size "
+              + batchSize
+              + "...");
 
       // Index documents
       long indexStart = System.currentTimeMillis();
       if (indexThreads > 0) {
-        miniClusterState.indexParallelBatched(COLLECTION, largeDocs, docCount, indexThreads, batchSize);
+        miniClusterState.indexParallelBatched(
+            COLLECTION, largeDocs, docCount, indexThreads, batchSize);
       } else {
         miniClusterState.index(COLLECTION, largeDocs, docCount, false);
       }
@@ -187,10 +206,16 @@ public class ReplicationRecovery {
 
     // Parse replica type
     Replica.Type type = Replica.Type.valueOf(state.replicaType.toUpperCase());
-    log("Starting replication of " + state.numShards + " shards to second node (replica type: " + type + ")...");
+    log(
+        "Starting replication of "
+            + state.numShards
+            + " shards to second node (replica type: "
+            + type
+            + ")...");
 
     // Get the second node name (without http prefix, with underscore) for the replica placement
-    String secondNode = state.secondNodeUrl.replace("http://", "").replace("https://", "").replace("/", "_");
+    String secondNode =
+        state.secondNodeUrl.replace("http://", "").replace("https://", "").replace("/", "_");
 
     // Add a replica for each shard to the second node
     for (int i = 1; i <= state.numShards; i++) {
@@ -261,4 +286,3 @@ public class ReplicationRecovery {
     return duration;
   }
 }
-

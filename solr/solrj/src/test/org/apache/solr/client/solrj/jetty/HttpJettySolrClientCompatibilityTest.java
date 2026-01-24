@@ -58,8 +58,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrJettyTestBase {
 
     try (var client = new HttpJettySolrClient.Builder().build()) {
       var transport = client.getHttpClient().getTransport();
-      assertTrue(
-          "Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
+      assertTrue("Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
 
       HttpClientTransportOverHTTP2 http2Transport = (HttpClientTransportOverHTTP2) transport;
       HTTP2Client http2Client = http2Transport.getHTTP2Client();
@@ -100,8 +99,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrJettyTestBase {
 
     try (var client = new HttpJettySolrClient.Builder().build()) {
       var transport = client.getHttpClient().getTransport();
-      assertTrue(
-          "Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
+      assertTrue("Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
 
       HttpClientTransportOverHTTP2 http2Transport = (HttpClientTransportOverHTTP2) transport;
       HTTP2Client http2Client = http2Transport.getHTTP2Client();

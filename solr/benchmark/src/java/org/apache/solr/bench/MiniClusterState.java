@@ -507,7 +507,13 @@ public class MiniClusterState {
             if (meter.getCount() >= docCount) {
               scheduledExecutor.shutdown();
             } else {
-              log(meter.getCount() + "/" + docCount + " docs at " + (long) meter.getMeanRate() + " doc/s");
+              log(
+                  meter.getCount()
+                      + "/"
+                      + docCount
+                      + " docs at "
+                      + (long) meter.getMeanRate()
+                      + " doc/s");
             }
           },
           5,
@@ -521,25 +527,26 @@ public class MiniClusterState {
       for (int t = 0; t < numThreads; t++) {
         final int threadDocsCount = docsPerThread + (t < remainder ? 1 : 0);
 
-        executorService.execute(() -> {
-          List<SolrInputDocument> batch = new ArrayList<>(batchSize);
+        executorService.execute(
+            () -> {
+              List<SolrInputDocument> batch = new ArrayList<>(batchSize);
 
-          for (int i = 0; i < threadDocsCount; i++) {
-            batch.add(docs.inputDocument());
+              for (int i = 0; i < threadDocsCount; i++) {
+                batch.add(docs.inputDocument());
 
-            if (batch.size() >= batchSize) {
-              sendBatch(collection, batch, indexingException);
-              meter.mark(batch.size());
-              batch.clear();
-            }
-          }
+                if (batch.size() >= batchSize) {
+                  sendBatch(collection, batch, indexingException);
+                  meter.mark(batch.size());
+                  batch.clear();
+                }
+              }
 
-          // Send remaining docs
-          if (!batch.isEmpty()) {
-            sendBatch(collection, batch, indexingException);
-            meter.mark(batch.size());
-          }
-        });
+              // Send remaining docs
+              if (!batch.isEmpty()) {
+                sendBatch(collection, batch, indexingException);
+                meter.mark(batch.size());
+              }
+            });
       }
 
       executorService.shutdown();
