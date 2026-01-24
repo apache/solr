@@ -686,6 +686,8 @@ public abstract class LBSolrClient extends SolrClient {
     if (t instanceof ConnectException || t instanceof HttpConnectTimeoutException) {
       return true;
     }
+    // Check for common connection timeout exceptions by name to avoid hard dependencies on
+    // specific HTTP client libraries (e.g., Jetty or Apache HttpClient).
     return t != null && t.getClass().getName().endsWith("ConnectTimeoutException");
   }
 
