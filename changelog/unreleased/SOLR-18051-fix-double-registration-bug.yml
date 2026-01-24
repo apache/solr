@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: prevent rare deadlock condition and double the possible throughput of coordinator fanouts
+title: Improve HttpJettySolrClient.requestAsync (used in sharded/distributed-search and more) to increase throughput and prevent a rare deadlock.
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: James Vanneman
