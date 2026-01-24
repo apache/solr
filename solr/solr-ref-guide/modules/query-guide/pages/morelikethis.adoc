@@ -47,6 +47,11 @@ The field used for the `uniqueKey` must also be stored in order for MoreLikeThis
 Terms from the original document are filtered using thresholds defined with the MoreLikeThis parameters.
 Once the terms have been selected, a query is run with any other query parameters as appropriate and a new document set is returned.
 
+The examples listed assume that you have loaded the example book data into Solr via:
+
+[source,bash]
+bin/solr post -c gettingstarted example/exampledocs/books.csv
+
 == MoreLikeThis Handler and Component
 
 The MoreLikeThis request handler and search component share several parameters, but also have some key differences in response and operation, as described below.
@@ -196,7 +201,7 @@ Manual Configuration::
 [source,xml]
 ----
 <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
-  <str name="mlt.fl">body</str>
+  <str name="mlt.fl">text</str>
 </requestHandler>
 ----
 ====
@@ -206,19 +211,19 @@ Config API::
 ====
 [source,bash]
 ----
-curl -X POST -H 'Content-type:application/json' -d {
+curl -X POST -H 'Content-type:application/json' -d '{
   "add-requesthandler": {
     "name": "/mlt",
     "class": "solr.MoreLikeThisHandler",
-    "defaults": {"mlt.fl": "body"}
+    "defaults": {"mlt.fl": "text"}
   }
-} http://localhost:8983/solr/<collection>/config
+}' http://localhost:8983/solr/gettingstarted/config
 ----
 ====
 ======
 
-Both of the above examples set the `mlt.fl` parameter to "body" for the request handler.
-This means that all requests to the handler will use that value for the parameter unless specifically overridden in an individual request.
+Both of the above examples set the `mlt.fl` parameter to "text" for the request handler.
+This means that all requests to the handler will use that field for the parameter unless specifically overridden in an individual request.
 
 For more about request handler configuration in general, see the section xref:configuration-guide:requesthandlers-searchcomponents.adoc#default-components[Default Components].
 
@@ -646,5 +651,13 @@ The query parser response includes only the similar documents sorted by score:
 
 === Query Parser for External Content
 
-Use `{!mlt_content}lorem ipsum` or `{!mlt_content q='lorem ipsum'}` to find docs similar to an external content absent in index in SolrCloud mode like `/mlt` handler and content streams. Parameters and response are the same as above. It queries fields passed via `qf` parameter with the given content. When `qf` is omitted it queries all fields in the schema that usually fails on numerics and other specific formatted field types. If you need to query different fields with different content combine several `{!mlt_content qf=fieldA}lorem ipsum` with `{!bool}` query or other.
+The `mlt_content` query parser enables finding documents similar to external content that is not present in the index.
+This provides functionality similar to the <<Streaming External Content to MoreLikeThis,MoreLikeThis handler with content streams>>, but works in SolrCloud mode.
 
+Use the syntax `{!mlt_content}lorem ipsum` or `{!mlt_content q='lorem ipsum'}` to provide the content for similarity matching.
+The query parser supports the same parameters as the <<Query Parser Parameters,standard MLT query parser>>.
+
+By default, the parser queries the fields specified in the `qf` parameter with the given content.
+When `qf` is omitted, it queries all fields in the schema, which typically fails on numeric and other specifically formatted field types.
+
+To query different fields with different content, combine multiple `{!mlt_content qf=fieldA}lorem ipsum` queries using the `{!bool}` query parser or other suitable query parsers.

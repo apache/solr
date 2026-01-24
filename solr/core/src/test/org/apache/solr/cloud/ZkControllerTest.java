@@ -201,7 +201,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       String nodeName = zkController.getNodeName();
       String liveNodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
       SolrZkClient zkClient = zkController.getZkClient();
-      byte[] actualData = zkClient.getData(liveNodePath, null, null, true);
+      byte[] actualData = zkClient.getData(liveNodePath, null, null);
 
       Map<String, Object> liveProps = (Map<String, Object>) Utils.fromJSON(actualData);
       String expectedSolrVersion = SolrVersion.LATEST.toString();
@@ -273,8 +273,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
             .makePath(
                 DocCollection.getCollectionPathRoot(collectionName),
                 new byte[0],
-                CreateMode.PERSISTENT,
-                true);
+                CreateMode.PERSISTENT);
 
         ZkNodeProps m =
             new ZkNodeProps(
@@ -439,30 +438,29 @@ public class ZkControllerTest extends SolrCloudTestCase {
 
               // touchConfDir doesn't make the znode
               Stat s = new Stat();
-              assertFalse(zkClient.exists(zkpath, true));
+              assertFalse(zkClient.exists(zkpath));
               zkClient.makePath(zkpath, true);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertNull(zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertNull(zkClient.getData(zkpath, null, s));
               assertEquals(0, s.getVersion());
 
               // touchConfDir should only set the data to new byte[] {0}
               ZkController.touchConfDir(loader);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(
-                  ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertArrayEquals(ZkController.TOUCHED_ZNODE_DATA, zkClient.getData(zkpath, null, s));
               assertEquals(1, s.getVersion());
 
               // set new data to check if touchConfDir overwrites later
               byte[] data = "{\"key\", \"new data\"".getBytes(StandardCharsets.UTF_8);
-              s = zkClient.setData(zkpath, data, true);
+              s = zkClient.setData(zkpath, data);
               assertEquals(2, s.getVersion());
 
               // make sure touchConfDir doesn't overwrite existing data.
               // touchConfDir should update version.
-              assertTrue(zkClient.exists(zkpath, true));
+              assertTrue(zkClient.exists(zkpath));
               ZkController.touchConfDir(loader);
-              assertTrue(zkClient.exists(zkpath, true));
-              assertArrayEquals(data, zkClient.getData(zkpath, null, s, true));
+              assertTrue(zkClient.exists(zkpath));
+              assertArrayEquals(data, zkClient.getData(zkpath, null, s));
               assertEquals(3, s.getVersion());
             }
           }
@@ -503,7 +501,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         byte[] data = Utils.toJSON(liveNodeData);
 
         // persistent since we're about to close this zkClient
-        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT, true);
+        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT);
       }
 
       // Now try to create a ZkController - this should fail due to version incompatibility
@@ -583,7 +581,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         byte[] data = Utils.toJSON(liveNodeData);
 
         // persistent since we're about to close this zkClient
-        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT, true);
+        zkClient.create(liveNodePath, data, CreateMode.PERSISTENT);
       }
 
       // Now try to create a ZkController - this should fail due to minor version incompatibility
@@ -638,10 +636,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
       server
           .getZkClient()
           .create(
-              "/clusterstate.json",
-              "{}".getBytes(StandardCharsets.UTF_8),
-              CreateMode.PERSISTENT,
-              true);
+              "/clusterstate.json", "{}".getBytes(StandardCharsets.UTF_8), CreateMode.PERSISTENT);
       AtomicInteger idx = new AtomicInteger();
       CountDownLatch latch = new CountDownLatch(nThreads);
       CountDownLatch done = new CountDownLatch(nThreads);
@@ -667,7 +662,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
             });
       }
       done.await();
-      assertFalse(server.getZkClient().exists("/clusterstate.json", true));
+      assertFalse(server.getZkClient().exists("/clusterstate.json"));
       assertNull(exception.get());
     } finally {
       ExecutorUtil.shutdownNowAndAwaitTermination(svc);

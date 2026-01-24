@@ -70,7 +70,7 @@ public class CuVSCodec extends FilterCodec {
               int cuvsGraphDegree = vectorType.getCuvsGraphDegree();
               int cuvsHnswLayers = vectorType.getCuvsHnswLayers();
               int cuvsHnswM = vectorType.getCuvsHnswMaxConn();
-              int cuvsHNSWEfConstruction = vectorType.getCuvsHnswEfConstruction();
+              int cuvsHnswEfConstruction = vectorType.getCuvsHnswEfConstruction();
 
               assert cuvsWriterThreads > 0 : "cuvsWriterThreads cannot be less then or equal to 0";
               assert cuvsIntGraphDegree > 0
@@ -78,18 +78,18 @@ public class CuVSCodec extends FilterCodec {
               assert cuvsGraphDegree > 0 : "cuvsGraphDegree cannot be less then or equal to 0";
               assert cuvsHnswLayers > 0 : "cuvsHnswLayers cannot be less then or equal to 0";
               assert cuvsHnswM > 0 : "cuvsHnswM cannot be less then or equal to 0";
-              assert cuvsHNSWEfConstruction > 0
-                  : "cuvsHNSWEfConstruction cannot be less then or equal to 0";
+              assert cuvsHnswEfConstruction > 0
+                  : "cuvsHnswEfConstruction cannot be less then or equal to 0";
 
               if (log.isInfoEnabled()) {
                 log.info(
-                    "Initializing Lucene99AcceleratedHNSWVectorsFormat with parameter values: cuvsWriterThreads {}, cuvsIntGraphDegree {}, cuvsGraphDegree {}, cuvsHnswLayers {}, cuvsHnswM {}, cuvsHNSWEfConstruction {}",
+                    "Initializing Lucene99AcceleratedHNSWVectorsFormat with parameter values: cuvsWriterThreads {}, cuvsIntGraphDegree {}, cuvsGraphDegree {}, cuvsHnswLayers {}, cuvsHnswM {}, cuvsHnswEfConstruction {}",
                     cuvsWriterThreads,
                     cuvsIntGraphDegree,
                     cuvsGraphDegree,
                     cuvsHnswLayers,
                     cuvsHnswM,
-                    cuvsHNSWEfConstruction);
+                    cuvsHnswEfConstruction);
               }
               return new Lucene99AcceleratedHNSWVectorsFormat(
                   cuvsWriterThreads,
@@ -97,7 +97,7 @@ public class CuVSCodec extends FilterCodec {
                   cuvsGraphDegree,
                   cuvsHnswLayers,
                   cuvsHnswM,
-                  cuvsHNSWEfConstruction);
+                  cuvsHnswEfConstruction);
             } else if (DenseVectorField.HNSW_ALGORITHM.equals(knnAlgorithm)) {
               return fallbackCodec.getKnnVectorsFormatForField(field);
             } else {

@@ -38,6 +38,11 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
   @BeforeClass
   @SuppressWarnings("resource")
   public static void beforeClassTika() {
+    // skip this test on s390x
+    Assume.assumeFalse(
+        "Skipping ExtractingRequestHandlerTikaServerTest on s390x",
+        "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
+
     String baseUrl;
     try {
       tika =
@@ -68,9 +73,6 @@ public class ExtractingRequestHandlerTikaServerTest extends ExtractingRequestHan
         tika = null;
       }
     }
-    System.clearProperty("solr.test.tikaserver.url");
-    System.clearProperty("solr.test.extraction.backend");
-    System.clearProperty("solr.test.tikaserver.metadata.compatibility");
   }
 
   @Test

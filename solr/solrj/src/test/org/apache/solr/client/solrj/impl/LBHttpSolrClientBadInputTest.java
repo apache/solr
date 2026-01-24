@@ -17,16 +17,23 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.LBHttpSolrClient;
-import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
+import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 
-public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
+public class LBHttpSolrClientBadInputTest extends SolrTestCaseJ4 {
+  @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
+
   private static final List<String> NULL_STR_LIST = null;
   private static final List<String> EMPTY_STR_LIST = new ArrayList<>();
   private static final String ANY_COLLECTION = "ANY_COLLECTION";
@@ -34,14 +41,21 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    createAndStartJetty(legacyExampleCollection1SolrHome(), JettyConfig.builder().build());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP,
+        ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
+        .newCollection("collection1")
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Test
   public void testDeleteByIdReportsInvalidIdLists() throws Exception {
     try (SolrClient client =
         new LBHttpSolrClient.Builder()
-            .withBaseEndpoint(getBaseUrl())
+            .withBaseEndpoint(solrTestRule.getBaseUrl())
             .withDefaultCollection(ANY_COLLECTION)
             .build()) {
       assertExceptionThrownWithMessageContaining(
@@ -71,7 +85,7 @@ public class LBHttpSolrClientBadInputTest extends SolrJettyTestBase {
     }
 
     try (SolrClient client =
-        new LBHttpSolrClient.Builder().withBaseEndpoint(getBaseUrl()).build()) {
+        new LBHttpSolrClient.Builder().withBaseEndpoint(solrTestRule.getBaseUrl()).build()) {
       assertExceptionThrownWithMessageContaining(
           IllegalArgumentException.class,
           List.of("ids", "null"),

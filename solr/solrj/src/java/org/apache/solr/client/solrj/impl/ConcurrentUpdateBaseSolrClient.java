@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.net.HttpURLConnection;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
@@ -42,9 +43,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.eclipse.jetty.client.InputStreamResponseListener;
-import org.eclipse.jetty.client.Response;
-import org.eclipse.jetty.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -79,7 +77,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     private final int queueSize;
     private final E backdoorE;
 
-    public CustomBlockingQueue(int queueSize, int maxConsumers, E backdoorE) {
+    public CustomBlockingQueue(int queueSize, E backdoorE) {
       queue = new LinkedBlockingQueue<>();
       available = new Semaphore(queueSize);
       this.queueSize = queueSize;
@@ -154,7 +152,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     this.shutdownClient = builder.closeHttpClient;
     this.idleTimeoutMillis = builder.idleTimeoutMillis;
     this.threadCount = builder.threadCount;
-    this.queue = new CustomBlockingQueue<>(builder.queueSize, threadCount, END_UPDATE);
+    this.queue = new CustomBlockingQueue<>(builder.queueSize, END_UPDATE);
     this.runners = new ArrayDeque<>();
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
@@ -246,15 +244,14 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
               break;
             }
 
-            InputStreamResponseListener responseListener = null;
+            StreamingResponse responseListener = null;
             responseListener = doSendUpdateStream(update);
 
             // just wait for the headers, so the idle timeout is sensible
-            Response response = responseListener.get(idleTimeoutMillis, TimeUnit.MILLISECONDS);
+            int statusCode = responseListener.awaitResponse(idleTimeoutMillis);
             rspBody = responseListener.getInputStream();
 
-            int statusCode = response.getStatus();
-            if (statusCode != HttpStatus.OK_200) {
+            if (statusCode != HttpURLConnection.HTTP_OK) {
               SolrException solrExc;
               Object remoteError = null;
               // parse out the metadata from the SolrException
@@ -271,7 +268,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
 
               handleError(solrExc);
             } else {
-              onSuccess(response, rspBody);
+              onSuccess(responseListener.getUnderlyingResponse(), rspBody);
             }
             stallDetection.incrementProcessedCount();
 
@@ -290,7 +287,7 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     }
   }
 
-  protected abstract InputStreamResponseListener doSendUpdateStream(Update update)
+  protected abstract StreamingResponse doSendUpdateStream(Update update)
       throws IOException, InterruptedException;
 
   private void consumeFully(InputStream is) {
@@ -550,9 +547,11 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
   /**
    * Intended to be used as an extension point for doing post-processing after a request completes.
    *
+   * @param responseMetadata implementation-specific response object (e.g., Jetty Response), may be
+   *     null
    * @param respBody the body of the response, subclasses must not close this stream.
    */
-  public void onSuccess(Response resp, InputStream respBody) {
+  public void onSuccess(Object responseMetadata, InputStream respBody) {
     // no-op by design, override to add functionality
   }
 
@@ -772,5 +771,53 @@ public abstract class ConcurrentUpdateBaseSolrClient extends SolrClient {
     public HttpSolrClientBase getClient() {
       return client;
     }
+  }
+
+  /**
+   * Abstraction for streaming HTTP response handling in {@link ConcurrentUpdateBaseSolrClient}.
+   * This allows the base class to work with different HTTP client implementations without direct
+   * dependencies on specific client libraries (e.g., Jetty, JDK HttpClient).
+   *
+   * <p>Implementations should wrap the underlying HTTP client's response mechanism and provide
+   * access to response status and body stream.
+   */
+  public interface StreamingResponse extends AutoCloseable {
+
+    /**
+     * Wait for response headers to arrive and return the HTTP status code.
+     *
+     * @param timeoutMillis maximum time to wait in milliseconds
+     * @return HTTP status code (e.g., 200, 404, 500)
+     * @throws Exception if timeout occurs, connection fails, or other error
+     */
+    int awaitResponse(long timeoutMillis) throws Exception;
+
+    /**
+     * Get the response body as an InputStream for parsing.
+     *
+     * <p>This should be called after {@link #awaitResponse(long)} has successfully returned.
+     *
+     * @return response body stream, never null
+     */
+    InputStream getInputStream();
+
+    /**
+     * Get the underlying implementation-specific response object.
+     *
+     * <p>This is used by the {@link ConcurrentUpdateBaseSolrClient#onSuccess(Object, InputStream)}
+     * hook method to allow subclasses access to implementation-specific metadata. The returned
+     * object type depends on the HTTP client implementation being used.
+     *
+     * @return underlying response object (implementation-specific), may be null
+     */
+    Object getUnderlyingResponse();
+
+    /**
+     * Release resources associated with this response.
+     *
+     * @throws IOException if cleanup fails
+     */
+    @Override
+    void close() throws IOException;
   }
 }

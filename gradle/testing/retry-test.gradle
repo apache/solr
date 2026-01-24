@@ -16,16 +16,16 @@
  */
 
 allprojects {
-    plugins.withType(JavaPlugin) {
-        tasks.withType(Test) {
-            develocity.testRetry {
-                if (isCIBuild) {
-                    // For more info on params: https://github.com/gradle/test-retry-gradle-plugin
-                    maxRetries = 3
-                    maxFailures = 10
-                    failOnPassedAfterRetry = true
-                }
-            }
+  plugins.withType(JavaPlugin) {
+    tasks.withType(Test) {
+      develocity.testRetry {
+        if (isCIBuild) {
+          // For more info on params: https://github.com/gradle/test-retry-gradle-plugin
+          maxRetries = 3
+          maxFailures = 10
+          failOnPassedAfterRetry = true
         }
+      }
     }
+  }
 }

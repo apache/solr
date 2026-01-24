@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.CREATE_NODE_SET;
 import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.NUM_SLICES;
 import static org.apache.solr.common.cloud.DocCollection.CollectionStateProps.SHARDS;
@@ -30,31 +29,43 @@ import static org.apache.solr.common.params.CollectionAdminParams.PER_REPLICA_ST
 import static org.apache.solr.common.params.CollectionAdminParams.PULL_REPLICAS;
 import static org.apache.solr.common.params.CollectionAdminParams.REPLICATION_FACTOR;
 import static org.apache.solr.common.params.CollectionAdminParams.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.WAIT_FOR_FINAL_STATE;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRouterProperties;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateCollection}. */
-public class CreateCollectionAPITest extends SolrTestCaseJ4 {
+public class CreateCollectionAPITest extends MockV2APITest {
+
+  private CreateCollection api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new CreateCollection(mockCoreContainer, mockQueryRequest, queryResponse);
+    when(mockSolrZkClient.getData(eq("properties.json"), any(), any()))
+        .thenReturn("{}".getBytes(StandardCharsets.UTF_8));
+  }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateCollection(null, null, null);
-              api.createCollection(null);
-            });
+        expectThrows(SolrException.class, () -> api.createCollection(null));
 
     assertEquals(400, thrown.code());
     assertEquals("Request body is missing but required", thrown.getMessage());
@@ -71,11 +82,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.nrtReplicas = 321;
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals(
@@ -90,11 +97,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.config = "someConfig";
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertTrue(
@@ -112,11 +115,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.shardNames = List.of("good-name", "bad;name");
 
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              CreateCollection.validateRequestBody(requestBody);
-            });
+        expectThrows(SolrException.class, () -> CreateCollection.validateRequestBody(requestBody));
 
     assertEquals(400, thrown.code());
     assertTrue(
@@ -125,7 +124,7 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.replicationFactor = 123;
@@ -145,40 +144,49 @@ public class CreateCollectionAPITest extends SolrTestCaseJ4 {
     requestBody.nodeSet = List.of("node1", "node2");
     requestBody.shuffleNodes = false;
 
-    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
+    api.createCollection(requestBody);
 
-    assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("true", remoteMessage.get("fromApi"));
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals(123, remoteMessage.get(REPLICATION_FACTOR));
-    assertEquals("someConfig", remoteMessage.get(COLL_CONF));
-    assertEquals(456, remoteMessage.get(NUM_SLICES));
-    assertEquals("shard1,shard2", remoteMessage.get(SHARDS));
-    assertEquals(789, remoteMessage.get(PULL_REPLICAS));
-    assertEquals(987, remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(123, remoteMessage.get(NRT_REPLICAS)); // replicationFactor value used
-    assertEquals(false, remoteMessage.get(WAIT_FOR_FINAL_STATE));
-    assertEquals(true, remoteMessage.get(PER_REPLICA_STATE));
-    assertEquals("someAliasName", remoteMessage.get(ALIAS));
-    assertEquals("propValue", remoteMessage.get("property.propName"));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
-    assertEquals("someRouterName", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET));
-    assertEquals(false, remoteMessage.get(CREATE_NODE_SET_SHUFFLE_PARAM));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATE,
+        requestBody.async,
+        message -> {
+          assertEquals(17, message.size());
+          assertEquals("true", message.get("fromApi"));
+          assertEquals("someName", message.get(NAME));
+          assertEquals(123, message.get(REPLICATION_FACTOR));
+          assertEquals("someConfig", message.get(COLL_CONF));
+          assertEquals(456, message.get(NUM_SLICES));
+          assertEquals("shard1,shard2", message.get(SHARDS));
+          assertEquals(789, message.get(PULL_REPLICAS));
+          assertEquals(987, message.get(TLOG_REPLICAS));
+          assertEquals(123, message.get(NRT_REPLICAS)); // replicationFactor value used
+          assertEquals(false, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(PER_REPLICA_STATE));
+          assertEquals("someAliasName", message.get(ALIAS));
+          assertEquals("propValue", message.get("property.propName"));
+          assertEquals("someRouterName", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET));
+          assertEquals(false, message.get(CREATE_NODE_SET_SHUFFLE_PARAM));
+        });
   }
 
   @Test
-  public void testNoReplicaCreationMessage() {
+  public void testNoReplicaCreationMessage() throws Exception {
     final var requestBody = new CreateCollectionRequestBody();
     requestBody.name = "someName";
     requestBody.createReplicas = false;
+    requestBody.async = "someAsyncId";
 
-    final var remoteMessage = CreateCollection.createRemoteMessage(requestBody).getProperties();
+    api.createCollection(requestBody);
 
-    assertEquals("create", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals("EMPTY", remoteMessage.get(CREATE_NODE_SET));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATE,
+        requestBody.async,
+        message -> {
+          assertEquals("someName", message.get(NAME));
+          assertEquals("EMPTY", message.get(CREATE_NODE_SET));
+        });
   }
 
   @Test

@@ -55,6 +55,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
+import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -238,6 +239,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
     rsp.add("jvm", getJvmInfo(nodeConfig));
     rsp.add("security", getSecurityInfo(req));
     rsp.add("system", getSystemInfo());
+
+    rsp.add("gpu", getGpuInfo(req));
     if (solrCloudMode) {
       rsp.add("node", getCoreContainer(req).getZkController().getNodeName());
     }
@@ -517,6 +520,50 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public Boolean registerV2() {
     return Boolean.TRUE;
+  }
+
+  private SimpleOrderedMap<Object> getGpuInfo(SolrQueryRequest req) {
+    SimpleOrderedMap<Object> gpuInfo = new SimpleOrderedMap<>();
+
+    try {
+      GpuMetricsProvider provider = getCoreContainer(req).getGpuMetricsProvider();
+
+      if (provider == null) {
+        gpuInfo.add("available", false);
+        return gpuInfo;
+      }
+
+      long gpuCount = provider.getGpuCount();
+      if (gpuCount > 0) {
+        gpuInfo.add("available", true);
+        gpuInfo.add("count", gpuCount);
+
+        long gpuMemoryTotal = provider.getGpuMemoryTotal();
+        long gpuMemoryUsed = provider.getGpuMemoryUsed();
+        long gpuMemoryFree = provider.getGpuMemoryFree();
+
+        if (gpuMemoryTotal > 0) {
+          SimpleOrderedMap<Object> memory = new SimpleOrderedMap<>();
+          memory.add("total", gpuMemoryTotal);
+          memory.add("used", gpuMemoryUsed);
+          memory.add("free", gpuMemoryFree);
+          gpuInfo.add("memory", memory);
+        }
+
+        var devices = provider.getGpuDevices();
+        if (devices != null && devices.size() > 0) {
+          gpuInfo.add("devices", devices);
+        }
+      } else {
+        gpuInfo.add("available", false);
+      }
+
+    } catch (Exception e) {
+      log.warn("Failed to get GPU information", e);
+      gpuInfo.add("available", false);
+    }
+
+    return gpuInfo;
   }
 
   @Override

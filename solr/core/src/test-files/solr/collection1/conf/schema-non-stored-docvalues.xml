@@ -28,6 +28,9 @@
   <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0"/>
   <fieldType name="enumField" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
+  <fieldType name="binary" class="solr.BinaryField" />
+  <fieldType name="binary_rev" class="solr.SwapBytesBinaryField" />
+  <fieldType name="binary_str" class="solr.StrBinaryField" />
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
 
@@ -65,6 +68,18 @@
   <dynamicField name="*_ls_dvo" multiValued="true" type="long" indexed="true" stored="false"/>
   <dynamicField name="*_dts_dvo" multiValued="true" type="date" indexed="true" stored="false"/>
 
+  <!-- binary fields (exclusively single valued) -->
+  <dynamicField name="*_bin" multiValued="false" type="binary" indexed="false" stored="true" docValues="false" />
+  <dynamicField name="*_bin_dv" multiValued="false" type="binary" indexed="false" stored="true" docValues="true" />
+  <dynamicField name="*_bin_dvo" multiValued="false" type="binary" indexed="false" stored="false" docValues="true" />
+  
+  <dynamicField name="*_rev_bin" multiValued="false" type="binary_rev" indexed="false" stored="true" docValues="false" />
+  <dynamicField name="*_rev_bin_dv" multiValued="false" type="binary_rev" indexed="false" stored="true" docValues="true" />
+  <dynamicField name="*_rev_bin_dvo" multiValued="false" type="binary_rev" indexed="false" stored="false" docValues="true" />
+  
+  <dynamicField name="*_str_bin" multiValued="false" type="binary_str" indexed="false" stored="true" docValues="false" />
+  <dynamicField name="*_str_bin_dv" multiValued="false" type="binary_str" indexed="false" stored="true" docValues="true" />
+  <dynamicField name="*_str_bin_dvo" multiValued="false" type="binary_str" indexed="false" stored="false" docValues="true" />
 
   <uniqueKey>id</uniqueKey>
 

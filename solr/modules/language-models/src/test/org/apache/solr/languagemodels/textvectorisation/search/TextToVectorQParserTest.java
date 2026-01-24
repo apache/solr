@@ -27,7 +27,7 @@ import org.junit.Test;
 public class TextToVectorQParserTest extends TestLanguageModelBase {
   @BeforeClass
   public static void init() throws Exception {
-    setupTest("solrconfig-language-models.xml", "schema.xml", true, false);
+    setupTest("solrconfig-language-models.xml", "schema-language-models.xml", true, false);
     loadModel("dummy-model.json");
   }
 
@@ -406,7 +406,7 @@ public class TextToVectorQParserTest extends TestLanguageModelBase {
     String expectedParsedQuery =
         String.format(
             Locale.US,
-            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=KnnFloatVectorQuery:vector[1.0,...][5]})",
+            "PatienceKnnVectorQuery(PatienceKnnVectorQuery{saturationThreshold=%.3f, patience=%d, delegate=SolrKnnFloatVectorQuery:vector[1.0,...][5]})",
             defaultSaturationThreshold,
             defaultPatience);
 

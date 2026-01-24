@@ -68,6 +68,8 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
     originalTestWait = IndexFetcher.testWait;
 
     super.setUp();
+    // Disable URL allow-list checks for replication tests
+    System.setProperty("solr.security.allow.urls.enabled", "false");
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     String factory =
         random().nextInt(100) < 75
@@ -113,7 +115,6 @@ public class TestReplicationHandlerDiskOverFlow extends SolrTestCaseJ4 {
       followerClient.close();
       followerClient = null;
     }
-    System.clearProperty(TEST_URL_ALLOW_LIST);
 
     IndexFetcher.usableDiskSpaceProvider = originalDiskSpaceprovider;
     IndexFetcher.testWait = originalTestWait;
