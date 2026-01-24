@@ -19,24 +19,15 @@ package org.apache.solr.response;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.nullValue;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test for {@link BuiltInResponseWriterRegistry}.
- *
- * <p>This test validates the registry's behavior for built-in response writers, including
- * availability, fallback behavior, and proper format handling.
+ * This test validates the registry's behavior for built-in response writers, including
+ * availability, fallback behavior, and proper format handling. Notice there is no core configured!
  */
 public class TestBuiltInResponseWriterRegistry extends SolrTestCaseJ4 {
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
-  }
 
   @Test
   public void testBuiltInWriterFallbackBehavior() {
@@ -64,7 +55,7 @@ public class TestBuiltInResponseWriterRegistry extends SolrTestCaseJ4 {
 
     // Built-in writers should NOT include extended format writers (csv, geojson, etc.)
     // These should all fall back to standard
-    // i think this standard thing is weird...   I think it should throw an exception!
+    // I think this standard thing is weird...   I think it should throw an exception!
     assertThat(
         "geojson should fall back to standard",
         BuiltInResponseWriterRegistry.getWriter("geojson"),

@@ -37,8 +37,6 @@ import org.apache.solr.common.params.CommonParams;
  * <p>For core-specific requests that need access to the full set of response writers (including
  * csv, geojson, graphml, smile, etc.), use the SolrCore's response writer registry which is loaded
  * from ImplicitPlugins.json and supports ConfigOverlay customizations.
- *
- * @since 11.0
  */
 public class BuiltInResponseWriterRegistry {
 
@@ -90,26 +88,5 @@ public class BuiltInResponseWriterRegistry {
       return BUILTIN_WRITERS.get("standard");
     }
     return BUILTIN_WRITERS.getOrDefault(writerName, BUILTIN_WRITERS.get("standard"));
-  }
-
-  /**
-   * Returns the set of built-in writer names.
-   *
-   * <p>This is useful for debugging, testing, and API documentation. The returned set is immutable.
-   *
-   * @return unmodifiable set of built-in writer names
-   */
-  static java.util.Set<String> getWriterNames() {
-    return BUILTIN_WRITERS.keySet();
-  }
-
-  /**
-   * Checks if a writer is available as a built-in writer.
-   *
-   * @param writerName the writer name to check
-   * @return true if the writer is available as a built-in writer
-   */
-  static boolean hasWriter(String writerName) {
-    return BUILTIN_WRITERS.containsKey(writerName);
   }
 }
