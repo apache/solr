@@ -52,13 +52,6 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient())
             .getStatus());
     cluster.waitForActiveCollection(COLLECTION, 10, TimeUnit.SECONDS, 2, NUM_SHARDS * NUM_REPLICAS);
-
-    UpdateRequest up = new UpdateRequest();
-    for (int i = 0; i < 200; i++) {
-      up.add("id", "id-" + i);
-    }
-    up.commit(cluster.getSolrClient(), COLLECTION);
-    NUM_DOCS += 200;
   }
 
   @Before
@@ -77,6 +70,9 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       }
       up.process(cluster.getSolrClient(), COLLECTION);
       NUM_DOCS += 1000;
+      if (random().nextBoolean()) {
+        cluster.getSolrClient().commit(COLLECTION);
+      }
     }
 
     DocCollection docCollection = cluster.getZkStateReader().getCollection(COLLECTION);
@@ -137,6 +133,9 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
       }
       up.process(cluster.getSolrClient(), COLLECTION);
       NUM_DOCS += 1000;
+      if (random().nextBoolean()) {
+        cluster.getSolrClient().commit(COLLECTION);
+      }
     }
 
     DocCollection docCollection = cluster.getZkStateReader().getCollection(COLLECTION);

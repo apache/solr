@@ -41,6 +41,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.update.PeerSync;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,14 +81,15 @@ public class SyncStrategy {
 
   public PeerSync.PeerSyncResult sync(
       ZkController zkController, SolrCore core, ZkNodeProps leaderProps) {
-    return sync(zkController, core, leaderProps, false);
+    return sync(zkController, core, leaderProps, false, false);
   }
 
   public PeerSync.PeerSyncResult sync(
       ZkController zkController,
       SolrCore core,
       ZkNodeProps leaderProps,
-      boolean peerSyncOnlyWithActive) {
+      boolean peerSyncOnlyWithActive,
+      boolean ignoreNoVersionsFailure) {
     if (SKIP_AUTO_RECOVERY) {
       return PeerSync.PeerSyncResult.success();
     }
@@ -108,14 +110,16 @@ public class SyncStrategy {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive);
+    return syncReplicas(
+        zkController, core, leaderProps, peerSyncOnlyWithActive, ignoreNoVersionsFailure);
   }
 
   private PeerSync.PeerSyncResult syncReplicas(
       ZkController zkController,
       SolrCore core,
       ZkNodeProps leaderProps,
-      boolean peerSyncOnlyWithActive) {
+      boolean peerSyncOnlyWithActive,
+      boolean ignoreNoVersionsFailure) {
     if (isClosed) {
       log.info("We have been closed, won't sync with replicas");
       return PeerSync.PeerSyncResult.failure();
@@ -133,6 +137,24 @@ public class SyncStrategy {
       result =
           syncWithReplicas(
               zkController, core, leaderProps, collection, shardId, peerSyncOnlyWithActive);
+
+      if (!result.isSuccess() && ignoreNoVersionsFailure) {
+        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+        boolean hasRecentUpdates = false;
+        if (ulog != null) {
+          // TODO: we could optimize this if necessary
+          try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+            hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+          }
+        }
+        // we failed sync, but we have no versions - we can't sync in that case
+        // - we were active before, so continue if no one else has any versions either
+        if (!hasRecentUpdates && !result.getOtherHasVersions().orElse(false)) {
+          log.info(
+              "We failed sync, but we have no versions - we can't sync in that case - so continue");
+          result = PeerSync.PeerSyncResult.success();
+        }
+      }
       success = result.isSuccess();
     } catch (Exception e) {
       log.error("Sync Failed", e);
