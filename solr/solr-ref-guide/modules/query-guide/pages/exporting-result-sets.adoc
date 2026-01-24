@@ -102,7 +102,7 @@ The fields can be single or multi-valued.
 
 By default, fields in the field list must have docValues enabled.
 However, when the `includeStoredFields` parameter is set to `true`, fields with only stored values (no docValues) can also be included.
-Note that sort fields still require docValues regardless of this setting.
+Note that sort fields still require docValues, regardless of this setting.
 
 Wildcard patterns can be used for the field list (e.g. `fl=*_i`) and will be expanded to the list of fields that match the pattern and are able to be exported, see <<Field Requirements>>.
 
