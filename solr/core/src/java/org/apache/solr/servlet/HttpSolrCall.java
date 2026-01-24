@@ -85,7 +85,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BuiltInResponseWriterRegistry;
+import org.apache.solr.response.BuiltInResponseWriters;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
@@ -738,7 +738,7 @@ public class HttpSolrCall {
     }
     // Admin requests have no core, use built-in writers
     QueryResponseWriter respWriter =
-        BuiltInResponseWriterRegistry.getWriter(solrReq.getParams().get(CommonParams.WT));
+        BuiltInResponseWriters.getWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit()) {

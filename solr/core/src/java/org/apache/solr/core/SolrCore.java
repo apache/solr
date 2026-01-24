@@ -127,6 +127,7 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.response.BuiltInResponseWriters;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -3120,12 +3121,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *
    * @param writerName the writer name, or null for default
    * @return the response writer, never null
-   * @deprecated Use {@link
-   *     org.apache.solr.response.BuiltInResponseWriterRegistry#getWriter(String)} instead.
+   * @deprecated Use {@link BuiltInResponseWriters#getWriter(String)} instead.
    */
   @Deprecated
   public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return org.apache.solr.response.BuiltInResponseWriterRegistry.getWriter(writerName);
+    return BuiltInResponseWriters.getWriter(writerName);
   }
 
   /**

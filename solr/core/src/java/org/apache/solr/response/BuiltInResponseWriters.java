@@ -38,7 +38,7 @@ import org.apache.solr.common.params.CommonParams;
  * csv, geojson, graphml, smile, etc.), use the SolrCore's response writer registry which is loaded
  * from ImplicitPlugins.json and supports ConfigOverlay customizations.
  */
-public class BuiltInResponseWriterRegistry {
+public class BuiltInResponseWriters {
 
   /**
    * Built-in response writers that are always available.

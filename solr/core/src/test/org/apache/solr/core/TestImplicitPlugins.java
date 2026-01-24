@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.response.BuiltInResponseWriterRegistry;
+import org.apache.solr.response.BuiltInResponseWriters;
 import org.apache.solr.response.QueryResponseWriter;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -31,8 +31,7 @@ import org.junit.Test;
  * <ul>
  *   <li>Request handlers are loaded from ImplicitPlugins.json
  *   <li>Response writers are loaded from ImplicitPlugins.json for core requests
- *   <li>Built in response writers use a minimal set defined in {@link
- *       org.apache.solr.response.BuiltInResponseWriterRegistry}.
+ *   <li>Built in response writers use a minimal set defined in {@link BuiltInResponseWriters}.
  * </ul>
  */
 public class TestImplicitPlugins extends SolrTestCaseJ4 {
@@ -55,25 +54,24 @@ public class TestImplicitPlugins extends SolrTestCaseJ4 {
     assertNotNull("Core should have smile writer", core.getQueryResponseWriter("smile"));
 
     // Test that built-in registry has minimal set and falls back for extended formats
-    QueryResponseWriter standardWriter = BuiltInResponseWriterRegistry.getWriter("standard");
+    QueryResponseWriter standardWriter = BuiltInResponseWriters.getWriter("standard");
     assertSame(
         "Built-in csv request should fall back to standard",
         standardWriter,
-        BuiltInResponseWriterRegistry.getWriter("csv"));
+        BuiltInResponseWriters.getWriter("csv"));
     assertSame(
         "Built-in geojson request should fall back to standard",
         standardWriter,
-        BuiltInResponseWriterRegistry.getWriter("geojson"));
+        BuiltInResponseWriters.getWriter("geojson"));
 
     // Test that both systems have common essential formats (though may be different instances)
     QueryResponseWriter coreJsonWriter = core.getQueryResponseWriter(CommonParams.JSON);
-    QueryResponseWriter builtInJsonWriter =
-        BuiltInResponseWriterRegistry.getWriter(CommonParams.JSON);
+    QueryResponseWriter builtInJsonWriter = BuiltInResponseWriters.getWriter(CommonParams.JSON);
     assertNotNull("Core json writer should not be null", coreJsonWriter);
     assertNotNull("Built-in json writer should not be null", builtInJsonWriter);
 
     QueryResponseWriter coreXmlWriter = core.getQueryResponseWriter("xml");
-    QueryResponseWriter builtInXmlWriter = BuiltInResponseWriterRegistry.getWriter("xml");
+    QueryResponseWriter builtInXmlWriter = BuiltInResponseWriters.getWriter("xml");
     assertNotNull("Core xml writer should not be null", coreXmlWriter);
     assertNotNull("Built-in xml writer should not be null", builtInXmlWriter);
   }
