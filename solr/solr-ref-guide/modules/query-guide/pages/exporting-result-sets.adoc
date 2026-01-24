@@ -71,7 +71,8 @@ The default value is `30000` but users may want to specify smaller values to lim
 An optional parameter `includeStoredFields` (default `false`) enables exporting fields that only have stored values (no docValues).
 When set to `true`, fields without docValues but with stored values can be included in the field list (`fl`).
 Note that retrieving stored fields may significantly impact export performance compared to docValues fields, as stored fields require additional I/O operations.
-If all requested fields are `docValues=true` then the data will be read only from docValues. This behavior applies to fields that are also `stored=true` and does not depend on the value of the `includeStoredFields` parameter.
+If all requested fields are `docValues=true` then the data will only be read from docValues.
+This behavior applies to fields that are also `stored=true` and does not depend on the value of the `includeStoredFields` parameter.
 
 The supported response writers are `json` and `javabin`.
 For backward compatibility reasons `wt=xsort` is also supported as input, but `wt=xsort` behaves same as `wt=json`.
