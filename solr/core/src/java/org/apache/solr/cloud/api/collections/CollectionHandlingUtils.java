@@ -800,7 +800,7 @@ public class CollectionHandlingUtils {
           status = (String) reqResult._get("status/state");
         }
         if ("failed".equalsIgnoreCase(status)) {
-          log.error("Error from shard {}: {}", node, reqResult);
+          log.error("Error from shard {}/{}: {}", node, coreNodeName, reqResult);
           addFailure(results, node, coreNodeName, reqResult);
         } else {
           addSuccess(results, node, coreNodeName, reqResult);
