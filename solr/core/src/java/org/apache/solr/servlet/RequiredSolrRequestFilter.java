@@ -35,10 +35,10 @@ import org.slf4j.LoggerFactory;
  * It is expected that solr will fail to function as intended without the conditions initialized in
  * this filter. Before adding anything to this filter ask yourself if a user could run without the
  * feature you are adding (either with an alternative implementation or without it at all to reduce
- * cpu/memory/dependencies). If it is not essential, it should have its own separate filter. Also,
- * please include a comment indicating why the thing added is essential.
+ * cpu/memory/dependencies). If it is not required, it should have its own separate filter. Also,
+ * please include a comment indicating why the thing added here is required.
  */
-public class EssentialSolrRequestFilter extends CoreContainerAwareHttpFilter {
+public class RequiredSolrRequestFilter extends CoreContainerAwareHttpFilter {
 
   // Best to put constant here because solr is not supposed to be functional (or compile)
   // without this filter.
@@ -55,25 +55,22 @@ public class EssentialSolrRequestFilter extends CoreContainerAwareHttpFilter {
     // this autocloseable is here to invoke MDCSnapshot.close() which restores captured state
     try (var mdcSnapshot = MDCSnapshot.create()) {
 
-      // MDC logging *shouldn't* be essential but currently is, see SOLR-18050.
-      // Our use of SLF4J indicates that we intend logging to be pluggable, and
-      // some implementations won't have an MDC, so having it as essential limits
-      // logging implementations.
+      // MDC logging *shouldn't* be required but currently is, see SOLR-18050.
       log.trace("MDC snapshot recorded {}", mdcSnapshot); // avoid both compiler and ide warning.
       MDCLoggingContext.reset();
       MDCLoggingContext.setNode(getCores());
 
-      // This is essential to accommodate libraries that (annoyingly) use
+      // This is required to accommodate libraries that (annoyingly) use
       // Thread.currentThread().getContextClassLoader()
       Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
 
       // set a request timer which can be reused by requests if needed
-      // Request Timer is essential for QueryLimits functionality as well as
+      // Request Timer is required for QueryLimits functionality as well as
       // timing our requests.
       req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
 
       // put the core container in request attribute
-      // This is essential for the LoadAdminUiServlet class. Removing it will cause 404
+      // This is required for the LoadAdminUiServlet class. Removing it will cause 404
       req.setAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE, getCores());
       chain.doFilter(req, res);
     } finally {
@@ -81,15 +78,15 @@ public class EssentialSolrRequestFilter extends CoreContainerAwareHttpFilter {
       MDCLoggingContext.reset();
       Thread.currentThread().setContextClassLoader(contextClassLoader);
 
-      // This is an essential safety valve to ensure we don't accidentally bleed information
+      // This is a required safety valve to ensure we don't accidentally bleed information
       // between requests.
       SolrRequestInfo.reset();
       if (!req.isAsyncStarted()) { // jetty's proxy uses this
 
-        // essential to avoid SOLR-8453 and SOLR-8683
+        // required to avoid SOLR-8453 and SOLR-8683
         ServletUtils.consumeInputFully(req, res);
 
-        // essential to remove temporary files created during multipart requests.
+        // required to remove temporary files created during multipart requests.
         SolrRequestParsers.cleanupMultipartFiles(req);
       }
     }
