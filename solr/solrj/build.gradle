@@ -62,6 +62,8 @@ dependencies {
   testImplementation libs.commonsio.commonsio
   testImplementation libs.fasterxml.jackson.dataformat.cbor
 
+  testImplementation libs.jakarta.servlet.api
+
   // Jetty test dependencies - needed for solrj's own tests
   // Client libraries
   testImplementation libs.eclipse.jetty.client
