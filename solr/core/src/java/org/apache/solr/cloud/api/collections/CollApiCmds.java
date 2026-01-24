@@ -279,7 +279,7 @@ public class CollApiCmds {
           message,
           params,
           results,
-          Replica.State.ACTIVE,
+          null,
           Collections.emptySet(),
           ccc);
     }

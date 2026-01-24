@@ -20,6 +20,7 @@ package org.apache.solr.cloud.api.collections;
 import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
@@ -158,7 +159,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
       ccc.getZkStateReader()
           .waitForState(
               typedMessage.collection,
-              10,
+              30,
               TimeUnit.SECONDS,
               (liveNodes, collectionState) -> {
                 collectionState.getSlice(typedMessage.shard).getReplicas().stream()
@@ -287,10 +288,8 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
   */
 
   /** A value-type representing the message received by {@link InstallShardDataCmd} */
+  @JsonIgnoreProperties(ignoreUnknown = true)
   public static class RemoteMessage implements JacksonReflectMapWriter {
-
-    @JsonProperty(QUEUE_OPERATION)
-    public String operation = CollectionParams.CollectionAction.INSTALLSHARDDATA.toLower();
 
     @JsonProperty public String collection;
 
@@ -303,9 +302,6 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     @JsonProperty public String name = "";
 
     @JsonProperty public String shardBackupId;
-
-    @JsonProperty(ASYNC)
-    public String asyncId;
 
     public void validate() {
       if (StrUtils.isBlank(collection)) {
