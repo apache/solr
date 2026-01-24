@@ -231,14 +231,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
     log.info("Attempting to replicate from core [{}] on node [{}].", leaderCore, leaderBaseUrl);
 
-    // send commit if replica could be a leader and this collection is not in a read-only state
+    // send commit if replica could be a leader
     if (replicaType.leaderEligible) {
-      if (!zkController
-          .getClusterState()
-          .getCollection(coreDescriptor.getCollectionName())
-          .isReadOnly()) {
-        commitOnLeader(leaderBaseUrl, leaderCore);
-      }
+      commitOnLeader(leaderBaseUrl, leaderCore);
     }
 
     // use rep handler directly, so we can do this sync rather than async
@@ -308,6 +303,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       // Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
+      // If the leader is readOnly, do not fail since the core is already committed.
+      ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
     }
   }

@@ -161,7 +161,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     assert TestInjection.injectFailUpdateRequests();
 
     if (isReadOnly()) {
-      throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+      if (cmd.failOnReadOnly) {
+        throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
+      } else {
+        // Committing on a readOnly core/collection is a no-op, since the core was committed when becoming read-only and hasn't had any updates since.
+        return;
+      }
     }
 
     List<SolrCmdDistributor.Node> nodes = null;
