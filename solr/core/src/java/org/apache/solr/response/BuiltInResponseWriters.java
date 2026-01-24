@@ -40,6 +40,10 @@ import org.apache.solr.common.params.CommonParams;
  */
 public class BuiltInResponseWriters {
 
+  private BuiltInResponseWriters() {
+    // Prevent instantiation
+  }
+
   /**
    * Built-in response writers that are always available.
    *
