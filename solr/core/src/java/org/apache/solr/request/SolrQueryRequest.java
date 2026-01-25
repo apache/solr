@@ -146,7 +146,7 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   /**
    * Only for V2 API. Returns a map of path segments and their values. For example, if the path is
-   * configured as /path/{segment1}/{segment2} and a reguest is made as /path/x/y the returned map
+   * configured as /path/{segment1}/{segment2} and a request is made as /path/x/y the returned map
    * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
@@ -199,9 +199,8 @@ public interface SolrQueryRequest extends AutoCloseable {
   /**
    * The writer to use for this request, considering {@link CommonParams#WT}. Never null.
    *
-   * <p>If a core is available, uses the core's response writer registry (loaded from
-   * ImplicitPlugins.json with ConfigOverlay support). If no core is available (e.g., for
-   * admin/container requests), uses a minimal set of admin-appropriate writers.
+   * <p>If a core is available, uses the core's response writer registry. If no core is available
+   * (e.g., for node/container requests), uses a minimal set of node/container-appropriate writers.
    */
   default QueryResponseWriter getResponseWriter() {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient

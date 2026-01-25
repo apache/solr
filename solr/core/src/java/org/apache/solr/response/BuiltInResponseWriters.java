@@ -26,18 +26,13 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 
 /**
- * Registry for built-in response writers in Solr.
+ * Essential response writers always available regardless of core configuration.
  *
- * <p>Manages a minimal set of essential response writers that are always available, regardless of
- * core configuration or ImplicitPlugins.json settings. These writers are primarily used by
- * admin/container-level requests that have no associated SolrCore.
+ * <p>Used by node/container-level requests that have no associated {@link
+ * org.apache.solr.core.SolrCore}.
  *
- * <p>Built-in writers include essential formats needed by admin APIs and core functionality:
- * javabin, json, xml, prometheus, and openmetrics.
- *
- * <p>For core-specific requests that need access to the full set of response writers (including
- * csv, geojson, graphml, smile, etc.), use the SolrCore's response writer registry which is loaded
- * from ImplicitPlugins.json and supports ConfigOverlay customizations.
+ * <p>For the full set of response writers (csv, geojson, graphml, smile, etc.), use {@link
+ * org.apache.solr.core.SolrCore}'s response writer registry.
  */
 public class BuiltInResponseWriters {
 
