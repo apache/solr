@@ -19,8 +19,6 @@ package org.apache.solr.response;
 import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
 import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
@@ -57,15 +55,25 @@ public class BuiltInResponseWriters {
 
   static {
     // Initialize built-in writers that are always available
-    Map<String, QueryResponseWriter> builtinWriters = new HashMap<>(7, 1);
-    builtinWriters.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
-    builtinWriters.put(CommonParams.JSON, new JacksonJsonWriter());
-    builtinWriters.put("standard", builtinWriters.get(CommonParams.JSON)); // Alias for JSON
-    builtinWriters.put("xml", new XMLResponseWriter());
-    builtinWriters.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    builtinWriters.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
-    builtinWriters.put(ReplicationAPIBase.FILE_STREAM, new FileStreamResponseWriter());
-    BUILTIN_WRITERS = Collections.unmodifiableMap(builtinWriters);
+    JacksonJsonWriter jsonWriter = new JacksonJsonWriter();
+    PrometheusResponseWriter prometheusWriter = new PrometheusResponseWriter();
+
+    BUILTIN_WRITERS =
+        Map.of(
+            CommonParams.JAVABIN,
+            new JavaBinResponseWriter(),
+            CommonParams.JSON,
+            jsonWriter,
+            "standard",
+            jsonWriter, // Alias for JSON
+            "xml",
+            new XMLResponseWriter(),
+            PROMETHEUS_METRICS_WT,
+            prometheusWriter,
+            OPEN_METRICS_WT,
+            prometheusWriter,
+            ReplicationAPIBase.FILE_STREAM,
+            new FileStreamResponseWriter());
   }
 
   /**
