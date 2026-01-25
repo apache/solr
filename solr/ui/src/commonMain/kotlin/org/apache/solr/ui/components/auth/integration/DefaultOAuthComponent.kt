@@ -52,7 +52,7 @@ class DefaultOAuthComponent(
     private val store = instanceKeeper.getStore {
         OAuthStoreProvider(
             storeFactory = storeFactory,
-            client = ServerOAuthStoreClient(httpClient),
+            client = PlatformOAuthStoreClient(httpClient),
             mainContext = mainScope.coroutineContext,
             ioContext = ioScope.coroutineContext,
             method = method,

@@ -22,25 +22,20 @@ import io.ktor.client.call.body
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.bearerAuth
-import io.ktor.client.request.forms.formData
 import io.ktor.client.request.forms.submitForm
 import io.ktor.client.request.get
-import io.ktor.client.request.parameter
-import io.ktor.client.request.post
-import io.ktor.client.request.setBody
-import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.http.contentType
 import io.ktor.http.parameters
-import kotlinx.serialization.json.Json
-import org.apache.solr.ui.components.auth.listenForOAuthCallback
+import kotlin.js.unsafeCast
+import kotlinx.browser.window
+import kotlinx.coroutines.suspendCancellableCoroutine
 import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
 import org.apache.solr.ui.data.AuthorizationResponse
-import org.apache.solr.ui.data.AuthorizationTokenRequest
 import org.apache.solr.ui.domain.OAuthData
 import org.apache.solr.ui.errors.InvalidResponseException
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
+import org.w3c.dom.MessageEvent
 
 /**
  * OAuth store implementation that uses a server instance for handling callbacks.
@@ -48,13 +43,14 @@ import org.apache.solr.ui.errors.UnknownResponseException
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
  */
-class ServerOAuthStoreClient(private val httpClient: HttpClient) : OAuthStoreProvider.Client {
-    override suspend fun authenticate(
+actual class PlatformOAuthStoreClient actual constructor(private val httpClient: HttpClient) : OAuthStoreProvider.Client {
+
+    actual override suspend fun authenticate(
         state: String,
         verifier: String,
         data: OAuthData,
     ): Result<BearerTokens> {
-        val queryParams = listenForOAuthCallback()
+        val queryParams = getQueryParams()
 
         val code = queryParams["code"] ?: throw InvalidResponseException("code not retrieved but required")
         val responseState = queryParams["state"] ?: throw InvalidResponseException("state not retrieved but required")
@@ -69,7 +65,7 @@ class ServerOAuthStoreClient(private val httpClient: HttpClient) : OAuthStorePro
             formParameters = parameters {
                 append("grant_type", "authorization_code")
                 append("code", code)
-                append("redirect_uri", "http://127.0.0.1:8088/callback")
+                append("redirect_uri", "http://127.0.0.1:8983/solr/ui/callback")
                 append("scope", data.scope)
                 append("code_verifier", verifier)
                 append("client_id", data.clientId)
@@ -91,6 +87,31 @@ class ServerOAuthStoreClient(private val httpClient: HttpClient) : OAuthStorePro
             }
 
             else -> Result.failure(UnknownResponseException(response))
+        }
+    }
+
+    /**
+     * Retrieves the query params from the current page
+     */
+    private suspend fun getQueryParams(): Map<String, String> {
+        return suspendCancellableCoroutine { continuation ->
+            window.addEventListener("message", { event ->
+                event as MessageEvent
+                if (event.origin != window.origin) return@addEventListener // security check
+
+                val params = event.data?.unsafeCast<JsString>().toString()
+                    .substring(1) // remove leading ?
+                    .split("&") // split params
+                    .mapNotNull { param ->
+                        // Map params key-value pairs
+                        val parts = param.split("=")
+                        if (parts.size == 2) {
+                            parts[0] to parts[1]
+                        } else null
+                    }.toMap()
+
+                continuation.resumeWith(Result.success(params))
+            })
         }
     }
 }

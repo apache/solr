@@ -24,21 +24,6 @@ import okio.ByteString
 import okio.ByteString.Companion.encodeUtf8
 
 /**
- * Starts an embedded Ktor server on 127.0.0.1:3000 and waits for a single OAuth callback.
- *
- * Returns a map of captured parameters (e.g. "code", "state", or "access_token").
- *
- * The function suspends until the callback is received, then the server is stopped and the captured
- * parameters are returned.
- */
-expect suspend fun listenForOAuthCallback(
-    port: Int = 8088,
-    host: String = "127.0.0.1",
-    path: String = "/callback",
-    timeoutMillis: Long = 120_000L,
-): Map<String, String>
-
-/**
  * Characters allowed by RFC 7636 for the code verifier
  */
 private const val CODE_VERIFIER_CHARSET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~"
@@ -65,3 +50,10 @@ internal fun generateOAuthState(): String = buildString {
         append(STATE_CHARSET[Random.nextInt(STATE_CHARSET.length)])
     }
 }
+
+/**
+ * Retrieve the redirect URI for the OAuth flow.
+ *
+ * This URI is platform-specific, as it uses different redirect URIs on different platforms.
+ */
+internal expect fun getRedirectUri(): String
