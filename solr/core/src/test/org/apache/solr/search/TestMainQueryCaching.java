@@ -127,7 +127,8 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   @Test
   public void testConstantScoreFlScore() throws Exception {
-    // explicitly requesting scores should unconditionally disable caching and sorting optimizations
+    // explicitly requesting rows=0 means that scores should not unconditionally disable caching and
+    // sorting optimizations
     String response =
         JQ(
             req(
@@ -141,7 +142,12 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                 "id,score",
                 "sort",
                 (random().nextBoolean() ? "id asc" : "score desc")));
-    assertMetricCounts(response, false, 0, 1, 0);
+    assertMetricCounts(
+        response,
+        false,
+        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0,
+        0,
+        USE_FILTER_FOR_SORTED_QUERY ? 1 : 0);
   }
 
   @Test
@@ -166,12 +172,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                 "sort",
                 (random().nextBoolean() ? "id asc" : "score desc")));
     final int insertAndSkipCount = USE_FILTER_FOR_SORTED_QUERY ? 1 : 0;
-    assertMetricCounts(
-        response,
-        false,
-        insertAndSkipCount,
-        USE_FILTER_FOR_SORTED_QUERY ? 0 : 1,
-        insertAndSkipCount);
+    assertMetricCounts(response, false, insertAndSkipCount, 0, insertAndSkipCount);
   }
 
   @Test
@@ -254,29 +255,34 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
 
   @Test
   public void testMatchAllDocsFlScore() throws Exception {
-    // explicitly requesting scores should unconditionally disable all cache consultation and sort
-    // optimization
+    // explicitly requesting scores no longer unconditionally disables all cache consultation and
+    // sort optimization; but `{!cache=false}` on the main query does disable cache/sort
+    // optimization.
+    boolean noCache = random().nextBoolean();
+    String prefix = noCache ? "{!cache=false}" : "";
+
+    // should no longer matter whether we request score.
+    String fl = random().nextBoolean() ? "id" : "id,score";
     String response =
         JQ(
             req(
                 "q",
-                MATCH_ALL_DOCS_QUERY,
+                prefix.concat(MATCH_ALL_DOCS_QUERY),
                 "indent",
                 "true",
                 "rows",
                 "0",
                 "fl",
-                "id,score",
+                fl,
                 "sort",
                 (random().nextBoolean() ? "id asc" : "score desc")));
     /*
-    NOTE: pretend we're not MatchAllDocs, from the perspective of `assertMetricsCounts(...)`
+    NOTE: when `noCache=true`, pretend we're not MatchAllDocs, from the perspective of
+    `assertMetricsCounts(...)`.
     We're specifically choosing `*:*` here because we want a query that would _definitely_ hit
-    our various optimizations, _but_ for the fact that we explicitly requested `score` to be
-    returned. This would be a bit of an anti-pattern in "real life", but it's useful (e.g., in
-    tests) to have this case just disable the optimizations.
+    our various optimizations, _except_ for if/when we explicitly disable caching.
      */
-    assertMetricCounts(response, false, 0, 1, 0, ALL_DOCS);
+    assertMetricCounts(response, !noCache, 0, noCache ? 1 : 0, noCache ? 0 : 1, ALL_DOCS);
   }
 
   @Test
@@ -312,6 +318,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     final int expectNumFound = MATCH_ALL_DOCS_QUERY.equals(q) ? ALL_DOCS : MOST_DOCS;
     final boolean consultMatchAllDocs;
     final boolean insertFilterCache;
+    final boolean fullSort;
     if (includeScoreInSort) {
       consultMatchAllDocs = false;
       insertFilterCache = false;
@@ -329,6 +336,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   @Test
   public void testCursorMarkZeroRows() throws Exception {
     String q = pickRandom(ALL_QUERIES);
+    boolean sortByScore = random().nextBoolean();
     String response =
         JQ(
             req(
@@ -341,25 +349,14 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
                 "rows",
                 "0",
                 "sort",
-                random().nextBoolean() ? "id asc" : "score desc,id asc"));
-    final boolean consultMatchAllDocs;
-    final boolean insertFilterCache;
-    final boolean skipSort;
-    if (MATCH_ALL_DOCS_QUERY.equals(q)) {
-      consultMatchAllDocs = true;
-      insertFilterCache = false;
-      skipSort = true;
-    } else {
-      consultMatchAllDocs = false;
-      insertFilterCache = USE_FILTER_FOR_SORTED_QUERY;
-      skipSort = USE_FILTER_FOR_SORTED_QUERY;
-    }
+                sortByScore ? "score desc,id asc" : "id asc"));
+    boolean filterCacheInsertCount = !MATCH_ALL_DOCS_QUERY.equals(q) && USE_FILTER_FOR_SORTED_QUERY;
     assertMetricCounts(
         response,
-        consultMatchAllDocs,
-        insertFilterCache ? 1 : 0,
-        skipSort ? 0 : 1,
-        skipSort ? 1 : 0);
+        MATCH_ALL_DOCS_QUERY.equals(q),
+        filterCacheInsertCount ? 1 : 0,
+        0,
+        MATCH_ALL_DOCS_QUERY.equals(q) || filterCacheInsertCount ? 1 : 0);
   }
 
   private static void assertMetricCounts(
