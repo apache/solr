@@ -3109,7 +3109,10 @@ public class SolrCore implements SolrInfoBean, Closeable {
     // Build default writers map from implicit plugins
     Map<String, QueryResponseWriter> defaultWriters = new HashMap<>();
 
-    // Load writers from ImplicitPlugins.json
+    // Start with built-in writers that are always available
+    defaultWriters.putAll(BuiltInResponseWriters.getAllWriters());
+
+    // Load writers from ImplicitPlugins.json (may override built-ins)
     List<PluginInfo> implicitWriters = getImplicitResponseWriters();
     for (PluginInfo info : implicitWriters) {
       try {

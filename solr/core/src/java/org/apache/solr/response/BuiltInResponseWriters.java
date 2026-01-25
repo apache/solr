@@ -94,4 +94,13 @@ public class BuiltInResponseWriters {
     }
     return BUILTIN_WRITERS.getOrDefault(writerName, BUILTIN_WRITERS.get("standard"));
   }
+
+  /**
+   * Gets all built-in response writers.
+   *
+   * @return immutable map of all built-in writers
+   */
+  public static Map<String, QueryResponseWriter> getAllWriters() {
+    return BUILTIN_WRITERS;
+  }
 }

@@ -159,26 +159,11 @@
     }
   },
   "queryResponseWriter": {
-    "xml": {
-      "class": "solr.XMLResponseWriter"
-    },
-    "json": {
-      "class": "solr.JacksonJsonWriter"
-    },
-    "standard": {
-      "class": "solr.JacksonJsonWriter"
-    },
     "geojson": {
       "class": "solr.GeoJSONResponseWriter"
     },
     "graphml": {
       "class": "solr.GraphMLResponseWriter"
-    },
-    "raw": {
-      "class": "solr.RawResponseWriter"
-    },
-    "javabin": {
-      "class": "solr.JavaBinResponseWriter"
     },
     "cbor": {
       "class": "solr.CborResponseWriter"
@@ -191,12 +176,6 @@
     },
     "smile": {
       "class": "solr.SmileResponseWriter"
-    },
-    "prometheus": {
-      "class": "solr.PrometheusResponseWriter"
-    },
-    "openmetrics": {
-      "class": "solr.PrometheusResponseWriter"
     }
   }
 }
