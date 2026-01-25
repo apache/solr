@@ -29,8 +29,9 @@ import org.apache.solr.request.SolrQueryRequest;
  * operations.
  *
  * <p>This writer handles streaming of large files (such as index files) by looking for a {@link
- * SolrCore.RawWriter} object in the response under the {@link ReplicationAPIBase#FILE_STREAM} key.
- * When found, it delegates directly to the raw writer to stream the file content efficiently.
+ * org.apache.solr.core.SolrCore.RawWriter} object in the response under the {@link
+ * ReplicationAPIBase#FILE_STREAM} key. When found, it delegates directly to the raw writer to
+ * stream the file content efficiently.
  *
  * <p>This writer is specifically designed for replication file transfers and provides no fallback
  * behavior - it only works when a proper RawWriter is present in the response.
