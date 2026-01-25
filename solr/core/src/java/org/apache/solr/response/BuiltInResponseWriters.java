@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 
 /**
  * Registry for built-in response writers in Solr.
@@ -54,19 +55,21 @@ public class BuiltInResponseWriters {
    *   <li><b>json/standard</b> - JSON format, default for most requests
    *   <li><b>xml</b> - XML format, provides backward compatibility
    *   <li><b>prometheus/openmetrics</b> - Required by metrics endpoints
+   *   <li><b>filestream</b> - File streaming for replication and exports
    * </ul>
    */
   private static final Map<String, QueryResponseWriter> BUILTIN_WRITERS;
 
   static {
     // Initialize built-in writers that are always available
-    Map<String, QueryResponseWriter> builtinWriters = new HashMap<>(6, 1);
+    Map<String, QueryResponseWriter> builtinWriters = new HashMap<>(7, 1);
     builtinWriters.put(CommonParams.JAVABIN, new JavaBinResponseWriter());
     builtinWriters.put(CommonParams.JSON, new JacksonJsonWriter());
     builtinWriters.put("standard", builtinWriters.get(CommonParams.JSON)); // Alias for JSON
     builtinWriters.put("xml", new XMLResponseWriter());
     builtinWriters.put(PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
     builtinWriters.put(OPEN_METRICS_WT, new PrometheusResponseWriter());
+    builtinWriters.put(ReplicationAPIBase.FILE_STREAM, new FileStreamResponseWriter());
     BUILTIN_WRITERS = Collections.unmodifiableMap(builtinWriters);
   }
 

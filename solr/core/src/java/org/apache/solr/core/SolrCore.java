@@ -110,7 +110,6 @@ import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager.SnapshotMetaDa
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SolrConfigHandler;
-import org.apache.solr.handler.admin.api.ReplicationAPIBase;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
@@ -128,7 +127,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.BuiltInResponseWriters;
-import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -3078,31 +3076,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private final PluginBag<QueryResponseWriter> responseWriters =
       new PluginBag<>(QueryResponseWriter.class, this);
 
-  private static JavaBinResponseWriter getFileStreamWriter() {
-    return new JavaBinResponseWriter() {
-      @Override
-      public void write(
-          OutputStream out, SolrQueryRequest req, SolrQueryResponse response, String contentType)
-          throws IOException {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
-        if (rawWriter != null) {
-          rawWriter.write(out);
-          if (rawWriter instanceof Closeable) ((Closeable) rawWriter).close();
-        }
-      }
-
-      @Override
-      public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-        RawWriter rawWriter = (RawWriter) response.getValues().get(ReplicationAPIBase.FILE_STREAM);
-        if (rawWriter != null) {
-          return rawWriter.getContentType();
-        } else {
-          return JavaBinResponseParser.JAVABIN_CONTENT_TYPE;
-        }
-      }
-    };
-  }
-
   public void fetchLatestSchema() {
     IndexSchema schema = configSet.getIndexSchema(true);
     setLatestSchema(schema);
@@ -3117,7 +3090,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   }
 
   /**
-   * Gets a response writer suitable for admin/container-level requests.
+   * Gets a response writer suitable for node/container-level requests.
    *
    * @param writerName the writer name, or null for default
    * @return the response writer, never null
@@ -3152,9 +3125,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
         log.warn("Failed to load implicit response writer: {}", info.name, e);
       }
     }
-
-    // Add special filestream writer (custom implementation)
-    defaultWriters.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
 
     // Initialize with the built defaults
     responseWriters.init(defaultWriters, this);

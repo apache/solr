@@ -736,7 +736,7 @@ public class HttpSolrCall {
             solrResp.getToLogAsString("[admin]"));
       }
     }
-    // Admin requests have no core, use built-in writers
+    // node/container requests have no core, use built-in writers
     QueryResponseWriter respWriter =
         BuiltInResponseWriters.getWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
