@@ -15,16 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.components.auth
+package org.apache.solr.ui.components.auth.integration
 
-import io.ktor.http.URLBuilder
-import io.ktor.http.appendPathSegments
-import kotlinx.browser.window
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
+import org.apache.solr.ui.domain.OAuthData
 
-internal actual fun getRedirectUri(): String {
-    // For wasmJs we return the current origin with the full path
-    // TODO window.location.href may not be reliable, update if necessary
-    return URLBuilder(window.location.href).apply {
-        appendPathSegments("callback")
-    }.buildString()
+/**
+ * OAuth store implementation that uses a server instance for handling callbacks.
+ *
+ * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
+ * already set.
+ */
+expect class PlatformOAuthStoreClient(httpClient: HttpClient) : OAuthStoreProvider.Client {
+    override suspend fun authenticate(
+        state: String,
+        verifier: String,
+        data: OAuthData,
+    ): Result<BearerTokens>
 }

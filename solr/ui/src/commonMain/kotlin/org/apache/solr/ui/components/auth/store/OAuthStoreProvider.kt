@@ -33,6 +33,7 @@ import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.auth.generateCodeChallenge
 import org.apache.solr.ui.components.auth.generateCodeVerifier
 import org.apache.solr.ui.components.auth.generateOAuthState
+import org.apache.solr.ui.components.auth.getRedirectUri
 import org.apache.solr.ui.components.auth.store.OAuthStore.Intent
 import org.apache.solr.ui.components.auth.store.OAuthStore.Label
 import org.apache.solr.ui.components.auth.store.OAuthStore.State
@@ -83,7 +84,7 @@ class OAuthStoreProvider(
                     encodedParameters = ParametersBuilder().apply {
                         set("client_id", method.data.clientId)
                         set("scope", method.data.scope)
-                        set("redirect_uri", "http://127.0.0.1:8088/callback")
+                        set("redirect_uri", getRedirectUri())
                         set("response_type", "code")
                         set("code_challenge_method", "S256")
                         set("code_challenge", challenge)
