@@ -1,22 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Introduce minimal ADMIN_RESPONSE_WRITERS for admin/container-level requests. Admin requests now use a minimal set of 6 response writers (javabin, json, xml, prometheus, openmetrics, standard) instead of the full 14-writer DEFAULT_RESPONSE_WRITERS map. Core-specific requests continue to use ImplicitPlugins.json with ConfigOverlay support.
+title: Introduce minimal set of request writers for node/container-level requests. Core-specific request writers now leverage ImplicitPlugins.json for creation.
 type: changed
 authors:
   - name: Eric Pugh
-links:
-  - name: GitHub Discussion
-    url: https://github.com/apache/solr/discussions
-notes: |
-  Admin/container-level requests (e.g., /admin/cores, /admin/collections) have no associated SolrCore
-  and cannot use the core's response writer registry loaded from ImplicitPlugins.json. Previously,
-  these requests used DEFAULT_RESPONSE_WRITERS (14 entries). Now they use ADMIN_RESPONSE_WRITERS (6 entries)
-  containing only the formats actually needed by admin APIs:
-  - javabin (SolrJ clients)
-  - json (Admin UI)
-  - xml (backward compatibility)
-  - prometheus/openmetrics (metrics endpoint)
-  - standard (alias for json)
-  
-  This provides clearer separation of concerns and better documentation of requirements. Core-specific
-  requests are unaffected and continue to use the full ImplicitPlugins.json system with ConfigOverlay support.
-  DEFAULT_RESPONSE_WRITERS remains available but is now deprecated for internal use.
+  - name: David Smiley
