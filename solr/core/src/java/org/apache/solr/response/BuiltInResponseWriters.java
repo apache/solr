@@ -81,11 +81,6 @@ public class BuiltInResponseWriters {
    * @return the response writer, never null (returns "standard"/JSON if not found)
    */
   public static QueryResponseWriter getWriter(String writerName) {
-    // carrying over this "standard" thing from original code, but do we want this?  null/blank
-    // means standard?
-    // feels like null or blank should throw an exception.  And a method should be added that is
-    // getWriter() that
-    // returns the json guy.  I hate passing around nulls and ""...
     if (writerName == null || writerName.isEmpty()) {
       return BUILTIN_WRITERS.get("standard");
     }
