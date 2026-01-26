@@ -48,10 +48,11 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   public NodeSystemInfoResponse getNodeSystemInfo() {
     solrQueryResponse.setHttpCaching(false);
 
-    // TODO? nodes=all is ignored
+    // TODO: AdminHandlersProxy does not support V2
     try {
-      if (AdminHandlersProxy.maybeProxyToNodes(
-          solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
+      if (solrQueryRequest.getCoreContainer() != null
+          && AdminHandlersProxy.maybeProxyToNodes(
+              solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
         return null;
       }
     } catch (Exception e) {
@@ -61,12 +62,20 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
     NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
     provider.getNodeSystemInfo(response);
-    log.info("Found {} nodes.", response == null ? "NO" : response.nodesInfo.size());
-    if (response != null) {
+    if (log.isDebugEnabled()) {
+      log.debug("Found {} nodes.", response == null ? "NO" : response.nodesInfo.size());
+    }
+    if (response != null && log.isTraceEnabled()) {
       response
           .nodesInfo
           .entrySet()
-          .forEach(e -> log.info("Node {}, core root: {}", e.getKey(), e.getValue().coreRoot));
+          .forEach(
+              e -> {
+                // yep, need to validate the log settings again.
+                if (log.isTraceEnabled()) {
+                  log.trace("Node {}, core root: {}", e.getKey(), e.getValue().coreRoot);
+                }
+              });
     }
     return response;
   }
