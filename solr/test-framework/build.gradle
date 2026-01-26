@@ -24,7 +24,6 @@ dependencies {
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
-  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -68,18 +67,15 @@ dependencies {
   implementation libs.dropwizard.metrics.core
   implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
-  permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
   implementation(libs.opentelemetry.exporter.prometheus) {
-    transitive = false
+    transitive = false // most things don't want or already have
   }
+  implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
+  permitUnusedDeclared libs.opentelemetry.sdk.metrics
   implementation libs.prometheus.metrics.model
-  implementation(libs.opentelemetry.sdk) {
-    exclude group: "io.opentelemetry", module: "opentelemetry-sdk-logs"
-  }
-  permitUnusedDeclared libs.opentelemetry.sdk
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
