@@ -18,7 +18,6 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
-import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -125,7 +124,8 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
     // internal version of doFilter that tracks if we are in a retry
-    doFilterRetry(closeShield(request), closeShield(response), chain, false);
+
+    dispatch(chain, closeShield(request), closeShield(response), false);
   }
 
   /*
@@ -140,30 +140,25 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   before adding anything else to it.
    */
 
-  private void doFilterRetry(
-      HttpServletRequest request, HttpServletResponse response, FilterChain chain, boolean retry)
-      throws IOException, ServletException {
-    setTracer(request, getCores().getTracer());
-    RateLimitManager rateLimitManager = getRateLimitManager();
-    ServletUtils.rateLimitRequest(
-        rateLimitManager,
-        request,
-        response,
-        () -> {
-          try {
-            dispatch(chain, request, response, retry);
-          } catch (IOException | ServletException | SolrAuthenticationException e) {
-            throw new ExceptionWhileTracing(e);
-          }
-        });
-  }
-
   private void dispatch(
       FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry)
-      throws IOException, ServletException, SolrAuthenticationException {
+      throws IOException, ServletException {
 
     AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-    authenticateRequest(request, response, wrappedRequest);
+    try {
+      authenticateRequest(request, response, wrappedRequest);
+    } catch (SolrAuthenticationException e) {
+      // it seems our auth system expects the plugin to set the status on the request.
+      // If this hasn't happened make sure it does happen now rather than throwing an
+      // exception, that formerly went on to be ignored in
+      // org.apache.solr.servlet.ServletUtils.traceHttpRequestExecution2
+      if (response.getStatus() < 400) {
+        log.error(
+            "Authentication Plugin threw SolrAuthenticationException without setting request status >= 400");
+        response.sendError(401, "Authentication Plugin rejected credentials.");
+      }
+      return; // Nothing more to do, chain.doFilter(req,res) doesn't get called.
+    }
     if (wrappedRequest.get() != null) {
       request = wrappedRequest.get();
     }
@@ -193,7 +188,8 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
           break;
         case RETRY:
           span.addEvent("SolrDispatchFilter RETRY");
-          doFilterRetry(request, response, chain, true); // RECURSION
+          // RECURSION
+          dispatch(chain, request, response, true);
           break;
         case FORWARD:
           span.addEvent("SolrDispatchFilter FORWARD");

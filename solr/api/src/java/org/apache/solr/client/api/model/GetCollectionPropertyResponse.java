@@ -14,25 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-apply plugin: 'java-library'
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-description = 'cuVS plugin'
+/** The Response for the v2 "get collection property" API */
+public class GetCollectionPropertyResponse extends SolrJerseyResponse {
 
-dependencies {
-  implementation(libs.cuvs.lucene) {
-    changing = true
-  }
-  implementation libs.cuvs.java
-  implementation libs.opentelemetry.api
-  implementation project(':solr:core')
-  implementation project(':solr:solrj')
-  implementation libs.apache.lucene.core
-  implementation libs.slf4j.api
-
-  testImplementation project(':solr:test-framework')
-  testImplementation libs.apache.lucene.testframework
-  testImplementation libs.junit.junit
-  testImplementation libs.commonsio.commonsio
+  @Schema(description = "The value of the collection property.")
+  @JsonProperty("value")
+  public String value;
 }
-

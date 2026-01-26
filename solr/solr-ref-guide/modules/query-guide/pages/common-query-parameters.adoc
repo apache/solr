@@ -350,7 +350,8 @@ This parameter specifies the amount of time, in milliseconds, allowed for a sear
 If this time expires before the search is complete, any partial results will be returned, but values such as `numFound`, xref:faceting.adoc[facet] counts, and result xref:stats-component.adoc[stats] may not be accurate for the entire result set.
 In case of expiration, if `omitHeader` isn't set to `true` the response header contains a special flag called `partialResults`.
 When using `timeAllowed` in combination with xref:pagination-of-results.adoc#using-cursors[`cursorMark`], and the `partialResults` flag is present, some matching documents may have been skipped in the result set.
-Additionally, if  the `partialResults` flag is present, `cursorMark` can match `nextCursorMark` even if there may be more results
+Additionally, if  the `partialResults` flag is present, `cursorMark` can match `nextCursorMark` even if there may be more results.
+It is recommended to set this value to be smaller than the xref:configuration-guide:configuring-solr-xml.adoc#sockettimeout[socketTimeout] configured in `solr.xml` to allow Solr to gracefully finish the request processing and return partial results before the coordinator gives up on the request.
 
 [source,json]
 ----
