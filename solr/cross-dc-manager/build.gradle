@@ -24,6 +24,7 @@ description = 'Cross-DC Manager'
 
 dependencies {
   implementation platform(project(':platform'))
+  implementation project(':solr:core')
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-zookeeper')
   implementation project(':solr:modules:cross-dc')
@@ -31,20 +32,15 @@ dependencies {
 
   implementation platform(libs.opentelemetry.bom)
   implementation libs.opentelemetry.api
-  implementation libs.opentelemetry.sdk
   implementation libs.opentelemetry.sdk.metrics
-  implementation libs.opentelemetry.sdk.extension.autoconfigure
-  implementation libs.opentelemetry.exporter.otlp
-  implementation(libs.opentelemetry.exporter.prometheus) {
-    transitive = false
-  }
-  implementation libs.prometheus.metrics.model
-  implementation(libs.prometheus.metrics.expositionformats, {
-    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
-    exclude group: "io.prometheus", module: "prometheus-metrics-config"
-  })
+//  implementation libs.prometheus.metrics.model
+//  implementation(libs.prometheus.metrics.expositionformats, {
+//    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+//    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+//  })
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
+  implementation libs.jakarta.servlet.api
   implementation libs.slf4j.api
   runtimeOnly libs.google.protobuf.javautils
   runtimeOnly libs.commonscodec.commonscodec

@@ -16,15 +16,8 @@
  */
 package org.apache.solr.crossdc.manager.consumer;
 
-// import io.prometheus.metrics.expositionformats.ExpositionFormats;
-// import io.prometheus.metrics.model.registry.PrometheusRegistry;
-// import io.prometheus.metrics.model.snapshots.MetricSnapshots;
-import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
-import io.prometheus.metrics.model.snapshots.MetricSnapshot;
-import io.prometheus.metrics.model.snapshots.MetricSnapshots;
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -35,8 +28,12 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.crossdc.common.MirroredSolrRequestSerializer;
+import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.response.PrometheusResponseWriter;
+import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,21 +41,36 @@ public class Util {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static void logMetrics(SolrMetricManager metricManager) {
-    List<MetricSnapshot> snapshotList =
-        metricManager.getPrometheusMetricReaders().values().stream()
-            .flatMap(r -> r.collect().stream())
-            .toList();
-    MetricSnapshots snapshots = MetricSnapshots.of(snapshotList.toArray(new MetricSnapshot[0]));
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    new MetricsHandler(metricManager)
+        .handleRequest(SolrParams.of(), (key, value) -> rsp.add(key, value));
     String output;
     try {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      new PrometheusTextFormatWriter(false).write(baos, snapshots);
+      new PrometheusResponseWriter()
+          .write(baos, null, rsp, PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS);
       output = baos.toString();
     } catch (Exception e) {
       log.error("Error while writing final metrics", e);
-      output = snapshots.toString();
+      output = rsp.toString();
     }
     log.info("#### Consumer Metrics: ####\n{}", output);
+    //    List<MetricSnapshot> snapshotList =
+    //        metricManager.getPrometheusMetricReaders().values().stream()
+    //            .flatMap(r -> r.collect().stream())
+    //            .toList();
+    //    MetricSnapshots snapshots = MetricSnapshots.of(snapshotList.toArray(new
+    // MetricSnapshot[0]));
+    //    String output;
+    //    try {
+    //      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    //      new PrometheusTextFormatWriter(false).write(baos, snapshots);
+    //      output = baos.toString();
+    //    } catch (Exception e) {
+    //      log.error("Error while writing final metrics", e);
+    //      output = snapshots.toString();
+    //    }
+    //    log.info("#### Consumer Metrics: ####\n{}", output);
   }
 
   public static void printKafkaInfo(String host, String groupId) {
