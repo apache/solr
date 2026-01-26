@@ -141,6 +141,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     claims.setClaim("claim1", "foo"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim2", "bar"); // additional claims/attributes about the subject can be added
     claims.setClaim("claim3", "foo"); // additional claims/attributes about the subject can be added
+    claims.setClaim("email_verified", true); // boolean claim as per OIDC spec
+    claims.setClaim("admin", false); // another boolean claim
     List<String> roles = Arrays.asList("group-one", "other-group", "group-three");
     claims.setStringListClaim(
         "roles", roles); // multi-valued claims work too and will end up as a JSON array
@@ -334,6 +336,38 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
     shouldMatch.put("claim1", "NA");
     resp = plugin.authenticate(testHeader);
     assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
+  }
+
+  @Test
+  public void claimMatchWithBooleanClaim() {
+    // Test that boolean claims work correctly with claimsMatch
+    Map<String, String> shouldMatch = new HashMap<>();
+    shouldMatch.put("email_verified", "true");
+    testConfig.put("claimsMatch", shouldMatch);
+    plugin.init(testConfig);
+    JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // Test matching false boolean value
+    shouldMatch.clear();
+    shouldMatch.put("admin", "false");
+    plugin.init(testConfig);
+    resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
+
+    // Test mismatch with boolean claim
+    shouldMatch.clear();
+    shouldMatch.put("email_verified", "false");
+    plugin.init(testConfig);
+    resp = plugin.authenticate(testHeader);
+    assertEquals(CLAIM_MISMATCH, resp.getAuthCode());
+
+    // Test regex pattern with boolean claim
+    shouldMatch.clear();
+    shouldMatch.put("email_verified", "true|false");
+    plugin.init(testConfig);
+    resp = plugin.authenticate(testHeader);
+    assertTrue(resp.getErrorMessage(), resp.isAuthenticated());
   }
 
   @Test
