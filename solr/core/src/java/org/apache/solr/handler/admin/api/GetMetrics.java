@@ -37,13 +37,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.jersey.PermissionName;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -85,13 +85,13 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     ModifiableSolrParams params =
         new ModifiableSolrParams(
             Map.of(
-                MetricsUtil.NODE_PARAM, new String[] {node},
-                MetricsUtil.METRIC_NAME_PARAM, new String[] {name},
-                MetricsUtil.CATEGORY_PARAM, new String[] {category},
-                MetricsUtil.CORE_PARAM, new String[] {core},
-                MetricsUtil.COLLECTION_PARAM, new String[] {collection},
-                MetricsUtil.SHARD_PARAM, new String[] {shard},
-                MetricsUtil.REPLICA_TYPE_PARAM, new String[] {replicaType}));
+                MetricUtils.NODE_PARAM, new String[] {node},
+                MetricUtils.METRIC_NAME_PARAM, new String[] {name},
+                MetricUtils.CATEGORY_PARAM, new String[] {category},
+                MetricUtils.CORE_PARAM, new String[] {core},
+                MetricUtils.COLLECTION_PARAM, new String[] {collection},
+                MetricUtils.SHARD_PARAM, new String[] {shard},
+                MetricUtils.REPLICA_TYPE_PARAM, new String[] {replicaType}));
 
     solrQueryRequest.setParams(params);
 
@@ -103,8 +103,8 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
     }
 
     // Using the same logic, same methods, as in MetricsHandler.handleRequest
-    Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
-    SortedMap<String, Set<String>> labelFilters = MetricsUtil.labelFilters(params);
+    Set<String> metricNames = MetricUtils.readParamsAsSet(params, MetricUtils.METRIC_NAME_PARAM);
+    SortedMap<String, Set<String>> labelFilters = MetricUtils.labelFilters(params);
 
     return doGetMetrics(metricNames, labelFilters);
   }
@@ -128,7 +128,7 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
       solrQueryRequest.setParams(
           SolrParams.wrapDefaults(
               solrQueryRequest.getParams(),
-              SolrParams.of(CommonParams.WT, MetricsUtil.PROMETHEUS_METRICS_WT)));
+              SolrParams.of(CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT)));
     } else if (!PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS.equals(acceptHeader)
         && !PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS.equals(acceptHeader)) {
       log.info("Unsupported format requested");
@@ -170,7 +170,7 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
       }
     }
 
-    return writeMetricSnapshots(MetricsUtil.mergeSnapshots(snapshots));
+    return writeMetricSnapshots(MetricUtils.mergeSnapshots(snapshots));
   }
 
   private StreamingOutput writeMetricSnapshots(MetricSnapshots snapshots) {

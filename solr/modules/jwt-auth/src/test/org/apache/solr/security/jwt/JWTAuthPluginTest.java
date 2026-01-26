@@ -212,6 +212,8 @@ public class JWTAuthPluginTest extends SolrTestCaseJ4 {
 
     JWTAuthPlugin.JWTAuthenticationResponse resp = plugin.authenticate(testHeader);
     assertEquals(JWT_VALIDATION_EXCEPTION, resp.getAuthCode());
+    System.out.println(
+        "initFromSecurityJSONUrlJwk error message: " + resp.getJwtException().getMessage());
     assertTrue(resp.getJwtException().getMessage().contains("Connection refused"));
   }
 

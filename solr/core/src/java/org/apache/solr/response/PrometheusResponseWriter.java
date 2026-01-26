@@ -26,8 +26,8 @@ import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.MetricsHandler;
 import org.apache.solr.handler.admin.api.GetMetrics;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.stats.MetricUtils;
 
 /**
  * Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} and V2
@@ -86,7 +86,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
   private boolean writeOpenMetricsFormat(SolrQueryRequest request) {
     String wt = request.getParams().get(CommonParams.WT);
-    if (MetricsUtil.OPEN_METRICS_WT.equals(wt)) {
+    if (MetricUtils.OPEN_METRICS_WT.equals(wt)) {
       return true;
     }
 

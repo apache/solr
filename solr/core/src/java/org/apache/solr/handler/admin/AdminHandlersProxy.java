@@ -42,9 +42,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -83,8 +83,8 @@ public class AdminHandlersProxy {
     // Check if response format is Prometheus/OpenMetrics
     String wt = params.get(CommonParams.WT);
     boolean isPrometheusFormat =
-        MetricsUtil.PROMETHEUS_METRICS_WT.equals(wt)
-            || MetricsUtil.OPEN_METRICS_WT.equals(wt)
+        MetricUtils.PROMETHEUS_METRICS_WT.equals(wt)
+            || MetricUtils.OPEN_METRICS_WT.equals(wt)
             || (wt == null && pathStr.endsWith("/metrics"));
 
     if (isPrometheusFormat) {
@@ -167,11 +167,11 @@ public class AdminHandlersProxy {
 
     // Set response parser based on wt parameter to ensure correct format is used
     String wt = params.get(CommonParams.WT);
-    if (MetricsUtil.PROMETHEUS_METRICS_WT.equals(wt) || MetricsUtil.OPEN_METRICS_WT.equals(wt)) {
+    if (MetricUtils.PROMETHEUS_METRICS_WT.equals(wt) || MetricUtils.OPEN_METRICS_WT.equals(wt)) {
       proxyReq.setResponseParser(new InputStreamResponseParser(wt));
     }
     if (wt == null && uriPath.endsWith("/metrics")) {
-      proxyReq.setResponseParser(new InputStreamResponseParser(MetricsUtil.PROMETHEUS_METRICS_WT));
+      proxyReq.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
     }
 
     try {

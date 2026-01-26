@@ -115,7 +115,6 @@ import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -3102,8 +3101,8 @@ public class SolrCore implements SolrInfoBean, Closeable {
     m.put("csv", new CSVResponseWriter());
     m.put("schema.xml", new SchemaXmlResponseWriter());
     m.put("smile", new SmileResponseWriter());
-    m.put(MetricsUtil.PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
-    m.put(MetricsUtil.OPEN_METRICS_WT, new PrometheusResponseWriter());
+    m.put(MetricUtils.PROMETHEUS_METRICS_WT, new PrometheusResponseWriter());
+    m.put(MetricUtils.OPEN_METRICS_WT, new PrometheusResponseWriter());
     m.put(ReplicationAPIBase.FILE_STREAM, getFileStreamWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
   }

@@ -32,7 +32,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.metrics.MetricsUtil;
+import org.apache.solr.util.stats.MetricUtils;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -88,7 +88,6 @@ public class TestMetricsRequest extends SolrCloudTestCase {
               }
             });
 
-    // System.out.println("testGetMetricsV2: " + str);
     Assert.assertTrue(str.contains("# HELP"));
     Assert.assertTrue(str.contains("# TYPE"));
   }
@@ -104,7 +103,7 @@ public class TestMetricsRequest extends SolrCloudTestCase {
     String notRequested = "solr_client_request_duration_milliseconds_bucket";
     SolrParams params =
         new ModifiableSolrParams(
-            Map.of(MetricsUtil.METRIC_NAME_PARAM, new String[] {requestedName}));
+            Map.of(MetricUtils.METRIC_NAME_PARAM, new String[] {requestedName}));
     MetricsRequest solrRequest = new MetricsRequest(METRICS_V2_PATH, params);
     String str =
         httpClient.requestWithBaseUrl(
@@ -117,7 +116,6 @@ public class TestMetricsRequest extends SolrCloudTestCase {
               }
             });
 
-    System.out.println("testGetMetricsV2ParamName: " + str);
     Assert.assertTrue(str.contains("# HELP"));
     Assert.assertTrue(str.contains("# TYPE"));
     Assert.assertTrue(str.contains(requestedName));
@@ -143,7 +141,6 @@ public class TestMetricsRequest extends SolrCloudTestCase {
               }
             });
 
-    // System.out.println("testGetMetricsV1: " + str);
     Assert.assertTrue(str.contains("# HELP"));
     Assert.assertTrue(str.contains("# TYPE"));
   }

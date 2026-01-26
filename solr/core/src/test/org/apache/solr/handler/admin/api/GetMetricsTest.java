@@ -34,9 +34,9 @@ import java.util.function.Consumer;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.util.SSLTestConfig;
+import org.apache.solr.util.stats.MetricUtils;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpFields.Mutable;
@@ -149,7 +149,6 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     Assert.assertEquals(200, response.getStatus());
 
     String str = readMaxOut(response.getContent());
-    System.out.println("testGetMetricsDefault: " + str);
     Assert.assertTrue(str.contains("# HELP"));
     Assert.assertTrue(str.contains("# TYPE"));
   }
@@ -221,7 +220,7 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
           jettyHttpClient
               .newRequest(metricsV2Url)
               .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .param(MetricsUtil.CATEGORY_PARAM, "QUERY")
+              .param(MetricUtils.CATEGORY_PARAM, "QUERY")
               .method(HttpMethod.GET)
               .headers(
                   new Consumer<Mutable>() {
@@ -239,7 +238,6 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
     Assert.assertEquals(200, response.getStatus());
 
     String str = readMaxOut(response.getContent());
-    System.out.println("testGetMetricsCategoryParams: " + str);
     Assert.assertTrue(str.contains(expected.trim()));
     Assert.assertFalse(str.contains("category=\"CORE\""));
     Assert.assertFalse(str.contains("category=\"UPDATE\""));
@@ -256,7 +254,7 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
           jettyHttpClient
               .newRequest(metricsV2Url)
               .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .param(MetricsUtil.NODE_PARAM, otherNode)
+              .param(MetricUtils.NODE_PARAM, otherNode)
               .method(HttpMethod.GET)
               .send();
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
@@ -272,7 +270,7 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
           jettyHttpClient
               .newRequest(metricsV2Url)
               .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .param(MetricsUtil.NODE_PARAM, unknownNode)
+              .param(MetricUtils.NODE_PARAM, unknownNode)
               .method(HttpMethod.GET)
               .send();
     } catch (InterruptedException | ExecutionException | TimeoutException e) {

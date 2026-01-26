@@ -32,7 +32,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetMetrics;
-import org.apache.solr.metrics.MetricsUtil;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -40,6 +39,7 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.stats.MetricUtils;
 
 /** Request handler to return metrics */
 public class MetricsHandler extends RequestHandlerBase implements PermissionNameProvider {
@@ -93,8 +93,8 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
     if (format == null) {
       req.setParams(SolrParams.wrapDefaults(params, SolrParams.of("wt", "prometheus")));
-    } else if (!MetricsUtil.PROMETHEUS_METRICS_WT.equals(format)
-        && !MetricsUtil.OPEN_METRICS_WT.equals(format)) {
+    } else if (!MetricUtils.PROMETHEUS_METRICS_WT.equals(format)
+        && !MetricUtils.OPEN_METRICS_WT.equals(format)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
@@ -118,13 +118,13 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
       return;
     }
 
-    Set<String> metricNames = MetricsUtil.readParamsAsSet(params, MetricsUtil.METRIC_NAME_PARAM);
-    SortedMap<String, Set<String>> labelFilters = MetricsUtil.labelFilters(params);
+    Set<String> metricNames = MetricUtils.readParamsAsSet(params, MetricUtils.METRIC_NAME_PARAM);
+    SortedMap<String, Set<String>> labelFilters = MetricUtils.labelFilters(params);
 
     if (metricNames.isEmpty() && labelFilters.isEmpty()) {
       consumer.accept(
           "metrics",
-          MetricsUtil.mergeSnapshots(
+          MetricUtils.mergeSnapshots(
               metricManager.getPrometheusMetricReaders().values().stream()
                   .flatMap(r -> r.collect().stream())
                   .toList()));
@@ -139,7 +139,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
     }
 
     // Merge all filtered snapshots and return the merged result
-    MetricSnapshots mergedSnapshots = MetricsUtil.mergeSnapshots(allSnapshots);
+    MetricSnapshots mergedSnapshots = MetricUtils.mergeSnapshots(allSnapshots);
     consumer.accept("metrics", mergedSnapshots);
   }
 
