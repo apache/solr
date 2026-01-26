@@ -104,7 +104,6 @@ public class TestCborDataFormat extends SolrCloudTestCase {
       QueryResponse result = new QueryRequest(q).process(client, testCollection);
       assertEquals(6, result.getResults().size());
     } finally {
-      System.clearProperty("managed.schema.mutable");
       cluster.shutdown();
     }
   }

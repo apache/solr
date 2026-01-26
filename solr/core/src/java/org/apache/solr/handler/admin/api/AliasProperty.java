@@ -16,30 +16,27 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.COLL_READ_PERM;
 
 import jakarta.inject.Inject;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.solr.client.api.endpoint.AliasPropertyApis;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
 import org.apache.solr.client.api.model.GetAliasPropertyResponse;
 import org.apache.solr.client.api.model.GetAllAliasPropertiesResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.UpdateAliasPropertiesRequestBody;
 import org.apache.solr.client.api.model.UpdateAliasPropertyRequestBody;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -103,7 +100,7 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
   @Override
   @PermissionName(COLL_EDIT_PERM)
-  public SolrJerseyResponse updateAliasProperties(
+  public AsyncJerseyResponse updateAliasProperties(
       String aliasName, UpdateAliasPropertiesRequestBody requestBody) throws Exception {
 
     if (requestBody == null) {
@@ -112,8 +109,8 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
-    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    modifyAliasProperties(aliasName, requestBody.properties, requestBody.async);
+    var response = instantiateJerseyResponse(AsyncJerseyResponse.class);
+    modifyAliasProperties(response, aliasName, requestBody.properties, requestBody.async);
     return response;
   }
 
@@ -128,8 +125,8 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
 
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
-    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    modifyAliasProperty(aliasName, propName, requestBody.value);
+    var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    modifyAliasProperty(response, aliasName, propName, requestBody.value);
     return response;
   }
 
@@ -139,52 +136,50 @@ public class AliasProperty extends AdminAPIBase implements AliasPropertyApis {
       throws Exception {
     recordCollectionForLogAndTracing(null, solrQueryRequest);
 
-    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
-    modifyAliasProperty(aliasName, propName, null);
+    var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    modifyAliasProperty(response, aliasName, propName, null);
     return response;
-  }
-
-  private void modifyAliasProperty(String alias, String proertyName, Object value)
-      throws Exception {
-    Map<String, Object> props = new HashMap<>();
-    // value can be null
-    props.put(proertyName, value);
-    modifyAliasProperties(alias, props, null);
-  }
-
-  /**
-   * @param alias alias
-   */
-  private void modifyAliasProperties(String alias, Map<String, Object> properties, String async)
-      throws Exception {
-    // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
-    // simple and one less case for api-callers to check for.
-    final CoreContainer coreContainer = fetchAndValidateZooKeeperAwareCoreContainer();
-    final ZkNodeProps remoteMessage = createRemoteMessage(alias, properties, async);
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer.getZkController(),
-            remoteMessage,
-            CollectionParams.CollectionAction.ALIASPROP,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
-
-    disableResponseCaching();
   }
 
   private static final String PROPERTIES = "property";
 
-  public ZkNodeProps createRemoteMessage(
-      String alias, Map<String, Object> properties, String async) {
-    final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.ALIASPROP.toLower());
-    remoteMessage.put(NAME, alias);
-    remoteMessage.put(PROPERTIES, properties);
-    if (async != null) {
-      remoteMessage.put(ASYNC, async);
+  private void modifyAliasProperty(
+      SolrJerseyResponse response, String alias, String proertyName, Object value)
+      throws Exception {
+    Map<String, Object> props = new HashMap<>();
+    // value can be null
+    props.put(proertyName, value);
+
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    submitRemoteMessageAndHandleException(
+        response,
+        CollectionParams.CollectionAction.ALIASPROP,
+        new ZkNodeProps(
+            Map.of(
+                NAME, alias,
+                PROPERTIES, props)));
+
+    disableResponseCaching();
+  }
+
+  private void modifyAliasProperties(
+      AsyncJerseyResponse response, String alias, Map<String, Object> properties, String async)
+      throws Exception {
+    // Note: success/no-op in the event of no properties supplied is intentional. Keeps code
+    // simple and one less case for api-callers to check for.
+    if (properties == null) {
+      properties = Collections.emptyMap();
     }
-    return new ZkNodeProps(remoteMessage);
+    fetchAndValidateZooKeeperAwareCoreContainer();
+    submitRemoteMessageAndHandleAsync(
+        response,
+        CollectionParams.CollectionAction.ALIASPROP,
+        new ZkNodeProps(
+            Map.of(
+                NAME, alias,
+                PROPERTIES, properties)),
+        async);
+
+    disableResponseCaching();
   }
 }

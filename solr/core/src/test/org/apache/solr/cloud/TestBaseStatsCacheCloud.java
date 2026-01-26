@@ -36,7 +36,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.search.similarities.CustomSimilarityFactory;
 import org.apache.solr.search.stats.StatsCache;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -96,12 +95,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
         .process(solrClient);
     indexDocs(solrClient, collectionName, NUM_DOCS, 0, generator);
     indexDocs(control, "collection1", NUM_DOCS, 0, generator);
-  }
-
-  @After
-  public void tearDownCluster() {
-    System.clearProperty("solr.statsCache");
-    System.clearProperty("solr.similarity");
   }
 
   @Test

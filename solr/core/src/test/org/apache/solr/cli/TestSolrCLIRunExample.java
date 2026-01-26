@@ -47,7 +47,6 @@ import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -66,14 +65,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
         Path.of(".").toAbsolutePath().toString().contains(" "));
     // to be true
     System.setProperty("solr.directoryFactory", "solr.NRTCachingDirectoryFactory");
-  }
-
-  @AfterClass
-  public static void cleanup() {
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.host.advertise");
-    System.clearProperty("solr.port.listen");
-    System.clearProperty("solr.log.dir");
   }
 
   /**

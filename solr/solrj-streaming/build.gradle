@@ -39,10 +39,6 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.hamcrest.hamcrest
 
-  testImplementation(libs.apache.zookeeper.zookeeper, {
-    exclude group: "org.apache.yetus", module: "audience-annotations"
-  })
-  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
-
-  permitTestUsedUndeclared project(':solr:solrj-streaming') // duh!
+  // cutterslade requires we state the obvious
+  testImplementation project(':solr:solrj-streaming')
 }
