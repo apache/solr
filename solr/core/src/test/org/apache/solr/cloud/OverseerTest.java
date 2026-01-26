@@ -154,13 +154,13 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       // live node
       final String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
-      zkClient.makePath(nodePath, CreateMode.EPHEMERAL, true);
+      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
     }
 
     private void deleteNode(final String path) {
 
       try {
-        zkClient.delete(path, -1, true);
+        zkClient.delete(path, -1);
       } catch (NoNodeException e) {
         // fine
         log.warn("cancelElection did not find election node to remove");
@@ -371,8 +371,6 @@ public class OverseerTest extends SolrTestCaseJ4 {
     if (null != zkClient) {
       zkClient.printLayoutToStream(System.out);
     }
-
-    System.clearProperty("solr.zookeeper.client.timeout");
 
     if (null != server) {
       server.shutdown();
@@ -1643,9 +1641,9 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       final String path =
           ZkStateReader.COLLECTIONS_ZKNODE + "/" + testCollectionName + "/state.json";
-      byte[] data = zkClient.getData(path, null, null, true);
+      byte[] data = zkClient.getData(path, null, null);
       // Simulate an external modification of state.json
-      zkClient.setData(path, data, true);
+      zkClient.setData(path, data);
 
       m =
           new ZkNodeProps(

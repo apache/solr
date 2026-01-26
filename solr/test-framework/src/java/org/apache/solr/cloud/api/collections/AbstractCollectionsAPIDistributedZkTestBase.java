@@ -20,7 +20,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -66,8 +65,6 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests the Cloud Collections API.
@@ -76,7 +73,6 @@ import org.slf4j.LoggerFactory;
  * creation to subclasses
  */
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() {
@@ -109,9 +105,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -127,9 +121,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -604,7 +596,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "
-                + entry.getValue().toString()
+                + entry.getValue()
                 + " all use indexDir "
                 + entry.getKey());
       }

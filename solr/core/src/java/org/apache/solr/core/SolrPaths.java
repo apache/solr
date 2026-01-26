@@ -125,6 +125,10 @@ public final class SolrPaths {
      * (not supported as a {@link Path} on Windows), see {@link #addPath(String)}.
      */
     public AllowPathBuilder addPath(Path path) {
+      if (path == null) {
+        return this;
+      }
+
       if (paths != ALL_PATHS) {
         if (path.equals(ALL_PATH)) {
           paths = ALL_PATHS;

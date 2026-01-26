@@ -60,6 +60,7 @@ import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils;
 import org.apache.solr.cluster.placement.PlacementPluginFactory;
 import org.apache.solr.cluster.placement.plugins.SimplePlacementFactory;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -452,7 +453,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
 
     when(clusterStateMock.getLiveNodes()).thenReturn(liveNodes);
 
-    when(solrZkClientMock.setData(anyString(), any(), anyInt(), anyBoolean()))
+    when(solrZkClientMock.setData(anyString(), any(), anyInt()))
         .then(
             invocation -> {
               System.out.println(
@@ -465,7 +466,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return null;
             });
 
-    when(solrZkClientMock.getData(anyString(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.getData(anyString(), any(), any()))
         .thenAnswer(
             invocation -> {
               byte[] data = zkClientData.get(invocation.getArgument(0));
@@ -475,14 +476,14 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
               return data;
             });
 
-    when(solrZkClientMock.create(any(), any(), any(), anyBoolean()))
+    when(solrZkClientMock.create(any(), any(), any()))
         .thenAnswer(
             invocation -> {
               zkClientData.put(invocation.getArgument(0), invocation.getArgument(1));
               return invocation.getArgument(0);
             });
 
-    when(solrZkClientMock.exists(any(String.class), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class)))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);
@@ -569,7 +570,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         .when(distribStateManagerMock)
         .makePath(anyString());
 
-    when(solrZkClientMock.exists(any(String.class), isNull(), anyBoolean()))
+    when(solrZkClientMock.exists(any(String.class), isNull()))
         .thenAnswer(
             invocation -> {
               String key = invocation.getArgument(0);
@@ -621,22 +622,20 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
           .record(any(), any());
     } else {
       // Mocking for state change via the Overseer queue
+      Mockito.doCallRealMethod().when(overseerMock).offerStateUpdate((MapWriter) any());
       Mockito.doAnswer(
-              new Answer<Void>() {
-                @Override
-                public Void answer(InvocationOnMock invocation) {
-                  try {
-                    handleCreateCollMessage(invocation.getArgument(0));
-                    verify(stateUpdateQueueMock, Mockito.atLeast(0))
-                        .offer((byte[]) invocation.getArgument(0));
-                  } catch (KeeperException e) {
-                    throw new RuntimeException(e);
-                  } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new RuntimeException(e);
-                  }
-                  return null;
+              invocation -> {
+                try {
+                  handleCreateCollMessage(invocation.getArgument(0));
+                  verify(stateUpdateQueueMock, Mockito.atLeast(0))
+                      .offer((byte[]) invocation.getArgument(0));
+                } catch (KeeperException e) {
+                  throw new RuntimeException(e);
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                  throw new RuntimeException(e);
                 }
+                return null;
               })
           .when(overseerMock)
           .offerStateUpdate((byte[]) any());

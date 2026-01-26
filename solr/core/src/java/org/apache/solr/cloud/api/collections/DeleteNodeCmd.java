@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.common.cloud.ClusterState;
@@ -36,12 +34,14 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     CollectionHandlingUtils.checkRequired(message, "node");
     String node = message.getStr("node");
-    List<Replica> sourceReplicas = ReplicaMigrationUtils.getReplicasOfNode(node, state);
-    List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
+    List<Replica> sourceReplicas =
+        ReplicaMigrationUtils.getReplicasOfNode(node, adminCmdContext.getClusterState());
+    List<String> singleReplicas =
+        verifyReplicaAvailability(sourceReplicas, adminCmdContext.getClusterState());
     if (!singleReplicas.isEmpty()) {
       results.add(
           "failure",
@@ -50,8 +50,7 @@ public class DeleteNodeCmd implements CollApiCmds.CollectionApiCommand {
               + ": "
               + singleReplicas);
     } else {
-      ReplicaMigrationUtils.cleanupReplicas(
-          results, state, sourceReplicas, ccc, message.getStr(ASYNC));
+      ReplicaMigrationUtils.cleanupReplicas(results, adminCmdContext, sourceReplicas, ccc);
     }
   }
 

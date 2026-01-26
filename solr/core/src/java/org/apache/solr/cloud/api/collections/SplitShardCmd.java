@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
 import java.io.InputStream;
@@ -41,16 +40,13 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
 import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
 import org.apache.solr.client.solrj.impl.NodeValueFetcher;
-import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
@@ -108,9 +104,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState state, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    split(state, message, results);
+    split(adminCmdContext, message, results);
   }
 
   /**
@@ -138,10 +134,9 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
    * <p>There is a shard split doc (dev-docs/shard-split/shard-split.adoc) on how shard split works;
    * illustrated with diagrams.
    */
-  public boolean split(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public boolean split(
+      AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    final String asyncId = message.getStr(ASYNC);
-
     boolean waitForFinalState = message.getBool(CommonAdminParams.WAIT_FOR_FINAL_STATE, false);
     String methodStr =
         message.getStr(
@@ -172,6 +167,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     slice.set(message.getStr(ZkStateReader.SHARD_ID_PROP));
     Set<String> offlineSlices = new HashSet<>();
     RTimerTree timings = new RTimerTree();
+    ClusterState clusterState = zkStateReader.getClusterState();
 
     String splitKey = message.getStr("split.key");
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -217,10 +213,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     Stat leaderZnodeStat =
         zkStateReader
             .getZkClient()
-            .exists(
-                ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
-                null,
-                true);
+            .exists(ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null);
     if (leaderZnodeStat == null) {
       // we just got to know the leader but its live node is gone already!
       throw new SolrException(
@@ -285,7 +278,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
 
         {
           final ShardRequestTracker shardRequestTracker =
-              CollectionHandlingUtils.syncRequestTracker(ccc);
+              CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
           shardRequestTracker.sendShardRequest(
               parentShardLeader.getNodeName(), params, shardHandler);
           SimpleOrderedMap<Object> getRangesResults = new SimpleOrderedMap<>();
@@ -348,7 +341,13 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(SHARD_ID_PROP, subSlice);
             ZkNodeProps m = new ZkNodeProps(propMap);
             try {
-              new DeleteShardCmd(ccc).call(clusterState, m, new NamedList<>());
+              new DeleteShardCmd(ccc)
+                  .call(
+                      adminCmdContext
+                          .subRequestContext(DELETESHARD, null)
+                          .withClusterState(clusterState),
+                      m,
+                      new NamedList<>());
             } catch (Exception e) {
               throw new SolrException(
                   SolrException.ErrorCode.SERVER_ERROR,
@@ -426,17 +425,17 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(key, message.getStr(key));
           }
         }
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
         new AddReplicaCmd(ccc)
-            .addReplica(clusterState, new ZkNodeProps((MapWriter) propMap), results, null);
+            .addReplica(
+                adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState),
+                new ZkNodeProps((MapWriter) propMap),
+                results,
+                null);
       }
 
       {
         final ShardRequestTracker syncRequestTracker =
-            CollectionHandlingUtils.syncRequestTracker(ccc);
+            CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
         String msgOnError = "SPLITSHARD failed to create subshard leaders";
         syncRequestTracker.processResponses(results, shardHandler, true, msgOnError);
         handleFailureOnAsyncRequest(results, msgOnError);
@@ -447,7 +446,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t = timings.sub("waitForSubSliceLeadersAlive");
       {
         final ShardRequestTracker shardRequestTracker =
-            CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
         for (String subShardName : subShardNames) {
           // wait for parent leader to acknowledge the sub-shard core
           log.debug(
@@ -502,7 +501,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t = timings.sub("splitParentCore");
       {
         final ShardRequestTracker shardRequestTracker =
-            CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
         shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
 
         String msgOnError = "SPLITSHARD failed to invoke SPLIT core admin command";
@@ -519,7 +518,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t = timings.sub("applyBufferedUpdates");
       {
         final ShardRequestTracker shardRequestTracker =
-            CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+            CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
 
         for (int i = 0; i < subShardNames.size(); i++) {
           String subShardName = subShardNames.get(i);
@@ -637,10 +636,6 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             propMap.put(key, message.getStr(key));
           }
         }
-        // add async param
-        if (asyncId != null) {
-          propMap.put(ASYNC, asyncId);
-        }
         // special flag param to instruct addReplica not to create the replica in cluster state
         // again
         propMap.put(CollectionHandlingUtils.SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, "true");
@@ -666,9 +661,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
           zkStateReader
               .getZkClient()
               .exists(
-                  ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(),
-                  null,
-                  true);
+                  ZkStateReader.LIVE_NODES_ZKNODE + "/" + parentShardLeader.getNodeName(), null);
       if (leaderZnodeStat == null || ephemeralOwner != leaderZnodeStat.getEphemeralOwner()) {
         // put sub-shards in recovery_failed state
 
@@ -787,14 +780,19 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       t = timings.sub("createCoresForReplicas");
       // 11. now actually create replica cores on sub shard nodes
       for (Map<String, Object> replica : replicas) {
-        new AddReplicaCmd(ccc).addReplica(clusterState, new ZkNodeProps(replica), results, null);
+        new AddReplicaCmd(ccc)
+            .addReplica(
+                adminCmdContext.subRequestContext(ADDREPLICA).withClusterState(clusterState),
+                new ZkNodeProps(replica),
+                results,
+                null);
       }
 
       assert TestInjection.injectSplitFailureAfterReplicaCreation();
 
       {
         final ShardRequestTracker syncRequestTracker =
-            CollectionHandlingUtils.syncRequestTracker(ccc);
+            CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
         String msgOnError = "SPLITSHARD failed to create subshard replicas";
         syncRequestTracker.processResponses(results, shardHandler, true, msgOnError);
         handleFailureOnAsyncRequest(results, msgOnError);
@@ -834,7 +832,12 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     } finally {
       if (!success) {
         cleanupAfterFailure(
-            zkStateReader, collectionName, parentSlice.getName(), subSlices, offlineSlices);
+            adminCmdContext,
+            zkStateReader,
+            collectionName,
+            parentSlice.getName(),
+            subSlices,
+            offlineSlices);
         unlockForSplit(ccc.getSolrCloudManager(), collectionName, parentSlice.getName());
       }
     }
@@ -874,19 +877,18 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
     ModifiableSolrParams params =
         new ModifiableSolrParams().add("name", indexSizeMetric).add("name", freeDiskSpaceMetric);
 
-    var req =
-        new GenericSolrRequest(
-            SolrRequest.METHOD.GET, "/admin/metrics", SolrRequest.SolrRequestType.ADMIN, params);
+    var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     var cloudClient = (CloudHttp2SolrClient) cloudManager.getSolrClient();
-    var httpClient = (HttpJettySolrClient) cloudClient.getHttpClient();
+    var httpClient = cloudClient.getHttpClient();
 
-    SolrResponse resp = httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req::process);
+    NamedList<Object> resp =
+        httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req, null);
 
     var indexSizeRef = new AtomicReference<Double>(-1.0);
     var freeSizeRef = new AtomicReference<Double>(-1.0);
-    try (InputStream prometheusStream = (InputStream) resp.getResponse().get(STREAM_KEY);
+    try (InputStream prometheusStream = (InputStream) resp.get(STREAM_KEY);
         var lines = NodeValueFetcher.Metrics.prometheusMetricStream(prometheusStream)) {
 
       lines
@@ -934,6 +936,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   private void cleanupAfterFailure(
+      AdminCmdContext adminCmdContext,
       ZkStateReader zkStateReader,
       String collectionName,
       String parentShard,
@@ -1035,7 +1038,11 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       props.put(SHARD_ID_PROP, subSlice);
       ZkNodeProps m = new ZkNodeProps(props);
       try {
-        new DeleteShardCmd(ccc).call(clusterState, m, new NamedList<Object>());
+        new DeleteShardCmd(ccc)
+            .call(
+                adminCmdContext.subRequestContext(DELETESHARD, null).withClusterState(clusterState),
+                m,
+                new NamedList<>());
       } catch (Exception e) {
         log.warn(
             "Cleanup failed after failed split of {}/{} : (deleting existing sub shard{})",

@@ -50,13 +50,14 @@ import org.apache.solr.common.util.SuppressForbidden;
  * Throwable#getCause}es of an included <code>Throwable</code>.
  *
  * <p>Matching ERROR messages are "muted" by filtering them out of the ROOT logger. Any Appenders
- * attached to more specific Loggers may still include these "muted" ERRROR messages.
+ * attached to more specific Loggers may still include these "muted" ERROR messages.
  */
 @SuppressForbidden(
     reason = "We need to use log4J2 classes directly to check that the ErrorLogMuter is working")
 public final class ErrorLogMuter implements Closeable, AutoCloseable {
 
-  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refe to log4j2
+  // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refer to
+  // log4j2
   // Logger
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(
@@ -69,7 +70,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
    */
   private static final AtomicInteger ID_GEN = new AtomicInteger(0);
 
-  /** generate a unique name for each muter to use in it's own lifecycle logging */
+  /** generate a unique name for each muter to use in its own lifecycle logging */
   private static String createName(final String type) {
     return MethodHandles.lookup().lookupClass().getSimpleName()
         + "-"
@@ -134,8 +135,8 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
   }
 
   /**
-   * The number of ERROR messages muted (by this instance) so far in it's lifecycle. This number may
-   * be less then the number of ERROR messages expected if multiple ErrorLogMuter objects are in use
+   * The number of ERROR messages muted (by this instance) so far in its lifecycle. This number may
+   * be less than the number of ERROR messages expected if multiple ErrorLogMuter objects are in use
    * which match the same ERROR log messages
    */
   public int getCount() {
@@ -144,11 +145,11 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
 
   @Override
   public void close() {
-    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidently get a double close
+    if (!closed.getAndSet(true)) { // Don't muck with log4j if we accidentally get a double close
       CTX.getConfiguration().getRootLogger().removeFilter(rootFilter);
       CTX.updateLoggers();
       if (log.isInfoEnabled()) {
-        log.info("Closing {} after mutting {} log messages", this.name, getCount());
+        log.info("Closing {} after muting {} log messages", this.name, getCount());
       }
     }
   }
@@ -196,7 +197,8 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
 
     // NOTE: This is inspired by log4j's RegexFilter, but with an eye to being more "garbage-free"
     // friendly
-    // Oddly, StringMatchFilter does things differnetly and acts like it needs to (re?) format msgs
+    // Oddly, StringMatchFilter does things differently and acts like it needs to (re?) format
+    // messages
     // when params are provided
     // Since RegexFilter has tests, and StringMatchFilter doesn't, we assume RegexFilter knows what
     // it's doing...
@@ -373,7 +375,7 @@ public final class ErrorLogMuter implements Closeable, AutoCloseable {
     public Result filter(LogEvent event) {
       // NOTE: For our usage, we're not worried about needing to filter LogEvents rom remote JVMs
       // with ThrowableProxy
-      // stand ins for Throwabls that don't exist in our classloader...
+      // stand ins for Throwables that don't exist in our classloader...
       return doFilter(
           event.getLevel(), event.getMessage().getFormattedMessage(), event.getThrown());
     }

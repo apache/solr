@@ -23,7 +23,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -45,17 +44,13 @@ import javax.naming.NoInitialContextException;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,10 +62,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CoreContainerProvider implements ServletContextListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
-  private Properties extraProperties;
-  private RateLimitManager rateLimitManager;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -151,7 +143,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // "extra" properties must be initialized first, so we know things like "do we have a zkHost"
       // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our
       // caller
-      this.extraProperties =
+      Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
               (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
 
@@ -160,7 +152,7 @@ public class CoreContainerProvider implements ServletContextListener {
         log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
       }
 
-      logWelcomeBanner();
+      logWelcomeBanner(extraProperties);
 
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null
@@ -189,21 +181,6 @@ public class CoreContainerProvider implements ServletContextListener {
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
 
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-
-      Builder builder = new Builder(zkClient);
-
-      this.rateLimitManager = builder.build();
-
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
-
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
       }
@@ -219,7 +196,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
 
-  private void logWelcomeBanner() {
+  private void logWelcomeBanner(Properties props) {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is
     // the only one that's so ugly so far.
     if (log.isInfoEnabled()) {
@@ -228,7 +205,7 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info(
           "/ __| ___| |_ _   Starting in {} mode on port {}",
-          isCloudMode() ? "cloud" : "standalone",
+          isCloudMode(props) ? "cloud" : "standalone",
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
@@ -290,12 +267,12 @@ public class CoreContainerProvider implements ServletContextListener {
    * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
-   * @see #extraProperties
    * @see #init
+   * @param props the "extra properties" which will indicate cloud mode before startup.
    */
-  private boolean isCloudMode() {
-    assert null != extraProperties; // we should never be called w/o this being initialized
-    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
+  private boolean isCloudMode(Properties props) {
+    assert null != props; // we should never be called w/o this being initialized
+    return (null != props.getProperty(SolrXmlConfig.ZK_HOST))
         || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
@@ -365,14 +342,5 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  public RateLimitManager getRateLimitManager() {
-    return rateLimitManager;
-  }
-
-  @VisibleForTesting
-  void setRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
   }
 }

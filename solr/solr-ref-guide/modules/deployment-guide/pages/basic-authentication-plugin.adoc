@@ -339,6 +339,8 @@ It also doesn't work with the many `SolrClient` methods which don't consume `Sol
 HttpJettySolrClient & HttpJdkSolrClient support setting the credentials at the client level when building it.
 This will ensure all requests issued with this particular client get the Basic Authentication headers set.
 
+NOTE: The examples below use `HttpJettySolrClient`, which requires the `solr-solrj-jetty` maven dependency.
+
 [source,java]
 ----
 var client = new HttpJettySolrClient.Builder(solrUrl)

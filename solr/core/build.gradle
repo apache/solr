@@ -21,13 +21,11 @@ description = 'Apache Solr Core'
 
 dependencies {
   api platform(project(":platform"))
-  permitUnusedDeclared platform(project(":platform"))
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
   testCompileOnly libs.spotbugs.annotations
-  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -48,22 +46,20 @@ dependencies {
 
   api project(':solr:api')
   api project(':solr:solrj')
+  implementation project(':solr:solrj-jetty')
   api project(':solr:solrj-zookeeper')
   api project(':solr:solrj-streaming')
 
   implementation libs.dropwizard.metrics.core
 
-  implementation(libs.jersey.containers.jettyhttp, {
+  runtimeOnly(libs.jersey.containers.jettyhttp, {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
     exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
   })
-  permitUnusedDeclared libs.jersey.containers.jettyhttp
-  implementation libs.jersey.inject.hk2
-  permitUnusedDeclared libs.jersey.inject.hk2
-  implementation (libs.jersey.media.jsonjackson, {
+  runtimeOnly libs.jersey.inject.hk2
+  implementation(libs.jersey.media.jsonjackson, {
     exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
   })
-  permitUnusedDeclared libs.jersey.media.jsonjackson
   implementation libs.jersey.core.common
   implementation libs.jersey.core.server
   implementation libs.hk2.api
@@ -78,8 +74,6 @@ dependencies {
   runtimeOnly libs.apache.lucene.analysis.phonetic
   runtimeOnly libs.apache.lucene.backward.codecs
   implementation libs.apache.lucene.codecs
-  implementation libs.apache.lucene.backward.codecs
-  permitUnusedDeclared libs.apache.lucene.backward.codecs
   implementation libs.apache.lucene.classification
   implementation libs.apache.lucene.expressions
   implementation libs.apache.lucene.grouping
@@ -91,7 +85,6 @@ dependencies {
   implementation libs.apache.lucene.spatialextras
   implementation libs.apache.lucene.suggest
 
-
   // Collections & lang utilities
   implementation libs.google.guava
   implementation libs.apache.commons.lang3
@@ -99,7 +92,7 @@ dependencies {
   implementation libs.commonsio.commonsio
   implementation libs.carrotsearch.hppc
 
-  implementation(libs.benmanes.caffeine) { transitive = false }
+  implementation(libs.benmanes.caffeine) {transitive = false}
 
   implementation libs.commonscodec.commonscodec
 
@@ -135,7 +128,7 @@ dependencies {
   implementation(libs.apache.zookeeper.jute) {
     exclude group: 'org.apache.yetus', module: 'audience-annotations'
   }
-  testImplementation variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }
+  testImplementation variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}
 
   // required for instantiating a Zookeeper server (for embedding ZK or running tests)
   runtimeOnly libs.xerial.snappy.java
@@ -176,9 +169,6 @@ dependencies {
   // For faster XML processing than the JDK
   implementation libs.codehaus.woodstox.stax2api
   implementation libs.fasterxml.woodstox.core
-  // See https://issues.apache.org/jira/browse/LOG4J2-3609 due to needing these annotations
-  compileOnly libs.aqute.bnd.annotation
-  compileOnly libs.osgi.annotation
 
   compileOnly libs.stephenc.jcip.annotations
 

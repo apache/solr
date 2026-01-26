@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
@@ -35,26 +34,37 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NODE;
 import static org.apache.solr.common.params.CoreAdminParams.ULOG_DIR;
 import static org.apache.solr.common.params.ShardParams._ROUTE_;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CreateReplicaRequestBody;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateReplica} */
-public class CreateReplicaAPITest extends SolrTestCaseJ4 {
+public class CreateReplicaAPITest extends MockV2APITest {
+
+  private CreateReplica api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new CreateReplica(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
+
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica("someCollName", "someShardName", null);
-            });
+            SolrException.class, () -> api.createReplica("someCollName", "someShardName", null));
 
     assertEquals(400, thrown.code());
     assertEquals("Required request-body is missing", thrown.getMessage());
@@ -64,12 +74,7 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
   public void testReportsErrorIfCollectionNameMissing() {
     final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica(null, "shardName", requestBody);
-            });
+        expectThrows(SolrException.class, () -> api.createReplica(null, "shardName", requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: collection", thrown.getMessage());
@@ -80,18 +85,14 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     final var requestBody = new CreateReplicaRequestBody();
     final SolrException thrown =
         expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateReplica(null, null, null);
-              api.createReplica("someCollectionName", null, requestBody);
-            });
+            SolrException.class, () -> api.createReplica("someCollectionName", null, requestBody));
 
     assertEquals(400, thrown.code());
     assertEquals("Missing required parameter: shard", thrown.getMessage());
   }
 
   @Test
-  public void testCreateRemoteMessageAllProperties() {
+  public void testCreateRemoteMessageAllProperties() throws Exception {
     final var requestBody = new CreateReplicaRequestBody();
     requestBody.name = "someName";
     requestBody.type = "NRT";
@@ -110,31 +111,34 @@ public class CreateReplicaAPITest extends SolrTestCaseJ4 {
     requestBody.async = "someAsyncId";
     requestBody.properties = Map.of("propName1", "propVal1", "propName2", "propVal2");
 
-    final var remoteMessage =
-        CreateReplica.createRemoteMessage("someCollectionName", "someShardName", requestBody)
-            .getProperties();
+    when(mockClusterState.hasCollection(eq("someCollectionName"))).thenReturn(true);
 
-    assertEquals(20, remoteMessage.size());
-    assertEquals("addreplica", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someCollectionName", remoteMessage.get(COLLECTION));
-    assertEquals("someShardName", remoteMessage.get(SHARD_ID_PROP));
-    assertEquals("someName", remoteMessage.get(NAME));
-    assertEquals("NRT", remoteMessage.get(REPLICA_TYPE));
-    assertEquals("/some/dir1", remoteMessage.get(INSTANCE_DIR));
-    assertEquals("/some/dir2", remoteMessage.get(DATA_DIR));
-    assertEquals("/some/dir3", remoteMessage.get(ULOG_DIR));
-    assertEquals("someRoute", remoteMessage.get(_ROUTE_));
-    assertEquals(123, remoteMessage.get(NRT_REPLICAS));
-    assertEquals(456, remoteMessage.get(TLOG_REPLICAS));
-    assertEquals(789, remoteMessage.get(PULL_REPLICAS));
-    assertEquals("node1,node2", remoteMessage.get(CREATE_NODE_SET_PARAM));
-    assertEquals("node3", remoteMessage.get(NODE));
-    assertEquals(Boolean.TRUE, remoteMessage.get(SKIP_NODE_ASSIGNMENT));
-    assertEquals(true, remoteMessage.get(WAIT_FOR_FINAL_STATE));
-    assertEquals(true, remoteMessage.get(FOLLOW_ALIASES));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
-    assertEquals("propVal1", remoteMessage.get("property.propName1"));
-    assertEquals("propVal2", remoteMessage.get("property.propName2"));
+    api.createReplica("someCollectionName", "someShardName", requestBody);
+
+    validateRunCommand(
+        CollectionParams.CollectionAction.ADDREPLICA,
+        requestBody.async,
+        message -> {
+          assertEquals(18, message.size());
+          assertEquals("someCollectionName", message.get(COLLECTION));
+          assertEquals("someShardName", message.get(SHARD_ID_PROP));
+          assertEquals("someName", message.get(NAME));
+          assertEquals("NRT", message.get(REPLICA_TYPE));
+          assertEquals("/some/dir1", message.get(INSTANCE_DIR));
+          assertEquals("/some/dir2", message.get(DATA_DIR));
+          assertEquals("/some/dir3", message.get(ULOG_DIR));
+          assertEquals("someRoute", message.get(_ROUTE_));
+          assertEquals(123, message.get(NRT_REPLICAS));
+          assertEquals(456, message.get(TLOG_REPLICAS));
+          assertEquals(789, message.get(PULL_REPLICAS));
+          assertEquals("node1,node2", message.get(CREATE_NODE_SET_PARAM));
+          assertEquals("node3", message.get(NODE));
+          assertEquals(Boolean.TRUE, message.get(SKIP_NODE_ASSIGNMENT));
+          assertEquals(true, message.get(WAIT_FOR_FINAL_STATE));
+          assertEquals(true, message.get(FOLLOW_ALIASES));
+          assertEquals("propVal1", message.get("property.propName1"));
+          assertEquals("propVal2", message.get("property.propName2"));
+        });
   }
 
   @Test

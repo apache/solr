@@ -16,6 +16,8 @@
  */
 package org.apache.solr.response;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,6 +32,7 @@ import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
@@ -41,12 +44,14 @@ import org.junit.Test;
 @SuppressSSL
 public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
 
-  @ClassRule public static final SolrJettyTestRule solrRule = new SolrJettyTestRule();
+  @ClassRule public static final SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   @BeforeClass
   public static void setupSolrHome() throws Exception {
     Path configSet = createTempDir("configSet");
     copyMinConf(configSet);
+    EnvUtils.setProperty(ALLOW_PATHS_SYSPROP, configSet.toAbsolutePath().toString());
+
     // insert a special filterCache configuration
     Path solrConfig = configSet.resolve("conf/solrconfig.xml");
     Files.writeString(
@@ -62,13 +67,14 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
                     + "  </requestHandler>\n"
                     + "</config>"));
 
-    solrRule.startSolr(LuceneTestCase.createTempDir());
-    solrRule.newCollection().withConfigSet(configSet.toString()).create();
+    solrTestRule.startSolr(LuceneTestCase.createTempDir());
+    solrTestRule.newCollection().withConfigSet(configSet).create();
   }
 
   @Test
   public void testFullStackTrace() throws Exception {
-    final String url = solrRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
+    final String url =
+        solrTestRule.getBaseUrl().toString() + "/collection1/withError?q=*:*&wt=json";
     final HttpGet get = new HttpGet(url);
     var client = HttpClientUtil.createClient(null);
     try (CloseableHttpResponse responseRaw = client.execute(get)) {
@@ -97,7 +103,7 @@ public class TestErrorResponseStackTrace extends SolrTestCaseJ4 {
   @Test
   @SuppressWarnings({"unchecked"})
   public void testRemoteSolrException() {
-    var client = solrRule.getSolrClient("collection1");
+    var client = solrTestRule.getSolrClient("collection1");
     QueryRequest queryRequest =
         new QueryRequest(new ModifiableSolrParams().set("q", "*:*").set("wt", "json"));
     queryRequest.setPath("/withError");

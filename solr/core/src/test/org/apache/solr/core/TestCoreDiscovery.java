@@ -25,7 +25,6 @@ import static org.hamcrest.core.StringContains.containsString;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -38,15 +37,11 @@ import java.util.Set;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.junit.After;
 import org.junit.AssumptionViolatedException;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class TestCoreDiscovery extends SolrTestCaseJ4 {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -141,9 +136,6 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
     return container;
   }
 
-  @After
-  public void after() {}
-
   // Test the basic setup, create some dirs with core.properties files in them, but solr.xml has
   // discoverCores set and ensure that we find all the cores and can load them.
   @Test
@@ -163,7 +155,7 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
 
       // force loading of core2 by getting it from the CoreContainer
       try (SolrCore core1 = cc.getCore("core1");
-          SolrCore core2 = cc.getCore("core2"); ) {
+          SolrCore core2 = cc.getCore("core2")) {
 
         // Let's assert we did the right thing for implicit properties too.
         CoreDescriptor desc = core1.getCoreDescriptor();
