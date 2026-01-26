@@ -20,21 +20,23 @@ base_dir=$(dirname "$0")
 
 if [ "${base_dir}" == "." ]; then
   gradlew_dir="../.."
-
-  if [ -d "lib" ]; then
-    echo "Using lib directory for classpath..."
-    classpath="lib/*"
-  else
-    echo "Getting classpath from gradle..."
-    # --no-daemon
-    gradleCmd="${gradlew_dir}/gradlew"
-    $gradleCmd -q -p ../../ jar
-    echo "gradle build done"
-    classpath=$($gradleCmd -q echoCp)
-  fi
 else
   echo "Benchmarks need to be run from the 'solr/benchmark' directory"
-  exit 1
+  exit
+fi
+
+
+if [ -d "lib" ]
+then
+  echo "Using lib directory for classpath..."
+  classpath="lib/*:build/classes/java/main"
+else
+  echo "Getting classpath from gradle..."
+  # --no-daemon
+  gradleCmd="${gradlew_dir}/gradlew"
+  $gradleCmd -q -p ../../ jar
+  echo "gradle build done"
+  classpath=$($gradleCmd -q echoCp)
 fi
 
 # shellcheck disable=SC2145
