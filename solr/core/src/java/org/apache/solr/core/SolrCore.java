@@ -126,7 +126,7 @@ import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
-import org.apache.solr.response.BuiltInResponseWriters;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.transform.TransformerFactory;
@@ -3094,11 +3094,11 @@ public class SolrCore implements SolrInfoBean, Closeable {
    *
    * @param writerName the writer name, or null for default
    * @return the response writer, never null
-   * @deprecated Use {@link BuiltInResponseWriters#getWriter(String)} instead.
+   * @deprecated Use {@link ResponseWritersRegistry#getWriter(String)} instead.
    */
   @Deprecated
   public static QueryResponseWriter getAdminResponseWriter(String writerName) {
-    return BuiltInResponseWriters.getWriter(writerName);
+    return ResponseWritersRegistry.getWriter(writerName);
   }
 
   /**
@@ -3110,7 +3110,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     Map<String, QueryResponseWriter> defaultWriters = new HashMap<>();
 
     // Start with built-in writers that are always available
-    defaultWriters.putAll(BuiltInResponseWriters.getAllWriters());
+    defaultWriters.putAll(ResponseWritersRegistry.getAllWriters());
 
     // Load writers from ImplicitPlugins.json (may override built-ins)
     List<PluginInfo> implicitWriters = getImplicitResponseWriters();

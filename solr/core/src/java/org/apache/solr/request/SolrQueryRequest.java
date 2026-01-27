@@ -30,7 +30,7 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.response.BuiltInResponseWriters;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -210,7 +210,7 @@ public interface SolrQueryRequest extends AutoCloseable {
     if (core != null) {
       return core.getQueryResponseWriter(wt);
     } else {
-      return BuiltInResponseWriters.getWriter(wt);
+      return ResponseWritersRegistry.getWriter(wt);
     }
   }
 
