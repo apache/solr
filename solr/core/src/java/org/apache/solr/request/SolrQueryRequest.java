@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -206,11 +207,17 @@ public interface SolrQueryRequest extends AutoCloseable {
       wt = getWtFromAcceptHeader();
     }
 
+    QueryResponseWriter writer;
     if (core != null) {
-      return core.getQueryResponseWriter(wt);
+      writer = core.getQueryResponseWriter(wt);
     } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.get(wt);
+      writer = SolrCore.DEFAULT_RESPONSE_WRITERS.get(wt);
     }
+    if (writer == null) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Unknown response writer type: " + wt);
+    }
+    return writer;
   }
 
   /**
