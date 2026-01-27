@@ -18,8 +18,8 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.junit.BeforeClass;
 import org.junit.Test;
 

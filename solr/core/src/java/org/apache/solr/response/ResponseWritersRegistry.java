@@ -29,8 +29,8 @@ import org.apache.solr.handler.admin.api.ReplicationAPIBase;
  * <p>Used by node/container-level requests that have no associated {@link
  * org.apache.solr.core.SolrCore}.
  *
- * <p>For the full set of response writers see {@link
- * org.apache.solr.core.SolrCore}'s response writer registry.
+ * <p>For the full set of response writers see {@link org.apache.solr.core.SolrCore}'s response
+ * writer registry.
  */
 public class ResponseWritersRegistry {
 
