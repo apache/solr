@@ -102,7 +102,7 @@ See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
 
 [NOTE]
 ====
-If no LLM component is configured in `solrconfig.xml`, the Text-to-Vector model store will not be registered and requests to `/schema/text-to-vector-model-store` will return an error.
+If no component is configured in `solrconfig.xml`, the Text-to-Vector model store will not be registered and requests to `/schema/text-to-vector-model-store` will return an error.
 ====
 
 == Text to Vector Lifecycle

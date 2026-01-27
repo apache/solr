@@ -28,32 +28,35 @@ public class TestManagedModelStoreInitialization extends TestLanguageModelBase {
   }
 
   @Test
-  public void managedModelStore_shouldBeInitialized_whenUrpComponentConfigured() throws Exception {
-    setupTest(
-        "solrconfig-language-models-urp-only.xml", "schema-language-models.xml", false, false);
-
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
-  }
-
-  @Test
-  public void managedModelStore_shouldBeInitialized_whenQParserComponentConfigured()
+  public void managedModelStore_whenUpdateRequestComponentConfigured_shouldBeInitialized()
       throws Exception {
     setupTest(
-        "solrconfig-language-models-qparser-only.xml", "schema-language-models.xml", false, false);
-
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
-    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
-  }
-
-  @Test
-  public void managedModelStore_shouldNotBeInitialized_whenNoLLMComponents() throws Exception {
-    setupTest(
-        "solrconfig-language-models-no-llm-components.xml",
+        "solrconfig-language-models-update-request-processor-only.xml",
         "schema-language-models.xml",
         false,
         false);
 
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+  }
+
+  @Test
+  public void managedModelStore_whenQueryParserComponentConfigured_shouldBeInitialized()
+      throws Exception {
+    setupTest(
+        "solrconfig-language-models-query-parser-only.xml",
+        "schema-language-models.xml",
+        false,
+        false);
+
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/responseHeader/status==0");
+    assertJQ(ManagedTextToVectorModelStore.REST_END_POINT, "/models==[]");
+  }
+
+  @Test
+  public void managedModelStore_whenNoComponents_shouldNotBeInitialized() throws Exception {
+    setupTest(
+        "solrconfig-language-models-no-components.xml", "schema-language-models.xml", false, false);
     assertJQ(
         ManagedTextToVectorModelStore.REST_END_POINT,
         "/responseHeader/status==400",
