@@ -63,14 +63,10 @@ public interface ConsumerMetrics {
    * measuring elapsed time when created.
    */
   interface ConsumerTimer {
-    /**
-     * Return the elapsed time in milliseconds.
-     *
-     * @return
-     */
+    /** Return the elapsed time in milliseconds. */
     double observeDuration();
 
-    /** */
+    /** Close this timer. */
     default void close() {
       observeDuration();
     }
@@ -139,7 +135,7 @@ public interface ConsumerMetrics {
    * collapsing).
    *
    * @param type the type of the request, corresponding to one of the {@link
-   *     MirroredSolrRequest.Type} values
+   *     MirroredSolrRequest#getType()} values
    * @param solrRequest SolrRequest object for which the batch size is being recorded
    */
   void recordOutputBatchSize(MirroredSolrRequest.Type type, SolrRequest<?> solrRequest);
@@ -149,7 +145,7 @@ public interface ConsumerMetrics {
    * retry for the specified request type.
    *
    * @param type the type of the request, corresponding to one of the {@link
-   *     MirroredSolrRequest.Type} values.
+   *     MirroredSolrRequest#getType()} values.
    * @param backoffTimeMs the backoff time in milliseconds.
    */
   void recordOutputBackoffTime(MirroredSolrRequest.Type type, long backoffTimeMs);
@@ -159,7 +155,7 @@ public interface ConsumerMetrics {
    * first attempt at processing.
    *
    * @param type the type of the request, corresponding to one of the {@link
-   *     MirroredSolrRequest.Type} values
+   *     MirroredSolrRequest#getType()} values
    * @param firstAttemptTimeMs the latency of the first attempt in milliseconds.
    */
   void recordOutputFirstAttemptTime(MirroredSolrRequest.Type type, long firstAttemptTimeMs);
