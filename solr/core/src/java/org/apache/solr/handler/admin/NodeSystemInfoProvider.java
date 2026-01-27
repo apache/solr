@@ -110,8 +110,8 @@ public class NodeSystemInfoProvider {
     initHostname();
   }
 
-  public NodeSystemInfoResponse getNodeSystemInfo() {
-    NodeSystemInfoResponse info = new NodeSystemInfoResponse();
+  public NodeSystemInfoResponse getNodeSystemInfo(NodeSystemInfoResponse response) {
+    NodeSystemInfoResponse.NodeSystemInfo info = new NodeSystemInfoResponse.NodeSystemInfo();
 
     SolrCore core = req.getCore();
     if (core != null) info.core = getCoreInfo(core, req.getSchema());
@@ -149,8 +149,8 @@ public class NodeSystemInfoProvider {
         info.environmentColor = env.getColor();
       }
     }
-
-    return info;
+    response.nodeInfo = info;
+    return response;
   }
 
   /** Get system info */

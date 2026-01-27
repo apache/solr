@@ -60,9 +60,10 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
-    NodeSystemInfoResponse response = provider.getNodeSystemInfo();
-    if (response != null && log.isTraceEnabled()) {
-      log.trace("Node {}, core root: {}", response.node, response.coreRoot);
+    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
+    provider.getNodeSystemInfo(response);
+    if (response.nodeInfo != null && log.isTraceEnabled()) {
+      log.trace("Node {}, core root: {}", response.nodeInfo.node, response.nodeInfo.coreRoot);
     }
     return response;
   }

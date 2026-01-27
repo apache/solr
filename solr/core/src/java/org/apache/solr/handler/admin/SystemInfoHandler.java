@@ -61,8 +61,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
       return; // Request was proxied to other node
     }
 
-    GetNodeSystemInfo getter = new GetNodeSystemInfo(req, rsp);
-    NodeSystemInfoResponse response = getter.getNodeSystemInfo();
+    NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
+    NodeSystemInfoResponse response = provider.getNodeSystemInfo(new NodeSystemInfoResponse());
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
 
     return;

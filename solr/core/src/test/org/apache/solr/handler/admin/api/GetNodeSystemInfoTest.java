@@ -140,8 +140,8 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     Assert.assertEquals(0, infoResponse.responseHeader.status);
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertNotNull(infoResponse);
-    Assert.assertEquals(expectedNode, infoResponse.node);
+    Assert.assertNotNull(infoResponse.nodeInfo);
+    Assert.assertEquals(expectedNode, infoResponse.nodeInfo.node);
     // other validations in NodeSystemInfoProviderTest
   }
 
@@ -179,7 +179,9 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     }
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertEquals(expectedNode, (String) nlResponse.get("node"));
+    Assert.assertNotNull(nlResponse.get("nodeInfo"));
+    Assert.assertEquals(
+        expectedNode, (String) ((NamedList<Object>) nlResponse.get("nodeInfo")).get("node"));
     // other validations in NodeSystemInfoProviderTest
   }
 
@@ -193,10 +195,10 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
 
     NodeSystemInfoResponse response = getter.getNodeSystemInfo();
-    Assert.assertNotNull(response);
-    Assert.assertEquals("std", response.mode);
+    Assert.assertNotNull(response.nodeInfo);
+    Assert.assertEquals("std", response.nodeInfo.mode);
     // Standalone mode : no "node"
-    Assert.assertNull(response.node);
+    Assert.assertNull(response.nodeInfo.node);
     // other validations in NodeSystemInfoProviderTest
   }
 }

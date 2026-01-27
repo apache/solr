@@ -21,34 +21,40 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.solr.client.api.util.ReflectWritable;
 
 /** Response from /node/info/system */
 public class NodeSystemInfoResponse extends SolrJerseyResponse {
 
-  @JsonProperty public String node;
-  @JsonProperty public String mode;
-  @JsonProperty public String zkHost;
+  @JsonProperty public NodeSystemInfo nodeInfo;
 
-  @JsonProperty("solr_home")
-  public String solrHome;
+  /** wrapper around the node info */
+  public static class NodeSystemInfo implements ReflectWritable {
+    @JsonProperty public String node;
+    @JsonProperty public String mode;
+    @JsonProperty public String zkHost;
 
-  @JsonProperty("core_root")
-  public String coreRoot;
+    @JsonProperty("solr_home")
+    public String solrHome;
 
-  @JsonProperty public String environment;
+    @JsonProperty("core_root")
+    public String coreRoot;
 
-  @JsonProperty(value = "environment_label")
-  public String environmentLabel;
+    @JsonProperty public String environment;
 
-  @JsonProperty(value = "environment_color")
-  public String environmentColor;
+    @JsonProperty(value = "environment_label")
+    public String environmentLabel;
 
-  @JsonProperty public Core core;
-  @JsonProperty public Lucene lucene;
-  @JsonProperty public JVM jvm;
-  @JsonProperty public Security security;
-  @JsonProperty public GPU gpu;
-  @JsonProperty public Map<String, String> system;
+    @JsonProperty(value = "environment_color")
+    public String environmentColor;
+
+    @JsonProperty public Core core;
+    @JsonProperty public Lucene lucene;
+    @JsonProperty public JVM jvm;
+    @JsonProperty public Security security;
+    @JsonProperty public GPU gpu;
+    @JsonProperty public Map<String, String> system;
+  }
 
   /** /node/system/security */
   public static class Security {
