@@ -49,7 +49,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TimeOut;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -81,11 +80,6 @@ public class SolrCloudAuthTestCase extends SolrCloudTestCase {
   @BeforeClass
   public static void enableMetrics() {
     System.setProperty("metricsEnabled", "true");
-  }
-
-  @AfterClass
-  public static void disableMetrics() {
-    System.clearProperty("metricsEnabled");
   }
 
   /** Used to check metric counts for PKI auth */

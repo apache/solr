@@ -26,6 +26,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.invoke.MethodHandles;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -47,6 +48,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
@@ -413,6 +415,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
             .build()) {
       return CoreAdminRequest.getCoreStatus(replica.getCoreName(), client);
     }
+  }
+
+  protected CollectionAdminRequest.RequestStatusResponse waitForAsyncClusterRequest(
+      String asyncId, Duration timeout) throws Exception {
+    return waitForAsyncClusterRequest(cluster.getSolrClient(), asyncId, timeout);
   }
 
   @SuppressWarnings({"rawtypes"})

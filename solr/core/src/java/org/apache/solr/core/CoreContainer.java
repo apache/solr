@@ -94,6 +94,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CollectionUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectCache;
@@ -1672,11 +1673,11 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happens when the core is deleted when this node is down
+        // this mostly happens when the core is deleted when this node is down,
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+            EnvUtils.getPropertyAsBool("solr.cloud.startup.delete.unknown.cores.enabled", false);
+
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
@@ -1684,7 +1685,7 @@ public class CoreContainer {
             (deleteUnknownCores
                 ? " It will be deleted. See SOLR-13396 for more information."
                 : ""));
-        // We alreday have an ongoing CoreOp, so do not wait to start another one
+        // We already have an ongoing CoreOp, so do not wait to start another one
         unloadWithoutCoreOp(
             dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;

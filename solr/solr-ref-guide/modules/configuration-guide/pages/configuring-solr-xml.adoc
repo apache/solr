@@ -522,7 +522,7 @@ Custom shard handlers are also supported and should be referenced in `solr.xml` 
 
 Sub-elements of `<shardHandlerFactory>` may vary in the case of custom shard handlers, but both `HttpShardHandlerFactory` and `ParallelShardHandlerFactory` support the following configuration options:
 
-`socketTimeout`::
+[[sockettimeout]]`socketTimeout`::
 +
 [%autowidth,frame=none]
 |===
@@ -531,6 +531,9 @@ Sub-elements of `<shardHandlerFactory>` may vary in the case of custom shard han
 +
 The read timeout for intra-cluster query and administrative requests.
 The default is the same as the `distribUpdateSoTimeout` specified in the `<solrcloud>` section.
++
+It is recommended to set this value to be larger than any xref:query-guide:common-query-parameters.adoc#timeallowed-parameter[`timeAllowed`] query parameter used to allow  xref:query-guide:common-query-parameters.adoc#timeallowed-parameter[`timeAllowed`]  to gracefully finish the request processing and return partial results before the coordinator gives up on the request.
+
 
 `connTimeout`::
 +
