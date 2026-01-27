@@ -80,7 +80,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -275,13 +274,7 @@ public class CollApiCmds {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
       CollectionHandlingUtils.collectionCmd(
-          adminCmdContext,
-          message,
-          params,
-          results,
-          null,
-          Collections.emptySet(),
-          ccc);
+          adminCmdContext, message, params, results, null, Collections.emptySet(), ccc);
     }
   }
 

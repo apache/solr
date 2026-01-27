@@ -48,9 +48,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -74,7 +72,6 @@ import org.apache.solr.core.backup.ShardBackupId;
 import org.apache.solr.core.backup.ShardBackupMetadata;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.util.LogLevel;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -496,6 +493,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   static Set<Integer> portsToFailOn = new HashSet<>();
+
   @Test
   public void testRestoreToOriginalSucceedsWithErrors() throws Exception {
     setTestSuffix("testRestoreToOriginalSucceedsOnASingleError");
@@ -503,14 +501,16 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     final String backupName = BACKUPNAME_PREFIX + testSuffix;
 
     // Bootstrap the backup collection with seed docs
-    CollectionAdminRequest.createCollection(
-            backupCollectionName, "conf1", NUM_SHARDS, NUM_NODES)
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, NUM_NODES)
         .process(cluster.getSolrClient());
     int backupDocs = indexDocs(backupCollectionName, true);
 
     // Backup and immediately add more docs to the collection
     try (BackupRepository repository =
-        cluster.getJettySolrRunner(0).getCoreContainer().newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
+        cluster
+            .getJettySolrRunner(0)
+            .getCoreContainer()
+            .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
       final String backupLocation = repository.getBackupLocation(getBackupLocation());
       final RequestStatusState result =
           CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
@@ -561,7 +561,10 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
       final String backupLocation = repository.getBackupLocation(getBackupLocation());
       // All but the first jetty will fail
-      portsToFailOn = cluster.getJettySolrRunners().subList(1, NUM_NODES).stream().map(JettySolrRunner::getLocalPort).collect(Collectors.toSet());
+      portsToFailOn =
+          cluster.getJettySolrRunners().subList(1, NUM_NODES).stream()
+              .map(JettySolrRunner::getLocalPort)
+              .collect(Collectors.toSet());
       final RequestStatusState result =
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
               .setLocation(backupLocation)
@@ -581,6 +584,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   public static class ErrorThrowingTrackingBackupRepository extends TrackingBackupRepository {
 
     private int port;
+
     @Override
     public void init(NamedList<?> args) {
       super.init(args);
@@ -597,7 +601,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
     @Override
     public void copyIndexFileTo(
-        URI sourceRepo, String sourceFileName, Directory dest, String destFileName) throws IOException {
+        URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
+        throws IOException {
       if (portsToFailOn.contains(port)) {
         throw new UnsupportedOperationException();
       }
@@ -682,11 +687,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   protected void clearDocs(String collectionName) throws Exception {
-    CollectionAdminRequest.deleteCollection(
-            collectionName)
-        .process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection(
-            collectionName, "conf1", NUM_SHARDS, NUM_NODES)
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, NUM_NODES)
         .process(cluster.getSolrClient());
 
     log.info("Cleared all docs in collection: {}", collectionName);

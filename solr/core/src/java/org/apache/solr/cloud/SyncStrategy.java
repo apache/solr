@@ -105,7 +105,8 @@ public class SyncStrategy {
       return PeerSync.PeerSyncResult.failure();
     }
 
-    return syncReplicas(zkController, core, leaderProps, peerSyncOnlyWithActive, ignoreNoVersionsFailure);
+    return syncReplicas(
+        zkController, core, leaderProps, peerSyncOnlyWithActive, ignoreNoVersionsFailure);
   }
 
   private PeerSync.PeerSyncResult syncReplicas(

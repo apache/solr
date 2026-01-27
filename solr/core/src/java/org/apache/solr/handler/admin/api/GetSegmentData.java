@@ -153,7 +153,7 @@ public class GetSegmentData extends JerseyResource implements SegmentsApi {
       coreSummary.indexDir = core.getIndexDir();
       coreSummary.sizeInGB = (double) core.getIndexSize() / GB;
 
-      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core);
+      RefCounted<IndexWriter> iwRef = core.getSolrCoreState().getIndexWriter(core, true);
       if (iwRef != null) {
         try {
           IndexWriter iw = iwRef.get();
@@ -257,7 +257,7 @@ public class GetSegmentData extends JerseyResource implements SegmentsApi {
       SolrQueryRequest req, SegmentInfos infos, List<String> mergeCandidates) throws IOException {
     final var result = new HashMap<String, Object>();
     RefCounted<IndexWriter> refCounted =
-        req.getCore().getSolrCoreState().getIndexWriter(req.getCore());
+        req.getCore().getSolrCoreState().getIndexWriter(req.getCore(), true );
     try {
       IndexWriter indexWriter = refCounted.get();
       if (indexWriter instanceof SolrIndexWriter) {

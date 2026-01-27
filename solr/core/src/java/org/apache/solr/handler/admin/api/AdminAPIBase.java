@@ -121,7 +121,8 @@ public abstract class AdminAPIBase extends JerseyResource {
   protected SolrResponse submitRemoteMessageAndHandleException(
       SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
       throws Exception {
-    adminCmdContext.setCallingLockIds((String) solrQueryRequest.getContext().get(CALLING_LOCK_IDS_HEADER));
+    adminCmdContext.setCallingLockIds(
+        (String) solrQueryRequest.getContext().get(CALLING_LOCK_IDS_HEADER));
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer.getZkController(),

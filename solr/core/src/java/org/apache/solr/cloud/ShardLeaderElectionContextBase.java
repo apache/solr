@@ -241,10 +241,14 @@ class ShardLeaderElectionContextBase extends ElectionContext {
             .persist(coll.getZNode(), zkStateReader.getZkClient());
       }
       try {
-        zkStateReader.waitForState(collection, 10, TimeUnit.SECONDS, state -> {
-          Replica leader = state.getLeader(shardId);
-          return leader != null && id.equals(leader.getName());
-        });
+        zkStateReader.waitForState(
+            collection,
+            10,
+            TimeUnit.SECONDS,
+            state -> {
+              Replica leader = state.getLeader(shardId);
+              return leader != null && id.equals(leader.getName());
+            });
       } catch (TimeoutException e) {
         throw new RuntimeException(e);
       }

@@ -58,7 +58,9 @@ public class LocalFSCloudIncrementalBackupTest extends AbstractIncrementalBackup
           + "  </solrcloud>\n"
           + "  \n"
           + "  <backup>\n"
-          + "    <repository name=\"errorBackupRepository\" class=\"" + ErrorThrowingTrackingBackupRepository.class.getName() + "\"> \n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
           + "    </repository>\n"

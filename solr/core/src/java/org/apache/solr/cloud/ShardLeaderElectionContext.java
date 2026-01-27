@@ -207,7 +207,8 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
 
         boolean success = false;
         try {
-          PeerSync.PeerSyncResult result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement, true);
+          PeerSync.PeerSyncResult result =
+              syncStrategy.sync(zkController, core, leaderProps, weAreReplacement, true);
           success = result.isSuccess();
         } catch (Exception e) {
           log.error("Exception while trying to sync", e);
