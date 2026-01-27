@@ -55,22 +55,6 @@ public class Util {
       output = rsp.toString();
     }
     log.info("#### Consumer Metrics: ####\n{}", output);
-    //    List<MetricSnapshot> snapshotList =
-    //        metricManager.getPrometheusMetricReaders().values().stream()
-    //            .flatMap(r -> r.collect().stream())
-    //            .toList();
-    //    MetricSnapshots snapshots = MetricSnapshots.of(snapshotList.toArray(new
-    // MetricSnapshot[0]));
-    //    String output;
-    //    try {
-    //      ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    //      new PrometheusTextFormatWriter(false).write(baos, snapshots);
-    //      output = baos.toString();
-    //    } catch (Exception e) {
-    //      log.error("Error while writing final metrics", e);
-    //      output = snapshots.toString();
-    //    }
-    //    log.info("#### Consumer Metrics: ####\n{}", output);
   }
 
   public static void printKafkaInfo(String host, String groupId) {

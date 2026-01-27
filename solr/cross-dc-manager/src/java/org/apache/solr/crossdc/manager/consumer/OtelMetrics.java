@@ -21,15 +21,14 @@ import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.api.metrics.LongHistogram;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.apache.solr.opentelemetry.OtlpExporterFactory;
-import org.apache.solr.util.RTimer;
 
 public class OtelMetrics implements ConsumerMetrics {
 
@@ -43,7 +42,8 @@ public class OtelMetrics implements ConsumerMetrics {
 
   protected SolrMetricManager metricManager;
 
-  protected LongCounter input;
+  protected LongCounter inputMsg;
+  protected LongCounter inputReq;
   protected LongCounter collapsed;
   protected LongCounter output;
   protected LongHistogram outputBatchSizeHistogram;
@@ -59,12 +59,17 @@ public class OtelMetrics implements ConsumerMetrics {
     this.metricManager = new SolrMetricManager(new OtlpExporterFactory().getExporter());
     SolrMetricsContext metricsContext = new SolrMetricsContext(metricManager, scope);
 
-    input =
-        metricsContext.longCounter(NAME_PREFIX + "input_total", "Total number of input messages");
+    inputMsg =
+        metricsContext.longCounter(
+            NAME_PREFIX + "input_msg_total", "Total number of input Kafka messages");
+
+    inputReq =
+        metricsContext.longCounter(
+            NAME_PREFIX + "input_req_total", "Total number of input Solr requests");
 
     collapsed =
         metricsContext.longCounter(
-            NAME_PREFIX + "collapsed_total", "Total number of collapsed messages");
+            NAME_PREFIX + "collapsed_total", "Total number of collapsed update requests");
 
     output =
         metricsContext.longCounter(NAME_PREFIX + "output_total", "Total number of output requests");
@@ -75,7 +80,7 @@ public class OtelMetrics implements ConsumerMetrics {
 
     outputBackoffHistogram =
         metricsContext.longHistogram(
-            NAME_PREFIX + "output_backoff_size", "Histogram of output backoff sleep times");
+            NAME_PREFIX + "output_backoff_time", "Histogram of output backoff sleep times");
 
     outputTimeHistogram =
         metricsContext.longHistogram(
@@ -87,7 +92,7 @@ public class OtelMetrics implements ConsumerMetrics {
         metricsContext.longHistogram(
             NAME_PREFIX + "output_first_attempt_time",
             "Histogram of first attempt request times",
-            OtelUnit.NANOSECONDS);
+            OtelUnit.MILLISECONDS);
   }
 
   protected static final String KEY_SEPARATOR = "#";
@@ -114,30 +119,30 @@ public class OtelMetrics implements ConsumerMetrics {
   }
 
   @Override
-  public void incrementInputCounter(String type, String subType) {
-    incrementInputCounter(type, subType, 1);
+  public void incrementInputMsgCounter(long delta) {
+    inputMsg.add(delta);
   }
 
   @Override
-  public void incrementInputCounter(String type, String subType, int delta) {
-    input.add(delta, attr("type", type, "subtype", subType));
-  }
-
-  @Override
-  public void incrementOutputCounter(String type, String result) {
-    incrementOutputCounter(type, result, 1);
+  public void incrementInputReqCounter(String type, String subType, int delta) {
+    inputReq.add(delta, attr(ATTR_TYPE, type, ATTR_SUBTYPE, subType));
   }
 
   @Override
   public void incrementOutputCounter(String type, String result, int delta) {
-    output.add(delta, attr("type", type, "result", result));
+    output.add(delta, attr(ATTR_TYPE, type, ATTR_RESULT, result));
   }
 
   @Override
   public void recordOutputBatchSize(MirroredSolrRequest.Type type, SolrRequest<?> solrRequest) {
     if (type != MirroredSolrRequest.Type.UPDATE) {
       outputBatchSizeHistogram.record(
-          1, attr(ATTR_TYPE, type.name(), ATTR_SUBTYPE, solrRequest.getPath()));
+          1,
+          attr(
+              ATTR_TYPE,
+              type.name(),
+              ATTR_SUBTYPE,
+              solrRequest.getParams().get("action", "unknown")));
       return;
     }
     UpdateRequest req = (UpdateRequest) solrRequest;
@@ -153,7 +158,7 @@ public class OtelMetrics implements ConsumerMetrics {
     }
     if (dbqCount > 0) {
       outputBatchSizeHistogram.record(
-          dbiCount, attr(ATTR_TYPE, type.name(), ATTR_SUBTYPE, "delete_by_query"));
+          dbqCount, attr(ATTR_TYPE, type.name(), ATTR_SUBTYPE, "delete_by_query"));
     }
   }
 
@@ -169,16 +174,9 @@ public class OtelMetrics implements ConsumerMetrics {
 
   @Override
   public ConsumerTimer startOutputTimeTimer(final String requestType) {
-    final RTimer timer =
-        new RTimer(TimeUnit.MILLISECONDS) {
-          @Override
-          public double stop() {
-            double elapsedTime = super.stop();
-            outputTimeHistogram.record(
-                Double.valueOf(elapsedTime).longValue(), attr(ATTR_TYPE, requestType));
-            return elapsedTime;
-          }
-        };
-    return () -> timer.stop();
+    final AttributedLongTimer timer =
+        new AttributedLongTimer(outputTimeHistogram, attr(ATTR_TYPE, requestType));
+    final AttributedLongTimer.MetricTimer metricTimer = timer.start();
+    return () -> metricTimer.stop();
   }
 }

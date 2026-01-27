@@ -19,6 +19,7 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -305,10 +306,11 @@ public class SolrMessageProcessor extends MessageProcessor
     // submitting on the primary side until the request is eligible to be consumed on the buddy side
     // (or vice versa).
     if (mirroredSolrRequest.getAttempt() == 1) {
-      final long latency =
-          TimeSource.CURRENT_TIME.getTimeNs() - mirroredSolrRequest.getSubmitTimeNanos();
-      log.debug("First attempt latency = {} ns", latency);
-      metrics.recordOutputFirstAttemptTime(mirroredSolrRequest.getType(), latency);
+      final long latencyMs =
+          TimeUnit.NANOSECONDS.toMillis(
+              TimeSource.CURRENT_TIME.getTimeNs() - mirroredSolrRequest.getSubmitTimeNanos());
+      log.debug("First attempt latency = {} ms", latencyMs);
+      metrics.recordOutputFirstAttemptTime(mirroredSolrRequest.getType(), latencyMs);
     }
   }
 

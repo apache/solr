@@ -338,12 +338,15 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
                   requestRecord.value());
             }
 
+            metrics.incrementInputMsgCounter();
             lastRecord = requestRecord;
             MirroredSolrRequest<?> req = requestRecord.value();
             SolrRequest<?> solrReq = req.getSolrRequest();
             MirroredSolrRequest.Type type = req.getType();
+
             if (type != MirroredSolrRequest.Type.UPDATE) {
-              metrics.incrementInputCounter(type.name(), solrReq.getPath());
+              String action = solrReq.getParams().get("action", "unknown");
+              metrics.incrementInputReqCounter(type.name(), action);
             }
 
             ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
@@ -408,19 +411,20 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               List<SolrInputDocument> docs = update.getDocuments();
               if (docs != null) {
                 updateReqBatch.add(docs);
-                metrics.incrementInputCounter(type.name(), "add", docs.size());
+                metrics.incrementInputReqCounter(type.name(), "add", docs.size());
               }
               List<String> deletes = update.getDeleteById();
               if (deletes != null) {
                 updateReqBatch.deleteById(deletes);
-                metrics.incrementInputCounter(type.name(), "delete_by_id", deletes.size());
+                metrics.incrementInputReqCounter(type.name(), "delete_by_id", deletes.size());
               }
               List<String> deleteByQuery = update.getDeleteQuery();
               if (deleteByQuery != null) {
                 for (String delByQuery : deleteByQuery) {
                   updateReqBatch.deleteByQuery(delByQuery);
                 }
-                metrics.incrementInputCounter(type.name(), "delete_by_query", deleteByQuery.size());
+                metrics.incrementInputReqCounter(
+                    type.name(), "delete_by_query", deleteByQuery.size());
               }
             } else {
               // non-update requests should be sent immediately
@@ -533,10 +537,10 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
               "Sending message to dead letter queue because of max attempts limit with current value = {}",
               attempt);
           kafkaMirroringSink.submitToDlq(item);
-          metrics.incrementOutputCounter(type.name(), "failed-dlq");
+          metrics.incrementOutputCounter(type.name(), "failed_dlq");
         } else {
           kafkaMirroringSink.submit(item);
-          metrics.incrementOutputCounter(type.name(), "failed-resubmit");
+          metrics.incrementOutputCounter(type.name(), "failed_resubmit");
         }
         break;
       case HANDLED:
@@ -555,7 +559,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       case FAILED_RETRY:
         log.error(
             "Unexpected response while processing request. We never expect {}.", result.status());
-        metrics.incrementOutputCounter(type.name(), "failed-retry");
+        metrics.incrementOutputCounter(type.name(), "failed_retry");
         break;
       default:
         if (log.isTraceEnabled()) {
