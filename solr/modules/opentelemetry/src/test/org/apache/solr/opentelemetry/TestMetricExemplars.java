@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -79,7 +78,6 @@ public class TestMetricExemplars extends SolrCloudTestCase {
     var expectedTrace = getRootTraceId(spans);
 
     var req = new MetricsRequest(new ModifiableSolrParams().set("wt", "openmetrics"));
-    req.setResponseParser(new InputStreamResponseParser("openmetrics"));
     NamedList<Object> resp = cloudClient.request(req);
 
     try (InputStream in = (InputStream) resp.get("stream")) {

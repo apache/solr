@@ -27,7 +27,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
@@ -132,7 +131,6 @@ public abstract class TestBaseStatsCacheCloud extends SolrCloudTestCase {
     for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
       try (SolrClient client = getHttpSolrClient(jettySolrRunner.getBaseUrl().toString())) {
         var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-        req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
         NamedList<Object> resp = client.request(req);
         try (InputStream in = (InputStream) resp.get("stream")) {
