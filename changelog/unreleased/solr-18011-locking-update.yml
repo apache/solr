@@ -1,9 +1,0 @@
-# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Allow locked Admin APIs to call other locked AdminAPIs without deadlocking
-type: changed # added, changed, fixed, deprecated, removed, dependency_update, security, other
-authors:
-  - name: Houston Putman
-    nick: HoustonPutman
-links:
-  - name: SOLR-18011
-    url: https://issues.apache.org/jira/browse/SOLR-18011
