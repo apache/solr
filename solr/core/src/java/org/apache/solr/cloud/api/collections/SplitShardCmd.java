@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
@@ -26,6 +27,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.CR
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETESHARD;
 import static org.apache.solr.common.params.CommonAdminParams.NUM_SUB_SHARDS;
 
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,12 +40,14 @@ import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.VersionedData;
+import org.apache.solr.client.solrj.impl.CloudHttp2SolrClient;
+import org.apache.solr.client.solrj.impl.NodeValueFetcher;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
@@ -858,42 +862,68 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
       SolrIndexSplitter.SplitMethod method,
       SolrCloudManager cloudManager)
       throws Exception {
-    if (true) {
-      log.warn("checkDiskSpace disabled SOLR-17458 SOLR-17955");
-      return;
-    }
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
 
-    String replicaName = Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName());
-    String indexSizeMetricName =
-        "solr.core." + collection + "." + shard + "." + replicaName + ":INDEX.sizeInBytes";
-    String freeDiskSpaceMetricName = "solr.node:CONTAINER.fs.usableSpace";
+    String indexSizeMetric = "solr_core_index_size_megabytes";
+    String freeDiskSpaceMetric = "solr_disk_space_megabytes";
+    String coreLabel =
+        collection
+            + "_"
+            + shard
+            + "_"
+            + Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName());
 
     ModifiableSolrParams params =
-        new ModifiableSolrParams()
-            .add("key", indexSizeMetricName)
-            .add("key", freeDiskSpaceMetricName);
-    SolrResponse rsp = new MetricsRequest(params).process(cloudManager.getSolrClient());
+        new ModifiableSolrParams().add("name", indexSizeMetric).add("name", freeDiskSpaceMetric);
 
-    Number size = (Number) rsp.getResponse()._get(List.of("metrics", indexSizeMetricName), null);
-    if (size == null) {
-      log.warn("cannot verify information for parent shard leader");
-      return;
+    var req = new MetricsRequest(params);
+    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+
+    var cloudClient = (CloudHttp2SolrClient) cloudManager.getSolrClient();
+    var httpClient = cloudClient.getHttpClient();
+
+    NamedList<Object> resp =
+        httpClient.requestWithBaseUrl(parentShardLeader.getBaseUrl(), req, null);
+
+    var indexSizeRef = new AtomicReference<Double>(-1.0);
+    var freeSizeRef = new AtomicReference<Double>(-1.0);
+    try (InputStream prometheusStream = (InputStream) resp.get(STREAM_KEY);
+        var lines = NodeValueFetcher.Metrics.prometheusMetricStream(prometheusStream)) {
+
+      lines
+          .filter(line -> !line.isBlank() && !line.startsWith("#"))
+          .forEach(
+              line -> {
+                if (line.contains(indexSizeMetric) && line.contains(coreLabel)) {
+                  indexSizeRef.set(NodeValueFetcher.Metrics.extractPrometheusValue(line));
+                } else if (line.contains(freeDiskSpaceMetric) && line.contains("usable_space")) {
+                  freeSizeRef.set(NodeValueFetcher.Metrics.extractPrometheusValue(line));
+                }
+              });
     }
-    double indexSize = size.doubleValue();
 
-    Number freeSize =
-        (Number) rsp.getResponse()._get(List.of("metrics", freeDiskSpaceMetricName), null);
-    if (freeSize == null) {
-      log.warn("missing node disk space information for parent shard leader");
-      return;
+    double indexSize = indexSizeRef.get();
+    double freeSize = freeSizeRef.get();
+
+    if (indexSize == -1.0) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "cannot verify index size information for parent shard leader on node "
+              + parentShardLeader.getNodeName());
+    }
+
+    if (freeSize == -1.0) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR,
+          "missing node disk space information for parent shard leader on node "
+              + parentShardLeader.getNodeName());
     }
 
     // 100% more for REWRITE, 5% more for LINK
     double neededSpace =
         method == SolrIndexSplitter.SplitMethod.REWRITE ? 2.0 * indexSize : 1.05 * indexSize;
-    if (freeSize.doubleValue() < neededSpace) {
+    if (freeSize < neededSpace) {
       throw new SolrException(
           SolrException.ErrorCode.SERVER_ERROR,
           "not enough free disk space to perform index split on node "
