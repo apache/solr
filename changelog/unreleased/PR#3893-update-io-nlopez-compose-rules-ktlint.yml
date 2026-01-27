@@ -1,0 +1,7 @@
+title: Update io.nlopez.compose.rules:ktlint to v0.5.5
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3893
+  url: https://github.com/apache/solr/pull/3893
