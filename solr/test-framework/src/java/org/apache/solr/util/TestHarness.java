@@ -419,7 +419,7 @@ public class TestHarness extends BaseTestHarness {
     @SuppressWarnings({"unchecked"})
     public LocalSolrQueryRequest makeRequest(String... q) {
       if (q.length == 1) {
-        args.put("wt", "xml");
+        args.computeIfAbsent("wt", k -> "xml");
         return new LocalSolrQueryRequest(
             TestHarness.this.getCore(), q[0], qtype, start, limit, args);
       }
