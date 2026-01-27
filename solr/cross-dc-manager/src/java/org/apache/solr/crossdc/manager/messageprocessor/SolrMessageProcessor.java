@@ -210,7 +210,7 @@ public class SolrMessageProcessor extends MessageProcessor
               "Skipping update request to nonexistent / not updatable collection {}",
               request.getCollection());
         }
-        metrics.counter(MetricRegistry.name(type.name(), "invalid-collection")).inc();
+        metrics.incrementOutputCounter(type.name(), "failed_collection_not_found");
         return new Result<>(ResultStatus.FAILED_NO_RETRY, mirroredSolrRequest);
       }
     }
