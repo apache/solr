@@ -19,6 +19,7 @@ package org.apache.solr.ui.components.auth
 
 internal actual fun getRedirectUri(): String {
     // For desktop we return the URL the custom server instance is listening to
-    // TODO The port may be overwritten, update accordingly to use right port
+    // TODO The hostname and port may be overwritten in future,
+    //  update accordingly to use dynamic values
     return "http://127.0.0.1:8088/callback"
 }
