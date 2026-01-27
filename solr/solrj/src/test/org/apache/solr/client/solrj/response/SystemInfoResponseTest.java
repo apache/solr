@@ -30,6 +30,7 @@ import org.junit.Test;
 
 public class SystemInfoResponseTest extends SolrCloudTestCase {
 
+  // private static MiniSolrCloudCluster cluster;
   private CloudSolrClient solrClient;
 
   @BeforeClass
@@ -61,14 +62,6 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
     Assert.assertEquals(2, rsp.getAllNodeResponses().size());
     Assert.assertEquals(2, rsp.getAllCoreRoots().size());
     Assert.assertEquals(2, rsp.getAllModes().size());
-  }
-
-  @Test
-  public void testResponseForGivenNode() throws SolrServerException, IOException {
-    MapSolrParams params = new MapSolrParams(Map.of("nodes", "all"));
-
-    SystemInfoRequest req = new SystemInfoRequest(params);
-    SystemInfoResponse rsp = req.process(solrClient);
 
     for (String node : rsp.getAllNodes()) {
       String coreRoot = rsp.getCoreRootForNode(node);
@@ -76,5 +69,22 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
       String solrHome = rsp.getCoreRootForNode(node);
       Assert.assertEquals(node, rsp.getNodeForSolrHome(solrHome));
     }
+  }
+
+  @Test
+  public void testResponseForGivenNode() throws SolrServerException, IOException {
+    String queryNode = cluster.getJettySolrRunner(0).getNodeName();
+    MapSolrParams params = new MapSolrParams(Map.of("nodes", queryNode));
+
+    SystemInfoRequest req = new SystemInfoRequest(params);
+    SystemInfoResponse rsp = req.process(solrClient);
+
+    Assert.assertEquals(1, rsp.getAllNodeResponses().size());
+    Assert.assertEquals(1, rsp.getAllCoreRoots().size());
+    Assert.assertEquals(1, rsp.getAllModes().size());
+    String coreRoot = rsp.getCoreRootForNode(queryNode);
+    Assert.assertEquals(queryNode, rsp.getNodeForCoreRoot(coreRoot));
+    String solrHome = rsp.getCoreRootForNode(queryNode);
+    Assert.assertEquals(queryNode, rsp.getNodeForSolrHome(solrHome));
   }
 }
