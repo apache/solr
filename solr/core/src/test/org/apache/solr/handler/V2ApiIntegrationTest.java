@@ -114,26 +114,27 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWTParam() throws Exception {
+  public void testInvalidWTParamReturnsError() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
-    // TODO: If possible do this in a better way
+    // Using an invalid wt parameter should return a 500 error
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
     String respString = InputStreamResponseParser.consumeResponseToString(res);
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
-    assertFalse(respString.contains("500"));
-    assertFalse(respString.contains("NullPointerException"));
-    assertFalse(
-        respString.contains(
-            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
-    // since no-op response writer is used, doing contains match
-    assertTrue(respString.contains("/c/collection1/get"));
+    // Should get a 500 Server Error for unknown writer type
+    assertTrue(
+        "Expected error message about unknown writer type",
+        respString.contains("Unknown response writer type"));
+    assertTrue("Expected 500 error code", respString.contains("500"));
+  }
 
-    // no response parser
+  @Test
+  public void testWTParam() throws Exception {
+    // When no response parser is set, the default JSON writer should be used
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
     request.setResponseParser(null);
     Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
-    respString = resp.toString();
+    String respString = resp.toString();
 
     assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
     assertFalse(

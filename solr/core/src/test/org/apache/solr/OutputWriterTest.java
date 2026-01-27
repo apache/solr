@@ -44,7 +44,7 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
   @Test
   public void testSOLR59responseHeaderVersions() {
     // default results in "new" responseHeader
-    lrf.args.put("wt", "standard");
+    lrf.args.put("wt", "json");
     assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
     lrf.args.remove("wt");
     assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
