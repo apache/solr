@@ -3156,9 +3156,9 @@ public class SolrCore implements SolrInfoBean, Closeable {
     // if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
   }
 
-  /** Finds a writer by name, or returns the default writer if not found. */
+  /** Finds a writer by name, or null if not found. */
   public final QueryResponseWriter getQueryResponseWriter(String writerName) {
-    return responseWriters.get(writerName, true);
+    return responseWriters.get(writerName, false);
   }
 
   /**
