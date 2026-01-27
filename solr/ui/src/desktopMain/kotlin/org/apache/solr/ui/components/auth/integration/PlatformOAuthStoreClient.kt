@@ -35,6 +35,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CompletableDeferred
+import org.apache.solr.ui.components.auth.getRedirectUri
 import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
 import org.apache.solr.ui.data.AuthorizationResponse
 import org.apache.solr.ui.domain.OAuthData
@@ -44,6 +45,17 @@ import org.apache.solr.ui.errors.UnknownResponseException
 
 /**
  * OAuth store implementation that uses a server instance for handling callbacks.
+ *
+ * The flow on desktop looks as follows:
+ * 1. The application launches a server that listens on 127.0.0.1:8088
+ * 2. The application opens the identity provider page in the browser
+ * 3. After the user authenticates and authorizes the app, the identity provider redirects the user
+ *    to the server that was launched by the app
+ * 4. The server evaluates the query parameters passed with the redirect and generates a new token.
+ *
+ * There is a special handling for redirects that use the hash fragment instead of query parameters.
+ * In that case, the server responds with a script that reloads the page with the hash fragment as
+ * query parameters.
  *
  * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
  * already set.
@@ -65,12 +77,13 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
             )
         }
 
+        // TODO Add check for valid redirect URIs to make sure the current is fine
         val authResponse = httpClient.submitForm(
             url = data.tokenEndpoint.toString(),
             formParameters = parameters {
                 append("grant_type", "authorization_code")
                 append("code", code)
-                append("redirect_uri", "http://127.0.0.1:8088/callback")
+                append("redirect_uri", getRedirectUri())
                 append("scope", data.scope)
                 append("code_verifier", verifier)
                 append("client_id", data.clientId)
