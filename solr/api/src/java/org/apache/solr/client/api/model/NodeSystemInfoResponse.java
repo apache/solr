@@ -25,35 +25,30 @@ import java.util.Set;
 /** Response from /node/info/system */
 public class NodeSystemInfoResponse extends SolrJerseyResponse {
 
-  @JsonProperty public Map<String, NodeSystemInfo> nodesInfo;
+  @JsonProperty public String node;
+  @JsonProperty public String mode;
+  @JsonProperty public String zkHost;
 
-  public static class NodeSystemInfo {
+  @JsonProperty("solr_home")
+  public String solrHome;
 
-    @JsonProperty public String node;
-    @JsonProperty public String mode;
-    @JsonProperty public String zkHost;
+  @JsonProperty("core_root")
+  public String coreRoot;
 
-    @JsonProperty("solr_home")
-    public String solrHome;
+  @JsonProperty public String environment;
 
-    @JsonProperty("core_root")
-    public String coreRoot;
+  @JsonProperty(value = "environment_label")
+  public String environmentLabel;
 
-    @JsonProperty public String environment;
+  @JsonProperty(value = "environment_color")
+  public String environmentColor;
 
-    @JsonProperty(value = "environment_label")
-    public String environmentLabel;
-
-    @JsonProperty(value = "environment_color")
-    public String environmentColor;
-
-    @JsonProperty public Core core;
-    @JsonProperty public Lucene lucene;
-    @JsonProperty public JVM jvm;
-    @JsonProperty public Security security;
-    @JsonProperty public GPU gpu;
-    @JsonProperty public Map<String, String> system;
-  }
+  @JsonProperty public Core core;
+  @JsonProperty public Lucene lucene;
+  @JsonProperty public JVM jvm;
+  @JsonProperty public Security security;
+  @JsonProperty public GPU gpu;
+  @JsonProperty public Map<String, String> system;
 
   /** /node/system/security */
   public static class Security {

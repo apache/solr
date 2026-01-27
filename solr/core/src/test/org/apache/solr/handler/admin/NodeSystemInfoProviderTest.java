@@ -59,14 +59,9 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
   public void testGetNodeSystemInfo() {
     SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams()) {};
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
-    NodeSystemInfoResponse response = new NodeSystemInfoResponse();
-    provider.getNodeSystemInfo(response);
+    NodeSystemInfoResponse info = provider.getNodeSystemInfo();
 
-    Assert.assertNotNull(response.nodesInfo);
-    Assert.assertEquals(1, response.nodesInfo.size());
-
-    NodeSystemInfoResponse.NodeSystemInfo info =
-        response.nodesInfo.values().stream().findFirst().get();
+    Assert.assertNotNull(info);
     // these can be validated
     Assert.assertEquals(h.getCoreContainer().getSolrHome().toString(), info.solrHome);
     Assert.assertEquals(h.getCoreContainer().getCoreRootDirectory().toString(), info.coreRoot);

@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse.NodeSystemInfo;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -141,11 +140,8 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     Assert.assertEquals(0, infoResponse.responseHeader.status);
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertNotNull(infoResponse.nodesInfo);
-    Assert.assertNotNull(infoResponse.nodesInfo.get(expectedNode));
-
-    NodeSystemInfo nodeInfo = infoResponse.nodesInfo.get(expectedNode);
-    Assert.assertEquals(expectedNode, nodeInfo.node);
+    Assert.assertNotNull(infoResponse);
+    Assert.assertEquals(expectedNode, infoResponse.node);
     // other validations in NodeSystemInfoProviderTest
   }
 
@@ -183,11 +179,7 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     }
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertNotNull(nlResponse.get("nodesInfo"));
-    NamedList<Object> nlNodesInfo = (NamedList<Object>) nlResponse.get("nodesInfo");
-    Assert.assertNotNull(nlNodesInfo.get(expectedNode));
-    NamedList<Object> nodeInfo = (NamedList<Object>) nlNodesInfo.get(expectedNode);
-    Assert.assertEquals(expectedNode, (String) nodeInfo.get("node"));
+    Assert.assertEquals(expectedNode, (String) nlResponse.get("node"));
     // other validations in NodeSystemInfoProviderTest
   }
 
@@ -201,15 +193,10 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
 
     NodeSystemInfoResponse response = getter.getNodeSystemInfo();
-    Assert.assertNotNull(response.nodesInfo);
-    Assert.assertEquals(1, response.nodesInfo.size());
-
-    NodeSystemInfoResponse.NodeSystemInfo info =
-        response.nodesInfo.values().stream().findFirst().orElseThrow();
-    Assert.assertNull(info.coreRoot);
-    Assert.assertEquals("std", info.mode);
+    Assert.assertNotNull(response);
+    Assert.assertEquals("std", response.mode);
     // Standalone mode : no "node"
-    Assert.assertNull(info.node);
+    Assert.assertNull(response.node);
     // other validations in NodeSystemInfoProviderTest
   }
 }

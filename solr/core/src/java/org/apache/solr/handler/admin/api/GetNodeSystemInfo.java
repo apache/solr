@@ -48,7 +48,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   public NodeSystemInfoResponse getNodeSystemInfo() {
     solrQueryResponse.setHttpCaching(false);
 
-    // TODO: AdminHandlersProxy does not support V2
+    // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
     try {
       if (solrQueryRequest.getCoreContainer() != null
           && AdminHandlersProxy.maybeProxyToNodes(
@@ -60,22 +60,9 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
-    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
-    provider.getNodeSystemInfo(response);
-    if (log.isDebugEnabled()) {
-      log.debug("Found {} nodes.", response == null ? "NO" : response.nodesInfo.size());
-    }
+    NodeSystemInfoResponse response = provider.getNodeSystemInfo();
     if (response != null && log.isTraceEnabled()) {
-      response
-          .nodesInfo
-          .entrySet()
-          .forEach(
-              e -> {
-                // yep, need to validate the log settings again.
-                if (log.isTraceEnabled()) {
-                  log.trace("Node {}, core root: {}", e.getKey(), e.getValue().coreRoot);
-                }
-              });
+      log.trace("Node {}, core root: {}", response.node, response.coreRoot);
     }
     return response;
   }

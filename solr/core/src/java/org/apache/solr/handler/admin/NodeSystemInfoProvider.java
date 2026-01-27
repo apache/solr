@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse.NodeSystemInfo;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -111,16 +110,8 @@ public class NodeSystemInfoProvider {
     initHostname();
   }
 
-  public void getNodeSystemInfo(NodeSystemInfoResponse response) {
-    Map<String, NodeSystemInfo> nodes = new HashMap<>();
-    NodeSystemInfo info = getNodeInfo();
-    String key = info.node != null ? info.node : hostname; // should allow null key ?
-    nodes.put(key, info);
-    response.nodesInfo = nodes;
-  }
-
-  private NodeSystemInfoResponse.NodeSystemInfo getNodeInfo() {
-    NodeSystemInfo info = new NodeSystemInfo();
+  public NodeSystemInfoResponse getNodeSystemInfo() {
+    NodeSystemInfoResponse info = new NodeSystemInfoResponse();
 
     SolrCore core = req.getCore();
     if (core != null) info.core = getCoreInfo(core, req.getSchema());
