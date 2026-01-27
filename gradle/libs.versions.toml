@@ -102,7 +102,7 @@ google-cloud-nio = "0.127.3"
 google-cloud-storage = "2.27.0"
 google-errorprone = "2.41.0"
 # @keep for version alignment
-google-gson = "2.13.1"
+google-gson = "2.13.2"
 google-guava = "33.4.8-jre"
 # @keep for version alignment
 google-j2objc = "3.1"
