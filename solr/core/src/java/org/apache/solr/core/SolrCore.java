@@ -3094,7 +3094,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
     HashMap<String, QueryResponseWriter> m = new HashMap<>(15, 1);
     m.put("xml", new XMLResponseWriter());
     m.put(CommonParams.JSON, new JacksonJsonWriter());
-    m.put("standard", m.get(CommonParams.JSON));
     m.put("geojson", new GeoJSONResponseWriter());
     m.put("graphml", new GraphMLResponseWriter());
     m.put("raw", new RawResponseWriter());
@@ -3154,7 +3153,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
   private void initWriters() {
     responseWriters.init(DEFAULT_RESPONSE_WRITERS, this);
     // configure the default response writer; this one should never be null
-    if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
+    // if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
   }
 
   /** Finds a writer by name, or returns the default writer if not found. */

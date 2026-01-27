@@ -200,12 +200,49 @@ public interface SolrQueryRequest extends AutoCloseable {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
     SolrCore core = getCore();
     String wt = getParams().get(CommonParams.WT);
+
+    if (wt == null || wt.isEmpty()) {
+      // Fall back to Accept header if wt parameter is not provided
+      wt = getWtFromAcceptHeader();
+    }
+
     if (core != null) {
       return core.getQueryResponseWriter(wt);
     } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+      return SolrCore.DEFAULT_RESPONSE_WRITERS.get(wt);
     }
+  }
+
+  /**
+   * Maps the HTTP Accept header to a wt parameter value. Returns "json" as default if no Accept
+   * header is present or if the content type is not recognized.
+   *
+   * <p>This is a quick implmentation, but it's not pluggable. For example, how do we support CBOR
+   * without modifying this. In V2ApiUtils.getMediaTypeFromWtParam() we do the same basic thing. i
+   * also dont' see cbor.
+   *
+   * @return the wt parameter value corresponding to the Accept header, or "json" as default
+   */
+  default String getWtFromAcceptHeader() {
+    HttpSolrCall httpSolrCall = getHttpSolrCall();
+    if (httpSolrCall != null) {
+      String acceptHeader = httpSolrCall.getReq().getHeader("Accept");
+      if (acceptHeader != null && !acceptHeader.isEmpty()) {
+        // Handle multiple accept types (e.g., "application/json, text/plain")
+        // by checking if the header contains specific content types
+        if (acceptHeader.contains("application/xml") || acceptHeader.contains("text/xml")) {
+          return "xml";
+        } else if (acceptHeader.contains("application/json")) {
+          return CommonParams.JSON;
+        } else if (acceptHeader.contains("application/javabin")
+            || acceptHeader.contains("application/vnd.apache.solr.javabin")) {
+          return CommonParams.JAVABIN;
+        }
+        // For "*/*" or unrecognized types, fall through to default
+      }
+    }
+    // Default to JSON when no Accept header or unrecognized content type
+    return CommonParams.JSON;
   }
 
   /**

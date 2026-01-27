@@ -68,11 +68,11 @@ public class SolrRequestParsers {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   // Should these constants be in a more public place?
-  public static final String MULTIPART = "multipart";
-  public static final String FORMDATA = "formdata";
-  public static final String RAW = "raw";
-  public static final String SIMPLE = "simple";
-  public static final String STANDARD = "standard";
+  // public static final String MULTIPART = "multipart";
+  // public static final String FORMDATA = "formdata";
+  // public static final String RAW = "raw";
+  // public static final String SIMPLE = "simple";
+  // public static final String STANDARD = "standard";
 
   private static final Charset CHARSET_US_ASCII = StandardCharsets.US_ASCII;
 
@@ -81,7 +81,7 @@ public class SolrRequestParsers {
 
   public static final String REQUEST_TIMER_SERVLET_ATTRIBUTE = "org.apache.solr.RequestTimer";
 
-  private final HashMap<String, SolrRequestParser> parsers = new HashMap<>();
+  // private final HashMap<String, SolrRequestParser> parsers = new HashMap<>();
   private StandardRequestParser standard;
 
   /**
@@ -120,12 +120,12 @@ public class SolrRequestParsers {
 
     // I don't see a need to have this publicly configured just yet
     // adding it is trivial
-    parsers.put(MULTIPART, multi);
-    parsers.put(FORMDATA, formdata);
-    parsers.put(RAW, raw);
-    parsers.put(SIMPLE, new SimpleRequestParser());
-    parsers.put(STANDARD, standard);
-    parsers.put("", standard);
+    // parsers.put(MULTIPART, multi);
+    // parsers.put(FORMDATA, formdata);
+    // parsers.put(RAW, raw);
+    // parsers.put(SIMPLE, new SimpleRequestParser());
+    // parsers.put(STANDARD, standard);
+    // parsers.put("", standard);
   }
 
   private static RTimerTree getRequestTimer(HttpServletRequest req) {
