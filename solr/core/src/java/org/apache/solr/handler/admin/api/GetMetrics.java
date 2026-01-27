@@ -97,7 +97,6 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
 
     validateRequest(acceptHeader);
 
-    // TODO: fix AdminHandlersProxy to support V2
     if (proxyToNodes()) {
       return null;
     }
@@ -111,27 +110,23 @@ public class GetMetrics extends AdminAPIBase implements MetricsApi {
 
   private void validateRequest(String acceptHeader) {
     if (!enabled) {
-      log.info("Metrics not enabled");
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "Metrics collection is disabled");
     }
 
     if (metricManager == null) {
-      log.info("SolrMetricManager instance not initialized");
       throw new SolrException(
           SolrException.ErrorCode.INVALID_STATE, "SolrMetricManager instance not initialized");
     }
 
     // Should handle 'Accept' header only, but a lot of code still expects 'wt'.
     if (acceptHeader == null) {
-      log.info("Set default wt=prometheus");
       solrQueryRequest.setParams(
           SolrParams.wrapDefaults(
               solrQueryRequest.getParams(),
               SolrParams.of(CommonParams.WT, MetricUtils.PROMETHEUS_METRICS_WT)));
     } else if (!PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS.equals(acceptHeader)
         && !PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS.equals(acceptHeader)) {
-      log.info("Unsupported format requested");
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Only Prometheus and OpenMetrics metric formats supported. Unsupported format requested: "
