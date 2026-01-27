@@ -659,15 +659,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state
-        // are sure to have finished (see SOLR-7141 for
-        // discussion around current value)
-        // TODO since SOLR-11216, we probably won't need this
-        try {
-          Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+        if (!core.readOnly) {
+          // we wait a bit so that any updates on the leader
+          // that started before they saw recovering state
+          // are sure to have finished (see SOLR-7141 for
+          // discussion around current value)
+          // TODO since SOLR-11216, we probably won't need this
+          try {
+            Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
         }
 
         // first thing we just try to sync
