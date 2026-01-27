@@ -31,6 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeLogging;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.request.SolrQueryRequest;
@@ -91,8 +92,11 @@ public class LoggingHandler extends RequestHandlerBase {
     }
 
     rsp.setHttpCaching(false);
-    if (cc != null && AdminHandlersProxy.maybeProxyToNodes(req, rsp, cc)) {
-      return; // Request was proxied to other node
+    if (cc != null) {
+      final var adminProxy = AdminHandlersProxy.create(cc, req, rsp);
+      if (adminProxy.shouldProxy()) {
+        adminProxy.proxyRequest();
+      }
     }
   }
 
