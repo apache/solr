@@ -195,7 +195,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // first cancel any current recovery
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
 
-        if (weAreReplacement) {
+        if (weAreReplacement && !core.readOnly) {
           // wait a moment for any floating updates to finish
           try {
             Thread.sleep(2500);
