@@ -38,19 +38,6 @@ public class BuiltInResponseWriters {
     // Prevent instantiation
   }
 
-  /**
-   * Built-in response writers that are always available.
-   *
-   * <p>Contains only essential formats needed by admin APIs and core functionality:
-   *
-   * <ul>
-   *   <li><b>javabin</b> - Binary format, efficient for SolrJ clients
-   *   <li><b>json/standard</b> - JSON format, default for most requests
-   *   <li><b>xml</b> - XML format, provides backward compatibility
-   *   <li><b>prometheus/openmetrics</b> - Required by metrics endpoints
-   *   <li><b>filestream</b> - File streaming for replication and exports
-   * </ul>
-   */
   private static final Map<String, QueryResponseWriter> BUILTIN_WRITERS;
 
   static {
