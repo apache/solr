@@ -532,15 +532,24 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           log.trace("result=failed-resubmit");
         }
         final int attempt = item.getAttempt();
-        if (attempt > this.maxAttempts) {
-          log.info(
-              "Sending message to dead letter queue because of max attempts limit with current value = {}",
-              attempt);
-          kafkaMirroringSink.submitToDlq(item);
-          metrics.incrementOutputCounter(type.name(), "failed_dlq");
-        } else {
-          kafkaMirroringSink.submit(item);
-          metrics.incrementOutputCounter(type.name(), "failed_resubmit");
+        final boolean dlq = attempt > this.maxAttempts;
+        try {
+          if (dlq) {
+            log.info(
+                "Sending message to dead letter queue because of max attempts limit with current value = {}",
+                attempt);
+            kafkaMirroringSink.submitToDlq(item);
+            metrics.incrementOutputCounter(type.name(), "failed_dlq");
+          } else {
+            kafkaMirroringSink.submit(item);
+            metrics.incrementOutputCounter(type.name(), "failed_resubmit");
+          }
+        } catch (Exception e) {
+          log.error(
+              "Failed to {}, msg={}",
+              dlq ? "send message to dead-letter queue" : "resubmit message for retry",
+              item,
+              e);
         }
         break;
       case HANDLED:
@@ -560,6 +569,17 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         log.error(
             "Unexpected response while processing request. We never expect {}.", result.status());
         metrics.incrementOutputCounter(type.name(), "failed_retry");
+        break;
+      case FAILED_NO_RETRY:
+        if (log.isDebugEnabled()) {
+          log.debug("Failed no-retry: sending message to dead-letter queue");
+        }
+        try {
+          kafkaMirroringSink.submitToDlq(item);
+        } catch (Exception e) {
+          log.error("Failed to send message to dead-letter queue, msg={}", item, e);
+        }
+        metrics.incrementOutputCounter(type.name(), "failed_no_retry");
         break;
       default:
         if (log.isTraceEnabled()) {

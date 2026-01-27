@@ -20,40 +20,40 @@ apply plugin: 'java-library'
 description = 'Solrj-ZooKeeper - SolrJ requiring ZooKeeper'
 
 dependencies {
-    // Spotbugs Annotations are only needed for old findbugs
-    // annotation usage like in Zookeeper during compilation time.
-    // It is not included in the release so exclude from checks.
-    compileOnly libs.spotbugs.annotations
-    permitUnusedDeclared libs.spotbugs.annotations
-    // Exclude these from jar validation and license checks.
-    configurations.jarValidation {
-        exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
-    }
+  // Spotbugs Annotations are only needed for old findbugs
+  // annotation usage like in Zookeeper during compilation time.
+  // It is not included in the release so exclude from checks.
+  compileOnly libs.spotbugs.annotations
+  // Exclude these from jar validation and license checks.
+  configurations.jarValidation {
+    exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
+  }
 
-    implementation project(':solr:solrj')
-    implementation project(':solr:solrj-jetty')
-    implementation project(':solr:api')
+  implementation project(':solr:solrj')
+  implementation project(':solr:solrj-jetty')
+  implementation project(':solr:api')
 
-    implementation libs.slf4j.api
+  implementation libs.slf4j.api
 
-    implementation(libs.apache.curator.client, {
-        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-    })
-    api(libs.apache.curator.framework, {
-        exclude group: 'org.apache.zookeeper', module: 'zookeeper'
-    })
-    api(libs.apache.zookeeper.zookeeper, {
-        exclude group: "org.apache.yetus", module: "audience-annotations"
-    })
-    implementation(libs.apache.zookeeper.jute) {
-        exclude group: 'org.apache.yetus', module: 'audience-annotations'
-    }
+  implementation(libs.apache.curator.client, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  api(libs.apache.curator.framework, {
+    exclude group: 'org.apache.zookeeper', module: 'zookeeper'
+  })
+  api(libs.apache.zookeeper.zookeeper, {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+  })
+  implementation(libs.apache.zookeeper.jute) {
+    exclude group: 'org.apache.yetus', module: 'audience-annotations'
+  }
 
-    testImplementation project(':solr:test-framework')
-    testImplementation project(':solr:core')
+  testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:core')
 
-    testImplementation libs.junit.junit
-    testImplementation libs.commonsio.commonsio
+  testImplementation libs.junit.junit
+  testImplementation libs.commonsio.commonsio
 
-    permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
+  // cutterslade requires we state the obvious
+  testImplementation project(':solr:solrj-zookeeper')
 }

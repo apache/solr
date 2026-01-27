@@ -14,19 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr;
+package org.apache.solr.client.api.model;
 
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.util.EmbeddedSolrServerTestRule;
-import org.junit.ClassRule;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Deprecated // simply use EmbeddedSolrServerTestRule
-public abstract class EmbeddedSolrServerTestBase extends SolrTestCase {
+/** The Response for the v2 "get collection property" API */
+public class GetCollectionPropertyResponse extends SolrJerseyResponse {
 
-  @ClassRule
-  public static EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
-
-  public static SolrClient getSolrClient() {
-    return solrTestRule.getSolrClient();
-  }
+  @Schema(description = "The value of the collection property.")
+  @JsonProperty("value")
+  public String value;
 }

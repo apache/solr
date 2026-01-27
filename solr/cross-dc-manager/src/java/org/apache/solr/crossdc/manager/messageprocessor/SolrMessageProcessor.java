@@ -28,6 +28,8 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -107,7 +109,7 @@ public class SolrMessageProcessor extends MessageProcessor
     try {
       prepareIfUpdateRequest(request);
       logRequest(request);
-      result = processMirroredSolrRequest(request, mirroredSolrRequest.getType());
+      result = processMirroredSolrRequest(mirroredSolrRequest);
     } catch (Exception e) {
       result = handleException(mirroredSolrRequest, e);
     }
@@ -123,7 +125,7 @@ public class SolrMessageProcessor extends MessageProcessor
     logIf4xxException(solrException);
     if (!isRetryable(e)) {
       log.error("Non retryable exception processing Solr update", e);
-      return new Result<>(ResultStatus.FAILED_NO_RETRY, e);
+      return new Result<>(ResultStatus.FAILED_NO_RETRY, e, mirroredSolrRequest);
     } else {
       logFailure(mirroredSolrRequest, e, solrException);
       mirroredSolrRequest.setAttempt(mirroredSolrRequest.getAttempt() + 1);
@@ -187,13 +189,32 @@ public class SolrMessageProcessor extends MessageProcessor
 
   /** Process the SolrRequest. If not, this method throws an exception. */
   private Result<MirroredSolrRequest<?>> processMirroredSolrRequest(
-      SolrRequest<?> request, MirroredSolrRequest.Type type) throws Exception {
+      MirroredSolrRequest<?> mirroredSolrRequest) throws Exception {
+    final SolrRequest<?> request = mirroredSolrRequest.getSolrRequest();
+    final MirroredSolrRequest.Type type = mirroredSolrRequest.getType();
     if (log.isDebugEnabled()) {
       log.debug(
           "Sending request to Solr at ZK address={} with params {}",
           ZkStateReader.from(clientSupplier.get()).getZkClient().getZkServerAddress(),
           request.getParams());
     }
+    // short-circuit requests to nonexistent or not updatable collections
+    if (type == MirroredSolrRequest.Type.UPDATE && request.getCollection() != null) {
+      ClusterState clusterState = clientSupplier.get().getClusterState();
+      DocCollection docCollection = clusterState.getCollectionOrNull(request.getCollection());
+      if (docCollection == null
+          || docCollection.isReadOnly()
+          || docCollection.getActiveSlices().isEmpty()) {
+        if (log.isInfoEnabled()) {
+          log.warn(
+              "Skipping update request to nonexistent / not updatable collection {}",
+              request.getCollection());
+        }
+        metrics.counter(MetricRegistry.name(type.name(), "invalid-collection")).inc();
+        return new Result<>(ResultStatus.FAILED_NO_RETRY, mirroredSolrRequest);
+      }
+    }
+
     Result<MirroredSolrRequest<?>> result;
     SolrResponseBase response;
     ConsumerMetrics.ConsumerTimer timer = metrics.startOutputTimeTimer(type.name());
@@ -224,7 +245,7 @@ public class SolrMessageProcessor extends MessageProcessor
           request.getParams(),
           status);
     }
-    result = new Result<>(ResultStatus.HANDLED);
+    result = new Result<>(ResultStatus.HANDLED, mirroredSolrRequest);
     return result;
   }
 

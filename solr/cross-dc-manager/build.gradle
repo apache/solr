@@ -106,7 +106,7 @@ task run(type: JavaExec) {
   description = 'Run the main class with JavaExecTask'
   mainClass = project.ext.mainClass
   classpath = sourceSets.main.runtimeClasspath
-  systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
+  systemProperties = ["log4j.configurationFile": "file:conf/log4j2.xml"]
 }
 
 jar {

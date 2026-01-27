@@ -49,6 +49,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.function.Supplier;
 import net.jcip.annotations.ThreadSafe;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.client.api.util.SolrVersion;
@@ -153,9 +154,14 @@ public class HttpSolrCall {
     this.requestType = RequestType.UNKNOWN;
     this.userAgentSolrVersion = parseUserAgentSolrVersion();
     this.span = Optional.ofNullable(TraceUtils.getSpan(req)).orElse(Span.getInvalid());
-    this.path = ServletUtils.getPathAfterContext(req);
+    normalizeAndSetPath(ServletUtils.getPathAfterContext(req));
 
     req.setAttribute(HttpSolrCall.class.getName(), this);
+  }
+
+  @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
+  protected void normalizeAndSetPath(String unnormalizedPath) {
+    this.path = StringUtils.stripEnd(unnormalizedPath, "/");
   }
 
   public String getPath() {
@@ -212,7 +218,7 @@ public class HttpSolrCall {
       // Try to resolve a Solr core name
       core = cores.getCore(origCorename);
       if (core != null) {
-        path = path.substring(idx);
+        normalizeAndSetPath(path.substring(idx));
       } else {
         // extra mem barriers, so don't look at this before trying to get core
         if (cores.isCoreLoading(origCorename)) {
@@ -221,7 +227,7 @@ public class HttpSolrCall {
         // the core may have just finished loading
         core = cores.getCore(origCorename);
         if (core != null) {
-          path = path.substring(idx);
+          normalizeAndSetPath(path.substring(idx));
         } else {
           if (!cores.isZooKeeperAware()) {
             core = cores.getCore("");
@@ -250,14 +256,14 @@ public class HttpSolrCall {
         core = getCoreByCollection(collectionName, isPreferLeader);
         if (core != null) {
           if (idx > 0) {
-            path = path.substring(idx);
+            normalizeAndSetPath(path.substring(idx));
           }
         } else {
           // if we couldn't find it locally, look on other nodes
           if (idx > 0) {
             extractRemotePath(collectionName);
             if (action == REMOTEPROXY) {
-              path = path.substring(idx);
+              normalizeAndSetPath(path.substring(idx));
               return;
             }
           }

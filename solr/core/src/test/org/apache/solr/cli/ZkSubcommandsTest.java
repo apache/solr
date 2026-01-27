@@ -44,7 +44,6 @@ import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -70,11 +69,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 
   @Override
@@ -568,34 +562,25 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUpdateAcls() throws Exception {
-    try {
-      System.setProperty(
-          SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-          DigestZkACLProvider.class.getName());
-      System.setProperty(
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
-      System.setProperty(
-          VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
-      System.setProperty(
-          SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-          VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
-      System.setProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-          "user");
-      System.setProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
-          "pass");
 
-      String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
-      assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
-    } finally {
-      // Need to clear these before we open the next SolrZkClient
-      System.clearProperty(SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME);
-      System.clearProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME);
-      System.clearProperty(
-          VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME);
-    }
+    System.setProperty(
+        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
+    System.setProperty(
+        VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
+    System.setProperty(
+        VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
+    System.setProperty(
+        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
+    System.setProperty(
+        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
+        "user");
+    System.setProperty(
+        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
+        "pass");
+
+    String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
+    assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
 
     boolean excepted = false;
     try (SolrZkClient zkClient =
@@ -619,8 +604,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (zkServer != null) {
       zkServer.shutdown();
     }
-    System.clearProperty("solr.home");
-    System.clearProperty("minStateByteLenForCompression");
     System.setOut(originalSystemOut);
     super.tearDown();
   }

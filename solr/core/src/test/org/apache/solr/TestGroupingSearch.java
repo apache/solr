@@ -42,7 +42,6 @@ import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -72,11 +71,6 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     System.setProperty(
         "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
-  }
-
-  @AfterClass
-  public static void afterTests() {
-    systemClearPropertySolrTestsMergePolicyFactory();
   }
 
   @Before

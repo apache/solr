@@ -108,7 +108,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -125,11 +124,6 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
   public static void setUpClass() throws Exception {
     System.setProperty("managed.schema.mutable", "true");
     configureCluster(1).withSecurityJson(getSecurityJson()).configure();
-  }
-
-  @AfterClass
-  public static void tearDownClass() {
-    System.clearProperty("managed.schema.mutable");
   }
 
   private static ConfigSetService getConfigSetService() {
@@ -417,18 +411,15 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
       ignoreException("Configset upload feature is disabled");
       for (boolean enabled : new boolean[] {true, false}) {
         System.setProperty("solr.configset.upload.enabled", String.valueOf(enabled));
-        try {
-          long statusCode =
-              uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
-          assertEquals(
-              "ConfigSet upload enabling/disabling not working as expected for enabled="
-                  + enabled
-                  + ".",
-              enabled ? 0l : 400l,
-              statusCode);
-        } finally {
-          System.clearProperty("solr.configset.upload.enabled");
-        }
+
+        long statusCode =
+            uploadConfigSet("regular", "test-enabled-is-" + enabled, null, zkClient, v2);
+        assertEquals(
+            "ConfigSet upload enabling/disabling not working as expected for enabled="
+                + enabled
+                + ".",
+            enabled ? 0l : 400l,
+            statusCode);
       }
       unIgnoreException("Configset upload feature is disabled");
     }

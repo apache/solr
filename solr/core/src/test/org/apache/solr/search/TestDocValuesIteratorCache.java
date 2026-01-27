@@ -52,12 +52,6 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
           systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
           startSolr(LuceneTestCase.createTempDir());
         }
-
-        @Override
-        protected void after() {
-          systemClearPropertySolrTestsMergePolicyFactory();
-          super.after();
-        }
       };
 
   private static String fieldConfig(String fieldName, boolean multivalued) {

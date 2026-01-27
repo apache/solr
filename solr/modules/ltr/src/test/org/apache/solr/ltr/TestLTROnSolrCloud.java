@@ -472,6 +472,5 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 }

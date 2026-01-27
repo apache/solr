@@ -18,7 +18,7 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -78,6 +78,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
+    assertNotNull(result.getItem());
   }
 
   /** Should handle MirroredSolrRequest and return a failed result with resubmit */
@@ -94,6 +95,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
+    assertNotNull(result.getItem());
     assertEquals(mirroredSolrRequest, result.getItem());
   }
 
@@ -113,7 +115,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.HANDLED, result.status());
-    assertNull(result.getItem());
+    assertNotNull(result.getItem());
   }
 
   /** Should connect to Solr if not connected and process the request */

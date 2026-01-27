@@ -56,7 +56,6 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
 import org.apache.solr.util.TestInjection;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -77,12 +76,6 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // being able to call optimize to have all deletes expunged.
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     System.setProperty("solr.cloud.client.pollQueueTime", "2000");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    systemClearPropertySolrTestsMergePolicyFactory();
-    System.clearProperty("solr.cloud.client.pollQueueTime");
   }
 
   private UpdateShardHandler updateShardHandler;
