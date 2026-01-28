@@ -34,6 +34,7 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.SegmentCommitInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.index.StoredFields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
@@ -138,11 +139,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
 
   private UpgradeCoreIndexResponse performUpgradeImpl(
       SolrCore core, UpgradeCoreIndexRequestBody requestBody, UpgradeCoreIndexResponse response) {
-    // Set LatestVersionMergePolicy to prevent older segments from
-    // participating in merges while we reindex. This is to prevent any older version
-    // segments from
-    // merging with any newly formed segments created due to reindexing and undoing the work
-    // we are doing.
+
     RefCounted<IndexWriter> iwRef = null;
     MergePolicy originalMergePolicy = null;
     int numSegmentsEligibleForUpgrade = 0, numSegmentsUpgraded = 0;
@@ -151,14 +148,28 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       iwRef = core.getSolrCoreState().getIndexWriter(core);
       IndexWriter iw = iwRef.get();
 
-      originalMergePolicy = iw.getConfig().getMergePolicy();
-      iw.getConfig()
-          .setMergePolicy(
-              new LatestVersionMergePolicy(
-                  iw.getConfig().getMergePolicy())); // prevent older segments from merging
-
       RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
       try {
+        // Check for nested documents before processing - we don't support them
+        if (indexContainsNestedDocs(searcherRef.get())) {
+          throw new SolrException(
+              BAD_REQUEST,
+              "UPGRADECOREINDEX does not support indexes containing nested documents. "
+                  + " Consider reindexing your data "
+                  + "from the original source.");
+        }
+
+        /* Set LatestVersionMergePolicy to prevent older segments from
+        participating in merges while we reindex. This is to prevent any older version
+        segments from
+        merging with any newly formed segments created due to reindexing and undoing the work
+        we are doing. */
+        originalMergePolicy = iw.getConfig().getMergePolicy();
+        iw.getConfig()
+            .setMergePolicy(
+                new LatestVersionMergePolicy(
+                    iw.getConfig().getMergePolicy())); // prevent older segments from merging
+
         List<LeafReaderContext> leafContexts = searcherRef.get().getIndexReader().leaves();
         DocValuesIteratorCache dvICache = new DocValuesIteratorCache(searcherRef.get());
 
@@ -217,6 +228,10 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
       response.numSegmentsEligibleForUpgrade = numSegmentsEligibleForUpgrade;
       response.numSegmentsUpgraded = numSegmentsUpgraded;
     } catch (Exception ioEx) {
+      // Avoid double-wrapping if already a CoreAdminAPIBaseException
+      if (ioEx instanceof CoreAdminAPIBaseException) {
+        throw (CoreAdminAPIBaseException) ioEx;
+      }
       throw new CoreAdminAPIBaseException(ioEx);
 
     } finally {
@@ -243,6 +258,32 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     segmentMinVersion = si.info.getMinVersion();
 
     return (segmentMinVersion == null || segmentMinVersion.major < Version.LATEST.major);
+  }
+
+  private boolean indexContainsNestedDocs(SolrIndexSearcher searcher) throws IOException {
+    IndexSchema schema = searcher.getSchema();
+
+    // First check if schema supports nested docs
+    if (!schema.isUsableForChildDocs()) {
+      return false;
+    }
+
+    // Check if _root_ field has fewer unique values than documents with that field.
+    // This indicates multiple docs share the same _root_ (i.e., child docs exist)
+    IndexReader reader = searcher.getIndexReader();
+    for (LeafReaderContext leaf : reader.leaves()) {
+      Terms terms = leaf.reader().terms(IndexSchema.ROOT_FIELD_NAME);
+      if (terms != null) {
+        long uniqueRootValues = terms.size();
+        int docsWithRoot = terms.getDocCount();
+
+        if (uniqueRootValues == -1 || uniqueRootValues < docsWithRoot) {
+          return true; // Codec doesn't store number of terms (so a safe fallback), or multiple docs
+          // share same _root_ (aka nested docs exist)
+        }
+      }
+    }
+    return false;
   }
 
   @SuppressWarnings({"rawtypes"})

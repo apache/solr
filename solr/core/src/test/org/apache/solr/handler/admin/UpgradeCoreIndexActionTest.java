@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.hamcrest.CoreMatchers.containsString;
+
 import java.lang.invoke.MethodHandles;
 import java.lang.invoke.VarHandle;
 import java.util.HashSet;
@@ -28,10 +30,15 @@ import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentReader;
 import org.apache.lucene.util.Version;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -314,4 +321,60 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
   }
 
   private record SegmentLayout(String coreName, String seg1, String seg2, String seg3) {}
+
+  @Test
+  public void testUpgradeCoreIndexFailsWithNestedDocuments() throws Exception {
+    final SolrCore core = h.getCore();
+    final String coreName = core.getName();
+
+    // Create a parent document with a child document (nested doc)
+    SolrInputDocument parentDoc = new SolrInputDocument();
+    parentDoc.addField("id", "100");
+    parentDoc.addField("title", "Parent Document");
+
+    SolrInputDocument childDoc = new SolrInputDocument();
+    childDoc.addField("id", "101");
+    childDoc.addField("title", "Child Document");
+
+    parentDoc.addChildDocument(childDoc);
+
+    // Index the nested document
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+    try {
+      AddUpdateCommand cmd = new AddUpdateCommand(req);
+      cmd.solrDoc = parentDoc;
+      core.getUpdateHandler().addDoc(cmd);
+    } finally {
+      req.close();
+    }
+    assertU(commit("openSearcher", "true"));
+
+    // Verify documents were indexed (parent + child = 2 docs)
+    assertQ(req("q", "*:*"), "//result[@numFound='2']");
+
+    // Attempt to upgrade the index - should fail because of nested documents
+    CoreAdminHandler admin = new CoreAdminHandler(h.getCoreContainer());
+    try {
+      final SolrQueryResponse resp = new SolrQueryResponse();
+      SolrException thrown =
+          assertThrows(
+              SolrException.class,
+              () ->
+                  admin.handleRequestBody(
+                      req(
+                          CoreAdminParams.ACTION,
+                          CoreAdminParams.CoreAdminAction.UPGRADECOREINDEX.toString(),
+                          CoreAdminParams.CORE,
+                          coreName),
+                      resp));
+
+      // Verify the exception message indicates nested documents are not supported
+      assertThat(
+          thrown.getMessage(),
+          containsString("does not support indexes containing nested documents"));
+    } finally {
+      admin.shutdown();
+      admin.close();
+    }
+  }
 }
