@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
@@ -571,18 +572,20 @@ public class CollectionHandlingUtils {
 
   public static ShardRequestTracker syncRequestTracker(
       AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
-    return requestTracker(null, ccc);
+    return requestTracker(null, adminCmdContext.getSubRequestCallingLockIds(), ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
       AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
-    return requestTracker(adminCmdContext.getAsyncId(), ccc);
+    return requestTracker(
+        adminCmdContext.getAsyncId(), adminCmdContext.getSubRequestCallingLockIds(), ccc);
   }
 
   protected static ShardRequestTracker requestTracker(
-      String asyncId, CollectionCommandContext ccc) {
+      String asyncId, String lockIds, CollectionCommandContext ccc) {
     return new ShardRequestTracker(
         asyncId,
+        lockIds,
         ccc.getAdminPath(),
         ccc.getZkStateReader(),
         ccc.newShardHandler().getShardHandlerFactory());
@@ -590,6 +593,7 @@ public class CollectionHandlingUtils {
 
   public static class ShardRequestTracker {
     private final String asyncId;
+    private final String lockIdList;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
     private final ShardHandlerFactory shardHandlerFactory;
@@ -597,10 +601,12 @@ public class CollectionHandlingUtils {
 
     public ShardRequestTracker(
         String asyncId,
+        String lockIdList,
         String adminPath,
         ZkStateReader zkStateReader,
         ShardHandlerFactory shardHandlerFactory) {
       this.asyncId = asyncId;
+      this.lockIdList = lockIdList;
       this.adminPath = adminPath;
       this.zkStateReader = zkStateReader;
       this.shardHandlerFactory = shardHandlerFactory;
@@ -663,6 +669,9 @@ public class CollectionHandlingUtils {
       sreq.actualShards = sreq.shards;
       sreq.nodeName = nodeName;
       sreq.params = params;
+      if (lockIdList != null && !lockIdList.isBlank()) {
+        sreq.headers = Map.of(CALLING_LOCK_IDS_HEADER, lockIdList);
+      }
 
       shardHandler.submit(sreq, replica, sreq.params);
     }
