@@ -22,7 +22,7 @@ System information is available via two different URLs:
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/system
+http://localhost:8983/solr/admin/info/system
 ----
 
 and
@@ -49,7 +49,7 @@ An object containing information on the JVM
 Information on the system.
 
 `solr_home`::
-Solr base directory.  Only available under `/solr/admin/system`.
+Solr base directory.  Only available under `/solr/admin/info/system`.
 
 `zkHost`::
 Zookeeper host, when running in cloud mode.
