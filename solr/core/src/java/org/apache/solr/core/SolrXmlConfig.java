@@ -357,6 +357,9 @@ public class SolrXmlConfig {
               case "hiddenSysProps":
                 builder.setHiddenSysProps(it.txt());
                 break;
+              case "implicitPluginsFile":
+                builder.setImplicitPluginsFile(it.txt());
+                break;
               case "allowPaths":
                 builder.setAllowPaths(separatePaths(it.txt()));
                 break;

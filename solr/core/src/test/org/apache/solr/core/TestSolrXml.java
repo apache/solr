@@ -579,6 +579,23 @@ public class TestSolrXml extends SolrTestCaseJ4 {
         thrown.getMessage());
   }
 
+  public void testImplicitPluginsFile() throws IOException {
+    // Test that implicitPluginsFile configuration is read from solr.xml
+    String solrXml =
+        "<solr><str name=\"implicitPluginsFile\">custom-implicit-plugins.json</str></solr>";
+    NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
+
+    assertEquals("custom-implicit-plugins.json", cfg.getImplicitPluginsFile());
+  }
+
+  public void testImplicitPluginsFileNotSet() {
+    // Test that implicitPluginsFile is null when not configured
+    String solrXml = "<solr></solr>";
+    NodeConfig cfg = SolrXmlConfig.fromString(solrHome, solrXml);
+
+    assertNull(cfg.getImplicitPluginsFile());
+  }
+
   public static class CS implements ClusterSingleton {
 
     @Override

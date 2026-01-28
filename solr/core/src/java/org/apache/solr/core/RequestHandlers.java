@@ -106,7 +106,7 @@ public final class RequestHandlers {
     List<PluginInfo> implicits = core.getImplicitHandlers();
     // use link map so we iterate in the same order
     Map<String, PluginInfo> infoMap = new LinkedHashMap<>();
-    // deduping implicit and explicit requesthandlers
+    // deduping implicit and explicit request handlers
     for (PluginInfo info : implicits) infoMap.put(info.name, info);
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
       infoMap.put(info.name, info);

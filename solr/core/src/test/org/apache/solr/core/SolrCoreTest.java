@@ -19,6 +19,10 @@ package org.apache.solr.core;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +36,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.QueryComponent;
@@ -144,6 +149,62 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       assertEquals(pathToClassMap.get("/tasks/list"), "solr.ActiveTasksListHandler");
     }
     assertEquals("wrong number of implicit handlers", ihCount, implicitHandlers.size());
+  }
+
+  @Test
+  public void testCustomImplicitPlugins() throws Exception {
+    // Test that the custom implicit plugins file can be loaded and parsed into PluginInfo objects
+    String customPluginsPath = TEST_HOME() + "/custom-implicit-plugins.json";
+    Path pluginsFile = Paths.get(customPluginsPath);
+
+    // Verify file exists
+    assertTrue(
+        "Custom implicit plugins file should exist: " + customPluginsPath,
+        Files.exists(pluginsFile));
+
+    // Load and parse the custom plugins file
+    try (InputStream is = Files.newInputStream(pluginsFile)) {
+      @SuppressWarnings("unchecked")
+      Map<String, ?> implicitPluginsInfo = (Map<String, ?>) Utils.fromJSON(is);
+
+      assertNotNull("Should parse custom plugins JSON", implicitPluginsInfo);
+
+      // Call parseImplicitPlugins to convert JSON to PluginInfo objects
+      List<PluginInfo> customHandlers = SolrCore.parseImplicitPlugins(implicitPluginsInfo);
+
+      assertNotNull("Should return list of PluginInfo objects", customHandlers);
+      assertEquals("Should have 3 custom handlers", 3, customHandlers.size());
+
+      // Build a map for easy verification
+      Map<String, String> pathToClassMap = new HashMap<>(customHandlers.size());
+      for (PluginInfo handler : customHandlers) {
+        assertEquals(
+            "All handlers should be of type requestHandler", SolrRequestHandler.TYPE, handler.type);
+        pathToClassMap.put(handler.name, handler.className);
+      }
+
+      // Verify custom handlers are present with correct classes
+      assertEquals(
+          "Custom update handler should be UpdateRequestHandler",
+          "solr.UpdateRequestHandler",
+          pathToClassMap.get("/custom-update"));
+      assertEquals(
+          "Custom select handler should be SearchHandler",
+          "solr.SearchHandler",
+          pathToClassMap.get("/custom-select"));
+      assertEquals(
+          "Custom ping handler should be PingRequestHandler",
+          "solr.PingRequestHandler",
+          pathToClassMap.get("/admin/ping"));
+
+      // Verify default handlers are NOT present (since we're using custom file)
+      assertNull(
+          "Default /debug/dump should not be present with custom plugins",
+          pathToClassMap.get("/debug/dump"));
+      assertNull(
+          "Default /update should not be present with custom plugins",
+          pathToClassMap.get("/update"));
+    }
   }
 
   @Test

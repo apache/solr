@@ -1,0 +1,23 @@
+{
+    "requestHandler": {
+        "/custom-update": {
+            "class": "solr.UpdateRequestHandler",
+            "defaults": {
+                "custom": "true"
+            }
+        },
+        "/custom-select": {
+            "class": "solr.SearchHandler",
+            "defaults": {
+                "echoParams": "all"
+            }
+        },
+        "/admin/ping": {
+            "class": "solr.PingRequestHandler",
+            "invariants": {
+                "echoParams": "all",
+                "q": "{!lucene}*:*"
+            }
+        }
+    }
+}
