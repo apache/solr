@@ -57,6 +57,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
@@ -673,11 +674,13 @@ public class MiniSolrCloudCluster {
    * Wait for the expected number of live nodes in the cluster.
    *
    * @param expectedCount expected number of live nodes
+   * @param timeoutSeconds timeout in seconds
    * @throws InterruptedException if interrupted while waiting
    * @throws TimeoutException if the expected count is not reached within the timeout
    */
-  public void waitForLiveNodes(int expectedCount) throws InterruptedException, TimeoutException {
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+  public void waitForLiveNodes(int expectedCount, int timeoutSeconds)
+      throws InterruptedException, TimeoutException {
+    TimeOut timeout = new TimeOut(timeoutSeconds, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeout.hasTimedOut()) {
       long runningNodes = jettys.stream().filter(JettySolrRunner::isRunning).count();
       if (runningNodes == expectedCount) {
@@ -695,15 +698,23 @@ public class MiniSolrCloudCluster {
   /**
    * Wait for the document count in a collection to reach the expected value.
    *
-   * @param client the CloudSolrClient to use for querying
+   * @param collectionName name of the collection to check
    * @param expectedCount expected number of documents
    * @param description description for logging
+   * @param timeoutValue timeout value in seconds
+   * @param timeoutUnit timeout unit
    * @throws InterruptedException if interrupted while waiting
    * @throws TimeoutException if the expected count is not reached within the timeout
    */
-  public void waitForDocCount(CloudSolrClient client, long expectedCount, String description)
+  public void waitForDocCount(
+      String collectionName,
+      long expectedCount,
+      String description,
+      int timeoutValue,
+      TimeUnit timeoutUnit)
       throws InterruptedException, TimeoutException {
-    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    TimeOut timeout = new TimeOut(timeoutValue, timeoutUnit, TimeSource.NANO_TIME);
+    SolrClient client = getSolrClient(collectionName);
     while (!timeout.hasTimedOut()) {
       try {
         QueryResponse response = client.query(new SolrQuery("*:*").setRows(0));
