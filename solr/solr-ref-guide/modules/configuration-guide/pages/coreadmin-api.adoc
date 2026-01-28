@@ -784,16 +784,21 @@ If the `split.key` parameter is specified then only documents having the same ro
 == UPGRADECOREINDEX
 
 The `UPGRADECOREINDEX` action upgrades an existing core's index in-place after a Solr major-version upgrade by reindexing documents from older-format segments.
-It temporarily adjusts merge behavior to keep older Lucene version segments from being merged with new segments while the operation reindexes all live documents from older-format segments, then commits and validates the result.
 If a core is upgraded by this action, it ensures index compatibility with the next Solr major version (upon a future Solr upgrade) without having to re-create the index from source.
 
-This action is expensive and is intended for user-managed clusters or single-node installations only. It is currently not supported in SolrCloud mode.
+This action is expensive and is intended for installations running Solr in user-managed (or standalone) mode only. It is currently not supported in SolrCloud mode.
 
 [NOTE]
 ====
 Only fields that are stored or have DocValues enabled can be preserved during upgrade.
 Fields that are neither stored nor docValues-backed will lose their data. However if a field is neither stored, nor docValues-enabled, but is a copyField target, it will be re-populated by the copy field mechanism during reindexing.
 Always test on a copy and ensure you have a backup before running on production data.
+====
+
+[NOTE]
+====
+Indexes containing nested documents (parent-child document hierarchies) are not supported by this action.
+If nested documents are detected in the index, the operation will fail with an error.
 ====
 
 === UPGRADECOREINDEX Parameters
