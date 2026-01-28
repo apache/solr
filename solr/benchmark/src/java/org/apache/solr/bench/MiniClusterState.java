@@ -503,8 +503,7 @@ public class MiniClusterState {
         UpdateRequest optimizeRequest = new UpdateRequest();
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
         optimizeRequest.setAction(
-            UpdateRequest.ACTION.OPTIMIZE,
-            CommitOptions.forOptimize(maxMergeSegments).waitSearcher(true));
+            UpdateRequest.ACTION.OPTIMIZE, CommitOptions.forOptimize(maxMergeSegments));
         client.requestWithBaseUrl(url, optimizeRequest, collection);
       }
     }

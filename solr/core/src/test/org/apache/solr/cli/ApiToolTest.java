@@ -67,8 +67,7 @@ public class ApiToolTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
     UpdateRequest ur = new UpdateRequest();
-    ur.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
+    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
 
     for (int i = 0; i < docCount; i++) {
       ur.add(

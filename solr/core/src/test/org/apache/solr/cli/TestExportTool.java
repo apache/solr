@@ -91,8 +91,7 @@ public class TestExportTool extends SolrCloudTestCase {
       Path baseDir = cluster.getBaseDir();
 
       UpdateRequest ur = new UpdateRequest();
-      ur.setAction(
-          AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
+      ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
       int docCount = 1000;
 
       for (int i = 0; i < docCount; i++) {

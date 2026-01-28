@@ -248,8 +248,7 @@ public class CollectionHandlingUtils {
       HttpJettySolrClient solrClient, String baseUrl, String coreName)
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setAction(
-        AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forSoftCommit().waitSearcher(true));
+    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forSoftCommit());
     return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 

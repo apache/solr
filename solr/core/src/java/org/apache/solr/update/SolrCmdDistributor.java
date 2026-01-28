@@ -297,11 +297,11 @@ public class SolrCmdDistributor implements Closeable {
 
     CommitOptions options =
         new CommitOptions()
-            .withWaitSearcher(cmd.waitSearcher)
-            .withOpenSearcher(cmd.openSearcher)
-            .withSoftCommit(cmd.softCommit)
-            .withExpungeDeletes(cmd.expungeDeletes)
-            .withMaxOptimizeSegments(cmd.maxOptimizeSegments);
+            .commit(cmd.softCommit)
+            .waitSearcher(cmd.waitSearcher)
+            .openSearcher(cmd.openSearcher)
+            .expungeDeletes(cmd.expungeDeletes)
+            .maxOptimizeSegments(cmd.maxOptimizeSegments);
 
     ureq.setAction(
         cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE : AbstractUpdateRequest.ACTION.COMMIT,

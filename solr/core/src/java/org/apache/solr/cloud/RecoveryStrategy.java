@@ -304,7 +304,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.setAction(
               AbstractUpdateRequest.ACTION.COMMIT,
-              CommitOptions.forHardCommit().openSearcher(false).waitSearcher(true))
+              CommitOptions.forHardCommit().openSearcher(false))
           .process(client);
     }
   }
