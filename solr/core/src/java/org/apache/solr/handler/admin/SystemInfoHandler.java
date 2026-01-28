@@ -77,9 +77,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
-   * This property will be logged as a suggested workaround if any problems are noticed when doing
-   * reverse lookup.
+   * Expert level system property to prevent doing a reverse lookup of our hostname. This property
+   * will be logged as a suggested workaround if any problems are noticed when doing reverse lookup.
    *
    * <p>TODO: should we refactor this (and the associated logic) into a helper method for any other
    * places where DNS is used?
@@ -97,7 +96,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
   // on some platforms, resolving canonical hostname can cause the thread
-  // to block for several seconds if nameservices aren't available
+  // to block for several seconds if name services aren't available
   // so resolve this once per handler instance
   // (ie: not static, so core reload will refresh)
   private String hostname = null;
