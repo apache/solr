@@ -21,7 +21,7 @@ This page has a number of graphs to help you visualize different Solr deployment
 
 The graphs are developed using Mermaid syntax.
 
-The site https://magjac.com/graphviz-visual-editor/ allows you to play with those graphs in real time.
+The site https://mermaid.live/ allows you to play with those diagrams in real time.
 ////
 
 This section embodies the Solr community's thoughts on best practices for deploying Solr depending on your needs.
@@ -29,26 +29,24 @@ This section embodies the Solr community's thoughts on best practices for deploy
 == Overview
 There is a logical progression of topologies for scaling Solr based on the number of nodes you anticipate needing to meet your indexing needs, querying needs, and storage needs.  
 
-[graphviz]
+[mermaid,width=100%]
 ....
-graph {
-  node [style=rounded, shape=circle, fixedsize=true, width=2, height=2]
-  //layout=circo
-  overlap=false
-  rankdir=LR;  // Set the direction to left to right
-  node1 [label="1. Single \nNode"]
-  node2 [label="2. Two Nodes"]
-  node3 [label="3. Three or Five Nodes"]
-  node4 [label="4. Six to Twelve\nNodes"]
-  node5 [label="5. Twelve to \nTwenty Five\nNodes"]
-  node6 [label="6. Twenty Six \nand Beyond"]
+flowchart LR
+    node1((1. Single<br/>Node))
+    node2((2. Two Nodes))
+    node3((3. Three or<br/>Five Nodes))
+    node4((4. Six to Twelve<br/>Nodes))
+    node5((5. Twelve to<br/>Twenty Five<br/>Nodes))
+    node6((6. Twenty Six<br/>and Beyond))
 
-  node1 -- node2
-  node2 -- node3
-  node3 -- node4
-  node4 -- node5
-  node5 -- node6  
-}
+    node1 --- node2
+    node2 --- node3
+    node3 --- node4
+    node4 --- node5
+    node5 --- node6
+
+    classDef uniform padding:20px,min-width:120px,min-height:120px
+    class node1,node2,node3,node4,node5,node6 uniform
 ....
 
 
@@ -61,14 +59,10 @@ ZooKeeper is the unifying technology that supports maintaining state from a sing
 
 If you only need a single Solr node, then it's perfectly reasonable to start Solr with `bin/solr start`.   You will have a single Solr node running in SolrCloud mode, with all the lovely APIs and features that SolrCloud provides.
 
-[graphviz]
+[mermaid]
 ....
-digraph single_node {
-  node [style=rounded]
-  node1 [shape=box, fillcolor=yellow]
-  
-  node1
-}
+flowchart TD
+    node1[node1]
 ....
 
 Use this approach when:
@@ -85,17 +79,13 @@ The next most common setup after a single node is having two separate nodes runn
 This leverages a simplistic ZooKeeper xref:getting-started:solr-glossary.adoc#ensemble[Ensemble] setup.
 You start the first Solr node with the embedded ZooKeeper, and then the second Solr is set to connect to the ZooKeeper embedded in the first Solr node.
 
-[graphviz]
+[mermaid]
 ....
-graph simple_embedded_zk_ensemble {
-  node [style=rounded]
-  layout=neato
-  node1 [shape=record, label="{ solr1 | zk }"]
-  node2 [shape=box, label="solr2"]
-  
-  node1 -- node2
-  node2 -- node1
-}
+flowchart LR
+    node1["solr1 | zk"]
+    node2[solr2]
+    
+    node1 --- node2
 ....
 
 This is basically what you are setting up when you run the `bin/solr start -e cloud` cloud example.
@@ -124,23 +114,23 @@ NOTE: What is the difference between failover and high availability? Failover, i
 
 
 
-[graphviz]
+[mermaid,width=100%]
 ....
-graph simple_embedded_zk_ensemble {
-  node [style=rounded]
-  layout=neato
-  node1 [shape=box]
-  node2 [shape=box]
-  node3 [shape=box]
-  node4 [shape=box]
-  node5 [shape=box]
-  
-  node1 -- node2
-  node2 -- node3
-  node3 -- node4
-  node4 -- node5
-  node5 -- node1
-}
+flowchart LR
+    node1[node1]
+    node2[node2]
+    node3[node3]
+    node4[node4]
+    node5[node5]
+    
+    node1 --- node2
+    node2 --- node3
+    node3 --- node4
+    node4 --- node5
+    node5 --- node1
+
+    classDef uniform padding:20px,min-width:120px,min-height:120px
+    class node1,node2,node3,node4,node5 uniform
 ....
 
 Use these approaches when:
@@ -163,38 +153,36 @@ Solr has a concept of node xref:deployment-guide:node-roles.adoc#roles[Roles] th
 
 This will work well as you grow from six to 12 nodes in your cluster.
 
-[graphviz]
+[mermaid]
 ....
-graph simple_embedded_zk_ensemble {
-
-  //size="5,5"
-  node [style=rounded]
-  layout=circo
-  overlap=false
-  nodesep=0.3
-  ratio=fill;
-  node1 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node2 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node3 [shape=box, label="data, zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node4 [shape=box, label="data"]
-  node5 [shape=box, label="data"]
-  node6 [shape=box, label="data"]
-  node7 [shape=box, label="data"]
-  node8 [shape=box, label="data"]
-  node9 [shape=box, label="data"]
-  
-  
-  node1 -- node2
-  node2 -- node3
-  node3 -- node1
-  node3 -- node4
-  node4 -- node5
-  node5 -- node6
-  node6 -- node7
-  node7 -- node8
-  node8 -- node9
-  node9 -- node1
-}
+flowchart TB
+    subgraph zk[ZooKeeper Ensemble]
+        node1[data, zookeeper]
+        node2[data, zookeeper]
+        node3[data, zookeeper]
+    end
+    
+    node4[data]
+    node5[data]
+    node6[data]
+    node7[data]
+    node8[data]
+    node9[data]
+    
+    node1 --- node2
+    node2 --- node3
+    node3 --- node1
+    node3 --- node4
+    node4 --- node5
+    node5 --- node6
+    node6 --- node7
+    node7 --- node8
+    node8 --- node9
+    node9 --- node1
+    
+    style node1 fill:#ffff00
+    style node2 fill:#ffff00
+    style node3 fill:#ffff00
 ....
 
 === Separating out ZooKeeper workload
@@ -202,34 +190,40 @@ graph simple_embedded_zk_ensemble {
 As your load in the cluster goes up, sharing ZooKeeper workloads with Solr workloads may become a bottleneck.
 At this point you may want to run distinct seperate ZooKeeper nodes on their own servers.
 
-[graphviz]
+[mermaid]
 ....
-graph dedicate_zk_ensemble {
-  node [style=rounded]
-  layout=osage
-  overlap=false
-  node1 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node2 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node3 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  node4 [shape=box]
-  node5 [shape=box]
-  node6 [shape=box]
-  node7 [shape=box] 
-  node8 [shape=box]
-  node9 [shape=box]
-  node10 [shape=box]
-  node11 [shape=box]
-  node12 [shape=box]
-  node13 [shape=box] 
-  node14 [shape=box]
-  node15 [shape=box]
-  node16 [shape=box]
-  node17 [shape=box]
-  node18 [shape=box]
-  node19 [shape=box]
-  node20 [shape=box]
-  
-}
+flowchart TB
+    subgraph zk[ZooKeeper Ensemble]
+        zk1[zookeeper]
+        zk2[zookeeper]
+        zk3[zookeeper]
+    end
+    
+    subgraph solr[Solr Nodes]
+        node4[node4]
+        node5[node5]
+        node6[node6]
+        node7[node7]
+        node8[node8]
+        node9[node9]
+        node10[node10]
+        node11[node11]
+        node12[node12]
+        node13[node13]
+        node14[node14]
+        node15[node15]
+        node16[node16]
+        node17[node17]
+        node18[node18]
+        node19[node19]
+        node20[node20]
+    end
+    
+    zk --- solr
+    
+    style zk1 fill:#ffff00
+    style zk2 fill:#ffff00
+    style zk3 fill:#ffff00
 ....
 
 Use this approach when:
@@ -251,66 +245,62 @@ Instead, use a well-supported container orchestrator with support for Solr and Z
 For Kubernetes, we provide the https://solr.apache.org/operator/[Solr Operator] sub project.
 There are also 3rd party Helm charts available. 
 
-[graphviz]
+[mermaid]
 ....
-graph kubernetes_setup {
-  fontname="Helvetica,Arial,sans-serif"
-  node [fontname="Helvetica,Arial,sans-serif"]
-  edge [fontname="Helvetica,Arial,sans-serif"]
-  layout=fdp
-  pack=1
-  
-  "Solr Operator" [fillcolor=aqua, style="filled"]
-  
-  zk1 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  zk2 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  zk3 [shape=box, label=" zookeeper", fillcolor=yellow, style="rounded,filled"]
-  
-  subgraph clusterKubernetes {
-      
-    "Solr Operator";
-    subgraph clusterSolr {
-      node1
-      node2
-      node3
-      node4
-      node5
-      node6
-      node7
-      node8
-      node9
-      node10
-      node11
-      node12
-      node13
-      node14
-      node15
-      node16
-      node17
-      node18
-      node19
-      node20
-      node21
-      node22
-      node23
-      node24
-      node25
-      node26
-      node27
-      node28
-      node29
-      node30
-     
-    }
-    subgraph clusterZK {
-      zk1 -- zk2;
-      zk2 -- zk3;
-      zk3 -- zk1;
-    }
-  }
-
-  clusterSolr -- clusterZK
-}
+flowchart TB
+    subgraph kubernetes[Kubernetes]
+        operator[Solr Operator]
+        
+        subgraph solr[Solr Pods]
+            node1[node1]
+            node2[node2]
+            node3[node3]
+            node4[node4]
+            node5[node5]
+            node6[node6]
+            node7[node7]
+            node8[node8]
+            node9[node9]
+            node10[node10]
+            node11[node11]
+            node12[node12]
+            node13[node13]
+            node14[node14]
+            node15[node15]
+            node16[node16]
+            node17[node17]
+            node18[node18]
+            node19[node19]
+            node20[node20]
+            node21[node21]
+            node22[node22]
+            node23[node23]
+            node24[node24]
+            node25[node25]
+            node26[node26]
+            node27[node27]
+            node28[node28]
+            node29[node29]
+            node30[node30]
+        end
+        
+        subgraph zk[ZooKeeper Ensemble]
+            zk1[zookeeper]
+            zk2[zookeeper]
+            zk3[zookeeper]
+            zk1 --- zk2
+            zk2 --- zk3
+            zk3 --- zk1
+        end
+    end
+    
+    operator --> solr
+    solr --- zk
+    
+    style operator fill:#00ffff
+    style zk1 fill:#ffff00
+    style zk2 fill:#ffff00
+    style zk3 fill:#ffff00
 ....
 
 Use this approach when:

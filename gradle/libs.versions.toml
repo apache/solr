@@ -45,8 +45,8 @@ apache-tomcat = "6.0.53"
 apache-zookeeper = "3.9.4"
 # @keep for version alignment
 apiguardian = "1.1.2"
-# @keep Asciidoctor kroki version used in ref-guide
-asciidoctor-kroki = "0.18.1"
+# @keep Antora mermaid extension version used in ref-guide
+antora-mermaid-extension = "0.0.8"
 # @keep Asciidoctor mathjax version used in ref-guide
 asciidoctor-mathjax = "0.0.9"
 # @keep Asciidoctor tabs version used in ref-guide

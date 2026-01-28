@@ -245,12 +245,12 @@ task downloadAsciidoctorMathjaxExtension(type: NpmTask) {
   outputs.dir("${project.ext.nodeProjectDir}/node_modules/@djencks/asciidoctor-mathjax")
 }
 
-task downloadAsciiDoctorKrokiExtension(type: NpmTask) {
+task downloadAntoraMermaidExtension(type: NpmTask) {
     group = 'Build Dependency Download'
-    args = ["install", "asciidoctor-kroki"]
+    args = ["install", "@sntke/antora-mermaid-extension@${libs.versions.antora.mermaid.extension.get()}"]
 
-    inputs.property("asciidoctor-kroki version", libs.versions.asciidoctor.kroki.get())
-    outputs.dir("${project.ext.nodeProjectDir}/node_modules/asciidoctor-kroki")
+    inputs.property("antora-mermaid-extension version", libs.versions.antora.mermaid.extension.get())
+    outputs.dir("${project.ext.nodeProjectDir}/node_modules/@sntke/antora-mermaid-extension")
 }
 
 task downloadAsciidoctorTabsExtension(type: NpmTask) {
@@ -268,7 +268,7 @@ task downloadAntora {
   dependsOn tasks.downloadAntoraCli
   dependsOn tasks.downloadAntoraSiteGenerator
   dependsOn tasks.downloadAntoraLunrExtension
-  dependsOn tasks.downloadAsciiDoctorKrokiExtension
+  dependsOn tasks.downloadAntoraMermaidExtension
   dependsOn tasks.downloadAsciidoctorMathjaxExtension
   dependsOn tasks.downloadAsciidoctorTabsExtension
 }
