@@ -527,15 +527,24 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
           log.trace("result=failed-resubmit");
         }
         final int attempt = item.getAttempt();
-        if (attempt > this.maxAttempts) {
-          log.info(
-              "Sending message to dead letter queue because of max attempts limit with current value = {}",
-              attempt);
-          kafkaMirroringSink.submitToDlq(item);
-          metrics.counter(MetricRegistry.name(type.name(), "failed-dlq")).inc();
-        } else {
-          kafkaMirroringSink.submit(item);
-          metrics.counter(MetricRegistry.name(type.name(), "failed-resubmit")).inc();
+        final boolean dlq = attempt > this.maxAttempts;
+        try {
+          if (dlq) {
+            log.info(
+                "Sending message to dead letter queue because of max attempts limit with current value = {}",
+                attempt);
+            kafkaMirroringSink.submitToDlq(item);
+            metrics.counter(MetricRegistry.name(type.name(), "failed-dlq")).inc();
+          } else {
+            kafkaMirroringSink.submit(item);
+            metrics.counter(MetricRegistry.name(type.name(), "failed-resubmit")).inc();
+          }
+        } catch (Exception e) {
+          log.error(
+              "Failed to {}, msg={}",
+              dlq ? "send message to dead-letter queue" : "resubmit message for retry",
+              item,
+              e);
         }
         break;
       case HANDLED:
@@ -555,6 +564,17 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         log.error(
             "Unexpected response while processing request. We never expect {}.", result.status());
         metrics.counter(MetricRegistry.name(type.name(), "failed-retry")).inc();
+        break;
+      case FAILED_NO_RETRY:
+        if (log.isDebugEnabled()) {
+          log.debug("Failed no-retry: sending message to dead-letter queue");
+        }
+        try {
+          kafkaMirroringSink.submitToDlq(item);
+        } catch (Exception e) {
+          log.error("Failed to send message to dead-letter queue, msg={}", item, e);
+        }
+        metrics.counter(MetricRegistry.name(type.name(), "failed-no-retry")).inc();
         break;
       default:
         if (log.isTraceEnabled()) {
