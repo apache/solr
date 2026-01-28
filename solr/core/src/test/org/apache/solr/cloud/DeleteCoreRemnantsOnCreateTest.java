@@ -21,9 +21,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -61,7 +61,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     waitForState(
         "Expected collection to be fully active",
         collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     Replica primaryReplica = getReplicaOnNode(collectionName, "shard1", primaryNode);
     JettySolrRunner primaryJetty = cluster.getReplicaJetty(primaryReplica);
@@ -99,7 +99,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     waitForState(
         "Expected collection to be fully active",
         collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     int nextReplicaIndex = 3; // Yep, from 1 to 3 due to how we count in ZK and setup.
     String expectedNewReplicaName = collectionName + "_shard1_replica_n" + nextReplicaIndex;
@@ -139,7 +139,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     waitForState(
         "Expected collection to be fully active",
         collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     Replica primaryReplica = getReplicaOnNode(collectionName, "shard1", primaryNode);
     JettySolrRunner primaryJetty = cluster.getReplicaJetty(primaryReplica);
@@ -206,7 +206,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     waitForState(
         "Expected recreated collection to be fully active",
         collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 1));
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
 
     // Verify collection was created successfully
     DocCollection collection = getCollectionState(collectionName);
@@ -266,7 +266,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     waitForState(
         "Expected replica addition to finish",
         collectionName,
-        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
+        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
 
     // Verify collection now has 2 replicas
     DocCollection collection = getCollectionState(collectionName);
