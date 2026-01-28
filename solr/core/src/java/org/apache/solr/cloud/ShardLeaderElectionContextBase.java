@@ -19,8 +19,6 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.api.transaction.OperationType;
 import org.apache.solr.cloud.overseer.OverseerAction;
@@ -239,18 +237,6 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                 id,
                 prs)
             .persist(coll.getZNode(), zkStateReader.getZkClient());
-      }
-      try {
-        zkStateReader.waitForState(
-            collection,
-            10,
-            TimeUnit.SECONDS,
-            state -> {
-              Replica leader = state.getLeader(shardId);
-              return leader != null && id.equals(leader.getName());
-            });
-      } catch (TimeoutException e) {
-        throw new RuntimeException(e);
       }
     }
   }
