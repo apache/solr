@@ -27,12 +27,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -273,7 +274,7 @@ public class CollectionsAPIAsyncDistributedZkTest extends SolrCloudTestCase {
                   reloadCollectionRequest.processAsync(
                       "repeatedId", clients[random().nextInt(clients.length)]);
                   numSuccess.incrementAndGet();
-                } catch (SolrServerException | SolrClient.RemoteSolrException e) {
+                } catch (SolrServerException | RemoteSolrException e) {
                   if (log.isInfoEnabled()) {
                     log.info("Exception during collection reloading, we were waiting for one: ", e);
                   }

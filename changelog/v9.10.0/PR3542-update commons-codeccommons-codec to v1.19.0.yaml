@@ -1,0 +1,7 @@
+title: Update commons-codec:commons-codec to v1.19.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3542
+  url: https://github.com/apache/solr/pull/3542

@@ -43,6 +43,7 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.CollectionUtil;
 import org.apache.solr.common.util.DOMUtil;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -347,9 +348,6 @@ public class SolrXmlConfig {
               case "maxBooleanClauses":
                 builder.setBooleanQueryMaxClauseCount(it.intVal(-1));
                 break;
-              case "managementPath":
-                builder.setManagementPath(it.txt());
-                break;
               case "sharedLib":
                 builder.setSharedLibDirectory(it.txt());
                 break;
@@ -499,17 +497,10 @@ public class SolrXmlConfig {
     int hostPort =
         parseInt("hostPort", required("solrcloud", "hostPort", removeValue(nl, "hostPort")));
     if (hostPort <= 0) {
-      // Default to the port that jetty is listening on, or 8983 if that is not provided.
-      hostPort = parseInt("jetty.port", System.getProperty("jetty.port", "8983"));
+      // Default to the port that Solr is listening on, or 8983 if that is not provided.
+      hostPort = EnvUtils.getPropertyAsInteger("solr.port.listen", 8983);
     }
     String hostName = required("solrcloud", "host", removeValue(nl, "host"));
-
-    // We no longer require or support the hostContext property, but legacy users may have it, so
-    // remove it from the list.
-    String hostContext = removeValue(nl, "hostContext");
-    if (hostContext != null) {
-      log.warn("solr.xml hostContext -- hostContext is deprecated and ignored.");
-    }
 
     CloudConfig.CloudConfigBuilder builder = new CloudConfig.CloudConfigBuilder(hostName, hostPort);
     // set the defaultZkHost until/unless it's overridden in the "cloud section" (below)...
@@ -531,9 +522,6 @@ public class SolrXmlConfig {
           break;
         case "zkHost":
           builder.setZkHost(value);
-          break;
-        case "genericCoreNodeNames":
-          builder.setUseGenericCoreNames(Boolean.parseBoolean(value));
           break;
         case "zkACLProvider":
           builder.setZkACLProviderClass(value);

@@ -161,6 +161,7 @@ templates:
 #     depends:  # One or more dependencies which will bar execution
 #     - todo_id1
 #     - todo_id2
+#     types: ['major', 'minor', 'bugfix'] # Limit TODO to specific release types
 #     vars:  # Dictionary of jinja2 variables local to this TODO, e.g.
 #       logfile_path: "{{ [rc_folder, 'logs'] | path_join }}"
 #       # Vars can contain global jinja vars or local vars earlier defined (ordered dict)
@@ -171,11 +172,14 @@ templates:
 #     function: my_python_function  # Will call the named function for complex tasks
 #     commands: !Commands   # A !Commands object holding commands to execute for this todo
 #       root_folder: '{{ git_checkout_folder }}' # path to where commands will run
-#       commands_text: Introduction text to be displayed just before the commands 
+#       commands_text: Introduction text to be displayed just before the commands
 #       enable_execute: true # Set to false to never offer to run commands automatically
 #       confirm_each_command: true # Set to false to run all commands without prompting
 #       remove_files: ['file1', 'folder2'] # List of files or folders that must be gone
 #       logs_prefix: prefix # Lets you prefix logs file names with this string
+#       run_text: Optional text to display before asking to run commands
+#       env: {} # Dictionary of environment variables to set before running commands
+#       vars: {} # Dictionary of local jinja2 variables for this Commands block
 #       commands:   # List of !Commands to execute
 #       - !Command  # One single command
 #         cmd: "ls {{ folder_to_ls }}"  # A single command. May reference jinja vars
@@ -183,13 +187,17 @@ templates:
 #         cwd: relative_path # Where to run command, relative to root_folder
 #         comment: # Will display a # or REM comment above the command in printouts
 #         vars: {} # Possible to define local vars for this command only
-#         logfile: my.og # Overrides log file name which may grow very long :)
+#         logfile: my.log # Overrides log file name which may grow very long :)
 #         tee: false       # If true, sends output to console and file
 #         stdout: false    # if true, sends output only to console, not log file
 #         live: false      # If true, sends output live byte-by-byte to console
 #         redirect: file.txt      # Send output to file. Use instead of >
 #         redirect_append: false  # Will cause output to be appended, like >>
-#         shell: false     $ Set to true to use built-in shell commands
+#         shell: false     # Set to true to use built-in shell commands
+#         should_fail: false # Set to true if command is expected to fail (for testing)
+#         persist_vars: false # If true, parses stdout for --wizard-var KEY=VALUE markers
+#                             # and persists them to TODO state.
+#                             # Format: --wizard-var var_name=value with spaces allowed in value
 #     user_input: # An array of !UserInput objects for requesting input from user
 #     - !UserInput
 #       prompt: Please enter your gpg key ID, e.g. 0D8D0B93
@@ -666,7 +674,11 @@ groups:
   - !Todo
     id: dependency_updates_changes
     title: Add dependency updates to changelog
-    description: Bulk add all 'solrbot' dependency updates since last release
+    description: |
+      Bulk add all 'solrbot' dependency updates since last release.
+      NOTE: Work in progress to let each Solrbot PR add its own changes to changelog.
+      This step will be removed once that is done.
+      Until then, there may be a mix of PRs with and without changes to changelog.
     depends: clean_git_checkout
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
@@ -680,46 +692,146 @@ groups:
         cmd: python3 -u dev-tools/scripts/addDepsToChanges.py --user solrbot --version {{ release_version }}
         tee: true
       - !Command
-        cmd: git add -u .  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
+        cmd: git add changelog  && git commit -m "Add dependency updates to changelog for {{ release_version }}"  && git push
         logfile: dependency-changes.log
   - !Todo
-    id: generate_changelog_release
-    title: Generate CHANGELOG.md for release
+    id: logchange_release
+    title: Run logchange release to prepare changelog folder
     description: |
-      Generate `CHANGELOG.md` by running `logchange release` and `logchange generate`. This will prepare both a
-      `changelog/v{{ release_version }}` folder and the `CHANGELOG.md` file in one commit.
+      This task will run `logchange release` to prepare the new `changelog/v{{ release_version }}` folder
+      and record it in two separate commits. These commits are then cherry-picked to the stable and unstable branches.
+      This task does not push anything upstream.
+
+      **IMPORTANT**: You must do each command in this TODO individually, as the cherry-pick command relies on there being two
+      new commits on the release-branch to cherry-pick from.
     depends: dependency_updates_changes
     commands: !Commands
       root_folder: '{{ git_checkout_folder }}'
-      commands_text: Generate CHANGELOG.md
+      commands_text: Run `logchange release` to create the changelog folder
+      confirm_each_command: true
       commands:
       - !Command
-        cmd: git checkout {{ release_branch }}
-        stdout: true
-      - !Command
-        cmd: git pull --ff-only
+        cmd: |
+          git checkout {{ release_branch }} && \
+          echo "Running logchange release" && \
+          {{ gradle_cmd }} logchangeRelease && \
+          echo "Recording in two commits" && \
+          git rm -r changelog/unreleased && \
+          git commit -m "Logchange release on {{ release_branch }} - rm changelog/unreleased" && \
+          echo "--wizard-var changelog_rm_sha=$(git rev-parse --short HEAD)" && \
+          git add changelog && \
+          git commit -m "Logchange release on {{ release_branch }} - add changelog/v{{ release_version }}" && \
+          echo "--wizard-var changelog_add_sha=$(git rev-parse --short HEAD)"
+        comment: Creates `changelog/v{{ release_version }}` folder and records it in two separate commits
+        logfile: logchange-release.log
+        shell: true
         tee: true
+        persist_vars: true
       - !Command
-        cmd: "{{ gradle_cmd }} logchangeRelease"
-        comment: Create `changelog/v{{ release_version }}` folder and move unreleased entries
-        tee: true
-      - !Command
-        cmd: "{{ gradle_cmd }} logchangeGenerate"
-        comment: Generate `CHANGELOG.md` in repository root
-        tee: true
-      - !Command
-        cmd: git add CHANGELOG.md changelog && git commit -m "Changelog for release v{{ release_version }}" && git push
-        comment: Commit and push changelog changes
-        logfile: commit_changelog.log
+        cmd: |
+          echo "--- Chery-picking to stable branch" && \
+          git checkout {{ stable_branch }} && \
+          git cherry-pick -X ours -X no-renames {{ changelog_rm_sha }} && \
+          git cherry-pick {{ changelog_add_sha }} && \
+          echo "--- Chery-picking to unstable branch" && \
+          git checkout main && \
+          git cherry-pick -X ours -X no-renames {{ changelog_rm_sha }} && \
+          git cherry-pick {{ changelog_add_sha }}
+        comment: Cherry-pick the release changelog commits to stable and unstable branches
+        logfile: cherry-pick-changelog-release.log
+        shell: true
         tee: true
   - !Todo
-    id: persist_changelog_sha
-    title: Persist the SHA of the changelog commit
-    description: Store the current git sha
-    depends: generate_changelog_release
+    id: validate_changelog_unreleased
+    title: Validate changelog structure across branches
+    description: |
+      Validate that the changelog folder structure is correct and consistent across branches,
+      and verify that changelog entries are properly distributed (no released files in unreleased folder).
+      This ensures the CHANGELOG.md generation was successful and ready for the release.
+    depends: logchange_release
     vars:
-      changelog_sha: '{{ current_git_rev }}'
-    persist_vars: changelog_sha
+      report_file: "{{ [rc_folder, 'changelog_validation_report.json'] | path_join }}"
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Run the changelog validation script to help assess state of changelog folder
+      confirm_each_command: false
+      commands:
+        - !Command
+          cmd: python3 -u dev-tools/scripts/validateChangelogs.py --report-file {{ report_file }} --format json --skip-sync-check
+          logfile: validateChangelogs.log
+          tee: true
+    post_description: |
+      Review the validation report at {{ report_file }}. If there are any errors, you may need to 
+      go back and fix the changelog entries and commit the fix to relevant branch. If there are only 
+      warnings, you can proceed. The validation ensures:
+      - All changelog/vX.Y.Z folders are identical across branches
+      - No released JIRAs exist in the unreleased folder
+      - You see a list of `changelog/unreleased/` files that are *new* to each version
+  - !Todo
+    id: logchange_generate
+    title: Generate CHANGELOG.md using logchange generate
+    description: |
+      This task will run `logchange generate` to generate the `/CHANGELOG.md` file
+      and commit it to the release branch. The generated CHANGELOG will be cherry-picked
+      to the stable and unstable branches afterward.
+    depends: validate_changelog_unreleased
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Generate `/CHANGELOG.md` using logchange
+      commands:
+      - !Command
+        cmd: |
+          git checkout {{ release_branch }} && \
+          echo "Running logchange generate" && \
+          {{ gradle_cmd }} logchangeGenerate && \
+          sed '/^\[unreleased\]$/,+3d' ./CHANGELOG.md >/tmp/CHANGELOG.md.tmp && \
+          mv /tmp/CHANGELOG.md.tmp CHANGELOG.md && \
+          rm -f changelog/unreleased/version-summary.md && \
+          git add CHANGELOG.md changelog && \
+          git commit -m "CHANGELOG.md generated for release v{{ release_version }}" && \
+          echo "--wizard-var changelog_md_sha=$(git rev-parse --short HEAD)"
+        comment: Generate `/CHANGELOG.md` and commit to {{ release_branch }}
+        logfile: logchange-generate.log
+        shell: true
+        tee: true
+        persist_vars: true
+      - !Command
+        cmd: |
+          generate_sha=$(git rev-parse --short HEAD) && \
+          echo "--- Chery-picking to stable branch" && \
+          git checkout {{ stable_branch }} && \
+          git cherry-pick {{ changelog_md_sha }} && \
+          echo "--- Chery-picking to unstable branch" && \
+          git checkout main && \
+          git cherry-pick {{ changelog_md_sha }}
+        comment: Cherry-pick the CHANGELOG generation commit to stable and unstable branches
+        logfile: cherry-pick-changelog-generate.log
+        shell: true
+        tee: true
+  - !Todo
+    id: push_changelog_to_branches
+    title: Push changelog edits to all branches
+    description: |
+      This task will push all the changelog edits (release, generate, and other changes)
+      to each branch (release, stable, and unstable) upstream to the git repository.
+
+      Perform this step after all changelog validations have passed and you're satisfied
+      with the changelog state on all branches.
+    depends: logchange_generate
+    commands: !Commands
+      root_folder: '{{ git_checkout_folder }}'
+      commands_text: Push changelog commits to all branches
+      commands:
+      - !Command
+        cmd: |
+          for branch in {{ release_branch }} {{ stable_branch }} main; do  
+          git checkout $branch
+          git push origin $branch
+          done
+        comment: Push changelog commits to all branches
+        logfile: push-changelog-all-branches.log
+        shell: true
+        tee: true
   - !Todo
     id: draft_release_notes
     title: Get a draft of the release notes in place
@@ -1721,44 +1833,6 @@ groups:
       - !Command
         cmd: git add -u .  && git commit -m "Add bugfix version {{ release_version }}"  && git push
         logfile: commit-stable.log
-  - !Todo
-    id: sync_changelog_cherry_pick
-    title: Cherry-pick changelog to stable and unstable branches
-    description: |
-      Cherry-pick the changelog commit from the release branch to the stable and main branches.
-      This syncs both CHANGELOG.md and changelog folder changes across all active branches.
-
-      The changelog commit was created in the previous step (generate_changelog_release) and will
-      be referenced here. Cherry-pick will automatically handle conflict resolution if needed.
-    depends: generate_changelog_release
-    commands: !Commands
-      root_folder: '{{ git_checkout_folder }}'
-      commands_text: Cherry-pick changelog changes to other branches
-      commands:
-      - !Command
-        cmd: git checkout {{ stable_branch }}
-        comment: Checkout stable branch
-        stdout: true
-      - !Command
-        cmd: git pull --ff-only
-        tee: true
-      - !Command
-        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
-        comment: Cherry-pick changelog commit
-        logfile: cherry_pick_changelog_stable.log
-        tee: true
-      - !Command
-        cmd: git checkout main
-        comment: Checkout main branch
-        stdout: true
-      - !Command
-        cmd: git pull --ff-only
-        tee: true
-      - !Command
-        cmd: git cherry-pick {{ persist_changelog_sha.changelog_sha }} && git push
-        comment: Cherry-pick changelog commit
-        logfile: cherry_pick_changelog_main.log
-        tee: true
   - !Todo
     id: increment_release_version
     title: Add the next version on release branch

@@ -25,7 +25,7 @@ configure(rootProject) {
     apply plugin: "eclipse"
 
     def eclipseJavaVersion = propertyOrDefault("eclipse.javaVersion", libs.versions.java.min.get())
-    def relativize = { other -> rootProject.rootDir.relativePath(other).toString() }
+    def relativize = {other -> rootProject.rootDir.relativePath(other).toString()}
 
     eclipse {
       project {
@@ -38,20 +38,24 @@ configure(rootProject) {
         defaultOutputDir = file('build/eclipse')
 
         file {
-          beforeMerged { classpath -> classpath.entries.removeAll { it.kind == "src" } }
+          beforeMerged {classpath -> classpath.entries.removeAll {it.kind == "src"}}
 
-          whenMerged { classpath ->
-            def projects = allprojects.findAll { prj ->
+          whenMerged {classpath ->
+            def projects = allprojects.findAll {prj ->
               return prj.plugins.hasPlugin(JavaPlugin) &&
-                     prj.path != ":solr:solr-ref-guide"
+                  prj.path != ":solr:solr-ref-guide"
             }
 
             Set<String> sources = []
             Set<File> jars = []
-            projects.each { prj ->
-              prj.sourceSets.each { sourceSet ->
-                sources += sourceSet.java.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
-                sources += sourceSet.resources.srcDirs.findAll { dir -> dir.exists() }.collect { dir -> relativize(dir) }
+            projects.each {prj ->
+              prj.sourceSets.each {sourceSet ->
+                sources += sourceSet.java.srcDirs
+                    .findAll {dir -> dir.exists()}
+                    .collect {dir -> relativize(dir)}
+                sources += sourceSet.resources.srcDirs
+                    .findAll {dir -> dir.exists()}
+                    .collect {dir -> relativize(dir)}
               }
 
               // This is hacky - we take the resolved compile classpath and just
@@ -62,10 +66,12 @@ configure(rootProject) {
               jars += prj.configurations.testCompileClasspath.resolve()
             }
 
-            classpath.entries += sources.sort().collect {name -> new SourceFolder(name, "build/eclipse/" + name) }
-            classpath.entries += jars.unique().findAll { location -> location.isFile() }.collect { location ->
-              new LibEntry(location.toString())
-            }
+            classpath.entries +=
+                sources.sort().collect {name -> new SourceFolder(name, "build/eclipse/" + name)}
+            classpath.entries +=
+                jars.unique().findAll {location -> location.isFile()}.collect {location ->
+                  new LibEntry(location.toString())
+                }
           }
         }
       }

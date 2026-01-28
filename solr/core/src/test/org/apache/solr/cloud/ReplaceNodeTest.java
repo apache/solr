@@ -128,9 +128,6 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-    if (replicas == null) {
-      replicas = Collections.emptyList();
-    }
     log.debug("### Existing replicas on decommissioned node: {}", replicas);
 
     // let's do it back - this time wait for recoveries
@@ -170,10 +167,8 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     }
     // make sure all replicas on emptyNode are not active
     replicas = collection.getReplicasOnNode(emptyNode);
-    if (replicas != null) {
-      for (Replica r : replicas) {
-        assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
-      }
+    for (Replica r : replicas) {
+      assertNotEquals(r.toString(), Replica.State.ACTIVE, r.getState());
     }
 
     // check replication metrics on this jetty - see SOLR-14924
@@ -189,7 +184,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
           var dp =
               SolrMetricTestUtils.getGaugeDatapoint(
                   core,
-                  "solr_replication_is_replicating",
+                  "solr_core_replication_is_replicating",
                   SolrMetricTestUtils.newCloudLabelsBuilder(core)
                       .label("category", SolrInfoBean.Category.REPLICATION.toString())
                       .label("handler", "/replication")
@@ -198,7 +193,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
 
           double isReplicating = dp.getValue();
           assertTrue(
-              "solr_replication_is_replicating should be 0 or 1, got: " + isReplicating,
+              "solr_core_replication_is_replicating should be 0 or 1, got: " + isReplicating,
               isReplicating == 0.0 || isReplicating == 1.0);
         }
       }
@@ -256,13 +251,9 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     log.debug("### After decommission: {}", collection);
     // check what are replica states on the decommissioned node
     List<Replica> replicas = collection.getReplicasOnNode(nodeToBeDecommissioned);
-    if (replicas == null) {
-      replicas = Collections.emptyList();
-    }
-    assertEquals(
+    assertTrue(
         "There should be no more replicas on the sourceNode after a replaceNode request.",
-        Collections.emptyList(),
-        replicas);
+        replicas.isEmpty());
     int sizeA = collection.getReplicasOnNode(emptyNodes.get(0)).size();
     int sizeB = collection.getReplicasOnNode(emptyNodes.get(1)).size();
     assertEquals(

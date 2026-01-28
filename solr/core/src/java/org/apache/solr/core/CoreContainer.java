@@ -69,8 +69,9 @@ import org.apache.solr.api.ClusterPluginsSource;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClientBase;
 import org.apache.solr.client.solrj.io.SolrClientCache;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -130,6 +131,7 @@ import org.apache.solr.jersey.InjectionFactories;
 import org.apache.solr.jersey.JerseyAppHandlerCache;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -433,6 +435,7 @@ public class CoreContainer {
     SolrPaths.AllowPathBuilder allowPathBuilder = new SolrPaths.AllowPathBuilder();
     allowPathBuilder.addPath(cfg.getSolrHome());
     allowPathBuilder.addPath(cfg.getCoreRootDirectory());
+    allowPathBuilder.addPath(cfg.getConfigSetBaseDirectory());
     if (cfg.getSolrDataHome() != null) {
       allowPathBuilder.addPath(cfg.getSolrDataHome());
     }
@@ -704,7 +707,7 @@ public class CoreContainer {
    *
    * @see #getDefaultHttpSolrClient()
    * @see ZkController#getSolrClient()
-   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
+   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
    * @deprecated likely to simply be moved to the ObjectCache so as to not be used
    */
   @Deprecated
@@ -777,6 +780,9 @@ public class CoreContainer {
         clusterEventProducerFactory.getPluginRegistryListener());
 
     solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    // Initialize GPU metrics service
+    initGpuMetricsService();
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
@@ -914,17 +920,17 @@ public class CoreContainer {
     Path dataHome =
         cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
 
-    solrMetricsContext.observableLongGauge(
+    solrMetricsContext.observableDoubleGauge(
         "solr_disk_space",
         "Disk metrics for Solr's data home directory (" + dataHome + ")",
         measurement -> {
           try {
             var fileStore = Files.getFileStore(dataHome);
             measurement.record(
-                fileStore.getTotalSpace(),
+                MetricUtils.bytesToMegabytes(fileStore.getTotalSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "total_space").build());
             measurement.record(
-                fileStore.getUsableSpace(),
+                MetricUtils.bytesToMegabytes(fileStore.getUsableSpace()),
                 containerAttrs.toBuilder().put(TYPE_ATTR, "usable_space").build());
           } catch (IOException e) {
             throw new SolrException(
@@ -933,7 +939,7 @@ public class CoreContainer {
                 e);
           }
         },
-        OtelUnit.BYTES);
+        OtelUnit.MEGABYTES);
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
     fieldCacheBean.initializeMetrics(
@@ -941,13 +947,13 @@ public class CoreContainer {
 
     // setup executor to load cores in parallel
     coreLoadExecutor =
-        MetricUtils.instrumentedExecutorService(
+        solrMetricsContext.instrumentedExecutorService(
             ExecutorUtil.newMDCAwareFixedThreadPool(
                 cfg.getCoreLoadThreadCount(isZooKeeperAware()),
                 new SolrNamedThreadFactory("coreLoadExecutor")),
-            solrMetricsContext,
-            SolrInfoBean.Category.CONTAINER,
-            "coreLoadExecutor");
+            "solr_node_executor",
+            "coreLoadExecutor",
+            SolrInfoBean.Category.CONTAINER);
 
     coreSorter =
         loader.newInstance(
@@ -1154,6 +1160,59 @@ public class CoreContainer {
     }
   }
 
+  private void initGpuMetricsService() {
+    try {
+      Class<?> serviceClass = Class.forName("org.apache.solr.cuvs.GpuMetricsService");
+      Object serviceObj = serviceClass.getMethod("getInstance").invoke(null);
+
+      if (serviceObj instanceof GpuMetricsProvider provider) {
+        serviceClass.getMethod("initialize", CoreContainer.class).invoke(serviceObj, this);
+        provider.initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder()
+                .put(SolrMetricProducer.TYPE_ATTR, "gpu")
+                .put(SolrMetricProducer.CATEGORY_ATTR, "system")
+                .build());
+        log.info("GPU metrics service initialized");
+      }
+    } catch (ClassNotFoundException e) {
+      log.debug("cuVS module not available, GPU metrics will not be collected");
+    } catch (Exception e) {
+      log.warn("Failed to initialize GPU metrics service", e);
+    }
+  }
+
+  private void shutdownGpuMetricsService() {
+    try {
+      Class<?> serviceClass = Class.forName("org.apache.solr.cuvs.GpuMetricsService");
+      Object serviceObj = serviceClass.getMethod("getInstance").invoke(null);
+
+      if (serviceObj instanceof GpuMetricsProvider) {
+        GpuMetricsProvider provider = (GpuMetricsProvider) serviceObj;
+        provider.close();
+        log.info("GPU metrics service shut down");
+      }
+    } catch (ClassNotFoundException e) {
+      // Expected when cuvs module is not available
+    } catch (Exception e) {
+      log.warn("Failed to shutdown GPU metrics service", e);
+    }
+  }
+
+  public GpuMetricsProvider getGpuMetricsProvider() {
+    try {
+      Class<?> serviceClass = Class.forName("org.apache.solr.cuvs.GpuMetricsService");
+      Object serviceObj = serviceClass.getMethod("getInstance").invoke(null);
+
+      if (serviceObj instanceof GpuMetricsProvider) {
+        return (GpuMetricsProvider) serviceObj;
+      }
+    } catch (Exception e) {
+      // Module not available
+    }
+    return null;
+  }
+
   private volatile boolean isShutDown = false;
 
   public boolean isShutDown() {
@@ -1218,6 +1277,9 @@ public class CoreContainer {
       }
 
       customThreadPool.execute(replayUpdatesExecutor::shutdownAndAwaitTermination);
+
+      // Shutdown GPU metrics service if it was initialized
+      shutdownGpuMetricsService();
 
       if (metricManager != null) {
         // Close all OTEL meter providers and metrics
@@ -1424,6 +1486,10 @@ public class CoreContainer {
         log.warn(msg);
         throw new SolrException(ErrorCode.CONFLICT, msg);
       }
+
+      // Validate 'instancePath' prior to instantiating CoreDescriptor, as CD construction attempts
+      // to read properties from 'instancePath'
+      assertPathAllowed(instancePath);
       CoreDescriptor cd =
           new CoreDescriptor(
               coreName, instancePath, parameters, getContainerProperties(), getZkController());
@@ -1438,7 +1504,6 @@ public class CoreContainer {
       }
 
       // Validate paths are relative to known locations to avoid path traversal
-      assertPathAllowed(cd.getInstanceDir());
       assertPathAllowed(Path.of(cd.getDataDir()));
 
       boolean preExistingZkEntry = false;
@@ -1509,6 +1574,8 @@ public class CoreContainer {
       }
     }
   }
+
+  public static final String ALLOW_PATHS_SYSPROP = "solr.security.allow.paths";
 
   /**
    * Checks that the given path is relative to SOLR_HOME, SOLR_DATA_HOME, coreRootDirectory or one
@@ -1606,11 +1673,11 @@ public class CoreContainer {
     } catch (Exception e) {
       coreInitFailures.put(dcore.getName(), new CoreLoadFailure(dcore, e));
       if (e instanceof ZkController.NotInClusterStateException && !newCollection) {
-        // this mostly happens when the core is deleted when this node is down
+        // this mostly happens when the core is deleted when this node is down,
         // but it can also happen if connecting to the wrong zookeeper
         final boolean deleteUnknownCores =
-            Boolean.parseBoolean(
-                System.getProperty("solr.cloud.startup.delete.unknown.cores.enabled", "false"));
+            EnvUtils.getPropertyAsBool("solr.cloud.startup.delete.unknown.cores.enabled", false);
+
         log.error(
             "SolrCore {} in {} is not in cluster state.{}",
             dcore.getName(),
@@ -1618,7 +1685,7 @@ public class CoreContainer {
             (deleteUnknownCores
                 ? " It will be deleted. See SOLR-13396 for more information."
                 : ""));
-        // We alreday have an ongoing CoreOp, so do not wait to start another one
+        // We already have an ongoing CoreOp, so do not wait to start another one
         unloadWithoutCoreOp(
             dcore.getName(), deleteUnknownCores, deleteUnknownCores, deleteUnknownCores);
         throw e;
@@ -2240,16 +2307,6 @@ public class CoreContainer {
     return this.hostName;
   }
 
-  /**
-   * Gets the alternate path for multicore handling: This is used in case there is a registered
-   * unnamed core (aka name is "") to declare an alternate way of accessing named cores. This can
-   * also be used in a pseudo single-core environment so admins can prepare a new version before
-   * swapping.
-   */
-  public String getManagementPath() {
-    return cfg.getManagementPath();
-  }
-
   public LogWatcher<?> getLogging() {
     return logging;
   }
@@ -2389,10 +2446,10 @@ public class CoreContainer {
    *
    * <p>The caller does not need to close the client.
    *
-   * @return the existing {@link Http2SolrClient}
-   * @see Http2SolrClient#requestWithBaseUrl(String, String, SolrRequest)
+   * @return the existing {@link HttpJettySolrClient}
+   * @see HttpSolrClientBase#requestWithBaseUrl(String, SolrRequest, String)
    */
-  public Http2SolrClient getDefaultHttpSolrClient() {
+  public HttpJettySolrClient getDefaultHttpSolrClient() {
     return solrClientProvider.getSolrClient();
   }
 

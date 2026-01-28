@@ -46,6 +46,7 @@ dependencies {
   runtimeOnly libs.lmax.disruptor
 
   testImplementation project(':solr:test-framework')
+  testImplementation project(':solr:solrj-jetty')
   testImplementation libs.apache.lucene.testframework
   testImplementation libs.carrotsearch.randomizedtesting.runner
   testImplementation libs.junit.junit
@@ -95,7 +96,7 @@ task run(type: JavaExec) {
   description = 'Run the main class with JavaExecTask'
   mainClass = project.ext.mainClass
   classpath = sourceSets.main.runtimeClasspath
-  systemProperties = ["log4j.configurationFile":"file:conf/log4j2.xml"]
+  systemProperties = ["log4j.configurationFile": "file:conf/log4j2.xml"]
 }
 
 jar {

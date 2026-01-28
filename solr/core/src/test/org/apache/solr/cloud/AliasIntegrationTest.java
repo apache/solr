@@ -35,7 +35,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
@@ -44,6 +43,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -124,7 +124,7 @@ public class AliasIntegrationTest extends SolrCloudTestCase {
     assertEquals("collection1meta", aliases.get(0));
     assertEquals("collection2meta", aliases.get(1));
     // ensure we have the back-compat format in ZK:
-    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null, true);
+    final byte[] rawBytes = zkStateReader.getZkClient().getData(ALIASES, null, null);
     assertTrue(
         ((Map<String, Map<String, ?>>) Utils.fromJSON(rawBytes)).get("collection").get("meta1")
             instanceof String);

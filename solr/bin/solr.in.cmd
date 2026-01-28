@@ -66,7 +66,7 @@ REM set ZK_CLIENT_TIMEOUT=30000
 
 REM By default the start script uses "localhost"; override the hostname here
 REM for production SolrCloud environments to control the hostname exposed to cluster state
-REM set SOLR_HOST=192.168.1.1
+REM set SOLR_HOST_ADVERTISE=192.168.1.1
 
 REM By default Solr will try to connect to Zookeeper with 30 seconds in timeout; override the timeout if needed
 REM set SOLR_CLOUD_WAIT_FOR_ZK_SECONDS=30
@@ -85,7 +85,7 @@ REM to monitor the JVM hosting Solr; set to "false" to disable that behavior
 REM (false is recommended in production environments)
 REM set ENABLE_REMOTE_JMX_OPTS=false
 
-REM The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
+REM The script will use SOLR_PORT_LISTEN+10000 for the RMI_PORT or you can set it here
 REM set RMI_PORT=18983
 
 REM Anything you add to the SOLR_OPTS variable will be included in the java
@@ -114,10 +114,10 @@ REM Location where Solr should write logs to. Absolute or relative to solr start
 REM set SOLR_LOGS_DIR=logs
 
 REM Enables jetty request log for all requests
-REM set SOLR_REQUESTLOG_ENABLED=true
+REM set SOLR_LOGS_REQUESTLOG_ENABLED=true
 
 REM Sets the port Solr binds to, default is 8983
-REM set SOLR_PORT=8983
+REM set SOLR_PORT_LISTEN=8983
 
 REM Sets the network interface the Solr binds to. To prevent administrators from
 REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
@@ -125,7 +125,7 @@ REM Administrators should think carefully about their deployment environment and
 REM set this value as narrowly as required before going to production. In
 REM environments where security is not a concern, 0.0.0.0 can be used to allow
 REM Solr to accept connections on all network interfaces.
-REM set SOLR_JETTY_HOST=127.0.0.1
+REM set SOLR_HOST_BIND=127.0.0.1
 REM Sets the network interface the Embedded ZK binds to.
 REM set SOLR_ZOOKEEPER_EMBEDDED_HOST=127.0.0.1
 
@@ -173,7 +173,7 @@ REM set SOLR_SSL_CLIENT_TRUST_STORE_TYPE=
 
 REM Settings for authentication
 REM Please configure only one of SOLR_AUTHENTICATION_CLIENT_BUILDER or SOLR_AUTH_TYPE parameters
-REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory
+REM set SOLR_AUTHENTICATION_CLIENT_BUILDER=org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer
 REM set SOLR_AUTH_TYPE=basic
 REM set SOLR_AUTHENTICATION_OPTS=-Dsolr.security.auth.basicauth.credentials=solr:SolrRocks
 
@@ -250,3 +250,7 @@ REM set SOLR_MODULES=extraction,ltr
 REM Configure the default replica placement plugin to use if one is not configured in cluster properties
 REM See https://solr.apache.org/guide/solr/latest/configuration-guide/replica-placement-plugins.html for details
 REM set SOLR_PLACEMENTPLUGIN_DEFAULT=simple
+
+REM Solr internally doesn't use cookies. If you don't need any of those, and you don't
+REM need them for an external system (such as a load balancer), you can disable the use of a CookieStore with:
+REM set SOLR_OPTS=%SOLR_OPTS% -Dsolr.solrj.http.cookies.enabled=false

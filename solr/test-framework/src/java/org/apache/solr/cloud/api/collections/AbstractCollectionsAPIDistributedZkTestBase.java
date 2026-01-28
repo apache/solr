@@ -20,7 +20,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -36,14 +35,15 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
@@ -65,8 +65,6 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Tests the Cloud Collections API.
@@ -75,7 +73,6 @@ import org.slf4j.LoggerFactory;
  * creation to subclasses
  */
 public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCloudTestCase {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() {
@@ -108,9 +105,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -126,9 +121,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
         CollectionAdminRequest.listCollections(cluster.getSolrClient()).contains(collectionName));
 
     assertFalse(
-        cluster
-            .getZkClient()
-            .exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName, true));
+        cluster.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + collectionName));
   }
 
   @Test
@@ -283,7 +276,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
             .isSuccess());
 
     expectThrows(
-        SolrClient.RemoteSolrException.class,
+        RemoteSolrException.class,
         () -> {
           CollectionAdminRequest.createCollection("halfcollection", "conf", 1, 1)
               .setCreateNodeSet(nn1 + "," + nn2)
@@ -342,7 +335,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
     waitForState(
         "Collection creation after a bad delete failed",
         "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 1, 2));
   }
 
   @Test
@@ -478,7 +471,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
           collectionName,
           (n, c) -> {
             CollectionAdminRequest.Create req = createRequests[j];
-            return DocCollection.isFullyActive(
+            return SolrCloudTestCase.replicasForCollectionAreFullyActive(
                 n, c, req.getNumShards(), req.getReplicationFactor());
           });
 
@@ -603,7 +596,7 @@ public abstract class AbstractCollectionsAPIDistributedZkTestBase extends SolrCl
       if (entry.getValue().size() > 1) {
         fail(
             "We have shards using the same indexDir. E.g. shards "
-                + entry.getValue().toString()
+                + entry.getValue()
                 + " all use indexDir "
                 + entry.getKey());
       }

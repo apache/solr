@@ -19,7 +19,7 @@ package org.apache.solr.ltr;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.After;
@@ -45,7 +45,7 @@ public class TestFeatureVectorCache extends TestRerankBase {
     loadFeatures("featurevectorcache_features.json");
     loadModels("featurevectorcache_linear_model.json");
 
-    core = solrClientTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME);
+    core = solrTestRule.getCoreContainer().getCore(DEFAULT_TEST_CORENAME);
   }
 
   @After

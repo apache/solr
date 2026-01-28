@@ -1,0 +1,7 @@
+title: Update plugin com.diffplug.spotless to v7
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3583
+  url: https://github.com/apache/solr/pull/3583

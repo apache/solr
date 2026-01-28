@@ -38,10 +38,8 @@
 
   <solrcloud>
 
-    <str name="host">${host:}</str>
+    <str name="host">${solr.host.advertise:}</str>
     <int name="hostPort">${solr.port.advertise:0}</int>
-
-    <bool name="genericCoreNodeNames">${genericCoreNodeNames:true}</bool>
 
     <int name="zkClientTimeout">${zkClientTimeout:30000}</int>
     <int name="distribUpdateSoTimeout">${distribUpdateSoTimeout:600000}</int>
@@ -58,17 +56,5 @@
     <int name="socketTimeout">${socketTimeout:600000}</int>
     <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
-
-  <metrics enabled="${metricsEnabled:true}">
-    <!--    Solr computes JVM metrics for threads. Computing these metrics, esp. computing deadlocks etc.,
-     requires potentially expensive computations, and can be avoided for every metrics call by
-     setting a high caching expiration interval (in seconds).
-      <caching>
-        <int name="threadsIntervalSeconds">5</int>
-      </caching>
-    -->
-    <!--reporter name="jmx_metrics" group="core" class="org.apache.solr.metrics.reporters.SolrJmxReporter"/-->
-  </metrics>
-
 
 </solr>

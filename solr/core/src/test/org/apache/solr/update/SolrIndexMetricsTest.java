@@ -64,7 +64,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var indexSize =
           SolrMetricTestUtils.getGaugeDatapoint(
               core,
-              "solr_core_index_size_bytes",
+              "solr_core_index_size_megabytes",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label("category", "CORE")
                   .build());
@@ -106,7 +106,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_merge_time_milliseconds",
+              "solr_core_indexwriter_merge_time_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
@@ -118,7 +118,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var majorMergeTimer =
           SolrMetricTestUtils.getHistogramDatapoint(
               core,
-              "solr_indexwriter_merge_time_milliseconds",
+              "solr_core_indexwriter_merge_time_milliseconds",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
@@ -131,7 +131,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_merge_docs",
+              "solr_core_indexwriter_merge_docs",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
@@ -146,7 +146,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var majorMergeDocs =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_merge_docs",
+              "solr_core_indexwriter_merge_docs",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
@@ -163,7 +163,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var minorSegmentsMergeMetric =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_merge_segments",
+              "solr_core_indexwriter_merge_segments",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "minor")
@@ -179,7 +179,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var majorSegmentsMergeMetric =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_merge_segments",
+              "solr_core_indexwriter_merge_segments",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .label(MERGE_TYPE_ATTR.toString(), "major")
@@ -196,7 +196,7 @@ public class SolrIndexMetricsTest extends SolrTestCaseJ4 {
       var flushCounter =
           SolrMetricTestUtils.getCounterDatapoint(
               core,
-              "solr_indexwriter_flushes",
+              "solr_core_indexwriter_flushes",
               SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                   .label(CATEGORY_ATTR.toString(), SolrInfoBean.Category.INDEX.toString())
                   .build());

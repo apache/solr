@@ -25,9 +25,9 @@ import java.util.function.IntSupplier;
 /**
  * Utility class for detecting stalls in request processing.
  *
- * <p>This class is used by {@link ConcurrentUpdateHttp2SolrClient} to detect when request
- * processing has stalled, which can happen if the server is unresponsive or if there's a problem
- * with the connection.
+ * <p>This class is used by {@link ConcurrentUpdateBaseSolrClient} to detect when request processing
+ * has stalled, which can happen if the server is unresponsive or if there's a problem with the
+ * connection.
  */
 public class StallDetection {
   private final LongAdder processedCount;

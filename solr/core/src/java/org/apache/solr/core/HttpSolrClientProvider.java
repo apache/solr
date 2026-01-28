@@ -18,7 +18,7 @@ package org.apache.solr.core;
 
 import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.TimeUnit;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
@@ -34,7 +34,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
 
   static final String METRIC_SCOPE_NAME = "defaultHttpSolrClientProvider";
 
-  private final Http2SolrClient httpSolrClient;
+  private final HttpJettySolrClient httpSolrClient;
 
   private final InstrumentedHttpListenerFactory trackHttpSolrMetrics;
 
@@ -42,8 +42,8 @@ final class HttpSolrClientProvider implements AutoCloseable {
     trackHttpSolrMetrics = new InstrumentedHttpListenerFactory(getNameStrategy(cfg));
     initializeMetrics(parentContext);
 
-    Http2SolrClient.Builder httpClientBuilder =
-        new Http2SolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
+    var httpClientBuilder =
+        new HttpJettySolrClient.Builder().addListenerFactory(trackHttpSolrMetrics);
 
     if (cfg != null) {
       httpClientBuilder
@@ -68,7 +68,7 @@ final class HttpSolrClientProvider implements AutoCloseable {
     trackHttpSolrMetrics.initializeMetrics(solrMetricsContext, Attributes.empty());
   }
 
-  Http2SolrClient getSolrClient() {
+  HttpJettySolrClient getSolrClient() {
     return httpSolrClient;
   }
 
