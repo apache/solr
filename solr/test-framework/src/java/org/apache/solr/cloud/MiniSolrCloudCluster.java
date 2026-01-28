@@ -24,6 +24,7 @@ import jakarta.servlet.Filter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
+import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -385,12 +386,7 @@ public class MiniSolrCloudCluster {
     Files.createDirectories(baseDir);
 
     // Phase 1: Reserve random ports for all nodes
-    int[] ports = new int[numServers];
-    for (int i = 0; i < numServers; i++) {
-      try (java.net.ServerSocket socket = new java.net.ServerSocket(0)) {
-        ports[i] = socket.getLocalPort();
-      }
-    }
+    int[] ports = reservePortPairs(numServers);
 
     // Build the zkHost string with all ZK ports (Solr port + 1000)
     StringBuilder zkHostBuilder = new StringBuilder();
@@ -498,6 +494,108 @@ public class MiniSolrCloudCluster {
     }
 
     log.info("Embedded ZK quorum cluster started successfully with {} nodes", numServers);
+  }
+
+  /**
+   * Reserves port pairs for embedded ZK quorum mode. For each node, we need both a Solr port and a
+   * ZK port (Solr port + 1000). This method ensures both ports in each pair are available before
+   * returning.
+   *
+   * <p>The method keeps all ServerSockets open during the search to prevent race conditions where
+   * another process might grab a port between our check and actual usage.
+   *
+   * @param numPairs the number of port pairs to reserve
+   * @return array of Solr ports (ZK ports are Solr port + 1000)
+   * @throws IOException if unable to find enough available port pairs
+   */
+  private int[] reservePortPairs(int numPairs) throws IOException {
+    List<ServerSocket> solrSockets = new ArrayList<>();
+    List<ServerSocket> zkSockets = new ArrayList<>();
+    int[] ports = new int[numPairs];
+
+    try {
+      int pairsFound = 0;
+      int maxAttempts = numPairs * 100; // Reasonable limit to avoid infinite loops
+      int attempts = 0;
+
+      while (pairsFound < numPairs && attempts < maxAttempts) {
+        attempts++;
+        ServerSocket solrSocket = null;
+        ServerSocket zkSocket = null;
+
+        try {
+          // Try to get a random available port for Solr
+          solrSocket = new ServerSocket(0);
+          int solrPort = solrSocket.getLocalPort();
+          int zkPort = solrPort + 1000;
+
+          // Check if ZK port would exceed the valid port range (0-65535)
+          if (zkPort > 65535) {
+            solrSocket.close();
+            continue; // Skip this port and try again
+          }
+
+          // Verify the corresponding ZK port is also available
+          zkSocket = new ServerSocket(zkPort);
+
+          // Both ports are available - keep the sockets and record the port
+          solrSockets.add(solrSocket);
+          zkSockets.add(zkSocket);
+          ports[pairsFound] = solrPort;
+          pairsFound++;
+
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "Reserved port pair {}/{}: Solr={}, ZK={}", pairsFound, numPairs, solrPort, zkPort);
+          }
+
+        } catch (IOException | IllegalArgumentException e) {
+          // ZK port was not available or invalid, close sockets and try again
+          if (solrSocket != null) {
+            try {
+              solrSocket.close();
+            } catch (IOException ignored) {
+            }
+          }
+          if (zkSocket != null) {
+            try {
+              zkSocket.close();
+            } catch (IOException ignored) {
+            }
+          }
+        }
+      }
+
+      if (pairsFound < numPairs) {
+        throw new IOException(
+            "Unable to find " + numPairs + " available port pairs after " + attempts + " attempts");
+      }
+
+      log.info(
+          "Successfully reserved {} port pairs in {} attempts: {}",
+          numPairs,
+          attempts,
+          Arrays.toString(ports));
+      return ports;
+
+    } finally {
+      // Close all sockets now that we've recorded the ports
+      // The ports will remain available for immediate reuse
+      for (ServerSocket socket : solrSockets) {
+        try {
+          socket.close();
+        } catch (IOException e) {
+          log.warn("Error closing Solr socket", e);
+        }
+      }
+      for (ServerSocket socket : zkSockets) {
+        try {
+          socket.close();
+        } catch (IOException e) {
+          log.warn("Error closing ZK socket", e);
+        }
+      }
+    }
   }
 
   /**
