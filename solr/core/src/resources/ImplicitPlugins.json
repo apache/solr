@@ -73,9 +73,9 @@
       "class": "solr.LukeRequestHandler",
       "useParams":"_ADMIN_LUKE"
     },
-    "/admin/system": {
-      "class": "solr.SystemInfoHandler",
-      "useParams":"_ADMIN_SYSTEM"
+    "/admin/core": {
+      "class": "solr.CoreInfoHandler",
+      "useParams":"_ADMIN_CORE"
     },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",

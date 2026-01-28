@@ -219,13 +219,15 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    SolrCore core = req.getCore();
+    //SolrCore core = req.getCore();
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-    if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
+    //if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
     rsp.add("mode", solrCloudMode ? "solrcloud" : "std");
+
+    rsp.add("host", hostname); // moved from core. tree.
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
@@ -263,41 +265,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
     return coreContainer == null ? cc : coreContainer;
   }
 
-  /** Get system info */
-  private SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-
-    info.add("schema", schema != null ? schema.getSchemaName() : "no schema!");
-
-    // Host
-    info.add("host", hostname);
-
-    // Now
-    info.add("now", new Date());
-
-    // Start Time
-    info.add("start", core.getStartTimeStamp());
-
-    // Solr Home
-    SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
-    dirs.add("instance", core.getInstancePath().toString());
-    try {
-      dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-      dirs.add("data", "N/A");
-    }
-    dirs.add("dirimpl", core.getDirectoryFactory().getClass().getName());
-    try {
-      dirs.add("index", core.getDirectoryFactory().normalize(core.getIndexDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-      dirs.add("index", "N/A");
-    }
-    info.add("directory", dirs);
-    return info;
-  }
 
   /** Get system info */
   public static SimpleOrderedMap<Object> getSystemInfo() {
