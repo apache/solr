@@ -46,9 +46,6 @@ public interface UpdateParams {
   /** expert: calls IndexWriter.prepareCommit */
   public static String PREPARE_COMMIT = "prepareCommit";
 
-  /** Fail a commit when the core or collection is in read-only mode */
-  public static String FAIL_ON_READ_ONLY = "failOnReadOnly";
-
   /** Rollback update commands */
   public static String ROLLBACK = "rollback";
 

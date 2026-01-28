@@ -2476,7 +2476,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
                   true,
                   directoryFactory);
         } else {
-          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this, true);
+          RefCounted<IndexWriter> writer = getSolrCoreState().getIndexWriter(this);
           DirectoryReader newReader = null;
           try {
             newReader = indexReaderFactory.newReader(writer.get(), this);

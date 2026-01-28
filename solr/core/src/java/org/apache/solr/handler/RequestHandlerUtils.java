@@ -99,7 +99,6 @@ public class RequestHandlerUtils {
     cmd.maxOptimizeSegments =
         params.getInt(UpdateParams.MAX_OPTIMIZE_SEGMENTS, cmd.maxOptimizeSegments);
     cmd.prepareCommit = params.getBool(UpdateParams.PREPARE_COMMIT, cmd.prepareCommit);
-    cmd.failOnReadOnly = params.getBool(UpdateParams.FAIL_ON_READ_ONLY, cmd.failOnReadOnly);
   }
 
   /**
