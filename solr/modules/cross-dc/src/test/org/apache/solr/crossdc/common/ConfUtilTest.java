@@ -46,6 +46,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   private Properties originalSysProps;
 
   @Before
+  @Override
   public void setUp() throws Exception {
     super.setUp();
     assumeWorkingMockito();
@@ -57,6 +58,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   }
 
   @After
+  @Override
   public void tearDown() throws Exception {
     super.tearDown();
     // Restore original system properties
