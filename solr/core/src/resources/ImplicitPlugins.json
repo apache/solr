@@ -73,7 +73,7 @@
       "class": "solr.LukeRequestHandler",
       "useParams":"_ADMIN_LUKE"
     },
-    "/admin/core": {
+    "/admin/info": {
       "class": "solr.CoreInfoHandler",
       "useParams":"_ADMIN_CORE"
     },
