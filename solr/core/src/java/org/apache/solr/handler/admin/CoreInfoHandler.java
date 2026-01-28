@@ -14,6 +14,9 @@ import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * This handler returns core level info. See {@link org.apache.solr.handler.admin.SystemInfoHandler}
+ */
 public class CoreInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

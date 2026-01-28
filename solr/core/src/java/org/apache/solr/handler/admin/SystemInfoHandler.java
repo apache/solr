@@ -66,9 +66,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This handler returns system info
- *
- * @since solr 1.2
+ * This handler returns node/container level info. See {@link
+ * org.apache.solr.handler.admin.CoreInfoHandler}
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
