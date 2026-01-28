@@ -106,9 +106,8 @@ public final class DefaultSolrCoreState extends SolrCoreState
   }
 
   @Override
-  public RefCounted<IndexWriter> getIndexWriter(SolrCore core, boolean readOnlyCompatible)
-      throws IOException {
-    if (core != null && (!core.indexEnabled || (!readOnlyCompatible && core.readOnly))) {
+  public RefCounted<IndexWriter> getIndexWriter(SolrCore core) throws IOException {
+    if (core != null && (!core.indexEnabled || core.readOnly)) {
       throw new SolrException(
           SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Indexing is temporarily disabled");
     }

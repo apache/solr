@@ -39,7 +39,6 @@ public class CommitUpdateCommand extends UpdateCommand {
   public boolean expungeDeletes = false;
   public boolean softCommit = false;
   public boolean prepareCommit = false;
-  public boolean failOnReadOnly = true; // fail the commit if the core or collection is readOnly
 
   /**
    * User provided commit data. Can be let to null if there is none. It is possible to commit this
@@ -99,9 +98,6 @@ public class CommitUpdateCommand extends UpdateCommand {
             .append(softCommit)
             .append(",prepareCommit=")
             .append(prepareCommit);
-    if (!failOnReadOnly) {
-      sb.append(",failOnReadOnly=").append(failOnReadOnly);
-    }
     if (commitData != null) {
       sb.append(",commitData=").append(commitData);
     }
