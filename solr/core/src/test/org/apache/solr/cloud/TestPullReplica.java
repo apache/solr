@@ -38,13 +38,12 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
-import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -55,6 +54,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -99,8 +99,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownCluster() {
-    System.clearProperty("solr.solrj.cloud.max.stale.retries");
-    System.clearProperty("zkReaderGetLeaderRetryTimeoutMs");
     TestInjection.reset();
   }
 
@@ -185,11 +183,11 @@ public class TestPullReplica extends SolrCloudTestCase {
         assertEquals(
             "Expecting 6 pull replicas, 3 per shard",
             6,
-            docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+            getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).size());
         assertEquals(
             "Expecting 2 writer replicas, one per shard",
             2,
-            docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
+            getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).size());
         for (Slice s : docCollection.getSlices()) {
           // read-only replicas can never become leaders
           assertNotSame(s.getLeader().getType(), Replica.Type.PULL);
@@ -197,9 +195,7 @@ public class TestPullReplica extends SolrCloudTestCase {
               cluster
                   .getZkClient()
                   .getChildren(
-                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()),
-                      null,
-                      true);
+                      ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null);
           assertEquals(
               "Unexpected election nodes for Shard: "
                   + s.getName()
@@ -269,7 +265,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
   }
 
-  @SuppressWarnings("unchecked")
   public void testAddDocs() throws Exception {
     int numPullReplicas = 1 + random().nextInt(3);
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, numPullReplicas)
@@ -310,17 +305,26 @@ public class TestPullReplica extends SolrCloudTestCase {
               : s.getReplicas(EnumSet.of(Replica.Type.PULL));
       waitForNumDocsInAllReplicas(numDocs, pullReplicas);
 
-      for (Replica r : pullReplicas) {
-        try (SolrClient pullReplicaClient = getHttpSolrClient(r)) {
-          SolrQuery req = new SolrQuery("qt", "/admin/plugins", "stats", "true");
-          QueryResponse statsResponse = pullReplicaClient.query(req);
-          // The adds gauge metric should be null for pull replicas since they don't process adds
-          assertNull(
-              "Replicas shouldn't process the add document request: " + statsResponse,
-              ((Map<String, Object>)
-                      (statsResponse.getResponse())
-                          ._get(List.of("plugins", "UPDATE", "updateHandler", "stats"), null))
-                  .get("UPDATE.updateHandler.adds"));
+      for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+        CoreContainer cc = jetty.getCoreContainer();
+        for (String coreName : cc.getAllCoreNames()) {
+          try (SolrCore core = cc.getCore(coreName)) {
+            var addOpsDatapoint =
+                org.apache.solr.util.SolrMetricTestUtils.getCounterDatapoint(
+                    core,
+                    "solr_core_update_committed_ops",
+                    org.apache.solr.util.SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                        .label("category", "UPDATE")
+                        .label("ops", "adds")
+                        .build());
+            // The adds gauge metric should be null for pull replicas since they don't process adds
+            if ((core.getCoreDescriptor().getCloudDescriptor().getReplicaType()
+                == Replica.Type.PULL)) {
+              assertNull(addOpsDatapoint);
+            } else {
+              assertNotNull(addOpsDatapoint);
+            }
+          }
         }
       }
 
@@ -420,6 +424,28 @@ public class TestPullReplica extends SolrCloudTestCase {
   @Test
   public void testKillLeader() throws Exception {
     doTestNoLeader(false);
+  }
+
+  @Test
+  public void testNoBufferingInPullIfConstructing() throws Exception {
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1, 0, 0)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
+
+    setSliceState(collectionName, "shard1", Slice.State.CONSTRUCTION);
+
+    CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.PULL)
+        .process(cluster.getSolrClient());
+    waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 1));
+  }
+
+  private void setSliceState(String collectionName, String shardId, Slice.State state)
+      throws Exception {
+    ShardTestUtil.setSliceState(cluster, collectionName, shardId, state);
+    waitForState(
+        "Expected shard " + shardId + " to be in state " + state,
+        collectionName,
+        c -> c.getSlice(shardId).getState() == state);
   }
 
   @Ignore("Ignore until I figure out a way to reliably record state transitions")
@@ -552,7 +578,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+    waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
 
     // Delete leader replica from shard1
     ignoreException("No registered leader was found"); // These are expected
@@ -603,7 +629,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
     // Also fails if I send the update to the pull replica explicitly
     try (SolrClient pullReplicaClient =
-        getHttpSolrClient(docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0))) {
+        getHttpSolrClient(getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).get(0))) {
       expectThrows(
           SolrException.class,
           () ->
@@ -617,7 +643,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
 
     // Queries should still work
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+    waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
     // Add nrt replica back. Since there is no nrt now, new nrt will have no docs. There will be
     // data loss, since it will become the leader and pull replicas will replicate from it.
     // Maybe we want to change this. Replicate from pull replicas is not a good idea, since they are
@@ -644,7 +670,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // different?
     if (removeReplica) {
       // Pull replicas will replicate the empty index if a new replica was added and becomes leader
-      waitForNumDocsInAllReplicas(0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+      waitForNumDocsInAllReplicas(0, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
     }
 
     // add docs agin
@@ -655,8 +681,8 @@ public class TestPullReplica extends SolrCloudTestCase {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
     waitForNumDocsInAllReplicas(
-        1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
-    waitForNumDocsInAllReplicas(1, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)));
+        1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)), "id:2", null, null);
+    waitForNumDocsInAllReplicas(1, getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)));
   }
 
   public void testKillPullReplica() throws Exception {
@@ -721,12 +747,11 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Collection init never finished?", collectionName, activeReplicaCount(0, 1, 2));
 
     assertEquals(
-        2, getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).size());
+        2, getReplicas(getCollectionState(collectionName), EnumSet.of(Replica.Type.PULL)).size());
 
     // set our 'skip' property on one of the PULL replicas, and keep track of this replica
     final String pullThatSkipsRecovery =
-        getCollectionState(collectionName)
-            .getReplicas(EnumSet.of(Replica.Type.PULL))
+        getReplicas(getCollectionState(collectionName), EnumSet.of(Replica.Type.PULL))
             .get(0)
             .getName();
     CollectionAdminRequest.addReplicaProperty(
@@ -759,7 +784,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         activeReplicaCount(0, 0, 2));
     waitForNumDocsInAllReplicas(
         numDocsAdded,
-        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)));
+        getReplicas(getCollectionState(collectionName), EnumSet.of(Replica.Type.PULL)));
 
     // Add yetanother PULL replica while the leader is down.
     // This new replica will immediately stall going into recoveery, since the leader is down.
@@ -772,7 +797,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         (liveNodes, colState) -> {
           int active = 0;
           int down = 0;
-          for (Replica r : colState.getReplicas(EnumSet.of(Replica.Type.PULL))) {
+          for (Replica r : getReplicas(colState, EnumSet.of(Replica.Type.PULL))) {
             if (r.getState().equals(Replica.State.ACTIVE)) {
               active++;
             } else if (r.getState().equals(Replica.State.DOWN)) {
@@ -785,7 +810,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // But even if when set our 'skip' property on this new PULL replica, it's *next* (re)start
     // should still block waiting for RECOVERY since it won't have an active index.
     final String pullThatWantsToSkipRecoveryButMustRecoverOnce =
-        getCollectionState(collectionName).getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(getCollectionState(collectionName), EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> r.getState().equals(Replica.State.DOWN))
             .map(r -> r.getName())
             .findFirst()
@@ -921,19 +946,19 @@ public class TestPullReplica extends SolrCloudTestCase {
     assertEquals(
         "Unexpected number of writer replicas: " + docCollection,
         numNrtReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.NRT)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of pull replicas: " + docCollection,
         numPullReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.PULL)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     assertEquals(
         "Unexpected number of active replicas: " + docCollection,
         numTlogReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream()
+        getReplicas(docCollection, EnumSet.of(Replica.Type.TLOG)).stream()
             .filter(r -> !activeOnly || r.getState() == Replica.State.ACTIVE)
             .count());
     return docCollection;

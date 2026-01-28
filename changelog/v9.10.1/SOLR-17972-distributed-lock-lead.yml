@@ -1,0 +1,7 @@
+title: Retry creation of ZK lock on transient connection loss.
+type: fixed
+authors:
+  - name: Pierre Salagnac
+links:
+  - name: SOLR-17972
+    url: https://issues.apache.org/jira/browse/SOLR-17972

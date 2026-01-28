@@ -34,10 +34,10 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -316,7 +316,7 @@ public class SolrCmdDistributor implements Closeable {
       try {
         clients
             .getHttpClient()
-            .requestWithBaseUrl(req.node.getBaseUrl(), req.node.getCoreName(), req.uReq);
+            .requestWithBaseUrl(req.node.getBaseUrl(), req.uReq, req.node.getCoreName());
       } catch (Exception e) {
         log.error("Exception making request", e);
         SolrError error = new SolrError();
@@ -482,7 +482,7 @@ public class SolrCmdDistributor implements Closeable {
     /**
      * NOTE: This is the request that happened to be executed when this error was <b>triggered</b>
      * the error, but because of how {@link StreamingSolrClients} uses {@link
-     * ConcurrentUpdateHttp2SolrClient} it might not actaully be the request that <b>caused</b> the
+     * ConcurrentUpdateBaseSolrClient} it might not actaully be the request that <b>caused</b> the
      * error -- multiple requests are merged &amp; processed as a sequential batch.
      */
     public Req req;

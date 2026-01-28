@@ -155,9 +155,9 @@ fi
 : "${SOLR_START_WAIT:=$SOLR_STOP_WAIT}" # defaulting to $SOLR_STOP_WAIT for backwards compatibility reasons
 
 # Store whether a solr port was explicitly provided, for the "solr stop" command.
-PROVIDED_SOLR_PORT="${SOLR_PORT:-}"
-: "${SOLR_PORT:=8983}"
-export SOLR_PORT
+PROVIDED_SOLR_PORT="${SOLR_PORT_LISTEN:-}"
+: "${SOLR_PORT_LISTEN:=8983}"
+export SOLR_PORT_LISTEN
 
 # test that Java exists, is executable and correct version
 JAVA_VER=$("$JAVA" -version 2>&1)
@@ -213,7 +213,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=https" "--lib=$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*")
   if [ "${SOLR_SSL_RELOAD_ENABLED:-true}" == "true" ]; then
     SOLR_JETTY_CONFIG+=("--module=ssl-reload")
-    SOLR_SSL_OPTS+=" -Dsolr.keyStoreReload.enabled=true"
+    SOLR_SSL_OPTS+=" -Dsolr.keystore.reload.enabled=true"
   fi
   SOLR_URL_SCHEME=https
   if [ -n "$SOLR_SSL_KEY_STORE" ]; then
@@ -245,10 +245,10 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.need.client.auth.enabled=$SOLR_SSL_NEED_CLIENT_AUTH"
   fi
   if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.want.client.auth.enabled=$SOLR_SSL_WANT_CLIENT_AUTH"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_KEY_STORE" ]; then
@@ -274,7 +274,7 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   fi
 
   if [ -n "$SOLR_SSL_CHECK_PEER_NAME" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.ssl.checkPeerName=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sniHostCheck=$SOLR_SSL_CHECK_PEER_NAME"
+    SOLR_SSL_OPTS+=" -Dsolr.ssl.check.peer.name.enabled=$SOLR_SSL_CHECK_PEER_NAME -Dsolr.jetty.ssl.sni.host.check.enabled=$SOLR_SSL_CHECK_PEER_NAME"
   fi
 
   if [ -n "$SOLR_SSL_CLIENT_TRUST_STORE" ]; then
@@ -306,7 +306,7 @@ if [ "${SOLR_JETTY_GRACEFUL:-false}" == "true" ]; then
 fi
 
 # Requestlog options
-if [ "${SOLR_REQUESTLOG_ENABLED:-true}" == "true" ]; then
+if [ "${SOLR_LOGS_REQUESTLOG_ENABLED:-true}" == "true" ]; then
   SOLR_JETTY_CONFIG+=("--module=requestlog")
 fi
 
@@ -342,7 +342,7 @@ fi
 if [ -n "${SOLR_AUTH_TYPE:-}" ]; then
   case "$(echo "$SOLR_AUTH_TYPE" | awk '{print tolower($0)}')" in
     basic)
-      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+      SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer"
       ;;
     *)
       echo "ERROR: Value specified for SOLR_AUTH_TYPE environment variable is invalid."
@@ -355,7 +355,7 @@ if [ -n "${SOLR_AUTHENTICATION_CLIENT_CONFIGURER:-}" ]; then
   echo "         Please start using SOLR_AUTH_TYPE instead"
 fi
 if [ -n "${SOLR_AUTHENTICATION_CLIENT_BUILDER:-}" ]; then
-  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
+  AUTHC_CLIENT_BUILDER_ARG="-Dsolr.solrj.http.jetty.customizer=$SOLR_AUTHENTICATION_CLIENT_BUILDER"
   AUTHC_OPTS="${AUTHC_CLIENT_BUILDER_ARG:-}"
 fi
 # This looks strange, but it is to avoid extra spaces when we have only one of the values set
@@ -382,8 +382,8 @@ function print_usage() {
     echo "  --host <host>         Specify the hostname for this Solr instance"
     echo ""
     echo "  -p/--port <port>      Specify the port to start the Solr HTTP listener on; default is 8983"
-    echo "                          The specified port (SOLR_PORT) will also be used to determine the stop port"
-    echo "                          STOP_PORT=(\$SOLR_PORT-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT+10000). "
+    echo "                          The specified port (SOLR_PORT_LISTEN) will also be used to determine the stop port"
+    echo "                          STOP_PORT=(\$SOLR_PORT_LISTEN-1000) and JMX RMI listen port RMI_PORT=(\$SOLR_PORT_LISTEN+10000). "
     echo "                          For instance, if you set -p 8985, then the STOP_PORT=7985 and RMI_PORT=18985"
     echo ""
     echo "  --server-dir <dir>   Specify the Solr server directory; defaults to server"
@@ -475,21 +475,21 @@ function solr_pid_by_port() {
   fi
 }
 
-# extract the value of the -Djetty.port parameter from a running Solr process
-function jetty_port() {
+# extract the value of the -Dsolr.port.listen parameter from a running Solr process
+function solr_port_listen() {
   SOLR_PID="$1"
-  SOLR_PROC=$(ps -fww -p "$SOLR_PID" | grep start\.jar | grep jetty\.port)
+  SOLR_PROC=$(ps -fww -p "$SOLR_PID" | grep start\.jar | grep solr\.port\.listen)
   IFS=' ' read -a proc_args <<< "$SOLR_PROC"
   for arg in "${proc_args[@]}"
     do
       IFS='=' read -a pair <<< "$arg"
-      if [ "${pair[0]}" == "-Djetty.port" ]; then
-        local jetty_port="${pair[1]}"
+      if [ "${pair[0]}" == "-Dsolr.port.listen" ]; then
+        local solr_port="${pair[1]}"
         break
       fi
     done
-  echo "$jetty_port"
-} # end jetty_port func
+  echo "$solr_port"
+} # end solr_port_listen func
 
 # run a Solr command-line tool using the SolrCLI class;
 # useful for doing cross-platform work from the command-line using Java
@@ -511,13 +511,13 @@ function run_tool() {
 function stop_solr() {
 
   DIR="$1"
-  SOLR_PORT="$2"
-  THIS_STOP_PORT="${STOP_PORT:-$((SOLR_PORT - 1000))}"
+  SOLR_PORT_LISTEN="$2"
+  THIS_STOP_PORT="${STOP_PORT:-$((SOLR_PORT_LISTEN - 1000))}"
   STOP_KEY="$3"
   SOLR_PID="$4"
 
   if [ -n "$SOLR_PID"  ]; then
-    echo -e "Sending stop command to Solr running on port $SOLR_PORT ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
+    echo -e "Sending stop command to Solr running on port $SOLR_PORT_LISTEN ... waiting up to $SOLR_STOP_WAIT seconds to allow Jetty process $SOLR_PID to stop gracefully."
     # shellcheck disable=SC2086,SC2164
     "$JAVA" -Djava.io.tmpdir="$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" $SOLR_SSL_OPTS $AUTHC_OPTS ${SOLR_TOOL_OPTS:-} \
       -jar "$DIR/start.jar" "STOP.PORT=$THIS_STOP_PORT" "STOP.KEY=$STOP_KEY" --stop || true
@@ -542,7 +542,7 @@ function stop_solr() {
         fi
       done) &
     spinner $!
-    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT_LISTEN.pid"
   else
     echo -e "No Solr nodes found to stop."
     exit 0
@@ -561,7 +561,7 @@ function stop_solr() {
     echo -e "Solr process $SOLR_PID is still running; forcefully killing it now."
     kill -9 "$SOLR_PID"
     echo "Killed process $SOLR_PID"
-    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+    rm -f "$SOLR_PID_DIR/solr-$SOLR_PORT_LISTEN.pid"
     sleep 10
   fi
 
@@ -752,8 +752,8 @@ if [ $# -gt 0 ]; then
               print_usage "$SCRIPT_CMD" "Hostname is required when using the $1 option!"
               exit 1
             fi
-            SOLR_HOST="$2"
-            PASS_TO_RUN_EXAMPLE+=("--host" "$SOLR_HOST")
+            SOLR_HOST_ADVERTISE="$2"
+            PASS_TO_RUN_EXAMPLE+=("--solr.host.advertise" "$SOLR_HOST_ADVERTISE")
             shift 2
         ;;
         -m|--memory)
@@ -770,9 +770,9 @@ if [ $# -gt 0 ]; then
               print_usage "$SCRIPT_CMD" "Port number is required when using the $1 option!"
               exit 1
             fi
-            SOLR_PORT="$2"
-            PROVIDED_SOLR_PORT="${SOLR_PORT}"
-            PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT")
+            SOLR_PORT_LISTEN="$2"
+            PROVIDED_SOLR_PORT="${SOLR_PORT_LISTEN}"
+            PASS_TO_RUN_EXAMPLE+=("-p" "$SOLR_PORT_LISTEN")
             shift 2
         ;;
         -z|--zk-host)
@@ -892,13 +892,21 @@ if $verbose ; then
   "$JAVA" -version
 fi
 
-if [ -n "${SOLR_HOST:-}" ]; then
-  SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
-elif [[ "${SOLR_JETTY_HOST:-127.0.0.1}" == "127.0.0.1" ]]; then
+# Check for deprecated SOLR_JETTY_HOST and show warning
+if [[ -n "${SOLR_JETTY_HOST:-}" && -z "${SOLR_HOST_BIND:-}" ]]; then
+  echo "WARNING: SOLR_JETTY_HOST is deprecated and will be removed in a future release."
+  echo "Please update your configuration to use SOLR_HOST_BIND instead of SOLR_JETTY_HOST."
+  SOLR_HOST_BIND="$SOLR_JETTY_HOST"
+fi
+
+
+if [ -n "${SOLR_HOST_ADVERTISE:-}" ]; then
+  SOLR_HOST_ADVERTISE_ARG=("-Dsolr.host.advertise=$SOLR_HOST_ADVERTISE")
+elif [[ "${SOLR_HOST_BIND:-127.0.0.1}" == "127.0.0.1" ]]; then
   # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
-  SOLR_HOST_ARG=("-Dhost=localhost")
+  SOLR_HOST_ADVERTISE_ARG=("-Dsolr.host.advertise=localhost")
 else
-  SOLR_HOST_ARG=()
+  SOLR_HOST_ADVERTISE_ARG=()
 fi
 
 : "${STOP_KEY:=solrrocks}"
@@ -910,7 +918,7 @@ if [[ "$SCRIPT_CMD" == "stop" ]]; then
     find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | while read PIDF
       do
         NEXT_PID=$(cat "$PIDF")
-        port=$(jetty_port "$NEXT_PID")
+        port=$(solr_port_listen "$NEXT_PID")
         if [ "$port" != "" ]; then
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$NEXT_PID"
           none_stopped=false
@@ -932,7 +940,7 @@ if [[ "$SCRIPT_CMD" == "stop" ]]; then
       PID="$(cat "$(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)")"
       CHECK_PID=$(ps -o pid='' -p "$PID" | tr -d ' ')
       if [ "$CHECK_PID" != "" ]; then
-        port=$(jetty_port "$CHECK_PID")
+        port=$(solr_port_listen "$CHECK_PID")
         if [ "$port" != "" ]; then
           stop_solr "$SOLR_SERVER_DIR" "$port" "$STOP_KEY" "$CHECK_PID"
           none_stopped=false
@@ -956,11 +964,11 @@ if [ -n "${SOLR_PORT_ADVERTISE:-}" ]; then
   SCRIPT_SOLR_OPTS+=("-Dsolr.port.advertise=$SOLR_PORT_ADVERTISE")
 fi
 
-if [ -n "${SOLR_JETTY_HOST:-}" ]; then
-  SCRIPT_SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+if [ -n "${SOLR_HOST_BIND:-}" ]; then
+  SCRIPT_SOLR_OPTS+=("-Dsolr.host.bind=$SOLR_HOST_BIND")
 fi
 
-: "${STOP_PORT:=$((SOLR_PORT - 1000))}"
+: "${STOP_PORT:=$((SOLR_PORT_LISTEN - 1000))}"
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
   if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
@@ -972,30 +980,30 @@ fi
 
 if [[ "$SCRIPT_CMD" == "start" ]]; then
   # see if Solr is already running
-  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT")
+  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT_LISTEN")
 
   if [ -z "${SOLR_PID:-}" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
+    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
   fi
 
   if [ -n "${SOLR_PID:-}" ]; then
-    echo -e "\nPort $SOLR_PORT is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
+    echo -e "\nPort $SOLR_PORT_LISTEN is already being used by another process (pid: $SOLR_PID)\nPlease choose a different port using the -p option.\n"
     exit 1
   fi
 else
   # either stop or restart
   # see if Solr is already running
-  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT")
+  SOLR_PID=$(solr_pid_by_port "$SOLR_PORT_LISTEN")
   if [ -z "$SOLR_PID" ]; then
     # not found using the pid file ... but use ps to ensure not found
-    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
+    SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
   fi
   if [ "$SOLR_PID" != "" ]; then
-    stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT" "$STOP_KEY" "$SOLR_PID"
+    stop_solr "$SOLR_SERVER_DIR" "$SOLR_PORT_LISTEN" "$STOP_KEY" "$SOLR_PID"
   else
     if [ "$SCRIPT_CMD" == "stop" ]; then
-      echo -e "No process found for Solr node running on port $SOLR_PORT"
+      echo -e "No process found for Solr node running on port $SOLR_PORT_LISTEN"
       exit 1
     fi
   fi
@@ -1072,8 +1080,8 @@ if [ "${SOLR_MODE:-}" == 'solrcloud' ]; then
   if [ -n "${ZK_HOST:-}" ]; then
     CLOUD_MODE_OPTS+=("-DzkHost=$ZK_HOST")
   else
-    if [ $SOLR_PORT -gt 64535 ]; then
-      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT, which would result in an invalid embedded Zookeeper port!\n"
+    if [ $SOLR_PORT_LISTEN -gt 64535 ]; then
+      echo -e "\nZK_HOST is not set and Solr port is $SOLR_PORT_LISTEN, which would result in an invalid embedded Zookeeper port!\n"
       exit 1
     fi
     if $verbose ; then
@@ -1111,7 +1119,7 @@ IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_ALLOWLIST:-}" \
 if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
 
   if [ -z "$RMI_PORT" ]; then
-    RMI_PORT=$((SOLR_PORT + 10000))
+    RMI_PORT=$((SOLR_PORT_LISTEN + 10000))
     if [ $RMI_PORT -gt 65535 ]; then
       echo -e "\nRMI_PORT is $RMI_PORT, which is invalid!\n"
       exit 1
@@ -1126,8 +1134,8 @@ if [ "${ENABLE_REMOTE_JMX_OPTS:-false}" == "true" ]; then
     "-Dcom.sun.management.jmxremote.rmi.port=$RMI_PORT")
 
   # if the host is set, then set that as the rmi server hostname
-  if [ "$SOLR_HOST" != "" ]; then
-    REMOTE_JMX_OPTS+=("-Djava.rmi.server.hostname=$SOLR_HOST")
+  if [ "$SOLR_HOST_ADVERTISE" != "" ]; then
+    REMOTE_JMX_OPTS+=("-Djava.rmi.server.hostname=$SOLR_HOST_ADVERTISE")
   fi
 else
   REMOTE_JMX_OPTS=()
@@ -1204,8 +1212,8 @@ function start_solr() {
 
   # If SSL-related system props are set, add them to SCRIPT_SOLR_OPTS
   if [ "$SOLR_SSL_ENABLED" == "true" ]; then
-    # If using SSL and solr.jetty.https.port not set explicitly, use the jetty.port
-    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT"
+    # If using SSL and solr.jetty.https.port not set explicitly, use the solr.port.listen
+    SSL_PORT_PROP="-Dsolr.jetty.https.port=$SOLR_PORT_LISTEN"
     SCRIPT_SOLR_OPTS+=($SOLR_SSL_OPTS "$SSL_PORT_PROP")
   fi
 
@@ -1233,8 +1241,8 @@ function start_solr() {
     echo -e "    JAVA               = $JAVA"
     echo -e "    SOLR_SERVER_DIR    = $SOLR_SERVER_DIR"
     echo -e "    SOLR_HOME          = $SOLR_HOME"
-    echo -e "    SOLR_HOST          = ${SOLR_HOST:-}"
-    echo -e "    SOLR_PORT          = $SOLR_PORT"
+    echo -e "    SOLR_HOST_ADVERTISE= ${SOLR_HOST_ADVERTISE:-}"
+    echo -e "    SOLR_PORT_LISTEN   = $SOLR_PORT_LISTEN"
     echo -e "    STOP_PORT          = $STOP_PORT"
     echo -e "    JAVA_MEM_OPTS      = ${JAVA_MEM_OPTS[*]}"
     echo -e "    GC_TUNE            = ${GC_TUNE_ARR[*]}"
@@ -1288,11 +1296,11 @@ function start_solr() {
   # shellcheck disable=SC2164
   SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE_ARR[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" -Dsolr.logs.dir="$SOLR_LOGS_DIR" \
-    "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
+    "-Dsolr.port.listen=$SOLR_PORT_LISTEN" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "-Djava.io.tmpdir=$(cd "${TMPDIR:-${TEMP:-${TMP:-/tmp}}}"; pwd -P)" \
     # '-OmitStackTraceInFastThrow' ensures stack traces in errors,
     # users who don't care about useful error msgs can override in SOLR_OPTS with +OmitStackTraceInFastThrow
-    "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
+    "${SOLR_HOST_ADVERTISE_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" "-XX:-OmitStackTraceInFastThrow" \
     # '+CrashOnOutOfMemoryError' ensures that Solr crashes whenever
     # OOME is thrown. Program operation after OOME is unpredictable.
     "-XX:+CrashOnOutOfMemoryError" "-XX:ErrorFile=${SOLR_LOGS_DIR}/jvm_crash_%p.log" \
@@ -1318,7 +1326,7 @@ function start_solr() {
     # shellcheck disable=SC2086
     nohup "$JAVA" "${SOLR_START_OPTS[@]}" $SOLR_ADDL_ARGS -Dsolr.log.muteconsole \
         -jar start.jar "${SOLR_JETTY_CONFIG[@]}" $SOLR_JETTY_ADDL_CONFIG \
-        1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT.pid"
+        1>"$SOLR_LOGS_DIR/solr-$SOLR_PORT_LISTEN-console.log" 2>&1 & echo $! > "$SOLR_PID_DIR/solr-$SOLR_PORT_LISTEN.pid"
 
     # Check and warn about low entropy on Linux systems
     if [ -e /proc/sys/kernel/random ]; then
@@ -1345,34 +1353,34 @@ function start_solr() {
 
     # no lsof on cygwin though
     if lsof -v 2>&1 | grep -q revision; then
-      echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT"
+      echo -n "Waiting up to $SOLR_START_WAIT seconds to see Solr running on port $SOLR_PORT_LISTEN"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN || :)
+        running=$(lsof -t -PniTCP:$SOLR_PORT_LISTEN -sTCP:LISTEN || :)
         if [ -z "${running:-}" ]; then
           slept=$((loops * 2))
           if [ $slept -lt $SOLR_START_WAIT ]; then
             sleep 2
             loops=$((loops+1))
           else
-            echo -e "Still not seeing Solr listening on $SOLR_PORT after $SOLR_START_WAIT seconds!"
+            echo -e "Still not seeing Solr listening on $SOLR_PORT_LISTEN after $SOLR_START_WAIT seconds!"
             tail -30 "$SOLR_LOGS_DIR/solr.log"
             exit # subshell!
           fi
         else
-          SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
-          echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
+          SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+          echo -e "\nStarted Solr server on port $SOLR_PORT_LISTEN (pid=$SOLR_PID). Happy searching!\n"
           exit # subshell!
         fi
       done) &
       spinner $!
     else
-      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT."
+      echo -e "NOTE: Please install lsof as this script needs it to determine if Solr is listening on port $SOLR_PORT_LISTEN."
       sleep 10
-      SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Djetty\.port=$SOLR_PORT/"' {print $2}' | sort -r)
-      echo -e "\nStarted Solr server on port $SOLR_PORT (pid=$SOLR_PID). Happy searching!\n"
+      SOLR_PID=$(ps auxww | grep start\.jar | awk "/\-Dsolr\.port\.listen=$SOLR_PORT_LISTEN/"' {print $2}' | sort -r)
+      echo -e "\nStarted Solr server on port $SOLR_PORT_LISTEN (pid=$SOLR_PID). Happy searching!\n"
       return;
     fi
   fi

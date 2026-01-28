@@ -33,7 +33,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.StringTokenizer;
 import javax.security.auth.Subject;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SpecProvider;
@@ -148,7 +148,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
                   return true;
                 }
               } else {
-                numErrors.mark();
+                numErrors.inc();
                 authenticationFailure(response, isAjaxRequest, "Invalid authentication token");
                 return false;
               }
@@ -156,7 +156,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
               throw new Error("Couldn't retrieve authentication", e);
             }
           } else {
-            numErrors.mark();
+            numErrors.inc();
             authenticationFailure(response, isAjaxRequest, "Malformed Basic Auth header");
             return false;
           }
@@ -217,7 +217,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin
   @Override
   protected boolean interceptInternodeRequest(Request request) {
     if (forwardCredentials) {
-      Object userToken = request.getAttributes().get(Http2SolrClient.REQ_PRINCIPAL_KEY);
+      Object userToken = request.getAttributes().get(HttpJettySolrClient.REQ_PRINCIPAL_KEY);
       if (userToken instanceof BasicAuthUserPrincipal principal) {
         String userPassBase64 =
             Base64.getEncoder()

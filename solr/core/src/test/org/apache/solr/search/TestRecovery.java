@@ -20,10 +20,6 @@ import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 import static org.apache.solr.util.SolrMatchers.subListMatches;
 
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -45,12 +41,12 @@ import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.hamcrest.FeatureMatcher;
@@ -73,11 +69,8 @@ public class TestRecovery extends SolrTestCaseJ4 {
   private static int timeout = 60;
 
   // TODO: fix this test to not require FSDirectory
-  static String savedFactory;
-
   @Before
   public void beforeTest() throws Exception {
-    savedFactory = System.getProperty("solr.DirectoryFactory");
     System.setProperty("solr.directoryFactory", "org.apache.solr.core.MockFSDirectoryFactory");
     initCore("solrconfig-tlog.xml", "schema15.xml");
 
@@ -92,20 +85,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
   @After
   public void afterTest() {
     TestInjection.reset(); // do after every test, don't wait for AfterClass
-    if (savedFactory == null) {
-      System.clearProperty("solr.directoryFactory");
-    } else {
-      System.setProperty("solr.directoryFactory", savedFactory);
-    }
-
     deleteCore();
-  }
-
-  private Map<String, Metric> getMetrics() {
-    SolrMetricManager manager = h.getCoreContainer().getMetricManager();
-    MetricRegistry registry =
-        manager.registry(h.getCore().getCoreMetricManager().getRegistryName());
-    return registry.getMetrics();
   }
 
   @Test
@@ -230,8 +210,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       createCore();
 
-      Map<String, Metric> metrics = getMetrics(); // live map view
-
       // Solr should kick this off now
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
@@ -244,18 +222,29 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertEquals(
           UpdateLog.State.REPLAYING, h.getCore().getUpdateHandler().getUpdateLog().getState());
+
+      var attributes =
+          SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+              .label("category", "TLOG")
+              .build();
+
       // check metrics
-      @SuppressWarnings({"unchecked"})
-      Gauge<Integer> state = (Gauge<Integer>) metrics.get("TLOG.state");
-      assertEquals(UpdateLog.State.REPLAYING.ordinal(), state.getValue().intValue());
-      @SuppressWarnings({"unchecked"})
-      Gauge<Integer> replayingLogs = (Gauge<Integer>) metrics.get("TLOG.replay.remaining.logs");
-      assertTrue(replayingLogs.getValue() > 0);
-      @SuppressWarnings({"unchecked"})
-      Gauge<Long> replayingDocs = (Gauge<Long>) metrics.get("TLOG.replay.remaining.bytes");
-      assertTrue(replayingDocs.getValue() > 0);
-      Meter replayDocs = (Meter) metrics.get("TLOG.replay.ops");
-      long initialOps = replayDocs.getCount();
+      assertEquals(
+          UpdateLog.State.REPLAYING.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
+
+      var actualReplayingLogs =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              h.getCore(), "solr_core_update_log_replay_logs_remaining", attributes);
+      assertTrue(actualReplayingLogs.getValue() > 0);
+
+      var actualReplayingDocs =
+          SolrMetricTestUtils.getGaugeDatapoint(
+              h.getCore(), "solr_core_update_log_size_remaining_bytes", attributes);
+      assertTrue(actualReplayingDocs.getValue() > 0);
 
       // unblock recovery
       logReplay.release(1000);
@@ -271,8 +260,18 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       assertJQ(req("q", "*:*"), "/response/numFound==3");
 
-      assertEquals(7L, replayDocs.getCount() - initialOps);
-      assertEquals(UpdateLog.State.ACTIVE.ordinal(), state.getValue().intValue());
+      var actualReplayOps =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  h.getCore(), "solr_core_update_log_replay_ops", attributes)
+              .getValue();
+      assertEquals(7.0, actualReplayOps, 0.0);
+
+      assertEquals(
+          UpdateLog.State.ACTIVE.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
 
       // make sure we can still access versions after recovery
       assertJQ(req("qt", "/get", "getVersions", "" + versions.size()), "/versions==" + versions);
@@ -650,8 +649,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
       clearIndex();
       assertU(commit());
 
-      Map<String, Metric> metrics = getMetrics();
-
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
@@ -662,14 +659,18 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       ulog.bufferUpdates();
       assertEquals(UpdateLog.State.BUFFERING, ulog.getState());
-      @SuppressWarnings({"unchecked"})
-      Gauge<Integer> state = (Gauge<Integer>) metrics.get("TLOG.state");
-      assertEquals(UpdateLog.State.BUFFERING.ordinal(), state.getValue().intValue());
-      @SuppressWarnings({"unchecked"})
-      Gauge<Integer> bufferedOps = (Gauge<Integer>) metrics.get("TLOG.buffered.ops");
-      int initialOps = bufferedOps.getValue();
-      Meter applyingBuffered = (Meter) metrics.get("TLOG.applyingBuffered.ops");
-      long initialApplyingOps = applyingBuffered.getCount();
+
+      var attributes =
+          SolrMetricTestUtils.newStandaloneLabelsBuilder(h.getCore())
+              .label("category", "TLOG")
+              .build();
+
+      assertEquals(
+          UpdateLog.State.BUFFERING.ordinal(),
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_state", attributes)
+              .getValue(),
+          0.0);
 
       String v3 = getNextVersion();
       String v940_del = "-" + getNextVersion();
@@ -722,7 +723,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       // be bad for updates to be visible if we're just buffering.
       assertJQ(req("qt", "/get", "id", "B3"), "=={'doc':null}");
 
-      assertEquals(6, bufferedOps.getValue() - initialOps);
+      var actualBufferedOpsValue =
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_buffered_ops", attributes)
+              .getValue();
+      assertEquals(6, actualBufferedOpsValue, 0.0);
 
       rinfoFuture = ulog.applyBufferedUpdates();
       assertNotNull(rinfoFuture);
@@ -734,7 +739,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       UpdateLog.RecoveryInfo rinfo = rinfoFuture.get();
       assertEquals(UpdateLog.State.ACTIVE, ulog.getState());
 
-      assertEquals(6L, applyingBuffered.getCount() - initialApplyingOps);
+      var actualAppliedBufferedOpsValue =
+          SolrMetricTestUtils.getCounterDatapoint(
+                  h.getCore(), "solr_core_update_log_applied_buffered_ops", attributes)
+              .getValue();
+      assertEquals(6, actualAppliedBufferedOpsValue, 0.0);
 
       assertThatJQ(
           req("qt", "/get", "getVersions", "6"),
@@ -868,7 +877,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       assertEquals(
           UpdateLog.State.ACTIVE, ulog.getState()); // leave each test method in a good state
 
-      assertEquals(0, bufferedOps.getValue().intValue());
+      actualBufferedOpsValue =
+          SolrMetricTestUtils.getGaugeDatapoint(
+                  h.getCore(), "solr_core_update_log_buffered_ops", attributes)
+              .getValue();
+      assertEquals(0, actualBufferedOpsValue, 0.0);
     } finally {
       UpdateLog.testing_logReplayHook = null;
       UpdateLog.testing_logReplayFinishHook = null;

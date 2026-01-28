@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.api.model.ZooKeeperStat;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.ZookeeperReadApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
@@ -95,9 +95,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
         bytes[i] = (byte) random().nextInt(128);
       }
       try {
-        cluster
-            .getZkClient()
-            .create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT, true);
+        cluster.getZkClient().create("/configs/_default/testdata", bytes, CreateMode.PERSISTENT);
 
         final var testDataRequest = new ZookeeperReadApi.ReadNode("/configs/_default/testdata");
         final var testDataResponse = testDataRequest.process(client);
@@ -109,7 +107,7 @@ public class ZookeeperReadAPITest extends SolrCloudTestCase {
           }
         }
       } finally {
-        cluster.getZkClient().delete("/configs/_default/testdata", -1, true);
+        cluster.getZkClient().delete("/configs/_default/testdata", -1);
       }
     }
   }

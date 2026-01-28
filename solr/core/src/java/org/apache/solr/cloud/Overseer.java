@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -167,7 +168,7 @@ public class Overseer implements SolrCloseable {
    *
    * <p>The cluster state updater is a single thread dequeueing and executing requests.
    */
-  private class ClusterStateUpdater implements Runnable, Closeable {
+  private class ClusterStateUpdater implements SolrInfoBean, Runnable, Closeable {
 
     private final ZkStateReader reader;
     private final SolrZkClient zkClient;
@@ -183,6 +184,8 @@ public class Overseer implements SolrCloseable {
 
     private boolean isClosed = false;
 
+    private AutoCloseable toClose;
+
     public ClusterStateUpdater(
         final ZkStateReader reader,
         final String myId,
@@ -196,12 +199,25 @@ public class Overseer implements SolrCloseable {
       this.minStateByteLenForCompression = minStateByteLenForCompression;
       this.compressor = compressor;
 
-      clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
-      clusterStateUpdaterMetricContext.gauge(
-          () -> stateUpdateQueue.getZkStats().getQueueLength(),
-          true,
-          "stateUpdateQueueSize",
-          "queue");
+      this.clusterStateUpdaterMetricContext = solrMetricsContext.getChildContext(this);
+      initializeMetrics(solrMetricsContext, Attributes.of(CATEGORY_ATTR, getCategory().toString()));
+    }
+
+    @Override
+    public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+      this.toClose =
+          parentContext.observableLongGauge(
+              "solr_overseer_state_update_queue_size",
+              "Size of overseer's update queue",
+              (observableLongMeasurement) -> {
+                observableLongMeasurement.record(
+                    stateUpdateQueue.getZkStats().getQueueLength(), attributes);
+              });
+    }
+
+    @Override
+    public SolrMetricsContext getSolrMetricsContext() {
+      return clusterStateUpdaterMetricContext;
     }
 
     public Stats getStateUpdateQueueStats() {
@@ -390,7 +406,7 @@ public class Overseer implements SolrCloseable {
     }
 
     // Return true whenever the exception thrown by ZkStateWriter is correspond
-    // to a invalid state or 'bad' message (in this case, we should remove that message from queue)
+    // to an invalid state or 'bad' message (in this case, we should remove that message from queue)
     private boolean isBadMessage(Exception e) {
       if (e instanceof KeeperException ke) {
         return ke.code() == KeeperException.Code.NONODE
@@ -449,7 +465,7 @@ public class Overseer implements SolrCloseable {
       final String path = OVERSEER_ELECT + "/leader";
       byte[] data;
       try {
-        data = zkClient.getData(path, null, stat, true);
+        data = zkClient.getData(path, null, stat);
       } catch (IllegalStateException | KeeperException.NoNodeException e) {
         return;
       } catch (Exception e) {
@@ -464,7 +480,7 @@ public class Overseer implements SolrCloseable {
             log.warn(
                 "I (id={}) am exiting, but I'm still the leader",
                 overseerCollectionConfigSetProcessor.getId());
-            zkClient.delete(path, stat.getVersion(), true);
+            zkClient.delete(path, stat.getVersion());
           } catch (KeeperException.BadVersionException e) {
             // no problem ignore it some other Overseer has already taken over
           } catch (Exception e) {
@@ -586,7 +602,7 @@ public class Overseer implements SolrCloseable {
       String propsId = null;
       try {
         ZkNodeProps props =
-            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null, true));
+            ZkNodeProps.load(zkClient.getData(OVERSEER_ELECT + "/leader", null, null));
         propsId = props.getStr(ID);
         if (myId.equals(propsId)) {
           return LeaderStatus.YES;
@@ -624,7 +640,22 @@ public class Overseer implements SolrCloseable {
     @Override
     public void close() {
       this.isClosed = true;
-      clusterStateUpdaterMetricContext.unregister();
+      IOUtils.closeQuietly(toClose);
+    }
+
+    @Override
+    public String getName() {
+      return this.getClass().getName();
+    }
+
+    @Override
+    public String getDescription() {
+      return "Cluster leader responsible for processing state updates";
+    }
+
+    @Override
+    public Category getCategory() {
+      return Category.OVERSEER;
     }
   }
 
@@ -699,8 +730,7 @@ public class Overseer implements SolrCloseable {
     this.solrMetricsContext =
         new SolrMetricsContext(
             zkController.getCoreContainer().getMetricManager(),
-            SolrInfoBean.Group.overseer.toString(),
-            metricTag);
+            SolrInfoBean.Group.overseer.toString());
   }
 
   public synchronized void start(String id) {
@@ -997,7 +1027,7 @@ public class Overseer implements SolrCloseable {
 
   private void createOverseerNode(final SolrZkClient zkClient) {
     try {
-      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT, true);
+      zkClient.create("/overseer", new byte[0], CreateMode.PERSISTENT);
     } catch (KeeperException.NodeExistsException e) {
       // ok
     } catch (InterruptedException e) {

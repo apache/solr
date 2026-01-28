@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.client.solrj.impl.CloudSolrClient.RouteResponse;
 
 import java.io.IOException;
@@ -33,25 +35,28 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.METHOD;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -60,6 +65,8 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
+import org.apache.solr.common.cloud.PerReplicaStates;
+import org.apache.solr.common.cloud.PerReplicaStatesOps;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -67,6 +74,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.URLUtil;
@@ -77,6 +85,7 @@ import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.LogListener;
+import org.apache.solr.util.SolrJMetricTestUtils;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -93,12 +102,17 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   private static final int TIMEOUT = 30;
   private static final int NODE_COUNT = 3;
 
-  private static CloudSolrClient httpBasedCloudSolrClient = null;
-  private static CloudSolrClient zkBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient httpJettyBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient httpJdkBasedCloudSolrClient = null;
+  private static CloudHttp2SolrClient zkBasedCloudSolrClient = null;
 
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("metricsEnabled", "true");
+    // BaseHttpClusterStateProvider has a background job that pre-fetches data from CLUSTERSTATUS
+    // on timed intervals.  This can pollute this test, so we set the interval very high to
+    // prevent it from running.
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "" + Integer.MAX_VALUE);
     configureCluster(NODE_COUNT)
         .addConfig(
             "conf",
@@ -111,40 +125,66 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    httpBasedCloudSolrClient = new CloudHttp2SolrClient.Builder(solrUrls).build();
+
+    httpJettyBasedCloudSolrClient =
+        new CloudSolrClient.Builder(solrUrls)
+            .withHttpClientBuilder(new HttpJettySolrClient.Builder())
+            .build();
+    assertTrue(httpJettyBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
+    assertTrue(
+        httpJettyBasedCloudSolrClient.getClusterStateProvider()
+            instanceof HttpClusterStateProvider<?>);
+    assertTrue(
+        ((HttpClusterStateProvider<?>) httpJettyBasedCloudSolrClient.getClusterStateProvider())
+                .getHttpClient()
+            instanceof HttpJettySolrClient);
+
+    httpJdkBasedCloudSolrClient =
+        new CloudSolrClient.Builder(solrUrls)
+            .withHttpClientBuilder(
+                new HttpJdkSolrClient.Builder()
+                    .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT))
+            .build();
+    assertTrue(httpJdkBasedCloudSolrClient.getHttpClient() instanceof HttpJdkSolrClient);
+    assertTrue(
+        httpJdkBasedCloudSolrClient.getClusterStateProvider()
+            instanceof HttpClusterStateProvider<?>);
+    assertTrue(
+        ((HttpClusterStateProvider<?>) httpJdkBasedCloudSolrClient.getClusterStateProvider())
+                .getHttpClient()
+            instanceof HttpJdkSolrClient);
+
     zkBasedCloudSolrClient =
-        new CloudHttp2SolrClient.Builder(
+        new CloudSolrClient.Builder(
                 Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
             .build();
+    assertTrue(zkBasedCloudSolrClient.getHttpClient() instanceof HttpJettySolrClient);
+    assertTrue(
+        zkBasedCloudSolrClient.getClusterStateProvider() instanceof ZkClientClusterStateProvider);
   }
 
   @AfterClass
   public static void tearDownAfterClass() throws Exception {
-
-    if (httpBasedCloudSolrClient != null) {
-      try {
-        httpBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-    if (zkBasedCloudSolrClient != null) {
-      try {
-        zkBasedCloudSolrClient.close();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
+    IOUtils.closeQuietly(httpJettyBasedCloudSolrClient);
+    IOUtils.closeQuietly(httpJdkBasedCloudSolrClient);
+    IOUtils.closeQuietly(zkBasedCloudSolrClient);
 
     shutdownCluster();
-    httpBasedCloudSolrClient = null;
+    httpJettyBasedCloudSolrClient = null;
+    httpJdkBasedCloudSolrClient = null;
     zkBasedCloudSolrClient = null;
   }
 
   /** Randomly return the cluster's ZK based CSC, or HttpClusterProvider based CSC. */
   private CloudSolrClient getRandomClient() {
-    //    return random().nextBoolean()? zkBasedCloudSolrClient : httpBasedCloudSolrClient;
-    return httpBasedCloudSolrClient;
+    int randInt = random().nextInt(3);
+    if (randInt == 0) {
+      return zkBasedCloudSolrClient;
+    }
+    if (randInt == 1) {
+      return httpJettyBasedCloudSolrClient;
+    }
+    return httpJdkBasedCloudSolrClient;
   }
 
   @Test
@@ -256,6 +296,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
   @Test
   @LogLevel("org.apache.solr.servlet.HttpSolrCall=DEBUG")
   public void testHttpCspPerf() throws Exception {
+    // This ensures CH2SC is caching cluster status by counting the number of logged calls to the
+    // admin endpoint. Too many calls to CLUSTERSTATUS might mean insufficient caching and
+    // performance regressions!
 
     String collectionName = "HTTPCSPTEST";
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
@@ -298,12 +341,15 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         assertEquals(2, adminLogs.getCount());
       }
     }
+
+    // Clean up the collection to allow test iterations to succeed
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
   private CloudSolrClient createHttpCSPBasedCloudSolrClient() {
     final List<String> solrUrls = new ArrayList<>();
     solrUrls.add(cluster.getJettySolrRunner(0).getBaseUrl().toString());
-    return new CloudHttp2SolrClient.Builder(solrUrls).build();
+    return new CloudSolrClient.Builder(solrUrls).build();
   }
 
   @Test
@@ -402,7 +448,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     // Track request counts on each node before query calls
     ClusterState clusterState = cluster.getSolrClient().getClusterState();
     DocCollection col = clusterState.getCollection("routing_collection");
-    Map<String, Long> requestCountsMap = new HashMap<>();
+    Map<String, Double> requestCountsMap = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
@@ -463,17 +509,17 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // Request counts increase from expected nodes should aggregate to 1000, while there should be
     // no increase in unexpected nodes.
-    long increaseFromExpectedUrls = 0;
-    long increaseFromUnexpectedUrls = 0;
-    Map<String, Long> numRequestsToUnexpectedUrls = new HashMap<>();
+    double increaseFromExpectedUrls = 0.0;
+    double increaseFromUnexpectedUrls = 0.0;
+    Map<String, Double> numRequestsToUnexpectedUrls = new HashMap<>();
     for (Slice slice : col.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         String baseURL = replica.getBaseUrl();
 
-        Long prevNumRequests = requestCountsMap.get(baseURL);
-        Long curNumRequests = getNumRequests(baseURL, "routing_collection");
+        Double prevNumRequests = requestCountsMap.get(baseURL);
+        Double curNumRequests = getNumRequests(baseURL, "routing_collection");
 
-        long delta = curNumRequests - prevNumRequests;
+        Double delta = curNumRequests - prevNumRequests;
         if (expectedBaseURLs.contains(baseURL)) {
           increaseFromExpectedUrls += delta;
         } else {
@@ -483,11 +529,13 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       }
     }
 
-    assertEquals("Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls);
+    assertEquals(
+        "Unexpected number of requests to expected URLs", n, increaseFromExpectedUrls, 0.0);
     assertEquals(
         "Unexpected number of requests to unexpected URLs: " + numRequestsToUnexpectedUrls,
         0,
-        increaseFromUnexpectedUrls);
+        increaseFromUnexpectedUrls,
+        0.0);
   }
 
   /**
@@ -643,57 +691,6 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
   }
 
-  private Long getNumRequests(String baseUrl, String collectionName)
-      throws SolrServerException, IOException {
-    return getNumRequests(baseUrl, collectionName, "QUERY", "/select", null, false);
-  }
-
-  private Long getNumRequests(
-      String baseUrl,
-      String collectionName,
-      String category,
-      String key,
-      String scope,
-      boolean returnNumErrors)
-      throws SolrServerException, IOException {
-
-    NamedList<Object> resp;
-    try (SolrClient client =
-        new HttpSolrClient.Builder(baseUrl)
-            .withDefaultCollection(collectionName)
-            .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-            .withSocketTimeout(60000, TimeUnit.MILLISECONDS)
-            .build()) {
-      ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("stats", "true");
-      params.set("key", key);
-      params.set("cat", category);
-      // use generic request to avoid extra processing of queries
-      var req =
-          new GenericSolrRequest(
-                  SolrRequest.METHOD.GET, "/admin/mbeans", SolrRequestType.ADMIN, params)
-              .setRequiresCollection(true);
-      resp = client.request(req);
-    }
-    String name;
-    if (returnNumErrors) {
-      name = category + "." + (scope != null ? scope : key) + ".errors";
-    } else {
-      name = category + "." + (scope != null ? scope : key) + ".requests";
-    }
-    @SuppressWarnings({"unchecked"})
-    Map<String, Object> map =
-        (Map<String, Object>) resp._get(List.of("solr-mbeans", category, key, "stats"), null);
-    if (map == null) {
-      return null;
-    }
-    if (scope != null) { // admin handler uses a meter instead of counter here
-      return (Long) map.get(name + ".count");
-    } else {
-      return (Long) map.get(name);
-    }
-  }
-
   @Test
   public void testNonRetryableRequests() throws Exception {
 
@@ -720,15 +717,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         for (String adminPath : adminPathToMbean.keySet()) {
           long errorsBefore = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests =
-                getNumRequests(
+            Double numRequests =
+                SolrJMetricTestUtils.getNumNodeRequestErrors(
                     runner.getBaseUrl().toString(),
-                    "foo",
-                    "ADMIN",
-                    adminPathToMbean.get(adminPath),
-                    adminPath,
-                    true);
-            errorsBefore += numRequests;
+                    SolrRequest.SolrRequestType.ADMIN.name(),
+                    adminPath);
+            errorsBefore += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
@@ -739,7 +733,8 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           params.set("action", "foobar"); // this should cause an error
 
           var request =
-              new GenericSolrRequest(METHOD.GET, adminPath, SolrRequestType.ADMIN, params);
+              new GenericSolrRequest(
+                  SolrRequest.METHOD.GET, adminPath, SolrRequest.SolrRequestType.ADMIN, params);
           try {
             NamedList<Object> resp = client.request(request);
             fail("call to foo for admin path " + adminPath + " should have failed");
@@ -748,15 +743,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
           }
           long errorsAfter = 0;
           for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-            Long numRequests =
-                getNumRequests(
+            Double numRequests =
+                SolrJMetricTestUtils.getNumNodeRequestErrors(
                     runner.getBaseUrl().toString(),
-                    "foo",
-                    "ADMIN",
-                    adminPathToMbean.get(adminPath),
-                    adminPath,
-                    true);
-            errorsAfter += numRequests;
+                    SolrRequest.SolrRequestType.ADMIN.name(),
+                    adminPath);
+            errorsAfter += numRequests.longValue();
             if (log.isInfoEnabled()) {
               log.info(
                   "Found {} requests to {} on {}", numRequests, adminPath, runner.getBaseUrl());
@@ -768,6 +760,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         fail("Collection could not be created within 60 seconds");
       }
     }
+  }
+
+  private Double getNumRequests(String baseUrl, String collectionName)
+      throws SolrServerException, IOException {
+    return SolrJMetricTestUtils.getNumCoreRequests(baseUrl, collectionName, "QUERY", "/select");
   }
 
   @Test
@@ -828,7 +825,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     Replica r = coll.getSlices().iterator().next().getReplicas().iterator().next();
 
     SolrQuery q = new SolrQuery().setQuery("*:*");
-    SolrClient.RemoteSolrException sse = null;
+    RemoteSolrException sse = null;
 
     try (SolrClient solrClient = getHttpSolrClient(r.getBaseUrl(), COLLECTION)) {
 
@@ -882,7 +879,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
       try {
         QueryResponse rsp = solrClient.query(q);
         log.info("error was expected");
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         sse = e;
       }
       assertNotNull(sse);
@@ -998,7 +995,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(COLLECTION, 2, 2);
-    CloudSolrClient client = httpBasedCloudSolrClient;
+    CloudSolrClient client = httpJettyBasedCloudSolrClient;
     SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "my doc");
     new UpdateRequest().add(doc).commit(client, COLLECTION);
     assertEquals(1, client.query(COLLECTION, params("q", "*:*")).getResults().getNumFound());
@@ -1069,7 +1066,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
       // ...and delete our original leader.
       assertEquals(
@@ -1080,7 +1077,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
               // change
               .process(cluster.getSolrClient())
               .getStatus());
-      AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+      AbstractFullDistribZkTestBase.waitForRecoveriesToFinish(
           COL, cluster.getZkStateReader(), true, true, 330);
 
       // stale_client's collection state cache should now only point at a leader that no longer
@@ -1207,6 +1204,74 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     assertTrue("No responses", shardAddresses.size() > 0);
     if (log.isInfoEnabled()) {
       log.info("Shards giving the response: {}", Arrays.toString(shardAddresses.toArray()));
+    }
+  }
+
+  @Test
+  public void testPing() throws Exception {
+    final String testCollection = "ping_test";
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 2);
+    final SolrClient clientUnderTest = getRandomClient();
+
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+
+    assertEquals("This should be OK", 0, response.getStatus());
+  }
+
+  public void testPerReplicaStateCollection() throws Exception {
+    String collection = getSaferTestName();
+
+    CollectionAdminRequest.createCollection(collection, "conf", 2, 1)
+        .process(cluster.getSolrClient());
+
+    String testCollection = "perReplicaState_test";
+    String collectionPath = DocCollection.getCollectionPath(testCollection);
+
+    int liveNodes = cluster.getJettySolrRunners().size();
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 2)
+        .setPerReplicaState(Boolean.TRUE)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 4);
+    final SolrClient clientUnderTest = getRandomClient();
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+    assertEquals("This should be OK", 0, response.getStatus());
+
+    DocCollection c = cluster.getZkStateReader().getCollection(testCollection);
+    c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+    PerReplicaStates prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+    assertEquals(4, prs.states.size());
+
+    JettySolrRunner jsr = null;
+    try {
+      jsr = cluster.startJettySolrRunner();
+
+      // Now let's do an add replica
+      CollectionAdminRequest.addReplicaToShard(testCollection, "shard1")
+          .process(cluster.getSolrClient());
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(5, prs.states.size());
+
+      // create a collection with PRS and v2 API
+      testCollection = "perReplicaState_testv2";
+      collectionPath = DocCollection.getCollectionPath(testCollection);
+
+      new V2Request.Builder("/collections")
+          .withMethod(POST)
+          .withPayload(
+              "{\"name\": \"perReplicaState_testv2\", \"config\" : \"conf\", \"numShards\" : 2, \"nrtReplicas\" : 2, \"perReplicaState\" : true}")
+          .build()
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(testCollection, 2, 4);
+      c = cluster.getZkStateReader().getCollection(testCollection);
+      c.forEachReplica((s, replica) -> assertNotNull(replica.getReplicaState()));
+      prs = PerReplicaStatesOps.fetch(collectionPath, cluster.getZkClient(), null);
+      assertEquals(4, prs.states.size());
+    } finally {
+      if (jsr != null) {
+        cluster.stopJettySolrRunner(jsr);
+      }
     }
   }
 }

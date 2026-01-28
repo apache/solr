@@ -30,7 +30,9 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.eclipse.jetty.client.Request;
 
 /** Utilities for distributed tracing. */
@@ -119,8 +121,10 @@ public class TraceUtils {
    * @param consumer consumer to be called
    */
   public static void ifValidTraceId(Span span, Consumer<Span> consumer) {
-    if (TraceId.isValid(span.getSpanContext().getTraceId())) {
-      consumer.accept(span);
+    if (span.isRecording()) {
+      if (TraceId.isValid(span.getSpanContext().getTraceId())) {
+        consumer.accept(span);
+      }
     }
   }
 
@@ -132,12 +136,12 @@ public class TraceUtils {
     return (Span) req.getAttribute(REQ_ATTR_TRACING_SPAN);
   }
 
-  public static void setTracer(HttpServletRequest req, Tracer t) {
-    req.setAttribute(REQ_ATTR_TRACING_TRACER, t);
-  }
-
   public static Tracer getTracer(HttpServletRequest req) {
-    return (Tracer) req.getAttribute(REQ_ATTR_TRACING_TRACER);
+    // This attribute is required to be not null, this method should only be called after
+    // requiredSolrRequestFilter has invoked chain.doFilter(req, res)
+    return ((CoreContainer)
+            req.getAttribute(RequiredSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE))
+        .getTracer();
   }
 
   public static Context extractContext(HttpServletRequest req) {

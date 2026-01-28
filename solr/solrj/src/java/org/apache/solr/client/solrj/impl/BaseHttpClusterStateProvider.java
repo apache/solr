@@ -17,8 +17,6 @@
 
 package org.apache.solr.client.solrj.impl;
 
-import static org.apache.solr.client.solrj.SolrClient.RemoteSolrException;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
@@ -34,6 +32,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -56,6 +55,8 @@ import org.slf4j.LoggerFactory;
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  protected static final String SYS_PROP_CACHE_TIMEOUT_SECONDS = "solr.solrj.cache.timeout.sec";
+
   private String urlScheme;
   private List<URL> configuredNodes;
   volatile Set<String> liveNodes; // initially null then never null
@@ -65,7 +66,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   long aliasesTimestamp = 0;
 
   // the liveNodes and aliases cache will be invalidated after 5 secs
-  private int cacheTimeout = EnvUtils.getPropertyAsInteger("solr.solrj.cache.timeout.sec", 5);
+  private int cacheTimeout = EnvUtils.getPropertyAsInteger(SYS_PROP_CACHE_TIMEOUT_SECONDS, 5);
 
   volatile boolean liveNodeReloadingScheduled = false;
   private final ScheduledExecutorService liveNodeReloadingService =

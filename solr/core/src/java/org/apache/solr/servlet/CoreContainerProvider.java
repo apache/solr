@@ -23,12 +23,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.codahale.metrics.jvm.CachedThreadStatesGaugeSet;
-import com.codahale.metrics.jvm.ClassLoadingGaugeSet;
-import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
-import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
-import com.codahale.metrics.jvm.ThreadStatesGaugeSet;
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -42,7 +36,6 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import javax.naming.Context;
 import javax.naming.InitialContext;
@@ -51,24 +44,13 @@ import javax.naming.NoInitialContextException;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.MetricsConfig;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrInfoBean.Group;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.metrics.AltBufferPoolMetricSet;
-import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.OperatingSystemMetricSet;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricManager.ResolutionStrategy;
-import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,12 +62,7 @@ import org.slf4j.LoggerFactory;
  */
 public class CoreContainerProvider implements ServletContextListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private CoreContainer cores;
-  private Properties extraProperties;
-  private SolrMetricManager metricManager;
-  private RateLimitManager rateLimitManager;
-  private String registryName;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -152,22 +129,8 @@ public class CoreContainerProvider implements ServletContextListener {
     //    }
 
     cores = null;
-    try {
-      if (metricManager != null) {
-        try {
-          metricManager.unregisterGauges(registryName, metricTag);
-        } catch (NullPointerException e) {
-          // okay
-        } catch (Exception e) {
-          log.warn("Exception closing FileCleaningTracker", e);
-        } finally {
-          metricManager = null;
-        }
-      }
-    } finally {
-      if (cc != null) {
-        cc.shutdown();
-      }
+    if (cc != null) {
+      cc.shutdown();
     }
   }
 
@@ -180,7 +143,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // "extra" properties must be initialized first, so we know things like "do we have a zkHost"
       // wrap as defaults (if set) so we can modify w/o polluting the Properties provided by our
       // caller
-      this.extraProperties =
+      Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
               (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
 
@@ -189,7 +152,7 @@ public class CoreContainerProvider implements ServletContextListener {
         log.info("Using logger factory {}", StartupLoggingUtils.getLoggerImplStr());
       }
 
-      logWelcomeBanner();
+      logWelcomeBanner(extraProperties);
 
       String muteConsole = System.getProperty(SOLR_LOG_MUTECONSOLE);
       if (muteConsole != null
@@ -217,22 +180,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-      setupJvmMetrics(coresInit, coresInit.getNodeConfig().getMetricsConfig());
-
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-
-      Builder builder = new Builder(zkClient);
-
-      this.rateLimitManager = builder.build();
-
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
@@ -249,7 +196,7 @@ public class CoreContainerProvider implements ServletContextListener {
     }
   }
 
-  private void logWelcomeBanner() {
+  private void logWelcomeBanner(Properties props) {
     // _Really_ sorry about how clumsy this is as a result of the logging call checker, but this is
     // the only one that's so ugly so far.
     if (log.isInfoEnabled()) {
@@ -258,7 +205,7 @@ public class CoreContainerProvider implements ServletContextListener {
     if (log.isInfoEnabled()) {
       log.info(
           "/ __| ___| |_ _   Starting in {} mode on port {}",
-          isCloudMode() ? "cloud" : "standalone",
+          isCloudMode(props) ? "cloud" : "standalone",
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
@@ -312,7 +259,7 @@ public class CoreContainerProvider implements ServletContextListener {
   }
 
   private String getSolrPort() {
-    return System.getProperty("jetty.port");
+    return EnvUtils.getProperty("solr.port.listen");
   }
 
   /**
@@ -320,12 +267,12 @@ public class CoreContainerProvider implements ServletContextListener {
    * is non-empty
    *
    * @see SolrXmlConfig#wrapAndSetZkHostFromSysPropIfNeeded
-   * @see #extraProperties
    * @see #init
+   * @param props the "extra properties" which will indicate cloud mode before startup.
    */
-  private boolean isCloudMode() {
-    assert null != extraProperties; // we should never be called w/o this being initialized
-    return (null != extraProperties.getProperty(SolrXmlConfig.ZK_HOST))
+  private boolean isCloudMode(Properties props) {
+    assert null != props; // we should never be called w/o this being initialized
+    return (null != props.getProperty(SolrXmlConfig.ZK_HOST))
         || EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
   }
 
@@ -395,74 +342,5 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  private void setupJvmMetrics(CoreContainer coresInit, MetricsConfig config) {
-    metricManager = coresInit.getMetricManager();
-    registryName = SolrMetricManager.getRegistryName(Group.jvm);
-    final NodeConfig nodeConfig = coresInit.getConfig();
-    try {
-      metricManager.registerAll(
-          registryName, new AltBufferPoolMetricSet(), ResolutionStrategy.IGNORE, "buffers");
-      metricManager.registerAll(
-          registryName, new ClassLoadingGaugeSet(), ResolutionStrategy.IGNORE, "classes");
-      metricManager.registerAll(
-          registryName, new OperatingSystemMetricSet(), ResolutionStrategy.IGNORE, "os");
-      metricManager.registerAll(
-          registryName, new GarbageCollectorMetricSet(), ResolutionStrategy.IGNORE, "gc");
-      metricManager.registerAll(
-          registryName, new MemoryUsageGaugeSet(), ResolutionStrategy.IGNORE, "memory");
-
-      if (config.getCacheConfig() != null
-          && config.getCacheConfig().threadsIntervalSeconds != null) {
-        if (log.isInfoEnabled()) {
-          log.info(
-              "Threads metrics will be cached for {} seconds",
-              config.getCacheConfig().threadsIntervalSeconds);
-        }
-        metricManager.registerAll(
-            registryName,
-            new CachedThreadStatesGaugeSet(
-                config.getCacheConfig().threadsIntervalSeconds, TimeUnit.SECONDS),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      } else {
-        metricManager.registerAll(
-            registryName,
-            new ThreadStatesGaugeSet(),
-            SolrMetricManager.ResolutionStrategy.IGNORE,
-            "threads");
-      }
-
-      MetricsMap sysprops =
-          new MetricsMap(
-              map ->
-                  System.getProperties()
-                      .forEach(
-                          (k, v) -> {
-                            if (!nodeConfig.isSysPropHidden(String.valueOf(k))) {
-                              map.putNoEx(String.valueOf(k), v);
-                            }
-                          }));
-      metricManager.registerGauge(
-          null,
-          registryName,
-          sysprops,
-          metricTag,
-          ResolutionStrategy.IGNORE,
-          "properties",
-          "system");
-    } catch (Exception e) {
-      log.warn("Error registering JVM metrics", e);
-    }
-  }
-
-  public RateLimitManager getRateLimitManager() {
-    return rateLimitManager;
-  }
-
-  @VisibleForTesting
-  void setRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
   }
 }

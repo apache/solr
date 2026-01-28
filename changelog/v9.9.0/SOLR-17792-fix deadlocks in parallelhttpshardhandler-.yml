@@ -1,0 +1,8 @@
+title: Fix deadlocks in ParallelHttpShardHandler, re-implement synchronization in
+  HttpShardHandler
+type: fixed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17792
+  url: https://issues.apache.org/jira/browse/SOLR-17792

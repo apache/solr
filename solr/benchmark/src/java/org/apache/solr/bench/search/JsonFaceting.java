@@ -28,7 +28,6 @@ import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -76,9 +75,6 @@ public class JsonFaceting {
     @Param({"false", "true"})
     boolean useTimeLimit;
 
-    @Param({"false", "true"})
-    boolean useExitableDirectoryReader;
-
     // DV,  // DocValues, collect into ordinal array
     // UIF, // UnInvertedField, collect into ordinal array
     // DVHASH, // DocValues, collect into hash
@@ -109,11 +105,6 @@ public class JsonFaceting {
 
       System.setProperty("maxMergeAtOnce", "50");
       System.setProperty("segmentsPerTier", "50");
-      if (useExitableDirectoryReader) {
-        System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, "true");
-      } else {
-        System.setProperty(SolrIndexSearcher.EXITABLE_READER_PROPERTY, "false");
-      }
 
       miniClusterState.startMiniCluster(nodeCount);
 
@@ -202,10 +193,7 @@ public class JsonFaceting {
     final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
     NamedList<Object> result =
-        miniClusterState
-            .client
-            .requestWithBaseUrl(url, state.collection, queryRequest)
-            .getResponse();
+        miniClusterState.client.requestWithBaseUrl(url, queryRequest, state.collection);
 
     // MiniClusterState.log("result: " + result);
 

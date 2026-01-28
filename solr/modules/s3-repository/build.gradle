@@ -57,16 +57,7 @@ dependencies {
   testImplementation libs.hamcrest.hamcrest
 
   testImplementation(libs.adobe.testing.s3mock.junit4) {
-    // Don't pull in separate versions of these libs, just use what Solr already has
-    exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
-    exclude group: 'ch.qos.logback', module: 'logback-classic'
-    exclude group: 'org.eclipse.jetty', module: '*'
-    exclude group: 'io.netty', module: '*'
-    exclude group: 'commons-io', module: 'commons-io'
-    exclude group: 'commons-codec', module: 'commons-codec'
-    exclude group: 'org.apache.commons', module: 'commons-lang3'
-    exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
-    exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    transitive = false
   }
   testImplementation(libs.adobe.testing.s3mock.testsupportcommon) {
     // Don't pull in separate versions of these libs, just use what Solr already has
@@ -79,6 +70,7 @@ dependencies {
     exclude group: 'org.apache.commons', module: 'commons-lang3'
     exclude group: 'software.amazon.awssdk', module: 'netty-nio-client'
     exclude group: 'org.codehaus.woodstox', module: 'stax2-api'
+    exclude group: 'org.springframework.boot', module: 'spring-boot-actuator-autoconfigure'
   }
 
   testImplementation libs.commonsio.commonsio
@@ -95,7 +87,8 @@ dependencies {
 
 test {
   // S3Mock uses Spring Boot under the hood, which tries to do too much auto configuration that we don't want
-  environment "spring.autoconfigure.exclude", "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration"
+  environment "spring.autoconfigure.exclude",
+      "org.springframework.boot.autoconfigure.solr.SolrAutoConfiguration"
   environment "spring.jmx.enabled", "false"
 
   // Without this, randomizedtesting will think our tests leak threads (b/c S3Mock's Jetty hasn't bothered to clean up yet)

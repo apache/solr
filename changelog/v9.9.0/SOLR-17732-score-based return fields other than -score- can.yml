@@ -1,0 +1,8 @@
+title: Score-based return fields other than "score" can now be returned in distributed
+  queries.
+type: changed
+authors:
+- name: Houston Putman
+links:
+- name: SOLR-17732
+  url: https://issues.apache.org/jira/browse/SOLR-17732

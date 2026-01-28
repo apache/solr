@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.impl;
 
+import static org.apache.solr.client.solrj.impl.BaseHttpClusterStateProvider.SYS_PROP_CACHE_TIMEOUT_SECONDS;
 import static org.apache.solr.common.util.URLUtil.getNodeNameForBaseUrl;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -34,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -64,9 +66,9 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
 
     @Override
     protected PreparedRequest prepareRequest(
-        SolrRequest<?> solrRequest, String collection, String overrideBaseUrl)
+        String overrideBaseUrl, SolrRequest<?> solrRequest, String collection)
         throws SolrServerException, IOException {
-      var pr = super.prepareRequest(solrRequest, collection, overrideBaseUrl);
+      var pr = super.prepareRequest(overrideBaseUrl, solrRequest, collection);
       pr.reqb.header("User-Agent", userAgent);
       return pr;
     }
@@ -84,7 +86,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 .resolve("conf"))
         .configure();
     cluster.waitForAllNodes(30);
-    System.setProperty("solr.solrj.cache.timeout.sec", "1");
+    System.setProperty(SYS_PROP_CACHE_TIMEOUT_SECONDS, "1");
   }
 
   @After
@@ -100,9 +102,9 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
         new String[] {"http2ClusterStateProvider"}, new String[] {"zkClientClusterStateProvider"});
   }
 
-  static class ClosingHttp2ClusterStateProvider
-      extends Http2ClusterStateProvider<HttpSolrClientBase> {
-    public ClosingHttp2ClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient)
+  static class ClosingHttpClusterStateProvider
+      extends HttpClusterStateProvider<HttpSolrClientBase> {
+    public ClosingHttpClusterStateProvider(List<String> solrUrls, HttpSolrClientBase httpClient)
         throws Exception {
       super(solrUrls, httpClient);
     }
@@ -118,7 +120,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     }
   }
 
-  private static Http2ClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
+  private static HttpClusterStateProvider<?> http2ClusterStateProvider(String userAgent) {
     try {
       var useJdkProvider = random().nextBoolean();
       HttpSolrClientBase client;
@@ -131,7 +133,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                       .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT),
                   userAgent);
         } else {
-          var http2SolrClient = new Http2SolrClient.Builder().build();
+          var http2SolrClient = new HttpJettySolrClient.Builder().build();
           http2SolrClient
               .getHttpClient()
               .setUserAgentField(new HttpField(HttpHeader.USER_AGENT, userAgent));
@@ -143,13 +145,13 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
                 ? new HttpJdkSolrClient.Builder()
                     .withSSLContext(MockTrustManager.ALL_TRUSTING_SSL_CONTEXT)
                     .build()
-                : new Http2SolrClient.Builder().build();
+                : new HttpJettySolrClient.Builder().build();
       }
       var clientClassName = client.getClass().getName();
       log.info("Using Http client implementation: {}", clientClassName);
 
       var csp =
-          new ClosingHttp2ClusterStateProvider(
+          new ClosingHttpClusterStateProvider(
               List.of(
                   cluster.getJettySolrRunner(0).getBaseUrl().toString(),
                   cluster.getJettySolrRunner(1).getBaseUrl().toString()),
@@ -160,7 +162,7 @@ public class ClusterStateProviderTest extends SolrCloudTestCase {
     }
   }
 
-  private static Http2ClusterStateProvider<?> http2ClusterStateProvider() {
+  private static HttpClusterStateProvider<?> http2ClusterStateProvider() {
     return http2ClusterStateProvider(null);
   }
 

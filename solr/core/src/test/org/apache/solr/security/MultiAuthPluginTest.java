@@ -46,8 +46,9 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.message.BasicHeader;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -132,12 +133,12 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
           pass);
 
       // anonymous requests are blocked by all plugins
-      int statusCode = doHttpGetAnonymous(httpClient, baseUrl + "/admin/info/system");
+      int statusCode = doHttpGetAnonymous(httpClient, baseUrl + CommonParams.SYSTEM_INFO_PATH);
       assertEquals("anonymous get succeeded but should not have", 401, statusCode);
       // update blockUnknown to allow anonymous for the basic plugin
       String command = "{\n" + "'set-property': { 'basic': {'blockUnknown':false} }\n" + "}";
       doHttpPost(httpClient, baseUrl + authcPrefix, command, user, pass, 200);
-      statusCode = doHttpGetAnonymous(httpClient, baseUrl + "/admin/info/system");
+      statusCode = doHttpGetAnonymous(httpClient, baseUrl + CommonParams.SYSTEM_INFO_PATH);
       assertEquals("anonymous get failed but should have succeeded", 200, statusCode);
 
       // For the multi-auth plugin, every command is wrapped with an object that identifies the
@@ -474,7 +475,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
       securityConfHandler.securityConfEdited();
 
       // Pretend to send unauthorized AJAX request
-      HttpGet httpGet = new HttpGet(baseUrl + "/admin/info/system");
+      HttpGet httpGet = new HttpGet(baseUrl + CommonParams.SYSTEM_INFO_PATH);
       httpGet.addHeader(new BasicHeader("X-Requested-With", "XMLHttpRequest"));
 
       HttpResponse response = httpClient.execute(httpGet);
@@ -515,7 +516,7 @@ public class MultiAuthPluginTest extends SolrTestCaseJ4 {
 
   private void verifyWWWAuthenticateHeaders(HttpClient httpClient, String baseUrl)
       throws Exception {
-    HttpGet httpGet = new HttpGet(baseUrl + "/admin/info/system");
+    HttpGet httpGet = new HttpGet(baseUrl + CommonParams.SYSTEM_INFO_PATH);
     HttpResponse response = httpClient.execute(httpGet);
     Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
     List<String> actualSchemes =

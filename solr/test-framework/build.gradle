@@ -24,7 +24,6 @@ dependencies {
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
-  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -32,6 +31,7 @@ dependencies {
 
   api project(':solr:core')
   api project(':solr:solrj')
+  api project(':solr:solrj-jetty')
   api project(':solr:api')
   implementation project(':solr:solrj-zookeeper')
 
@@ -39,7 +39,6 @@ dependencies {
   implementation libs.apache.lucene.core
   implementation libs.apache.lucene.queries
   implementation libs.apache.lucene.suggest
-
 
   var zkExcludes = {
     exclude group: "org.apache.yetus", module: "audience-annotations"
@@ -59,7 +58,7 @@ dependencies {
 
   implementation(libs.apache.zookeeper.zookeeper, zkExcludes)
   implementation(libs.apache.zookeeper.jute, zkExcludes)
-  implementation(variantOf(libs.apache.zookeeper.zookeeper) { classifier 'tests' }, zkExcludes)
+  implementation(variantOf(libs.apache.zookeeper.zookeeper) {classifier 'tests'}, zkExcludes)
 
   implementation libs.commonsio.commonsio
   implementation libs.slf4j.api
@@ -68,10 +67,15 @@ dependencies {
   implementation libs.dropwizard.metrics.core
   implementation libs.dropwizard.metrics.jetty12.ee10
   implementation libs.commonscli.commonscli
-  permitUnusedDeclared libs.commonscli.commonscli
   implementation libs.apache.httpcomponents.httpclient
   implementation libs.apache.httpcomponents.httpcore
   implementation libs.opentelemetry.api
+  implementation(libs.opentelemetry.exporter.prometheus) {
+    transitive = false // most things don't want or already have
+  }
+  implementation libs.opentelemetry.sdk.metrics // prometheus exporter needs
+  permitUnusedDeclared libs.opentelemetry.sdk.metrics
+  implementation libs.prometheus.metrics.model
 
   implementation libs.jakarta.servlet.api
   implementation libs.eclipse.jetty.server
@@ -89,4 +93,18 @@ dependencies {
   implementation libs.carrotsearch.randomizedtesting.runner
   implementation libs.junit.junit
   implementation libs.hamcrest.hamcrest
+
+  implementation(libs.prometheus.metrics.expositionformats, {
+    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
+    exclude group: "io.prometheus", module: "prometheus-metrics-config"
+  })
+
+  implementation(libs.apache.httpcomponents.httpmime, {
+    exclude group: "commons-codec", module: "commons-codec"
+    exclude group: "commons-logging", module: "commons-logging"
+  })
+  implementation libs.apache.httpcomponents.httpclient
+  implementation libs.apache.httpcomponents.httpcore
+
+  testImplementation libs.apache.commons.lang3
 }

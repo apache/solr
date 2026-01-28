@@ -78,7 +78,7 @@ public final class SolrPaths {
           SolrException.ErrorCode.BAD_REQUEST,
           "Path "
               + path
-              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.allowPaths' to add other allowed paths.");
+              + " must be relative to SOLR_HOME, SOLR_DATA_HOME coreRootDirectory. Set system property 'solr.security.allow.paths' to add other allowed paths.");
     }
   }
 
@@ -125,6 +125,10 @@ public final class SolrPaths {
      * (not supported as a {@link Path} on Windows), see {@link #addPath(String)}.
      */
     public AllowPathBuilder addPath(Path path) {
+      if (path == null) {
+        return this;
+      }
+
       if (paths != ALL_PATHS) {
         if (path.equals(ALL_PATH)) {
           paths = ALL_PATHS;

@@ -42,16 +42,16 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
@@ -107,7 +107,6 @@ public class TestPackages extends SolrCloudTestCase {
     if (cluster != null) {
       cluster.shutdown();
     }
-    System.clearProperty("solr.packages.enabled");
 
     super.tearDown();
   }
@@ -579,7 +578,7 @@ public class TestPackages extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testAPI() throws Exception {
-    String errPath = "/error/details[0]/errorMessages[0]";
+    String errPath = "/details[0]/errorMessages[0]";
     String FILE1 = "/mypkg/v.0.12/jar_a.jar";
     String FILE2 = "/mypkg/v.0.12/jar_b.jar";
     String FILE3 = "/mypkg/v.0.13/jar_a.jar";
@@ -629,8 +628,7 @@ public class TestPackages extends SolrCloudTestCase {
         1,
         () ->
             NavigableObject.wrap(
-                Utils.fromJSON(
-                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[0]:version", "0.12", ":packages:test_pkg[0]:files[0]", FILE2));
 
     // post a new jar with a proper signature
@@ -652,8 +650,7 @@ public class TestPackages extends SolrCloudTestCase {
         1,
         () ->
             NavigableObject.wrap(
-                Utils.fromJSON(
-                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
@@ -677,8 +674,7 @@ public class TestPackages extends SolrCloudTestCase {
         1,
         () ->
             NavigableObject.wrap(
-                Utils.fromJSON(
-                    cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat(), true))),
+                Utils.fromJSON(cluster.getZkClient().getData(SOLR_PKGS_PATH, null, new Stat()))),
         Map.of(":packages:test_pkg[0]:version", "0.13", ":packages:test_pkg[0]:files[0]", FILE3));
 
     // So far we have been verifying the details with  ZK directly
@@ -877,8 +873,11 @@ public class TestPackages extends SolrCloudTestCase {
     try {
       req.process(client);
       fail("should have failed with message : " + expectErrorMsg);
-    } catch (BaseHttpSolrClient.RemoteExecutionException e) {
-      String msg = Objects.requireNonNullElse(e.getMetaData()._getStr(errPath), "");
+    } catch (RemoteSolrException e) {
+      String msg =
+          Objects.requireNonNullElse(
+                  Utils.getObjectByPath(e.getRemoteErrorObject(), false, errPath), "")
+              .toString();
       assertTrue(
           "should have failed with message: " + expectErrorMsg + "actual message : " + msg,
           msg.contains(expectErrorMsg));

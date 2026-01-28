@@ -18,7 +18,7 @@ package org.apache.solr.security;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
@@ -83,7 +83,7 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
   @Test
   public void collectionTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       for (int i = 0; i < 30; i++) {
@@ -103,7 +103,7 @@ public class AuthWithShardHandlerFactoryOverrideTest extends SolrCloudAuthTestCa
   @Test
   public void aliasTest() throws Exception {
     try (SolrClient client =
-        new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
+        new HttpJettySolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
             .build()) {
 
       for (int i = 0; i < 30; i++) {

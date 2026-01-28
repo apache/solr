@@ -20,9 +20,7 @@ package org.apache.solr.cloud;
 import static java.util.Collections.singletonList;
 
 import com.carrotsearch.randomizedtesting.generators.RandomStrings;
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
+import io.opentelemetry.api.metrics.MeterProvider;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -32,19 +30,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,10 +67,6 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     if (!success) {
       printLayoutOnTearDown = true;
     }
-    System.clearProperty("distribUpdateSoTimeout");
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("tests.zk.violationReportAction");
     super.distribTearDown();
   }
 
@@ -115,90 +110,101 @@ public class PeerSyncReplicationTest extends AbstractFullDistribZkTestBase {
     commit();
     waitForThingsToLevelOut(30, TimeUnit.SECONDS);
 
-    try {
-      checkShardConsistency(false, true);
+    checkShardConsistency(false, true);
 
-      long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-      assertEquals(docId, cloudClientDocs);
+    long cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    assertEquals(docId, cloudClientDocs);
 
-      CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
-      List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
-      CloudJettyRunner neverLeader = otherJetties.get(otherJetties.size() - 1);
-      otherJetties.remove(neverLeader);
+    CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
+    List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
+    CloudJettyRunner neverLeader = otherJetties.get(otherJetties.size() - 1);
+    otherJetties.remove(neverLeader);
 
-      // first shutdown a node that will never be a leader
-      forceNodeFailures(singletonList(neverLeader));
+    // first shutdown a node that will never be a leader
+    forceNodeFailures(singletonList(neverLeader));
 
-      // node failure and recovery via PeerSync
-      log.info("Forcing PeerSync");
-      CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(true);
+    // node failure and recovery via PeerSync
+    log.info("Forcing PeerSync");
+    CloudJettyRunner nodePeerSynced = forceNodeFailureAndDoPeerSync(true);
 
-      // add a few more docs
-      indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
-      indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
-      commit();
+    // add a few more docs
+    indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+    indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+    commit();
 
-      cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
-      assertEquals(docId, cloudClientDocs);
+    cloudClientDocs = cloudClient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    assertEquals(docId, cloudClientDocs);
 
-      // now shutdown all other nodes except for 'nodeShutDownForFailure'
-      otherJetties.remove(nodePeerSynced);
-      forceNodeFailures(otherJetties);
-      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-      checkShardConsistency(false, true);
+    // now shutdown all other nodes except for 'nodeShutDownForFailure'
+    otherJetties.remove(nodePeerSynced);
+    forceNodeFailures(otherJetties);
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+    checkShardConsistency(false, true);
 
-      // now shutdown the original leader
-      log.info("Now shutting down initial leader");
-      forceNodeFailures(singletonList(initialLeaderJetty));
-      log.info("Updating mappings from zk");
-      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
-      updateMappingsFromZk(jettys, clients, true);
-      assertEquals(
-          "PeerSynced node did not become leader",
-          nodePeerSynced,
-          shardToLeaderJetty.get("shard1"));
+    // now shutdown the original leader
+    log.info("Now shutting down initial leader");
+    forceNodeFailures(singletonList(initialLeaderJetty));
+    log.info("Updating mappings from zk");
+    waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
+    updateMappingsFromZk(jettys, clients, true);
+    assertEquals(
+        "PeerSynced node did not become leader", nodePeerSynced, shardToLeaderJetty.get("shard1"));
 
-      // bring up node that was down all along, and let it PeerSync from the node that was forced to
-      // PeerSync
-      bringUpDeadNodeAndEnsureNoReplication(neverLeader, false);
-      waitTillNodesActive();
+    // bring up node that was down all along, and let it PeerSync from the node that was forced to
+    // PeerSync
+    bringUpDeadNodeAndEnsureNoReplication(neverLeader, false);
+    waitTillNodesActive();
 
-      checkShardConsistency(false, true);
+    checkShardConsistency(false, true);
 
-      // bring back all the nodes including initial leader
-      // (commented as reports Maximum concurrent create/delete watches above limit violation and
-      // reports thread leaks)
-      /*for(int i = 0 ; i < nodesDown.size(); i++) {
-        bringUpDeadNodeAndEnsureNoReplication(shardToLeaderJetty.get("shard1"), neverLeader, false);
-      }
-      checkShardConsistency(false, true);*/
-
-      // make sure leader has not changed after bringing initial leader back
-      assertEquals(nodePeerSynced, shardToLeaderJetty.get("shard1"));
-
-      // assert metrics
-      SolrMetricManager manager = nodePeerSynced.jetty.getCoreContainer().getMetricManager();
-      MetricRegistry registry = null;
-      for (String name : manager.registryNames()) {
-        if (name.startsWith("solr.core.collection1")) {
-          registry = manager.registry(name);
-          break;
-        }
-      }
-      assertNotNull(registry);
-      Map<String, Metric> metrics = registry.getMetrics();
-      assertTrue(
-          "REPLICATION.peerSync.time present", metrics.containsKey("REPLICATION.peerSync.time"));
-      assertTrue(
-          "REPLICATION.peerSync.errors present",
-          metrics.containsKey("REPLICATION.peerSync.errors"));
-
-      Counter counter = (Counter) metrics.get("REPLICATION.peerSync.errors");
-      assertEquals(0L, counter.getCount());
-      success = true;
-    } finally {
-      System.clearProperty("solr.index.replication.fingerprint.enabled");
+    // bring back all the nodes including initial leader
+    // (commented as reports Maximum concurrent create/delete watches above limit violation and
+    // reports thread leaks)
+    /*for(int i = 0 ; i < nodesDown.size(); i++) {
+      bringUpDeadNodeAndEnsureNoReplication(shardToLeaderJetty.get("shard1"), neverLeader, false);
     }
+    checkShardConsistency(false, true);*/
+
+    // make sure leader has not changed after bringing initial leader back
+    assertEquals(nodePeerSynced, shardToLeaderJetty.get("shard1"));
+
+    // assert metrics
+    SolrMetricManager manager = nodePeerSynced.jetty.getCoreContainer().getMetricManager();
+    MeterProvider registry = null;
+    for (String name : manager.registryNames()) {
+      if (name.startsWith("solr.core.collection1")) {
+        registry = manager.meterProvider(name);
+        break;
+      }
+    }
+    assertNotNull(registry);
+    CoreContainer cc = nodePeerSynced.jetty.getCoreContainer();
+    String coreName =
+        cc.getAllCoreNames().stream()
+            .filter(n -> n.contains(DEFAULT_TEST_COLLECTION_NAME))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "Couldn't find core for " + nodePeerSynced.coreNodeName));
+    try (SolrCore core = cc.getCore(coreName)) {
+      assertTrue(
+          SolrMetricTestUtils.getHistogramDatapoint(
+                  core,
+                  "solr_core_sync_with_leader_time_milliseconds",
+                  SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                      .label("category", "REPLICATION")
+                      .build())
+              .hasCount());
+      assertNull(
+          SolrMetricTestUtils.getCounterDatapoint(
+              core,
+              "solr_core_sync_with_leader_sync_errors",
+              SolrMetricTestUtils.newCloudLabelsBuilder(core)
+                  .label("category", "REPLICATION")
+                  .build()));
+    }
+    success = true;
   }
 
   class IndexInBackGround extends Thread {

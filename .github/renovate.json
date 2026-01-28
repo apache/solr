@@ -2,6 +2,7 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "description": "Runs Renovate with solrbot, see dev-docs/dependency-upgrades.adoc for more",
   "enabled": true,
+  "gitIgnoredAuthors": ["renovate-bot <renovate-bot@noreply.github.com>"],
   "dependencyDashboard": false,
   "enabledManagers": ["gradle", "github-actions"],
   "labels": ["exempt-stale"],
@@ -42,8 +43,15 @@
       "schedule": ["before 9am on the first day of the month"]
     },
     {
-      "description": "Noisy, frequently updated dependencies checked less often",
-      "matchPackagePrefixes": ["software.amazon.awssdk", "com.google.cloud"],
+      "description": "AWS SDK packages checked less often",
+      "matchPackagePrefixes": ["software.amazon.awssdk"],
+      "groupName": "AWS SDK",
+      "schedule": ["before 9am on the first day of the month"]
+    },
+    {
+      "description": "Google Cloud packages checked less often",
+      "matchPackagePrefixes": ["com.google.cloud"],
+      "groupName": "Google Cloud",
       "schedule": ["before 9am on the first day of the month"]
     },
     {
@@ -94,7 +102,7 @@
       "groupName": "Admin UI libraries"
     }
   ],
-  "schedule": ["* * * * *"],
+  "schedule": ["* * * * 0"],
   "prConcurrentLimit": 300,
   "prHourlyLimit": 20,
   "minimumReleaseAge": "5 days"

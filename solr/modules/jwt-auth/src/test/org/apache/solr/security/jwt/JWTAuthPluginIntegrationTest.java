@@ -57,10 +57,11 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -142,11 +143,11 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
     // First attempt without token fails
-    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    Map<String, String> headers = getHeaders(baseUrl + CommonParams.SYSTEM_INFO_PATH, null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
 
     // Second attempt with token from Oauth mock server succeeds
-    headers = getHeaders(baseUrl + "/admin/info/system", mockOAuthToken);
+    headers = getHeaders(baseUrl + CommonParams.SYSTEM_INFO_PATH, mockOAuthToken);
     assertEquals("200", headers.get("code"));
     myCluster.shutdown();
   }
@@ -162,10 +163,10 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
     // No token fails
-    assertThrows(IOException.class, () -> get(baseUrl + "/admin/info/system", null));
+    assertThrows(IOException.class, () -> get(baseUrl + CommonParams.SYSTEM_INFO_PATH, null));
 
     // Validate X-Solr-AuthData headers
-    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    Map<String, String> headers = getHeaders(baseUrl + CommonParams.SYSTEM_INFO_PATH, null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
     assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
     String authData = new String(Base64.getDecoder().decode(headers.get("X-Solr-AuthData")), UTF_8);
@@ -188,7 +189,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
         configureClusterStaticKeys("jwt_plugin_jwk_security_blockUnknownFalse.json");
     String baseUrl = myCluster.getRandomJetty(random()).getBaseUrl().toString();
 
-    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    Map<String, String> headers = getHeaders(baseUrl + CommonParams.SYSTEM_INFO_PATH, null);
     assertEquals("Should have received 401 code", "401", headers.get("code"));
     assertEquals(
         "Bearer realm=\"my-solr-jwt-blockunknown-false\"", headers.get("WWW-Authenticate"));
@@ -342,6 +343,24 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return "Bearer " + jws.getCompactSerialization();
   }
 
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        JWTAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
+  }
+
   /**
    * Configure solr cluster with a security.json talking to MockOAuth2 server
    *
@@ -361,7 +380,7 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
             .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
             .build();
     String securityJson = createMockOAuthSecurityJson(pemFilePath);
-    myCluster.zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()), true);
+    myCluster.zkSetData("/security.json", securityJson.getBytes(Charset.defaultCharset()));
     RTimer timer = new RTimer();
     do { // Wait timeoutMs time for the security.json change to take effect
       Thread.sleep(200);

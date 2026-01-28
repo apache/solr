@@ -55,7 +55,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     long processHttpValue = isWindows ? processHttp.getKey() : processHttp.getValue().pid();
     long processHttpsValue = isWindows ? processHttps.getKey() : processHttps.getValue().pid();
     SolrProcessManager.enableTestingMode = true;
-    System.setProperty("jetty.port", Integer.toString(processHttp.getKey()));
+    System.setProperty("solr.port.listen", Integer.toString(processHttp.getKey()));
     Path pidDir = createTempDir("solr-pid-dir");
     System.setProperty("solr.pid.dir", pidDir.toString());
     Files.writeString(
@@ -71,8 +71,6 @@ public class SolrProcessManagerTest extends SolrTestCase {
     processHttp.getValue().destroyForcibly();
     processHttps.getValue().destroyForcibly();
     SolrProcessManager.enableTestingMode = false;
-    System.clearProperty("jetty.port");
-    System.clearProperty("solr.pid.dir");
   }
 
   private static int findAvailablePort() throws IOException {
@@ -92,7 +90,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
     ProcessBuilder processBuilder =
         new ProcessBuilder(
             System.getProperty("java.home") + "/bin/java",
-            "-Djetty.port=" + port,
+            "-Dsolr.port.listen=" + port,
             "-DisHttps=" + https,
             "-DmockSolr=true",
             "-cp",
@@ -194,7 +192,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
   @SuppressWarnings("NewClassNamingConvention")
   public static class MockSolrProcess {
     public static void main(String[] args) {
-      int port = Integer.parseInt(System.getProperty("jetty.port"));
+      int port = Integer.parseInt(System.getProperty("solr.port.listen"));
       boolean https = System.getProperty("isHttps").equals("true");
       try (ServerSocket serverSocket = new ServerSocket(port)) {
         System.out.println("Listening on " + (https ? "https" : "http") + " port " + port);

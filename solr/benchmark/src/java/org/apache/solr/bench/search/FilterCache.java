@@ -27,10 +27,10 @@ import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.SolrRandomnessSource;
 import org.apache.solr.bench.generators.SolrGen;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
@@ -109,7 +109,7 @@ public class FilterCache {
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), null, reload);
+      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), reload, null);
     }
 
     @TearDown(Level.Iteration)
@@ -139,8 +139,8 @@ public class FilterCache {
       throws SolrServerException, IOException {
     return miniClusterState.client.requestWithBaseUrl(
         benchState.baseUrl,
-        COLLECTION,
-        miniClusterState.getRandom().nextBoolean() ? benchState.q1 : benchState.q2);
+        miniClusterState.getRandom().nextBoolean() ? benchState.q1 : benchState.q2,
+        COLLECTION);
   }
 
   @Benchmark
@@ -148,6 +148,6 @@ public class FilterCache {
       BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     return miniClusterState.client.requestWithBaseUrl(
-        benchState.baseUrl, COLLECTION, benchState.q1);
+        benchState.baseUrl, benchState.q1, COLLECTION);
   }
 }

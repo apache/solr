@@ -33,7 +33,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
 
     String threadName = t.getName();
 
-    // due to netty - will stop on it's own
+    // due to netty - will stop on its own
     if (threadName.startsWith("globalEventExecutor")) {
       return true;
     }
@@ -43,7 +43,7 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    // These is a java pool for the collection stream api
+    // This is a java pool for the collection stream api
     if (threadName.startsWith("ForkJoinPool.")) {
       return true;
     }
@@ -83,6 +83,25 @@ public class SolrIgnoredThreadsFilter implements ThreadFilter {
       return true;
     }
 
-    return threadName.startsWith("closeThreadPool");
+    // JVM JFR (Java Flight Recorder) periodic tasks thread
+    if (threadName.equals("JFR Periodic Tasks")) {
+      return true;
+    }
+
+    if (threadName.startsWith("closeThreadPool")) {
+      return true;
+    }
+
+    // TestContainers
+    if (threadName.startsWith("testcontainers-ryuk")
+        || threadName.startsWith("testcontainers-wait-")
+        || threadName.startsWith("testcontainers-pull-watchdog-")
+        || threadName.equals("JNA Cleaner")
+        || threadName.startsWith("HttpClient-")
+        || threadName.startsWith("HttpClient-TestContainers")) {
+      return true;
+    }
+
+    return false;
   }
 }

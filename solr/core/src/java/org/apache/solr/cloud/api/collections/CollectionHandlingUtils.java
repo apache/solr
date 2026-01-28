@@ -36,10 +36,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -219,7 +219,7 @@ public class CollectionHandlingUtils {
   }
 
   static void commit(
-      Http2SolrClient solrClient,
+      HttpJettySolrClient solrClient,
       NamedList<Object> results,
       String slice,
       Replica parentShardLeader) {
@@ -244,11 +244,11 @@ public class CollectionHandlingUtils {
   }
 
   private static UpdateResponse softCommit(
-      Http2SolrClient solrClient, String baseUrl, String coreName)
+      HttpJettySolrClient solrClient, String baseUrl, String coreName)
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
     ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
-    return solrClient.requestWithBaseUrl(baseUrl, coreName, ureq);
+    return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 
   public static String waitForCoreNodeName(
@@ -307,13 +307,17 @@ public class CollectionHandlingUtils {
   }
 
   static void cleanupCollection(
-      String collectionName, NamedList<Object> results, CollectionCommandContext ccc)
+      AdminCmdContext adminCmdContext,
+      String collectionName,
+      NamedList<Object> results,
+      CollectionCommandContext ccc)
       throws Exception {
     log.error("Cleaning up collection [{}].", collectionName);
-    Map<String, Object> props =
-        Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, collectionName);
     new DeleteCollectionCmd(ccc)
-        .call(ccc.getZkStateReader().getClusterState(), new ZkNodeProps(props), results);
+        .call(
+            adminCmdContext.subRequestContext(DELETE),
+            new ZkNodeProps(NAME, collectionName),
+            results);
   }
 
   static Map<String, Replica> waitToSeeReplicasInState(
@@ -372,17 +376,6 @@ public class CollectionHandlingUtils {
     new DeleteBackupCmd(ccc).keepNumberOfBackup(repository, backupPath, maxNumBackup, results);
   }
 
-  static List<ZkNodeProps> addReplica(
-      ClusterState clusterState,
-      ZkNodeProps message,
-      NamedList<Object> results,
-      Runnable onComplete,
-      CollectionCommandContext ccc)
-      throws Exception {
-
-    return new AddReplicaCmd(ccc).addReplica(clusterState, message, results, onComplete);
-  }
-
   static void validateConfigOrThrowSolrException(
       ConfigSetService configSetService, String configName) throws IOException {
     boolean isValid = configSetService.checkConfigExists(configName);
@@ -399,24 +392,26 @@ public class CollectionHandlingUtils {
    * @return List of replicas which is not live for receiving the request
    */
   static List<Replica> collectionCmd(
+      AdminCmdContext adminCmdContext,
       ZkNodeProps message,
       ModifiableSolrParams params,
       NamedList<Object> results,
       Replica.State stateMatcher,
-      String asyncId,
       Set<String> okayExceptions,
-      CollectionCommandContext ccc,
-      ClusterState clusterState) {
-    log.info("Executing Collection Cmd={}, asyncId={}", params, asyncId);
+      CollectionCommandContext ccc) {
+    if (log.isInfoEnabled()) {
+      log.info("Executing Collection Cmd={}, asyncId={}", params, adminCmdContext.getAsyncId());
+    }
     String collectionName = message.getStr(NAME);
     ShardHandler shardHandler = ccc.newShardHandler();
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = ccc.getZkStateReader().getClusterState().getCollection(collectionName);
     List<Replica> notLivesReplicas = new ArrayList<>();
     final CollectionHandlingUtils.ShardRequestTracker shardRequestTracker =
-        asyncRequestTracker(asyncId, ccc);
+        asyncRequestTracker(adminCmdContext, ccc);
     for (Slice slice : coll.getSlices()) {
       notLivesReplicas.addAll(
-          shardRequestTracker.sliceCmd(clusterState, params, stateMatcher, slice, shardHandler));
+          shardRequestTracker.sliceCmd(
+              ccc.getZkStateReader().getClusterState(), params, stateMatcher, slice, shardHandler));
     }
 
     shardRequestTracker.processResponses(results, shardHandler, false, null, okayExceptions);
@@ -441,8 +436,8 @@ public class CollectionHandlingUtils {
       String shard,
       Set<String> okayExceptions) {
     String rootThrowable = null;
-    if (e instanceof SolrClient.RemoteSolrException) {
-      rootThrowable = ((SolrClient.RemoteSolrException) e).getRootThrowable();
+    if (e instanceof RemoteSolrException remoteSolrException) {
+      rootThrowable = remoteSolrException.getRootThrowable();
     }
 
     if (e != null && (rootThrowable == null || !okayExceptions.contains(rootThrowable))) {
@@ -574,11 +569,17 @@ public class CollectionHandlingUtils {
     } while (true);
   }
 
-  public static ShardRequestTracker syncRequestTracker(CollectionCommandContext ccc) {
-    return asyncRequestTracker(null, ccc);
+  public static ShardRequestTracker syncRequestTracker(
+      AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
+    return requestTracker(null, ccc);
   }
 
   public static ShardRequestTracker asyncRequestTracker(
+      AdminCmdContext adminCmdContext, CollectionCommandContext ccc) {
+    return requestTracker(adminCmdContext.getAsyncId(), ccc);
+  }
+
+  protected static ShardRequestTracker requestTracker(
       String asyncId, CollectionCommandContext ccc) {
     return new ShardRequestTracker(
         asyncId,
@@ -588,12 +589,6 @@ public class CollectionHandlingUtils {
   }
 
   public static class ShardRequestTracker {
-    /*
-     * backward compatibility reasons, add the response with the async ID as top level.
-     * This can be removed in Solr 9
-     */
-    @Deprecated static boolean INCLUDE_TOP_LEVEL_RESPONSE = true;
-
     private final String asyncId;
     private final String adminPath;
     private final ZkStateReader zkStateReader;
@@ -656,7 +651,8 @@ public class CollectionHandlingUtils {
       if (asyncId != null) {
         String coreAdminAsyncId = asyncId + Math.abs(System.nanoTime());
         params.set(ASYNC, coreAdminAsyncId);
-        track(nodeName, coreAdminAsyncId);
+        // Track async requests
+        shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
       }
 
       ShardRequest sreq = new ShardRequest();
@@ -718,9 +714,6 @@ public class CollectionHandlingUtils {
         NamedList<Object> reqResult =
             waitForCoreAdminAsyncCallToComplete(
                 shardHandlerFactory, adminPath, zkStateReader, node, shardAsyncId);
-        if (INCLUDE_TOP_LEVEL_RESPONSE) {
-          results.add(shardAsyncId, reqResult);
-        }
         if ("failed".equalsIgnoreCase(((String) reqResult.get("STATUS")))) {
           log.error("Error from shard {}: {}", node, reqResult);
           addFailure(results, node, reqResult);
@@ -728,14 +721,6 @@ public class CollectionHandlingUtils {
           addSuccess(results, node, reqResult);
         }
       }
-    }
-
-    /**
-     * @deprecated consider to make it private after {@link CreateCollectionCmd} refactoring
-     */
-    @Deprecated
-    void track(String nodeName, String coreAdminAsyncId) {
-      shardAsyncIdByNode.add(nodeName, coreAdminAsyncId);
     }
   }
 }

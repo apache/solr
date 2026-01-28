@@ -29,7 +29,7 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
-  <updateHandler class="solr.DirectUpdateHandler2">
+  <updateHandler class="solr.DirectUpdateHandler2" aggregateNodeLevelMetricsEnabled="true">
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>
     </commitWithin>

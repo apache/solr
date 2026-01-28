@@ -25,11 +25,6 @@ allprojects {
   // Repositories to fetch dependencies from.
   repositories {
     mavenCentral()
-    // Note: The maven repository below is temorary and will be removed eventually.
-    maven {
-      name "SearchScale"
-      url "https://maven.searchscale.com/snapshots"
-    }
     /* Reenable this if we need it again in future
     maven {
       name "LucenePrerelease${lucenePrereleaseBuild}"
@@ -41,13 +36,13 @@ allprojects {
   // Artifacts will have names after full gradle project path
   // so :solr:core will have solr-core.jar, etc.
   project.archivesBaseName = project.path
-          .replaceAll("^:", "")
-          .replace(':', '-')
-          .replace("-modules-", "-")
+      .replaceAll("^:", "")
+      .replace(':', '-')
+      .replace("-modules-", "-")
 
   project.ext {
     // Utility method to support passing overrides via -P or -D.
-    propertyOrDefault = { propName, defValue ->
+    propertyOrDefault = {propName, defValue ->
       def result
       if (project.hasProperty(propName)) {
         result = project.getProperty(propName)
@@ -62,25 +57,26 @@ allprojects {
     }
 
     // System environment variable or default.
-    envOrDefault = { envName, defValue ->
+    envOrDefault = {envName, defValue ->
       return Objects.requireNonNullElse(System.getenv(envName), defValue);
     }
 
     // Either a project, system property, environment variable or default value.
-    propertyOrEnvOrDefault = { propName, envName, defValue ->
+    propertyOrEnvOrDefault = {propName, envName, defValue ->
       return propertyOrDefault(propName, envOrDefault(envName, defValue));
     }
 
     // Locate script-relative resource folder. This is context-sensitive so pass
     // the right buildscript (top-level).
-    scriptResources = { buildscript ->
+    scriptResources = {buildscript ->
       return file(buildscript.sourceFile.absolutePath.replaceAll('.gradle$', ""))
     }
 
-    failOrWarn = { propName, message, errors ->
+    failOrWarn = {propName, message, errors ->
       if (errors) {
         def shouldFail = Boolean.valueOf(propertyOrDefault(propName, true))
-        def msg = message + (shouldFail ? " (skip with -P${propName}=false)" : "") + ":\n${errors.join("\n")}"
+        def msg = message + (shouldFail ? " (skip with -P${propName}=false)" : "") +
+            ":\n${errors.join("\n")}"
 
         if (shouldFail) {
           throw new GradleException(msg)
@@ -92,7 +88,7 @@ allprojects {
 
     // Utility function similar to project.exec but not emitting
     // any output unless an error code is returned from the executed command.
-    quietExec = { closure ->
+    quietExec = {closure ->
       // Resolve any properties against the provided closure.
       resolveStrategy = Closure.DELEGATE_ONLY
       delegate = closure.delegate
@@ -102,7 +98,7 @@ allprojects {
       boolean saveIgnoreExitValue
       ExecSpec saveExecSpec
 
-      outputFile.withOutputStream { output ->
+      outputFile.withOutputStream {output ->
         // we want to capture both stdout and stderr to the same
         // stream but gradle attempts to close these separately
         // (it has two independent pumping threads) and it can happen
@@ -114,7 +110,7 @@ allprojects {
           }
         }
 
-        result = project.exec { ExecSpec execSpec ->
+        result = project.exec {ExecSpec execSpec ->
           project.configure(execSpec, closure)
 
           saveIgnoreExitValue = execSpec.ignoreExitValue
@@ -144,7 +140,7 @@ allprojects {
     }
 
     // Convert a list of strings, tasks and task providers into resolved tasks or task providers.
-    resolveTaskRefs = { List<Object> refs ->
+    resolveTaskRefs = {List<Object> refs ->
       def resolved = refs.collect {
         if (it instanceof Task) return it
         if (it instanceof TaskProvider) return it
@@ -158,7 +154,7 @@ allprojects {
     // This method should not be required in 99% of cases, consider regular dependsOn links.
     // This method does NOT imply any ordering between dependencies of task on the input
     // list - the execution of these may still be unordered.
-    mustRunInOrder = { List<Object> taskList ->
+    mustRunInOrder = {List<Object> taskList ->
       project.afterEvaluate {
         def resolved = resolveTaskRefs(taskList)
 
@@ -176,7 +172,7 @@ allprojects {
     // detect if we run in CI environment by looking at existence of env vars:
     // "CI": Github (https://docs.github.com/en/actions/learn-github-actions/environment-variables)
     // anything starting with "JENKINS_" or "HUDSON_": Jenkins/Hudson (https://jenkins.thetaphi.de/env-vars.html/)
-    isCIBuild = System.getenv().keySet().any { it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/ }
+    isCIBuild = System.getenv().keySet().any {it ==~ /(?i)((JENKINS|HUDSON)(_\w+)?|CI)/}
 
     // Assign different java version for client-side modules 'api' and 'solrj*'
     var isSolrJ = project.name.matches("^(solrj.*|api)\$")

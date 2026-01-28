@@ -16,11 +16,10 @@
  */
 package org.apache.solr.blockcache;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import io.opentelemetry.api.common.Attributes;
 import java.util.concurrent.atomic.AtomicLong;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCacheBase;
 
@@ -49,17 +48,31 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
   public AtomicLong shardBuffercacheAllocate = new AtomicLong(0);
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
 
-  private MetricsMap metricsMap;
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
+  private AutoCloseable toClose;
+
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     solrMetricsContext = parentContext.getChildContext(this);
-    metricsMap =
-        new MetricsMap(
-            map -> {
+    var baseAttributes =
+        attributes.toBuilder().put(CATEGORY_ATTR, getCategory().toString()).build();
+    var blockcacheStats =
+        solrMetricsContext.longGaugeMeasurement("solr_block_cache_stats", "Block cache stats");
+    var hitRatio =
+        solrMetricsContext.doubleGaugeMeasurement(
+            "solr_block_cache_hit_ratio", "Block cache hit ratio");
+    var perSecStats =
+        solrMetricsContext.doubleGaugeMeasurement(
+            "solr_block_cache_stats_per_second", "Block cache per second stats");
+    var bufferCacheStats =
+        solrMetricsContext.doubleGaugeMeasurement(
+            "solr_buffer_cache_stats", "Buffer cache per second stats");
+
+    this.toClose =
+        solrMetricsContext.batchCallback(
+            () -> {
               long now = System.nanoTime();
               long delta = Math.max(now - previous, 1);
               double seconds = delta / 1000000000.0;
@@ -83,54 +96,73 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean {
               long lookups_delta = hits_delta + miss_delta;
               long lookups_total = hits_total + miss_total;
 
-              map.put("size", blockCacheSize.get());
-              map.put("lookups", lookups_total);
-              map.put("hits", hits_total);
-              map.put("evictions", evict_total);
-              map.put("storeFails", storeFail_total);
-              map.put(
-                  "hitratio_current",
-                  calcHitRatio(lookups_delta, hits_delta)); // hit ratio since the last call
-              map.put(
-                  "lookups_persec",
-                  getPerSecond(lookups_delta, seconds)); // lookups per second since the last call
-              map.put(
-                  "hits_persec",
-                  getPerSecond(hits_delta, seconds)); // hits per second since the last call
-              map.put(
-                  "evictions_persec",
-                  getPerSecond(evict_delta, seconds)); // evictions per second since the last call
-              map.put(
-                  "storeFails_persec",
-                  getPerSecond(
-                      storeFail_delta, seconds)); // evictions per second since the last call
-              map.put("time_delta", seconds); // seconds since last call
-
-              // TODO: these aren't really related to the BlockCache
-              map.put(
-                  "buffercache.allocations",
-                  getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds));
-              map.put("buffercache.lost", getPerSecond(shardBuffercacheLost.getAndSet(0), seconds));
-
+              blockcacheStats.record(
+                  blockCacheSize.get(), baseAttributes.toBuilder().put(TYPE_ATTR, "size").build());
+              blockcacheStats.record(
+                  lookups_total, baseAttributes.toBuilder().put(TYPE_ATTR, "lookups").build());
+              blockcacheStats.record(
+                  hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "hits").build());
+              blockcacheStats.record(
+                  hits_total, baseAttributes.toBuilder().put(TYPE_ATTR, "evictions").build());
+              blockcacheStats.record(
+                  storeFail_total,
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "store_fails").build());
+              perSecStats.record(
+                  getPerSecond(lookups_delta, seconds),
+                  baseAttributes.toBuilder()
+                      .put(TYPE_ATTR, "lookups")
+                      .build()); // lookups per second since the last call
+              perSecStats.record(
+                  getPerSecond(hits_delta, seconds),
+                  baseAttributes.toBuilder()
+                      .put(TYPE_ATTR, "hits")
+                      .build()); // hits per second since the last call
+              perSecStats.record(
+                  getPerSecond(evict_delta, seconds),
+                  baseAttributes.toBuilder()
+                      .put(TYPE_ATTR, "evictions")
+                      .build()); // evictions per second since the last call
+              perSecStats.record(
+                  getPerSecond(storeFail_delta, seconds),
+                  baseAttributes.toBuilder()
+                      .put(TYPE_ATTR, "store_fails")
+                      .build()); // evictions per second since the last call
+              hitRatio.record(
+                  calcHitRatio(lookups_delta, hits_delta),
+                  baseAttributes); // hit ratio since the last call
+              bufferCacheStats.record(
+                  getPerSecond(shardBuffercacheAllocate.getAndSet(0), seconds),
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "allocations").build());
+              bufferCacheStats.record(
+                  getPerSecond(shardBuffercacheLost.getAndSet(0), seconds),
+                  baseAttributes.toBuilder().put(TYPE_ATTR, "lost").build());
               previous = now;
-            });
-    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString(), scope);
+            },
+            blockcacheStats,
+            perSecStats,
+            hitRatio,
+            bufferCacheStats);
   }
 
   private float getPerSecond(long value, double seconds) {
     return (float) (value / seconds);
   }
 
+  @Override
+  public void close() {
+    IOUtils.closeQuietly(toClose);
+  }
+
   // SolrInfoBean methods
 
   @Override
   public String getName() {
-    return "hdfsBlockCache";
+    return "blockCache";
   }
 
   @Override
   public String getDescription() {
-    return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
+    return "Provides metrics for the BlockCache.";
   }
 
   @Override

@@ -374,7 +374,7 @@ But note that Solr will only be able to talk to the servers listed in the static
 
 If your ensemble is or will be shared among other systems besides Solr, you should consider defining application-specific _znodes_, or a hierarchical namespace that will only include Solr's files.
 
-Once you create a znode for each application, you add it's name, also called a _chroot_, to the end of your connect string whenever you tell Solr where to access ZooKeeper.
+Once you create a znode for each application, you add its name, also called a _chroot_, to the end of your connection string whenever you tell Solr where to access ZooKeeper.
 
 Creating a chroot is done with a `bin/solr` command:
 

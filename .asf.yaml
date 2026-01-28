@@ -21,6 +21,8 @@ github:
   # TODO: Add to this list for each new minor release
   protected_branches:
     main: {}
+    branch_10x: {}
+    branch_10_0: {}
     branch_9_0: {}
     branch_9_1: {}
     branch_9_2: {}
@@ -31,6 +33,7 @@ github:
     branch_9_7: {}
     branch_9_8: {}
     branch_9_9: {}
+    branch_9_10: {}
     branch_9x: {}
 
   protected_tags:
