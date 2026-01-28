@@ -22,6 +22,8 @@
   <string name="action_go_back">Go Back</string>
   <string name="action_logout">Logout</string>
   <string name="action_sign_in_with_credentials">Sign In with Credentials</string>
+  <string name="action_sign_in_with_with_realm">Sign In with %1$s</string>
+  <string name="action_sign_in_with_with_identity_provider">Sign In with Identity Provider</string>
 
   <!-- Content Descriptions (cd) -->
   <string name="cd_back_navigation">Back Navigation</string>
@@ -32,6 +34,8 @@
   <string name="desc_solr_instance_with_auth">The Solr instance %1$s has enabled authentication.</string>
   <string name="desc_sign_in_with_credentials">To authenticate you may use your credentials for Basic authentication.</string>
   <string name="desc_sign_in_with_credentials_to_realm">To authenticate you may use your credentials for the realm %1$s.</string>
+  <string name="desc_sign_in_with_oauth">To authenticate you may sign in via the Identity Provider.</string>
+  <string name="desc_sign_in_with_oauth_to_realm">To authenticate you may sign in via the Identity Provider for the realm %1$s.</string>
 
   <!-- Errors (error) -->
   <string name="error_invalid_url">The provided URL is invalid.</string>
