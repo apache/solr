@@ -41,7 +41,8 @@ With the `/export` handler, these steps are decoupled - Solr can continue sortin
 The advantage of cursors is _flexibility_.
 Cursors impose no constraints on the sort criteria accept that you must include a unique key, which isn't a real constraint.
 Cursors work as part of `SearchHandler` and thus can include most/all capabilities of it like highlighting.
-A cursor mark can be persisted and resumed later, even across restarts, whereas an `/export` stream is entirely in-memory and must be consumed in a single session.
+A `cursorMark` can be persisted and resumed later, even across restarts, or never continued if enough results were consumed to satisfy the use-case.  
+An `/export` stream must be consumed in a single session.
 Cursors also support distributed queries by default while `/export` does not, although they can be achieved using
 xref:streaming-expressions.adoc[streaming expressions] which are built on top of the `/export` handler.
 
