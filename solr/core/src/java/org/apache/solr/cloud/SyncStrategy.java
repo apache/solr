@@ -105,11 +105,6 @@ public class SyncStrategy {
       log.info("Sync replicas to {}", ZkCoreNodeProps.getCoreUrl(leaderProps));
     }
 
-    if (core.getUpdateHandler().getUpdateLog() == null) {
-      log.error("No UpdateLog found - cannot sync");
-      return PeerSync.PeerSyncResult.failure();
-    }
-
     return syncReplicas(
         zkController, core, leaderProps, peerSyncOnlyWithActive, ignoreNoVersionsFailure);
   }
@@ -134,9 +129,14 @@ public class SyncStrategy {
 
     // first sync ourselves - we are the potential leader after all
     try {
-      result =
-          syncWithReplicas(
-              zkController, core, leaderProps, collection, shardId, peerSyncOnlyWithActive);
+      if (core.getUpdateHandler().getUpdateLog() == null) {
+        log.error("No UpdateLog found - cannot sync");
+        result = PeerSync.PeerSyncResult.failure();
+      } else {
+        result =
+            syncWithReplicas(
+                zkController, core, leaderProps, collection, shardId, peerSyncOnlyWithActive);
+      }
 
       if (!result.isSuccess() && ignoreNoVersionsFailure) {
         UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
