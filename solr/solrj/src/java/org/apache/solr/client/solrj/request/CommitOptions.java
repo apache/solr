@@ -16,13 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
-/**
- * Encapsulates commit and optimize options for update requests. This record provides a type-safe
- * way to specify commit parameters instead of using multiple boolean parameters in method
- * signatures.
- *
- * @since Solr 10.0
- */
+/** Encapsulates commit and optimize options for update requests. */
 public record CommitOptions(
     boolean waitSearcher,
     boolean openSearcher,
@@ -59,16 +53,6 @@ public record CommitOptions(
   }
 
   /**
-   * Returns a new CommitOptions with the waitSearcher value changed.
-   *
-   * @param waitSearcher true to wait for searcher
-   * @return new CommitOptions instance with updated waitSearcher
-   */
-  public CommitOptions withWaitSearcher(boolean waitSearcher) {
-    return waitSearcher(waitSearcher);
-  }
-
-  /**
    * Sets whether to open a new searcher as part of the commit. Returns a new CommitOptions instance
    * with the updated value.
    *
@@ -78,16 +62,6 @@ public record CommitOptions(
   public CommitOptions openSearcher(boolean openSearcher) {
     return new CommitOptions(
         waitSearcher, openSearcher, softCommit, expungeDeletes, maxOptimizeSegments);
-  }
-
-  /**
-   * Returns a new CommitOptions with the openSearcher value changed.
-   *
-   * @param openSearcher true to open a new searcher
-   * @return new CommitOptions instance with updated openSearcher
-   */
-  public CommitOptions withOpenSearcher(boolean openSearcher) {
-    return openSearcher(openSearcher);
   }
 
   /**
@@ -114,16 +88,6 @@ public record CommitOptions(
   }
 
   /**
-   * Returns a new CommitOptions with the expungeDeletes value changed.
-   *
-   * @param expungeDeletes true to expunge deletes
-   * @return new CommitOptions instance with updated expungeDeletes
-   */
-  public CommitOptions withExpungeDeletes(boolean expungeDeletes) {
-    return expungeDeletes(expungeDeletes);
-  }
-
-  /**
    * Sets the maximum number of segments to optimize down to. Only applies when using
    * ACTION.OPTIMIZE. Returns a new CommitOptions instance with the updated value.
    *
@@ -134,17 +98,6 @@ public record CommitOptions(
   public CommitOptions maxOptimizeSegments(int maxOptimizeSegments) {
     return new CommitOptions(
         waitSearcher, openSearcher, softCommit, expungeDeletes, maxOptimizeSegments);
-  }
-
-  /**
-   * Returns a new CommitOptions with the maxOptimizeSegments value changed.
-   *
-   * @param maxOptimizeSegments maximum number of segments (must be >= 1)
-   * @return new CommitOptions instance with updated maxOptimizeSegments
-   * @throws IllegalArgumentException if maxOptimizeSegments &lt; 1
-   */
-  public CommitOptions withMaxOptimizeSegments(int maxOptimizeSegments) {
-    return maxOptimizeSegments(maxOptimizeSegments);
   }
 
   // Convenience factory methods
@@ -168,7 +121,7 @@ public record CommitOptions(
    * @return CommitOptions with default settings for hard commit
    */
   public static CommitOptions forHardCommit() {
-    return new CommitOptions().withSoftCommit(false);
+    return new CommitOptions();
   }
 
   /**
@@ -187,7 +140,7 @@ public record CommitOptions(
    * @return CommitOptions suitable for optimize operations
    */
   public static CommitOptions forOptimize() {
-    return new CommitOptions().withExpungeDeletes(true).withMaxOptimizeSegments(1);
+    return new CommitOptions().expungeDeletes(true).maxOptimizeSegments(1);
   }
 
   /**
@@ -197,6 +150,6 @@ public record CommitOptions(
    * @return CommitOptions configured for optimize with specified max segments
    */
   public static CommitOptions forOptimize(int maxSegments) {
-    return new CommitOptions().withExpungeDeletes(true).withMaxOptimizeSegments(maxSegments);
+    return new CommitOptions().expungeDeletes(true).maxOptimizeSegments(maxSegments);
   }
 }

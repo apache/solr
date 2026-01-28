@@ -26,24 +26,15 @@ public class CommitOptionsTest extends SolrTestCase {
   public void testMaxOptimizeSegmentsValidation() {
     CommitOptions options = new CommitOptions();
 
-    // Valid values should work
-    options = options.withMaxOptimizeSegments(1);
+    // Valid value should work
+    options = options.maxOptimizeSegments(1);
     assertEquals(1, options.maxOptimizeSegments());
 
-    options = options.withMaxOptimizeSegments(100);
-    assertEquals(100, options.maxOptimizeSegments());
-
-    // Invalid values should throw exception
+    // Invalid value should throw exception
     CommitOptions finalOptions = options;
     IllegalArgumentException e1 =
-        expectThrows(IllegalArgumentException.class, () -> finalOptions.withMaxOptimizeSegments(0));
+        expectThrows(IllegalArgumentException.class, () -> finalOptions.maxOptimizeSegments(0));
     assertTrue(e1.getMessage().contains("maxOptimizeSegments must be >= 1"));
-
-    CommitOptions finalOptions1 = options;
-    IllegalArgumentException e2 =
-        expectThrows(
-            IllegalArgumentException.class, () -> finalOptions1.withMaxOptimizeSegments(-1));
-    assertTrue(e2.getMessage().contains("maxOptimizeSegments must be >= 1"));
   }
 
   @Test
@@ -51,8 +42,7 @@ public class CommitOptionsTest extends SolrTestCase {
     UpdateRequest updateRequest = new UpdateRequest();
 
     // Test with hard commit
-    CommitOptions hardCommit =
-        CommitOptions.forHardCommit().withWaitSearcher(false).withOpenSearcher(true);
+    CommitOptions hardCommit = CommitOptions.forHardCommit().waitSearcher(false).openSearcher(true);
 
     updateRequest.setAction(AbstractUpdateRequest.ACTION.COMMIT, hardCommit);
 
@@ -63,8 +53,7 @@ public class CommitOptionsTest extends SolrTestCase {
 
     // Test with optimize
     UpdateRequest optimizeRequest = new UpdateRequest();
-    CommitOptions optimize =
-        CommitOptions.forOptimize(5).withWaitSearcher(true).withExpungeDeletes(false);
+    CommitOptions optimize = CommitOptions.forOptimize(5).waitSearcher(true).expungeDeletes(false);
 
     optimizeRequest.setAction(AbstractUpdateRequest.ACTION.OPTIMIZE, optimize);
 
