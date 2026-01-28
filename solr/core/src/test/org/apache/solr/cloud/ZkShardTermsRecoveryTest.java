@@ -63,7 +63,7 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
   public void testShardTermsInducedReplication() throws Exception {
     String shard = "shard2";
     if (random().nextBoolean()) {
-      // Add uncommitted documents, to test that part of the recovery
+      // Add uncommitted/committed documents, to test that part of the recovery
       UpdateRequest up = new UpdateRequest();
       for (int i = 0; i < 1000; i++) {
         up.add("id", "id2-" + i);
@@ -126,7 +126,7 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
   public void testShardTermsInducedLeaderElection() throws IOException, SolrServerException {
     String shard = "shard1";
     if (random().nextBoolean()) {
-      // Add uncommitted documents, to test that part of the recovery
+      // Add uncommitted/committed documents, to test that part of the recovery
       UpdateRequest up = new UpdateRequest();
       for (int i = 0; i < 1000; i++) {
         up.add("id", "id3-" + i);
