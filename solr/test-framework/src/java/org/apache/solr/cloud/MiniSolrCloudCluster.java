@@ -475,8 +475,8 @@ public class MiniSolrCloudCluster {
             .withUrl(this.zkHost)
             .withTimeout(60000, TimeUnit.MILLISECONDS)
             .build()) {
-      if (!zkClient.exists("/solr", true)) {
-        zkClient.makePath("/solr", false, true);
+      if (!zkClient.exists("/solr")) {
+        zkClient.makePath("/solr", true);
       }
 
       if (jettyConfig.sslConfig != null && jettyConfig.sslConfig.isSSLMode()) {
