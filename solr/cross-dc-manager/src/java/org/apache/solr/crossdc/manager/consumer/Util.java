@@ -18,6 +18,7 @@ package org.apache.solr.crossdc.manager.consumer;
 
 import java.io.ByteArrayOutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Properties;
 import java.util.Set;
 import org.apache.kafka.clients.admin.AdminClient;
@@ -49,7 +50,7 @@ public class Util {
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       new PrometheusResponseWriter()
           .write(baos, null, rsp, PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS);
-      output = baos.toString();
+      output = baos.toString(StandardCharsets.UTF_8);
     } catch (Exception e) {
       log.error("Error while writing final metrics", e);
       output = rsp.toString();

@@ -23,6 +23,9 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
+import java.nio.charset.StandardCharsets;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.servlet.SolrRequestParsers;
 
 /**
  * An HTTP servlets which outputs a {@code text/plain} dump of all threads in the VM. Only responds
@@ -52,22 +55,22 @@ public class ThreadDumpServlet extends HttpServlet {
   @Override
   protected void doGet(HttpServletRequest req, HttpServletResponse resp)
       throws ServletException, IOException {
-    final boolean includeMonitors = getParam(req.getParameter("monitors"), true);
-    final boolean includeSynchronizers = getParam(req.getParameter("synchronizers"), true);
+    final SolrParams queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
+    final boolean includeMonitors = queryParams.getBool("monitors", true);
+    final boolean includeSynchronizers = queryParams.getBool("synchronizers", true);
 
     resp.setStatus(HttpServletResponse.SC_OK);
     resp.setContentType(CONTENT_TYPE);
     resp.setHeader("Cache-Control", "must-revalidate,no-cache,no-store");
     if (threadDump == null) {
-      resp.getWriter().println("Sorry your runtime environment does not allow to dump threads.");
+      resp.getOutputStream()
+          .write(
+              "Sorry your runtime environment does not allow to dump threads.\r\n"
+                  .getBytes(StandardCharsets.UTF_8));
       return;
     }
     try (OutputStream output = resp.getOutputStream()) {
       threadDump.dump(includeMonitors, includeSynchronizers, output);
     }
-  }
-
-  private static Boolean getParam(String initParam, boolean defaultValue) {
-    return initParam == null ? defaultValue : Boolean.parseBoolean(initParam);
   }
 }
