@@ -62,6 +62,8 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -665,6 +667,77 @@ public class MiniSolrCloudCluster {
     getZkStateReader()
         .waitForLiveNodes(
             timeoutSeconds, TimeUnit.SECONDS, (o, n) -> n != null && n.contains(nodeName));
+  }
+
+  /**
+   * Wait for the expected number of live nodes in the cluster.
+   *
+   * @param expectedCount expected number of live nodes
+   * @throws InterruptedException if interrupted while waiting
+   * @throws TimeoutException if the expected count is not reached within the timeout
+   */
+  public void waitForLiveNodes(int expectedCount) throws InterruptedException, TimeoutException {
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      long runningNodes = jettys.stream().filter(JettySolrRunner::isRunning).count();
+      if (runningNodes == expectedCount) {
+        log.info("Verified {} live nodes", runningNodes);
+        return;
+      }
+      Thread.sleep(200);
+    }
+    // Final check after timeout
+    long actualCount = jettys.stream().filter(JettySolrRunner::isRunning).count();
+    throw new TimeoutException(
+        "Live node count mismatch: expected " + expectedCount + " but got " + actualCount);
+  }
+
+  /**
+   * Wait for the document count in a collection to reach the expected value.
+   *
+   * @param client the CloudSolrClient to use for querying
+   * @param expectedCount expected number of documents
+   * @param description description for logging
+   * @throws InterruptedException if interrupted while waiting
+   * @throws TimeoutException if the expected count is not reached within the timeout
+   */
+  public void waitForDocCount(CloudSolrClient client, long expectedCount, String description)
+      throws InterruptedException, TimeoutException {
+    TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    while (!timeout.hasTimedOut()) {
+      try {
+        QueryResponse response = client.query(new SolrQuery("*:*").setRows(0));
+        long actualCount = response.getResults().getNumFound();
+        if (actualCount == expectedCount) {
+          log.info("Verified {}: {} documents", description, actualCount);
+          return;
+        }
+        Thread.sleep(100);
+      } catch (Exception e) {
+        // Cluster might be temporarily unavailable during recovery
+        Thread.sleep(500);
+      }
+    }
+    // Final check after timeout
+    try {
+      QueryResponse response = client.query(new SolrQuery("*:*").setRows(0));
+      long actualCount = response.getResults().getNumFound();
+      throw new TimeoutException(
+          "Document count mismatch for: "
+              + description
+              + ". Expected "
+              + expectedCount
+              + " but got "
+              + actualCount);
+    } catch (Exception e) {
+      throw new TimeoutException(
+          "Document count check failed for: "
+              + description
+              + ". Expected "
+              + expectedCount
+              + " but query failed: "
+              + e.getMessage());
+    }
   }
 
   /**
