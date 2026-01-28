@@ -215,11 +215,10 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    // SolrCore core = req.getCore();
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-    // if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
+
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
     rsp.add("mode", solrCloudMode ? "solrcloud" : "std");
 
