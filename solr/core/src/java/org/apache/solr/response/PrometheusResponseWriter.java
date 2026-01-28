@@ -34,8 +34,8 @@ import org.apache.solr.request.SolrQueryRequest;
 public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
 
-  private static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
-  private static final String CONTENT_TYPE_OPEN_METRICS =
+  public static final String CONTENT_TYPE_PROMETHEUS = "text/plain; version=0.0.4";
+  public static final String CONTENT_TYPE_OPEN_METRICS =
       "application/openmetrics-text; version=1.0.0; charset=utf-8";
 
   @Override

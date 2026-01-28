@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
+import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +56,8 @@ public class SolrMessageProcessorTest {
   public void setUp() {
     client = mock(CloudSolrClient.class);
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
-    solrMessageProcessor = new SolrMessageProcessor(() -> client, resubmitBackoffPolicy);
+    solrMessageProcessor =
+        new SolrMessageProcessor(mock(OtelMetrics.class), () -> client, resubmitBackoffPolicy);
   }
 
   /** Should handle MirroredSolrRequest and return a failed result with no retry */
