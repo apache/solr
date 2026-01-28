@@ -17,37 +17,32 @@
 
 package org.apache.solr.schema;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
-import java.util.Map;
+import java.util.List;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StoredValue;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.queries.function.docvalues.LongDocValues;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
-import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
-import org.apache.lucene.util.mutable.MutableValue;
-import org.apache.lucene.util.mutable.MutableValueDate;
 import org.apache.solr.search.QParser;
-import org.apache.solr.uninverting.UninvertingReader;
+import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.update.processor.TimestampUpdateProcessorFactory;
 import org.apache.solr.util.DateMathParser;
 
 /**
- * FieldType that can represent any Date/Time with millisecond precision.
+ * An {@code NumericField} implementation of a field for {@code Date} values with millisecond
+ * precision using {@code LongPoint}, {@code StringField}, {@code SortedNumericDocValuesField} and
+ * {@code StoredField}.
  *
  * <p>Date Format for the XML, incoming and outgoing:
  *
@@ -80,10 +75,10 @@ import org.apache.solr.util.DateMathParser;
  * above) or the literal string "NOW", ie: "NOW+1YEAR", "NOW/DAY",
  * "1995-12-31T23:59:59.999Z+5MINUTES", etc... -- see {@link DateMathParser} for more examples.
  *
- * <p><b>NOTE:</b> Although it is possible to configure a <code>DatePointField</code> instance with
- * a default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed,
- * this is not advisable when using SolrCloud since each replica of the document may compute a
- * slightly different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
+ * <p><b>NOTE:</b> Although it is possible to configure a <code>DateField</code> instance with a
+ * default value of "<code>NOW</code>" to compute a timestamp of when the document was indexed, this
+ * is not advisable when using SolrCloud since each replica of the document may compute a slightly
+ * different value. {@link TimestampUpdateProcessorFactory} is recommended instead.
  *
  * <p>Explanation of "UTC"...
  *
@@ -98,10 +93,11 @@ import org.apache.solr.util.DateMathParser;
  * </blockquote>
  *
  * @see PointField
+ * @see LongPoint
  */
-public class DatePointField extends PointField implements DateValueFieldType {
+public class DateField extends NumericField implements DateValueFieldType {
 
-  public DatePointField() {
+  public DateField() {
     type = NumberType.DATE;
   }
 
@@ -111,6 +107,18 @@ public class DatePointField extends PointField implements DateValueFieldType {
       return DateMathParser.parseMath(null, val.toString());
     }
     return super.toNativeType(val);
+  }
+
+  @Override
+  public Query getPointFieldQuery(QParser parser, SchemaField field, String value) {
+    return LongPoint.newExactQuery(
+        field.getName(), DateMathParser.parseMath(null, value).getTime());
+  }
+
+  @Override
+  public Query getDocValuesFieldQuery(QParser parser, SchemaField field, String value) {
+    return SortedNumericDocValuesField.newSlowExactQuery(
+        field.getName(), DateMathParser.parseMath(null, value).getTime());
   }
 
   @Override
@@ -128,7 +136,7 @@ public class DatePointField extends PointField implements DateValueFieldType {
       actualMin = DateMathParser.parseMath(null, min).getTime();
       if (!minInclusive) {
         if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
-        actualMin++;
+        ++actualMin;
       }
     }
     if (max == null) {
@@ -137,10 +145,62 @@ public class DatePointField extends PointField implements DateValueFieldType {
       actualMax = DateMathParser.parseMath(null, max).getTime();
       if (!maxInclusive) {
         if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
-        actualMax--;
+        --actualMax;
       }
     }
     return LongPoint.newRangeQuery(field.getName(), actualMin, actualMax);
+  }
+
+  @Override
+  public Query getDocValuesRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive) {
+    long actualMin, actualMax;
+    if (min == null) {
+      actualMin = Long.MIN_VALUE;
+    } else {
+      actualMin = DateMathParser.parseMath(null, min).getTime();
+      if (!minInclusive) {
+        if (actualMin == Long.MAX_VALUE) return new MatchNoDocsQuery();
+        ++actualMin;
+      }
+    }
+    if (max == null) {
+      actualMax = Long.MAX_VALUE;
+    } else {
+      actualMax = DateMathParser.parseMath(null, max).getTime();
+      if (!maxInclusive) {
+        if (actualMax == Long.MIN_VALUE) return new MatchNoDocsQuery();
+        --actualMax;
+      }
+    }
+    return SortedNumericDocValuesField.newSlowRangeQuery(field.getName(), actualMin, actualMax);
+  }
+
+  @Override
+  public Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
+    long[] values = new long[externalVals.size()];
+    int i = 0;
+    for (String val : externalVals) {
+      values[i++] = DateMathParser.parseMath(null, val).getTime();
+    }
+    return LongPoint.newSetQuery(field.getName(), values);
+  }
+
+  @Override
+  public Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals) {
+    long[] points = new long[externalVals.size()];
+    int i = 0;
+    for (String val : externalVals) {
+      points[i++] = DateMathParser.parseMath(null, val).getTime();
+    }
+    return SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
   }
 
   @Override
@@ -150,6 +210,10 @@ public class DatePointField extends PointField implements DateValueFieldType {
 
   @Override
   public Object toObject(IndexableField f) {
+    final StoredValue storedValue = f.storedValue();
+    if (storedValue != null) {
+      return new Date(storedValue.getLongValue());
+    }
     final Number val = f.numericValue();
     if (val != null) {
       return new Date(val.longValue());
@@ -159,39 +223,8 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    assert externalVals.size() > 0;
-    Query indexQuery = null;
-    long[] values = null;
-    if (field.indexed()) {
-      values = new long[externalVals.size()];
-      int i = 0;
-      for (String val : externalVals) {
-        values[i++] = DateMathParser.parseMath(null, val).getTime();
-      }
-      indexQuery = LongPoint.newSetQuery(field.getName(), values);
-    }
-    if (field.hasDocValues()) {
-      long[] points = new long[externalVals.size()];
-      if (values != null) {
-        points = values.clone();
-      } else {
-        int i = 0;
-        for (String val : externalVals) {
-          points[i++] = DateMathParser.parseMath(null, val).getTime();
-        }
-      }
-      Query docValuesQuery = SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
-      if (indexQuery != null) {
-        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
-      } else {
-        return docValuesQuery;
-      }
-    } else if (indexQuery != null) {
-      return indexQuery;
-    } else {
-      return super.getSetQuery(parser, field, externalVals);
-    }
+  public String storedToReadable(IndexableField f) {
+    return Long.toString(f.storedValue().getLongValue());
   }
 
   @Override
@@ -209,23 +242,37 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  public UninvertingReader.Type getUninversionType(SchemaField sf) {
+  public Type getUninversionType(SchemaField sf) {
     if (sf.multiValued()) {
       return null;
     } else {
-      return UninvertingReader.Type.LONG_POINT;
+      return Type.LONG_POINT;
     }
   }
 
   @Override
-  public ValueSource getValueSource(SchemaField field, QParser parser) {
+  public ValueSource getValueSource(SchemaField field, QParser qparser) {
     field.checkFieldCacheSource();
-    return new DatePointFieldSource(field.getName());
+    return new MultiValuedLongFieldSource(field.getName(), SortedNumericSelector.Type.MIN);
   }
 
   @Override
-  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field) {
-    return new MultiValuedLongFieldSource(field.getName(), choice);
+  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField f) {
+    return new MultiValuedLongFieldSource(f.getName(), choice);
+  }
+
+  @Override
+  public List<IndexableField> createFields(SchemaField sf, Object value) {
+    Date date =
+        (value instanceof Date) ? ((Date) value) : DateMathParser.parseMath(null, value.toString());
+    return Collections.singletonList(
+        new LongField.SolrLongField(
+            sf.getName(),
+            date.getTime(),
+            sf.indexed(),
+            sf.enhancedIndex(),
+            sf.hasDocValues(),
+            sf.stored()));
   }
 
   @Override
@@ -238,111 +285,5 @@ public class DatePointField extends PointField implements DateValueFieldType {
   @Override
   protected StoredField getStoredField(SchemaField sf, Object value) {
     return new StoredField(sf.getName(), ((Date) this.toNativeType(value)).getTime());
-  }
-
-  private static class DatePointFieldSource extends LongFieldSource {
-
-    public DatePointFieldSource(String field) {
-      super(field);
-    }
-
-    @Override
-    public String description() {
-      return "date(" + field + ')';
-    }
-
-    @Override
-    public Date longToObject(long val) {
-      return new Date(val);
-    }
-
-    @Override
-    public String longToString(long val) {
-      return longToObject(val).toInstant().toString();
-    }
-
-    @Override
-    public long externalToLong(String extVal) {
-      return DateMathParser.parseMath(null, extVal).getTime();
-    }
-
-    // Override this whole method, everything is copied from LongFieldSource except:
-    // -- externalToLong uses DPFS.externalToLong
-    // -- ValueFiller is changed to have MutableValueDate
-    @Override
-    public FunctionValues getValues(Map<Object, Object> context, LeafReaderContext readerContext)
-        throws IOException {
-      final NumericDocValues arr = getNumericDocValues(context, readerContext);
-
-      return new LongDocValues(this) {
-        int lastDocID;
-
-        @Override
-        public long longVal(int doc) throws IOException {
-          if (exists(doc)) {
-            return arr.longValue();
-          } else {
-            return 0;
-          }
-        }
-
-        @Override
-        public boolean exists(int doc) throws IOException {
-          if (doc < lastDocID) {
-            throw new IllegalArgumentException(
-                "docs were sent out-of-order: lastDocID=" + lastDocID + " vs docID=" + doc);
-          }
-          lastDocID = doc;
-          int curDocID = arr.docID();
-          if (doc > curDocID) {
-            curDocID = arr.advance(doc);
-          }
-          return doc == curDocID;
-        }
-
-        @Override
-        public Object objectVal(int doc) throws IOException {
-          if (exists(doc)) {
-            long value = longVal(doc);
-            return longToObject(value);
-          } else {
-            return null;
-          }
-        }
-
-        @Override
-        public String strVal(int doc) throws IOException {
-          if (exists(doc)) {
-            long value = longVal(doc);
-            return longToString(value);
-          } else {
-            return null;
-          }
-        }
-
-        @Override
-        protected long externalToLong(String extVal) {
-          return DatePointFieldSource.this.externalToLong(extVal);
-        }
-
-        @Override
-        public ValueFiller getValueFiller() {
-          return new ValueFiller() {
-            private final MutableValueDate mval = new MutableValueDate();
-
-            @Override
-            public MutableValue getValue() {
-              return mval;
-            }
-
-            @Override
-            public void fillValue(int doc) throws IOException {
-              mval.value = longVal(doc);
-              mval.exists = exists(doc);
-            }
-          };
-        }
-      };
-    }
   }
 }
