@@ -530,7 +530,7 @@ public class IndexFetcher {
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
           RefCounted<IndexWriter> iw =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore, true);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore, false);
           try {
             iw.get().deleteAll();
           } finally {
@@ -624,7 +624,7 @@ public class IndexFetcher {
           // are successfully deleted
           solrCore.getUpdateHandler().newIndexWriter(true);
           RefCounted<IndexWriter> writer =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null, true);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null, false);
           try {
             IndexWriter indexWriter = writer.get();
             int c = 0;
