@@ -17,12 +17,19 @@
 
 package org.apache.solr.cloud.api.collections;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
+
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.request.SolrQueryRequest;
 
 public class AdminCmdContext {
   private final CollectionParams.CollectionAction action;
   private final String asyncId;
+  private String lockId;
+  private String callingLockIds;
+  private String subRequestCallingLockIds;
   private ClusterState clusterState;
 
   public AdminCmdContext(CollectionParams.CollectionAction action) {
@@ -34,12 +41,49 @@ public class AdminCmdContext {
     this.asyncId = asyncId;
   }
 
+  public AdminCmdContext(
+      CollectionParams.CollectionAction action, String asyncId, SolrQueryRequest req) {
+    this.action = action;
+    this.asyncId = asyncId;
+    this.setCallingLockIds((String) req.getContext().get(CALLING_LOCK_IDS_HEADER));
+  }
+
   public CollectionParams.CollectionAction getAction() {
     return action;
   }
 
   public String getAsyncId() {
     return asyncId;
+  }
+
+  public void setLockId(String lockId) {
+    this.lockId = lockId;
+    regenerateSubRequestCallingLockIds();
+  }
+
+  public String getLockId() {
+    return lockId;
+  }
+
+  public void setCallingLockIds(String callingLockIds) {
+    this.callingLockIds = callingLockIds;
+    regenerateSubRequestCallingLockIds();
+  }
+
+  private void regenerateSubRequestCallingLockIds() {
+    if (StrUtils.isNotBlank(callingLockIds) && StrUtils.isNotBlank(lockId)) {
+      subRequestCallingLockIds += "," + lockId;
+    } else if (StrUtils.isNotBlank(callingLockIds)) {
+      subRequestCallingLockIds = callingLockIds;
+    } else if (StrUtils.isNotBlank(lockId)) {
+      subRequestCallingLockIds = lockId;
+    } else {
+      subRequestCallingLockIds = null;
+    }
+  }
+
+  public String getCallingLockIds() {
+    return callingLockIds;
   }
 
   public ClusterState getClusterState() {
@@ -51,6 +95,10 @@ public class AdminCmdContext {
     return this;
   }
 
+  public String getSubRequestCallingLockIds() {
+    return subRequestCallingLockIds;
+  }
+
   public AdminCmdContext subRequestContext(CollectionParams.CollectionAction action) {
     return subRequestContext(action, asyncId);
   }
@@ -58,6 +106,7 @@ public class AdminCmdContext {
   public AdminCmdContext subRequestContext(
       CollectionParams.CollectionAction action, String asyncId) {
     AdminCmdContext nextContext = new AdminCmdContext(action, asyncId);
+    nextContext.setCallingLockIds(subRequestCallingLockIds);
     return nextContext.withClusterState(clusterState);
   }
 }

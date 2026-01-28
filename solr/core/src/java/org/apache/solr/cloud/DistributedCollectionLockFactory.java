@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.util.List;
 import org.apache.solr.cloud.api.collections.CollectionApiLockFactory;
 import org.apache.solr.common.params.CollectionParams;
 
@@ -62,5 +63,6 @@ public interface DistributedCollectionLockFactory {
       CollectionParams.LockLevel level,
       String collName,
       String shardId,
-      String replicaName);
+      String replicaName,
+      List<String> callingLockIds);
 }

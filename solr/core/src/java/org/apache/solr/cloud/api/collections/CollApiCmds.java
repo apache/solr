@@ -80,7 +80,6 @@ import org.apache.solr.cloud.DistributedClusterStateUpdater;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.OverseerNodePrioritizer;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -275,13 +274,7 @@ public class CollApiCmds {
       params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RELOAD.toString());
 
       CollectionHandlingUtils.collectionCmd(
-          adminCmdContext,
-          message,
-          params,
-          results,
-          Replica.State.ACTIVE,
-          Collections.emptySet(),
-          ccc);
+          adminCmdContext, message, params, results, null, Collections.emptySet(), ccc);
     }
   }
 
@@ -314,7 +307,8 @@ public class CollApiCmds {
 
       String baseUrl = ccc.getZkStateReader().getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
       ShardRequest sreq = new ShardRequest();
-      sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+      sreq.nodeName = message.getStr(NODE_NAME_PROP);
+      sreq.coreName = message.getStr(CORE_NAME_PROP);
       // yes, they must use same admin handler path everywhere...
       params.set("qt", ccc.getAdminPath());
       sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
