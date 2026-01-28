@@ -13,5 +13,3 @@ I am confident you can reproduce this behavior with a comparable amount of data 
 | HTTP/2 | 12 | default | Slowest | ~320s |
 | HTTP/2 | 12 | `maxConcurrentStreams=1`| Slower | ~180s |
 
-A minor note, a theory explaining why `maxConcurrentStreams=1` is still slower than HTTP/1 is that our network set-up may not be capable of fully utilizing the network capacity
-with a single connection. Still, the improvement suggests that even if we were able to fully consume bandwidth with HTTP/2's multiplexing, the overhead of managing multiple streams is still detrimental to recovery performance.
