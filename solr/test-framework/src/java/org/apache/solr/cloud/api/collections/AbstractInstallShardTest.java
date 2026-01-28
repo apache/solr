@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -72,6 +73,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
+  protected static final String ERROR_BACKUP_REPO_NAME = "errorBackupRepository";
 
   private static long docsSeed; // see indexDocs()
 
@@ -242,6 +244,45 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     runParallelShardInstalls(collectionName);
 
     assertCollectionHasNumDocs(collectionName, multiShardNumDocs);
+  }
+
+  @Test
+  public void testInstallSucceedsOnASingleError() throws Exception {
+    final String collectionName = createAndAwaitEmptyCollection(1, 2);
+    deleteAfterTest(collectionName);
+    enableReadOnly(collectionName);
+
+    AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.portsToFailOn =
+        Set.of(cluster.getJettySolrRunner(0).getLocalPort());
+    final String singleShardLocation = singleShard1Uri.toString();
+    { // Test synchronous request error reporting
+      CollectionAdminRequest.installDataToShard(
+              collectionName, "shard1", singleShardLocation, ERROR_BACKUP_REPO_NAME)
+          .process(cluster.getSolrClient());
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          collectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(1, 2));
+      assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+    }
+
+    { // Test asynchronous request error reporting
+      final var requestStatusState =
+          CollectionAdminRequest.installDataToShard(
+                  collectionName, "shard1", singleShardLocation, ERROR_BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 15);
+
+      assertEquals(RequestStatusState.COMPLETED, requestStatusState);
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          collectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(1, 2));
+      assertCollectionHasNumDocs(collectionName, singleShardNumDocs);
+    }
   }
 
   /**

@@ -492,8 +492,6 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
-  static Set<Integer> portsToFailOn = new HashSet<>();
-
   @Test
   public void testRestoreToOriginalSucceedsWithErrors() throws Exception {
     setTestSuffix("testRestoreToOriginalSucceedsOnASingleError");
@@ -534,7 +532,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             .getCoreContainer()
             .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
       // Only the first jetty will fail
-      portsToFailOn = Set.of(cluster.getJettySolrRunner(0).getLocalPort());
+      ErrorThrowingTrackingBackupRepository.portsToFailOn =
+          Set.of(cluster.getJettySolrRunner(0).getLocalPort());
       final String backupLocation = repository.getBackupLocation(getBackupLocation());
       final RequestStatusState result =
           CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
@@ -561,7 +560,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
             .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
       final String backupLocation = repository.getBackupLocation(getBackupLocation());
       // All but the first jetty will fail
-      portsToFailOn =
+      ErrorThrowingTrackingBackupRepository.portsToFailOn =
           cluster.getJettySolrRunners().subList(1, NUM_NODES).stream()
               .map(JettySolrRunner::getLocalPort)
               .collect(Collectors.toSet());
@@ -582,6 +581,8 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   }
 
   public static class ErrorThrowingTrackingBackupRepository extends TrackingBackupRepository {
+
+    public static Set<Integer> portsToFailOn = new HashSet<>();
 
     private int port;
 
