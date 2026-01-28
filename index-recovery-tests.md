@@ -1,6 +1,7 @@
 # Harder-to-Reproduce Index Recovery Performance Results
 
-I tested recovery of 1 and 12 shards of ~20 Gigs each. The size makes it a bit challenging to package nicely in a reproducible benchmark although I am sure it can be done. I am confident you can reproduce this behavior with a comparable amount of data and cloud structure. I can share the scripts I used to achieve these results if it is helpful.
+I tested recovery of 1 and 12 shards of ~20 Gigs each. The size makes it a bit challenging to package nicely in a reproducible benchmark, although I am sure it can be done.
+I am confident you can reproduce this behavior with a comparable amount of data and cloud structure. I can share the scripts I used to achieve these results if it is helpful.
 
 ## Results Summary
 
@@ -11,3 +12,6 @@ I tested recovery of 1 and 12 shards of ~20 Gigs each. The size makes it a bit c
 | HTTP/1 | 12 | default | Fast | ~90s |
 | HTTP/2 | 12 | default | Slowest | ~320s |
 | HTTP/2 | 12 | `maxConcurrentStreams=1`| Slower | ~180s |
+
+A minor note, a theory explaining why `maxConcurrentStreams=1` is still slower than HTTP/1 is that our network set-up may not be capable of fully utilizing the network capacity
+with a single connection. Still, the improvement suggests that even if we were able to fully consume bandwidth with HTTP/2's multiplexing, the overhead of managing multiple streams is still detrimental to recovery performance.
