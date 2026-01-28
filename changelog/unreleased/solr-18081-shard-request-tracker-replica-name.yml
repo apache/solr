@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: ShardRequestTracker should index results by node and replica rather than just node. This fixes requests that had multiple responses from a single node that got over-written.
-type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+title: ShardRequestTracker now indexes Admin API results by node and replica rather than just node. This fixes situations where multiple sub-requests are sent to a single node.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Houston Putman
     nick: HoustonPutman
