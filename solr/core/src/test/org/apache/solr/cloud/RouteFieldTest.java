@@ -115,8 +115,8 @@ public class RouteFieldTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(COLL_ROUTE, docsRoute);
     cluster.getSolrClient().add(COLL_ID, docsId);
 
-    cluster.getSolrClient().commit(COLL_ROUTE, true, true);
-    cluster.getSolrClient().commit(COLL_ID, true, true);
+    cluster.getSolrClient().commit(COLL_ROUTE);
+    cluster.getSolrClient().commit(COLL_ID);
 
     checkShardsHaveSameDocs();
   }
