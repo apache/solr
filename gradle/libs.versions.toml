@@ -93,7 +93,7 @@ flexmark = "0.64.8"
 google-api-gax = "2.70.0"
 # @keep for version alignment
 google-api-grpc-proto = "2.61.1"
-google-auth = "1.19.0"
+google-auth = "1.42.1"
 # @keep for version alignment
 google-autovalue = "1.11.0"
 google-cloud-bom = "0.224.0"
