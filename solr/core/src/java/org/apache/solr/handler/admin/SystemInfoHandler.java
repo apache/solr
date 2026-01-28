@@ -22,7 +22,6 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -30,7 +29,6 @@ import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -58,7 +56,6 @@ import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
 import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -97,7 +94,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
   // on some platforms, resolving canonical hostname can cause the thread
-  // to block for several seconds if nameservices aren't available
+  // to block for several seconds if name services aren't available
   // so resolve this once per handler instance
   // (ie: not static, so core reload will refresh)
   private String hostname = null;
@@ -219,11 +216,11 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    //SolrCore core = req.getCore();
+    // SolrCore core = req.getCore();
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-    //if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
+    // if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
     rsp.add("mode", solrCloudMode ? "solrcloud" : "std");
 
@@ -264,7 +261,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
     CoreContainer coreContainer = req.getCoreContainer();
     return coreContainer == null ? cc : coreContainer;
   }
-
 
   /** Get system info */
   public static SimpleOrderedMap<Object> getSystemInfo() {
@@ -448,13 +444,13 @@ public class SystemInfoHandler extends RequestHandlerBase {
     String newSizeAndUnits;
 
     if (bytes / ONE_GB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_GB)) + " GB";
+      newSizeAndUnits = df.format((float) bytes / ONE_GB) + " GB";
     } else if (bytes / ONE_MB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_MB)) + " MB";
+      newSizeAndUnits = df.format((float) bytes / ONE_MB) + " MB";
     } else if (bytes / ONE_KB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_KB)) + " KB";
+      newSizeAndUnits = df.format((float) bytes / ONE_KB) + " KB";
     } else {
-      newSizeAndUnits = String.valueOf(bytes) + " bytes";
+      newSizeAndUnits = bytes + " bytes";
     }
 
     return newSizeAndUnits;

@@ -1,5 +1,9 @@
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
+import java.util.Date;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -9,10 +13,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
-import java.util.Date;
 
 public class CoreInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -40,13 +40,10 @@ public class CoreInfoHandler extends RequestHandlerBase {
     rsp.add("core", getCoreInfo(core, req.getSchema()));
   }
 
-
   private SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 
     info.add("schema", schema != null ? schema.getSchemaName() : "no schema!");
-
-
 
     // Now
     info.add("now", new Date());
