@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Fix normal operation errors for readOnly collections
-type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+title: Fix operational issues with readOnly collections, such as restarting SolrNodes and replicating from the leader.
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Houston Putman
     nick: HoustonPutman

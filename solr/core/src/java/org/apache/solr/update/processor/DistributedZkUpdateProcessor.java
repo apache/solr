@@ -166,6 +166,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       } else {
         // Committing on a readOnly core/collection is a no-op, since the core was committed when
         // becoming read-only and hasn't had any updates since.
+        assert ulog == null || !ulog.hasUncommittedChanges()
+            : "Uncommitted changes found when trying to commit on a read-only collection";
         return;
       }
     }

@@ -98,9 +98,10 @@ public class CommitUpdateCommand extends UpdateCommand {
             .append(",softCommit=")
             .append(softCommit)
             .append(",prepareCommit=")
-            .append(prepareCommit)
-            .append(",failOnReadOnly=")
-            .append(failOnReadOnly);
+            .append(prepareCommit);
+    if (!failOnReadOnly) {
+      sb.append(",failOnReadOnly=").append(failOnReadOnly);
+    }
     if (commitData != null) {
       sb.append(",commitData=").append(commitData);
     }
