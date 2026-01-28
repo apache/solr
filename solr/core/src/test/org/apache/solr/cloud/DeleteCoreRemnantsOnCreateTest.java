@@ -52,7 +52,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
    */
   private String setupCollectionRemnant(String collectionName) throws Exception {
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
+    String primaryNode = jettys.get(0).getNodeName();
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
@@ -90,7 +90,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
    */
   private void setupReplicaRemnant(String collectionName) throws Exception {
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
+    String primaryNode = jettys.get(0).getNodeName();
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
@@ -130,7 +130,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
    */
   private String setupCoreRemnantForUnloadCoreOperation(String collectionName) throws Exception {
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
+    String primaryNode = jettys.get(0).getNodeName();
 
     CollectionAdminRequest.Create createRequest =
         CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1);
@@ -215,7 +215,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
 
     // Verify replica on the node where we had the remnant is active
     Replica recreatedReplica =
-        getReplicaOnNode(collectionName, "shard1", jettys.getFirst().getNodeName());
+        getReplicaOnNode(collectionName, "shard1", jettys.get(0).getNodeName());
     assertNotNull("Should have a replica on the primary node", recreatedReplica);
     assertEquals("Replica should be active", Replica.State.ACTIVE, recreatedReplica.getState());
   }
@@ -229,7 +229,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     setupReplicaRemnant(collectionName);
 
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
+    String primaryNode = jettys.get(0).getNodeName();
 
     // Try to add a new replica - this demonstrates the behavior without the setting
     CollectionAdminRequest.AddReplica addReplicaRequest =
@@ -255,7 +255,7 @@ public class DeleteCoreRemnantsOnCreateTest extends SolrCloudTestCase {
     setupReplicaRemnant(collectionName);
 
     List<JettySolrRunner> jettys = cluster.getJettySolrRunners();
-    String primaryNode = jettys.getFirst().getNodeName();
+    String primaryNode = jettys.get(0).getNodeName();
 
     // With the setting enabled, replica addition should succeed despite remnants
     CollectionAdminRequest.AddReplica addReplicaRequest =
