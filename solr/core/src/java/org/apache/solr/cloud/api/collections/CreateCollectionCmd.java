@@ -411,7 +411,8 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
         ModifiableSolrParams params = e.getValue();
         String nodeName = nodeNames.get(e.getKey());
         params.set(CoreAdminParams.CORE_NODE_NAME, replicas.get(e.getKey()).getName());
-        shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+        shardRequestTracker.sendShardRequest(
+            nodeName, replicas.get(e.getKey()).getCoreName(), params, shardHandler);
       }
 
       shardRequestTracker.processResponses(
