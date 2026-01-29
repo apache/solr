@@ -67,7 +67,6 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
     cluster =
         configureCluster(NUM_NODES).addConfig("conf1", configPath).withEmbeddedZkQuorum().build();
     cluster.waitForAllNodes(60);
-    log.info("Cluster configured with {} nodes", NUM_NODES);
   }
 
   @Test
@@ -77,16 +76,12 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       JettySolrRunner node = cluster.getJettySolrRunner(i);
       assertTrue("Node " + i + " should be running", node.isRunning());
       assertNotNull("Node " + i + " should have a NodeName", node.getNodeName());
-      if (log.isInfoEnabled()) {
-        log.info("Node {} is running: {}", i, node.getNodeName());
-      }
     }
   }
 
   @Test
   public void testCollectionIndexing() throws Exception {
     try (CloudSolrClient client = cluster.getSolrClient(COLLECTION_NAME)) {
-      log.info("Creating collection: {}", COLLECTION_NAME);
       CollectionAdminRequest.Create createCmd =
           CollectionAdminRequest.createCollection(COLLECTION_NAME, "conf1", 1, 3);
       createCmd.process(client);
@@ -145,9 +140,6 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
     try {
       privateCluster.waitForAllNodes(60);
-      log.info(
-          "Private cluster configured with {} nodes for testQuorumResilienceWithNodeFailure",
-          NUM_NODES);
 
       // Create collection with replica on each node
       CollectionAdminRequest.createCollection(collectionName, "conf1", 1, 3)
@@ -163,7 +155,9 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         // Stop one node (quorum maintained with 2/3 nodes)
         JettySolrRunner stoppedNode = privateCluster.getJettySolrRunner(2);
         String stoppedNodeName = stoppedNode.getNodeName();
-        log.info("Stopping node to test quorum resilience: {}", stoppedNodeName);
+        if (log.isInfoEnabled()) {
+          log.info("Stopping node to test quorum resilience: {}", stoppedNodeName);
+        }
         privateCluster.stopJettySolrRunner(stoppedNode);
 
         // Wait for ZK to detect node loss and verify cluster still operational
@@ -175,10 +169,10 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
             "documents while node down",
             120,
             TimeUnit.SECONDS);
-        log.info("Cluster operational with 2/3 nodes (quorum maintained)");
+        if (log.isInfoEnabled()) {
+          log.info("Starting node {} again and testing functionality", stoppedNodeName);
+        }
 
-        // Restart node with same ports (critical for ZK quorum rejoining)
-        log.info("Restarting node: {}", stoppedNodeName);
         privateCluster.startJettySolrRunner(stoppedNode, true);
         privateCluster.waitForNode(stoppedNode, 120);
 
@@ -187,7 +181,7 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
         // CRITICAL: Wait for collection to become active (replicas up, leader elected)
         // before attempting to index documents
-        privateCluster.waitForActiveCollection(collectionName, 1, 3);
+        privateCluster.waitForActiveCollection(collectionName, 120, TimeUnit.SECONDS, 1, 3);
 
         privateCluster.waitForDocCount(
             collectionName,
@@ -204,19 +198,10 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
             "all documents",
             120,
             TimeUnit.SECONDS);
-
-        log.info(
-            "Node {} successfully rejoined quorum and cluster is fully operational",
-            stoppedNodeName);
       }
     } finally {
-      // Clean up collection and cluster
-      try {
-        CollectionAdminRequest.deleteCollection(collectionName)
-            .process(privateCluster.getSolrClient());
-      } catch (Exception e) {
-        log.warn("Failed to delete collection {}: {}", collectionName, e.getMessage());
-      }
+      CollectionAdminRequest.deleteCollection(collectionName)
+          .process(privateCluster.getSolrClient());
       privateCluster.shutdown();
     }
   }
@@ -250,7 +235,6 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
 
     try {
       privateCluster.waitForAllNodes(60);
-      log.info("Private cluster configured with {} nodes for testQuorumLossAndRecovery", NUM_NODES);
 
       // Create collection with 3 replicas (one on each node) to ensure at least
       // one replica survives when we stop 2 nodes
@@ -269,68 +253,55 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
         String node1Name = node1.getNodeName();
         String node2Name = node2.getNodeName();
 
-        log.info("Stopping 2 nodes to lose quorum: {}, {}", node1Name, node2Name);
+        if (log.isInfoEnabled()) {
+          log.info("Stopping 2 nodes to lose quorum: {}, {}", node1Name, node2Name);
+        }
         privateCluster.stopJettySolrRunner(node1);
         privateCluster.stopJettySolrRunner(node2);
 
         // Wait for ZK to detect quorum loss
         privateCluster.waitForLiveNodes(1, 120);
-        log.info("Quorum lost - only 1/3 nodes remaining");
 
         // Restart both nodes to restore quorum
-        log.info("Restarting nodes to restore quorum");
+        if (log.isInfoEnabled()) {
+          log.info("Restarting nodes to restore quorum");
+        }
         privateCluster.startJettySolrRunner(node1, true);
         privateCluster.startJettySolrRunner(node2, true);
 
         // Wait for both nodes to register with ZK (they should appear in live_nodes)
         // but we don't require them to be fully recovered immediately
-        try {
-          privateCluster.waitForNode(node1, 120);
-          privateCluster.waitForNode(node2, 120);
-          log.info("Both nodes registered with ZooKeeper");
-        } catch (Exception e) {
-          log.warn(
-              "One or more nodes failed to fully register: {}. Continuing test to verify basic cluster operation.",
-              e.getMessage());
-        }
+        privateCluster.waitForNode(node1, 120);
+        privateCluster.waitForNode(node2, 120);
         privateCluster.waitForLiveNodes(3, 120);
 
         // CRITICAL: Wait for collection to become active (replicas up, leader elected)
         // After catastrophic failure, we need to ensure at least one replica is active
         // before attempting operations
-        log.info("Waiting for collection to become active...");
         privateCluster.waitForActiveCollection(collectionName, 120, TimeUnit.SECONDS, 1, 1);
 
         // After catastrophic failure, the cluster should be operational with quorum restored
         // even if not all replicas are immediately active
-        log.info("Verifying cluster can query existing data...");
         try {
           privateCluster.waitForDocCount(
               collectionName, 1, "document after recovery", 120, TimeUnit.SECONDS);
 
           // Verify cluster accepts writes
-          log.info("Verifying cluster accepts writes...");
           indexDocuments(client, 1, 1, "after_recovery");
           privateCluster.waitForDocCount(
               collectionName, 2, "all documents after recovery", 120, TimeUnit.SECONDS);
 
-          log.info("Quorum restored successfully - cluster is operational");
         } catch (Exception e) {
-          log.error(
-              "Cluster failed to become operational after quorum restoration: {}", e.getMessage());
+          if (log.isErrorEnabled()) {
+            log.error("Cluster failed to become operational after quorum restoration");
+          }
           throw e;
         }
-
-        log.info("Quorum restored and cluster fully operational");
       }
     } finally {
       // Clean up collection and cluster
-      try {
-        CollectionAdminRequest.deleteCollection(collectionName)
-            .process(privateCluster.getSolrClient());
-      } catch (Exception e) {
-        log.warn("Failed to delete collection {}: {}", collectionName, e.getMessage());
-      }
+      CollectionAdminRequest.deleteCollection(collectionName)
+          .process(privateCluster.getSolrClient());
       privateCluster.shutdown();
     }
   }

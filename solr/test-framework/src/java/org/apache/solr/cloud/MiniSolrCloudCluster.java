@@ -573,12 +573,6 @@ public class MiniSolrCloudCluster {
         throw new IOException(
             "Unable to find " + numPairs + " available port pairs after " + attempts + " attempts");
       }
-
-      log.info(
-          "Successfully reserved {} port pairs in {} attempts: {}",
-          numPairs,
-          attempts,
-          Arrays.toString(ports));
       return ports;
 
     } finally {

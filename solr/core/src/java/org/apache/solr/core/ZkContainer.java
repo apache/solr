@@ -85,9 +85,10 @@ public class ZkContainer {
   public ZkContainer() {}
 
   public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
+    // zkServerEnabled is set whenever in solrCloud mode ('-c') but no explicit zkHost/ZK_HOST is
+    // provided.
     final boolean zkServerEnabled =
         EnvUtils.getPropertyAsBool("solr.zookeeper.server.enabled", false);
-    // TODO NOCOMMIT - understand when zkServerEnabled is set
     boolean zkQuorumNode = false;
     if (NodeRoles.MODE_ON.equals(cc.nodeRoles.getRoleMode(NodeRoles.Role.ZOOKEEPER_QUORUM))) {
       zkQuorumNode = true;
@@ -130,7 +131,7 @@ public class ZkContainer {
         if (zookeeperHost == null) {
           zookeeperHost = zkServer.getClientString();
         }
-        // TODO NOCOMMIT - should this code go in SolrZkServer to augment or replace its current
+        // TODO - should this code go in SolrZkServer to augment or replace its current
         // capabilities?  Doing so
         //  would definitely keep ZkContainer cleaner...
       } else {
