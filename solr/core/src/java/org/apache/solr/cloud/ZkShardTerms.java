@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
-import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -162,7 +161,12 @@ public class ZkShardTerms implements AutoCloseable {
     synchronized (listeners) {
       listeners.clear();
     }
+    terms.set(new ShardTerms());
     assert ObjectReleaseTracker.release(this);
+  }
+
+  public boolean isClosed() {
+    return isClosed.get();
   }
 
   // package private for testing, only used by tests
@@ -322,12 +326,17 @@ public class ZkShardTerms implements AutoCloseable {
       throws KeeperException.NoNodeException {
     byte[] znodeData = Utils.toJSON(newTerms);
     try {
-      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
+      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion());
       setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
       log.info("Successful update of terms at {} to {} for {}", znodePath, newTerms, action);
       return true;
     } catch (KeeperException.BadVersionException e) {
-      log.info("Failed to save terms, version is not a match, retrying");
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Failed to save terms for {}, version {} is not a match, retrying",
+            action,
+            newTerms.getVersion());
+      }
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
@@ -349,7 +358,7 @@ public class ZkShardTerms implements AutoCloseable {
 
       try {
         Map<String, Long> initialTerms = new HashMap<>();
-        zkClient.makePath(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT, true);
+        zkClient.makePath(path, Utils.toJSON(initialTerms), CreateMode.PERSISTENT);
       } catch (KeeperException.NodeExistsException e) {
         // it's okay if another beats us creating the node
       }
@@ -369,7 +378,7 @@ public class ZkShardTerms implements AutoCloseable {
     ShardTerms newTerms;
     try {
       Stat stat = new Stat();
-      byte[] data = zkClient.getData(znodePath, null, stat, true);
+      byte[] data = zkClient.getData(znodePath, null, stat);
       newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (KeeperException | InterruptedException e) {
       Throwable cause = SolrZkClient.checkInterrupted(e);
@@ -413,6 +422,10 @@ public class ZkShardTerms implements AutoCloseable {
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
           }
+          // If the node is deleted, we should close the ZkShardTerms
+          if (Watcher.Event.EventType.NodeDeleted == event.getType()) {
+            close();
+          }
           // Some events may be missed during registering a watcher, so it is safer to refresh terms
           // after registering watcher
           retryRegisterWatcher();
@@ -432,7 +445,7 @@ public class ZkShardTerms implements AutoCloseable {
         };
     try {
       // exists operation is faster than getData operation
-      zkClient.exists(znodePath, watcher, true);
+      zkClient.exists(znodePath, watcher);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(

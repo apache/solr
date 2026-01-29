@@ -37,7 +37,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
@@ -69,7 +69,8 @@ public final class ReplicationTestHelper {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -85,8 +86,8 @@ public final class ReplicationTestHelper {
    * @param baseUrl the root URL for a Solr node
    * @param collectionOrCore an optional default collection/core for the created client
    */
-  public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
-    return new Http2SolrClient.Builder(baseUrl)
+  public static HttpJettySolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withIdleTimeout(90000, TimeUnit.MILLISECONDS)
@@ -292,9 +293,6 @@ public final class ReplicationTestHelper {
     }
 
     public void setUp() throws Exception {
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
       Properties props = new Properties();
       props.setProperty("name", "collection1");
 

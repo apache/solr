@@ -61,9 +61,6 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     if (!success) {
       printLayoutOnTearDown = true;
     }
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("tests.zk.violationReportAction");
     super.distribTearDown();
   }
 
@@ -93,78 +90,71 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
     handle.clear();
     handle.put("timestamp", SKIPVAL);
 
-    try {
-      CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
-      List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
+    CloudJettyRunner initialLeaderJetty = shardToLeaderJetty.get("shard1");
+    List<CloudJettyRunner> otherJetties = getOtherAvailableJetties(initialLeaderJetty);
 
+    log.info(
+        "Leader node_name: {},  url: {}", initialLeaderJetty.coreNodeName, initialLeaderJetty.url);
+    for (CloudJettyRunner cloudJettyRunner : otherJetties) {
       log.info(
-          "Leader node_name: {},  url: {}",
-          initialLeaderJetty.coreNodeName,
-          initialLeaderJetty.url);
-      for (CloudJettyRunner cloudJettyRunner : otherJetties) {
-        log.info(
-            "Non-leader node_name: {},  url: {}",
-            cloudJettyRunner.coreNodeName,
-            cloudJettyRunner.url);
-      }
-
-      CloudJettyRunner secondNode = otherJetties.get(0);
-      CloudJettyRunner freshNode = otherJetties.get(1);
-
-      // shutdown a node to simulate fresh start
-      otherJetties.remove(freshNode);
-      forceNodeFailures(singletonList(freshNode));
-
-      del("*:*");
-      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
-      checkShardConsistency(false, true);
-
-      // index a few docs and commit
-      for (int i = 0; i < 100; i++) {
-        indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
-      }
-      commit();
-      waitForThingsToLevelOut(30, TimeUnit.SECONDS);
-
-      checkShardConsistency(false, true);
-
-      // bring down the other node and index a few docs; so the leader and other node segments
-      // diverge
-      forceNodeFailures(singletonList(secondNode));
-      for (int i = 0; i < 10; i++) {
-        indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
-        if (i % 2 == 0) {
-          commit();
-        }
-      }
-      commit();
-      restartNodes(singletonList(secondNode));
-
-      // start the freshNode
-      restartNodes(singletonList(freshNode));
-      String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
-      Path replicationProperties =
-          Path.of(
-              freshNode.jetty.getSolrHome(), "cores", coreName, "data", "replication.properties");
-      String md5 = DigestUtils.md5Hex(Files.readAllBytes(replicationProperties));
-
-      // shutdown the original leader
-      log.info("Now shutting down initial leader");
-      forceNodeFailures(singletonList(initialLeaderJetty));
-      waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
-      waitTillNodesActive();
-      log.info("Updating mappings from zk");
-      updateMappingsFromZk(jettys, clients, true);
-      assertEquals(
-          "Node went into replication",
-          md5,
-          DigestUtils.md5Hex(Files.readAllBytes(replicationProperties)));
-
-      success = true;
-    } finally {
-      System.clearProperty("solr.index.replication.fingerprint.enabled");
+          "Non-leader node_name: {},  url: {}",
+          cloudJettyRunner.coreNodeName,
+          cloudJettyRunner.url);
     }
+
+    CloudJettyRunner secondNode = otherJetties.get(0);
+    CloudJettyRunner freshNode = otherJetties.get(1);
+
+    // shutdown a node to simulate fresh start
+    otherJetties.remove(freshNode);
+    forceNodeFailures(singletonList(freshNode));
+
+    del("*:*");
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+
+    checkShardConsistency(false, true);
+
+    // index a few docs and commit
+    for (int i = 0; i < 100; i++) {
+      indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+    }
+    commit();
+    waitForThingsToLevelOut(30, TimeUnit.SECONDS);
+
+    checkShardConsistency(false, true);
+
+    // bring down the other node and index a few docs; so the leader and other node segments
+    // diverge
+    forceNodeFailures(singletonList(secondNode));
+    for (int i = 0; i < 10; i++) {
+      indexDoc(id, docId, i1, 50, tlong, 50, t1, "document number " + docId++);
+      if (i % 2 == 0) {
+        commit();
+      }
+    }
+    commit();
+    restartNodes(singletonList(secondNode));
+
+    // start the freshNode
+    restartNodes(singletonList(freshNode));
+    String coreName = freshNode.jetty.getCoreContainer().getCores().iterator().next().getName();
+    Path replicationProperties =
+        Path.of(freshNode.jetty.getSolrHome(), "cores", coreName, "data", "replication.properties");
+    String md5 = DigestUtils.md5Hex(Files.readAllBytes(replicationProperties));
+
+    // shutdown the original leader
+    log.info("Now shutting down initial leader");
+    forceNodeFailures(singletonList(initialLeaderJetty));
+    waitForNewLeader(cloudClient, "shard1", initialLeaderJetty.info);
+    waitTillNodesActive();
+    log.info("Updating mappings from zk");
+    updateMappingsFromZk(jettys, clients, true);
+    assertEquals(
+        "Node went into replication",
+        md5,
+        DigestUtils.md5Hex(Files.readAllBytes(replicationProperties)));
+
+    success = true;
   }
 
   private void restartNodes(List<CloudJettyRunner> nodesToRestart) throws Exception {

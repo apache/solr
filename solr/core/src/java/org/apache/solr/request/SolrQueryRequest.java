@@ -21,6 +21,7 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -162,7 +163,7 @@ public interface SolrQueryRequest extends AutoCloseable {
   }
 
   default String getHttpMethod() {
-    return (String) getContext().get("httpMethod");
+    return ((SolrRequest.METHOD) getContext().get("httpMethod")).name();
   }
 
   default HttpSolrCall getHttpSolrCall() {

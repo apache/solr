@@ -18,33 +18,38 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.client.solrj.request.beans.V2ApiConstants.COLLECTIONS;
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.Mockito.when;
 
 import java.util.List;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.model.CategoryRoutedAliasProperties;
 import org.apache.solr.client.api.model.CreateAliasRequestBody;
 import org.apache.solr.client.api.model.CreateCollectionRequestBody;
 import org.apache.solr.client.api.model.RoutedAliasProperties;
 import org.apache.solr.client.api.model.TimeRoutedAliasProperties;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.junit.Before;
 import org.junit.Test;
 
 /** Unit tests for {@link CreateAlias} */
-public class CreateAliasAPITest extends SolrTestCaseJ4 {
+public class CreateAliasAPITest extends MockV2APITest {
+
+  private CreateAlias api;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    when(mockCoreContainer.isZooKeeperAware()).thenReturn(true);
+
+    api = new CreateAlias(mockCoreContainer, mockQueryRequest, queryResponse);
+  }
 
   @Test
   public void testReportsErrorIfRequestBodyMissing() {
-    final SolrException thrown =
-        expectThrows(
-            SolrException.class,
-            () -> {
-              final var api = new CreateAlias(null, null, null);
-              api.createAlias(null);
-            });
+    final SolrException thrown = expectThrows(SolrException.class, () -> api.createAlias(null));
 
     assertEquals(400, thrown.code());
     assertEquals("Request body is required but missing", thrown.getMessage());
@@ -202,24 +207,26 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRemoteMessageCreationForTraditionalAlias() {
+  public void testRemoteMessageCreationForTraditionalAlias() throws Exception {
     final var requestBody = new CreateAliasRequestBody();
     requestBody.name = "someAliasName";
     requestBody.collections = List.of("validColl1", "validColl2");
     requestBody.async = "someAsyncId";
 
-    final var remoteMessage =
-        CreateAlias.createRemoteMessageForTraditionalAlias(requestBody).getProperties();
+    api.createAlias(requestBody);
 
-    assertEquals(4, remoteMessage.size());
-    assertEquals("createalias", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("validColl1,validColl2", remoteMessage.get(COLLECTIONS));
-    assertEquals("someAsyncId", remoteMessage.get(ASYNC));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        requestBody.async,
+        message -> {
+          assertEquals(2, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("validColl1,validColl2", message.get(COLLECTIONS));
+        });
   }
 
   @Test
-  public void testRemoteMessageCreationForCategoryRoutedAlias() {
+  public void testRemoteMessageCreationForCategoryRoutedAlias() throws Exception {
     final var requestBody = new CreateAliasRequestBody();
     requestBody.name = "someAliasName";
     final var categoryRouter = new CategoryRoutedAliasProperties();
@@ -230,25 +237,27 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    final var remoteMessage =
-        CreateAlias.createRemoteMessageForRoutedAlias(requestBody).getProperties();
+    api.createAlias(requestBody);
 
-    assertEquals(6, remoteMessage.size());
-    assertEquals("createalias", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("category", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(5, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("category", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   @Test
-  public void testRemoteMessageCreationForTimeRoutedAlias() {
+  public void testRemoteMessageCreationForTimeRoutedAlias() throws Exception {
     final var requestBody = new CreateAliasRequestBody();
     requestBody.name = "someAliasName";
     final var timeRouter = new TimeRoutedAliasProperties();
     timeRouter.field = "someField";
-    timeRouter.start = "NOW";
+    timeRouter.start = "NOW/HOUR";
     timeRouter.interval = "+1MONTH";
     timeRouter.maxFutureMs = 123456L;
     requestBody.routers = List.of(timeRouter);
@@ -257,28 +266,30 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    final var remoteMessage =
-        CreateAlias.createRemoteMessageForRoutedAlias(requestBody).getProperties();
+    api.createAlias(requestBody);
 
-    assertEquals(9, remoteMessage.size());
-    assertEquals("createalias", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("time", remoteMessage.get("router.name"));
-    assertEquals("someField", remoteMessage.get("router.field"));
-    assertEquals("NOW", remoteMessage.get("router.start"));
-    assertEquals("+1MONTH", remoteMessage.get("router.interval"));
-    assertEquals(Long.valueOf(123456L), remoteMessage.get("router.maxFutureMs"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(8, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("time", message.get("router.name"));
+          assertEquals("someField", message.get("router.field"));
+          assertEquals("NOW/HOUR", message.get("router.start"));
+          assertEquals("+1MONTH", message.get("router.interval"));
+          assertEquals(Long.valueOf(123456L), message.get("router.maxFutureMs"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   @Test
-  public void testRemoteMessageCreationForMultiDimensionalRoutedAlias() {
+  public void testRemoteMessageCreationForMultiDimensionalRoutedAlias() throws Exception {
     final var requestBody = new CreateAliasRequestBody();
     requestBody.name = "someAliasName";
     final var timeRouter = new TimeRoutedAliasProperties();
     timeRouter.field = "someField";
-    timeRouter.start = "NOW";
+    timeRouter.start = "NOW/HOUR";
     timeRouter.interval = "+1MONTH";
     timeRouter.maxFutureMs = 123456L;
     final var categoryRouter = new CategoryRoutedAliasProperties();
@@ -289,21 +300,23 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     createParams.config = "someConfig";
     requestBody.collCreationParameters = createParams;
 
-    final var remoteMessage =
-        CreateAlias.createRemoteMessageForRoutedAlias(requestBody).getProperties();
+    api.createAlias(requestBody);
 
-    assertEquals(11, remoteMessage.size());
-    assertEquals("createalias", remoteMessage.get(QUEUE_OPERATION));
-    assertEquals("someAliasName", remoteMessage.get("name"));
-    assertEquals("time", remoteMessage.get("router.0.name"));
-    assertEquals("someField", remoteMessage.get("router.0.field"));
-    assertEquals("NOW", remoteMessage.get("router.0.start"));
-    assertEquals("+1MONTH", remoteMessage.get("router.0.interval"));
-    assertEquals(Long.valueOf(123456L), remoteMessage.get("router.0.maxFutureMs"));
-    assertEquals("category", remoteMessage.get("router.1.name"));
-    assertEquals("someField", remoteMessage.get("router.1.field"));
-    assertEquals(3, remoteMessage.get("create-collection.numShards"));
-    assertEquals("someConfig", remoteMessage.get("create-collection.collection.configName"));
+    validateRunCommand(
+        CollectionParams.CollectionAction.CREATEALIAS,
+        message -> {
+          assertEquals(10, message.size());
+          assertEquals("someAliasName", message.get("name"));
+          assertEquals("time", message.get("router.0.name"));
+          assertEquals("someField", message.get("router.0.field"));
+          assertEquals("NOW/HOUR", message.get("router.0.start"));
+          assertEquals("+1MONTH", message.get("router.0.interval"));
+          assertEquals(Long.valueOf(123456L), message.get("router.0.maxFutureMs"));
+          assertEquals("category", message.get("router.1.name"));
+          assertEquals("someField", message.get("router.1.field"));
+          assertEquals(3, message.get("create-collection.numShards"));
+          assertEquals("someConfig", message.get("create-collection.collection.configName"));
+        });
   }
 
   private CreateAliasRequestBody requestBodyWithProvidedRouter(RoutedAliasProperties router) {
@@ -325,7 +338,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
     v1Params.add("name", "someAliasName");
     v1Params.add("router.name", "Dimensional[time,category]");
     v1Params.add("router.0.field", "someField");
-    v1Params.add("router.0.start", "NOW");
+    v1Params.add("router.0.start", "NOW/HOUR");
     v1Params.add("router.0.interval", "+1MONTH");
     v1Params.add("router.0.maxFutureMs", "123456");
     v1Params.add("router.1.field", "someOtherField");
@@ -342,7 +355,7 @@ public class CreateAliasAPITest extends SolrTestCaseJ4 {
         requestBody.routers.get(0) instanceof TimeRoutedAliasProperties);
     final var timeRouter = (TimeRoutedAliasProperties) requestBody.routers.get(0);
     assertEquals("someField", timeRouter.field);
-    assertEquals("NOW", timeRouter.start);
+    assertEquals("NOW/HOUR", timeRouter.start);
     assertEquals("+1MONTH", timeRouter.interval);
     assertEquals(Long.valueOf(123456L), timeRouter.maxFutureMs);
     assertTrue(

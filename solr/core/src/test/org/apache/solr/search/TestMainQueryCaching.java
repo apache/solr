@@ -58,12 +58,10 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() {
     if (RESTORE_UFFSQ_PROP == null) {
-      System.clearProperty(TEST_UFFSQ_PROPNAME);
     } else {
       System.setProperty(TEST_UFFSQ_PROPNAME, RESTORE_UFFSQ_PROP);
     }
     if (RESTORE_QRC_WINDOW_SIZE_PROP == null) {
-      System.clearProperty(TEST_QRC_WINDOW_SIZE_PROPNAME);
     } else {
       System.setProperty(TEST_QRC_WINDOW_SIZE_PROPNAME, RESTORE_QRC_WINDOW_SIZE_PROP);
     }
@@ -102,7 +100,7 @@ public class TestMainQueryCaching extends SolrTestCaseJ4 {
     return (long)
         SolrMetricTestUtils.getCounterDatapoint(
                 core,
-                "solr_searcher_live_docs_cache",
+                "solr_core_indexsearcher_live_docs_cache",
                 SolrMetricTestUtils.newStandaloneLabelsBuilder(core)
                     .label("category", "SEARCHER")
                     .label("type", type)

@@ -446,6 +446,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       // `init(UpdateHandler, SolrCore` is never actually called concurrently in application code
       // (`TestHdfsUpdateLog.testFSThreadSafety()`, introduced by SOLR-7113, seems to be the only
       // place that requires true thread safety from this method?).
+      // HDFS was removed in Solr 10, and therefore the test referenced is gone as well.
       if (debug) {
         log.debug(
             "UpdateHandler init: tlogDir={}, next id={}  this is a reopen or double init ... nothing else to do.",
@@ -509,8 +510,8 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   /**
    * Resolves any relative path wrt the highest core-scoped level (whatever that means for a
-   * particular implementation). For most filesystems, this will be the core instanceDir, but there
-   * are other cases; e.g., HdfsUpdateLog will resolve paths relative to the core dataDir.
+   * particular implementation). For most filesystems, this will be the core instanceDir, but that
+   * is not a hard and fast rule.
    *
    * <p>If the input path is already absolute, it will be returned unmodified.
    *

@@ -34,7 +34,7 @@ public class DirectoryUtil {
    * </pre>
    *
    * will copy the contents of src directly into dst. This will not create a new "src" folder inside
-   * of dst.
+   * the dst.
    */
   public static void copyDirectoryContents(final Path source, final Path destination)
       throws IOException {

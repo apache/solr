@@ -50,9 +50,6 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
   @Before
   public void beforeTest() throws Exception {
     Path home = TEST_PATH();
-    // define these properties, they are used in solrconfig.xml
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml =
         Files.readString(home.resolve("solr-metricreporter.xml"), StandardCharsets.UTF_8);
     NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
@@ -84,8 +81,8 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "permanent"));
     assertNotNull(getGaugeOpt(reader, "solr_cores_loaded", "unloaded"));
 
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "total_space"));
-    assertNotNull(getGaugeOpt(reader, "solr_disk_space_bytes", "usable_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "total_space"));
+    assertNotNull(getGaugeOpt(reader, "solr_disk_space_megabytes", "usable_space"));
   }
 
   private static GaugeDataPointSnapshot getGaugeOpt(

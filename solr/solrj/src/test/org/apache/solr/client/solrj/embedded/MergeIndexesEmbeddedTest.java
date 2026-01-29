@@ -28,13 +28,6 @@ import org.apache.solr.core.SolrCore;
 public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
 
   @Override
-  public void setUp() throws Exception {
-    // TODO: fix this test to use MockDirectoryFactory
-    System.clearProperty("solr.directoryFactory");
-    super.setUp();
-  }
-
-  @Override
   protected SolrClient getSolrCore0() {
     return new EmbeddedSolrServer(cores, "core0");
   }

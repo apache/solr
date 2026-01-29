@@ -355,14 +355,6 @@ public class SolrConfig implements MapSerializable {
       formUploadLimitKB = requestParsersNode.intAttr("formdataUploadLimitInKB", Integer.MAX_VALUE);
       if (formUploadLimitKB == -1) formUploadLimitKB = Integer.MAX_VALUE;
 
-      if (requestParsersNode.attr("enableRemoteStreaming") != null) {
-        log.warn("Ignored deprecated enableRemoteStreaming in config; use sys-prop");
-      }
-
-      if (requestParsersNode.attr("enableStreamBody") != null) {
-        log.warn("Ignored deprecated enableStreamBody in config; use sys-prop");
-      }
-
       List<PluginInfo> argsInfos = getPluginInfos(InitParams.class.getName());
       if (argsInfos != null) {
         Map<String, InitParams> argsMap = new HashMap<>();

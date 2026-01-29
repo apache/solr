@@ -21,9 +21,9 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -55,9 +55,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
 
     super.setUp();
     solrCluster = new MiniSolrCloudCluster(3, createTempDir(), JettyConfig.builder().build());
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
     solrCluster.uploadConfigSet(TEST_PATH().resolve("collection1/conf"), "conf1");
     solrCluster.uploadConfigSet(configset("configset-2"), "conf2");
   }
@@ -65,9 +62,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
-    System.clearProperty("solr.statsCache");
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
     super.tearDown();
   }
 

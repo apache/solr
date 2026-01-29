@@ -103,7 +103,7 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   set SOLR_URL_SCHEME=https
   IF "%SOLR_SSL_RELOAD_ENABLED%"=="true" (
     set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=ssl-reload"
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keyStoreReload.enabled=true"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.keystore.reload.enabled=true"
   )
   IF DEFINED SOLR_SSL_KEY_STORE (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.keystore=%SOLR_SSL_KEY_STORE%"
@@ -133,10 +133,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.need.client.auth.enabled=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
   IF DEFINED SOLR_SSL_WANT_CLIENT_AUTH (
-    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.wantClientAuth=%SOLR_SSL_WANT_CLIENT_AUTH%"
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.want.client.auth.enabled=%SOLR_SSL_WANT_CLIENT_AUTH%"
   )
 
   IF DEFINED SOLR_SSL_CLIENT_KEY_STORE (
@@ -174,17 +174,17 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     )
   )
   IF DEFINED SOLR_SSL_CHECK_PEER_NAME (
-   set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.ssl.checkPeerName=%SOLR_SSL_CHECK_PEER_NAME% -Dsolr.jetty.ssl.sniHostCheck=%SOLR_SSL_CHECK_PEER_NAME%"
+   set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.ssl.check.peer.name.enabled=%SOLR_SSL_CHECK_PEER_NAME% -Dsolr.jetty.ssl.sni.host.check.enabled=%SOLR_SSL_CHECK_PEER_NAME%"
   )
 ) ELSE (
   set SOLR_SSL_OPTS=
 )
 
 REM Requestlog options
-IF NOT DEFINED SOLR_REQUESTLOG_ENABLED (
-  set SOLR_REQUESTLOG_ENABLED=true
+IF NOT DEFINED SOLR_LOGS_REQUESTLOG_ENABLED (
+  set SOLR_LOGS_REQUESTLOG_ENABLED=true
 )
-IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
+IF "%SOLR_LOGS_REQUESTLOG_ENABLED%"=="true" (
   set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
 
@@ -227,7 +227,7 @@ IF DEFINED SOLR_AUTH_TYPE (
 
 IF DEFINED SOLR_AUTH_TYPE (
   IF /I "%SOLR_AUTH_TYPE%" == "basic" (
-    set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory"
+    set SOLR_AUTHENTICATION_CLIENT_BUILDER="org.apache.solr.client.solrj.jetty.PreemptiveBasicAuthClientCustomizer"
   ) ELSE (
     echo ERROR: Value specified for SOLR_AUTH_TYPE configuration variable is invalid.
     goto err
@@ -239,7 +239,7 @@ IF DEFINED SOLR_AUTHENTICATION_CLIENT_CONFIGURER (
   echo          Please start using SOLR_AUTH_TYPE instead
 )
 IF DEFINED SOLR_AUTHENTICATION_CLIENT_BUILDER (
-  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.httpclient.builder.factory=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
+  set AUTHC_CLIENT_BUILDER_ARG="-Dsolr.solrj.http.jetty.customizer=%SOLR_AUTHENTICATION_CLIENT_BUILDER%"
 )
 set "AUTHC_OPTS=%AUTHC_CLIENT_BUILDER_ARG% %SOLR_AUTHENTICATION_OPTS%"
 
@@ -443,6 +443,7 @@ goto parse_args
 
 :set_user_managed_mode
 set SOLR_MODE=user-managed
+set "PASS_TO_RUN_EXAMPLE=--user-managed !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 
@@ -557,7 +558,7 @@ IF "%firstChar%"=="-" (
   goto invalid_cmd_line
 )
 
-set SOLR_HOST=%~2
+set SOLR_HOST_ADVERTISE=%~2
 set "PASS_TO_RUN_EXAMPLE=--host %~2 !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 SHIFT
@@ -1172,7 +1173,7 @@ for %%a in (%*) do (
    ) else (
       set "option!option!=%%a"
       if "!option!" equ "--solr-home" set "SOLR_HOME=%%a"
-      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"    
+      if "!option!" equ "--server-dir" set "SOLR_SERVER_DIR=%%a"
       if not "!option!" equ "--solr-home" if not "!option!" equ "--server-dir" (
         set "AUTH_PARAMS=!AUTH_PARAMS! !option! %%a"
       )

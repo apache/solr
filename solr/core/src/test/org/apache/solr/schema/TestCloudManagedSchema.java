@@ -22,10 +22,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.CoreStatusResponse;
-import org.apache.solr.client.solrj.JacksonContentWriter;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -99,16 +99,16 @@ public class TestCloudManagedSchema extends AbstractFullDistribZkTestBase {
   private String getFileContentFromZooKeeper(SolrZkClient zkClient, String fileName)
       throws KeeperException, InterruptedException {
 
-    return (new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8));
+    return (new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8));
   }
 
   protected final void assertFileNotInZooKeeper(
       SolrZkClient zkClient, String parent, String fileName) throws Exception {
-    List<String> kids = zkClient.getChildren(parent, null, true);
+    List<String> kids = zkClient.getChildren(parent, null);
     for (String kid : kids) {
       if (kid.equalsIgnoreCase(fileName)) {
         String rawContent =
-            new String(zkClient.getData(fileName, null, null, true), StandardCharsets.UTF_8);
+            new String(zkClient.getData(fileName, null, null), StandardCharsets.UTF_8);
         fail(
             "File '"
                 + fileName

@@ -34,12 +34,12 @@ import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.client.methods.HttpDelete;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
@@ -55,7 +55,6 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -69,11 +68,6 @@ public class TestDistribFileStore extends SolrCloudTestCase {
   @Before
   public void setup() {
     System.setProperty("solr.packages.enabled", "true");
-  }
-
-  @After
-  public void teardown() {
-    System.clearProperty("solr.packages.enabled");
   }
 
   @Test
@@ -94,7 +88,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
             "/package/mypkg/v1.0/runtimelibs.jar",
             "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA==");
         fail("should have failed because of wrong signature ");
-      } catch (RemoteExecutionException e) {
+      } catch (RemoteSolrException e) {
         assertThat(e.getMessage(), containsString("Signature does not match"));
       }
 

@@ -58,15 +58,14 @@ public class ConfUtil {
     if (solrClient != null) {
       try {
         if (solrClient.exists(
-            System.getProperty(CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
-            true)) {
+            System.getProperty(
+                CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES))) {
           byte[] data =
               solrClient.getData(
                   System.getProperty(
                       CrossDcConf.ZK_CROSSDC_PROPS_PATH, CrossDcConf.CROSSDC_PROPERTIES),
                   null,
-                  null,
-                  true);
+                  null);
 
           if (data == null) {
             log.error("{} file in Zookeeper has no data", CrossDcConf.CROSSDC_PROPERTIES);

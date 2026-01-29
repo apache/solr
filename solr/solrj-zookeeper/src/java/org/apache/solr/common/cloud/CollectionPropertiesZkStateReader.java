@@ -242,7 +242,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
               collectionPropsObservers.remove(coll);
 
               // This is the one time we know it's safe to throw this out. We just failed to set the
-              // watch due to an NoNodeException, so it isn't held by ZK and can't re-set itself due
+              // watch due to a NoNodeException, so it isn't held by ZK and can't re-set itself due
               // to an update.
               collectionPropsWatchers.remove(coll);
             }
@@ -316,7 +316,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
     while (true) {
       try {
         Stat stat = new Stat();
-        byte[] data = zkClient.getData(znodePath, watcher, stat, true);
+        byte[] data = zkClient.getData(znodePath, watcher, stat);
         @SuppressWarnings("unchecked")
         Map<String, String> props = (Map<String, String>) Utils.fromJSON(data);
         return new VersionedCollectionProps(stat.getVersion(), props);
@@ -328,7 +328,7 @@ public class CollectionPropertiesZkStateReader implements Closeable {
       } catch (KeeperException.NoNodeException e) {
         if (watcher != null) {
           // Leave an exists watch in place in case a collectionprops.json is created later.
-          Stat exists = zkClient.exists(znodePath, watcher, true);
+          Stat exists = zkClient.exists(znodePath, watcher);
           if (exists != null) {
             // Rare race condition, we tried to fetch the data and couldn't find it, then we found
             // it exists. Loop and try again.

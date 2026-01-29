@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -144,8 +144,7 @@ public class IndexingNestedDocuments extends SolrCloudTestCase {
       assertEquals(1, docs.getNumFound());
       assertEquals("P11!prod", docs.get(0).getFieldValue("id"));
 
-      // [child] returns a flat list of all (anon) descendents
-      assertEquals(5, docs.get(0).getChildDocumentCount());
+      // [child] returns a flat list of all (anon) descendants
       assertEquals(5, docs.get(0).getChildDocuments().size());
 
       // flat list is depth first...

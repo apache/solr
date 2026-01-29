@@ -32,7 +32,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -177,9 +177,10 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
-  private Http2SolrClient.Builder recoverySolrClientBuilder(String baseUrl, String leaderCoreName) {
+  private HttpJettySolrClient.Builder recoverySolrClientBuilder(
+      String baseUrl, String leaderCoreName) {
     final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
-    return new Http2SolrClient.Builder(baseUrl)
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(leaderCoreName)
         .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient());
   }
@@ -302,6 +303,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       // ureq.getParams().set(UpdateParams.OPEN_SEARCHER, onlyLeaderIndexes);
       // Why do we need to open searcher if "onlyLeaderIndexes"?
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
+      // If the leader is readOnly, do not fail since the core is already committed.
+      ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
       ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
     }
   }
@@ -656,15 +659,17 @@ public class RecoveryStrategy implements Runnable, Closeable {
           break;
         }
 
-        // we wait a bit so that any updates on the leader
-        // that started before they saw recovering state
-        // are sure to have finished (see SOLR-7141 for
-        // discussion around current value)
-        // TODO since SOLR-11216, we probably won't need this
-        try {
-          Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
-        } catch (InterruptedException e) {
-          Thread.currentThread().interrupt();
+        if (!core.readOnly) {
+          // we wait a bit so that any updates on the leader
+          // that started before they saw recovering state
+          // are sure to have finished (see SOLR-7141 for
+          // discussion around current value)
+          // TODO since SOLR-11216, we probably won't need this
+          try {
+            Thread.sleep(waitForUpdatesWithStaleStatePauseMilliSeconds);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+          }
         }
 
         // first thing we just try to sync

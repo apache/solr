@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove Request ID based tracing.
+type: removed
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17934
+    url: https://issues.apache.org/jira/browse/SOLR-17934
+issues:
+  - 17934
