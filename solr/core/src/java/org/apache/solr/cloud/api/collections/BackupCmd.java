@@ -350,7 +350,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
               slice.getName(), backupManager.getBackupId().getId());
       params.set(CoreAdminParams.SHARD_BACKUP_ID, shardBackupId.getIdAsString());
 
-      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
@@ -532,7 +532,7 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
         params.set(CoreAdminParams.COMMIT_NAME, snapshotMeta.get().getName());
       }
 
-      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
       log.debug("Sent backup request to core={} for backupName={}", coreName, backupName);
     }
     log.debug("Sent backup requests to all shard leaders for backupName={}", backupName);
