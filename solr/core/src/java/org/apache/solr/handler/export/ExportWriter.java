@@ -507,21 +507,12 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       SchemaField schemaField = req.getSchema().getField(field);
       FieldType fieldType = schemaField.getType();
 
-      // Check if field can use DocValues
-      boolean canUseDocValues =
-          schemaField.hasDocValues()
-              // Special handling for SortableTextField: unlike other field types, it requires
-              // useDocValuesAsStored=true to be included via glob patterns in /export. This
-              // matches the behavior of /select (which requires useDocValuesAsStored=true for
-              // all globbed fields) and avoids performance issues. The requirement cannot be
-              // extended to other field types in /export for backward compatibility reasons.
-              && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
       Set<String> requestFieldNames =
           solrReturnFields.getRequestedFieldNames() == null
               ? Set.of()
               : solrReturnFields.getRequestedFieldNames();
 
-      if (canUseDocValues) {
+      if (canUseDocValues(schemaField, fieldType)) {
         // Prefer DocValues when available
         docValueFields.add(schemaField);
       } else if (schemaField.stored()) {
@@ -619,6 +610,16 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
     }
 
     return writers;
+  }
+
+  private static boolean canUseDocValues(SchemaField schemaField, FieldType fieldType) {
+    return schemaField.hasDocValues()
+        // Special handling for SortableTextField: unlike other field types, it requires
+        // useDocValuesAsStored=true to be included via glob patterns in /export. This
+        // matches the behavior of /select (which requires useDocValuesAsStored=true for
+        // all globbed fields) and avoids performance issues. The requirement cannot be
+        // extended to other field types in /export for backward compatibility reasons.
+        && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
   }
 
   SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
