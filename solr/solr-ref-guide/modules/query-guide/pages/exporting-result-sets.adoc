@@ -25,21 +25,52 @@ The cases where this functionality may be useful include: session analysis, dist
 
 == Comparison with Cursors
 
-The `/export` handler offers several advantages over xref:pagination-of-results.adoc#fetching-a-large-number-of-sorted-results-cursors[cursor-based pagination] for streaming large result sets.
+The `/export` handler and xref:pagination-of-results.adoc#fetching-a-large-number-of-sorted-results-cursors[cursor-based pagination] offer different trade-offs for streaming large result sets.
+
+[cols="1h,1,1"]
+|===
+| |`/export` |Cursors
+
+|Advantages
+a|
+* Query executed once; bitmasks applied once per segment
+* Consistent snapshot (no duplicates or missing docs)
+* Lower latency to first document
+* Streaming decouples reader and writer creating smoother flow
+a|
+* Flexible sort criteria (just needs unique key)
+* Full `SearchHandler` features (highlighting, etc.)
+* Resumable across requests and restarts
+* Distributed queries by default
+
+|Disadvantages
+a|
+* Must consume in a single session
+* IndexReaders held open, delaying resource cleanup
+* Requires streaming expressions for distributed queries
+* Sort fields must have docValues
+a|
+* Query re-executed for each page
+* Possible duplicates or missing docs during updates
+* Large batches needed for throughput (create "glugging" effect)
+* Higher latency to first document
+|===
+
+=== Details
 
 With cursors, the query is re-executed for each page of results.
 In contrast, `/export` runs the filter query once and the resulting segment-level bitmasks are applied once per segment, after which the documents are simply iterated over.
 Additionally, the segments that existed when the stream was opened are held open for the duration of the export, eliminating the disappearing or duplicate document issues that can occur with cursors.
-The trade-off is that IndexReaders are kept around for longer periods of time, which delays cleanup of memory and disk resources until the export completes.
+However, this means IndexReaders are kept around for longer periods of time, which delays cleanup of memory and disk resources until the export completes.
 
-Another advantage of `/export` is significantly lower latency until the first document is returned, because the internal batch size is decoupled from the response message size.
+The `/export` handler has significantly lower latency until the first document is returned, because the internal batch size is decoupled from the response message size.
 With cursors, you typically need to set the `rows` parameter to a high value (e.g., 100,000) to achieve decent throughput.
 However, this creates a "glugging" effect: when you request a large batch, Solr must build the entire payload and send it over the wire while your client waits.
 Only after receiving and decoding this large payload can the client request the next batch, but in the interim Solr sits idle on this request.
 With the `/export` handler, these steps are decoupled - Solr can continue sorting and decoding/encoding documents while waiting for more demand from the client.
 
 The advantage of cursors is _flexibility_.
-Cursors impose no constraints on the sort criteria accept that you must include a unique key, which isn't a real constraint.
+Cursors impose no constraints on the sort criteria except that you must include a unique key, which isn't a real constraint.
 Cursors work as part of `SearchHandler` and thus can include most/all capabilities of it like highlighting.
 A `cursorMark` can be persisted and resumed later, even across restarts, or never continued if enough results were consumed to satisfy the use-case.
 An `/export` stream must be consumed in a single session.
