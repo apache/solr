@@ -97,18 +97,18 @@ public class LockTree {
       // If a callingLockId was passed in, validate it with the current lock path, and only start
       // locking below the calling lock
       Lock callingLock = callingLockIds.isEmpty() ? null : allLocks.get(callingLockIds.getLast());
-      boolean ignoreCallingLock = false;
+      boolean reuseCurrentLock = false;
       if (callingLock != null && callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
         startingNode = ((LockImpl) callingLock).node;
         startingSession = startingSession.find(startingNode.level.getHeight(), path);
         if (startingSession == null) {
           startingSession = root;
         }
-        ignoreCallingLock = true;
+        reuseCurrentLock = true;
       }
       synchronized (LockTree.this) {
         if (startingSession.isBusy(action.lockLevel, path)) return null;
-        Lock lockObject = startingNode.lock(action.lockLevel, path, ignoreCallingLock);
+        Lock lockObject = startingNode.lock(action.lockLevel, path, reuseCurrentLock);
         if (lockObject == null) {
           startingSession.markBusy(action.lockLevel, path);
         } else {
@@ -207,11 +207,13 @@ public class LockTree {
       }
     }
 
-    Lock lock(LockLevel lockLevel, List<String> path, boolean ignoreCurrentLock) {
-      if (myLock != null && !ignoreCurrentLock)
-        return null; // I'm already locked. no need to go any further
+    Lock lock(LockLevel lockLevel, List<String> path, boolean reuseCurrentLock) {
       if (lockLevel == level) {
         // lock is supposed to be acquired at this level
+        if (myLock != null && reuseCurrentLock) {
+          // I am already locked, and I want to be re-used
+          return myLock;
+        }
         // If I am locked or any of my children or grandchildren are locked
         // it is not possible to acquire a lock
         if (isLocked()) return null;
@@ -226,7 +228,7 @@ public class LockTree {
     }
 
     boolean validateSubpath(int lockLevel, List<String> path) {
-      return level.getHeight() < lockLevel
+      return level.getHeight() <= lockLevel
           && (level.getHeight() == 0 || name.equals(path.get(level.getHeight() - 1)))
           && (mom == null || mom.validateSubpath(lockLevel, path));
     }

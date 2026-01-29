@@ -48,8 +48,7 @@ public interface CollectionParams {
     REPLICA(3, null),
     SHARD(2, REPLICA),
     COLLECTION(1, SHARD),
-    CLUSTER(0, COLLECTION),
-    BASE(-1, CLUSTER);
+    CLUSTER(0, COLLECTION);
 
     private final int height;
     private final LockLevel child;

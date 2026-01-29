@@ -122,6 +122,106 @@ public class TestLockTree extends SolrTestCaseJ4 {
     }
   }
 
+  public void testCallingLockIdSubLocks() throws Exception {
+    LockTree lockTree = new LockTree();
+    Lock coll1Lock =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.CREATE, List.of("coll1"), Collections.emptyList());
+    assertNotNull(coll1Lock);
+
+    // Test sub-locks at the same level
+    assertNull(
+        "Should not be able to lock coll1 without using a callingLockId",
+        lockTree
+            .getSession()
+            .lock(CollectionAction.RELOAD, List.of("coll1"), Collections.emptyList()));
+    Lock coll1Lock2 =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.RELOAD, List.of("coll1"), List.of(coll1Lock.id()));
+    assertNotNull(coll1Lock2);
+    coll1Lock2.unlock();
+
+    // Test locks underneath
+    Lock replica1Lock =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.ADDREPLICA,
+                List.of("coll1", "shard1", "replica1"),
+                List.of(coll1Lock.id()));
+    assertNotNull(replica1Lock);
+    assertNull(
+        "Should not be able to lock coll1/shard1/replica2 since our callingLockId is only coll1, not shard1",
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.ADDREPLICA,
+                List.of("coll1", "shard1", "replica2"),
+                List.of(coll1Lock.id())));
+    Lock replica2Lock =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.ADDREPLICA,
+                List.of("coll1", "shard2", "replica1"),
+                List.of(coll1Lock.id()));
+    assertNotNull(replica2Lock);
+    replica2Lock.unlock();
+    replica1Lock.unlock();
+    coll1Lock.unlock();
+
+    // Test difference at a higher level
+    Lock shard1Lock1 =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.INSTALLSHARDDATA,
+                List.of("coll1", "shard1"),
+                Collections.emptyList());
+    assertNotNull(shard1Lock1);
+    Lock shard1Lock2 =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.INSTALLSHARDDATA,
+                List.of("coll2", "shard1"),
+                Collections.emptyList());
+    assertNotNull(shard1Lock2);
+    assertNull(
+        "Should not be able to lock coll1/shard1 since our callingLockId is coll2",
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.SYNCSHARD, List.of("coll1", "shard1"), List.of(shard1Lock2.id())));
+    Lock shard1Lock3 =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.SYNCSHARD, List.of("coll1", "shard1"), List.of(shard1Lock1.id()));
+    assertNotNull(shard1Lock3);
+    shard1Lock1.unlock();
+    shard1Lock2.unlock();
+    shard1Lock3.unlock();
+
+    // Test difference at a higher level
+    shard1Lock1 =
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.INSTALLSHARDDATA,
+                List.of("coll1", "shard1"),
+                Collections.emptyList());
+    assertNotNull(shard1Lock1);
+    assertNull(
+        "Should not be able to lock coll1 since our callingLockId is coll1/shar1. Cannot move up",
+        lockTree
+            .getSession()
+            .lock(CollectionAction.RELOAD, List.of("coll1"), Collections.emptyList()));
+    shard1Lock1.unlock();
+  }
+
   private Runnable getRunnable(
       List<Pair<CollectionAction, List<String>>> completedOps,
       Pair<CollectionAction, List<String>> operation,
