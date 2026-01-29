@@ -1,0 +1,10 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Capability for Solr to run embedded ZooKeeper in a quorum/ensemble mode, allowing multiple Solr nodes to form a distributed ZooKeeper ensemble within their own processes. Controlled by a new solr node-role.
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+  - name: Jason Gerlowski
+  - name: Jan Høydahl
+links:
+  - name: SOLR-18094
+    url: https://issues.apache.org/jira/browse/SOLR-18094
