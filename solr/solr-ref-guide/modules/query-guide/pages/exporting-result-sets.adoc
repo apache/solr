@@ -33,13 +33,13 @@ The `/export` handler and xref:pagination-of-results.adoc#fetching-a-large-numbe
 
 |Advantages
 a|
-* Query executed once; bitmasks applied once per segment
+* Query executed once
 * Consistent snapshot (no duplicates or missing docs)
 * Lower latency to first document (typically)
 * Streaming decouples reader and writer creating smoother flow
 a|
 * Distributed queries by default
-* Flexible sort criteria (just needs unique key)
+* Flexible sort criteria
 * Resumable across requests and restarts
 * Full `SearchHandler` features (highlighting, etc.)
 
