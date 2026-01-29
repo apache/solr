@@ -113,27 +113,13 @@ public class ZkContainer {
     if (zkServerEnabled) {
       if (!runAsQuorum) {
         // Old school ZooKeeperServerMain being used under the covers.
-        String zkDataHome =
-            EnvUtils.getProperty(
-                "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
-        String zkConfHome =
-            EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
         zkServer =
-            new SolrZkServer(
-                stripChroot(config.getZkHost()),
-                Path.of(zkDataHome),
-                zkConfHome,
-                config.getSolrHostPort());
-        zkServer.parseConfig();
-        zkServer.start();
+            SolrZkServer.createAndStart(config.getZkHost(), solrHome, config.getSolrHostPort());
 
         // set client from server config if not already set
         if (zookeeperHost == null) {
           zookeeperHost = zkServer.getClientString();
         }
-        // TODO - should this code go in SolrZkServer to augment or replace its current
-        // capabilities?  Doing so
-        //  would definitely keep ZkContainer cleaner...
       } else {
         // ZooKeeperServerEmbedded being used under the covers.
         // Figure out where to put zoo-data
@@ -357,11 +343,6 @@ public class ZkContainer {
         ZooKeeperServerEmbedded.builder().baseDir(Path.of(zkHomeDir)).configuration(p).build();
     zkServerEmbedded.start();
     log.info("Started embedded ZooKeeper server in quorum mode on port {}", port);
-  }
-
-  private String stripChroot(String zkRun) {
-    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
-    return zkRun.substring(0, zkRun.lastIndexOf('/'));
   }
 
   public static volatile Predicate<CoreDescriptor> testing_beforeRegisterInZk;

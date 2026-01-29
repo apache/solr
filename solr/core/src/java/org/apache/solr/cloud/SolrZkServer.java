@@ -60,6 +60,40 @@ public class SolrZkServer {
     this.solrPort = solrPort;
   }
 
+  /**
+   * Creates and initializes a SolrZkServer instance for standalone (non-quorum) mode.
+   *
+   * @param zkHost the ZooKeeper host string (chroot will be stripped)
+   * @param solrHome the Solr home directory path
+   * @param solrHostPort the Solr host port
+   * @return initialized and started SolrZkServer instance
+   */
+  public static SolrZkServer createAndStart(String zkHost, Path solrHome, int solrHostPort) {
+    String zkDataHome =
+        EnvUtils.getProperty(
+            "solr.zookeeper.server.datadir", solrHome.resolve("zoo_data").toString());
+    String zkConfHome = EnvUtils.getProperty("solr.zookeeper.server.confdir", solrHome.toString());
+
+    String strippedZkHost = stripChroot(zkHost);
+    SolrZkServer zkServer =
+        new SolrZkServer(strippedZkHost, Path.of(zkDataHome), zkConfHome, solrHostPort);
+    zkServer.parseConfig();
+    zkServer.start();
+
+    return zkServer;
+  }
+
+  /**
+   * Strips the chroot portion from a ZooKeeper host string.
+   *
+   * @param zkRun the ZooKeeper host string (e.g., "localhost:2181/solr")
+   * @return the host string without chroot (e.g., "localhost:2181")
+   */
+  private static String stripChroot(String zkRun) {
+    if (zkRun == null || zkRun.trim().isEmpty() || zkRun.lastIndexOf('/') < 0) return zkRun;
+    return zkRun.substring(0, zkRun.lastIndexOf('/'));
+  }
+
   public String getClientString() {
     if (zkHost != null) {
       return zkHost;
