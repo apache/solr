@@ -35,26 +35,25 @@ The `/export` handler and xref:pagination-of-results.adoc#fetching-a-large-numbe
 a|
 * Query executed once; bitmasks applied once per segment
 * Consistent snapshot (no duplicates or missing docs)
-* Typically lower latency to first document
+* Lower latency to first document (typically)
 * Streaming decouples reader and writer creating smoother flow
 a|
-* Flexible sort criteria (just needs unique key)
-* Full `SearchHandler` features (highlighting, etc.)
 * Distributed queries by default
+* Flexible sort criteria (just needs unique key)
 * Resumable across requests and restarts
-* No noise in logs if *not* resumed
+* Full `SearchHandler` features (highlighting, etc.)
 
 |Disadvantages
 a|
-* Must consume in a single session
-* IndexReaders held open, delaying memory/disk cleanup
 * Requires streaming expressions for distributed queries
 * Sort fields must have docValues
+* Must consume in a single session
+* IndexReaders held open, delaying memory/disk cleanup
 a|
 * Query re-executed for each page
 * Possible duplicates or missing docs during updates
-* Large batches needed for throughput (create "glugging" effect)
-* Typically higher latency to first document
+* Higher latency to first document (typically)
+* Large batches needed for throughput
 |===
 
 === Details
