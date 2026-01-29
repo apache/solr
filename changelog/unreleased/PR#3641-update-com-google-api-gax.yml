@@ -1,0 +1,7 @@
+title: Update com.google.api:gax to v2.74.0
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3641
+  url: https://github.com/apache/solr/pull/3641
