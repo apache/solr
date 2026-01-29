@@ -27,33 +27,34 @@ The cases where this functionality may be useful include: session analysis, dist
 
 The `/export` handler and xref:pagination-of-results.adoc#fetching-a-large-number-of-sorted-results-cursors[cursor-based pagination] offer different trade-offs for streaming large result sets.
 
-[cols="1h,1,1"]
+[cols="h,2,2"]
 |===
-| |`/export` |Cursors
+| |Export |Cursors
 
 |Advantages
 a|
 * Query executed once; bitmasks applied once per segment
 * Consistent snapshot (no duplicates or missing docs)
-* Lower latency to first document
+* Typically lower latency to first document
 * Streaming decouples reader and writer creating smoother flow
 a|
 * Flexible sort criteria (just needs unique key)
 * Full `SearchHandler` features (highlighting, etc.)
-* Resumable across requests and restarts
 * Distributed queries by default
+* Resumable across requests and restarts
+* No noise in logs if *not* resumed
 
 |Disadvantages
 a|
 * Must consume in a single session
-* IndexReaders held open, delaying resource cleanup
+* IndexReaders held open, delaying memory/disk cleanup
 * Requires streaming expressions for distributed queries
 * Sort fields must have docValues
 a|
 * Query re-executed for each page
 * Possible duplicates or missing docs during updates
 * Large batches needed for throughput (create "glugging" effect)
-* Higher latency to first document
+* Typically higher latency to first document
 |===
 
 === Details
