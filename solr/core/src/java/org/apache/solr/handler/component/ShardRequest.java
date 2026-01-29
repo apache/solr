@@ -58,6 +58,9 @@ public class ShardRequest {
   public String nodeName;
 
   /** may be null */
+  public String coreNodeName;
+
+  /** may be null */
   public Map<String, String> headers;
 
   // TODO: one could store a list of numbers to correlate where returned docs

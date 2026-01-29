@@ -454,8 +454,6 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory.getKeyStoreType());
     assertEquals("bar", sslContextFactory.getTrustStoreType());
-    System.clearProperty("javax.net.ssl.keyStoreType");
-    System.clearProperty("javax.net.ssl.trustStoreType");
 
     System.setProperty("solr.ssl.check.peer.name.enabled", "true");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
@@ -464,9 +462,6 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     assertEquals("HTTPS", sslContextFactory2.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory2.getKeyStoreType());
     assertEquals("bar", sslContextFactory2.getTrustStoreType());
-    System.clearProperty("solr.ssl.check.peer.name.enabled");
-    System.clearProperty("javax.net.ssl.keyStoreType");
-    System.clearProperty("javax.net.ssl.trustStoreType");
 
     System.setProperty("solr.ssl.check.peer.name.enabled", "false");
     System.setProperty("javax.net.ssl.keyStoreType", "foo");
@@ -475,9 +470,6 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
     assertNull(sslContextFactory3.getEndpointIdentificationAlgorithm());
     assertEquals("foo", sslContextFactory3.getKeyStoreType());
     assertEquals("bar", sslContextFactory3.getTrustStoreType());
-    System.clearProperty("solr.ssl.check.peer.name.enabled");
-    System.clearProperty("javax.net.ssl.keyStoreType");
-    System.clearProperty("javax.net.ssl.trustStoreType");
   }
 
   protected void expectThrowsAndMessage(
@@ -533,8 +525,6 @@ public class HttpJettySolrClientTest extends HttpSolrClientTestBase {
           "Basic " + Base64.getEncoder().encodeToString("foo:bar".getBytes(StandardCharsets.UTF_8)),
           authorizationHeader);
     } finally {
-      System.clearProperty(PreemptiveBasicAuthClientCustomizer.SYS_PROP_BASIC_AUTH_CREDENTIALS);
-      System.clearProperty(HttpJettySolrClient.CLIENT_CUSTOMIZER_SYSPROP);
       PreemptiveBasicAuthClientCustomizer.setDefaultSolrParams(SolrParams.of());
     }
   }

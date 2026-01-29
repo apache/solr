@@ -1378,7 +1378,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
           // ensure the writer is initialized so that we have a list of commit points
           RefCounted<IndexWriter> iw =
-              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core);
+              core.getUpdateHandler().getSolrCoreState().getIndexWriter(core, false);
           iw.decref();
 
         } catch (IOException e) {

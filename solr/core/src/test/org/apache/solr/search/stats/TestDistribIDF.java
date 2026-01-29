@@ -62,7 +62,6 @@ public class TestDistribIDF extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     solrCluster.shutdown();
-    System.clearProperty("solr.statsCache");
     super.tearDown();
   }
 

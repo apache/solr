@@ -40,7 +40,6 @@ import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkCredentialsInjector;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException.NoAuthException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -64,11 +63,6 @@ public class VMParamsZkACLAndCredentialsProvidersTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("solrcloud.skip.autorecovery", "true");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solrcloud.skip.autorecovery");
   }
 
   @Override
