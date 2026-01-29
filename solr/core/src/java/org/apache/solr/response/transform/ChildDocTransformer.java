@@ -303,12 +303,17 @@ class ChildDocTransformer extends DocTransformer {
   private Set<String> getMultiValuedVectorFields(
       IndexSchema schema, SolrReturnFields childReturnFields, VectorEncoding encoding) {
     Set<String> multiValuedVectorsFields = new HashSet<>();
-    for (String fieldName : childReturnFields.getExplicitlyRequestedFieldNames()) {
-      SchemaField sfield = schema.getFieldOrNull(fieldName);
-      if (sfield.getType() instanceof DenseVectorField
-          && sfield.multiValued()
-          && ((DenseVectorField) sfield.getType()).getVectorEncoding() == encoding) {
-        multiValuedVectorsFields.add(fieldName);
+    Set<String> explicitlyRequestedFieldNames =
+        childReturnFields.getExplicitlyRequestedFieldNames();
+    if (explicitlyRequestedFieldNames != null) {
+      for (String fieldName : explicitlyRequestedFieldNames) {
+        SchemaField sfield = schema.getFieldOrNull(fieldName);
+        if (sfield != null
+            && sfield.getType() instanceof DenseVectorField
+            && sfield.multiValued()
+            && ((DenseVectorField) sfield.getType()).getVectorEncoding() == encoding) {
+          multiValuedVectorsFields.add(fieldName);
+        }
       }
     }
     return multiValuedVectorsFields;
