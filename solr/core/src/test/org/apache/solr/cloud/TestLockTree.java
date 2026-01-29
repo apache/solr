@@ -26,6 +26,7 @@ import static org.apache.solr.common.params.CollectionParams.CollectionAction.SP
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -42,25 +43,36 @@ public class TestLockTree extends SolrTestCaseJ4 {
   public void testLocks() throws Exception {
     LockTree lockTree = new LockTree();
     Lock coll1Lock =
-        lockTree.getSession().lock(CollectionAction.CREATE, Arrays.asList("coll1"), null);
+        lockTree
+            .getSession()
+            .lock(CollectionAction.CREATE, Arrays.asList("coll1"), Collections.emptyList());
     assertNotNull(coll1Lock);
     assertNull(
         "Should not be able to lock coll1/shard1",
         lockTree
             .getSession()
-            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), null));
+            .lock(
+                CollectionAction.BALANCESHARDUNIQUE,
+                Arrays.asList("coll1", "shard1"),
+                Collections.emptyList()));
 
     coll1Lock.unlock();
     Lock shard1Lock =
         lockTree
             .getSession()
-            .lock(CollectionAction.BALANCESHARDUNIQUE, Arrays.asList("coll1", "shard1"), null);
+            .lock(
+                CollectionAction.BALANCESHARDUNIQUE,
+                Arrays.asList("coll1", "shard1"),
+                Collections.emptyList());
     assertNotNull(shard1Lock);
     shard1Lock.unlock();
     Lock replica1Lock =
         lockTree
             .getSession()
-            .lock(ADDREPLICAPROP, Arrays.asList("coll1", "shard1", "core_node2"), null);
+            .lock(
+                ADDREPLICAPROP,
+                Arrays.asList("coll1", "shard1", "core_node2"),
+                Collections.emptyList());
     assertNotNull(replica1Lock);
 
     List<Pair<CollectionAction, List<String>>> operations = new ArrayList<>();
@@ -83,7 +95,8 @@ public class TestLockTree extends SolrTestCaseJ4 {
       List<Lock> locks = new CopyOnWriteArrayList<>();
       List<Thread> threads = new ArrayList<>();
       for (Pair<CollectionAction, List<String>> operation : operations) {
-        final Lock lock = session.lock(operation.first(), operation.second(), null);
+        final Lock lock =
+            session.lock(operation.first(), operation.second(), Collections.emptyList());
         if (lock != null) {
           Thread thread = new Thread(getRunnable(completedOps, operation, locks, lock));
           threads.add(thread);

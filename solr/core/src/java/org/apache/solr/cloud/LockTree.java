@@ -96,7 +96,7 @@ public class LockTree {
 
       // If a callingLockId was passed in, validate it with the current lock path, and only start
       // locking below the calling lock
-      Lock callingLock = callingLockIds != null ? allLocks.get(callingLockIds.getLast()) : null;
+      Lock callingLock = callingLockIds.isEmpty() ? null : allLocks.get(callingLockIds.getLast());
       boolean ignoreCallingLock = false;
       if (callingLock != null && callingLock.validateSubpath(action.lockLevel.getHeight(), path)) {
         startingNode = ((LockImpl) callingLock).node;

@@ -53,7 +53,7 @@ public interface OverseerMessageHandler {
    *
    * @return <code>null</code> if locking is not possible.
    */
-  Lock lockTask(ZkNodeProps message, long batchSessionId);
+  Lock lockTask(ZkNodeProps message, long batchSessionId, List<String> callingLockIds);
 
   /**
    * @param message the message being processed
