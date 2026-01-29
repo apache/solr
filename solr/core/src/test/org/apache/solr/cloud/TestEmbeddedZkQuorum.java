@@ -19,6 +19,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.apache.solr.SolrTestCaseJ4;
@@ -322,7 +323,8 @@ public class TestEmbeddedZkQuorum extends SolrCloudTestCase {
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField("id", startId + i);
       doc.addField("phase_s", phase);
-      doc.addField("content_t", String.format("Document %d in phase %s", startId + i, phase));
+      doc.addField(
+          "content_t", String.format(Locale.ROOT, "Document %d in phase %s", startId + i, phase));
       client.add(doc);
     }
     client.commit();
