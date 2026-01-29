@@ -21,6 +21,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
 
 import java.io.ByteArrayOutputStream;
+import java.io.OutputStreamWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -128,7 +129,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("custom.zk.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    zkProps.store(baos, null);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    zkProps.store(writer, null);
+    writer.close();
     byte[] zkData = baos.toByteArray();
 
     when(mockZkClient.exists(anyString())).thenReturn(true);
@@ -152,7 +155,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty(KafkaCrossDcConf.TOPIC_NAME, "zk-topic");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    zkProps.store(baos, null);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    zkProps.store(writer, null);
+    writer.close();
     byte[] zkData = baos.toByteArray();
 
     when(mockZkClient.exists(anyString())).thenReturn(true);
@@ -313,7 +318,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     zkProps.setProperty("zk.only.property", "zk-value");
 
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    zkProps.store(baos, null);
+    OutputStreamWriter writer = new OutputStreamWriter(baos, "UTF-8");
+    zkProps.store(writer, null);
+    writer.close();
     byte[] zkData = baos.toByteArray();
 
     when(mockZkClient.exists(anyString())).thenReturn(true);
