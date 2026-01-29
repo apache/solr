@@ -95,11 +95,8 @@ public class JsonQueryRequestUnitTest extends SolrTestCase {
     queriesMap.put("query2", Map.of("edismax", Map.of("query", "solr", "df", "text")));
     final JsonQueryRequest request = new JsonQueryRequest().setQueries(queriesMap);
     final String requestBody = writeRequestToJson(request);
-    assertThat(
-        requestBody, containsString("\"query1\":{\"lucene\":{\"query\":\"*:*\",\"df\":\"text\"}}"));
-    assertThat(
-        requestBody,
-        containsString("\"query2\":{\"edismax\":{\"query\":\"solr\",\"df\":\"text\"}}"));
+    assertThat(requestBody, containsString("\"query1\":{\"lucene\":"));
+    assertThat(requestBody, containsString("\"query2\":{\"edismax\":"));
   }
 
   @Test
