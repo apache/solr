@@ -19,7 +19,6 @@ package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.cloud.DistributedCollectionLockFactory;
 import org.apache.solr.cloud.DistributedLock;
@@ -108,12 +107,7 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
-    List<String> callingLockIdList;
-    if (adminCmdContext.getCallingLockIds() == null) {
-      callingLockIdList = Collections.emptyList();
-    } else {
-      callingLockIdList = List.of(adminCmdContext.getCallingLockIds().split(","));
-    }
+    List<String> callingLockIdList = adminCmdContext.getCallingLockIdList();
 
     // The first requested lock is a write one (on the target object for the action, depending on
     // lock level), then requesting read locks on "higher" levels (collection > shard > replica here
@@ -126,11 +120,6 @@ public class CollectionApiLockFactory {
     };
     List<DistributedLock> locks = new ArrayList<>(iterationOrder.length);
     for (CollectionParams.LockLevel level : iterationOrder) {
-      // We do not want to re-lock from the parent lock level
-      // TODO: Fix
-      //      if (calledFromLockLevel.isHigherOrEqual(level)) {
-      //        continue;
-      //      }
       // This comparison is based on the LockLevel height value that classifies replica > shard >
       // collection.
       if (lockLevel.isHigherOrEqual(level)) {

@@ -86,7 +86,7 @@ abstract class ZkDistributedLock implements DistributedLock {
     @Override
     boolean canMirrorLock(String lockId) {
       // Only another Write lock can be mirrored
-      int lockTypeSuffixIndex = lockId.indexOf(LOCK_PREFIX_SUFFIX) - 1;
+      int lockTypeSuffixIndex = lockId.lastIndexOf(LOCK_PREFIX_SUFFIX) - 1;
       if (lockTypeSuffixIndex < 0) {
         return false;
       } else {

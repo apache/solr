@@ -48,7 +48,6 @@ import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -187,7 +186,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
    *     because it happens that a lock got released).
    */
   @Override
-  public Lock lockTask(ZkNodeProps message, long batchSessionId) {
+  public Lock lockTask(ZkNodeProps message, long batchSessionId, List<String> callingLockIds) {
     if (sessionId != batchSessionId) {
       // this is always called in the same thread.
       // Each batch is supposed to have a new taskBatch
@@ -196,11 +195,6 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       sessionId = batchSessionId;
     }
 
-    List<String> callingLockIds = null;
-    String callingLockIdsString = message.getStr(CALLING_LOCK_IDS_HEADER);
-    if (StrUtils.isNotBlank(callingLockIdsString)) {
-      callingLockIds = List.of(callingLockIdsString.split(","));
-    }
     return lockSession.lock(
         getCollectionAction(message.getStr(Overseer.QUEUE_OPERATION)),
         Arrays.asList(

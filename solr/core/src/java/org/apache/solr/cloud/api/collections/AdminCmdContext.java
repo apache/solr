@@ -19,6 +19,8 @@ package org.apache.solr.cloud.api.collections;
 
 import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 
+import java.util.Collections;
+import java.util.List;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.StrUtils;
@@ -70,6 +72,11 @@ public class AdminCmdContext {
     regenerateSubRequestCallingLockIds();
   }
 
+  public AdminCmdContext withCallingLockIds(String callingLockIds) {
+    setCallingLockIds(callingLockIds);
+    return this;
+  }
+
   private void regenerateSubRequestCallingLockIds() {
     if (StrUtils.isNotBlank(callingLockIds) && StrUtils.isNotBlank(lockId)) {
       subRequestCallingLockIds += "," + lockId;
@@ -84,6 +91,18 @@ public class AdminCmdContext {
 
   public String getCallingLockIds() {
     return callingLockIds;
+  }
+
+  public List<String> getCallingLockIdList() {
+    return parseCallingLockIds(callingLockIds);
+  }
+
+  public static List<String> parseCallingLockIds(String callingLockIdsString) {
+    if (StrUtils.isBlank(callingLockIdsString)) {
+      return Collections.emptyList();
+    } else {
+      return List.of(callingLockIdsString.split(","));
+    }
   }
 
   public ClusterState getClusterState() {
