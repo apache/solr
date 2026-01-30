@@ -108,8 +108,6 @@ public class MessageBodyWriters {
     }
   }
 
-  // Not sure if required.  Ref. org.apache.solr.handler.admin.api.GetMetrics and
-  // org.apache.solr.response.PrometheusResponseWriter
   @Produces(PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS)
   public static class PrometheusMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<Object> {
@@ -124,8 +122,6 @@ public class MessageBodyWriters {
     }
   }
 
-  // Not sure if required.  Ref. org.apache.solr.handler.admin.api.GetMetrics and
-  // org.apache.solr.response.PrometheusResponseWriter
   @Produces(PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS)
   public static class OpenmetricsMessageBodyWriter extends BaseMessageBodyWriter
       implements MessageBodyWriter<Object> {

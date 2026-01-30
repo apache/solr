@@ -51,17 +51,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Unit tests for {@link GetMetrics}
- *
- * <p>These tests are not using any extension of HttpSolrClientBase:
- *
- * <ul>
- *   <li>to avoid dependency on SolrJ, SolrRequest, SolrParams, NamedList
- *   <li>to be able to send the "Accept" header
- * </ul>
- *
- * <p>Tests in this class make plain RESTful HTTP GET requests, with "Accept" header and query
- * parameters, to test GetMetrics/MetricsApi.
+ * Unit tests for {@link GetMetrics}.
  *
  * <p>See also: TestMetricsRequest, in SolrJ
  */

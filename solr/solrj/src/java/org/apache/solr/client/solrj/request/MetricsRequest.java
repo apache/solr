@@ -59,7 +59,7 @@ public class MetricsRequest extends SolrRequest<InputStreamResponse> {
     super(METHOD.GET, path, SolrRequestType.ADMIN);
     if (!path.endsWith("/metrics")) {
       throw new SolrException(
-          SolrException.ErrorCode.INVALID_STATE, "Request path not supported: " + path);
+          SolrException.ErrorCode.BAD_REQUEST, "Request path not supported: " + path);
     }
     this.params = params;
     // Set response parser according to "wt".
