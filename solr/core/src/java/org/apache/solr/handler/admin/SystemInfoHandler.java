@@ -63,7 +63,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
     NodeSystemInfoResponse response = provider.getNodeSystemInfo(new NodeSystemInfoResponse());
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
+    // V1 does not wrap the system info into "nodeInfo" field
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response.nodeInfo);
 
     return;
   }

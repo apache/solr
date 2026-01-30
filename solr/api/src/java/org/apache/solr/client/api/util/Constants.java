@@ -47,4 +47,6 @@ public class Constants {
   public static final String ADDTL_FIELDS_PROPERTY = "hasAdditionalFields";
 
   public static final String JAVABIN_CONTENT_TYPE_V2 = "application/vnd.apache.solr.javabin";
+
+  public static final String NODE_INFO_SYSTEM_PATH = "/node/info/system";
 }

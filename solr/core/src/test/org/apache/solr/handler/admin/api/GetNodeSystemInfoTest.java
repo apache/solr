@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.util.Constants;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -73,7 +74,7 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(TIMEOUT / 1000);
     jettyRunner = cluster.getRandomJetty(random());
     baseV2Url = jettyRunner.getBaseURLV2();
-    systemInfoV2Url = baseV2Url.toString().concat("/node/info/system");
+    systemInfoV2Url = baseV2Url.toString().concat(Constants.NODE_INFO_SYSTEM_PATH);
 
     // useSsl = true, clientAuth = false
     SSLTestConfig sslConfig = new SSLTestConfig(true, false);

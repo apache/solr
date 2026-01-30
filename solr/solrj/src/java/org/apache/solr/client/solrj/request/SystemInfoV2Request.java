@@ -16,51 +16,41 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import org.apache.solr.client.api.util.Constants;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.client.solrj.response.SystemInfoV2Response;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /** Class to get a system info response. */
-public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
+public class SystemInfoV2Request extends SolrRequest<SystemInfoV2Response> {
 
   private static final long serialVersionUID = 1L;
 
   private final SolrParams params;
 
-  /** Request to "/admin/info/system" by default, without params. */
-  public SystemInfoRequest() {
+  /** Request to "/node/info/system" by default, without params. */
+  public SystemInfoV2Request() {
     // TODO: support V2 by default.  Requires refactoring throughout the CLI tools, at least
-    this(CommonParams.SYSTEM_INFO_PATH);
-  }
-
-  /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or old V2 "/node/system"
-   */
-  public SystemInfoRequest(String path) {
-    this(path, new ModifiableSolrParams());
+    this(Constants.NODE_INFO_SYSTEM_PATH, new ModifiableSolrParams());
   }
 
   /**
    * @param params the Solr parameters to use for this request.
    */
-  public SystemInfoRequest(SolrParams params) {
-    this(CommonParams.SYSTEM_INFO_PATH, params);
+  public SystemInfoV2Request(SolrParams params) {
+    this(Constants.NODE_INFO_SYSTEM_PATH, params);
   }
 
   /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or old V2 "/node/system"
+   * @param path the HTTP path to use for this request. Supports V2 "/node/info/system"
    * @param params query parameter names and values for making this request.
    */
-  public SystemInfoRequest(String path, SolrParams params) {
+  public SystemInfoV2Request(String path, SolrParams params) {
     super(METHOD.GET, path, SolrRequestType.ADMIN);
-    if (!path.equals(CommonParams.SYSTEM_INFO_PATH)
-        && !path.equals(CommonParams.V2_SYSTEM_INFO_PATH)) {
+    if (!path.equals(Constants.NODE_INFO_SYSTEM_PATH)) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Unsupported request path: " + path);
     }
@@ -73,17 +63,12 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   }
 
   @Override
-  protected SystemInfoResponse createResponse(NamedList<Object> namedList) {
-    return new SystemInfoResponse(namedList);
+  protected SystemInfoV2Response createResponse(NamedList<Object> namedList) {
+    return new SystemInfoV2Response(namedList);
   }
 
   @Override
   public ApiVersion getApiVersion() {
-    if (CommonParams.SYSTEM_INFO_PATH.equals(getPath())) {
-      // (/solr) /admin/info/system
-      return ApiVersion.V1;
-    }
-    // Ref. org.apache.solr.handler.admin.api.NodeSystemInfoAPI : /node/system
     return ApiVersion.V2;
   }
 }

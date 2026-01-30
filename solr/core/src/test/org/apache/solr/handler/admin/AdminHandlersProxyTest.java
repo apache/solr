@@ -19,7 +19,6 @@ package org.apache.solr.handler.admin;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -50,7 +49,6 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void proxySystemInfoHandlerAllNodes() throws IOException, SolrServerException {
     MapSolrParams params = new MapSolrParams(Collections.singletonMap("nodes", "all"));
 
@@ -60,13 +58,8 @@ public class AdminHandlersProxyTest extends SolrCloudTestCase {
     assertEquals(3, nl.size());
     assertTrue(nl.getName(1).endsWith("_solr"));
     assertTrue(nl.getName(2).endsWith("_solr"));
-    String node1name = nl.getName(1);
-    String node2name = nl.getName(2);
-    NamedList<Object> node1 = (NamedList<Object>) nl.get(node1name);
-    // mmm??? nodeInfo is not translated to NamedList?
-    assertEquals("solrcloud", ((Map<String, Object>) node1.get("nodeInfo")).get("mode"));
-    NamedList<Object> node2 = (NamedList<Object>) nl.get(node2name);
-    assertEquals(node2name, ((Map<String, Object>) node2.get("nodeInfo")).get("node"));
+    assertEquals("solrcloud", ((NamedList) nl.get(nl.getName(1))).get("mode"));
+    assertEquals(nl.getName(2), ((NamedList) nl.get(nl.getName(2))).get("node"));
   }
 
   @Test(expected = SolrException.class)

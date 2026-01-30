@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -25,14 +26,18 @@ import org.apache.solr.client.api.model.NodeSystemInfoResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 
-/** This class holds the response from V1 "/admin/info/system" or V2 "/node/info/system" */
+/** This class holds the response from V1 "/admin/info/system" */
 public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
   // AdminHandlersProxy wraps nodes responses in a map.
   // Mimic that here, even if the response might be just a single node.
-  private final Map<String, NodeSystemInfoResponse> nodesInfo = new HashMap<>();
+  protected final Map<String, NodeSystemInfoResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
+
+  protected SystemInfoResponse() {
+    // allow a NamedList constructor in the V2 extension
+  }
 
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
@@ -43,19 +48,25 @@ public class SystemInfoResponse extends SolrResponseBase {
   public void setResponse(NamedList<Object> response) {
     if (getResponse() == null) {
       super.setResponse(response);
+      parseResponse(response);
     } else {
       assert response.equals(getResponse());
       return;
     }
+  }
 
-    if (getResponse().get("node") == null) {
-      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
+  /** Parse the V1 response */
+  @SuppressWarnings("unchecked")
+  protected void parseResponse(NamedList<Object> response) {
+    if (response.get("node") == null) {
+      // multi-nodes response, NamedList of "host:port_solr"-> NodeSystemInfoResponse
       for (Entry<String, Object> node : response) {
         if (node.getKey().endsWith("_solr")) {
           nodesInfo.put(
               node.getKey(),
               JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                  node.getValue(), NodeSystemInfoResponse.class));
+                  removeHeader((NamedList<Object>) node.getValue()),
+                  NodeSystemInfoResponse.NodeSystemInfo.class));
         }
       }
 
@@ -65,7 +76,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         nodesInfo.put(
             null,
             JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                response, NodeSystemInfoResponse.class));
+                removeHeader(response), NodeSystemInfoResponse.NodeSystemInfo.class));
       }
 
     } else {
@@ -73,14 +84,19 @@ public class SystemInfoResponse extends SolrResponseBase {
       nodesInfo.put(
           response.get("node").toString(),
           JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              getResponse(), NodeSystemInfoResponse.class));
+              removeHeader(response), NodeSystemInfoResponse.NodeSystemInfo.class));
     }
+  }
+
+  private NamedList<Object> removeHeader(NamedList<Object> value) {
+    value.remove("responseHeader");
+    return value;
   }
 
   /** Get the mode from a single node system info */
   public String getMode() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().orElseThrow().nodeInfo.mode;
+      return nodesInfo.values().stream().findFirst().orElseThrow().mode;
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllModes', or 'getModeForNode(String)'.");
@@ -90,19 +106,19 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get all modes, per node */
   public Map<String, String> getAllModes() {
     Map<String, String> allModes = new HashMap<>();
-    nodesInfo.forEach((key, value) -> allModes.put(key, value.nodeInfo.mode));
+    nodesInfo.forEach((key, value) -> allModes.put(key, value.mode));
     return allModes;
   }
 
   /** Get the mode for the given node name */
   public String getModeForNode(String node) {
-    return nodesInfo.get(node).nodeInfo.mode;
+    return nodesInfo.get(node).mode;
   }
 
   /** Get the ZK host from a single node system info */
   public String getZkHost() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().orElseThrow().nodeInfo.zkHost;
+      return nodesInfo.values().stream().findFirst().orElseThrow().zkHost;
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllZkHosts', or 'getZkHostForNode(String)'.");
@@ -112,19 +128,19 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get all ZK hosts, per node */
   public Map<String, String> getAllZkHosts() {
     Map<String, String> allModes = new HashMap<>();
-    nodesInfo.forEach((key, value) -> allModes.put(key, value.nodeInfo.zkHost));
+    nodesInfo.forEach((key, value) -> allModes.put(key, value.zkHost));
     return allModes;
   }
 
   /** Get the ZK host for the given node name */
   public String getZkHostForNode(String node) {
-    return nodesInfo.get(node).nodeInfo.zkHost;
+    return nodesInfo.get(node).zkHost;
   }
 
   /** Get the Solr home from a single node system info */
   public String getSolrHome() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().orElseThrow().nodeInfo.solrHome;
+      return nodesInfo.values().stream().findFirst().orElseThrow().solrHome;
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllSolrHomes', or 'getSolrHomeForNode(String)'.");
@@ -134,19 +150,19 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get all Solr homes, per node */
   public Map<String, String> getAllSolrHomes() {
     Map<String, String> allModes = new HashMap<>();
-    nodesInfo.forEach((key, value) -> allModes.put(key, value.nodeInfo.solrHome));
+    nodesInfo.forEach((key, value) -> allModes.put(key, value.solrHome));
     return allModes;
   }
 
   /** Get the Solr home for the given node name */
   public String getSolrHomeForNode(String node) {
-    return nodesInfo.get(node).nodeInfo.solrHome;
+    return nodesInfo.get(node).solrHome;
   }
 
   /** Get the core root from a single node system info */
   public String getCoreRoot() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().orElseThrow().nodeInfo.coreRoot;
+      return nodesInfo.values().stream().findFirst().orElseThrow().coreRoot;
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllCoreRoots', or 'getCoreRootForNode(String)'.");
@@ -156,19 +172,19 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get all core roots, per node */
   public Map<String, String> getAllCoreRoots() {
     Map<String, String> allModes = new HashMap<>();
-    nodesInfo.forEach((key, value) -> allModes.put(key, value.nodeInfo.coreRoot));
+    nodesInfo.forEach((key, value) -> allModes.put(key, value.coreRoot));
     return allModes;
   }
 
   /** Get the core root for the given node name */
   public String getCoreRootForNode(String node) {
-    return nodesInfo.get(node).nodeInfo.coreRoot;
+    return nodesInfo.get(node).coreRoot;
   }
 
   /** Get the node name from a single node system info */
   public String getNode() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().orElseThrow().nodeInfo.node;
+      return nodesInfo.values().stream().findFirst().orElseThrow().node;
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllNodes', or 'getNodeForSolrHome(String)', or 'getNodeForCoreRoot(String)'.");
@@ -183,8 +199,8 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get the node name for the given Solr home */
   public String getNodeForSolrHome(String solrHome) {
     return nodesInfo.values().stream()
-        .filter(v -> solrHome.equals(v.nodeInfo.solrHome))
-        .map(v -> v.nodeInfo.node)
+        .filter(v -> solrHome.equals(v.solrHome))
+        .map(v -> v.node)
         .findFirst()
         .get();
   }
@@ -192,8 +208,8 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get the node name for the given core root */
   public String getNodeForCoreRoot(String coreRoot) {
     return nodesInfo.values().stream()
-        .filter(v -> coreRoot.equals(v.nodeInfo.coreRoot))
-        .map(v -> v.nodeInfo.node)
+        .filter(v -> coreRoot.equals(v.coreRoot))
+        .map(v -> v.node)
         .findFirst()
         .get();
   }
@@ -201,7 +217,7 @@ public class SystemInfoResponse extends SolrResponseBase {
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for a single node */
   public NodeSystemInfoResponse.NodeSystemInfo getNodeResponse() {
     if (nodesInfo.size() == 1) {
-      return nodesInfo.values().stream().findFirst().get().nodeInfo;
+      return nodesInfo.values().stream().findFirst().get();
     } else {
       throw new UnsupportedOperationException(
           "Multiple nodes system info available, use method 'getAllNodeResponses', or 'getNodeResponseForNode(String)'.");
@@ -209,13 +225,13 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get all {@code NodeSystemResponse}s */
-  public Map<String, NodeSystemInfoResponse> getAllNodeResponses() {
+  public Map<String, NodeSystemInfoResponse.NodeSystemInfo> getAllNodeResponses() {
     return nodesInfo;
   }
 
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for the given node name */
   public NodeSystemInfoResponse.NodeSystemInfo getNodeResponseForNode(String node) {
-    return nodesInfo.get(node).nodeInfo;
+    return nodesInfo.get(node);
   }
 
   public String getSolrImplVersion() {

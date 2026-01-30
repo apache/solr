@@ -21,7 +21,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.client.api.util.ReflectWritable;
 
 /** Response from /node/info/system */
 public class NodeSystemInfoResponse extends SolrJerseyResponse {
@@ -29,7 +28,7 @@ public class NodeSystemInfoResponse extends SolrJerseyResponse {
   @JsonProperty public NodeSystemInfo nodeInfo;
 
   /** wrapper around the node info */
-  public static class NodeSystemInfo implements ReflectWritable {
+  public static class NodeSystemInfo {
     @JsonProperty public String node;
     @JsonProperty public String mode;
     @JsonProperty public String zkHost;
