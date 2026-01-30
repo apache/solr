@@ -144,29 +144,51 @@ public class TestLockTree extends SolrTestCaseJ4 {
     coll1Lock2.unlock();
 
     // Test locks underneath
+    Lock shard1Lock =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.ADDREPLICA, List.of("coll1", "shard1"), List.of(coll1Lock.id()));
+    assertNotNull(shard1Lock);
+    assertNull(
+        "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1",
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.ADDREPLICA, List.of("coll1", "shard1"), List.of(coll1Lock.id())));
+    Lock shard2Lock =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.ADDREPLICA, List.of("coll1", "shard2"), List.of(coll1Lock.id()));
+    assertNotNull(shard2Lock);
+    shard2Lock.unlock();
+    shard1Lock.unlock();
+
+    // Test locks 2 underneath
     Lock replica1Lock =
         lockTree
             .getSession()
             .lock(
-                CollectionAction.ADDREPLICA,
-                List.of("coll1", "shard1", "replica1"),
-                List.of(coll1Lock.id()));
-    assertNotNull(replica1Lock);
+                MOCK_REPLICA_TASK, List.of("coll1", "shard1", "replica1"), List.of(coll1Lock.id()));
     assertNull(
-        "Should not be able to lock coll1/shard1/replica2 since our callingLockId is only coll1, not shard1",
+        "Should not be able to lock coll1/shard1/replica1 since our callingLockId is only coll1, not replica1, which is already locked",
         lockTree
             .getSession()
             .lock(
-                CollectionAction.ADDREPLICA,
-                List.of("coll1", "shard1", "replica2"),
+                CollectionAction.MOCK_REPLICA_TASK,
+                List.of("coll1", "shard1", "replica1"),
                 List.of(coll1Lock.id())));
+    assertNull(
+        "Should not be able to lock coll1/shard1 since our callingLockId is only coll1, not shard1, which is locked because of a replica task",
+        lockTree
+            .getSession()
+            .lock(
+                CollectionAction.ADDREPLICA, List.of("coll1", "shard1"), List.of(coll1Lock.id())));
+    assertNotNull(replica1Lock);
     Lock replica2Lock =
         lockTree
             .getSession()
             .lock(
-                CollectionAction.ADDREPLICA,
-                List.of("coll1", "shard2", "replica1"),
-                List.of(coll1Lock.id()));
+                MOCK_REPLICA_TASK, List.of("coll1", "shard1", "replica2"), List.of(coll1Lock.id()));
     assertNotNull(replica2Lock);
     replica2Lock.unlock();
     replica1Lock.unlock();
@@ -201,24 +223,28 @@ public class TestLockTree extends SolrTestCaseJ4 {
             .lock(
                 CollectionAction.SYNCSHARD, List.of("coll1", "shard1"), List.of(shard1Lock1.id()));
     assertNotNull(shard1Lock3);
-    shard1Lock1.unlock();
     shard1Lock2.unlock();
     shard1Lock3.unlock();
 
     // Test difference at a higher level
-    shard1Lock1 =
-        lockTree
-            .getSession()
-            .lock(
-                CollectionAction.INSTALLSHARDDATA,
-                List.of("coll1", "shard1"),
-                Collections.emptyList());
-    assertNotNull(shard1Lock1);
     assertNull(
-        "Should not be able to lock coll1 since our callingLockId is coll1/shar1. Cannot move up",
+        "Should not be able to lock coll1 since we have no callingLockId and shard1 is already locked. Cannot move up",
         lockTree
             .getSession()
             .lock(CollectionAction.RELOAD, List.of("coll1"), Collections.emptyList()));
+    assertNull(
+        "Should not be able to lock coll1 since our callingLockId is coll1/shard1. Cannot move up",
+        lockTree
+            .getSession()
+            .lock(CollectionAction.RELOAD, List.of("coll1"), List.of(shard1Lock1.id())));
+
+    // Test an unrelated lock
+    Lock coll2Lock =
+        lockTree
+            .getSession()
+            .lock(CollectionAction.CREATE, List.of("coll2"), List.of(shard1Lock1.id()));
+    assertNotNull(coll2Lock);
+    coll2Lock.unlock();
     shard1Lock1.unlock();
   }
 

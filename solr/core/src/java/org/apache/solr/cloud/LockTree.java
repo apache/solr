@@ -53,8 +53,9 @@ public class LockTree {
     @Override
     public void unlock() {
       synchronized (LockTree.this) {
-        node.unlock(this);
-        allLocks.remove(id);
+        if (node.unlock(this)) {
+          allLocks.remove(id);
+        }
       }
     }
 
@@ -184,6 +185,7 @@ public class LockTree {
     final String name;
     final Node mom;
     final LockLevel level;
+    int refCount = 0;
     HashMap<String, Node> children = new HashMap<>();
     LockImpl myLock;
 
@@ -200,23 +202,33 @@ public class LockTree {
       return false;
     }
 
-    void unlock(LockImpl lockObject) {
+    boolean unlock(LockImpl lockObject) {
+      if (--refCount > 0) {
+        return false;
+      }
       if (myLock == lockObject) myLock = null;
       else {
         log.info("Unlocked multiple times : {}", lockObject);
       }
+      return true;
     }
 
     Lock lock(LockLevel lockLevel, List<String> path, boolean reuseCurrentLock) {
+      if (myLock != null && !reuseCurrentLock) {
+        // I'm already locked. no need to go any further
+        return null;
+      }
       if (lockLevel == level) {
         // lock is supposed to be acquired at this level
         if (myLock != null && reuseCurrentLock) {
           // I am already locked, and I want to be re-used
+          refCount++;
           return myLock;
         }
         // If I am locked or any of my children or grandchildren are locked
         // it is not possible to acquire a lock
         if (isLocked()) return null;
+        refCount++;
         return myLock = new LockImpl(this);
       } else {
         String childName = path.get(level.getHeight());
