@@ -72,6 +72,11 @@ public class AdminCmdContext {
     regenerateSubRequestCallingLockIds();
   }
 
+  public AdminCmdContext withCallingLockIds(String callingLockIds) {
+    setCallingLockIds(callingLockIds);
+    return this;
+  }
+
   private void regenerateSubRequestCallingLockIds() {
     if (StrUtils.isNotBlank(callingLockIds) && StrUtils.isNotBlank(lockId)) {
       subRequestCallingLockIds += "," + lockId;
