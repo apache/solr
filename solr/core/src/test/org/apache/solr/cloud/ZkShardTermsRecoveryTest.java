@@ -142,7 +142,7 @@ public class ZkShardTermsRecoveryTest extends SolrCloudTestCase {
     for (Replica r : recoveryReplicas) {
       assertFalse(shardTermsSnapshot.canBecomeLeader(r.getName()));
     }
-    
+
     waitForState(
         "Wait for leadership to be given up", COLLECTION, dc -> dc.getLeader(shard) == null);
     waitForState("Wait for leadership to be taken", COLLECTION, dc -> dc.getLeader(shard) != null);
