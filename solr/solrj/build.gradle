@@ -50,7 +50,6 @@ dependencies {
   testImplementation(libs.apache.zookeeper.zookeeper, {
     exclude group: "org.apache.yetus", module: "audience-annotations"
   })
-  permitTestUnusedDeclared libs.apache.zookeeper.zookeeper
   testImplementation libs.apache.zookeeper.jute
 
   testImplementation libs.apache.lucene.core
@@ -67,25 +66,16 @@ dependencies {
 
   // Jetty test dependencies - needed for solrj's own tests
   // Client libraries
-  testImplementation libs.eclipse.jetty.http2.client
-  permitTestUnusedDeclared libs.eclipse.jetty.http2.client
   testImplementation libs.eclipse.jetty.client
-  permitTestUnusedDeclared libs.eclipse.jetty.client
   testImplementation libs.eclipse.jetty.http
-  permitTestUnusedDeclared libs.eclipse.jetty.http
   // Server libraries
   testImplementation libs.eclipse.jetty.server
-  permitTestUnusedDeclared libs.eclipse.jetty.server
   testImplementation libs.eclipse.jetty.ee10.servlet
-  permitTestUnusedDeclared libs.eclipse.jetty.ee10.servlet
   testImplementation libs.eclipse.jetty.ee10.webapp
-  permitTestUnusedDeclared libs.eclipse.jetty.ee10.webapp
   testRuntimeOnly(libs.eclipse.jetty.alpnjavaserver, {
     exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
   })
   testImplementation libs.eclipse.jetty.session
-  permitTestUnusedDeclared libs.eclipse.jetty.session
-  permitTestUnusedDeclared libs.jakarta.servlet.api
 
   testImplementation(libs.mockito.core, {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"

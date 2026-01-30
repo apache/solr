@@ -58,7 +58,7 @@ public class ShardRequest {
   public String nodeName;
 
   /** may be null */
-  public String coreName;
+  public String coreNodeName;
 
   /** may be null */
   public Map<String, String> headers;

@@ -537,7 +537,7 @@ public class IndexFetcher {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
-          if (skipCommitOnLeaderVersionZero) {
+          if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
             SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
