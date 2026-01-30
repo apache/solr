@@ -874,7 +874,7 @@ public class SplitShardCmd implements CollApiCmds.CollectionApiCommand {
             + Utils.parseMetricsReplicaName(collection, parentShardLeader.getCoreName());
 
     ModifiableSolrParams params =
-      new ModifiableSolrParams().add("name", indexSizeMetric).add("name", freeDiskSpaceMetric);
+        new ModifiableSolrParams().add("name", indexSizeMetric).add("name", freeDiskSpaceMetric);
 
     var req = new MetricsRequest(params);
     req.setResponseParser(new InputStreamResponseParser("prometheus"));
