@@ -718,7 +718,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[128, 6, 7, 8]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[128, 6, 7, 8]'"));
 
       assertThat(
           thrown.getCause().getCause().getMessage(),
@@ -740,7 +740,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[1, -129, 7, 8]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[1, -129, 7, 8]'"));
       assertThat(
           thrown.getCause().getCause().getMessage(),
           is(
@@ -769,7 +769,7 @@ public class DenseVectorFieldTest extends AbstractBadConfigTestBase {
       assertThat(
           thrown.getCause().getMessage(),
           is(
-              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored}' from value '[14.3, 6.2, 7.2, 8.1]'"));
+              "Error while creating field 'vector_byte_encoding{type=knn_vector_byte_encoding,properties=indexed,stored,omitNorms,omitTermFreqAndPositions,useDocValuesAsStored}' from value '[14.3, 6.2, 7.2, 8.1]'"));
 
       assertThat(
           thrown.getCause().getCause().getMessage(),
