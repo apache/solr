@@ -217,11 +217,11 @@ public class SystemInfoHandler extends RequestHandlerBase {
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
     rsp.add("mode", solrCloudMode ? "solrcloud" : "std");
 
-    rsp.add("host", hostname); // moved from core. tree.
+    rsp.add("host", hostname);
+
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
