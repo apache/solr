@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Seperate the node/container level info from the core level info for the admin end points.
+type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18091
+    url: https://issues.apache.org/jira/browse/SOLR-18091
