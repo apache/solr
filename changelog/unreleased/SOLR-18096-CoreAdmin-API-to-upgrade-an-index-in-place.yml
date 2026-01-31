@@ -4,6 +4,6 @@ type: added
 authors:
   - name: Rahul Goswami
 links:
-  - name: SOLR-17725
-    url: https://issues.apache.org/jira/browse/SOLR-17725
+  - name: SOLR-18096
+    url: https://issues.apache.org/jira/browse/SOLR-18096
 
