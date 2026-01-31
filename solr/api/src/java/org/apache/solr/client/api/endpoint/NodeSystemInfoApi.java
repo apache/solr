@@ -19,6 +19,8 @@ package org.apache.solr.client.api.endpoint;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.QueryParam;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
 import org.apache.solr.client.api.util.Constants;
 
@@ -28,7 +30,16 @@ public interface NodeSystemInfoApi {
 
   @GET
   @Operation(
-      summary = "Retrieve node system info.",
+      summary = "Retrieve all node system info.",
       tags = {"system"})
-  NodeSystemInfoResponse getNodeSystemInfo();
+  NodeSystemInfoResponse getNodeSystemInfo(@QueryParam(value = "nodes") String nodes);
+
+  @GET
+  @Operation(
+      summary = "Retrieve specific node system info.",
+      tags = {"system"})
+  @Path("/{requestedInfo}")
+  NodeSystemInfoResponse getSpecificNodeSystemInfo(
+      @PathParam(value = "requestedInfo") String requestedInfo,
+      @QueryParam(value = "nodes") String nodes);
 }

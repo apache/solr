@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import java.lang.invoke.MethodHandles;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;

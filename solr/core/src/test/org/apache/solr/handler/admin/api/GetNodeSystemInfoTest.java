@@ -30,6 +30,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
 import org.apache.solr.client.api.util.Constants;
+import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -195,11 +196,47 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
 
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
 
-    NodeSystemInfoResponse response = getter.getNodeSystemInfo();
+    NodeSystemInfoResponse response = getter.getNodeSystemInfo(null);
     Assert.assertNotNull(response.nodeInfo);
     Assert.assertEquals("std", response.nodeInfo.mode);
     // Standalone mode : no "node"
     Assert.assertNull(response.nodeInfo.node);
     // other validations in NodeSystemInfoProviderTest
+  }
+
+  /** Test getting specific information */
+  @Test
+  public void testGetSpecificNodeSystemInfo() throws Exception {
+    ContentResponse response = null;
+    try {
+      response =
+          jettyHttpClient
+              .newRequest(systemInfoV2Url.concat("/lucene"))
+              .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
+              .method(HttpMethod.GET)
+              .send();
+    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+      Assert.fail("Should not throw exception: " + e.getClass() + ".  message: " + e.getMessage());
+      return;
+    }
+    Assert.assertEquals(200, response.getStatus());
+    Assert.assertEquals("application/json", response.getMediaType());
+
+    NodeSystemInfoResponse infoResponse;
+    JacksonDataBindResponseParser<NodeSystemInfoResponse> parser =
+        new JacksonDataBindResponseParser<>(NodeSystemInfoResponse.class);
+    try (InputStream in = new ByteArrayInputStream(response.getContent())) {
+      infoResponse = parser.processToType(in, StandardCharsets.UTF_8.toString());
+    }
+    Assert.assertNotNull(infoResponse.nodeInfo);
+    Assert.assertNotNull(infoResponse.nodeInfo.lucene);
+    Assert.assertEquals(
+        0,
+        SolrVersion.compareVersions(
+            infoResponse.nodeInfo.lucene.solrSpecVersion, SolrVersion.LATEST_STRING));
+    Assert.assertNull(infoResponse.nodeInfo.gpu);
+    Assert.assertNull(infoResponse.nodeInfo.jvm);
+    Assert.assertNull(infoResponse.nodeInfo.security);
+    Assert.assertNull(infoResponse.nodeInfo.core);
   }
 }

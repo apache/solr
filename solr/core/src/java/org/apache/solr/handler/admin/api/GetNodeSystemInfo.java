@@ -21,6 +21,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
 import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.handler.admin.NodeSystemInfoProvider;
 import org.apache.solr.jersey.PermissionName;
@@ -45,18 +46,20 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
-  public NodeSystemInfoResponse getNodeSystemInfo() {
+  public NodeSystemInfoResponse getNodeSystemInfo(String nodes) {
     solrQueryResponse.setHttpCaching(false);
 
     // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
     try {
+      // TODO: Should use the "nodes" param
       if (solrQueryRequest.getCoreContainer() != null
           && AdminHandlersProxy.maybeProxyToNodes(
               solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
         return null;
       }
     } catch (Exception e) {
-      log.warn("Error occurred while proxying to other node", e);
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
@@ -64,6 +67,49 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     provider.getNodeSystemInfo(response);
     if (response.nodeInfo != null && log.isTraceEnabled()) {
       log.trace("Node {}, core root: {}", response.nodeInfo.node, response.nodeInfo.coreRoot);
+    }
+    return response;
+  }
+
+  @Override
+  public NodeSystemInfoResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
+    solrQueryResponse.setHttpCaching(false);
+
+    // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
+    try {
+      // TODO: Should use the "nodes" param
+      if (solrQueryRequest.getCoreContainer() != null
+          && AdminHandlersProxy.maybeProxyToNodes(
+              solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
+        return null;
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+
+    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
+    response.nodeInfo = new NodeSystemInfoResponse.NodeSystemInfo();
+    NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
+    switch (requestedInfo) {
+      case "core":
+        response.nodeInfo.core = provider.getCoreInfo();
+        break;
+      case "gpu":
+        response.nodeInfo.gpu = provider.getGpuInfo();
+        break;
+      case "jvm":
+        response.nodeInfo.jvm = provider.getJvmInfo();
+        break;
+      case "lucene":
+        response.nodeInfo.lucene = provider.getLuceneInfo();
+        break;
+      case "security":
+        response.nodeInfo.security = provider.getSecurityInfo();
+        break;
+      default:
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Unknown parameter: " + requestedInfo);
     }
     return response;
   }

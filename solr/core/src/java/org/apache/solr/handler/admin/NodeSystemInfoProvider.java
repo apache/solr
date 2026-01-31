@@ -110,11 +110,12 @@ public class NodeSystemInfoProvider {
     initHostname();
   }
 
+  /** Fill-out the provided response with all system info. */
   public NodeSystemInfoResponse getNodeSystemInfo(NodeSystemInfoResponse response) {
     NodeSystemInfoResponse.NodeSystemInfo info = new NodeSystemInfoResponse.NodeSystemInfo();
 
     SolrCore core = req.getCore();
-    if (core != null) info.core = getCoreInfo(core, req.getSchema());
+    if (core != null) info.core = getCoreInfo();
 
     if (cc != null) {
       info.solrHome = cc.getSolrHome().toString();
@@ -130,10 +131,9 @@ public class NodeSystemInfoProvider {
 
     info.lucene = getLuceneInfo();
 
-    NodeConfig nodeConfig = cc != null ? cc.getNodeConfig() : null;
-    info.jvm = getJvmInfo(nodeConfig);
+    info.jvm = getJvmInfo();
 
-    info.security = getSecurityInfo(req);
+    info.security = getSecurityInfo();
     info.system = getSystemInfo();
     info.gpu = getGpuInfo();
 
@@ -153,19 +153,16 @@ public class NodeSystemInfoProvider {
     return response;
   }
 
-  /** Get system info */
-  private NodeSystemInfoResponse.Core getCoreInfo(SolrCore core, IndexSchema schema) {
+  /** Get core info */
+  public NodeSystemInfoResponse.Core getCoreInfo() {
     NodeSystemInfoResponse.Core info = new NodeSystemInfoResponse.Core();
 
+    SolrCore core = req.getCore();
+    IndexSchema schema = req.getSchema();
+
     info.schema = schema != null ? schema.getSchemaName() : "no schema!";
-
-    // Host
     info.host = hostname;
-
-    // Now
     info.now = new Date();
-
-    // Start Time
     info.start = core.getStartTimeStamp();
 
     // Solr Home
@@ -190,7 +187,7 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get system info */
-  private Map<String, String> getSystemInfo() {
+  public Map<String, String> getSystemInfo() {
     Map<String, String> info = new HashMap<>();
 
     OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
@@ -211,7 +208,7 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get JVM Info - including memory info */
-  private NodeSystemInfoResponse.JVM getJvmInfo(NodeConfig nodeConfig) {
+  public NodeSystemInfoResponse.JVM getJvmInfo() {
     NodeSystemInfoResponse.JVM jvm = new NodeSystemInfoResponse.JVM();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
@@ -282,6 +279,7 @@ public class NodeSystemInfoProvider {
 
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
+      NodeConfig nodeConfig = cc != null ? cc.getNodeConfig() : null;
       jmx.commandLineArgs = getInputArgumentsRedacted(nodeConfig, mx);
 
       jmx.startTime = new Date(mx.getStartTime());
@@ -295,7 +293,7 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get Security Info */
-  private NodeSystemInfoResponse.Security getSecurityInfo(SolrQueryRequest req) {
+  public NodeSystemInfoResponse.Security getSecurityInfo() {
     NodeSystemInfoResponse.Security info = new NodeSystemInfoResponse.Security();
 
     if (cc != null) {
@@ -337,7 +335,8 @@ public class NodeSystemInfoProvider {
     return info;
   }
 
-  private NodeSystemInfoResponse.Lucene getLuceneInfo() {
+  /** Get Lucene and Solr versions */
+  public NodeSystemInfoResponse.Lucene getLuceneInfo() {
     NodeSystemInfoResponse.Lucene info = new NodeSystemInfoResponse.Lucene();
 
     Package p = SolrCore.class.getPackage();
@@ -354,7 +353,8 @@ public class NodeSystemInfoProvider {
     return info;
   }
 
-  private NodeSystemInfoResponse.GPU getGpuInfo() {
+  /** Get GPU info */
+  public NodeSystemInfoResponse.GPU getGpuInfo() {
     NodeSystemInfoResponse.GPU gpuInfo = new NodeSystemInfoResponse.GPU();
     gpuInfo.available = false; // set below if available
 
