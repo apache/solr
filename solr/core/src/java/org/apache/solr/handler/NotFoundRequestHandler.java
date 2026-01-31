@@ -28,7 +28,7 @@ public class NotFoundRequestHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
+        SolrException.ErrorCode.NOT_FOUND, req.getContext().get(PATH) + " is not found");
   }
 
   @Override
