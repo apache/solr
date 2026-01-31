@@ -27,7 +27,6 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.FilterLeafReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MergePolicy;
@@ -56,12 +55,12 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocValuesIteratorCache;
 import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.update.DocumentBuilder;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.util.RefCounted;
@@ -416,7 +415,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
             continue;
           }
           Document doc = storedFields.document(luceneDocId);
-          SolrInputDocument solrDoc = toSolrInputDocument(doc, indexSchema);
+          SolrInputDocument solrDoc = DocumentBuilder.toSolrInputDocument(doc, indexSchema);
 
           docFetcher.decorateDocValueFields(
               solrDoc, leafReaderContext.docBase + luceneDocId, nonStoredDVFields, dvICache);
@@ -431,35 +430,5 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
         processor.close();
       }
     }
-  }
-
-  /** Convert a lucene Document to a SolrInputDocument */
-  protected SolrInputDocument toSolrInputDocument(
-      org.apache.lucene.document.Document doc, IndexSchema schema) {
-    SolrInputDocument out = new SolrInputDocument();
-    for (IndexableField f : doc.getFields()) {
-      String fname = f.name();
-      SchemaField sf = schema.getFieldOrNull(f.name());
-      Object val = null;
-      if (sf != null) {
-        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) {
-          continue;
-        }
-        val = sf.getType().toObject(f);
-      } else {
-        val = f.stringValue();
-        if (val == null) {
-          val = f.numericValue();
-        }
-        if (val == null) {
-          val = f.binaryValue();
-        }
-        if (val == null) {
-          val = f;
-        }
-      }
-      out.addField(fname, val);
-    }
-    return out;
   }
 }
