@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
@@ -213,50 +212,6 @@ public interface SolrQueryRequest extends AutoCloseable {
     } else {
       return ResponseWritersRegistry.getWriter(wt);
     }
-
-    QueryResponseWriter writer;
-    if (core != null) {
-      writer = core.getQueryResponseWriter(wt);
-    } else {
-      writer = SolrCore.DEFAULT_RESPONSE_WRITERS.get(wt);
-    }
-    if (writer == null) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Unknown response writer type: " + wt);
-    }
-    return writer;
-  }
-
-  /**
-   * Maps the HTTP Accept header to a wt parameter value. Returns "json" as default if no Accept
-   * header is present or if the content type is not recognized.
-   *
-   * <p>This is a quick implmentation, but it's not pluggable. For example, how do we support CBOR
-   * without modifying this. In V2ApiUtils.getMediaTypeFromWtParam() we do the same basic thing. i
-   * also dont' see cbor.
-   *
-   * @return the wt parameter value corresponding to the Accept header, or "json" as default
-   */
-  default String getWtFromAcceptHeader() {
-    HttpSolrCall httpSolrCall = getHttpSolrCall();
-    if (httpSolrCall != null) {
-      String acceptHeader = httpSolrCall.getReq().getHeader("Accept");
-      if (acceptHeader != null && !acceptHeader.isEmpty()) {
-        // Handle multiple accept types (e.g., "application/json, text/plain")
-        // by checking if the header contains specific content types
-        if (acceptHeader.contains("application/xml") || acceptHeader.contains("text/xml")) {
-          return "xml";
-        } else if (acceptHeader.contains("application/json")) {
-          return CommonParams.JSON;
-        } else if (acceptHeader.contains("application/javabin")
-            || acceptHeader.contains("application/vnd.apache.solr.javabin")) {
-          return CommonParams.JAVABIN;
-        }
-        // For "*/*" or unrecognized types, fall through to default
-      }
-    }
-    // Default to JSON when no Accept header or unrecognized content type
-    return CommonParams.JSON;
   }
 
   /**
