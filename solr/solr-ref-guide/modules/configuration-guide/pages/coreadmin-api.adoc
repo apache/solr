@@ -795,7 +795,7 @@ Fields that are neither stored nor docValues-backed will lose their data, unless
 * Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
 * Indexes containing child/nested documents are not supported.
 
-Always test on a copy and ensure you have a backup before running on production data.
+It is recommended to test on a copy and have a backup before running on production data.
 
 === UPGRADECOREINDEX Parameters
 
