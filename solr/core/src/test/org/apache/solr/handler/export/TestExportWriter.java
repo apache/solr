@@ -17,6 +17,7 @@
 package org.apache.solr.handler.export;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -952,7 +953,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         s.contains("\"status\":400}"));
     assertTrue(
         "Should have a cause when exporting sortabledv_m, it does not have useDocValuesAsStored='true'",
-        s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+        s.contains("includeStoredFields=true"));
 
     s =
         h.query(
@@ -970,7 +971,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
         s.contains("\"status\":400}"));
     assertTrue(
         "Should have a cause when exporting sortabledv, it does not have useDocValuesAsStored='true'",
-        s.contains("Must have useDocValuesAsStored='true' to be used with export writer"));
+        s.contains("includeStoredFields=true"));
   }
 
   private void assertJsonEquals(String actual, String expected) {
@@ -1292,9 +1293,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     assertTrue("doc doesn't have exception", doc.containsKey(StreamParams.EXCEPTION));
     assertTrue(
         "wrong exception message",
-        doc.get(StreamParams.EXCEPTION)
-            .toString()
-            .contains("Must have useDocValuesAsStored='true'"));
+        doc.get(StreamParams.EXCEPTION).toString().contains("includeStoredFields=true"));
   }
 
   @Test
@@ -1475,5 +1474,290 @@ public class TestExportWriter extends SolrTestCaseJ4 {
     doc.addField("number_" + type + (mv ? "s" : "") + "_p", value);
     doc.addField("number_" + type + (mv ? "s" : "") + "_ni_t", value);
     doc.addField("number_" + type + (mv ? "s" : "") + "_ni_p", value);
+  }
+
+  @Test
+  public void testIncludeStoredFieldsExplicitRequest() throws Exception {
+    // Test that stored-only fields are returned when includeStoredFields=true
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "str_s_stored", "hello",
+            "num_i_stored", "42",
+            "num_l_stored", "1234567890123",
+            "num_f_stored", "3.14",
+            "num_d_stored", "2.71828",
+            "date_dt_stored", "2024-01-15T10:30:00Z",
+            "bool_b_stored", "true"));
+    assertU(commit());
+
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl",
+                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{"
+            + "  \"responseHeader\":{\"status\":0},"
+            + "  \"response\":{"
+            + "    \"numFound\":1,"
+            + "    \"docs\":[{"
+            + "        \"id\":\"1\","
+            + "        \"str_s_stored\":\"hello\","
+            + "        \"num_i_stored\":42,"
+            + "        \"num_l_stored\":1234567890123,"
+            + "        \"num_f_stored\":3.14,"
+            + "        \"num_d_stored\":2.71828,"
+            + "        \"date_dt_stored\":\"2024-01-15T10:30:00Z\","
+            + "        \"bool_b_stored\":true}]}}");
+  }
+
+  @Test
+  public void testIncludeStoredFieldsErrorWithoutParam() throws Exception {
+    // Test that error with hint is thrown when requesting stored-only field without
+    // includeStoredFields
+    clearIndex();
+
+    assertU(adoc("id", "1", "intdv", "1", "str_s_stored", "hello"));
+    assertU(commit());
+
+    // Request stored-only field without includeStoredFields=true should error
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl", "id,str_s_stored",
+                "sort", "intdv asc"));
+
+    assertTrue(
+        "Expected error message to contain hint about includeStoredFields",
+        resp.contains("includeStoredFields=true"));
+    assertTrue("Expected error message to mention the field", resp.contains("str_s_stored"));
+  }
+
+  @Test
+  public void testIncludeStoredFieldsGlobSkipsWithoutParam() throws Exception {
+    // Test that glob pattern silently skips stored-only fields when includeStoredFields=false
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "stringdv", "docvalue_string",
+            "str_s_stored", "stored_string"));
+    assertU(commit());
+
+    // Explicit fl with stored-only field should error
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl", "id,intdv,stringdv,str_s_stored",
+                "sort", "intdv asc"));
+
+    // Should error because str_s_stored is explicitly requested
+    assertTrue(
+        "Expected error for explicitly requested stored-only field", resp.contains("str_s_stored"));
+    assertTrue(
+        "Expected hint about includeStoredFields", resp.contains("includeStoredFields=true"));
+
+    // Now test with glob - should silently skip stored-only fields and succeed
+    resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl", "intdv,*",
+                "sort", "intdv asc"));
+
+    assertJsonEquals(
+        resp,
+        "{"
+            + "  \"responseHeader\":{\"status\":0},"
+            + "  \"response\":{"
+            + "    \"numFound\":1,"
+            + "    \"docs\":[{"
+            + "        \"id\":\"1\","
+            + "        \"intdv\":1,"
+            + "        \"stringdv\":\"docvalue_string\"}]}}");
+  }
+
+  @Test
+  public void testIncludeStoredFieldsGlobIncludesWithParam() throws Exception {
+    // Test that glob pattern includes stored-only fields when includeStoredFields=true
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "stringdv", "docvalue_string",
+            "str_s_stored", "stored_string"));
+    assertU(commit());
+
+    // Glob fl=* with includeStoredFields=true should include stored-only fields
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl", "*",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{"
+            + "  \"responseHeader\":{\"status\":0},"
+            + "  \"response\":{"
+            + "    \"numFound\":1,"
+            + "    \"docs\":[{"
+            + "        \"intdv\":1,"
+            + "        \"stringdv\":\"docvalue_string\","
+            + "        \"id\":\"1\","
+            + "        \"str_s_stored\":\"stored_string\"}]}}");
+  }
+
+  @Test
+  public void testIncludeStoredFieldsMultiValued() throws Exception {
+    // Test that multi-valued stored-only fields work correctly
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "strs_ss_stored", "value1",
+            "strs_ss_stored", "value2",
+            "strs_ss_stored", "value3",
+            "nums_is_stored", "10",
+            "nums_is_stored", "20",
+            "nums_is_stored", "30"));
+    assertU(commit());
+
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl", "id,strs_ss_stored,nums_is_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{"
+            + "  \"responseHeader\":{\"status\":0},"
+            + "  \"response\":{"
+            + "    \"numFound\":1,"
+            + "    \"docs\":[{"
+            + "        \"id\":\"1\","
+            + "        \"strs_ss_stored\":[\"value1\",\"value2\",\"value3\"],"
+            + "        \"nums_is_stored\":[10,20,30]}]}}");
+  }
+
+  @Test
+  public void testIncludeStoredFieldsAllTypes() throws Exception {
+    // Test all supported stored field types including Date
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "intdv", "1",
+            "str_s_stored", "test_string",
+            "num_i_stored", "123",
+            "num_l_stored", "9876543210",
+            "num_f_stored", "1.5",
+            "num_d_stored", "2.5",
+            "date_dt_stored", "2025-12-25T00:00:00Z",
+            "bool_b_stored", "false"));
+    assertU(
+        adoc(
+            "id", "2",
+            "intdv", "2",
+            "str_s_stored", "another_string",
+            "num_i_stored", "456",
+            "num_l_stored", "1234567890",
+            "num_f_stored", "2.5",
+            "num_d_stored", "3.5",
+            "date_dt_stored", "2025-06-15T12:30:00Z",
+            "bool_b_stored", "true"));
+    assertU(commit());
+
+    String resp =
+        h.query(
+            req(
+                "qt", "/export",
+                "q", "*:*",
+                "fl",
+                    "id,str_s_stored,num_i_stored,num_l_stored,num_f_stored,num_d_stored,date_dt_stored,bool_b_stored",
+                "sort", "intdv asc",
+                "includeStoredFields", "true"));
+
+    assertJsonEquals(
+        resp,
+        "{"
+            + "  \"responseHeader\":{\"status\":0},"
+            + "  \"response\":{"
+            + "    \"numFound\":2,"
+            + "    \"docs\":[{"
+            + "        \"id\":\"1\","
+            + "        \"str_s_stored\":\"test_string\","
+            + "        \"num_i_stored\":123,"
+            + "        \"num_l_stored\":9876543210,"
+            + "        \"num_f_stored\":1.5,"
+            + "        \"num_d_stored\":2.5,"
+            + "        \"date_dt_stored\":\"2025-12-25T00:00:00Z\","
+            + "        \"bool_b_stored\":false},"
+            + "      {"
+            + "        \"id\":\"2\","
+            + "        \"str_s_stored\":\"another_string\","
+            + "        \"num_i_stored\":456,"
+            + "        \"num_l_stored\":1234567890,"
+            + "        \"num_f_stored\":2.5,"
+            + "        \"num_d_stored\":3.5,"
+            + "        \"date_dt_stored\":\"2025-06-15T12:30:00Z\","
+            + "        \"bool_b_stored\":true}]}}");
+  }
+
+  @Test
+  public void testSortingWithoutDocValues() throws Exception {
+    // Attempting to sort on a field without DocValues should fail
+    clearIndex();
+
+    assertU(
+        adoc(
+            "id", "1",
+            "sorted_i_stored", "0"));
+    assertU(commit());
+
+    IOException ex =
+        expectThrows(
+            IOException.class,
+            () ->
+                h.query(
+                    req(
+                        "qt", "/export",
+                        "q", "*:*",
+                        "fl", "id",
+                        "sort", "sorted_i_stored asc",
+                        "includeStoredFields", "true")));
+
+    assertTrue(
+        "Error message should mention DocValues requirement",
+        ex.getMessage().contains("DocValues"));
   }
 }
