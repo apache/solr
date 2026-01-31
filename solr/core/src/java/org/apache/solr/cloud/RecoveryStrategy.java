@@ -47,6 +47,7 @@ import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
@@ -305,7 +306,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       // If the leader is readOnly, do not fail since the core is already committed.
       ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT,  CommitOptions.forHardCommit()).process(client);
     }
   }
 
