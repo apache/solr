@@ -35,8 +35,7 @@ class LongFieldWriter extends FieldWriter {
   }
 
   @Override
-  public boolean write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew, int fieldIndex)
+  public void write(SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter ew)
       throws IOException {
     long val;
     SortValue sortValue = sortDoc.getSortValue(this.field);
@@ -44,7 +43,7 @@ class LongFieldWriter extends FieldWriter {
       if (sortValue.isPresent()) {
         val = (long) sortValue.getCurrentValue();
       } else { // empty-value
-        return false;
+        return;
       }
     } else {
       // field is not part of 'sort' param, but part of 'fl' param
@@ -54,11 +53,10 @@ class LongFieldWriter extends FieldWriter {
       if (vals != null) {
         val = vals.longValue();
       } else {
-        return false;
+        return;
       }
     }
     doWrite(ew, val);
-    return true;
   }
 
   protected void doWrite(MapWriter.EntryWriter ew, long val) throws IOException {
