@@ -295,36 +295,6 @@ public class DocumentBuilder {
     return out;
   }
 
-  /** Convert a lucene Document to a SolrInputDocument */
-  public static SolrInputDocument toSolrInputDocument(
-      org.apache.lucene.document.Document doc, IndexSchema schema) {
-    SolrInputDocument out = new SolrInputDocument();
-    for (IndexableField f : doc.getFields()) {
-      String fname = f.name();
-      SchemaField sf = schema.getFieldOrNull(f.name());
-      Object val = null;
-      if (sf != null) {
-        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) {
-          continue;
-        }
-        val = sf.getType().toObject(f);
-      } else {
-        val = f.stringValue();
-        if (val == null) {
-          val = f.numericValue();
-        }
-        if (val == null) {
-          val = f.binaryValue();
-        }
-        if (val == null) {
-          val = f;
-        }
-      }
-      out.addField(fname, val);
-    }
-    return out;
-  }
-
   private static boolean addOriginalField(
       Object originalFieldValue,
       SchemaField sfield,
@@ -464,5 +434,35 @@ public class DocumentBuilder {
         doc.add(field);
       }
     }
+  }
+
+  /** Convert a lucene Document to a SolrInputDocument */
+  public static SolrInputDocument toSolrInputDocument(
+      org.apache.lucene.document.Document doc, IndexSchema schema) {
+    SolrInputDocument out = new SolrInputDocument();
+    for (IndexableField f : doc.getFields()) {
+      String fname = f.name();
+      SchemaField sf = schema.getFieldOrNull(f.name());
+      Object val = null;
+      if (sf != null) {
+        if ((!sf.hasDocValues() && !sf.stored()) || schema.isCopyFieldTarget(sf)) {
+          continue;
+        }
+        val = sf.getType().toObject(f);
+      } else {
+        val = f.stringValue();
+        if (val == null) {
+          val = f.numericValue();
+        }
+        if (val == null) {
+          val = f.binaryValue();
+        }
+        if (val == null) {
+          val = f;
+        }
+      }
+      out.addField(fname, val);
+    }
+    return out;
   }
 }

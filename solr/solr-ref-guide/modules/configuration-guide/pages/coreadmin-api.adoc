@@ -793,7 +793,7 @@ Note:
 * Only stored fields and fields with docValues enabled can be preserved during upgrade.
 Fields that are neither stored nor docValues-backed will lose their data, unless they are `copyField` targets. 
 * Not supported in SolrCloud mode. In order to achieve the same purpose in SolrCloud mode (aka upgrade index for compatibility with next Solr version), configure the `LatestVersionMergePolicyFactory` for the collection and reindex all documents through a client utility.
-* Indexes containing nested documents (parent-child document hierarchies) are not supported.
+* Indexes containing child/nested documents are not supported.
 
 Always test on a copy and ensure you have a backup before running on production data.
 
