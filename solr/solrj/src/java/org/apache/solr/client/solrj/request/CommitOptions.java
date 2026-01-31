@@ -76,8 +76,7 @@ public record CommitOptions(
   }
 
   /**
-   * Sets whether to expunge deleted documents during optimize. Returns a new CommitOptions instance
-   * with the updated value.
+   * Sets whether to expunge deleted documents.
    *
    * @param expungeDeletes true to expunge deletes
    * @return new CommitOptions instance for method chaining
@@ -89,7 +88,7 @@ public record CommitOptions(
 
   /**
    * Sets the maximum number of segments to optimize down to. Only applies when using
-   * ACTION.OPTIMIZE. Returns a new CommitOptions instance with the updated value.
+   * ACTION.OPTIMIZE.
    *
    * @param maxOptimizeSegments maximum number of segments (must be >= 1)
    * @return new CommitOptions instance for method chaining
@@ -103,7 +102,7 @@ public record CommitOptions(
   // Convenience factory methods
 
   /**
-   * Creates CommitOptions with type based on property.
+   * Creates CommitOptions with type based on if a soft commit was requested
    *
    * @return CommitOptions configured for soft commit
    */
