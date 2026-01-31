@@ -73,9 +73,8 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * Undocumented expert level system property to prevent doing a reverse lookup of our hostname.
-   * This property will be logged as a suggested workaround if any problems are noticed when doing
-   * reverse lookup.
+   * Expert level system property to prevent doing a reverse lookup of our hostname. This property
+   * will be logged as a suggested workaround if any problems are noticed when doing reverse lookup.
    *
    * <p>TODO: should we refactor this (and the associated logic) into a helper method for any other
    * places where DNS is used?

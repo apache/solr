@@ -157,5 +157,25 @@
         "activetaskslist"
       ]
     }
+  },
+  "queryResponseWriter": {
+    "geojson": {
+      "class": "solr.GeoJSONResponseWriter"
+    },
+    "graphml": {
+      "class": "solr.GraphMLResponseWriter"
+    },
+    "cbor": {
+      "class": "solr.CborResponseWriter"
+    },
+    "csv": {
+      "class": "solr.CSVResponseWriter"
+    },
+    "schema.xml": {
+      "class": "solr.SchemaXmlResponseWriter"
+    },
+    "smile": {
+      "class": "solr.SmileResponseWriter"
+    }
   }
 }

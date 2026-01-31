@@ -297,7 +297,7 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleValidMirroredSolrRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     SolrInputDocument doc = new SolrInputDocument();
@@ -336,7 +336,7 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleValidAdminRequest() throws Exception {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     CollectionAdminRequest.Create create =
@@ -417,7 +417,7 @@ public class KafkaCrossDcConsumerTest {
             CrossDcConf.COLLAPSE_UPDATES, collapseUpdates.name(),
             CrossDcConf.MAX_COLLAPSE_RECORDS, String.valueOf(maxCollapseRecords));
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     List<ConsumerRecord<String, MirroredSolrRequest<?>>> records = new ArrayList<>();
@@ -452,7 +452,7 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleInvalidMirroredSolrRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     SolrMessageProcessor mockSolrMessageProcessor = mock(SolrMessageProcessor.class);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(mockSolrMessageProcessor)
         .handleItem(any());
     KafkaCrossDcConsumer spyConsumer =
