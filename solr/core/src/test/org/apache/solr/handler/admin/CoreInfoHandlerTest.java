@@ -66,7 +66,7 @@ public class CoreInfoHandlerTest extends SolrTestCaseJ4 {
     // Verify start time is present
     Date start = (Date) core.get("start");
     assertNotNull("Start time should not be null", start);
-    assertTrue("Start time should be before now", start.before(now) || start.equals(now));
+    assertTrue("Start time should be before or equal to now", start.getTime() <= now.getTime());
 
     // Verify directory info
     @SuppressWarnings("unchecked")
@@ -105,7 +105,10 @@ public class CoreInfoHandlerTest extends SolrTestCaseJ4 {
 
       // Verify start time matches core's start time
       Date startTime = (Date) coreInfo.get("start");
-      assertEquals("Start time should match core start time", core.getStartTimeStamp(), startTime);
+      assertEquals(
+          "Start time should match core start time",
+          core.getStartTimeStamp().getTime(),
+          startTime.getTime());
 
       // Verify instance path is correctly reported
       @SuppressWarnings("unchecked")
