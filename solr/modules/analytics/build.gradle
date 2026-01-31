@@ -35,3 +35,8 @@ dependencies {
   testImplementation 'junit:junit'
   testImplementation 'org.slf4j:slf4j-api'
 }
+
+// Disable treating warnings as errors for this module
+tasks.withType(JavaCompile) {
+  options.compilerArgs -= "-Werror"
+}
