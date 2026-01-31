@@ -306,7 +306,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       // If the leader is readOnly, do not fail since the core is already committed.
       ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT,  CommitOptions.forHardCommit()).process(client);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit())
+          .process(client);
     }
   }
 
