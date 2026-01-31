@@ -296,8 +296,7 @@ public class SolrCmdDistributor implements Closeable {
     if (cmd == null) return;
 
     CommitOptions options =
-        new CommitOptions()
-            .commit(cmd.softCommit)
+        CommitOptions.commit(cmd.softCommit)
             .waitSearcher(cmd.waitSearcher)
             .openSearcher(cmd.openSearcher)
             .expungeDeletes(cmd.expungeDeletes)
