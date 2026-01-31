@@ -24,7 +24,6 @@ dependencies {
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
-  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -32,7 +31,7 @@ dependencies {
 
   implementation project(':solr:solrj')
   implementation project(':solr:solrj-jetty')
-    implementation project(':solr:api')
+  implementation project(':solr:api')
 
   implementation libs.slf4j.api
 
@@ -55,5 +54,6 @@ dependencies {
   testImplementation libs.junit.junit
   testImplementation libs.commonsio.commonsio
 
-  permitTestUsedUndeclared project(':solr:solrj-zookeeper') // duh!
+  // cutterslade requires we state the obvious
+  testImplementation project(':solr:solrj-zookeeper')
 }

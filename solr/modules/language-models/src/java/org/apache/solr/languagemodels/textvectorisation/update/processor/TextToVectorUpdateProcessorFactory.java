@@ -21,16 +21,21 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.languagemodels.textvectorisation.model.SolrTextToVectorModel;
 import org.apache.solr.languagemodels.textvectorisation.store.rest.ManagedTextToVectorModelStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.rest.ManagedResource;
+import org.apache.solr.rest.ManagedResourceObserver;
 import org.apache.solr.schema.DenseVectorField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
 /**
  * Vectorises a textual field value and add the resulting vector to another field.
@@ -47,10 +52,12 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
  *
  * *
  */
-public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory {
+public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFactory
+    implements SolrCoreAware, ManagedResourceObserver {
   private static final String INPUT_FIELD_PARAM = "inputField";
   private static final String OUTPUT_FIELD_PARAM = "outputField";
   private static final String MODEL_NAME = "model";
+  private ManagedTextToVectorModelStore modelStore = null;
 
   private String inputField;
   private String outputField;
@@ -64,6 +71,23 @@ public class TextToVectorUpdateProcessorFactory extends UpdateRequestProcessorFa
     inputField = required.get(INPUT_FIELD_PARAM);
     outputField = required.get(OUTPUT_FIELD_PARAM);
     modelName = required.get(MODEL_NAME);
+  }
+
+  @Override
+  public void inform(SolrCore core) {
+    final SolrResourceLoader solrResourceLoader = core.getResourceLoader();
+    ManagedTextToVectorModelStore.registerManagedTextToVectorModelStore(solrResourceLoader, this);
+  }
+
+  @Override
+  public void onManagedResourceInitialized(NamedList<?> args, ManagedResource res)
+      throws SolrException {
+    if (res instanceof ManagedTextToVectorModelStore) {
+      modelStore = (ManagedTextToVectorModelStore) res;
+    }
+    if (modelStore != null) {
+      modelStore.loadStoredModels();
+    }
   }
 
   @Override
