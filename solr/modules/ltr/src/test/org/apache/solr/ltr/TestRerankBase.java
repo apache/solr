@@ -104,10 +104,6 @@ public class TestRerankBase extends RestTestBase {
     }
   }
 
-  protected static void unchooseDefaultFeatureFormat() {
-    System.clearProperty(SYSTEM_PROPERTY_SOLR_LTR_TRANSFORMER_FV_DEFAULTFORMAT);
-  }
-
   protected static void setuptest(boolean bulkIndex) throws Exception {
     chooseDefaultFeatureFormat();
     setuptest("solrconfig-ltr.xml", "schema.xml");
@@ -203,9 +199,6 @@ public class TestRerankBase extends RestTestBase {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
-    // System.clearProperty("solr.index.updatelog.enabled");
-    unchooseDefaultFeatureFormat();
   }
 
   public static void makeRestTestHarnessNull() {

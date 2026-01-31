@@ -161,7 +161,12 @@ public class ZkShardTerms implements AutoCloseable {
     synchronized (listeners) {
       listeners.clear();
     }
+    terms.set(new ShardTerms());
     assert ObjectReleaseTracker.release(this);
+  }
+
+  public boolean isClosed() {
+    return isClosed.get();
   }
 
   // package private for testing, only used by tests
@@ -326,7 +331,12 @@ public class ZkShardTerms implements AutoCloseable {
       log.info("Successful update of terms at {} to {} for {}", znodePath, newTerms, action);
       return true;
     } catch (KeeperException.BadVersionException e) {
-      log.info("Failed to save terms, version is not a match, retrying");
+      if (log.isInfoEnabled()) {
+        log.info(
+            "Failed to save terms for {}, version {} is not a match, retrying",
+            action,
+            newTerms.getVersion());
+      }
       refreshTerms();
     } catch (KeeperException.NoNodeException e) {
       throw e;
@@ -411,6 +421,10 @@ public class ZkShardTerms implements AutoCloseable {
           // session events are not change events, and do not remove the watcher
           if (Watcher.Event.EventType.None == event.getType()) {
             return;
+          }
+          // If the node is deleted, we should close the ZkShardTerms
+          if (Watcher.Event.EventType.NodeDeleted == event.getType()) {
+            close();
           }
           // Some events may be missed during registering a watcher, so it is safer to refresh terms
           // after registering watcher

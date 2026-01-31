@@ -87,9 +87,6 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }
@@ -274,7 +271,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();
     cluster.waitForAllNodes(30);
-    ;
+
     waitForState(
         "Timeout waiting for leader",
         collection,

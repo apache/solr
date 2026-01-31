@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -36,7 +35,6 @@ import java.util.stream.Collectors;
 import org.apache.solr.cloud.api.collections.CollApiCmds.CollectionApiCommand;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -61,13 +59,13 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
-    deleteReplica(clusterState, message, results, null);
+    deleteReplica(adminCmdContext, message, results, null);
   }
 
   void deleteReplica(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       ZkNodeProps message,
       NamedList<Object> results,
       Runnable onComplete)
@@ -79,7 +77,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
 
     // If a count is specified the strategy needs be different
     if (message.getStr(COUNT_PROP) != null) {
-      deleteReplicaBasedOnCount(clusterState, message, results, onComplete, parallel);
+      deleteReplicaBasedOnCount(adminCmdContext, message, results, onComplete, parallel);
       return;
     }
 
@@ -97,14 +95,15 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       collectionName = extCollectionName;
     }
 
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = adminCmdContext.getClusterState().getCollection(collectionName);
     Slice slice = coll.getSlice(shard);
     if (slice == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Invalid shard name : " + shard + " in collection : " + collectionName);
     }
-    deleteCore(coll, shard, replicaName, message, results, onComplete, parallel, true);
+    deleteCore(
+        adminCmdContext, coll, shard, replicaName, message, results, onComplete, parallel, true);
   }
 
   /**
@@ -112,7 +111,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
    * deletes given num replicas across all shards for the given collection.
    */
   void deleteReplicaBasedOnCount(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       ZkNodeProps message,
       NamedList<Object> results,
       Runnable onComplete,
@@ -122,7 +121,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     int count = Integer.parseInt(message.getStr(COUNT_PROP));
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
-    DocCollection coll = clusterState.getCollection(collectionName);
+    DocCollection coll = adminCmdContext.getClusterState().getCollection(collectionName);
     Slice slice = null;
     // Validate if shard is passed.
     if (shard != null) {
@@ -172,7 +171,8 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
       for (String replica : replicas) {
         log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);
         // don't verify with the placement plugin - we already did it
-        deleteCore(coll, shardId, replica, message, results, onComplete, parallel, false);
+        deleteCore(
+            adminCmdContext, coll, shardId, replica, message, results, onComplete, parallel, false);
       }
       results.add("shard_id", shardId);
       results.add("replicas_deleted", replicas);
@@ -242,6 +242,7 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
   }
 
   void deleteCore(
+      AdminCmdContext adminCmdContext,
       DocCollection coll,
       String shardId,
       String replicaName,
@@ -295,7 +296,6 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
 
     ShardHandler shardHandler = ccc.newShardHandler();
     String core = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-    String asyncId = message.getStr(ASYNC);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.UNLOAD.toString());
@@ -311,9 +311,9 @@ public class DeleteReplicaCmd implements CollectionApiCommand {
     boolean isLive =
         ccc.getZkStateReader().getClusterState().getLiveNodes().contains(replica.getNodeName());
     final ShardRequestTracker shardRequestTracker =
-        CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+        CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
     if (isLive) {
-      shardRequestTracker.sendShardRequest(replica.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(replica, params, shardHandler);
     }
 
     Callable<Boolean> callable =

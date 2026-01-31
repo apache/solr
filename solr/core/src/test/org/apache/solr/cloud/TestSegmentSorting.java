@@ -60,8 +60,6 @@ public class TestSegmentSorting extends SolrCloudTestCase {
   @After
   public void ensureClusterEmpty() throws Exception {
     cluster.deleteAllCollections();
-    System.clearProperty("mergePolicySort");
-    System.clearProperty("solr.tests.id.docValues");
   }
 
   @Before

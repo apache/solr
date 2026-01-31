@@ -443,6 +443,7 @@ goto parse_args
 
 :set_user_managed_mode
 set SOLR_MODE=user-managed
+set "PASS_TO_RUN_EXAMPLE=--user-managed !PASS_TO_RUN_EXAMPLE!"
 SHIFT
 goto parse_args
 

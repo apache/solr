@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
@@ -46,9 +45,6 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
     PathUtils.copyDirectory(TEST_HOME(), tmpSolrHome, StandardCopyOption.COPY_ATTRIBUTES);
     initCore("solrconfig.xml", "schema.xml", tmpSolrHome);
   }
-
-  @AfterClass
-  public static void AfterClass() {}
 
   public void testStopwordsAfterCoreReload() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();

@@ -28,8 +28,8 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import net.jcip.annotations.ThreadSafe;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.ClusterPropertiesListener;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.RateLimiterConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +49,6 @@ public class RateLimitManager implements ClusterPropertiesListener {
 
   public static final String ERROR_MESSAGE =
       "Too many requests for this request type. Please try after some time or increase the quota for this request type";
-  public static final int DEFAULT_CONCURRENT_REQUESTS =
-      (Runtime.getRuntime().availableProcessors()) * 3;
-  public static final long DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS = -1;
   private final ConcurrentHashMap<String, RequestRateLimiter> requestRateLimiterMap;
 
   public RateLimitManager() {
@@ -175,18 +172,24 @@ public class RateLimitManager implements ClusterPropertiesListener {
   }
 
   public static class Builder {
-    protected SolrZkClient solrZkClient;
+    protected ZkController solrZk;
 
-    public Builder(SolrZkClient solrZkClient) {
-      this.solrZkClient = solrZkClient;
+    public Builder() {}
+
+    @SuppressWarnings("UnusedReturnValue")
+    public Builder withZk(ZkController zkClient) {
+      solrZk = zkClient;
+      return this;
     }
 
     public RateLimitManager build() {
       RateLimitManager rateLimitManager = new RateLimitManager();
-
       rateLimitManager.registerRequestRateLimiter(
-          new QueryRateLimiter(solrZkClient), SolrRequest.SolrRequestType.QUERY);
-
+          new QueryRateLimiter(solrZk == null ? null : solrZk.getZkClient()),
+          SolrRequest.SolrRequestType.QUERY);
+      if (solrZk != null) {
+        solrZk.zkStateReader.registerClusterPropertiesListener(rateLimitManager);
+      }
       return rateLimitManager;
     }
   }
