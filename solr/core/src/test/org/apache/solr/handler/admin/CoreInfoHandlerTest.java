@@ -57,11 +57,11 @@ public class CoreInfoHandlerTest extends SolrTestCaseJ4 {
     // Verify 'now' date is present and reasonable
     Date now = (Date) core.get("now");
     assertNotNull("Now date should not be null", now);
-    long currentTime = System.currentTimeMillis();
+    Date currentTime = new Date();
     long responseTime = now.getTime();
     assertTrue(
         "Response time should be close to current time",
-        Math.abs(currentTime - responseTime) < 5000); // within 5 seconds
+        Math.abs(currentTime.getTime() - responseTime) < 5000); // within 5 seconds
 
     // Verify start time is present
     Date start = (Date) core.get("start");
