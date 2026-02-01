@@ -188,7 +188,8 @@ public abstract class CoreAdminParams {
     INSTALLCOREDATA,
     CREATESNAPSHOT,
     DELETESNAPSHOT,
-    LISTSNAPSHOTS;
+    LISTSNAPSHOTS,
+    UPGRADECOREINDEX;
 
     public final boolean isRead;
 
