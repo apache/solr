@@ -16,8 +16,8 @@
  */
 package org.apache.solr.response;
 
-import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
-import static org.apache.solr.handler.admin.MetricsHandler.PROMETHEUS_METRICS_WT;
+import static org.apache.solr.util.stats.MetricUtils.OPEN_METRICS_WT;
+import static org.apache.solr.util.stats.MetricUtils.PROMETHEUS_METRICS_WT;
 
 import java.util.Map;
 import org.apache.solr.common.params.CommonParams;

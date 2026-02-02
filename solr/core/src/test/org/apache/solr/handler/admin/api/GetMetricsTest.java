@@ -23,26 +23,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.UnrecoverableKeyException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.response.PrometheusResponseWriter;
-import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.stats.MetricUtils;
 import org.eclipse.jetty.client.ContentResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -55,6 +50,7 @@ import org.junit.Test;
  *
  * <p>See also: TestMetricsRequest, in SolrJ
  */
+@SuppressSSL
 public class GetMetricsTest extends SolrTestCaseJ4 {
 
   // No need for the full output
@@ -64,6 +60,7 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
 
   private static HttpClient jettyHttpClient;
   private static String metricsV2Url;
+  private static String baseV2Url;
   private static MiniSolrCloudCluster cluster;
 
   @BeforeClass
@@ -74,28 +71,16 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
         SolrTestCaseJ4.TEST_PATH().resolve("solr.xml"),
         tempDir.resolve("solr.xml"),
         StandardCopyOption.REPLACE_EXISTING);
+
     MiniSolrCloudCluster.Builder clusterBuilder = new MiniSolrCloudCluster.Builder(2, tempDir);
     cluster = clusterBuilder.withSolrXml(tempDir.resolve("solr.xml")).build();
 
-    metricsV2Url = cluster.getJettySolrRunner(0).getBaseURLV2().toString().concat("/metrics");
+    baseV2Url = cluster.getJettySolrRunner(0).getBaseURLV2().toString();
 
-    // useSsl = true, clientAuth = false
-    SSLTestConfig sslConfig = new SSLTestConfig(true, false);
-    // trustAll = true
-    SslContextFactory.Client factory = new SslContextFactory.Client(true);
-    try {
-      factory.setSslContext(sslConfig.buildClientSSLContext());
-    } catch (KeyManagementException
-        | UnrecoverableKeyException
-        | NoSuchAlgorithmException
-        | KeyStoreException e) {
-      throw new IllegalStateException(
-          "Unable to setup https scheme for HTTPClient to test SSL.", e);
-    }
+    metricsV2Url = baseV2Url.concat("/metrics");
 
     jettyHttpClient = new HttpClient();
     jettyHttpClient.setConnectTimeout(TIMEOUT);
-    jettyHttpClient.setSslContextFactory(factory);
     jettyHttpClient.setMaxConnectionsPerDestination(1);
     jettyHttpClient.setMaxRequestsQueuedPerDestination(1);
   }
@@ -145,7 +130,11 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetMetricsPrometheus()
-      throws IOException, InterruptedException, TimeoutException, ExecutionException {
+      throws IOException,
+          InterruptedException,
+          TimeoutException,
+          ExecutionException,
+          SolrServerException {
     ContentResponse response = null;
     try {
       response =
@@ -172,7 +161,11 @@ public class GetMetricsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetMetricsOpenMetrics()
-      throws IOException, InterruptedException, TimeoutException, ExecutionException {
+      throws IOException,
+          InterruptedException,
+          TimeoutException,
+          ExecutionException,
+          SolrServerException {
     ContentResponse response = null;
     try {
       response =
