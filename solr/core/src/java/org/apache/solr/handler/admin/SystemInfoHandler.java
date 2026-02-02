@@ -55,6 +55,7 @@ import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
+import org.apache.solr.handler.admin.proxy.AdminHandlersProxy;
 import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -219,8 +220,10 @@ public class SystemInfoHandler extends RequestHandlerBase {
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
     SolrCore core = req.getCore();
-    if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
-      return; // Request was proxied to other node
+    final var adminProxy = AdminHandlersProxy.create(getCoreContainer(req), req, rsp);
+    if (adminProxy.shouldProxy()) {
+      adminProxy.proxyRequest();
+      return;
     }
     if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
