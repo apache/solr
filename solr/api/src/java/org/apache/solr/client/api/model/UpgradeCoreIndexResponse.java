@@ -14,23 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.handler.export;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.io.IOException;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.solr.common.MapWriter;
+public class UpgradeCoreIndexResponse extends SolrJerseyResponse {
+  @Schema(description = "The name of the core.")
+  @JsonProperty
+  public String core;
 
-abstract class FieldWriter {
-  /**
-   * Writes field values from the document to the output.
-   *
-   * @param sortDoc the document being exported
-   * @param readerContext the leaf reader context for accessing field values
-   * @param out the output writer to write field values to
-   * @throws IOException if an I/O error occurs while reading or writing field values
-   */
-  public abstract void write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out)
-      throws IOException;
+  @Schema(description = "The total number of segments eligible for upgrade.")
+  @JsonProperty
+  public Integer numSegmentsEligibleForUpgrade;
+
+  @Schema(description = "The number of segments successfully upgraded.")
+  @JsonProperty
+  public Integer numSegmentsUpgraded;
+
+  @Schema(description = "Status of the core index upgrade operation.")
+  @JsonProperty
+  public String upgradeStatus;
 }
