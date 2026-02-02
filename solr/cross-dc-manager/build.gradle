@@ -33,11 +33,6 @@ dependencies {
   implementation platform(libs.opentelemetry.bom)
   implementation libs.opentelemetry.api
   implementation libs.opentelemetry.sdk.metrics
-//  implementation libs.prometheus.metrics.model
-//  implementation(libs.prometheus.metrics.expositionformats, {
-//    exclude group: "io.prometheus", module: "prometheus-metrics-shaded-protobuf"
-//    exclude group: "io.prometheus", module: "prometheus-metrics-config"
-//  })
   implementation libs.eclipse.jetty.server
   implementation libs.eclipse.jetty.ee10.servlet
   implementation libs.jakarta.servlet.api

@@ -234,7 +234,7 @@ public class SolrMessageProcessor extends MessageProcessor
     }
 
     if (status != 0) {
-      metrics.incrementOutputCounter(type.name(), "solrError");
+      metrics.incrementOutputCounter(type.name(), "solr_error");
       throw new SolrException(SolrException.ErrorCode.getErrorCode(status), "response=" + response);
     }
 

@@ -561,9 +561,9 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
         break;
       case NOT_HANDLED_SHUTDOWN:
         if (log.isTraceEnabled()) {
-          log.trace("result=nothandled_shutdown");
+          log.trace("result=unhandled_shutdown");
         }
-        metrics.incrementOutputCounter(type.name(), "nothandled_shutdown");
+        metrics.incrementOutputCounter(type.name(), "unhandled_shutdown");
         break;
       case FAILED_RETRY:
         log.error(
