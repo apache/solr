@@ -77,7 +77,7 @@ cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
 decompose = "3.3.0"
-diffplug-spotless = "7.2.1"
+diffplug-spotless = "8.2.1"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
 dropwizard-metrics = "4.2.26"
