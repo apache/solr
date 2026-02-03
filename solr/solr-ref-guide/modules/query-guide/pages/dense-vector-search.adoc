@@ -171,12 +171,9 @@ It has the same meaning as `efConstruction` from the 2018 paper.
 Accepted values:
 Any integer.
 
-`DenseVectorField` supports the attributes: `indexed`, `stored`.
+`DenseVectorField` supports the attributes: `indexed`, `stored`, `multivalued`.
 
-[NOTE]
-currently multivalue is not supported
-
-Here's how a `DenseVectorField` should be indexed:
+Here's how a `DenseVectorField` should be indexed when single valued:
 
 [tabs#densevectorfield-index]
 ======
@@ -239,6 +236,154 @@ client.add(Arrays.asList(d1, d2));
 ----
 ====
 ======
+
+Here's how a `DenseVectorField` should be indexed when multi-valued:
+
+[tabs#densevectorfield-index]
+======
+JSON::
++
+====
+[source,json]
+----
+[{ "id": "1",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+},
+{ "id": "2",
+ "vector_multivalued": [[1.0, 2.0, 3.0, 4.0],[5.0, 6.0, 7.0, 8.0]]
+}
+]
+----
+====
+
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+List<List<Float>> floatVectors1 = new ArrayList<>(2);
+floatVectors1.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors1.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d1.setField("vector_multivalued", floatVectors1);
+
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+List<List<Float>> floatVectors2 = new ArrayList<>(2);
+floatVectors2.add(Arrays.asList(1.0f, 2.0f, 3.0f, 4.0f));
+floatVectors2.add(Arrays.asList(5.0f, 6.0f, 7.0f, 8.0f));
+d2.setField("vector_multivalued", floatVectors2);
+
+client.add(Arrays.asList(d1, d2));
+
+----
+====
+======
+
+=== ScalarQuantizedDenseVectorField
+Because dense vectors can have a costly size, it may be worthwhile to use a technique called "quantization"
+which creates a compressed representation of the original vectors. This allows more of the index to be stored in faster memory
+at the cost of some precision.
+
+This dense vector type uses a conversion that projects a 32 bit float precision feature down to an 8 bit int (or smaller)
+by linearly mapping the float range of each dimension down to evenly sized "buckets" of values that fit into an int. For example:
+with 8 bits we can store up to 256 discrete values, so a float dimension with values from 0.0 to 1.0 may be mapped as
+
+[0.0, 0.0039) => 0, [0.0039, 0.0078) => 1 ... etc
+
+As a specific type of DenseVectorField, this field type supports all the same configurable properties outlined above as well
+as some additional ones.
+
+Here is how a ScalarQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="scalar_quantized_vector" class="solr.ScalarQuantizedDenseVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="vector" type="scalar_quantized_vector" indexed="true" stored="true"/>
+
+`bits`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `7`
+|===
++
+The number of bits to use for each quantized dimension value
++
+Accepted values: 4 (half byte) or 7 (unsigned byte).
+
+`confidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `dimension-scaled`
+|===
++
+Statistically, outlier values are rarely meaningfully relevant to searches, so to increase the size of each bucket for
+quantization (and therefore information gain) we can scale the quantization intervals to the middle n % of values and place the remaining
+outliers in the outermost intervals.
++
+For example: 0.9 means scale interval sizes to the middle 90% of values
++
+If this param is omitted a default is used; scaled to the number of dimensions according to `1-1/(vector_dimensions + 1)`
++
+Accepted values: `FLOAT32`  (within 0.9 and 1.0)
+
+`dynamicConfidenceInterval`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, enables dynamically determining confidence interval (per dimension) by sampling values each time a merge occurs.
++
+`NOTE: when this is enabled, it will take precedence over any value configured for confidenceInterval`
++
+Accepted values: `BOOLEAN`
+
+`compress`::
++
+[%autowidth,frame=none]
+|===
+s|Optional |Default: `false`
+|===
++
+If set to true, this will further pack multiple dimension values within a one byte alignment. This further decreases the
+quantized vector disk storage size by 50% at some decode penalty. This does not affect the raw vector which is always
+preserved when `stored` is true.
++
+`NOTE: this can only be enabled when bits=4`
++
+Accepted values: `BOOLEAN`
+
+=== BinaryQuantizedDenseVectorField
+
+Binary quantization is a quantization technique that extends scalar quantization, and is even more aggressive in its compression;
+able to reduce in-memory representation of each vector dimension from a 32 bit float down to a single bit.
+This is done by normalizing each dimension of a vector relative to a centroid (mid-point pre-calculated against all vectors in the index)
+with the stored bit representing whether the actual value is "above" or "below" the centroid's value. A further "corrective factor" is also computed
+and stored to help compensate accuracy in the estimated distance. At query time asymmetric quantization is applied to the query
+vector (reducing its dimension values down to 4 bits each), but allowing comparison with the stored binary quantized vector via bit arithmetic.
+
+This implementation comprises of LVQ, proposed in https://arxiv.org/abs/2304.04759[Similarity Search in the Blink of an Eye With Compressed Indices]
+by Cecilia Aguerrebere et al., previous work on globally optimized scalar quantization in Apache Lucene, and ideas from
+https://arxiv.org/abs/1908.10396[Accelerating Large-Scale Inference with Anisotropic Vector Quantization] by Ruiqi Guo et al.
+
+This vector type is best utilized for data sets consisting of large amounts of high dimensionality vectors.
+
+Here is how a BinaryQuantizedDenseVectorField can be defined in the schema:
+
+[source,xml]
+<fieldType name="binary_quantized_vector" class="solr.BinaryQuantizedDenseVectorField" vectorDimension="4"/>
+<field name="vector" type="binary_quantized_vector" indexed="true" stored="true"/>
+
+BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField` with the only notable exception being
+`similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
+param.
 
 == Query Time
 
@@ -341,6 +486,79 @@ Here's an example of a simple `knn_text_to_vector` search:
 The search results retrieved are the k=10 nearest documents to the vector encoded from the query `hello world query`, using the model `a-model`.
 
 For more details on how to work with vectorise text in Apache Solr, please refer to the dedicated page: xref:text-to-vector.adoc[Text to Vector]
+
+=== Handle multivalued vector fields at query time
+Behind the scenes a multivalued vector field is handled by Solr as nested documents with a single vector each (see the parameters for the knn query parser that deal with nested vectors 'parents.preFilter' and 'childrenOf').
+
+So you should query a multivalued vector fields following the same syntax:
+[source,text]
+?q={!parent which=$allParents score=max v=$children.q}
+&children.q={!knn f=vector_multivalued topK=3 parents.preFilter=$someParents childrenOf=$allParents}[1.0, 2.0, 3.0, 4.0]
+&allParents=*:* -_nest_path_:*
+&someParents=color_s:RED
+
+In terms of rendering the results, you need the child transformer if you want to output them flat (you can choose to only return the best vector per result or all vectors):
+
+All Children
+[source,text]
+fl=id,vector_multivalued,[child fl="vector_multivalued"]
+
+====
+[source,json]
+----
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      },
+      {
+        "id":"2",
+        "vector_multivalued":[
+          [
+            1.0,2.0, 3.0, 4.0
+          ],
+          [
+            5.0,6.0, 7.0, 8.0
+          ]
+        ]
+      }]
+----
+====
+
+Best Child
+[source,text]
+fl=id,vector_multivalued,[child fl="vector_multivalued" childFilter=$children.q]
+
+====
+[source,json]
+----
+"docs":[
+      {
+        "id":"1",
+        "vector_multivalued":[
+        [
+          1.0,2.0, 3.0, 4.0
+        ]
+      ]
+    },
+    {
+      "id":"2",
+      "vector_multivalued":[
+      [
+        1.0,2.0, 3.0, 4.0
+      ]
+    ]
+  }]
+----
+====
+
 
 === vectorSimilarity Query Parser
 
