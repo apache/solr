@@ -43,8 +43,6 @@ Additionally, the server exposes https://modelcontextprotocol.io/specification/2
 * `solr://collections` - Lists all available collections
 * `solr://\{collection\}/schema` - Provides schema details for a specific collection
 
-NOTE: In a future release, https://modelcontextprotocol.io/specification/2025-11-25/server/prompts[MCP prompt templates] will be added to provide guided interactions with Solr.
-
 == Prerequisites
 
 * Java 25 or later
