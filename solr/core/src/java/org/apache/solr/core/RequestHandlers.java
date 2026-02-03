@@ -117,8 +117,7 @@ public final class RequestHandlers {
       modifiedInfos.add(applyInitParams(config, info));
     }
     handlers.init(Collections.emptyMap(), core, modifiedInfos);
-    // Curious if this is actually needed!
-    // handlers.alias(handlers.getDefault(), "");
+
     if (log.isDebugEnabled()) {
       log.debug("Registered paths: {}", StrUtils.join(new ArrayList<>(handlers.keySet()), ','));
     }

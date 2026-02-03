@@ -48,7 +48,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private static String COLL_NAME = "collection1";
+  private static final String COLL_NAME = "collection1";
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -80,11 +80,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build();
     v2Request.setResponseParser(responseParser);
     RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class,
-            () -> {
-              v2Request.process(cluster.getSolrClient());
-            });
+        expectThrows(RemoteSolrException.class, () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }
 

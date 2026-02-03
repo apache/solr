@@ -3131,9 +3131,6 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     // Initialize with the built defaults
     responseWriters.init(defaultWriters, this);
-
-    // configure the default response writer; this one should never be null
-    // if (responseWriters.getDefault() == null) responseWriters.setDefault("standard");
   }
 
   /** Finds a writer by name, or null if not found. */
