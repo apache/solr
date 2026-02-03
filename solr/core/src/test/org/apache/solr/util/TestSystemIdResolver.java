@@ -27,12 +27,6 @@ import org.xml.sax.InputSource;
 
 public class TestSystemIdResolver extends SolrTestCaseJ4 {
 
-  @Override
-  public void tearDown() throws Exception {
-    System.clearProperty(SolrResourceLoader.SOLR_RESOURCELOADING_RESTRICTED_ENABLED_PARAM);
-    super.tearDown();
-  }
-
   private void assertEntityResolving(
       SystemIdResolver resolver, String expectedSystemId, String base, String systemId)
       throws Exception {

@@ -99,8 +99,6 @@ public class TestPullReplica extends SolrCloudTestCase {
 
   @AfterClass
   public static void tearDownCluster() {
-    System.clearProperty("solr.solrj.cloud.max.stale.retries");
-    System.clearProperty("zkReaderGetLeaderRetryTimeoutMs");
     TestInjection.reset();
   }
 

@@ -23,7 +23,6 @@ import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.DELETE;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
@@ -38,7 +37,6 @@ import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.CollectionHandlingUtils.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
@@ -65,7 +63,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
   }
 
   @Override
-  public void call(ClusterState clusterState, ZkNodeProps message, NamedList<Object> results)
+  public void call(AdminCmdContext adminCmdContext, ZkNodeProps message, NamedList<Object> results)
       throws Exception {
     String extSourceCollectionName = message.getStr("collection");
     String splitKey = message.getStr("split.key");
@@ -89,13 +87,15 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       targetCollectionName = extTargetCollectionName;
     }
 
-    DocCollection sourceCollection = clusterState.getCollection(sourceCollectionName);
+    DocCollection sourceCollection =
+        adminCmdContext.getClusterState().getCollection(sourceCollectionName);
     if (sourceCollection == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Unknown source collection: " + sourceCollectionName);
     }
-    DocCollection targetCollection = clusterState.getCollection(targetCollectionName);
+    DocCollection targetCollection =
+        adminCmdContext.getClusterState().getCollection(targetCollectionName);
     if (targetCollection == null) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
@@ -136,9 +136,6 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
               + splitKey);
     }
 
-    String asyncId = null;
-    if (message.containsKey(ASYNC) && message.get(ASYNC) != null) asyncId = message.getStr(ASYNC);
-
     for (Slice sourceSlice : sourceSlices) {
       for (Slice targetSlice : targetSlices) {
         log.info(
@@ -147,7 +144,7 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             targetSlice,
             splitKey);
         migrateKey(
-            clusterState,
+            adminCmdContext,
             sourceCollection,
             sourceSlice,
             targetCollection,
@@ -155,14 +152,13 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             splitKey,
             timeout,
             results,
-            asyncId,
             message);
       }
     }
   }
 
   private void migrateKey(
-      ClusterState clusterState,
+      AdminCmdContext adminCmdContext,
       DocCollection sourceCollection,
       Slice sourceSlice,
       DocCollection targetCollection,
@@ -170,21 +166,22 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       String splitKey,
       int timeout,
       NamedList<Object> results,
-      String asyncId,
       ZkNodeProps message)
       throws Exception {
     String tempSourceCollectionName =
         "split_" + sourceSlice.getName() + "_temp_" + targetSlice.getName();
     ZkStateReader zkStateReader = ccc.getZkStateReader();
-    if (clusterState.hasCollection(tempSourceCollectionName)) {
+    if (adminCmdContext.getClusterState().hasCollection(tempSourceCollectionName)) {
       log.info("Deleting temporary collection: {}", tempSourceCollectionName);
-      Map<String, Object> props =
-          Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, tempSourceCollectionName);
-
       try {
         new DeleteCollectionCmd(ccc)
-            .call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
-        clusterState = zkStateReader.getClusterState();
+            .call(
+                adminCmdContext
+                    .subRequestContext(DELETE)
+                    .withClusterState(zkStateReader.getClusterState()),
+                new ZkNodeProps(Map.of(NAME, tempSourceCollectionName)),
+                results);
+        adminCmdContext.withClusterState(zkStateReader.getClusterState());
       } catch (Exception e) {
         log.warn(
             "Unable to clean up existing temporary collection: {}", tempSourceCollectionName, e);
@@ -234,8 +231,8 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     {
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
 
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to request node to buffer updates");
@@ -312,17 +309,26 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             configName,
             CollectionHandlingUtils.CREATE_NODE_SET,
             sourceLeader.getNodeName());
-    if (asyncId != null) {
-      String internalAsyncId = asyncId + Math.abs(System.nanoTime());
-      props.put(ASYNC, internalAsyncId);
+    String internalAsyncId = null;
+    if (adminCmdContext.getAsyncId() != null) {
+      internalAsyncId = adminCmdContext.getAsyncId() + Math.abs(System.nanoTime());
     }
 
     log.info("Creating temporary collection: {}", props);
-    new CreateCollectionCmd(ccc).call(clusterState, new ZkNodeProps(props), results);
+    new CreateCollectionCmd(ccc)
+        .call(
+            adminCmdContext.subRequestContext(CREATE, internalAsyncId),
+            new ZkNodeProps(props),
+            results);
     // refresh cluster state
-    clusterState = zkStateReader.getClusterState();
+    adminCmdContext.withClusterState(zkStateReader.getClusterState());
     Slice tempSourceSlice =
-        clusterState.getCollection(tempSourceCollectionName).getSlices().iterator().next();
+        adminCmdContext
+            .getClusterState()
+            .getCollection(tempSourceCollectionName)
+            .getSlices()
+            .iterator()
+            .next();
     Replica tempSourceLeader =
         zkStateReader.getLeaderRetry(tempSourceCollectionName, tempSourceSlice.getName(), 120000);
 
@@ -349,10 +355,10 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     cmd.setOnlyIfLeader(true);
     {
       final ShardRequestTracker syncRequestTracker =
-          CollectionHandlingUtils.syncRequestTracker(ccc);
+          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
       // we don't want this to happen asynchronously
       syncRequestTracker.sendShardRequest(
-          tempSourceLeader.getNodeName(), new ModifiableSolrParams(cmd.getParams()), shardHandler);
+          tempSourceLeader, new ModifiableSolrParams(cmd.getParams()), shardHandler);
 
       syncRequestTracker.processResponses(
           results,
@@ -370,12 +376,10 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
     params.set(CoreAdminParams.RANGES, splitRange.toString());
     params.set("split.key", splitKey);
 
-    String tempNodeName = sourceLeader.getNodeName();
-
     {
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(tempNodeName, params, shardHandler);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+      shardRequestTracker.sendShardRequest(sourceLeader, params, shardHandler);
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to invoke SPLIT core admin command");
     }
@@ -392,7 +396,6 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
             tempSourceSlice.getName(),
             Replica.Type.defaultType());
     props = new HashMap<>();
-    props.put(Overseer.QUEUE_OPERATION, ADDREPLICA.toLower());
     props.put(COLLECTION_PROP, tempSourceCollectionName);
     props.put(SHARD_ID_PROP, tempSourceSlice.getName());
     props.put("node", targetLeader.getNodeName());
@@ -404,14 +407,13 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
       }
     }
     // add async param
-    if (asyncId != null) {
-      props.put(ASYNC, asyncId);
-    }
-    new AddReplicaCmd(ccc).addReplica(clusterState, new ZkNodeProps(props), results, null);
+    new AddReplicaCmd(ccc)
+        .addReplica(
+            adminCmdContext.subRequestContext(ADDREPLICA), new ZkNodeProps(props), results, null);
 
     {
       final ShardRequestTracker syncRequestTracker =
-          CollectionHandlingUtils.syncRequestTracker(ccc);
+          CollectionHandlingUtils.syncRequestTracker(adminCmdContext, ccc);
       syncRequestTracker.processResponses(
           results,
           shardHandler,
@@ -442,8 +444,8 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     {
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(tempSourceLeader.getNodeName(), params, shardHandler);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+      shardRequestTracker.sendShardRequest(tempSourceLeader, params, shardHandler);
 
       shardRequestTracker.processResponses(
           results,
@@ -462,9 +464,9 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     {
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
 
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
       String msg =
           "MIGRATE failed to merge "
               + tempCollectionReplica2
@@ -482,16 +484,20 @@ public class MigrateCmd implements CollApiCmds.CollectionApiCommand {
 
     {
       final ShardRequestTracker shardRequestTracker =
-          CollectionHandlingUtils.asyncRequestTracker(asyncId, ccc);
-      shardRequestTracker.sendShardRequest(targetLeader.getNodeName(), params, shardHandler);
+          CollectionHandlingUtils.asyncRequestTracker(adminCmdContext, ccc);
+      shardRequestTracker.sendShardRequest(targetLeader, params, shardHandler);
       shardRequestTracker.processResponses(
           results, shardHandler, true, "MIGRATE failed to request node to apply buffered updates");
     }
     try {
       log.info("Deleting temporary collection: {}", tempSourceCollectionName);
-      props = Map.of(Overseer.QUEUE_OPERATION, DELETE.toLower(), NAME, tempSourceCollectionName);
       new DeleteCollectionCmd(ccc)
-          .call(zkStateReader.getClusterState(), new ZkNodeProps(props), results);
+          .call(
+              adminCmdContext
+                  .subRequestContext(DELETE)
+                  .withClusterState(zkStateReader.getClusterState()),
+              new ZkNodeProps(Map.of(NAME, tempSourceCollectionName)),
+              results);
     } catch (Exception e) {
       log.error(
           "Unable to delete temporary collection: {}. Please remove it manually",
