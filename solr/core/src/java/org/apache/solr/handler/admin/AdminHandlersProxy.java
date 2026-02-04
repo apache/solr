@@ -33,15 +33,18 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.stats.MetricUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,17 +58,34 @@ public class AdminHandlersProxy {
   private static final String PARAM_NODE = "node";
   private static final long PROMETHEUS_FETCH_TIMEOUT_SECONDS = 10;
 
-  /** Proxy this request to a different remote node if 'node' or 'nodes' parameter is provided */
+  /**
+   * Proxy this request to a different remote node's V1 API if 'node' or 'nodes' parameter is
+   * provided. For V2, use {@link AdminHandlersProxy#maybeProxyToNodes(String, SolrQueryRequest,
+   * SolrQueryResponse, CoreContainer)}
+   */
   public static boolean maybeProxyToNodes(
       SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
+      throws IOException, SolrServerException, InterruptedException {
+    return maybeProxyToNodes("V1", req, rsp, container);
+  }
+
+  /**
+   * Proxy this request to a different remote node's selected API version if 'node' or 'nodes'
+   * parameter is provided
+   */
+  public static boolean maybeProxyToNodes(
+      String apiVersion, SolrQueryRequest req, SolrQueryResponse rsp, CoreContainer container)
       throws IOException, SolrServerException, InterruptedException {
 
     String pathStr = req.getPath();
     ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
 
     // Check if response format is Prometheus/OpenMetrics
-    String wt = params.get("wt");
-    boolean isPrometheusFormat = "prometheus".equals(wt) || "openmetrics".equals(wt);
+    String wt = params.get(CommonParams.WT);
+    boolean isPrometheusFormat =
+        MetricUtils.PROMETHEUS_METRICS_WT.equals(wt)
+            || MetricUtils.OPEN_METRICS_WT.equals(wt)
+            || (wt == null && pathStr.endsWith("/metrics"));
 
     if (isPrometheusFormat) {
       // Prometheus format: use singular 'node' parameter for single-node proxy
@@ -75,7 +95,7 @@ public class AdminHandlersProxy {
       }
 
       params.remove(PARAM_NODE);
-      handlePrometheusSingleNode(nodeName, pathStr, params, container, rsp);
+      handlePrometheusSingleNode(apiVersion, nodeName, pathStr, params, container, rsp);
     } else {
       // Other formats (JSON/XML): use plural 'nodes' parameter for multi-node aggregation
       String nodeNames = req.getParams().get(PARAM_NODES);
@@ -85,7 +105,7 @@ public class AdminHandlersProxy {
 
       params.remove(PARAM_NODES);
       Set<String> nodes = resolveNodes(nodeNames, container);
-      handleNamedListFormat(nodes, pathStr, params, container.getZkController(), rsp);
+      handleNamedListFormat(apiVersion, nodes, pathStr, params, container.getZkController(), rsp);
     }
 
     return true;
@@ -93,6 +113,7 @@ public class AdminHandlersProxy {
 
   /** Handle non-Prometheus formats using the existing NamedList approach. */
   private static void handleNamedListFormat(
+      String apiVersion,
       Set<String> nodes,
       String pathStr,
       SolrParams params,
@@ -101,7 +122,7 @@ public class AdminHandlersProxy {
 
     Map<String, Future<NamedList<Object>>> responses = new LinkedHashMap<>();
     for (String node : nodes) {
-      responses.put(node, callRemoteNode(node, pathStr, params, zkController));
+      responses.put(node, callRemoteNode(apiVersion, node, pathStr, params, zkController));
     }
 
     for (Map.Entry<String, Future<NamedList<Object>>> entry : responses.entrySet()) {
@@ -125,8 +146,12 @@ public class AdminHandlersProxy {
   }
 
   /** Makes a remote request asynchronously. */
-  public static CompletableFuture<NamedList<Object>> callRemoteNode(
-      String nodeName, String uriPath, SolrParams params, ZkController zkController) {
+  private static CompletableFuture<NamedList<Object>> callRemoteNode(
+      String apiVersion,
+      String nodeName,
+      String uriPath,
+      SolrParams params,
+      ZkController zkController) {
 
     // Validate that the node exists in the cluster
     if (!zkController.zkStateReader.getClusterState().getLiveNodes().contains(nodeName)) {
@@ -137,12 +162,16 @@ public class AdminHandlersProxy {
 
     log.debug("Proxying {} request to node {}", uriPath, nodeName);
     URI baseUri = URI.create(zkController.zkStateReader.getBaseUrlForNodeName(nodeName));
-    SolrRequest<?> proxyReq = new GenericSolrRequest(SolrRequest.METHOD.GET, uriPath, params);
+
+    SolrRequest<?> proxyReq = createRequest(apiVersion, uriPath, params);
 
     // Set response parser based on wt parameter to ensure correct format is used
-    String wt = params.get("wt");
-    if ("prometheus".equals(wt) || "openmetrics".equals(wt)) {
+    String wt = params.get(CommonParams.WT);
+    if (MetricUtils.PROMETHEUS_METRICS_WT.equals(wt) || MetricUtils.OPEN_METRICS_WT.equals(wt)) {
       proxyReq.setResponseParser(new InputStreamResponseParser(wt));
+    }
+    if (wt == null && uriPath.endsWith("/metrics")) {
+      proxyReq.setResponseParser(new InputStreamResponseParser(MetricUtils.PROMETHEUS_METRICS_WT));
     }
 
     try {
@@ -195,6 +224,7 @@ public class AdminHandlersProxy {
    * @param rsp the response to populate
    */
   private static void handlePrometheusSingleNode(
+      String apiVersion,
       String nodeName,
       String pathStr,
       ModifiableSolrParams params,
@@ -205,7 +235,7 @@ public class AdminHandlersProxy {
     // Keep wt=prometheus for the remote request so MetricsHandler accepts it
     // The InputStreamResponseParser will return the Prometheus text in a "stream" key
     Future<NamedList<Object>> response =
-        callRemoteNode(nodeName, pathStr, params, container.getZkController());
+        callRemoteNode(apiVersion, nodeName, pathStr, params, container.getZkController());
 
     try {
       try {
@@ -219,5 +249,13 @@ public class AdminHandlersProxy {
     } catch (Throwable t) { // unlikely?
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, t);
     }
+  }
+
+  private static SolrRequest<?> createRequest(
+      String apiVersion, String uriPath, SolrParams params) {
+    if (apiVersion.equalsIgnoreCase("V1")) {
+      return new GenericSolrRequest(SolrRequest.METHOD.GET, uriPath, params);
+    }
+    return new GenericV2SolrRequest(SolrRequest.METHOD.GET, uriPath, params);
   }
 }

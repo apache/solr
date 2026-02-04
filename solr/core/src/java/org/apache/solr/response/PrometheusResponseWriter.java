@@ -16,8 +16,6 @@
  */
 package org.apache.solr.response;
 
-import static org.apache.solr.handler.admin.MetricsHandler.OPEN_METRICS_WT;
-
 import io.prometheus.metrics.expositionformats.OpenMetricsTextFormatWriter;
 import io.prometheus.metrics.expositionformats.PrometheusTextFormatWriter;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
@@ -27,10 +25,14 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.handler.admin.MetricsHandler;
+import org.apache.solr.handler.admin.api.GetMetrics;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.util.stats.MetricUtils;
 
-/** Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} */
-@SuppressWarnings(value = "unchecked")
+/**
+ * Response writer for Prometheus metrics. This is used only by the {@link MetricsHandler} and V2
+ * API implementation {@link GetMetrics}
+ */
 public class PrometheusResponseWriter implements QueryResponseWriter {
   // not TextQueryResponseWriter because Prometheus libs work with an OutputStream
 
@@ -64,6 +66,12 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
       throw new IOException("No metrics found in response");
     }
     MetricSnapshots snapshots = (MetricSnapshots) metrics;
+    writeMetricSnapshots(out, request, snapshots);
+  }
+
+  /** Write MetricSnapshots in Prometheus or OpenMetrics format */
+  public void writeMetricSnapshots(
+      OutputStream out, SolrQueryRequest request, MetricSnapshots snapshots) throws IOException {
     if (writeOpenMetricsFormat(request)) {
       new OpenMetricsTextFormatWriter(false, true).write(out, snapshots);
     } else {
@@ -78,7 +86,7 @@ public class PrometheusResponseWriter implements QueryResponseWriter {
 
   private boolean writeOpenMetricsFormat(SolrQueryRequest request) {
     String wt = request.getParams().get(CommonParams.WT);
-    if (OPEN_METRICS_WT.equals(wt)) {
+    if (MetricUtils.OPEN_METRICS_WT.equals(wt)) {
       return true;
     }
 
