@@ -109,15 +109,6 @@ public class SolrRequestParsers {
     RawRequestParser raw = new RawRequestParser();
     FormDataRequestParser formdata = new FormDataRequestParser(formUploadLimitKB);
     parser = new StandardRequestParser(multi, raw, formdata);
-
-    // I don't see a need to have this publicly configured just yet
-    // adding it is trivial
-    // parsers.put(MULTIPART, multi);
-    // parsers.put(FORMDATA, formdata);
-    // parsers.put(RAW, raw);
-    // parsers.put(SIMPLE, new SimpleRequestParser());
-    // parsers.put(STANDARD, standard);
-    // parsers.put("", standard);
   }
 
   private static RTimerTree getRequestTimer(HttpServletRequest req) {
@@ -327,9 +318,9 @@ public class SolrRequestParsers {
               // we have no charset decoder until now, buffer the keys / values for later
               // processing:
               buffer.add(keyBytes);
-              buffer.add(Long.valueOf(keyPos));
+              buffer.add(keyPos);
               buffer.add(valueBytes);
-              buffer.add(Long.valueOf(valuePos));
+              buffer.add(valuePos);
             } else {
               // we already have a charsetDecoder, so we can directly decode without buffering:
               final String key = decodeChars(keyBytes, keyPos, charsetDecoder),

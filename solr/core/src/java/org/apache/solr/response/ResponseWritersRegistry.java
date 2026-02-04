@@ -104,18 +104,14 @@ public class ResponseWritersRegistry {
     }
 
     // If not found and writer is explicitly requested, validate it exists in built-in
-    if (writer == null && writerName != null && !writerName.isEmpty()) {
+    if (writer == null) {
       if (!hasWriter(writerName)) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR, "Unknown response writer type: " + writerName);
+      } else {
+        writer = getWriter(writerName);
       }
     }
-
-    // Fallback to built-in writers (or default if writerName is null/empty)
-    if (writer == null) {
-      writer = getWriter(writerName);
-    }
-
     return writer;
   }
 
