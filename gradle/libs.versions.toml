@@ -202,7 +202,6 @@ swagger3 = "2.2.22"
 tdunning-tdigest = "3.3"
 testcontainers = "1.20.4"
 thetaphi-forbiddenapis = "3.10"
-thisptr-jacksonjq = "0.0.13"
 threeten-bp = "1.6.8"
 undercouch-download = "5.6.0"
 xerial-snappy = "1.1.10.8"
@@ -514,6 +513,5 @@ swagger3-annotations-jakarta = { module = "io.swagger.core.v3:swagger-annotation
 swagger3-jaxrs2-jakarta = { module = "io.swagger.core.v3:swagger-jaxrs2-jakarta", version.ref = "swagger3" }
 tdunning-tdigest = { module = "com.tdunning:t-digest", version.ref = "tdunning-tdigest" }
 testcontainers = { module = "org.testcontainers:testcontainers", version.ref = "testcontainers" }
-thisptr-jacksonjq = { module = "net.thisptr:jackson-jq", version.ref = "thisptr-jacksonjq" }
 threeten-bp = { module = "org.threeten:threetenbp", version.ref = "threeten-bp" }
 xerial-snappy-java = { module = "org.xerial.snappy:snappy-java", version.ref = "xerial-snappy" }
