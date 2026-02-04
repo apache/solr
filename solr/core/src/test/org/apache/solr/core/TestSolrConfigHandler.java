@@ -66,9 +66,6 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final String collection = "collection1";
-  private static final String confDir = collection + "/conf";
-
   public static ByteBuffer getFileContent(String f) throws IOException {
     return getFileContent(f, true);
   }
@@ -152,7 +149,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     RestTestHarness harness = restTestHarness;
     MapWriter confMap = getRespMap("/config", harness);
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/luke"), null));
-    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/system"), null));
+    assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/info"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/file"), null));
     assertNotNull(confMap._get(asList("config", "requestHandler", "/admin/ping"), null));
 
