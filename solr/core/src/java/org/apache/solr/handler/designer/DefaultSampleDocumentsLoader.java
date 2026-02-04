@@ -148,7 +148,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     } else {
       stream = new ContentStreamBase.ByteArrayStream(streamBytes, source, "text/csv");
     }
-    return (new SampleCSVLoader(new CSVRequest(params), maxDocsToLoad)).loadDocs(stream);
+    return (new SampleCSVLoader(new SolrQueryRequestBase(null, params), maxDocsToLoad)).loadDocs(stream);
   }
 
   @SuppressWarnings("unchecked")
@@ -333,19 +333,13 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     }
   }
 
-  private static class CSVRequest extends SolrQueryRequestBase {
-    CSVRequest(SolrParams params) {
-      super(null, params);
-    }
-  }
-
   private static class SampleCSVLoader extends CSVLoaderBase {
     List<SolrInputDocument> docs = new ArrayList<>();
-    CSVRequest req;
+    SolrQueryRequestBase req;
     int maxDocsToLoad;
     String multiValueDelimiter;
 
-    SampleCSVLoader(CSVRequest req, int maxDocsToLoad) {
+    SampleCSVLoader(SolrQueryRequestBase req, int maxDocsToLoad) {
       super(req, new NoOpUpdateRequestProcessor());
       this.req = req;
       this.maxDocsToLoad = maxDocsToLoad;
