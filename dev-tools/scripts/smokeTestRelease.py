@@ -409,8 +409,8 @@ def testChangelogFolder(dir, version):
   if len(unreleased_contents) > 0:
     raise RuntimeError('changelog/unreleased folder is not empty, contains: %s' % unreleased_contents)
 
-  # Pattern to match version folders (e.g., v9.5.0, v10.0.0)
-  version_pattern = re.compile(r'^v\d+\.\d+\.\d+$')
+  # Pattern to match version folders (e.g., v9.5.0, v10.0.0 or v10.1.0-beta1)
+  version_pattern = re.compile(r'^v\d+\.\d+\.\d+(-\w+)?$')
 
   # Check all subdirectories in changelog
   for entry in os.listdir(changelog_folder):
