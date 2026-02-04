@@ -14,23 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.client.api.model;
 
-package org.apache.solr.handler.export;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.io.IOException;
-import org.apache.lucene.index.LeafReaderContext;
-import org.apache.solr.common.MapWriter;
+public class UpgradeCoreIndexRequestBody {
 
-abstract class FieldWriter {
-  /**
-   * Writes field values from the document to the output.
-   *
-   * @param sortDoc the document being exported
-   * @param readerContext the leaf reader context for accessing field values
-   * @param out the output writer to write field values to
-   * @throws IOException if an I/O error occurs while reading or writing field values
-   */
-  public abstract void write(
-      SortDoc sortDoc, LeafReaderContext readerContext, MapWriter.EntryWriter out)
-      throws IOException;
+  @Schema(description = "Request ID to track this action which will be processed asynchronously.")
+  @JsonProperty
+  public String async;
+
+  @Schema(
+      description =
+          "updateChain to be used for reindexing during index upgrade if you don't want to use the one used by /update by default")
+  @JsonProperty
+  public String updateChain;
 }
