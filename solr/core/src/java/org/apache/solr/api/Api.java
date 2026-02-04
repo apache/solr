@@ -25,7 +25,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * Every version 2 API must extend the this class. It's mostly like a request handler but it has
+ * Every version 2 API must extend this class. It's mostly like a request handler, but it has
  * extra methods to provide the json schema of the end point
  */
 public abstract class Api implements SpecProvider {
