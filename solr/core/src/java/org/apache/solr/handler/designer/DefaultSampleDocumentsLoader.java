@@ -148,7 +148,8 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     } else {
       stream = new ContentStreamBase.ByteArrayStream(streamBytes, source, "text/csv");
     }
-    return (new SampleCSVLoader(new SolrQueryRequestBase(null, params), maxDocsToLoad)).loadDocs(stream);
+    return (new SampleCSVLoader(new SolrQueryRequestBase(null, params), maxDocsToLoad))
+        .loadDocs(stream);
   }
 
   @SuppressWarnings("unchecked")
