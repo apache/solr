@@ -46,7 +46,6 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
   String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
 
-  // silly getBoolean doesn't take a default.
   /**
    * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
    * true, and solr will omit results when any shard fails due query execution limits (time, cpu
@@ -117,17 +116,17 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** The index searcher associated with this request */
   SolrIndexSearcher getSearcher();
 
-  /** The solr core (coordinator, etc) associated with this request */
+  /** The solr core (coordinator, etc.) associated with this request */
   SolrCore getCore();
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
-  public IndexSchema getSchema();
+  IndexSchema getSchema();
 
   /** Replaces the current schema snapshot with the latest from the core. */
-  public void updateSchemaToLatest();
+  void updateSchemaToLatest();
 
   /** Returns a string representing all the important parameters. Suitable for logging. */
-  public String getParamString();
+  String getParamString();
 
   /**
    * Returns any associated JSON (or null if none) in deserialized generic form. Java classes used
@@ -145,7 +144,7 @@ public interface SolrQueryRequest extends AutoCloseable {
 
   /**
    * Only for V2 API. Returns a map of path segments and their values. For example, if the path is
-   * configured as /path/{segment1}/{segment2} and a reguest is made as /path/x/y the returned map
+   * configured as /path/{segment1}/{segment2} and a request is made as /path/x/y the returned map
    * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
