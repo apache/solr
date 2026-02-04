@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -34,7 +33,6 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -92,8 +90,7 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   public static SolrParams makeParams(
       String query, String qtype, int start, int limit, Map<?, ?> args) {
     Map<String, String[]> map = new HashMap<>();
-    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext(); ) {
-      Map.Entry<?, ?> e = iter.next();
+    for (Map.Entry<?, ?> e : args.entrySet()) {
       String k = e.getKey().toString();
       Object v = e.getValue();
       if (v instanceof String[]) map.put(k, (String[]) v);
@@ -259,29 +256,15 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
     return CommandOperation.clone(parsedCommands);
   }
 
-  protected ValidatingJsonMap getSpec() {
-    return null;
-  }
-
   protected Map<String, JsonSchemaValidator> getValidators() {
     return Collections.emptyMap();
   }
 
-  private static final class LocalPrincipal implements Principal {
-    private final String user;
-
-    public LocalPrincipal(String user) {
-      this.user = user;
-    }
+  private record LocalPrincipal(String user) implements Principal {
 
     @Override
     public String getName() {
       return user;
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hashCode(user);
     }
 
     @Override
