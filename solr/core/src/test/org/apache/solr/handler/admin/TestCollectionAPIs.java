@@ -151,7 +151,19 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     if (api == null) throw new RuntimeException("No handler at path :" + path);
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequestBase req =
-        createTestRequest(queryParams, parts, method.toString(), payload, api);
+        new SolrQueryRequestBase(null, queryParams) {
+          @Override
+          public List<CommandOperation> getCommands(boolean validateInput) {
+            if (payload == null) return Collections.emptyList();
+            return ApiBag.getCommandOperations(
+                new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
+          }
+
+          @Override
+          public Map<String, String> getPathTemplateValues() {
+            return parts;
+          }
+        };
     api.call(req, rsp);
     return new Pair<>(req, rsp);
   }
@@ -173,11 +185,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
       @Override
       public Map<String, String> getPathTemplateValues() {
         return pathTemplateValues;
-      }
-
-      @Override
-      public String getHttpMethod() {
-        return httpMethod;
       }
     };
   }

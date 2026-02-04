@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -204,46 +203,27 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       RequestHandlerBase mockHandler)
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
-    ModifiableSolrParams inputSolrParams = new ModifiableSolrParams();
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
     inputParams.stream()
         .forEach(
             e -> {
-              inputSolrParams.add(e.getKey(), e.getValue());
+              solrParams.add(e.getKey(), e.getValue());
             });
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
     final SolrQueryRequestBase req =
-        createTestRequest(inputSolrParams, parts, method, v2RequestBody, api);
+        new SolrQueryRequestBase(null, solrParams) {
+          @Override
+          public List<CommandOperation> getCommands(boolean validateInput) {
+            if (v2RequestBody == null) return Collections.emptyList();
+            return ApiBag.getCommandOperations(
+                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+          }
+        };
 
     api.call(req, rsp);
     verify(mockHandler).handleRequestBody(queryRequestCaptor.capture(), any());
     return queryRequestCaptor.getValue().getParams();
-  }
-
-  private SolrQueryRequestBase createTestRequest(
-      SolrParams params,
-      Map<String, String> pathTemplateValues,
-      String httpMethod,
-      String requestBody,
-      Api api) {
-    return new SolrQueryRequestBase(null, params) {
-      @Override
-      public List<CommandOperation> getCommands(boolean validateInput) {
-        if (requestBody == null) return Collections.emptyList();
-        return ApiBag.getCommandOperations(
-            new ContentStreamBase.StringStream(requestBody), api.getCommandSchema(), true);
-      }
-
-      @Override
-      public Map<String, String> getPathTemplateValues() {
-        return pathTemplateValues;
-      }
-
-      @Override
-      public String getHttpMethod() {
-        return httpMethod;
-      }
-    };
   }
 
   private static void registerAllNodeApis(

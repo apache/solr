@@ -89,7 +89,7 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, "POST", parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final SolrQueryRequestBase req = createTestRequest(parts);
+    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, new ModifiableSolrParams());
     req.getContext().put(PATH, path);
 
     api.call(req, rsp);
