@@ -236,11 +236,5 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
     public String getName() {
       return user;
     }
-
-    @Override
-    public boolean equals(Object other) {
-      return Objects.equals(this.getClass(), other.getClass())
-          && Objects.equals(this.getName(), ((LocalPrincipal) other).getName());
-    }
   }
 }
