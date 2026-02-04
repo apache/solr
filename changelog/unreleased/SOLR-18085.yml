@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Removed the wt=standard concept that was used internally by Solr.  It was redundent with json writer type that was used as well.
+title: Removed the wt=standard concept that was used internally by Solr.
 type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
