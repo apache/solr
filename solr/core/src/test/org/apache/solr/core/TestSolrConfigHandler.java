@@ -19,7 +19,6 @@ package org.apache.solr.core;
 import static java.util.Arrays.asList;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -34,8 +33,6 @@ import java.util.Objects;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -84,31 +81,6 @@ public class TestSolrConfigHandler extends RestTestBase {
       jar = ByteBuffer.wrap(buf);
     }
     return jar;
-  }
-
-  public static ByteBuffer persistZip(String loc, Class<?>... classes) throws IOException {
-    ByteBuffer jar = generateZip(classes);
-    try (FileOutputStream fos = new FileOutputStream(loc)) {
-      fos.write(jar.array(), jar.arrayOffset(), jar.limit());
-      fos.flush();
-    }
-    return jar;
-  }
-
-  public static ByteBuffer generateZip(Class<?>... classes) throws IOException {
-    Utils.BAOS bos = new Utils.BAOS();
-    try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
-      zipOut.setLevel(ZipOutputStream.DEFLATED);
-      for (Class<?> c : classes) {
-        String path = c.getName().replace('.', '/').concat(".class");
-        ZipEntry entry = new ZipEntry(path);
-        ByteBuffer b = Utils.toByteArray(c.getClassLoader().getResourceAsStream(path));
-        zipOut.putNextEntry(entry);
-        zipOut.write(b.array(), b.arrayOffset(), b.limit());
-        zipOut.closeEntry();
-      }
-    }
-    return bos.getByteBuffer();
   }
 
   @Before
@@ -1006,7 +978,7 @@ public class TestSolrConfigHandler extends RestTestBase {
 
   public void testCacheDisableSolrConfig() throws Exception {
     RESTfulServerProvider oldProvider = restTestHarness.getServerProvider();
-    restTestHarness.setServerProvider(() -> getBaseUrl());
+    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertTrue(
         "fieldValueCache metrics should be present",
@@ -1027,7 +999,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     MapWriter overlay = getRespMap("/config/overlay", restTestHarness);
     assertEquals("399", overlay._getStr("overlay/props/query/documentCache/size"));
     // Setting size only will not enable the cache
-    restTestHarness.setServerProvider(() -> getBaseUrl());
+    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
 
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertFalse(prometheusMetrics.contains("cache_name=\"documentCache\""));
@@ -1040,7 +1012,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     // Enabling Cache
     String payload = "{'set-property' : { 'query.documentCache.enabled': true} }";
     runConfigCommand(restTestHarness, "/config", payload);
-    restTestHarness.setServerProvider(() -> getBaseUrl());
+    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
 
     String prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertTrue(prometheusMetrics.contains("name=\"documentCache\""));
@@ -1050,7 +1022,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     restTestHarness.setServerProvider(oldProvider);
 
     runConfigCommand(restTestHarness, "/config", payload);
-    restTestHarness.setServerProvider(() -> getBaseUrl());
+    restTestHarness.setServerProvider(RestTestBase::getBaseUrl);
 
     prometheusMetrics = restTestHarness.query("/admin/metrics?wt=prometheus");
     assertFalse(prometheusMetrics.contains("name=\"documentCache\""));
