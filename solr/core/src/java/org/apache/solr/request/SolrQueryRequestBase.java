@@ -20,11 +20,14 @@ import java.io.Closeable;
 import java.security.Principal;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -35,6 +38,7 @@ import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 
@@ -45,7 +49,7 @@ import org.apache.solr.util.RefCounted;
  * <p>The <code>close()</code> method must be called on any instance of this class once it is no
  * longer in use.
  */
-public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
+public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected volatile IndexSchema schema;
@@ -53,6 +57,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected Map<Object, Object> context;
   protected Iterable<ContentStream> streams;
   protected Map<String, Object> json;
+  protected String userPrincipalName = null;
 
   private final RTimerTree requestTimer;
   protected final long startTime;
@@ -70,6 +75,35 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
     this(core, params, new RTimerTree());
+  }
+
+  /**
+   * Utility method to build SolrParams from individual query components. This is a convenience
+   * method for legacy code that needs to construct params from separate query, qtype, start, limit,
+   * and additional args.
+   *
+   * @param query the query string (added as "q" param)
+   * @param qtype the query type (added as "qt" param)
+   * @param start the start offset (added as "start" param)
+   * @param limit the row limit (added as "rows" param)
+   * @param args additional parameters as a map
+   * @return SolrParams containing all the specified parameters
+   */
+  public static SolrParams makeParams(
+      String query, String qtype, int start, int limit, Map<?, ?> args) {
+    Map<String, String[]> map = new HashMap<>();
+    for (Iterator<? extends Map.Entry<?, ?>> iter = args.entrySet().iterator(); iter.hasNext(); ) {
+      Map.Entry<?, ?> e = iter.next();
+      String k = e.getKey().toString();
+      Object v = e.getValue();
+      if (v instanceof String[]) map.put(k, (String[]) v);
+      else map.put(k, new String[] {v.toString()});
+    }
+    if (query != null) map.put(CommonParams.Q, new String[] {query});
+    if (qtype != null) map.put(CommonParams.QT, new String[] {qtype});
+    map.put(CommonParams.START, new String[] {Integer.toString(start)});
+    map.put(CommonParams.ROWS, new String[] {Integer.toString(limit)});
+    return new MultiMapSolrParams(map);
   }
 
   @Override
@@ -128,7 +162,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     return searcherHolder.get();
   }
 
-  // The solr core (coordinator, etc) associated with this request
+  // The solr core (coordinator, etc.) associated with this request
   @Override
   public SolrCore getCore() {
     return core;
@@ -137,7 +171,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   // The index schema associated with this request
   @Override
   public IndexSchema getSchema() {
-    // a request for a core admin will no have a core
+    // a request for a core admin will not have a core
     return schema;
   }
 
@@ -191,7 +225,23 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public Principal getUserPrincipal() {
-    return null;
+    if (userPrincipalName == null) {
+      return null;
+    }
+    return new LocalPrincipal(userPrincipalName);
+  }
+
+  /**
+   * Allows setting the 'name' of the User Principal for the purposes of creating local requests in
+   * a solr node when security is enabled. It is experimental and subject to removal
+   *
+   * @see PKIAuthenticationPlugin#NODE_IS_USER
+   * @see #getUserPrincipal
+   * @lucene.internal
+   * @lucene.experimental
+   */
+  public void setUserPrincipalName(String s) {
+    this.userPrincipalName = s;
   }
 
   List<CommandOperation> parsedCommands;
@@ -215,5 +265,29 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   protected Map<String, JsonSchemaValidator> getValidators() {
     return Collections.emptyMap();
+  }
+
+  private static final class LocalPrincipal implements Principal {
+    private final String user;
+
+    public LocalPrincipal(String user) {
+      this.user = user;
+    }
+
+    @Override
+    public String getName() {
+      return user;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(user);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return Objects.equals(this.getClass(), other.getClass())
+          && Objects.equals(this.getName(), ((LocalPrincipal) other).getName());
+    }
   }
 }
