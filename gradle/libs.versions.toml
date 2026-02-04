@@ -202,7 +202,7 @@ swagger3 = "2.2.22"
 tdunning-tdigest = "3.3"
 testcontainers = "2.0.3"
 thetaphi-forbiddenapis = "3.10"
-threeten-bp = "1.6.8"
+threeten-bp = "1.7.2"
 undercouch-download = "5.6.0"
 xerial-snappy = "1.1.10.8"
 
