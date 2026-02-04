@@ -168,27 +168,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return new Pair<>(req, rsp);
   }
 
-  private SolrQueryRequestBase createTestRequest(
-      SolrParams params,
-      Map<String, String> pathTemplateValues,
-      String httpMethod,
-      String requestBody,
-      Api api) {
-    return new SolrQueryRequestBase(null, params) {
-      @Override
-      public List<CommandOperation> getCommands(boolean validateInput) {
-        if (requestBody == null) return Collections.emptyList();
-        return ApiBag.getCommandOperations(
-            new ContentStreamBase.StringStream(requestBody), api.getCommandSchema(), true);
-      }
-
-      @Override
-      public Map<String, String> getPathTemplateValues() {
-        return pathTemplateValues;
-      }
-    };
-  }
-
   private static void assertMapEqual(Map<String, ?> expected, ZkNodeProps actual) {
     assertEquals(errorMessage(expected, actual), expected.size(), actual.getProperties().size());
     for (Map.Entry<String, ?> e : expected.entrySet()) {
