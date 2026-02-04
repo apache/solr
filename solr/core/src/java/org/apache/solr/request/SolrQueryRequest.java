@@ -31,6 +31,7 @@ import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.HttpSolrCall;
@@ -194,16 +195,21 @@ public interface SolrQueryRequest extends AutoCloseable {
     return getCore().getCoreDescriptor().getCloudDescriptor();
   }
 
-  /** The writer to use for this request, considering {@link CommonParams#WT}. Never null. */
+  /**
+   * The writer to use for this request, considering {@link CommonParams#WT}. Never null.
+   *
+   * <p>If a core is available, uses the core's response writer registry. If no core is available
+   * (e.g., for node/container requests), uses a minimal set of node/container-appropriate writers.
+   */
   default QueryResponseWriter getResponseWriter() {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
     SolrCore core = getCore();
     String wt = getParams().get(CommonParams.WT);
+    // Use core writers if available, otherwise fall back to built-in writers
     if (core != null) {
       return core.getQueryResponseWriter(wt);
     } else {
-      return SolrCore.DEFAULT_RESPONSE_WRITERS.getOrDefault(
-          wt, SolrCore.DEFAULT_RESPONSE_WRITERS.get("standard"));
+      return ResponseWritersRegistry.getWriter(wt);
     }
   }
 

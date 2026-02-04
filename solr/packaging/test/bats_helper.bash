@@ -97,41 +97,21 @@ collection_exists() {
   return 1
 }
 
-# Wait for a collection to be queryable
-wait_for_collection() {
-  local collection="$1"
-  local timeout=${2:-180}
-  local start_ts
-  start_ts=$(date +%s)
-  while true; do
-    if curl -s -S -f "http://localhost:${SOLR_PORT}/solr/${collection}/select?q=*:*" | grep -q '"responseHeader"'; then
+# Utility function to retry a command until it succeeds or times out
+wait_for() {
+  local timeout="${1:-30}"     # Default 30 seconds timeout
+  local interval="${2:-1}"     # Default 1 second between retries
+  shift 2                      # Remove timeout and interval from args
+  local command=("$@")         # Remaining args are the command to execute
+  
+  local end_time=$(($(date +%s) + timeout))
+  
+  while [ $(date +%s) -lt $end_time ]; do
+    if "${command[@]}"; then
       return 0
     fi
-    local now
-    now=$(date +%s)
-    if [ $(( now - start_ts )) -ge ${timeout} ]; then
-      echo "Timed out waiting for collection '${collection}' to become queryable" >&2
-      return 1
-    fi
-    sleep 3
+    sleep "$interval"
   done
-}
-
-# Apply the ExtractingRequestHandler via Config API and print error body on failure
-apply_extract_handler() {
-  local collection="$1"
-  local json="{\"add-requesthandler\":{\"name\":\"/update/extract\",\"class\":\"org.apache.solr.handler.extraction.ExtractingRequestHandler\",\"tikaserver.url\":\"http://localhost:${TIKA_PORT}\",\"defaults\":{\"lowernames\":\"true\",\"captureAttr\":\"true\"}}}"
-  local url="http://localhost:${SOLR_PORT}/solr/${collection}/config"
-  # Capture body and status code
-  local resp code body
-  sleep 5
-  resp=$(curl -s -S -w "\n%{http_code}" -X POST -H 'Content-type:application/json' -d "$json" "$url")
-  code="${resp##*$'\n'}"
-  body="${resp%$'\n'*}"
-  if [ "$code" = "200" ]; then
-    return 0
-  else
-    echo "Config API error applying ExtractingRequestHandler to ${collection} (HTTP ${code}): ${body}" >&3
-    return 1
-  fi
+  
+  return 1  # Timeout reached
 }
