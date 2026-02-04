@@ -16,9 +16,6 @@
  */
 package org.apache.solr.crossdc.manager.messageprocessor;
 
-import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.SharedMetricRegistries;
-import com.codahale.metrics.Timer;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
 import java.util.Map;
@@ -36,12 +33,13 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.crossdc.common.CrossDcConstants;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
 import org.apache.solr.crossdc.common.SolrExceptionUtil;
-import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -59,16 +57,17 @@ public class SolrMessageProcessor extends MessageProcessor
     implements IQueueHandler<MirroredSolrRequest<?>> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final MetricRegistry metrics =
-      SharedMetricRegistries.getOrCreate(Consumer.METRICS_REGISTRY);
-
+  final ConsumerMetrics metrics;
   final Supplier<CloudSolrClient> clientSupplier;
 
   private static final String VERSION_FIELD = "_version_";
 
   public SolrMessageProcessor(
-      Supplier<CloudSolrClient> clientSupplier, ResubmitBackoffPolicy resubmitBackoffPolicy) {
+      ConsumerMetrics metrics,
+      Supplier<CloudSolrClient> clientSupplier,
+      ResubmitBackoffPolicy resubmitBackoffPolicy) {
     super(resubmitBackoffPolicy);
+    this.metrics = metrics;
     this.clientSupplier = clientSupplier;
   }
 
@@ -147,7 +146,7 @@ public class SolrMessageProcessor extends MessageProcessor
       sleepTimeMs = Math.max(1, Long.parseLong(backoffTimeSuggested));
     }
     log.info("Consumer backoff. sleepTimeMs={}", sleepTimeMs);
-    metrics.meter(MetricRegistry.name(request.getType().name(), "backoff")).mark(sleepTimeMs);
+    metrics.recordOutputBackoffTime(request.getType(), sleepTimeMs);
     uncheckedSleep(sleepTimeMs);
   }
 
@@ -211,18 +210,21 @@ public class SolrMessageProcessor extends MessageProcessor
               "Skipping update request to nonexistent / not updatable collection {}",
               request.getCollection());
         }
-        metrics.counter(MetricRegistry.name(type.name(), "invalid-collection")).inc();
+        metrics.incrementOutputCounter(type.name(), "failed_collection_not_found");
         return new Result<>(ResultStatus.FAILED_NO_RETRY, mirroredSolrRequest);
       }
     }
 
     Result<MirroredSolrRequest<?>> result;
     SolrResponseBase response;
-    Timer.Context ctx = metrics.timer(MetricRegistry.name(type.name(), "outputTime")).time();
+    ConsumerMetrics.ConsumerTimer timer = metrics.startOutputTimeTimer(type.name());
     try {
       response = (SolrResponseBase) request.process(clientSupplier.get());
     } finally {
-      ctx.stop();
+      // unit tests might not care
+      if (timer != null) {
+        timer.close();
+      }
     }
 
     int status = response.getStatus();
@@ -232,7 +234,7 @@ public class SolrMessageProcessor extends MessageProcessor
     }
 
     if (status != 0) {
-      metrics.counter(MetricRegistry.name(type.name(), "outputErrors")).inc();
+      metrics.incrementOutputCounter(type.name(), "solr_error");
       throw new SolrException(SolrException.ErrorCode.getErrorCode(status), "response=" + response);
     }
 
@@ -325,11 +327,11 @@ public class SolrMessageProcessor extends MessageProcessor
     // submitting on the primary side until the request is eligible to be consumed on the buddy side
     // (or vice versa).
     if (mirroredSolrRequest.getAttempt() == 1) {
-      final long latency = System.nanoTime() - mirroredSolrRequest.getSubmitTimeNanos();
-      log.debug("First attempt latency = {} ns", latency);
-      metrics
-          .timer(MetricRegistry.name(mirroredSolrRequest.getType().name(), "outputLatency"))
-          .update(latency, TimeUnit.NANOSECONDS);
+      final long latencyMs =
+          TimeUnit.NANOSECONDS.toMillis(
+              TimeSource.CURRENT_TIME.getTimeNs() - mirroredSolrRequest.getSubmitTimeNanos());
+      log.debug("First attempt latency = {} ms", latencyMs);
+      metrics.recordOutputFirstAttemptTime(mirroredSolrRequest.getType(), latencyMs);
     }
   }
 
@@ -398,7 +400,7 @@ public class SolrMessageProcessor extends MessageProcessor
     if (result.status().equals(ResultStatus.FAILED_RESUBMIT)) {
       final long backoffMs = getResubmitBackoffPolicy().getBackoffTimeMs(result.getItem());
       if (backoffMs > 0L) {
-        metrics.meter(MetricRegistry.name(type.name(), "backoff")).mark(backoffMs);
+        metrics.recordOutputBackoffTime(type, backoffMs);
         try {
           Thread.sleep(backoffMs);
         } catch (final InterruptedException ex) {
