@@ -39,6 +39,23 @@ gradle/wrapper/gradle-wrapper.jar
 # Kotlin
 .kotlin/
 
+# AI Coding Assistants
+CLAUDE.md
+.claude/
+.cursor/
+.cursorignore
+.cursorrules
+.aider*
+.continue/
+.cody/
+.windsurf/
+.codeium/
+.copilot/
+.gemini/
+.replit/
+.ai/
+.github/copilot-*
+
 # WANT TO ADD MORE?  You can tell Git without adding to this file:
 # See https://git-scm.com/docs/gitignore
 # In particular, if you have tools you use, add to $GIT_DIR/info/exclude or use core.excludesFile
