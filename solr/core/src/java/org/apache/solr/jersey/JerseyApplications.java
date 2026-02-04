@@ -48,6 +48,8 @@ public class JerseyApplications {
       register(MessageBodyWriters.XmlMessageBodyWriter.class, 5);
       register(MessageBodyWriters.CsvMessageBodyWriter.class, 5);
       register(MessageBodyWriters.RawMessageBodyWriter.class, 5);
+      register(MessageBodyWriters.PrometheusMessageBodyWriter.class, 5);
+      register(MessageBodyWriters.OpenmetricsMessageBodyWriter.class, 5);
       register(MessageBodyReaders.CachingJsonMessageBodyReader.class, 2);
       register(SolrJacksonMapper.class);
 
