@@ -36,6 +36,7 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.solr.client.solrj.response.ClusteringResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -384,18 +385,23 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       highlighter = // never null
           ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME))
               .getHighlighter(new ModifiableSolrParams().add(HighlightParams.METHOD, "original"));
+      ModifiableSolrParams params = new ModifiableSolrParams();
       Map<String, Object> args = new HashMap<>();
-      args.put(HighlightParams.FIELDS, fieldsToCluster);
-      args.put(HighlightParams.HIGHLIGHT, "true");
+      params.set(HighlightParams.FIELDS, fieldsToCluster);
+      params.set(HighlightParams.HIGHLIGHT, "true");
       // We don't want any highlight marks.
-      args.put(HighlightParams.SIMPLE_PRE, "");
-      args.put(HighlightParams.SIMPLE_POST, "");
-      args.put(HighlightParams.FRAGSIZE, requestParameters.contextSize());
-      args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
+      params.set(HighlightParams.SIMPLE_PRE, "");
+      params.set(HighlightParams.SIMPLE_POST, "");
+      params.set(HighlightParams.FRAGSIZE, requestParameters.contextSize());
+      params.set(HighlightParams.SNIPPETS, requestParameters.contextCount());
       // TODO highlight all docs at once instead of 1-by-1
+
+      params.add(CommonParams.Q, query.toString());
+      params.set(CommonParams.START, 0);
+      params.set(CommonParams.ROWS, 1);
+
       req =
-          new SolrQueryRequestBase(
-              core, SolrQueryRequestBase.makeParams(query.toString(), "", 0, 1, args)) {
+          new SolrQueryRequestBase(core, params) {
             @Override
             public SolrIndexSearcher getSearcher() {
               return indexSearcher;

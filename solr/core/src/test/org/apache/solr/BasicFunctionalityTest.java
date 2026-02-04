@@ -34,6 +34,7 @@ import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -500,11 +501,11 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testSolrQueryRequestBaseParams() {
-    HashMap<String, Object> args = new HashMap<>();
-    args.put("string", "string value");
-    args.put("array", new String[] {"array", "value"});
-    SolrQueryRequest req =
-        new SolrQueryRequestBase(null, SolrQueryRequestBase.makeParams(null, null, 0, 20, args));
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.set("string", "string value");
+    solrParams.set("array", "array", "value");
+    solrParams.set(CommonParams.ROWS, 20);
+    SolrQueryRequest req = new SolrQueryRequestBase(null, solrParams);
     assertEquals("string value", req.getParams().get("string"));
     assertEquals("array", req.getParams().get("array"));
 
@@ -614,10 +615,10 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(p.get("s"), "bbb");
     assertEquals(p.get("ss"), "SSS");
 
-    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+    assertEquals(p.getBool("bt"), !p.getBool("bf"));
     assertTrue(p.getBool("foo", true));
     assertFalse(p.getBool("foo", false));
-    assertEquals(!!p.getBool("bt"), !p.getBool("bf"));
+    assertEquals(p.getBool("bt"), !p.getBool("bf"));
 
     NamedList<String> more = new NamedList<>();
     more.add("s", "aaa");
@@ -786,9 +787,9 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     DocList dl = ((ResultContext) rsp.getResponse()).getDocList();
     DocIterator di = dl.iterator();
     Document d1 = req.getSearcher().getDocFetcher().doc(di.nextDoc());
-    IndexableField[] values1 = null;
+    IndexableField[] values1;
 
-    // ensure fl field is non lazy, and non-fl field is lazy
+    // ensure fl field are not lazy, and non-fl field is lazy
     assertFalse(d1.getField("title") instanceof LazyDocument.LazyField);
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");

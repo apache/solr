@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
@@ -73,34 +71,6 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
 
   public SolrQueryRequestBase(SolrCore core, SolrParams params) {
     this(core, params, new RTimerTree());
-  }
-
-  /**
-   * Utility method to build SolrParams from individual query components. This is a convenience
-   * method for legacy code that needs to construct params from separate query, qtype, start, limit,
-   * and additional args.
-   *
-   * @param query the query string (added as "q" param)
-   * @param qtype the query type (added as "qt" param)
-   * @param start the start offset (added as "start" param)
-   * @param limit the row limit (added as "rows" param)
-   * @param args additional parameters as a map
-   * @return SolrParams containing all the specified parameters
-   */
-  public static SolrParams makeParams(
-      String query, String qtype, int start, int limit, Map<?, ?> args) {
-    Map<String, String[]> map = new HashMap<>();
-    for (Map.Entry<?, ?> e : args.entrySet()) {
-      String k = e.getKey().toString();
-      Object v = e.getValue();
-      if (v instanceof String[]) map.put(k, (String[]) v);
-      else map.put(k, new String[] {v.toString()});
-    }
-    if (query != null) map.put(CommonParams.Q, new String[] {query});
-    if (qtype != null) map.put(CommonParams.QT, new String[] {qtype});
-    map.put(CommonParams.START, new String[] {Integer.toString(start)});
-    map.put(CommonParams.ROWS, new String[] {Integer.toString(limit)});
-    return new MultiMapSolrParams(map);
   }
 
   @Override
