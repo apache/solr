@@ -789,7 +789,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     Document d1 = req.getSearcher().getDocFetcher().doc(di.nextDoc());
     IndexableField[] values1;
 
-    // ensure fl field are not lazy, and non-fl field is lazy
+    // ensure fl fields are not lazy, and non-fl field is lazy
     assertFalse(d1.getField("title") instanceof LazyDocument.LazyField);
     assertFalse(d1.getField("id") instanceof LazyDocument.LazyField);
     values1 = d1.getFields("test_hlt");
