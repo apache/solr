@@ -72,7 +72,7 @@ public class ResponseWritersRegistry {
    */
   public static QueryResponseWriter getWriter(String writerName) {
     if (writerName == null || writerName.isEmpty()) {
-      return BUILTIN_WRITERS.get(CommonParams.JSON);
+      writerName = CommonParams.JSON;
     }
     return BUILTIN_WRITERS.get(writerName);
   }
