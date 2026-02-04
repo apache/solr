@@ -36,8 +36,8 @@ import org.slf4j.LoggerFactory;
 public class ConfUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String KAFKA_ENV_PREFIX = "KAFKA_";
-  public static final String KAFKA_PROP_PREFIX = "kafka.";
+  public static final String KAFKA_ENV_PREFIX = "SOLR_CROSSDC_KAFKA_";
+  public static final String KAFKA_PROP_PREFIX = "solr.crossdc.kafka.";
 
   public static void fillProperties(SolrZkClient solrClient, Map<String, Object> properties) {
     // fill in from environment

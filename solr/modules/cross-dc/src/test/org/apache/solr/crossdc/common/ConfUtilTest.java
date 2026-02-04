@@ -90,10 +90,10 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   public void testFillProperties_WithKafkaPrefixSystemProperties() {
     Map<String, Object> properties = new HashMap<>();
 
-    // Set custom Kafka properties with kafka. prefix
-    System.setProperty("kafka.max.request.size", "2097152");
-    System.setProperty("kafka.compression.type", "gzip");
-    System.setProperty("kafka.acks", "all");
+    // Set custom Kafka properties with solr.crossdc.kafka. prefix
+    System.setProperty("solr.crossdc.kafka.max.request.size", "2097152");
+    System.setProperty("solr.crossdc.kafka.compression.type", "gzip");
+    System.setProperty("solr.crossdc.kafka.acks", "all");
 
     ConfUtil.fillProperties(null, properties);
 
@@ -107,9 +107,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
   public void testFillProperties_WithMixedCaseKafkaPrefix() {
     Map<String, Object> properties = new HashMap<>();
 
-    // Test kafka. prefix handles case conversion correctly
-    System.setProperty("kafka.SSL.Protocol", "TLSv1.2");
-    System.setProperty("kafka.security.protocol", "SSL");
+    // Test solr.crossdc.kafka. prefix handles case conversion correctly
+    System.setProperty("solr.crossdc.kafka.SSL.Protocol", "TLSv1.2");
+    System.setProperty("solr.crossdc.kafka.security.protocol", "SSL");
 
     ConfUtil.fillProperties(null, properties);
 
@@ -179,10 +179,10 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     Map<String, Object> properties = new HashMap<>();
 
     // Set various custom Kafka properties
-    System.setProperty("kafka.batch.size", "16384");
-    System.setProperty("kafka.linger.ms", "10");
-    System.setProperty("kafka.buffer.memory", "33554432");
-    System.setProperty("kafka.retries", "3");
+    System.setProperty("solr.crossdc.kafka.batch.size", "16384");
+    System.setProperty("solr.crossdc.kafka.linger.ms", "10");
+    System.setProperty("solr.crossdc.kafka.buffer.memory", "33554432");
+    System.setProperty("solr.crossdc.kafka.retries", "3");
 
     ConfUtil.fillProperties(null, properties);
 
@@ -198,7 +198,7 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     Map<String, Object> properties = new HashMap<>();
 
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "localhost:9092");
-    System.setProperty("kafka.compression.type", "snappy");
+    System.setProperty("solr.crossdc.kafka.compression.type", "snappy");
 
     // Should not throw exception with null ZK client
     ConfUtil.fillProperties(null, properties);
@@ -294,9 +294,9 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     Map<String, Object> properties = new HashMap<>();
 
     // Set security-related properties
-    System.setProperty("kafka.ssl.truststore.location", "/path/to/truststore");
-    System.setProperty("kafka.ssl.keystore.location", "/path/to/keystore");
-    System.setProperty("kafka.security.protocol", "SSL");
+    System.setProperty("solr.crossdc.kafka.ssl.truststore.location", "/path/to/truststore");
+    System.setProperty("solr.crossdc.kafka.ssl.keystore.location", "/path/to/keystore");
+    System.setProperty("solr.crossdc.kafka.security.protocol", "SSL");
 
     ConfUtil.fillProperties(null, properties);
 
@@ -328,8 +328,8 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
 
     // Set system properties - should override ZK
     System.setProperty(KafkaCrossDcConf.BOOTSTRAP_SERVERS, "sys-kafka:9092");
-    System.setProperty("kafka.max.poll.records", "1000");
-    System.setProperty("kafka.enable.auto.commit", "false");
+    System.setProperty("solr.crossdc.kafka.max.poll.records", "1000");
+    System.setProperty("solr.crossdc.kafka.enable.auto.commit", "false");
 
     ConfUtil.fillProperties(mockZkClient, properties);
 
@@ -352,8 +352,8 @@ public class ConfUtilTest extends SolrTestCaseJ4 {
     Map<String, Object> properties = new HashMap<>();
 
     // Test underscore to dot conversion in kafka. prefix env
-    properties.put("KAFKA_MAX_POLL_RECORDS", "500");
-    properties.put("KAFKA_FETCH_MAX_WAIT_MS", "1000");
+    properties.put("SOLR_CROSSDC_KAFKA_MAX_POLL_RECORDS", "500");
+    properties.put("SOLR_CROSSDC_KAFKA_FETCH_MAX_WAIT_MS", "1000");
 
     ConfUtil.fillProperties(null, properties);
 
