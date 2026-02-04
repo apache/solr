@@ -74,7 +74,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
@@ -451,7 +451,7 @@ public class IndexSchema {
     final SolrQueryResponse response = new SolrQueryResponse();
     response.add(IndexSchema.SCHEMA, getNamedPropertyValues());
     final SolrParams args = (new ModifiableSolrParams()).set("indent", "on");
-    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, args);
+    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, args);
     final SchemaXmlWriter schemaXmlWriter = new SchemaXmlWriter(writer, req, response);
     schemaXmlWriter.setEmitManagedSchemaDoNotEditWarning(true);
     schemaXmlWriter.writeResponse();

@@ -45,8 +45,8 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Test;
@@ -124,7 +124,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
   }
 
-  static ZkNodeProps compareOutput(
+  ZkNodeProps compareOutput(
       final ApiBag apiBag,
       final String path,
       final SolrRequest.METHOD method,
@@ -138,7 +138,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return output;
   }
 
-  public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
+  public Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag, String path, final SolrRequest.METHOD method, final String payload) {
     SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
@@ -150,27 +150,36 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Api api = apiBag.lookup(path, method.toString(), parts);
     if (api == null) throw new RuntimeException("No handler at path :" + path);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, queryParams) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (payload == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method.toString();
-          }
-        };
+    SolrQueryRequestBase req =
+        createTestRequest(queryParams, parts, method.toString(), payload, api);
     api.call(req, rsp);
     return new Pair<>(req, rsp);
+  }
+
+  private SolrQueryRequestBase createTestRequest(
+      SolrParams params,
+      Map<String, String> pathTemplateValues,
+      String httpMethod,
+      String requestBody,
+      Api api) {
+    return new SolrQueryRequestBase(null, params) {
+      @Override
+      public List<CommandOperation> getCommands(boolean validateInput) {
+        if (requestBody == null) return Collections.emptyList();
+        return ApiBag.getCommandOperations(
+            new ContentStreamBase.StringStream(requestBody), api.getCommandSchema(), true);
+      }
+
+      @Override
+      public Map<String, String> getPathTemplateValues() {
+        return pathTemplateValues;
+      }
+
+      @Override
+      public String getHttpMethod() {
+        return httpMethod;
+      }
+    };
   }
 
   private static void assertMapEqual(Map<String, ?> expected, ZkNodeProps actual) {
@@ -190,7 +199,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   static class MockCollectionsHandler extends CollectionsHandler {
-    LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {}
 

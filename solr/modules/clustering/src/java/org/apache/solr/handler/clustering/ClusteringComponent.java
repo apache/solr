@@ -47,8 +47,8 @@ import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.highlight.SolrHighlighter;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.DocIterator;
@@ -394,7 +394,8 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
       args.put(HighlightParams.SNIPPETS, requestParameters.contextCount());
       // TODO highlight all docs at once instead of 1-by-1
       req =
-          new LocalSolrQueryRequest(core, query.toString(), "", 0, 1, args) {
+          new SolrQueryRequestBase(
+              core, SolrQueryRequestBase.makeParams(query.toString(), "", 0, 1, args)) {
             @Override
             public SolrIndexSearcher getSearcher() {
               return indexSearcher;

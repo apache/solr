@@ -38,8 +38,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
@@ -499,11 +499,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testLocalSolrQueryRequestParams() {
+  public void testSolrQueryRequestBaseParams() {
     HashMap<String, Object> args = new HashMap<>();
     args.put("string", "string value");
     args.put("array", new String[] {"array", "value"});
-    SolrQueryRequest req = new LocalSolrQueryRequest(null, null, null, 0, 20, args);
+    SolrQueryRequest req =
+        new SolrQueryRequestBase(null, SolrQueryRequestBase.makeParams(null, null, 0, 20, args));
     assertEquals("string value", req.getParams().get("string"));
     assertEquals("array", req.getParams().get("array"));
 
@@ -592,7 +593,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     m.put("s", "BBB");
     m.put("ss", "SSS");
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, nl);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(null, nl.toSolrParams());
     SolrParams p = req.getParams();
 
     assertEquals(p.get("i"), "555");

@@ -42,8 +42,8 @@ import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
 import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -204,37 +204,46 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       RequestHandlerBase mockHandler)
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
-    final Map<String, String[]> inputParamsMap = new HashMap<>();
+    ModifiableSolrParams inputSolrParams = new ModifiableSolrParams();
     inputParams.stream()
         .forEach(
             e -> {
-              inputParamsMap.put(e.getKey(), e.getValue());
+              inputSolrParams.add(e.getKey(), e.getValue());
             });
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, inputParamsMap) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
+    final SolrQueryRequestBase req =
+        createTestRequest(inputSolrParams, parts, method, v2RequestBody, api);
 
     api.call(req, rsp);
     verify(mockHandler).handleRequestBody(queryRequestCaptor.capture(), any());
     return queryRequestCaptor.getValue().getParams();
+  }
+
+  private SolrQueryRequestBase createTestRequest(
+      SolrParams params,
+      Map<String, String> pathTemplateValues,
+      String httpMethod,
+      String requestBody,
+      Api api) {
+    return new SolrQueryRequestBase(null, params) {
+      @Override
+      public List<CommandOperation> getCommands(boolean validateInput) {
+        if (requestBody == null) return Collections.emptyList();
+        return ApiBag.getCommandOperations(
+            new ContentStreamBase.StringStream(requestBody), api.getCommandSchema(), true);
+      }
+
+      @Override
+      public Map<String, String> getPathTemplateValues() {
+        return pathTemplateValues;
+      }
+
+      @Override
+      public String getHttpMethod() {
+        return httpMethod;
+      }
+    };
   }
 
   private static void registerAllNodeApis(
