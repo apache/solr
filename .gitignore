@@ -40,18 +40,24 @@ gradle/wrapper/gradle-wrapper.jar
 .kotlin/
 
 # AI Coding Assistants
+.beads/
 CLAUDE.md
+CLAUDE.local.md
 .claude/
+.github/copilot-instructions.md
 .cursor/
 .cursorignore
 .cursorrules
+cursorrules/
 .aider*
 .continue/
 .cody/
 .windsurf/
 .codeium/
 .copilot/
+GEMINI.md
 .gemini/
+llms.txt
 .replit/
 .ai/
 .github/copilot-*
