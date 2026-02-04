@@ -50,8 +50,16 @@ It provides efficient approximate nearest neighbor search for high dimensional v
 See https://doi.org/10.1016/j.is.2013.10.006[Approximate nearest neighbor algorithm based on navigable small world graphs (2014)] and https://arxiv.org/abs/1603.09320[Efficient and robust approximate nearest neighbor search using Hierarchical Navigable Small World graphs (2018)] for details.
 
 
-== Index Time
-This is the Apache Solr field type designed to support dense vector search:
+=== Late Interaction Retrieval
+
+Late Interaction Retrieval (LIR) is a method of encoding detailed semantic information into multiple dense vectors for finer grain representation.
+
+Across a large corpora, these "multi-vector" representations of the original semantic content are typically too large and unwieldy to index and search in navigable small-world graph in a useful manner.  Instead "Late Interaction" approaches are typically used to compute vector similarities scores against a subset of documents, after an initial pass of other search techniques.
+
+
+== Indexing Dense Vectors in Navigable Small-world Graphs
+
+Apache Solr supports multiple relative field types designed to support dense vector search with navigable small world graphs:
 
 === DenseVectorField
 The dense vector field gives the possibility of indexing and searching dense vectors of float elements.
@@ -76,9 +84,9 @@ s|Required |Default: none
 The dimension of the dense vector to pass in.
 +
 Accepted values:
-Any integer.
+Any positive integer.
 
-`similarityFunction`::
+[[similarityFunction-caveats]]`similarityFunction`::
 +
 [%autowidth,frame=none]
 |===
@@ -87,24 +95,18 @@ Any integer.
 +
 Vector similarity function; used in search to return top K most similar vectors to a target vector.
 +
-Accepted values: `euclidean`, `dot_product`  or `cosine`.
-
+Accepted values:
++
 * `euclidean`: https://en.wikipedia.org/wiki/Euclidean_distance[Euclidean distance]
+* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
 * `dot_product`: https://en.wikipedia.org/wiki/Dot_product[Dot product]
 
 [NOTE]
-this similarity is intended as an optimized way to perform cosine similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
-
-* `cosine`: https://en.wikipedia.org/wiki/Cosine_similarity[Cosine similarity]
-
-[NOTE]
-the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
-
-[NOTE]
-the preferred way to perform cosine similarity is to normalize all vectors to unit length, and instead use DOT_PRODUCT. You should only use this function if you need to preserve the original vectors and cannot normalize them in advance.
-
-[NOTE]
-The HNSW parameters `hnswM` and `hnswEfConstruction`, previously known as `hnswMaxConnections` and `hnswBeamWidth` respectively.
+====
+* the preferred way to perform `cosine` similarity is to normalize all vectors to unit length, and instead use `doc_product`. You should only specify `cosine` if you need to preserve the original vectors and cannot normalize them in advance.
+* `dot_product` is intended as an optimized way to perform `cosine` similarity. In order to use it, all vectors must be of unit length, including both document and query vectors. Using dot product with vectors that are not unit length can result in errors or poor search results.
+* the cosine similarity scores returned by Solr are normalized like this : `(1 + cosine_similarity) / 2`.
+====
 
 To use the following advanced parameters that customise the codec format
 and the hyperparameter of the HNSW algorithm, make sure the xref:configuration-guide:codec-factory.adoc[Schema Codec Factory], is in use.
@@ -124,7 +126,6 @@ Here's how `DenseVectorField` can be configured with the advanced hyperparameter
 +
 (advanced) Specifies the underlying knn algorithm to use
 +
-
 Accepted values: `hnsw`, `cagra_hnsw` (requires GPU acceleration setup).
 
 Please note that the `knnAlgorithm` accepted values may change in future releases.
@@ -138,7 +139,6 @@ Please note that the `knnAlgorithm` accepted values may change in future release
 +
 (advanced) Specifies the underlying encoding of the dense vector elements. This affects memory/disk impact for both the indexed and stored fields (if enabled)
 +
-
 Accepted values: `FLOAT32`, `BYTE`.
 
 
@@ -388,9 +388,10 @@ BinaryQuantizedDenseVectorField accepts the same parameters as `DenseVectorField
 `similarityFunction`. Bit quantization uses its own distance calculation and so does not require nor use the `similarityFunction`
 param.
 
-== Query Time
+[[query-hnsw-fields]]
+== Querying Vectors in Navigable Small-world Graphs
 
-Apache Solr provides three query parsers that work with dense vector fields, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
+Apache Solr provides three query parsers that work with the `DenseVectorField` family of field types, that each support different ways of matching documents based on vector similarity: The `knn` query parser, the `vectorSimilarity` query parser and the `knn_text_to_vector` query parser.
 
 All parsers return scores for retrieved documents that are the approximate distance to the target vector (defined by the similarityFunction configured at indexing time) and both support "Pre-Filtering" the document graph to reduce the number of candidate vectors evaluated (without needing to compute their vector similarity distances).
 
@@ -743,11 +744,11 @@ Here's an example of a simple `vectorSimilarity` search:
 The search results retrieved are all documents whose similarity with the input vector `[1.0, 2.0, 3.0, 4.0]` is at least `0.7` based on the `similarityFunction` configured at indexing time
 
 
-=== Which one to use?
+=== Which Query Parser to use?
 
 Let's see when to use each of the dense retrieval query parsers available:
 
-== knn Query Parser
+==== knn Query Parser
 
 You should use the `knn` query parser when:
 
@@ -756,7 +757,7 @@ You should use the `knn` query parser when:
 * you want to a have a fine-grained control over the way you encode text to vector and prefer to do it outside of Apache Solr
 
 
-== knn_text_to_vector Query Parser
+==== knn_text_to_vector Query Parser
 
 You should use the `knn_text_to_vector` query parser when:
 
@@ -770,7 +771,7 @@ Apache Solr uses https://github.com/langchain4j/langchain4j[LangChain4j] to inte
 The integration is experimental and we are going to improve our stress-test and benchmarking coverage of this query parser in future iterations: if you care about raw performance you may prefer to encode the text outside of Solr
 ====
 
-== vectorSimilarity Query Parser
+==== vectorSimilarity Query Parser
 
 You should use the `vectorSimilarity` query parser when:
 
@@ -876,6 +877,136 @@ The final ranked list of results will have the first pass score(main query `q`) 
 
 Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
 ====
+
+
+== Indexing Multi-Vectors for Late Interaction
+
+For Late Interaction usecases, Solr provides a `StrFloatLateInteractionVectorField` field type, which supports indexing a variable length "Multi-Vector" of Float vectors, serialized as as a single String value.
+
+For example: `"[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"`
+
+Here's how `StrFloatLateInteractionVectorField` should be configured in the schema:
+
+[source,xml]
+<fieldType name="late_vectors" class="solr.StrFloatLateInteractionVectorField" vectorDimension="4" similarityFunction="cosine"/>
+<field name="my_late_vectors" type="late_vectors" docValues="true" stored="true"/>
+
+
+`vectorDimension`::
++
+[%autowidth,frame=none]
+|===
+s|Required |Default: none
+|===
++
+The dimension of the individual dense vectors that will be contained in the Multi-Vectors indexed in this field
++
+Accepted values:
+Any positive integer.
+
+`similarityFunction`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `euclidean`
+|===
++
+Vector similarity function; used in computing the similarity of indexed vectors to a target vector.
++
+Accepted values: `euclidean`, `dot_product`  or `cosine`.
++
+[NOTE]
+See <<similarityFunction-caveats,previous notes regarding `similarityFunction`>> in `DenseVectorField`, they are also applicable here.
+
+`scoreFunction`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `sum_min_max`
+|===
++
+Multi Vector scoring function, used to compute a single numeric score when computing the similarity of multiple indexed vectors to a multiple target vector.
++
+Accepted values: `sum_min_max`
+
+`StrFloatLateInteractionVectorField` also supports the standard attribute `stored`.
+
+[NOTE]
+====
+* `StrFloatLateInteractionVectorField` defaults to (and requires) `docValues="true" indexed="false" multivalued="false"`
+* Allthough the field type is used to index "Multi-Vectors", Only a _single_ string value (including the multiple vectors) may be indexed into each field.
+====
+
+Here's how a `StrFloatLateInteractionVectorField` named `my_late_vector` should be indexed:
+
+[tabs#latevectorfield-index]
+======
+JSON::
++
+====
+[source,json]
+----
+[{ "id": "1",
+"my_late_vector": "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]",
+},
+{ "id": "2",
+"my_late_vector": "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"
+}
+]
+----
+====
+
+XML::
++
+====
+[source,xml]
+----
+<add>
+<doc>
+<field name="id">1</field>
+<field name="my_late_vector">[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]</field>
+</doc>
+<doc>
+<field name="id">2</field>
+<field name="my_late_vector">[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]</field>
+</doc>
+</add>
+----
+====
+
+SolrJ::
++
+====
+[source,java,indent=0]
+----
+final SolrClient client = getSolrClient();
+
+final SolrInputDocument d1 = new SolrInputDocument();
+d1.setField("id", "1");
+d1.setField("my_late_vector", "[[1.0, 2, 3.7, 4.1], [2.2, -2.5, 7.3, 4.0]]"));
+
+final SolrInputDocument d2 = new SolrInputDocument();
+d2.setField("id", "2");
+d2.setField("my_late_vector", "[[2.0, 5.6, -3.2, 1.4], [7.8, -2.5, 3.7, 0.0034], [-2.2, 5.5, 0.6, -0.030]]"));
+
+client.add(Arrays.asList(d1, d2));
+----
+====
+======
+
+[[late-vector-queries]]
+== Using Late Interaction Vectors in Re-Ranking
+
+Late Interaction vector fields are poorly suited for querying  (or filtering) documents, but they can be very useful for xref:query-guide:query-re-ranking.adoc[Re-Ranking] first pass results from other queries (even <<query-hnsw-fields,other dense vector queries>>) by using a `lateVector()` xref:query-guide:function-queries.adoc#latevector-function[function query].
+
+Here is an example of re-ranking a query using a `StrFloatLateInteractionVectorField` named `my_late_vector`:
+
+[source,text]
+?q=title:"Potato Chips"&rq={!rerank reRankQuery=$rqq}&rqq={!func}lateVector(my_late_vector,"[[1.0,-2.0,3.0,4.0],[[6.0,7,8.1,9.9]]")
+
+
+Details about using the ReRank Query Parser can be found in the xref:query-guide:query-re-ranking.adoc[Query Re-Ranking] section.
+
 
 == GPU Acceleration
 
