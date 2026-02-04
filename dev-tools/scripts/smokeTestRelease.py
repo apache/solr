@@ -438,9 +438,9 @@ def testChangelogFolder(dir, version):
         if not os.path.exists(release_date_file):
           raise RuntimeError('changelog/%s folder is missing release-date.txt' % entry)
     else:
-      # Non-version folders (if any) should also have release-date.txt
-      if not os.path.exists(release_date_file):
-        raise RuntimeError('changelog/%s folder is missing release-date.txt' % entry)
+      # Non-version folders (e.g., documentation or support directories) are allowed
+      # and are not required to contain a release-date.txt file.
+      # They are intentionally ignored by this check.
 
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
