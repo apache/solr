@@ -1,0 +1,7 @@
+title: Update io.prometheus:prometheus* to v1.4.3 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4028
+  url: https://github.com/apache/solr/pull/4028
