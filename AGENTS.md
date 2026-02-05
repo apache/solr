@@ -28,7 +28,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Build and Development Workflow
 
-- Always run "gradlew tidy" after editing files
+- When done or preparing to commit changes to java source files, be sure to run `gradlew tidy` to format the code
 - Always run "gradlew check -x test" before declaring a feature done
 - Respect our .editorconfig
 
