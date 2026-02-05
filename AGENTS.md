@@ -40,7 +40,12 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Testing
 
-- When adding new unit tests, avoid using the old TestHarness and consider using EmbeddedSolrServerTestRule
+- When adding a test to an existing suite/file, keep the same style / design choices
+- When adding a *new* Java test suite/file:
+  - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
+  - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
+  - Avoid SolrTestCaseJ4 for new tests
+  
 - See dev-docs/gradle-help/tests.txt for hints on running tests
 
 ## Documentation
