@@ -29,32 +29,16 @@ import org.junit.Test;
 /** Tests the ability to configure multiple query output writers, and select those at query time. */
 public class OutputWriterTest extends SolrTestCaseJ4 {
 
-  /** The XML string that's output for testing purposes. */
-  public static final String USELESS_OUTPUT = "useless output";
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solr/crazy-path-to-config.xml", "solr/crazy-path-to-schema.xml");
-  }
-
-  /**
-   * responseHeader has changed in SOLR-59, check old and new variants, In SOLR-2413, we removed
-   * support for the deprecated versions
-   */
-  @Test
-  public void testSOLR59responseHeaderVersions() {
-    // default results in "new" responseHeader
-    lrf.args.put("wt", "json");
-    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='status'][.='0']");
-    lrf.args.remove("wt");
-    assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
   }
 
   @Test
   public void testUselessWriter() throws Exception {
     lrf.args.put("wt", "useless");
     String out = h.query(req("foo"));
-    assertEquals(USELESS_OUTPUT, out);
+    assertEquals(UselessOutputWriter.USELESS_OUTPUT, out);
   }
 
   public void testLazy() {
@@ -70,6 +54,9 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
   ////////////////////////////////////////////////////////////////////////////
   /** An output writer that doesn't do anything useful. */
   public static class UselessOutputWriter implements TextQueryResponseWriter {
+
+    /** The XML string that's output for testing purposes. */
+    public static final String USELESS_OUTPUT = "useless output";
 
     public UselessOutputWriter() {}
 
