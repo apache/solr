@@ -49,6 +49,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - Always consider whether a reference-guide page needs updating due to the new/changed features. Target audience is end user
 - For changes to build system and other developer-focused changes, consider updating or adding docs in dev-docs/ folder
 - Keep all documentation including javadoc concise
+- New classes should have some javadocs
+- Changes should not have code comments communicating the change, which are instead great comments to leave for code review / commentary
 
 ## Changelog
 
