@@ -1,8 +1,8 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: SOLR 18042 - MDC Logging context lifecycle is now managed by a servlet filter
+title: Ratelimiting now exists in it's own Servlet filter which can be customized or removed.
 type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Gus Heck
 links:
-  - name: SOLR-18042
-    url: https://issues.apache.org/jira/browse/SOLR-18042
+  - name: SOLR-18046
+    url: https://issues.apache.org/jira/browse/SOLR-18046

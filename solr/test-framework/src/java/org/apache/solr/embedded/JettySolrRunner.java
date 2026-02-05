@@ -61,8 +61,9 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.servlet.CoreContainerProvider;
-import org.apache.solr.servlet.MdcLoggingFilter;
 import org.apache.solr.servlet.PathExclusionFilter;
+import org.apache.solr.servlet.RateLimitFilter;
+import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
@@ -113,7 +114,8 @@ public class JettySolrRunner {
 
   volatile FilterHolder debugFilter;
   volatile FilterHolder pathExcludeFilter;
-  volatile FilterHolder mdcLoggingFilter;
+  volatile FilterHolder requiredFilter;
+  volatile FilterHolder rateLimitFilter;
   volatile FilterHolder dispatchFilter;
 
   private int jettyPort = -1;
@@ -411,9 +413,13 @@ public class JettySolrRunner {
       pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
       pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
 
-      // logging context setup
-      mdcLoggingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
-      mdcLoggingFilter.setHeldClass(MdcLoggingFilter.class);
+      // required request setup
+      requiredFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      requiredFilter.setHeldClass(RequiredSolrRequestFilter.class);
+
+      // Ratelimit Requests
+      rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      rateLimitFilter.setHeldClass(RateLimitFilter.class);
 
       // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
@@ -421,7 +427,8 @@ public class JettySolrRunner {
 
       // Map dispatchFilter in same path as in web.xml
       root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
-      root.addFilter(mdcLoggingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
@@ -476,6 +483,13 @@ public class JettySolrRunner {
    */
   public SolrDispatchFilter getSolrDispatchFilter() {
     return (SolrDispatchFilter) dispatchFilter.getFilter();
+  }
+
+  /**
+   * @return the {@link SolrDispatchFilter} for this node
+   */
+  public RateLimitFilter getSolrRateLimitFilter() {
+    return (RateLimitFilter) rateLimitFilter.getFilter();
   }
 
   /**
