@@ -117,6 +117,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     core = mock(SolrCore.class);
     when(core.getCoreAttributes()).thenReturn(Attributes.empty());
 
+    Map<String, Attr>
+
     producerMetrics =
         spy(
             new ProducerMetrics(mock(SolrMetricsContext.class), core) {
@@ -144,6 +146,46 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
               @Override
               public AttributedLongCounter getSubmitError() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedAdd() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedAddError() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedDeleteById() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedDeleteByIdError() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedDeleteByQuery() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedDeleteByQueryError() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedCommit() {
+                return counterMock;
+              }
+
+              @Override
+              public AttributedLongCounter getSubmittedCommitError() {
                 return counterMock;
               }
 

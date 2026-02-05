@@ -181,9 +181,11 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       try {
         requestMirroringHandler.mirror(mirrorRequest);
         producerMetrics.getSubmitted().inc();
+        producerMetrics.getSubmittedAdd().inc();
       } catch (Exception e) {
         log.error("mirror submit failed", e);
         producerMetrics.getSubmitError().inc();
+        producerMetrics.getSubmittedAddError().inc();
         throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
       }
     }
@@ -250,7 +252,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       return;
     }
     super.processDelete(cmd); // let this throw to prevent mirroring invalid requests
-
+    producerMetrics.getLocal().inc();
     if (doMirroring) {
       boolean isLeader = false;
       UpdateRequest mirrorRequest = createMirrorRequest();
@@ -271,8 +273,11 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
 
           try {
             requestMirroringHandler.mirror(mirrorRequest);
+            producerMetrics.getSubmitted().inc();
+            producerMetrics.getSubmittedDeleteById().inc();
           } catch (Exception e) {
             log.error("mirror submit failed", e);
+            producerMetrics.getSubmittedDeleteByIdError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
@@ -289,8 +294,12 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
 
           try {
             requestMirroringHandler.mirror(mirrorRequest);
+            producerMetrics.getSubmitted().inc();
+            producerMetrics.getSubmittedDeleteByQuery().inc();
           } catch (Exception e) {
             log.error("mirror submit failed", e);
+            producerMetrics.getSubmitError().inc();
+            producerMetrics.getSubmittedDeleteByQueryError().inc();
             throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
           }
         }
@@ -424,8 +433,11 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       log.debug(" --doMirroring commit req={}", req);
       try {
         requestMirroringHandler.mirror(req);
+        producerMetrics.getSubmittedCommit().inc();
       } catch (Exception e) {
         log.error("mirror submit failed", e);
+        producerMetrics.getSubmitError().inc();
+        producerMetrics.getSubmittedCommitError().inc();
         throw new SolrException(SERVER_ERROR, "mirror submit failed", e);
       }
 
