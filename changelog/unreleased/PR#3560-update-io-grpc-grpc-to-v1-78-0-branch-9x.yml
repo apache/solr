@@ -1,0 +1,7 @@
+title: Update io.grpc:grpc-* to v1.78.0 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3560
+  url: https://github.com/apache/solr/pull/3560
