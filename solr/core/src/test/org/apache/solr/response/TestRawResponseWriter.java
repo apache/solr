@@ -44,7 +44,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   private static RawResponseWriter writerJsonBase;
   private static RawResponseWriter writerBinBase;
   private static RawResponseWriter writerCborBase;
-  // private static RawResponseWriter writerNoBase;
+  private static RawResponseWriter writerNoBase;
 
   private static RawResponseWriter[] allWriters;
 
@@ -56,14 +56,18 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     // we spin up.
     initCore("solrconfig.xml", "schema.xml");
 
-    // writerNoBase = newRawResponseWriter(null); /* defaults to standard writer as base */
+    writerNoBase =
+        newRawResponseWriter(
+            null); /* null base uses core's default writer (XML for this core), or JSON if no core */
     writerXmlBase = newRawResponseWriter("xml");
     writerJsonBase = newRawResponseWriter("json");
     writerBinBase = newRawResponseWriter("javabin");
     writerCborBase = newRawResponseWriter("cbor");
 
     allWriters =
-        new RawResponseWriter[] {writerXmlBase, writerJsonBase, writerBinBase, writerCborBase};
+        new RawResponseWriter[] {
+          writerXmlBase, writerJsonBase, writerBinBase, writerCborBase, writerNoBase
+        };
   }
 
   @AfterClass
@@ -71,7 +75,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     writerXmlBase = null;
     writerJsonBase = null;
     writerBinBase = null;
-    // writerNoBase = null;
+    writerNoBase = null;
     writerCborBase = null;
     allWriters = null;
   }
@@ -131,7 +135,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     rsp.add("foo", "bar");
 
     // check Content-Type against each writer
-    // assertEquals("application/xml; charset=UTF-8", writerNoBase.getContentType(req(), rsp));
+    assertEquals("application/xml; charset=UTF-8", writerNoBase.getContentType(req(), rsp));
     assertEquals("application/xml; charset=UTF-8", writerXmlBase.getContentType(req(), rsp));
     assertEquals("application/json; charset=UTF-8", writerJsonBase.getContentType(req(), rsp));
     assertEquals("application/octet-stream", writerBinBase.getContentType(req(), rsp));
@@ -153,11 +157,10 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
     writerXmlBase.write(xmlBout, req(), rsp);
     assertEquals(xml, xmlBout.toString(StandardCharsets.UTF_8));
 
-    //
-    //    assertEquals(xml, writerNoBase.writeToString(req(), rsp));
-    //    ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
-    //    writerNoBase.write(noneBout, req(), rsp);
-    //    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8.toString()));
+    assertEquals(xml, writerNoBase.writeToString(req(), rsp));
+    ByteArrayOutputStream noneBout = new ByteArrayOutputStream();
+    writerNoBase.write(noneBout, req(), rsp);
+    assertEquals(xml, noneBout.toString(StandardCharsets.UTF_8));
 
     // json
     String json = "{\n" + "  \"content\":\"test\",\n" + "  \"foo\":\"bar\"}\n";
@@ -204,7 +207,7 @@ public class TestRawResponseWriter extends SolrTestCaseJ4 {
   }
 
   /**
-   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name (which much
+   * Generates a new {@link RawResponseWriter} wrapping the specified baseWriter name (which must
    * either be an implicitly defined response writer, or one explicitly configured in
    * solrconfig.xml)
    *
