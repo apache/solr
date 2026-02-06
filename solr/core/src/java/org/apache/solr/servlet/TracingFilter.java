@@ -20,7 +20,6 @@ package org.apache.solr.servlet;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,14 +29,11 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.tracing.TraceUtils;
 
 /**
- * Filter for distributed tracing -- creating a span for this request.
+ * Filter for distributed tracing. This filter creates a span for this request. While this filter
+ * could be replaced, the replacement must supply an instance of io.opentelemetry.api.trace.Span for
+ * use in the rest of solr.
  */
 public class TracingFilter extends HttpFilter {
-
-  @Override
-  public void init(FilterConfig config) throws ServletException {
-    super.init(config);
-  }
 
   @Override
   protected void doFilter(HttpServletRequest req, HttpServletResponse res, FilterChain chain)
