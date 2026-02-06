@@ -29,6 +29,9 @@ import java.io.IOException;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.util.tracing.TraceUtils;
 
+/**
+ * Filter for distributed tracing -- creating a span for this request.
+ */
 public class TracingFilter extends HttpFilter {
 
   @Override
