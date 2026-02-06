@@ -227,42 +227,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
 
-  /** Models all the information about how group head documents should be selected */
-  public static final class GroupHeadSelector {
+  /**
+   * Models all the information about how group head documents should be selected
+   *
+   * @param type The type for this selector, will never be null
+   * @param selectorText The param value for this selector whose meaning depends on type. (ie: a
+   *     field or valuesource for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be
+   *     null.
+   */
+  public record GroupHeadSelector(GroupHeadSelectorType type, String selectorText) {
 
-    /**
-     * The param value for this selector whose meaning depends on type. (ie: a field or valuesource
-     * for MIN/MAX, a sort string for SORT, "score" for SCORE). Will never be null.
-     */
-    public final String selectorText;
-
-    /** The type for this selector, will never be null */
-    public final GroupHeadSelectorType type;
-
-    private GroupHeadSelector(String s, GroupHeadSelectorType type) {
-      assert null != s;
+    public GroupHeadSelector {
+      assert null != selectorText;
       assert null != type;
-
-      this.selectorText = s;
-      this.type = type;
-    }
-
-    @Override
-    public boolean equals(final Object other) {
-      if (other instanceof GroupHeadSelector that) {
-        return (this.type == that.type) && this.selectorText.equals(that.selectorText);
-      }
-      return false;
-    }
-
-    @Override
-    public int hashCode() {
-      return 17 * (31 + selectorText.hashCode()) * (31 + type.hashCode());
-    }
-
-    @Override
-    public String toString() {
-      return "GroupHeadSelector(selectorText=" + this.selectorText + ", type=" + this.type + ")";
     }
 
     /** returns a new GroupHeadSelector based on the specified local params */
@@ -280,14 +257,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (null != sortString) {
-        return new GroupHeadSelector(sortString, GroupHeadSelectorType.SORT);
+        return new GroupHeadSelector(GroupHeadSelectorType.SORT, sortString);
       } else if (null != min) {
-        return new GroupHeadSelector(min, GroupHeadSelectorType.MIN);
+        return new GroupHeadSelector(GroupHeadSelectorType.MIN, min);
       } else if (null != max) {
-        return new GroupHeadSelector(max, GroupHeadSelectorType.MAX);
+        return new GroupHeadSelector(GroupHeadSelectorType.MAX, max);
       }
       // default
-      return new GroupHeadSelector("score", GroupHeadSelectorType.SCORE);
+      return new GroupHeadSelector(GroupHeadSelectorType.SCORE, "score");
     }
   }
 

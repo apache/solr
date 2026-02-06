@@ -1124,23 +1124,23 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
         () -> GroupHeadSelector.build(params("sort", "foo_s asc", "min", "bar_s")));
 
     s = GroupHeadSelector.build(params("min", "foo_s"));
-    assertEquals(GroupHeadSelectorType.MIN, s.type);
-    assertEquals("foo_s", s.selectorText);
+    assertEquals(GroupHeadSelectorType.MIN, s.type());
+    assertEquals("foo_s", s.selectorText());
 
     s = GroupHeadSelector.build(params("max", "foo_s"));
-    assertEquals(GroupHeadSelectorType.MAX, s.type);
-    assertEquals("foo_s", s.selectorText);
+    assertEquals(GroupHeadSelectorType.MAX, s.type());
+    assertEquals("foo_s", s.selectorText());
     assertNotEquals(s, GroupHeadSelector.build(params("min", "foo_s", "other", "stuff")));
 
     s = GroupHeadSelector.build(params());
-    assertEquals(GroupHeadSelectorType.SCORE, s.type);
-    assertNotNull(s.selectorText);
+    assertEquals(GroupHeadSelectorType.SCORE, s.type());
+    assertNotNull(s.selectorText());
     assertEquals(GroupHeadSelector.build(params()), s);
     assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
 
     s = GroupHeadSelector.build(params("sort", "foo_s asc"));
-    assertEquals(GroupHeadSelectorType.SORT, s.type);
-    assertEquals("foo_s asc", s.selectorText);
+    assertEquals(GroupHeadSelectorType.SORT, s.type());
+    assertEquals("foo_s asc", s.selectorText());
     assertEquals(GroupHeadSelector.build(params("sort", "foo_s asc")), s);
     assertNotEquals(s, GroupHeadSelector.build(params("sort", "BAR_s asc")));
     assertNotEquals(s, GroupHeadSelector.build(params("min", "BAR_s")));
