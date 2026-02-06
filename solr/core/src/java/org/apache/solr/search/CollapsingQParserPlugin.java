@@ -223,7 +223,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     MIN,
     MAX,
     SORT,
-    SCORE;
+    SCORE,
+    CUSTOM;
     public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
 
@@ -367,7 +368,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             SolrException.ErrorCode.BAD_REQUEST, "Collapsing not supported on multivalued fields");
       }
 
-      this.groupHeadSelector = GroupHeadSelector.build(localParams);
+      this.groupHeadSelector = buildGroupHeadSelector(localParams);
 
       if (groupHeadSelector.type.equals(GroupHeadSelectorType.SORT)
           && CollapseScore.wantsCScore(groupHeadSelector.selectorText)) {
@@ -420,6 +421,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       this.nullPolicy = NullPolicy.fromString(localParams.get("nullPolicy"));
+    }
+
+    protected GroupHeadSelector buildGroupHeadSelector(SolrParams localParams) {
+      return GroupHeadSelector.build(localParams);
     }
 
     @Override
