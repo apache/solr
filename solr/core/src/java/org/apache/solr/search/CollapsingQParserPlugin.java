@@ -293,15 +293,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
   public static class CollapsingPostFilter extends ExtendedQueryBase implements PostFilter {
 
-    private String collapseField;
-    private final GroupHeadSelector groupHeadSelector;
-    private final SortSpec sortSpec; // may be null, parsed at most once from groupHeadSelector
-    public String hint;
-    private boolean needsScores = true;
-    private boolean needsScores4Collapsing = false;
-    private NullPolicy nullPolicy;
+    protected final String collapseField;
+    protected final GroupHeadSelector groupHeadSelector;
+    protected final SortSpec sortSpec; // may be null, parsed at most once from groupHeadSelector
+    public final String hint;
+    protected final boolean needsScores;
+    protected final boolean needsScores4Collapsing;
+    protected final NullPolicy nullPolicy;
+    private final int size;
     private Set<BytesRef> boosted; // ordered by "priority"
-    private int size;
 
     public String getField() {
       return this.collapseField;
@@ -449,9 +449,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @SuppressWarnings({"unchecked"})
     public DelegatingCollector getFilterCollector(IndexSearcher indexSearcher) {
       try {
-
-        SolrIndexSearcher searcher = (SolrIndexSearcher) indexSearcher;
-        CollectorFactory collectorFactory = new CollectorFactory();
         // Deal with boosted docs.
         // We have to deal with it here rather then the constructor because
         // because the QueryElevationComponent runs after the Queries are constructed.
@@ -467,21 +464,208 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           this.boosted = (Set<BytesRef>) context.get(QueryElevationComponent.BOOSTED);
         }
 
+        SolrIndexSearcher searcher = (SolrIndexSearcher) indexSearcher;
         boostDocsMap = QueryElevationComponent.getBoostDocs(searcher, this.boosted, context);
-        return collectorFactory.getCollector(
-            this.collapseField,
-            this.groupHeadSelector,
-            this.sortSpec,
-            this.nullPolicy.getCode(),
-            this.hint,
-            this.needsScores4Collapsing,
-            this.needsScores,
-            this.size,
-            boostDocsMap,
-            searcher);
+        return this.getCollector(boostDocsMap, searcher);
 
       } catch (IOException e) {
         throw new RuntimeException(e);
+      }
+    }
+
+    /**
+     * @see #isNumericCollapsible
+     */
+    private static final EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES =
+        EnumSet.of(NumberType.INTEGER, NumberType.FLOAT);
+
+    private boolean isNumericCollapsible(FieldType collapseFieldType) {
+      return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
+    }
+
+    protected DelegatingCollector getCollector(IntIntHashMap boostDocs, SolrIndexSearcher searcher)
+        throws IOException {
+
+      DocValuesProducer docValuesProducer = null;
+      FunctionQuery funcQuery = null;
+
+      // block collapsing logic is much simpler and uses less memory, but is only viable in specific
+      // situations
+      final boolean blockCollapse =
+          (("_root_".equals(collapseField) || HINT_BLOCK.equals(hint))
+              // because we currently handle all min/max cases using
+              // AbstractBlockSortSpecCollector, we can't handle functions wrapping cscore()
+              // (for the same reason cscore() isn't supported in 'sort' local param)
+              && (!CollapseScore.wantsCScore(groupHeadSelector.selectorText))
+              //
+              && NullPolicy.COLLAPSE.getCode() != nullPolicy.getCode());
+      if (HINT_BLOCK.equals(hint) && !blockCollapse) {
+        log.debug(
+            "Query specifies hint={} but other local params prevent the use block based collapse",
+            HINT_BLOCK);
+      }
+
+      FieldType collapseFieldType = searcher.getSchema().getField(collapseField).getType();
+
+      if (collapseFieldType instanceof StrField) {
+        // if we are using blockCollapse, then there is no need to bother with TOP_FC
+        if (HINT_TOP_FC.equals(hint) && !blockCollapse) {
+          @SuppressWarnings("resource")
+          final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
+
+          docValuesProducer =
+              new EmptyDocValuesProducer() {
+                @Override
+                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+                  SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
+                  if (values != null) {
+                    return values;
+                  } else {
+                    return DocValues.emptySorted();
+                  }
+                }
+              };
+        } else {
+          docValuesProducer =
+              new EmptyDocValuesProducer() {
+                @Override
+                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+                  return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
+                }
+              };
+        }
+      } else {
+        if (HINT_TOP_FC.equals(hint)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "top_fc hint is only supported when collapsing on String Fields");
+        }
+      }
+
+      FieldType minMaxFieldType = null;
+      if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
+        final String text = groupHeadSelector.selectorText;
+        if (!text.contains("(")) {
+          minMaxFieldType = searcher.getSchema().getField(text).getType();
+        } else {
+          SolrParams params = new ModifiableSolrParams();
+          try (SolrQueryRequest request = SolrQueryRequest.wrapSearcher(searcher, params)) {
+            FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
+            funcQuery = (FunctionQuery) functionQParser.parse();
+          } catch (SyntaxError e) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+          }
+        }
+      }
+
+      int maxDoc = searcher.maxDoc();
+      int leafCount = searcher.getTopReaderContext().leaves().size();
+
+      SolrRequestInfo req = SolrRequestInfo.getRequestInfo();
+      boolean collectElevatedDocsWhenCollapsing =
+          req != null
+              && req.getReq().getParams().getBool(COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, true);
+
+      if (GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type)) {
+
+        if (collapseFieldType instanceof StrField) {
+          if (blockCollapse) {
+            return new BlockOrdScoreCollector(collapseField, nullPolicy.getCode(), boostDocs);
+          }
+          return new OrdScoreCollector(
+              maxDoc,
+              leafCount,
+              docValuesProducer,
+              nullPolicy.getCode(),
+              boostDocs,
+              searcher,
+              collectElevatedDocsWhenCollapsing);
+
+        } else if (isNumericCollapsible(collapseFieldType)) {
+          if (blockCollapse) {
+            return new BlockIntScoreCollector(collapseField, nullPolicy.getCode(), boostDocs);
+          }
+
+          return new IntScoreCollector(
+              maxDoc,
+              leafCount,
+              nullPolicy.getCode(),
+              size,
+              collapseField,
+              boostDocs,
+              searcher,
+              collectElevatedDocsWhenCollapsing);
+
+        } else {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Collapsing field should be of either String, Int or Float type");
+        }
+
+      } else { // min, max, sort, etc.. something other then just "score"
+
+        if (collapseFieldType instanceof StrField) {
+          if (blockCollapse) {
+            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
+            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
+            // some (performance?) reason to specialize
+            return new BlockOrdSortSpecCollector(
+                collapseField,
+                nullPolicy.getCode(),
+                boostDocs,
+                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
+                needsScores || needsScores4Collapsing);
+          }
+
+          return new OrdFieldValueCollector(
+              maxDoc,
+              leafCount,
+              docValuesProducer,
+              nullPolicy.getCode(),
+              groupHeadSelector,
+              sortSpec,
+              needsScores4Collapsing,
+              needsScores,
+              minMaxFieldType,
+              boostDocs,
+              funcQuery,
+              searcher,
+              collectElevatedDocsWhenCollapsing);
+
+        } else if (isNumericCollapsible(collapseFieldType)) {
+
+          if (blockCollapse) {
+            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
+            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
+            // some (performance?) reason to specialize
+            return new BlockIntSortSpecCollector(
+                collapseField,
+                nullPolicy.getCode(),
+                boostDocs,
+                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
+                needsScores || needsScores4Collapsing);
+          }
+
+          return new IntFieldValueCollector(
+              maxDoc,
+              size,
+              leafCount,
+              nullPolicy.getCode(),
+              collapseField,
+              groupHeadSelector,
+              sortSpec,
+              needsScores4Collapsing,
+              needsScores,
+              minMaxFieldType,
+              boostDocs,
+              funcQuery,
+              searcher,
+              collectElevatedDocsWhenCollapsing);
+        } else {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Collapsing field should be of either String, Int or Float type");
+        }
       }
     }
   }
@@ -1001,26 +1185,26 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    *
    * @lucene.internal
    */
-  static class OrdFieldValueCollector extends DelegatingCollector {
+  protected static class OrdFieldValueCollector extends DelegatingCollector {
     private LeafReaderContext[] contexts;
 
     private DocValuesProducer collapseValuesProducer;
-    private SortedDocValues collapseValues;
+    protected SortedDocValues collapseValues;
     protected OrdinalMap ordinalMap;
     protected SortedDocValues segmentValues;
     protected LongValues segmentOrdinalMap;
     protected MultiDocValues.MultiSortedDocValues multiSortedDocValues;
 
-    private int maxDoc;
-    private int nullPolicy;
+    protected int maxDoc;
+    protected int nullPolicy;
 
     private OrdFieldValueStrategy collapseStrategy;
-    private boolean needsScores4Collapsing;
-    private boolean needsScores;
+    protected boolean needsScores4Collapsing;
+    protected boolean needsScores;
 
     private boolean collectElevatedDocsWhenCollapsing;
 
-    private final BoostedDocsCollector boostedDocsCollector;
+    protected final BoostedDocsCollector boostedDocsCollector;
 
     public OrdFieldValueCollector(
         int maxDoc,
@@ -1056,36 +1240,48 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
 
-      int valueCount = collapseValues.getValueCount();
       this.nullPolicy = nullPolicy;
       this.needsScores4Collapsing = needsScores4Collapsing;
       this.needsScores = needsScores;
+      this.collapseStrategy =
+          createCollapseStrategy(
+              maxDoc, groupHeadSelector, sortSpec, fieldType, funcQuery, searcher);
+    }
+
+    protected OrdFieldValueStrategy createCollapseStrategy(
+        int maxDoc,
+        GroupHeadSelector groupHeadSelector,
+        SortSpec sortSpec,
+        FieldType fieldType,
+        FunctionQuery funcQuery,
+        IndexSearcher searcher)
+        throws IOException {
+      int valueCount = collapseValues.getValueCount();
+
       if (null != sortSpec) {
-        this.collapseStrategy =
-            new OrdSortSpecStrategy(
-                maxDoc,
-                nullPolicy,
-                valueCount,
-                groupHeadSelector,
-                this.needsScores4Collapsing,
-                this.needsScores,
-                boostedDocsCollector,
-                sortSpec,
-                searcher,
-                collapseValues);
+        return new OrdSortSpecStrategy(
+            maxDoc,
+            nullPolicy,
+            valueCount,
+            groupHeadSelector,
+            this.needsScores4Collapsing,
+            this.needsScores,
+            boostedDocsCollector,
+            sortSpec,
+            searcher,
+            collapseValues);
       } else if (funcQuery != null) {
-        this.collapseStrategy =
-            new OrdValueSourceStrategy(
-                maxDoc,
-                nullPolicy,
-                valueCount,
-                groupHeadSelector,
-                this.needsScores4Collapsing,
-                this.needsScores,
-                boostedDocsCollector,
-                funcQuery,
-                searcher,
-                collapseValues);
+        return new OrdValueSourceStrategy(
+            maxDoc,
+            nullPolicy,
+            valueCount,
+            groupHeadSelector,
+            this.needsScores4Collapsing,
+            this.needsScores,
+            boostedDocsCollector,
+            funcQuery,
+            searcher,
+            collapseValues);
       } else {
         NumberType numType = fieldType.getNumberType();
         if (null == numType) {
@@ -1093,53 +1289,35 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               SolrException.ErrorCode.BAD_REQUEST,
               "min/max must be either Int/Long/Float based field types");
         }
-        switch (numType) {
-          case INTEGER:
-            {
-              this.collapseStrategy =
-                  new OrdIntStrategy(
-                      maxDoc,
-                      nullPolicy,
-                      valueCount,
-                      groupHeadSelector,
-                      this.needsScores,
-                      boostedDocsCollector,
-                      collapseValues);
-              break;
-            }
-          case FLOAT:
-            {
-              this.collapseStrategy =
-                  new OrdFloatStrategy(
-                      maxDoc,
-                      nullPolicy,
-                      valueCount,
-                      groupHeadSelector,
-                      this.needsScores,
-                      boostedDocsCollector,
-                      collapseValues);
-              break;
-            }
-          case LONG:
-            {
-              this.collapseStrategy =
-                  new OrdLongStrategy(
-                      maxDoc,
-                      nullPolicy,
-                      valueCount,
-                      groupHeadSelector,
-                      this.needsScores,
-                      boostedDocsCollector,
-                      collapseValues);
-              break;
-            }
-          default:
-            {
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "min/max must be either Int/Long/Float field types");
-            }
-        }
+        return switch (numType) {
+          case INTEGER -> new OrdIntStrategy(
+              maxDoc,
+              nullPolicy,
+              valueCount,
+              groupHeadSelector,
+              this.needsScores,
+              boostedDocsCollector,
+              collapseValues);
+          case FLOAT -> new OrdFloatStrategy(
+              maxDoc,
+              nullPolicy,
+              valueCount,
+              groupHeadSelector,
+              this.needsScores,
+              boostedDocsCollector,
+              collapseValues);
+          case LONG -> new OrdLongStrategy(
+              maxDoc,
+              nullPolicy,
+              valueCount,
+              groupHeadSelector,
+              this.needsScores,
+              boostedDocsCollector,
+              collapseValues);
+          default -> throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "min/max must be either Int/Long/Float field types");
+        };
       }
     }
 
@@ -2039,214 +2217,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  private static class CollectorFactory {
-    /**
-     * @see #isNumericCollapsible
-     */
-    private static final EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES =
-        EnumSet.of(NumberType.INTEGER, NumberType.FLOAT);
-
-    private boolean isNumericCollapsible(FieldType collapseFieldType) {
-      return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
-    }
-
-    public DelegatingCollector getCollector(
-        String collapseField,
-        GroupHeadSelector groupHeadSelector,
-        SortSpec sortSpec,
-        int nullPolicy,
-        String hint,
-        boolean needsScores4Collapsing,
-        boolean needsScores,
-        int size,
-        IntIntHashMap boostDocs,
-        SolrIndexSearcher searcher)
-        throws IOException {
-
-      DocValuesProducer docValuesProducer = null;
-      FunctionQuery funcQuery = null;
-
-      // block collapsing logic is much simpler and uses less memory, but is only viable in specific
-      // situations
-      final boolean blockCollapse =
-          (("_root_".equals(collapseField) || HINT_BLOCK.equals(hint))
-              // because we currently handle all min/max cases using
-              // AbstractBlockSortSpecCollector, we can't handle functions wrapping cscore()
-              // (for the same reason cscore() isn't supported in 'sort' local param)
-              && (!CollapseScore.wantsCScore(groupHeadSelector.selectorText))
-              //
-              && NullPolicy.COLLAPSE.getCode() != nullPolicy);
-      if (HINT_BLOCK.equals(hint) && !blockCollapse) {
-        log.debug(
-            "Query specifies hint={} but other local params prevent the use block based collapse",
-            HINT_BLOCK);
-      }
-
-      FieldType collapseFieldType = searcher.getSchema().getField(collapseField).getType();
-
-      if (collapseFieldType instanceof StrField) {
-        // if we are using blockCollapse, then there is no need to bother with TOP_FC
-        if (HINT_TOP_FC.equals(hint) && !blockCollapse) {
-          @SuppressWarnings("resource")
-          final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
-
-          docValuesProducer =
-              new EmptyDocValuesProducer() {
-                @Override
-                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
-                  if (values != null) {
-                    return values;
-                  } else {
-                    return DocValues.emptySorted();
-                  }
-                }
-              };
-        } else {
-          docValuesProducer =
-              new EmptyDocValuesProducer() {
-                @Override
-                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
-                }
-              };
-        }
-      } else {
-        if (HINT_TOP_FC.equals(hint)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "top_fc hint is only supported when collapsing on String Fields");
-        }
-      }
-
-      FieldType minMaxFieldType = null;
-      if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
-        final String text = groupHeadSelector.selectorText;
-        if (!text.contains("(")) {
-          minMaxFieldType = searcher.getSchema().getField(text).getType();
-        } else {
-          SolrParams params = new ModifiableSolrParams();
-          try (SolrQueryRequest request = SolrQueryRequest.wrapSearcher(searcher, params)) {
-            FunctionQParser functionQParser = new FunctionQParser(text, null, params, request);
-            funcQuery = (FunctionQuery) functionQParser.parse();
-          } catch (SyntaxError e) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
-          }
-        }
-      }
-
-      int maxDoc = searcher.maxDoc();
-      int leafCount = searcher.getTopReaderContext().leaves().size();
-
-      SolrRequestInfo req = SolrRequestInfo.getRequestInfo();
-      boolean collectElevatedDocsWhenCollapsing =
-          req != null
-              && req.getReq().getParams().getBool(COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, true);
-
-      if (GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type)) {
-
-        if (collapseFieldType instanceof StrField) {
-          if (blockCollapse) {
-            return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
-          }
-          return new OrdScoreCollector(
-              maxDoc,
-              leafCount,
-              docValuesProducer,
-              nullPolicy,
-              boostDocs,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
-
-        } else if (isNumericCollapsible(collapseFieldType)) {
-          if (blockCollapse) {
-            return new BlockIntScoreCollector(collapseField, nullPolicy, boostDocs);
-          }
-
-          return new IntScoreCollector(
-              maxDoc,
-              leafCount,
-              nullPolicy,
-              size,
-              collapseField,
-              boostDocs,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
-
-        } else {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Collapsing field should be of either String, Int or Float type");
-        }
-
-      } else { // min, max, sort, etc.. something other then just "score"
-
-        if (collapseFieldType instanceof StrField) {
-          if (blockCollapse) {
-            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
-            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
-            // some (performance?) reason to specialize
-            return new BlockOrdSortSpecCollector(
-                collapseField,
-                nullPolicy,
-                boostDocs,
-                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
-                needsScores || needsScores4Collapsing);
-          }
-
-          return new OrdFieldValueCollector(
-              maxDoc,
-              leafCount,
-              docValuesProducer,
-              nullPolicy,
-              groupHeadSelector,
-              sortSpec,
-              needsScores4Collapsing,
-              needsScores,
-              minMaxFieldType,
-              boostDocs,
-              funcQuery,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
-
-        } else if (isNumericCollapsible(collapseFieldType)) {
-
-          if (blockCollapse) {
-            // NOTE: for now we don't worry about whether this is a sortSpec of min/max
-            // groupHeadSelector, we use a "sort spec' based block collector unless/until there is
-            // some (performance?) reason to specialize
-            return new BlockIntSortSpecCollector(
-                collapseField,
-                nullPolicy,
-                boostDocs,
-                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
-                needsScores || needsScores4Collapsing);
-          }
-
-          return new IntFieldValueCollector(
-              maxDoc,
-              size,
-              leafCount,
-              nullPolicy,
-              collapseField,
-              groupHeadSelector,
-              sortSpec,
-              needsScores4Collapsing,
-              needsScores,
-              minMaxFieldType,
-              boostDocs,
-              funcQuery,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
-        } else {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Collapsing field should be of either String, Int or Float type");
-        }
-      }
-    }
-  }
-
   public static final class CollapseScore {
     /**
      * Inspects the GroupHeadSelector to determine if this CollapseScore is needed. If it is, then
@@ -2288,7 +2258,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    * The abstract base Strategy for collapse strategies that collapse on an ordinal using min/max
    * field value to select the group head.
    */
-  private abstract static class OrdFieldValueStrategy {
+  protected abstract static class OrdFieldValueStrategy {
     protected int nullPolicy;
     protected IntIntDynamicMap ords;
     protected Scorable scorer;
@@ -3356,14 +3326,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    *
    * <p>NOTE: collect methods must be called in increasing globalDoc order
    */
-  private static class BoostedDocsCollector {
+  protected static class BoostedDocsCollector {
     private final IntIntHashMap boostDocsMap;
     private final int[] sortedGlobalDocIds;
     private final boolean hasBoosts;
 
     private final IntArrayList boostedKeys = new IntArrayList();
     private final IntArrayList boostedDocs = new IntArrayList();
-    ;
+
     private boolean boostedNullGroup = false;
     private final MergeBoost boostedDocsIdsIter;
 
