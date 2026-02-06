@@ -60,4 +60,6 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Changelog
 
-- We use logchange as changelog tool. Add a new file changelog/unreleased/describe-your-feature.yml for each change, see dev-docs/changelog.adoc
+- We use logchange (https://logchange.dev/tools/logchange/) as changelog tool, each change is represented by one yaml file each in changelog/unreleased
+- Read dev-docs/changelog.adoc for our changelog conventions and how to scaffold a new file
+- Do not add a changelog before you know either a JIRA issue number or a github number, as one is required.
