@@ -486,9 +486,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected DelegatingCollector getCollector(IntIntHashMap boostDocs, SolrIndexSearcher searcher)
         throws IOException {
 
-      DocValuesProducer docValuesProducer = null;
-      FunctionQuery funcQuery = null;
-
       // block collapsing logic is much simpler and uses less memory, but is only viable in specific
       // situations
       final boolean blockCollapse =
@@ -505,43 +502,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             HINT_BLOCK);
       }
 
-      FieldType collapseFieldType = searcher.getSchema().getField(collapseField).getType();
+      SchemaField schemaField = searcher.getSchema().getField(collapseField);
+      DocValuesProducer docValuesProducer =
+          getDocValuesProducer(schemaField, hint, searcher, blockCollapse);
+      FieldType collapseFieldType = schemaField.getType();
 
-      if (collapseFieldType instanceof StrField) {
-        // if we are using blockCollapse, then there is no need to bother with TOP_FC
-        if (HINT_TOP_FC.equals(hint) && !blockCollapse) {
-          @SuppressWarnings("resource")
-          final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
-
-          docValuesProducer =
-              new EmptyDocValuesProducer() {
-                @Override
-                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
-                  if (values != null) {
-                    return values;
-                  } else {
-                    return DocValues.emptySorted();
-                  }
-                }
-              };
-        } else {
-          docValuesProducer =
-              new EmptyDocValuesProducer() {
-                @Override
-                public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
-                  return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
-                }
-              };
-        }
-      } else {
-        if (HINT_TOP_FC.equals(hint)) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "top_fc hint is only supported when collapsing on String Fields");
-        }
-      }
-
+      FunctionQuery funcQuery = null;
       FieldType minMaxFieldType = null;
       if (GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type)) {
         final String text = groupHeadSelector.selectorText;
@@ -667,6 +633,43 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               "Collapsing field should be of either String, Int or Float type");
         }
       }
+    }
+
+    protected DocValuesProducer getDocValuesProducer(
+        SchemaField schemaField, String hint, SolrIndexSearcher searcher, boolean blockCollapse) {
+      if (schemaField.getType() instanceof StrField) {
+        // if we are using blockCollapse, then there is no need to bother with TOP_FC
+        if (HINT_TOP_FC.equals(hint) && !blockCollapse) {
+          @SuppressWarnings("resource")
+          final LeafReader uninvertingReader = getTopFieldCacheReader(searcher, collapseField);
+
+          return new EmptyDocValuesProducer() {
+            @Override
+            public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+              SortedDocValues values = uninvertingReader.getSortedDocValues(collapseField);
+              if (values != null) {
+                return values;
+              } else {
+                return DocValues.emptySorted();
+              }
+            }
+          };
+        } else {
+          return new EmptyDocValuesProducer() {
+            @Override
+            public SortedDocValues getSorted(FieldInfo ignored) throws IOException {
+              return DocValues.getSorted(searcher.getSlowAtomicReader(), collapseField);
+            }
+          };
+        }
+      } else {
+        if (HINT_TOP_FC.equals(hint)) {
+          throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "top_fc hint is only supported when collapsing on String Fields");
+        }
+      }
+      return null;
     }
   }
 
@@ -918,7 +921,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
 
-      collapseValues = collapseValuesProducer.getSorted(null);
+      collapseValues = collapseValuesProducer.getSorted(null); // reset iterator
 
       if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
         this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
@@ -1380,7 +1383,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       int currentContext = 0;
       int currentDocBase = 0;
 
-      this.collapseValues = collapseValuesProducer.getSorted(null);
+      this.collapseValues = collapseValuesProducer.getSorted(null); // reset iterator
       if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
         this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
         this.ordinalMap = multiSortedDocValues.mapping;
