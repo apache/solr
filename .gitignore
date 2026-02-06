@@ -39,28 +39,13 @@ gradle/wrapper/gradle-wrapper.jar
 # Kotlin
 .kotlin/
 
-# AI Coding Assistants
-.beads/
+# AI Coding Assistants, we only want AGENTS.md checked in
 CLAUDE.md
-CLAUDE.local.md
 .claude/
-.github/copilot-instructions.md
 .cursor/
-.cursorignore
-.cursorrules
-cursorrules/
 .aider*
-.continue/
-.cody/
-.windsurf/
-.codeium/
-.copilot/
 GEMINI.md
 .gemini/
-llms.txt
-.replit/
-.ai/
-.github/copilot-*
 
 # WANT TO ADD MORE?  You can tell Git without adding to this file:
 # See https://git-scm.com/docs/gitignore
