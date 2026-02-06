@@ -22,7 +22,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 - Follow Apache Software Foundation licensing rules, avoid adding a dependency with a banned license
 - Always apply the Apache License to new source files
-- We use gradle version-catalog toml file to encode dependency versions, never add versions directly to build.gradle files
+- We use gradle version-catalog (gradle/libs.versions.toml) to encode dependency versions, never add versions directly to build.gradle files
+- If a dependency is covered by a bom, declare "empty" version-less dependencies for individual libraries.
 - We use the "cutterslade-analyze" plugin which requires explicit recording of all dependencies in a build.gradle file
 - Always run "gradlew updateLicenses resolveAndLockAll --write-locks" after adding or changing a dependency. See dev-docs/gradle-help/dependencies.txt for more info
 
@@ -45,7 +46,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
   - Subclass SolrTestCase, or if SolrCloud is needed then SolrCloudTestCase
   - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
   - Avoid SolrTestCaseJ4 for new tests
-  
+
 - See dev-docs/gradle-help/tests.txt for hints on running tests
 
 ## Documentation
