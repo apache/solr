@@ -49,9 +49,8 @@
       "schedule": ["before 9am on the first day of the month"]
     },
     {
-      "description": "Google Cloud packages checked less often",
-      "matchPackagePrefixes": ["com.google.cloud"],
-      "groupName": "Google Cloud",
+      "description": "Google Cloud BOM checked less often to avoid spam",
+      "matchPackageNames": ["com.google.cloud:google-cloud-bom"],
       "schedule": ["before 9am on the first day of the month"]
     },
     {
