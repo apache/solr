@@ -22,7 +22,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 - Follow Apache Software Foundation licensing rules, avoid adding a dependency with a banned license
 - Always apply the Apache License to new source files
-- We use gradle version-catalog (gradle/libs.versions.toml) to encode dependency versions, never add versions directly to build.gradle files
+- We use gradle version-catalog (gradle/libs.versions.toml) to encode dependency versions; never add versions directly to build.gradle files
 - If a dependency is covered by a bom, declare "empty" version-less dependencies for individual libraries.
 - We use the "gradle-dependency-analyze" plugin, which requires explicit recording of all dependencies in a build.gradle file. Only in very rare cases use the 'permitUnusedDeclared' and other 'permit*' options.
 - Always run "gradlew updateLicenses resolveAndLockAll --write-locks" after adding or changing a dependency. See dev-docs/gradle-help/dependencies.txt for more info
