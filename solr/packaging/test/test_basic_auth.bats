@@ -19,14 +19,14 @@ load bats_helper
 
 setup() {
   common_clean_setup
-
+  
   echo "Starting Solr"
   solr start -Dsolr.packages.enabled=true
-
-  # The auth command exports some system variables that are injected as basic auth username and password,
+  
+  # The auth command exports some system variables that are injected as basic auth username and password, 
   # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
   solr auth enable --type basicAuth --credentials name:password --solr-include-file /force/credentials/to/be/supplied
-
+  
   solr assert --credentials name:password --cloud http://localhost:${SOLR_PORT} --timeout 5000
 }
 
@@ -45,28 +45,28 @@ teardown() {
 @test "create, config, api, and delete with basic auth" {
 
   # Test create
-  run solr create -u name:password -c COLL_NAME
+  run solr create -u name:password -c COLL_NAME 
   assert_output --partial "Created collection 'COLL_NAME'"
-
+  
   # Test config
   run solr config -u name:password -c COLL_NAME --action set-property --property updateHandler.autoCommit.maxDocs --value 100 --solr-url http://localhost:${SOLR_PORT}/solr
   assert_output --partial "Successfully set-property updateHandler.autoCommit.maxDocs to 100"
-
+  
   # Test api
   run solr api -u name:password --solr-url "http://localhost:${SOLR_PORT}/solr/COLL_NAME/select?q=*:*" --verbose
   assert_output --partial '"numFound":0'
-
+  
   # Test delete
   run solr delete --credentials name:password -c COLL_NAME -z localhost:${ZK_PORT} --delete-config --verbose
   assert_output --partial "Deleted collection 'COLL_NAME'"
   refute collection_exists "COLL_NAME"
   refute config_exists "COLL_NAME"
-
+  
 }
 
 @test "post, postlogs and export with basic auth" {
 run solr create -c COLL_NAME
-  run solr create -u name:password -c COLL_NAME
+  run solr create -u name:password -c COLL_NAME 
   assert_output --partial "Created collection 'COLL_NAME'"
 
   # Test post
@@ -76,15 +76,15 @@ run solr create -c COLL_NAME
   # Test postlogs
   run solr postlogs -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME -rootdir ${SOLR_LOGS_DIR}/solr.log
   assert_output --partial 'Committed'
-
+  
   # Test export
   #run solr export -u name:password --solr-url http://localhost:${SOLR_PORT} --name COLL_NAME --query "*:*" --output "${BATS_TEST_TMPDIR}/output"
   #assert_output --partial 'Export complete'
-
+  
 }
 
 @test "package with basic auth" {
-
+  
   run solr package deploy PACKAGE_NAME --credentials name:password --collections foo-1.2
   # verify that package tool is communicating with Solr via basic auth
   assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
