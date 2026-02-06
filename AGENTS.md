@@ -16,7 +16,7 @@
  -->
 # AGENTS.md for Apache Solr
 
-While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for coding agents on the Solr codebase. For background, see https://agents.md
+While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see dev-docs/how-to-contribute.adoc for some guidelines when using genAI to contribute to Solr.
 
 ## Licensing and Dependencies
 
