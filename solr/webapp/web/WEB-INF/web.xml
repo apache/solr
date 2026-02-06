@@ -75,6 +75,15 @@
   </filter-mapping>
 
   <filter>
+    <filter-name>AuthenticationFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.AuthenticationFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>AuthenticationFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+  <filter>
     <filter-name>SolrRequestFilter</filter-name>
     <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
   </filter>

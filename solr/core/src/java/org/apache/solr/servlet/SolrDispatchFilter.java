@@ -16,9 +16,9 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
 
+import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -27,8 +27,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -36,11 +34,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.security.AuditEvent;
-import org.apache.solr.security.AuditEvent.EventType;
-import org.apache.solr.security.AuthenticationPlugin;
-import org.apache.solr.security.PKIAuthenticationPlugin;
-import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +118,7 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       throws IOException, ServletException {
     // internal version of doFilter that tracks if we are in a retry
 
-    dispatch(chain, closeShield(request), closeShield(response), false);
+    dispatch(chain, request, response, false);
   }
 
   /*
@@ -143,41 +136,13 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   private void dispatch(
       FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry)
       throws IOException, ServletException {
-
-    AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-    try {
-      authenticateRequest(request, response, wrappedRequest);
-    } catch (SolrAuthenticationException e) {
-      // it seems our auth system expects the plugin to set the status on the request.
-      // If this hasn't happened make sure it does happen now rather than throwing an
-      // exception, that formerly went on to be ignored in
-      // org.apache.solr.servlet.ServletUtils.traceHttpRequestExecution2
-      if (response.getStatus() < 400) {
-        log.error(
-            "Authentication Plugin threw SolrAuthenticationException without setting request status >= 400");
-        response.sendError(401, "Authentication Plugin rejected credentials.");
-      }
-      return; // Nothing more to do, chain.doFilter(req,res) doesn't get called.
-    }
-    if (wrappedRequest.get() != null) {
-      request = wrappedRequest.get();
-    }
-
     var span = getSpan(request);
-    if (getCores().getAuthenticationPlugin() != null) {
-      if (log.isDebugEnabled()) {
-        log.debug("User principal: {}", request.getUserPrincipal());
-      }
-      final String principalName;
-      if (request.getUserPrincipal() != null) {
-        principalName = request.getUserPrincipal().getName();
-      } else {
-        principalName = null;
-      }
-      TraceUtils.setUser(span, String.valueOf(principalName));
-    }
-
     HttpSolrCall call = getHttpSolrCall(request, response, retry);
+
+    // this flag LOOKS like it should be in RequiredSolrRequestFilter, but
+    // the value set here is drives PKIAuthenticationPlugin.isSolrThread
+    // which gets used BEFORE this is set for some reason.
+    // BUG? Important timing?
     ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
     try {
       Action result = call.call();
@@ -208,6 +173,8 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
     }
   }
 
+
+
   /**
    * Allow a subclass to modify the HttpSolrCall. In particular, subclasses may want to add
    * attributes to the request and send errors differently
@@ -223,118 +190,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
     }
     return solrCallFactory.createInstance(this, path, cores, request, response, retry);
-  }
-
-  // TODO: make this a servlet filter
-  private void authenticateRequest(
-      HttpServletRequest request,
-      HttpServletResponse response,
-      final AtomicReference<HttpServletRequest> wrappedRequest)
-      throws IOException, SolrAuthenticationException {
-    boolean requestContinues;
-    final AtomicBoolean isAuthenticated = new AtomicBoolean(false);
-    CoreContainer cores;
-    try {
-      cores = getCores();
-    } catch (UnavailableException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
-    }
-    AuthenticationPlugin authenticationPlugin = cores.getAuthenticationPlugin();
-    if (authenticationPlugin == null) {
-      if (shouldAudit(EventType.ANONYMOUS)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ANONYMOUS, request));
-      }
-      return;
-    } else {
-      // /admin/info/key must be always open. see SOLR-9188
-      String requestPath = ServletUtils.getPathAfterContext(request);
-      if (PublicKeyHandler.PATH.equals(requestPath)) {
-        log.debug("Pass through PKI authentication endpoint");
-        return;
-      }
-      // /solr/ (Admin UI) must be always open to allow displaying Admin UI with login page
-      if ("/solr/".equals(requestPath) || "/".equals(requestPath)) {
-        log.debug("Pass through Admin UI entry point");
-        return;
-      }
-      String header = request.getHeader(PKIAuthenticationPlugin.HEADER);
-      String headerV2 = request.getHeader(PKIAuthenticationPlugin.HEADER_V2);
-      if ((header != null || headerV2 != null)
-          && cores.getPkiAuthenticationSecurityBuilder() != null)
-        authenticationPlugin = cores.getPkiAuthenticationSecurityBuilder();
-      try {
-        if (log.isDebugEnabled()) {
-          log.debug(
-              "Request to authenticate: {}, domain: {}, port: {}",
-              request,
-              request.getLocalName(),
-              request.getLocalPort());
-        }
-        // For legacy reasons, upon successful authentication this wants to call the chain's next
-        // filter, which obfuscates the layout of the code since one usually expects to be able to
-        // find the call to doFilter() in the implementation of jakarta.servlet.Filter. Supplying a
-        // trivial impl here to keep existing code happy while making the flow clearer. Chain will
-        // be called after this method completes. Eventually auth all moves to its own filter
-        // (hopefully). Most auth plugins simply return true after calling this anyway, so they
-        // obviously don't care.
-        //
-        // The Hadoop Auth Plugin was removed in SOLR-17540, however leaving the below reference
-        // for future readers, as there may be an option to simplify this logic.
-        //
-        // Kerberos plugins seem to mostly use it to satisfy the api of a
-        // wrapped instance of javax.servlet.Filter and neither of those seem to be doing anything
-        // fancy with the filter chain, so this would seem to be a hack brought on by the fact that
-        // our auth code has been forced to be code within dispatch filter, rather than being a
-        // filter itself. The HadoopAuthPlugin has a suspicious amount of code after the call to
-        // doFilter() which seems to imply that anything in this chain can get executed before
-        // authentication completes, and I can't figure out how that's a good idea in the first
-        // place.
-        requestContinues =
-            authenticationPlugin.authenticate(
-                request,
-                response,
-                (req, rsp) -> {
-                  isAuthenticated.set(true);
-                  wrappedRequest.set((HttpServletRequest) req);
-                });
-      } catch (Exception e) {
-        log.info("Error authenticating", e);
-        throw new SolrException(ErrorCode.SERVER_ERROR, "Error during request authentication, ", e);
-      }
-    }
-    // requestContinues is an optional short circuit, thus we still need to check isAuthenticated.
-    // This is because the AuthenticationPlugin doesn't always have enough information to determine
-    // if it should short circuit, e.g. the Kerberos Authentication Filter will send an error and
-    // not call later filters in chain, but doesn't throw an exception.  We could force each Plugin
-    // to implement isAuthenticated to simplify the check here, but that just moves the complexity
-    // to multiple code paths.
-    if (!requestContinues || !isAuthenticated.get()) {
-      response.flushBuffer();
-      if (shouldAudit(EventType.REJECTED)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, request));
-      }
-      throw new SolrAuthenticationException();
-    }
-    if (shouldAudit(EventType.AUTHENTICATED)) {
-      cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.AUTHENTICATED, request));
-    }
-    // Auth Success
-  }
-
-  /**
-   * Check if audit logging is enabled and should happen for given event type
-   *
-   * @param eventType the audit event
-   */
-  private boolean shouldAudit(AuditEvent.EventType eventType) {
-    CoreContainer cores;
-    try {
-      cores = getCores();
-    } catch (UnavailableException e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Core Container Unavailable");
-    }
-    return cores.getAuditLoggerPlugin() != null
-        && cores.getAuditLoggerPlugin().shouldLog(eventType);
   }
 
   /** internal API */

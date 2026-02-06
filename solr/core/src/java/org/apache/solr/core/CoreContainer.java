@@ -39,6 +39,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
+import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -147,6 +148,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -2509,5 +2511,30 @@ public class CoreContainer {
             }
           }
         });
+  }
+
+  /**
+   * Check if audit logging is enabled and should happen for given event type
+   *
+   * @param eventType the audit event
+   */
+  public boolean shouldAudit(AuditEvent.EventType eventType) {
+    return this.getAuditLoggerPlugin() != null && this.getAuditLoggerPlugin().shouldLog(eventType);
+  }
+
+  /**
+   * Audit an event
+   *
+   * @param type The type of event to audit.
+   * @param req The request being audited
+   */
+  public void audit(AuditEvent.EventType type, HttpServletRequest req) {
+    if (shouldAudit(type)) {
+      getAuditLoggerPlugin().doAudit(new AuditEvent(type, req));
+    }
+  }
+
+  public boolean isAuthEnabled() {
+    return getAuthenticationPlugin() != null;
   }
 }
