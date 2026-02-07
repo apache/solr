@@ -36,6 +36,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -189,14 +190,14 @@ public class PackageManager implements Closeable {
     List<SolrPackageInstance> ret = new ArrayList<>();
     packages = new HashMap<>();
     try {
-      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH, true)) {
+      if (zkClient.exists(ZkStateReader.SOLR_PKGS_PATH)) {
         @SuppressWarnings("unchecked")
         Map<String, List<Map<?, ?>>> packagesZnodeMap =
             (Map<String, List<Map<?, ?>>>)
                 getMapper()
                     .readValue(
                         new String(
-                            zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null, true),
+                            zkClient.getData(ZkStateReader.SOLR_PKGS_PATH, null, null),
                             StandardCharsets.UTF_8),
                         Map.class)
                     .get("packages");
@@ -249,7 +250,8 @@ public class PackageManager implements Closeable {
                       false) /* Making a collection request, but already baked into path */);
       packages =
           (Map<String, String>)
-              result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
+              Objects.requireNonNullElse(
+                  result._get("/response/params/PKG_VERSIONS"), Collections.emptyMap());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by
       // the package manager.
@@ -331,7 +333,7 @@ public class PackageManager implements Closeable {
 
   private void ensureCollectionsExist(List<String> collections) {
     try {
-      List<String> existingCollections = zkClient.getChildren("/collections", null, true);
+      List<String> existingCollections = zkClient.getChildren("/collections", null);
       Set<String> nonExistent = new HashSet<>(collections);
       nonExistent.removeAll(existingCollections);
       if (!nonExistent.isEmpty()) {
@@ -734,7 +736,9 @@ public class PackageManager implements Closeable {
                   .setRequiresCollection(
                       false) /* Making a collection-request, but already baked into path */);
       return (Map<String, String>)
-          response._get("/response/params/packages/" + packageName, Collections.emptyMap());
+          Objects.requireNonNullElse(
+              response._get("/response/params/packages/" + packageName), Collections.emptyMap());
+
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       log.warn("There are no parameters to return for package: {}", packageName);
@@ -1095,7 +1099,7 @@ public class PackageManager implements Closeable {
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;
     try {
-      allCollections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, null, true);
+      allCollections = zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, null);
     } catch (KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
     }

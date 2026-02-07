@@ -69,6 +69,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         jbcO.marshal(s, os);
         try (JavaBinCodec jbcI = new JavaBinCodec();
             ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray())) {
+          jbcI.readMapAsNamedList(false);
           Object o = jbcI.unmarshal(is);
           assertEquals(s, o);
         }
@@ -84,6 +85,17 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     idoc.addField("enumf", new EnumFieldValue(1, "foo"));
     types.add(idoc);
     compareObjects((List) getObject(getBytes(types, true)), (List) types);
+  }
+
+  public void testReadMap() throws Exception {
+    Map<String, String> types = new HashMap<>();
+    types.put("1", "one");
+
+    byte[] bytes = getBytes(types, true);
+    Object result = getObjectWithMapAsNl(bytes, true);
+
+    assertTrue(result instanceof SimpleOrderedMap);
+    assertEquals("one", ((SimpleOrderedMap<?>) result).get("1"));
   }
 
   public static SolrDocument generateSolrDocumentWithChildDocs() {
@@ -162,11 +174,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     types.add(new byte[] {1, 2, 3, 4, 5});
 
-    // TODO?
-    // List<String> list = new ArrayList<String>();
-    // list.add("one");
-    // types.add(list.iterator());
-
     types.add((byte) 15); // END
 
     SolrInputDocument idoc = new SolrInputDocument();
@@ -211,6 +218,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
                 return super.readIterator(fis);
               }
             }; ) {
+      javabin.readMapAsNamedList(false);
       @SuppressWarnings({"unchecked"})
       List<Object> unmarshalledObj = (List<Object>) javabin.unmarshal(is);
       List<Object> matchObj = generateAllDataTypes();
@@ -285,6 +293,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         ByteArrayOutputStream os = new ByteArrayOutputStream()) {
 
       Object data = generateAllDataTypes();
+      javabin.readMapAsNamedList(false);
       javabin.marshal(data, os);
       byte[] newFormatBytes = os.toByteArray();
 
@@ -294,7 +303,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
         for (int i = 1;
             i < currentFormatBytes.length;
             i++) { // ignore the first byte. It is version information
-          assertEquals(newFormatBytes[i], currentFormatBytes[i]);
+          assertEquals("for i:" + i, newFormatBytes[i], currentFormatBytes[i]);
         }
       }
     }
@@ -383,6 +392,7 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     try (InputStream is = getClass().getResourceAsStream(fileName)) {
       try (DataInputInputStream dis = new FastInputStream(is)) {
         try (JavaBinCodec javabin = new JavaBinCodec()) {
+          javabin.readMapAsNamedList(false);
           return javabin.readMapEntry(dis);
         }
       }
@@ -410,10 +420,16 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
     }
   }
 
-  private static Object getObject(byte[] bytes) throws IOException {
+  private static Object getObjectWithMapAsNl(byte[] bytes, boolean mapAsNamedList)
+      throws IOException {
     try (JavaBinCodec jbc = new JavaBinCodec()) {
+      jbc.readMapAsNamedList(mapAsNamedList);
       return jbc.unmarshal(new ByteArrayInputStream(bytes));
     }
+  }
+
+  private static Object getObject(byte[] bytes) throws IOException {
+    return getObjectWithMapAsNl(bytes, false);
   }
 
   @Test
@@ -580,16 +596,6 @@ public class TestJavaBinCodec extends SolrTestCaseJ4 {
 
     // Print free memory
     System.out.println("Free Memory:" + runtime.freeMemory() / mb);
-  }
-
-  public static void main(String[] args) throws IOException {
-    TestJavaBinCodec test = new TestJavaBinCodec();
-    test.genBinaryFiles();
-    //    try {
-    //      doDecodePerf(args);
-    //    } catch (Exception e) {
-    //      throw new RuntimeException(e);
-    //    }
   }
 
   // common-case ascii

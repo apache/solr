@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -53,7 +53,7 @@ public class SyncStrategy {
 
   private volatile boolean isClosed;
 
-  private final Http2SolrClient solrClient;
+  private final HttpJettySolrClient solrClient;
 
   private final ExecutorService updateExecutor;
 
@@ -358,7 +358,7 @@ public class SyncStrategy {
           recoverRequestCmd.setAction(CoreAdminAction.REQUESTRECOVERY);
           recoverRequestCmd.setCoreName(coreName);
           try (SolrClient client =
-              new Http2SolrClient.Builder(baseUrl)
+              new HttpJettySolrClient.Builder(baseUrl)
                   .withHttpClient(solrClient)
                   .withIdleTimeout(120000, TimeUnit.MILLISECONDS)
                   .build()) {

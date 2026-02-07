@@ -39,7 +39,6 @@ public class TestDefaultStatsCache extends BaseDistributedSearchTestCase {
   @Override
   public void distribTearDown() throws Exception {
     super.distribTearDown();
-    System.clearProperty("solr.statsCache");
   }
 
   @Test

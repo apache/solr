@@ -49,7 +49,7 @@ teardown() {
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
 
   solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
@@ -87,7 +87,7 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_HOST=127.0.0.1
+  export SOLR_HOST_ADVERTISE=127.0.0.1
 
   solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
@@ -118,7 +118,7 @@ teardown() {
 
   # Restart the server enabling the SNI hostcheck
   export SOLR_SSL_CHECK_PEER_NAME=false
-  export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sniHostCheck=true"
+  export SOLR_OPTS="${SOLR_OPTS} -Dsolr.jetty.ssl.sni.host.check.enabled=true"
   solr restart
   # This should fail the SNI Hostname check
   run ! solr api --verbose --solr-url "https://localhost:${SOLR_PORT}/solr/admin/collections?action=CLUSTERSTATUS"
@@ -149,7 +149,7 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=false
   export SOLR_SSL_CHECK_PEER_NAME=true
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
 
   solr start
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
@@ -205,7 +205,7 @@ teardown() {
   export SOLR_SSL_NEED_CLIENT_AUTH=false
   export SOLR_SSL_WANT_CLIENT_AUTH=true
   export SOLR_SSL_CHECK_PEER_NAME=true
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
   export SOLR_SECURITY_MANAGER_ENABLED=true
 
   run solr start
@@ -320,7 +320,7 @@ teardown() {
   export SOLR_SSL_CHECK_PEER_NAME=true
   # Cannot set this to true, because the client certificate does not have the right hostname ("localhost") or IP
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
 
   solr start
   solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
@@ -459,7 +459,7 @@ teardown() {
   export SOLR_SSL_WANT_CLIENT_AUTH=true
   export SOLR_SSL_CHECK_PEER_NAME=true
   export SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=true
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
 
   solr start
   solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT}
@@ -521,19 +521,19 @@ teardown() {
   export SOLR_SSL_TRUST_STORE_PASSWORD=secret
   export SOLR_SSL_NEED_CLIENT_AUTH=true
   export SOLR_SSL_WANT_CLIENT_AUTH=false
-  export SOLR_HOST=localhost
+  export SOLR_HOST_ADVERTISE=localhost
 
   # server1 will run on $SOLR_PORT and will use server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server1.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server1.keystore.p12
-  solr start --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start --jvm-opts "-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR_PORT} --timeout 5000
 
   # server2 will run on $SOLR2_PORT and will use server2.keystore. Initially, this is the same as server1.keystore
   export SOLR_SSL_KEY_STORE=$ssl_dir/server2.keystore.p12
   export SOLR_SSL_TRUST_STORE=$ssl_dir/server2.keystore.p12
   
-  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts "-Dsolr.jetty.sslContext.reload.scanInterval=1 -DsocketTimeout=5000"
+  solr start -z localhost:${ZK_PORT} -p ${SOLR2_PORT} --jvm-opts "-Dsolr.jetty.ssl.context.reload.scan.interval.secs=1 -DsocketTimeout=5000"
   solr assert --started https://localhost:${SOLR2_PORT} --timeout 5000
 
   # "test" collection is two shards, meaning there must be communication between shards for queries (handled by http shard handler factory)

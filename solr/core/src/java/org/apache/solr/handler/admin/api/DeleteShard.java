@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.cloud.Overseer.QUEUE_OPERATION;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
@@ -80,8 +79,7 @@ public class DeleteShard extends AdminAPIBase implements DeleteShardApi {
             deleteInstanceDir,
             deleteDataDir,
             deleteIndex,
-            followAliases,
-            asyncId);
+            followAliases);
     submitRemoteMessageAndHandleResponse(
         response, CollectionParams.CollectionAction.DELETESHARD, remoteMessage, asyncId);
     return response;
@@ -93,17 +91,14 @@ public class DeleteShard extends AdminAPIBase implements DeleteShardApi {
       Boolean deleteInstanceDir,
       Boolean deleteDataDir,
       Boolean deleteIndex,
-      Boolean followAliases,
-      String asyncId) {
+      Boolean followAliases) {
     final Map<String, Object> remoteMessage = new HashMap<>();
-    remoteMessage.put(QUEUE_OPERATION, CollectionParams.CollectionAction.DELETESHARD.toLower());
     remoteMessage.put(COLLECTION_PROP, collectionName);
     remoteMessage.put(SHARD_ID_PROP, shardName);
     insertIfNotNull(remoteMessage, FOLLOW_ALIASES, followAliases);
     insertIfNotNull(remoteMessage, DELETE_INSTANCE_DIR, deleteInstanceDir);
     insertIfNotNull(remoteMessage, DELETE_DATA_DIR, deleteDataDir);
     insertIfNotNull(remoteMessage, DELETE_INDEX, deleteIndex);
-    insertIfNotNull(remoteMessage, ASYNC, asyncId);
 
     return new ZkNodeProps(remoteMessage);
   }

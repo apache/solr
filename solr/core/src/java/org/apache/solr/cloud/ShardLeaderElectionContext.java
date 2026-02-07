@@ -103,8 +103,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
    * weAreReplacement: has someone else been the leader already?
    */
   @Override
-  void runLeaderProcess(boolean weAreReplacement, int pauseBeforeStart)
-      throws KeeperException, InterruptedException {
+  void runLeaderProcess(boolean weAreReplacement) throws KeeperException, InterruptedException {
     String coreName = leaderProps.getStr(ZkStateReader.CORE_NAME_PROP);
     ActionThrottle lt;
     try (SolrCore core = cc.getCore(coreName)) {
@@ -196,7 +195,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         // first cancel any current recovery
         core.getUpdateHandler().getSolrCoreState().cancelRecovery();
 
-        if (weAreReplacement) {
+        if (weAreReplacement && !core.readOnly) {
           // wait a moment for any floating updates to finish
           try {
             Thread.sleep(2500);
@@ -296,7 +295,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
                 coreNodeName);
             zkController.getShardTerms(collection, shardId).setTermEqualsToLeader(coreNodeName);
           }
-          super.runLeaderProcess(weAreReplacement, 0);
+          super.runLeaderProcess(weAreReplacement);
           try (SolrCore core = cc.getCore(coreName)) {
             if (core != null) {
               core.getCoreDescriptor().getCloudDescriptor().setLeader(true);
@@ -452,7 +451,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       if (slices != null) {
         int found = 0;
         try {
-          found = zkClient.getChildren(shardsElectZkPath, null, true).size();
+          found = zkClient.getChildren(shardsElectZkPath, null).size();
         } catch (KeeperException e) {
           if (e instanceof KeeperException.SessionExpiredException) {
             // if the session has expired, then another election will be launched, so

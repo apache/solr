@@ -268,7 +268,7 @@ public class AtomicUpdateDocumentMerger {
         // not an in-place update if there are fields that are not maps
         return Collections.emptySet();
       }
-      // else it's a atomic update map...
+      // else it's an atomic update map...
       Map<String, Object> fieldValueMap = (Map<String, Object>) fieldValue;
       for (Entry<String, Object> entry : fieldValueMap.entrySet()) {
         String op = entry.getKey();
@@ -545,8 +545,11 @@ public class AtomicUpdateDocumentMerger {
     final String name = sif.getName();
     SolrInputField existingField = toDoc.get(name);
 
-    Collection<Object> original =
-        existingField != null ? existingField.getValues() : new ArrayList<>();
+    Collection<Object> original = existingField != null ? existingField.getValues() : null;
+
+    if (original == null) {
+      original = new ArrayList<>();
+    }
 
     int initialSize = original.size();
     if (fieldVal instanceof Collection) {

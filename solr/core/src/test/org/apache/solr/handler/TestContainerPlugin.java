@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Phaser;
 import java.util.concurrent.Semaphore;
@@ -38,8 +39,8 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.ConfigurablePlugin;
 import org.apache.solr.api.ContainerPluginsRegistry;
 import org.apache.solr.api.EndPoint;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.PackagePayload;
@@ -50,6 +51,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -77,7 +79,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   /**
    * A package listener that will count how many times it has been triggered. Useful to wait for
-   * changes accross multiple cores.
+   * changes across multiple cores.
    *
    * <p>Use by calling {@link #reset()} before the API calls, and then {@link #waitFor(int)} to
    * block until <code>num</code> cores have been notified.
@@ -111,7 +113,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
   @Before
   public void setup() throws Exception {
-    System.setProperty("enable.packages", "true");
+    System.setProperty("solr.packages.enabled", "true");
     phaser = new Phaser();
     forceV2 = random().nextBoolean();
 
@@ -142,7 +144,6 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   @After
   public void teardown() throws Exception {
     shutdownCluster();
-    System.clearProperty("enable.packages");
   }
 
   @SuppressWarnings("unchecked")
@@ -170,7 +171,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // just check if the plugin is indeed registered
     Callable<V2Response> readPluginState = getPlugin("/cluster/plugin");
     V2Response rsp = readPluginState.call();
-    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class", null));
+    assertEquals(C3.class.getName(), rsp._getStr("/plugin/testplugin/class"));
 
     // let's test the plugin
     TestDistribFileStore.assertResponseValues(
@@ -183,7 +184,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // verify it is removed
     rsp = readPluginState.call();
-    assertNull(rsp._get("/plugin/testplugin/class", null));
+    assertNull(rsp._get("/plugin/testplugin/class"));
 
     try (ErrorLogMuter errors = ErrorLogMuter.substring("TestContainerPlugin$C4")) {
       // test with a class  @EndPoint methods. This also uses a template in the path name
@@ -211,12 +212,11 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 
-    RemoteExecutionException e =
+    RemoteSolrException e =
         assertThrows(
-            RemoteExecutionException.class,
-            () -> getPlugin("/my-random-prefix/their/plugin").call());
+            RemoteSolrException.class, () -> getPlugin("/my-random-prefix/their/plugin").call());
     assertEquals(404, e.code());
-    final String msg = (String) ((Map<String, Object>) (e.getMetaData().get("error"))).get("msg");
+    final String msg = Utils.getObjectByPath(e.getRemoteErrorObject(), false, "msg").toString();
     assertThat(msg, containsString("Cannot find API for the path"));
 
     // test ClusterSingleton plugin
@@ -230,7 +230,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
 
     // just check if the plugin is indeed registered
     rsp = readPluginState.call();
-    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class", null));
+    assertEquals(C6.class.getName(), rsp._getStr("/plugin/clusterSingleton/class"));
 
     assertTrue("ccProvided", C6.ccProvided);
     assertTrue("startCalled", C6.startCalled);
@@ -395,7 +395,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // Verify that the expected error is thrown and the plugin is not registered
     expectError(addPlugin, "invalid config");
     V2Response response = readPluginState.call();
-    assertNull(response._getStr("/plugin/validatableplugin/class", null));
+    assertNull(response._getStr("/plugin/validatableplugin/class"));
 
     // Now register it with a valid configuration
     config.willPassValidation = true;
@@ -405,7 +405,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     response = readPluginState.call();
     assertEquals(
         ConfigurablePluginWithValidation.class.getName(),
-        response._getStr("/plugin/validatableplugin/class", null));
+        response._getStr("/plugin/validatableplugin/class"));
   }
 
   public static class CC1 extends CC {}
@@ -579,15 +579,17 @@ public class TestContainerPlugin extends SolrCloudTestCase {
   }
 
   private void expectError(V2Request req, String expectErrorMsg) {
-    String errPath = "/error/details[0]/errorMessages[0]";
+    String errPath = "details[0]/errorMessages[0]";
     expectError(req, cluster.getSolrClient(), errPath, expectErrorMsg);
   }
 
   private static void expectError(
       V2Request req, SolrClient client, String errPath, String expectErrorMsg) {
-    RemoteExecutionException e =
-        expectThrows(RemoteExecutionException.class, () -> req.process(client));
-    String msg = e.getMetaData()._getStr(errPath, "");
+    RemoteSolrException e = expectThrows(RemoteSolrException.class, () -> req.process(client));
+    String msg =
+        Objects.requireNonNullElse(
+                Utils.getObjectByPath(e.getRemoteErrorObject(), false, errPath), "")
+            .toString();
     assertTrue(expectErrorMsg, msg.contains(expectErrorMsg));
   }
 }

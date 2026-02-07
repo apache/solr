@@ -28,8 +28,11 @@ import java.io.PrintWriter;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -39,7 +42,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
@@ -47,6 +49,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.MapWriter.EntryWriter;
@@ -99,15 +102,15 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
 
   public static final String BATCH_SIZE_PARAM = "batchSize";
   public static final String QUEUE_SIZE_PARAM = "queueSize";
+  public static final String INCLUDE_STORED_FIELDS_PARAM = "includeStoredFields";
 
   public static final int DEFAULT_BATCH_SIZE = 30000;
   public static final int DEFAULT_QUEUE_SIZE = 150000;
   private static final FieldWriter EMPTY_FIELD_WRITER =
       new FieldWriter() {
         @Override
-        public boolean write(
-            SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out, int fieldIndex) {
-          return false;
+        public void write(SortDoc sortDoc, LeafReaderContext readerContext, EntryWriter out) {
+          // do nothing
         }
       };
 
@@ -482,44 +485,71 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       throws IOException {
     int ord = sortDoc.ord;
     LeafReaderContext context = leaves.get(ord);
-    int fieldIndex = 0;
     for (FieldWriter fieldWriter : writers) {
-      if (fieldWriter.write(sortDoc, context, ew, fieldIndex)) {
-        ++fieldIndex;
-      }
+      fieldWriter.write(sortDoc, context, ew);
     }
   }
 
   public List<FieldWriter> getFieldWriters(String[] fields, SolrQueryRequest req)
       throws IOException {
     DocValuesIteratorCache dvIterCache = new DocValuesIteratorCache(req.getSearcher(), false);
-
     SolrReturnFields solrReturnFields = new SolrReturnFields(fields, req);
+    boolean includeStoredFields = req.getParams().getBool(INCLUDE_STORED_FIELDS_PARAM, false);
 
     List<FieldWriter> writers = new ArrayList<>();
+    Set<SchemaField> docValueFields = new LinkedHashSet<>();
+    Map<String, SchemaField> storedFields = new LinkedHashMap<>();
+
     for (String field : req.getSearcher().getFieldNames()) {
       if (!solrReturnFields.wantsField(field)) {
         continue;
       }
       SchemaField schemaField = req.getSchema().getField(field);
-      if (!schemaField.hasDocValues()) {
-        throw new IOException(schemaField + " must have DocValues to use this feature.");
+      FieldType fieldType = schemaField.getType();
+
+      Set<String> requestFieldNames =
+          solrReturnFields.getRequestedFieldNames() == null
+              ? Set.of()
+              : solrReturnFields.getRequestedFieldNames();
+
+      if (canUseDocValues(schemaField, fieldType)) {
+        // Prefer DocValues when available
+        docValueFields.add(schemaField);
+      } else if (schemaField.stored()) {
+        // Field is stored-only (no usable DocValues)
+        if (includeStoredFields) {
+          storedFields.put(field, schemaField);
+        } else if (requestFieldNames.contains(field)) {
+          // Explicitly requested field without DocValues and includeStoredFields=false
+          throw new IOException(
+              schemaField
+                  + " must have DocValues to use this feature. "
+                  + "Try setting includeStoredFields=true to retrieve this field from stored values.");
+        }
+        // Else: glob matched stored-only field without includeStoredFields - silently skip
+      } else if (requestFieldNames.contains(field)) {
+        // Explicitly requested field that has neither DocValues nor stored
+        if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
+          throw new IOException(
+              schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
+        } else {
+          throw new IOException(
+              schemaField + " must have DocValues or be stored to use this feature.");
+        }
       }
+      // Else: glob matched field with neither DocValues nor stored - silently skip
+    }
+
+    for (SchemaField schemaField : docValueFields) {
+      String field = schemaField.getName();
       boolean multiValued = schemaField.multiValued();
       FieldType fieldType = schemaField.getType();
       FieldWriter writer;
 
-      if (fieldType instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
-        if (solrReturnFields.getRequestedFieldNames() != null
-            && solrReturnFields.getRequestedFieldNames().contains(field)) {
-          // Explicitly requested field cannot be used due to not having useDocValuesAsStored=true,
-          // throw exception
-          throw new IOException(
-              schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
-        } else {
-          // Glob pattern matched field cannot be used due to not having useDocValuesAsStored=true
-          continue;
-        }
+      if (schemaField.stored() && !storedFields.isEmpty()) {
+        // if we're reading StoredFields *anyway*, then we might as well avoid this extra DV lookup
+        storedFields.put(field, schemaField);
+        continue;
       }
 
       DocValuesIteratorCache.FieldDocValuesSupplier docValuesCache = dvIterCache.getSupplier(field);
@@ -574,7 +604,22 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
       }
       writers.add(writer);
     }
+
+    if (!storedFields.isEmpty()) {
+      writers.add(new StoredFieldsWriter(storedFields));
+    }
+
     return writers;
+  }
+
+  private static boolean canUseDocValues(SchemaField schemaField, FieldType fieldType) {
+    return schemaField.hasDocValues()
+        // Special handling for SortableTextField: unlike other field types, it requires
+        // useDocValuesAsStored=true to be included via glob patterns in /export. This
+        // matches the behavior of /select (which requires useDocValuesAsStored=true for
+        // all globbed fields) and avoids performance issues. The requirement cannot be
+        // extended to other field types in /export for backward compatibility reasons.
+        && (!(fieldType instanceof SortableTextField) || schemaField.useDocValuesAsStored());
   }
 
   SortDoc getSortDoc(SolrIndexSearcher searcher, SortField[] sortFields) throws IOException {
@@ -591,7 +636,7 @@ public class ExportWriter implements SolrCore.RawWriter, Closeable {
         throw new IOException(field + " must have DocValues to use this feature.");
       }
 
-      if (ft instanceof SortableTextField && schemaField.useDocValuesAsStored() == false) {
+      if (ft instanceof SortableTextField && !schemaField.useDocValuesAsStored()) {
         throw new IOException(
             schemaField + " Must have useDocValuesAsStored='true' to be used with export writer");
       }

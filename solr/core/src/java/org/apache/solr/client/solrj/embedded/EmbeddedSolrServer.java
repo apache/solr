@@ -29,17 +29,17 @@ import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;
 import org.apache.lucene.search.TotalHits.Relation;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.StreamingResponseCallback;
-import org.apache.solr.client.solrj.impl.InputStreamResponseParser;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
-import org.apache.solr.client.solrj.impl.XMLRequestWriter;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.XMLRequestWriter;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
+import org.apache.solr.client.solrj.response.ResponseParser;
+import org.apache.solr.client.solrj.response.StreamingResponseCallback;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -168,7 +168,7 @@ public class EmbeddedSolrServer extends SolrClient {
         SolrQueryRequest req =
             _parser.buildRequestFrom(
                 null, getParams(request), getContentStreams(request), request.getUserPrincipal());
-        req.getContext().put("httpMethod", request.getMethod().name());
+        req.getContext().put("httpMethod", request.getMethod());
         req.getContext().put(PATH, path);
         SolrQueryResponse resp = new SolrQueryResponse();
         handler.handleRequest(req, resp);
@@ -221,7 +221,7 @@ public class EmbeddedSolrServer extends SolrClient {
               .buildRequestFrom(
                   core, params, getContentStreams(request), request.getUserPrincipal());
       req.getContext().put(PATH, path);
-      req.getContext().put("httpMethod", request.getMethod().name());
+      req.getContext().put("httpMethod", request.getMethod());
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
 

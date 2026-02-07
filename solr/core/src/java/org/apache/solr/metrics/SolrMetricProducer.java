@@ -16,10 +16,20 @@
  */
 package org.apache.solr.metrics;
 
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 
 /** Used by objects that expose metrics through {@link SolrMetricManager}. */
 public interface SolrMetricProducer extends AutoCloseable {
+
+  public static final AttributeKey<String> TYPE_ATTR = AttributeKey.stringKey("type");
+  public static final AttributeKey<String> CATEGORY_ATTR = AttributeKey.stringKey("category");
+  public static final AttributeKey<String> HANDLER_ATTR = AttributeKey.stringKey("handler");
+  public static final AttributeKey<String> OPERATION_ATTR = AttributeKey.stringKey("ops");
+  public static final AttributeKey<String> RESULT_ATTR = AttributeKey.stringKey("result");
+  public static final AttributeKey<String> NAME_ATTR = AttributeKey.stringKey("name");
+  public static final AttributeKey<String> PLUGIN_NAME_ATTR = AttributeKey.stringKey("plugin_name");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /
@@ -40,20 +50,20 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Initialize metrics specific to this producer.
+   * Implementation should initialize all metrics to a {@link SolrMetricsContext}
+   * Registry/MeterProvider with {@link Attributes} as the common set of attributes that will be
+   * attached to every metric that is initialized for that class/component
    *
-   * @param parentContext parent metrics context. If this component has the same life-cycle as the
-   *     parent it can simply use the parent context, otherwise it should obtain a child context
-   *     using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code> as the
-   *     child object.
-   * @param scope component scope
+   * @param parentContext The registry that the component will initialize metrics to
+   * @param attributes Base set of attributes that will be bound to all metrics for that component
    */
-  void initializeMetrics(SolrMetricsContext parentContext, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes);
 
   /**
    * Implementations should return the context used in {@link #initializeMetrics(SolrMetricsContext,
-   * String)} to ensure proper cleanup of metrics at the end of the life-cycle of this component.
-   * This should be the child context if one was created, or null if the parent context was used.
+   * Attributes)} to ensure proper cleanup of metrics at the end of the life-cycle of this
+   * component. This should be the child context if one was created, or null if the parent context
+   * was used.
    */
   SolrMetricsContext getSolrMetricsContext();
 
@@ -70,9 +80,7 @@ public interface SolrMetricProducer extends AutoCloseable {
   @Override
   default void close() throws IOException {
     SolrMetricsContext context = getSolrMetricsContext();
-    if (context == null) {
-      return;
-    } else {
+    if (context != null) {
       context.unregister();
     }
   }

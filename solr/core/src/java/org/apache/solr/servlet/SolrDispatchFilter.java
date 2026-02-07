@@ -17,38 +17,25 @@
 package org.apache.solr.servlet;
 
 import static org.apache.solr.servlet.ServletUtils.closeShield;
-import static org.apache.solr.servlet.ServletUtils.configExcludes;
-import static org.apache.solr.servlet.ServletUtils.excludedPath;
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
-import static org.apache.solr.util.tracing.TraceUtils.setTracer;
 
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
-import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
-import org.apache.http.client.HttpClient;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.ExecutorUtil;
-import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.logging.MDCSnapshot;
-import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.apache.solr.security.AuthenticationPlugin;
@@ -68,34 +55,14 @@ import org.slf4j.LoggerFactory;
 // servlets that are more focused in scope. This should become possible now that we have a
 // ServletContextListener for startup/shutdown of CoreContainer that sets up a service from which
 // things like CoreContainer can be requested. (or better yet injected)
-public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
+public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  private CoreContainerProvider containerProvider;
-
-  protected final CountDownLatch init = new CountDownLatch(1);
 
   protected String abortErrorMessage = null;
 
   private HttpSolrCallFactory solrCallFactory;
 
-  @Override
-  public void setExcludePatterns(List<Pattern> excludePatterns) {
-    this.excludePatterns = excludePatterns;
-  }
-
-  private List<Pattern> excludePatterns;
-
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
-
-  public HttpClient getHttpClient() {
-    try {
-      return containerProvider.getHttpClient();
-    } catch (UnavailableException e) {
-      throw new SolrException(
-          ErrorCode.SERVER_ERROR, "Internal Http Client Unavailable, startup may have failed");
-    }
-  }
 
   /**
    * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
@@ -110,9 +77,9 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
     RETURN,
     RETRY,
     ADMIN,
-    REMOTEQUERY,
+    REMOTEPROXY,
     PROCESS,
-    ADMIN_OR_REMOTEQUERY
+    ADMIN_OR_REMOTEPROXY
   }
 
   public SolrDispatchFilter() {}
@@ -123,7 +90,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
 
   public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
 
-  public static final String SOLR_DEFAULT_CONFDIR_ATTRIBUTE = "solr.default.confdir";
+  public static final String SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE =
+      "solr.configset.default.confdir";
 
   public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
 
@@ -132,7 +100,7 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
   @Override
   public void init(FilterConfig config) throws ServletException {
     try {
-      containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
+      super.init(config);
       boolean isCoordinator =
           NodeRoles.MODE_ON.equals(getCores().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
@@ -141,7 +109,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
 
-      configExcludes(this, config.getInitParameter("excludePatterns"));
     } catch (Throwable t) {
       // catch this so our filter still works
       log.error("Could not start Dispatch Filter.", t);
@@ -150,65 +117,48 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
       }
     } finally {
       log.trace("SolrDispatchFilter.init() done");
-      init.countDown();
     }
-  }
-
-  /** The CoreContainer. It's ready for use, albeit could shut down whenever. Never null. */
-  public CoreContainer getCores() throws UnavailableException {
-    return containerProvider.getCoreContainer();
   }
 
   @Override
-  @SuppressForbidden(
-      reason =
-          "Set the thread contextClassLoader for all 3rd party dependencies that we cannot control")
   public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
-    if (excludedPath(excludePatterns, request, response, chain)) {
-      return;
-    }
+    // internal version of doFilter that tracks if we are in a retry
 
-    try (var mdcSnapshot = MDCSnapshot.create()) {
-      assert null != mdcSnapshot; // prevent compiler warning
-      MDCLoggingContext.reset();
-      MDCLoggingContext.setNode(getCores());
-      Thread.currentThread().setContextClassLoader(getCores().getResourceLoader().getClassLoader());
-
-      doFilterRetry(closeShield(request), closeShield(response), chain, false);
-    }
+    dispatch(chain, closeShield(request), closeShield(response), false);
   }
 
-  protected void doFilterRetry(
-      HttpServletRequest request, HttpServletResponse response, FilterChain chain, boolean retry)
-      throws IOException, ServletException {
-    setTracer(request, getCores().getTracer());
-    RateLimitManager rateLimitManager = containerProvider.getRateLimitManager();
-    try {
-      ServletUtils.rateLimitRequest(
-          rateLimitManager,
-          request,
-          response,
-          () -> {
-            try {
-              dispatch(chain, request, response, retry);
-            } catch (IOException | ServletException | SolrAuthenticationException e) {
-              throw new ExceptionWhileTracing(e);
-            }
-          });
-    } finally {
-      ServletUtils.consumeInputFully(request, response);
-      SolrRequestInfo.reset();
-      SolrRequestParsers.cleanupMultipartFiles(request);
-    }
-  }
+  /*
+  Wait? Where did X go??? (I hear you ask).
+
+  For over a decade this class did anything and everything
+  In late 2021 SOLR-15590 moved container startup to CoreContainerProvider
+  In late 2025 SOLR-18040 moved request wrappers to independent ServletFilters
+    such as PathExclusionFilter see web.xml for a full, up-to-date list
+
+  This class is moving toward only handling dispatch, please think twice
+  before adding anything else to it.
+   */
 
   private void dispatch(
       FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry)
-      throws IOException, ServletException, SolrAuthenticationException {
+      throws IOException, ServletException {
 
     AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
-    authenticateRequest(request, response, wrappedRequest);
+    try {
+      authenticateRequest(request, response, wrappedRequest);
+    } catch (SolrAuthenticationException e) {
+      // it seems our auth system expects the plugin to set the status on the request.
+      // If this hasn't happened make sure it does happen now rather than throwing an
+      // exception, that formerly went on to be ignored in
+      // org.apache.solr.servlet.ServletUtils.traceHttpRequestExecution2
+      if (response.getStatus() < 400) {
+        log.error(
+            "Authentication Plugin threw SolrAuthenticationException without setting request status >= 400");
+        response.sendError(401, "Authentication Plugin rejected credentials.");
+      }
+      return; // Nothing more to do, chain.doFilter(req,res) doesn't get called.
+    }
     if (wrappedRequest.get() != null) {
       request = wrappedRequest.get();
     }
@@ -238,7 +188,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           break;
         case RETRY:
           span.addEvent("SolrDispatchFilter RETRY");
-          doFilterRetry(request, response, chain, true); // RECURSION
+          // RECURSION
+          dispatch(chain, request, response, true);
           break;
         case FORWARD:
           span.addEvent("SolrDispatchFilter FORWARD");
@@ -246,8 +197,8 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
           break;
         case ADMIN:
         case PROCESS:
-        case REMOTEQUERY:
-        case ADMIN_OR_REMOTEQUERY:
+        case REMOTEPROXY:
+        case ADMIN_OR_REMOTEPROXY:
         case RETURN:
           break;
       }
@@ -384,11 +335,6 @@ public class SolrDispatchFilter extends HttpFilter implements PathExcluder {
     }
     return cores.getAuditLoggerPlugin() != null
         && cores.getAuditLoggerPlugin().shouldLog(eventType);
-  }
-
-  @VisibleForTesting
-  void replaceRateLimitManager(RateLimitManager rateLimitManager) {
-    containerProvider.setRateLimitManager(rateLimitManager);
   }
 
   /** internal API */

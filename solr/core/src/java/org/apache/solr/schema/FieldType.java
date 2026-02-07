@@ -47,10 +47,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MultiTermQuery;
-import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
@@ -367,6 +366,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external (string, human readable) value
    *
+   * <p>This is the default method used for converting a stored field value into an external value
+   * to be returned to clients. See {@link ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toObject(IndexableField)
    * @see #toInternal
    */
   public String toExternal(IndexableField f) {
@@ -384,6 +387,10 @@ public abstract class FieldType extends FieldProperties {
   /**
    * Convert the stored-field format to an external object.
    *
+   * <p>This method is not typically used for custom FieldTypes, see {@link
+   * ExternalizeStoredValuesAsObjects} for more details
+   *
+   * @see #toExternal
    * @see #toInternal
    * @since solr 1.3
    */
@@ -483,8 +490,8 @@ public abstract class FieldType extends FieldProperties {
     if (termStr != null && termStr.isEmpty()) {
       return getExistenceQuery(parser, sf);
     }
-    PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
-    query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
+    PrefixQuery query =
+        new PrefixQuery(new Term(sf.getName(), termStr), sf.getType().getRewriteMethod(parser, sf));
     QueryUtils.ensurePrefixQueryObeysMinimumPrefixLength(parser, query, termStr);
     return query;
   }
@@ -1022,8 +1029,7 @@ public abstract class FieldType extends FieldProperties {
    * to an unbounded rangeQuery.
    *
    * <p>This method should only be overridden whenever a fieldType does not support {@link
-   * org.apache.lucene.search.DocValuesFieldExistsQuery} or {@link
-   * org.apache.lucene.search.NormsFieldExistsQuery}. If a fieldType does not support an unbounded
+   * org.apache.lucene.search.FieldExistsQuery}. If a fieldType does not support an unbounded
    * rangeQuery as an existenceQuery (such as <code>double</code> or <code>float</code> fields),
    * {@link #getSpecializedExistenceQuery} should be overridden.
    *
@@ -1033,10 +1039,10 @@ public abstract class FieldType extends FieldProperties {
    */
   public Query getExistenceQuery(QParser parser, SchemaField field) {
     if (field.hasDocValues()) {
-      return new DocValuesFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else if (!field.omitNorms()
         && !isPointField()) { // TODO: Remove !isPointField() for SOLR-14199
-      return new NormsFieldExistsQuery(field.getName());
+      return new FieldExistsQuery(field.getName());
     } else {
       // Default to an unbounded range query
       return getSpecializedExistenceQuery(parser, field);
@@ -1461,6 +1467,22 @@ public abstract class FieldType extends FieldProperties {
     final byte[] bytes = Base64.getDecoder().decode(val);
     return new BytesRef(bytes);
   }
+
+  /**
+   * A marker interface that can be implemented by any FieldType to indicate that Solr should trust
+   * &amp; delegate to this field type's implementation of {@link
+   * FieldType#toObject(IndexableField)} when converted internal stored fields to an external
+   * representation that will be returned to clients.
+   *
+   * <p>The default behavior if this interface is not implemented, is to delegate to {@link
+   * FieldType#toExternal(IndexableField)}, unless the field type is (exactly equal to) one of a
+   * specific list of {@link org.apache.solr.response.DocsStreamer#KNOWN_TYPES}
+   *
+   * @see #toExternal
+   * @see #toObject(IndexableField)
+   * @see org.apache.solr.response.DocsStreamer#KNOWN_TYPES
+   */
+  public static interface ExternalizeStoredValuesAsObjects {}
 
   /**
    * An enumeration representing various options that may exist for selecting a single value from a

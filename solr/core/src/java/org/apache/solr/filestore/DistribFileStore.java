@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrPaths;
@@ -62,9 +63,9 @@ import org.slf4j.LoggerFactory;
 @NotThreadSafe
 public class DistribFileStore implements FileStore {
   static final long MAX_PKG_SIZE =
-      Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
+      EnvUtils.getPropertyAsLong("solr.filestore.filesize.max", (long) (100 * 1024 * 1024));
 
-  /** This is where al the files in the package store are listed */
+  /** This is where all the files in the package store are listed */
   static final String ZK_PACKAGESTORE = "/packagestore";
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -204,7 +205,7 @@ public class DistribFileStore implements FileStore {
       ByteBuffer filedata = null;
       try {
         final var fileRequest = new FileStoreApi.GetFile(path);
-        final var fileResponse = solrClient.requestWithBaseUrl(baseUrl, null, fileRequest);
+        final var fileResponse = fileRequest.processWithBaseUrl(solrClient, baseUrl, null);
         try (final var stream = fileResponse.getResponseStreamIfSuccessful()) {
           filedata = Utils.newBytesConsumer((int) MAX_PKG_SIZE).accept(stream);
         }
@@ -344,18 +345,18 @@ public class DistribFileStore implements FileStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
+
       coreContainer
           .getZkController()
           .getZkClient()
-          .makePath(ZK_PACKAGESTORE + dirName, false, true);
-      coreContainer
-          .getZkController()
-          .getZkClient()
-          .create(
+          .makePath(
               ZK_PACKAGESTORE + info.path,
               info.getDetails().getMetaData().sha512.getBytes(UTF_8),
               CreateMode.PERSISTENT,
-              true);
+              null,
+              false,
+              0);
+
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
     }
@@ -452,7 +453,7 @@ public class DistribFileStore implements FileStore {
   }
 
   @Override
-  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing)
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchMissing)
       throws IOException {
     Path file = getRealPath(path);
     String simpleName = file.getFileName().toString();
@@ -537,7 +538,7 @@ public class DistribFileStore implements FileStore {
   private void checkInZk(String path) {
     try {
       // fail if file exists
-      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path, true)) {
+      if (coreContainer.getZkController().getZkClient().exists(ZK_PACKAGESTORE + path)) {
         throw new SolrException(BAD_REQUEST, "The path exist ZK, delete and retry");
       }
 
@@ -561,11 +562,7 @@ public class DistribFileStore implements FileStore {
       @SuppressWarnings({"rawtypes"})
       List l = null;
       try {
-        l =
-            coreContainer
-                .getZkController()
-                .getZkClient()
-                .getChildren(ZK_PACKAGESTORE + path, null, true);
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE + path, null);
       } catch (KeeperException.NoNodeException e) {
         // does not matter
       }
@@ -573,7 +570,6 @@ public class DistribFileStore implements FileStore {
         @SuppressWarnings({"rawtypes"})
         List myFiles = list(path, s -> true);
         for (Object f : l) {
-          // TODO: https://issues.apache.org/jira/browse/SOLR-15426
           // l should be a List<String> and myFiles should be a List<FileDetails>, so contains
           // should always return false!
           if (!myFiles.contains(f)) {
@@ -679,7 +675,7 @@ public class DistribFileStore implements FileStore {
 
   public static void deleteZKFileEntry(SolrZkClient client, String path) {
     try {
-      client.delete(ZK_PACKAGESTORE + path, -1, true);
+      client.delete(ZK_PACKAGESTORE + path, -1);
     } catch (KeeperException | InterruptedException e) {
       log.error("", e);
     }

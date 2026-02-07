@@ -16,7 +16,9 @@
  */
 package org.apache.solr.schema;
 
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -25,6 +27,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -34,11 +37,19 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathFactory;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.StoredFields;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.lucene.tests.util.TestUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.AbstractBadConfigTestBase;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -46,7 +57,11 @@ import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 
-/** Tests the useDocValuesAsStored functionality. */
+/**
+ * Tests the useDocValuesAsStored functionality.
+ *
+ * <p>This test uses XML/json (text writer) based responses.
+ */
 public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
   private int id = 1;
@@ -111,7 +126,7 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
 
     // initCore will trigger an upgrade to managed schema, since the solrconfig has
     // <schemaFactory class="ManagedIndexSchemaFactory" ... />
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     System.setProperty("managed.schema.mutable", "true");
     initCore("solrconfig-managed-schema.xml", "schema-non-stored-docvalues.xml", tmpSolrHome);
 
@@ -122,8 +137,6 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
   public void afterTest() {
     clearIndex();
     deleteCore();
-    System.clearProperty("managed.schema.mutable");
-    System.clearProperty("enable.update.log");
   }
 
   public String getCoreName() {
@@ -239,6 +252,96 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
           nextValues(arity[7], "str"));
       doTest("enumField", "enum" + plural(arity[8]) + "_dvo", "str", nextValues(arity[8], "enum"));
     }
+  }
+
+  /**
+   * @see TestBinaryField
+   * @see #testInternallyReversedBytesBinary
+   * @see #testExternallyPrefixedStringifiedBinary
+   */
+  public void testBinary() throws Exception {
+
+    // When indexing: BinaryField can parse base64 encoded string values
+    // In XML/json output: response values will also be base64 encoded
+    final String data = Base64.getEncoder().encodeToString(new byte[] {0, 0, 1, 2, 3});
+
+    doTest("binary stored only", "foo_bin", "str", data);
+    doTest("binary stored+DV", "foo_bin_dv", "str", data);
+    doTest("binary DV only", "foo_bin_dvo", "str", data);
+
+    // sanity check our low level internal values
+    final BytesRef expectedInternalValue = new BytesRef(new byte[] {0, 0, 1, 2, 3});
+    assertAllInternalBinaryValuesMatch("foo_bin", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_bin_dv", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_bin_dvo", expectedInternalValue);
+  }
+
+  /**
+   * @see TestBinaryField
+   * @see #testBinary
+   * @see #testInternallyReversedBytesBinary
+   */
+  public void testExternallyPrefixedStringifiedBinary() throws Exception {
+
+    // This field type *enforces* base64 encoded binary data, with a custom prefix
+    final String data =
+        StrBinaryField.PREFIX + Base64.getEncoder().encodeToString(new byte[] {0, 0, 1, 2, 3});
+
+    doTest("(str) binary stored only", "foo_str_bin", "str", data);
+    doTest("(str) binary stored+DV", "foo_str_bin_dv", "str", data);
+    doTest("(str) binary DV only", "foo_str_bin_dvo", "str", data);
+
+    // sanity check our low level internal values
+    final BytesRef expectedInternalValue = new BytesRef(new byte[] {0, 0, 1, 2, 3});
+    assertAllInternalBinaryValuesMatch("foo_str_bin", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_str_bin_dv", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_str_bin_dvo", expectedInternalValue);
+  }
+
+  /**
+   * @see TestBinaryField
+   * @see #testBinary
+   * @see #testExternallyPrefixedStringifiedBinary
+   */
+  public void testInternallyReversedBytesBinary() throws Exception {
+
+    // When indexing: BinaryField can parse base64 encoded string values
+    // In XML/json output: response values will also be base64 encoded
+    final String data = Base64.getEncoder().encodeToString(new byte[] {0, 0, 1, 2, 3});
+
+    doTest("(rev) binary stored only", "foo_rev_bin", "str", data);
+    doTest("(rev) binary stored+DV", "foo_rev_bin_dv", "str", data);
+    doTest("(rev) binary DV only", "foo_rev_bin_dvo", "str", data);
+
+    // sanity check our low level internal values
+    final BytesRef expectedInternalValue = new BytesRef(new byte[] {3, 2, 1, 0, 0});
+    assertAllInternalBinaryValuesMatch("foo_rev_bin", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_rev_bin_dv", expectedInternalValue);
+    assertAllInternalBinaryValuesMatch("foo_rev_bin_dvo", expectedInternalValue);
+  }
+
+  public void testSanityCheckOfSwapBytesBinaryField() throws Exception {
+    final byte[] expected = new byte[] {1, 2, 3, 4, 5};
+
+    assertArrayEquals(
+        expected, SwapBytesBinaryField.copyAndReverse(new byte[] {5, 4, 3, 2, 1}, 0, 5));
+    assertArrayEquals(
+        expected, SwapBytesBinaryField.copyAndReverse(new byte[] {9, 5, 4, 3, 2, 1, 0}, 1, 5));
+
+    assertEquals(
+        ByteBuffer.wrap(expected),
+        SwapBytesBinaryField.copyAndReverse(ByteBuffer.wrap(new byte[] {5, 4, 3, 2, 1})));
+    assertEquals(
+        ByteBuffer.wrap(expected),
+        SwapBytesBinaryField.copyAndReverse(
+            ByteBuffer.wrap(new byte[] {9, 5, 4, 3, 2, 1, 0}, 1, 5)));
+
+    assertEquals(
+        new BytesRef(expected),
+        SwapBytesBinaryField.copyAndReverse(new BytesRef(new byte[] {5, 4, 3, 2, 1})));
+    assertEquals(
+        new BytesRef(expected),
+        SwapBytesBinaryField.copyAndReverse(new BytesRef(new byte[] {9, 5, 4, 3, 2, 1, 0}, 1, 5)));
   }
 
   private String plural(int arity) {
@@ -539,5 +642,32 @@ public class TestUseDocValuesAsStored extends AbstractBadConfigTestBase {
         "/response/docs/[0]/test_mvt_dvu_st_str/[0]==cccc",
         "/response/docs/[0]/test_mvt_dvu_st_str/[1]==aaaa",
         "/response/docs/[0]/test_mvt_dvu_st_str/[2]==bbbb");
+  }
+
+  /**
+   * A fairly niche helper method that asserts all binary doc values and/or stored values in the
+   * specified field (regardless of doc id) all match an explicitly expected value.
+   */
+  private final void assertAllInternalBinaryValuesMatch(
+      final String fieldName, final BytesRef expected) throws IOException {
+    try (SolrCore core = h.getCoreInc()) {
+      final IndexReader top = core.withSearcher(SolrIndexSearcher::getIndexReader);
+      final StoredFields stored = top.storedFields();
+      for (int id = 0; id < top.maxDoc(); id++) {
+        final IndexableField storedValue = stored.document(id).getField(fieldName);
+        // we might be called on a non-stored field, but if it is stored it better be binary
+        if (null != storedValue) {
+          assertEquals(expected, storedValue.binaryValue());
+        }
+      }
+      for (LeafReaderContext context : top.leaves()) {
+        // Note: explicitly avoid DocValues.getBinary(...) to bypass type check.
+        // For our purposes, we're fine with NONE if the field type isn't using docValues at all
+        final BinaryDocValues dv = context.reader().getBinaryDocValues(fieldName);
+        while (null != dv && dv.nextDoc() < BinaryDocValues.NO_MORE_DOCS) {
+          assertEquals(expected, dv.binaryValue());
+        }
+      }
+    }
   }
 }

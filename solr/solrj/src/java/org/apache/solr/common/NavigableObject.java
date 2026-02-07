@@ -34,23 +34,22 @@ public interface NavigableObject {
    * list of strings where performance is important
    *
    * @param path the full path to that object such as a/b/c[4]/d etc
-   * @param def the default
    * @return the found value or default
    */
-  default Object _get(String path, Object def) {
+  default Object _get(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : v;
+    return v;
   }
 
   /**
    * get the value as a String. useful in tests
    *
    * @param path the full path
-   * @param def default value
    */
-  default String _getStr(String path, String def) {
+  default String _getStr(String path) {
     Object v = Utils.getObjectByPath(this, false, path);
-    return v == null ? def : String.valueOf(v);
+    if (v == null) return null;
+    return String.valueOf(v);
   }
 
   /**

@@ -73,7 +73,7 @@ public class DebugComponent extends SearchComponent {
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.isDebugTrack() && rb.isDistrib) {
       rb.setNeedDocList(true);
-      doDebugTrack(rb);
+      rb.addDebug(new SimpleOrderedMap<>(), "track");
     }
   }
 
@@ -140,11 +140,6 @@ public class DebugComponent extends SearchComponent {
     }
   }
 
-  private void doDebugTrack(ResponseBuilder rb) {
-    final String rid = rb.req.getParams().get(CommonParams.REQUEST_ID);
-    rb.addDebug(rid, "track", CommonParams.REQUEST_ID); // to see it in the response
-  }
-
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
     if (!rb.isDebug()) return;
@@ -176,7 +171,6 @@ public class DebugComponent extends SearchComponent {
     }
     if (rb.isDebugTrack()) {
       sreq.params.add(CommonParams.DEBUG, CommonParams.TRACK);
-      sreq.params.set(CommonParams.REQUEST_ID, rb.req.getParams().get(CommonParams.REQUEST_ID));
       sreq.params.set(
           CommonParams.REQUEST_PURPOSE, SolrPluginUtils.getRequestPurpose(sreq.purpose));
     }
@@ -200,10 +194,10 @@ public class DebugComponent extends SearchComponent {
       NamedList<Object> stageList =
           (NamedList<Object>)
               ((NamedList<Object>) rb.getDebugInfo().get("track"))
-                  .get(getDistributedStageName(rb.stage));
+                  .get(getDistributedStageName(rb.getStage()));
       if (stageList == null) {
         stageList = new SimpleOrderedMap<>();
-        rb.addDebug(stageList, "track", getDistributedStageName(rb.stage));
+        rb.addDebug(stageList, "track", getDistributedStageName(rb.getStage()));
       }
       for (ShardResponse response : sreq.responses) {
         stageList.add(response.getShard(), getTrackResponse(response));
@@ -216,7 +210,7 @@ public class DebugComponent extends SearchComponent {
   @Override
   @SuppressWarnings({"unchecked"})
   public void finishStage(ResponseBuilder rb) {
-    if (rb.isDebug() && rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.isDebug() && rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       NamedList<Object> info = rb.getDebugInfo();
       NamedList<Object> explain = new SimpleOrderedMap<>();
 

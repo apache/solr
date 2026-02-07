@@ -25,8 +25,8 @@ import java.util.function.Predicate;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -53,8 +53,7 @@ public class TestAuthorizationFramework extends AbstractFullDistribZkTestBase {
         new ZkStateReader(zkServer.getZkAddress(), TIMEOUT, TIMEOUT)) {
       zkStateReader
           .getZkClient()
-          .create(
-              ZkStateReader.SOLR_SECURITY_CONF_PATH, SECURITY_JSON, CreateMode.PERSISTENT, true);
+          .create(ZkStateReader.SOLR_SECURITY_CONF_PATH, SECURITY_JSON, CreateMode.PERSISTENT);
     }
   }
 

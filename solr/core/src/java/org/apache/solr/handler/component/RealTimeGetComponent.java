@@ -331,7 +331,7 @@ public class RealTimeGetComponent extends SearchComponent {
           if (rb.getFilters() != null) {
             for (Query raw : rb.getFilters()) {
               raw = makeQueryable(raw);
-              Query q = raw.rewrite(searcherInfo.getSearcher().getIndexReader());
+              Query q = raw.rewrite(searcherInfo.getSearcher());
               Scorer scorer =
                   searcherInfo
                       .getSearcher()
@@ -1030,8 +1030,8 @@ public class RealTimeGetComponent extends SearchComponent {
 
   @Override
   public int distributedProcess(ResponseBuilder rb) throws IOException {
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) return ResponseBuilder.STAGE_GET_FIELDS;
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       return createSubRequests(rb);
     }
     return ResponseBuilder.STAGE_DONE;
@@ -1143,7 +1143,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
 

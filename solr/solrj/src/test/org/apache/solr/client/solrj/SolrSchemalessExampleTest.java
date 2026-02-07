@@ -30,18 +30,22 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.InputStreamEntity;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.JavaBinRequestWriter;
-import org.apache.solr.client.solrj.impl.JavaBinResponseParser;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.HttpSolrClient;
+import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
+import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.ExternalPaths;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
+
+  protected HttpClient getHttpClient() {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    return client.getHttpClient();
+  }
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -57,22 +61,13 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
     PathUtils.copyDirectory(ExternalPaths.DEFAULT_CONFIGSET, collection1Dir);
     Properties props = new Properties();
     props.setProperty("name", "collection1");
-    OutputStreamWriter writer = null;
-    try {
-      writer =
-          new OutputStreamWriter(
-              PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
-              StandardCharsets.UTF_8);
+    try (OutputStreamWriter writer =
+        new OutputStreamWriter(
+            PathUtils.newOutputStream(collection1Dir.resolve("core.properties"), false),
+            StandardCharsets.UTF_8)) {
       props.store(writer, null);
-    } finally {
-      if (writer != null) {
-        try {
-          writer.close();
-        } catch (Exception ignore) {
-        }
-      }
     }
-    createAndStartJetty(tempSolrHome);
+    solrTestRule.startSolr(tempSolrHome);
   }
 
   @Test
@@ -91,7 +86,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
         new InputStreamEntity(new ByteArrayInputStream(json.getBytes(StandardCharsets.UTF_8)), -1));
     HttpResponse response =
         httpClient.execute(post, HttpClientUtil.createNewHttpClientRequestContext());
-    Utils.consumeFully(response.getEntity());
+    HttpClientUtil.consumeFully(response.getEntity());
     assertEquals(200, response.getStatusLine().getStatusCode());
     client.commit();
     assertNumFound("*:*", 2);

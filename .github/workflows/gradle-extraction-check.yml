@@ -1,0 +1,25 @@
+# This test covers TikaServer tests for SolrCell, since crave does not support docker yet.
+name: Extraction module tests with Docker
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'solr/modules/extraction/**'
+
+jobs:
+  test:
+    name: extraction module tests with docker
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - uses: ./.github/actions/prepare-for-build
+
+      - name: Run extraction module tests
+        run: ./gradlew --no-daemon solr:modules:extraction:check

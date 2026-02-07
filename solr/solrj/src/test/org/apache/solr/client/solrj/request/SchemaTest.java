@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import org.apache.commons.io.file.PathUtils;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.schema.AnalyzerDefinition;
 import org.apache.solr.client.solrj.request.schema.FieldTypeDefinition;
@@ -56,13 +57,12 @@ public class SchemaTest extends RestTestBase {
     assertEquals(
         "Response contained errors: " + schemaResponse.toString(), 0, schemaResponse.getStatus());
     assertNull(
-        "Response contained errors: " + schemaResponse.toString(),
-        schemaResponse.getResponse().get("errors"));
+        "Response contained errors: " + schemaResponse, schemaResponse.getResponse().get("errors"));
   }
 
   private static void assertFailedSchemaResponse(
       ThrowingRunnable runnable, String expectedErrorMessage) {
-    final var e = expectThrows(SolrClient.RemoteSolrException.class, runnable);
+    final var e = expectThrows(RemoteSolrException.class, runnable);
     assertThat(e.getMessage(), containsString(expectedErrorMessage));
   }
 
@@ -104,7 +104,7 @@ public class SchemaTest extends RestTestBase {
     final SortedMap<ServletHolder, String> extraServlets = new TreeMap<>();
 
     System.setProperty("managed.schema.mutable", "true");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
 
     createJettyAndHarness(
         tmpSolrHome, "solrconfig-managed-schema.xml", "schema.xml", "/solr", true, extraServlets);
@@ -112,7 +112,7 @@ public class SchemaTest extends RestTestBase {
 
   @After
   public void cleanup() throws Exception {
-    solrClientTestRule.reset();
+    solrTestRule.reset();
     if (restTestHarness != null) {
       restTestHarness.close();
     }
@@ -460,7 +460,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deletingADynamicFieldThatDoesntExistInTheSchemaShouldFail() throws Exception {
+  public void deletingADynamicFieldThatDoesntExistInTheSchemaShouldFail() {
     String dynamicFieldName = "*_notexists";
     SchemaRequest.DeleteDynamicField deleteDynamicFieldRequest =
         new SchemaRequest.DeleteDynamicField(dynamicFieldName);
@@ -722,7 +722,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deletingAFieldTypeThatDoesntExistInTheSchemaShouldFail() throws Exception {
+  public void deletingAFieldTypeThatDoesntExistInTheSchemaShouldFail() {
     String fieldType = "fieldTypeToBeDeleted";
     SchemaRequest.DeleteFieldType deleteFieldTypeRequest =
         new SchemaRequest.DeleteFieldType(fieldType);
@@ -847,7 +847,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void copyFieldsShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() throws Exception {
+  public void copyFieldsShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() {
     String srcFieldName = "srcnotexist";
     String destFieldName1 = "destNotExist1", destFieldName2 = "destNotExist2";
 
@@ -885,7 +885,7 @@ public class SchemaTest extends RestTestBase {
   }
 
   @Test
-  public void deleteCopyFieldShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() throws Exception {
+  public void deleteCopyFieldShouldFailWhenOneOfTheFieldsDoesntExistInTheSchema() {
     String srcFieldName = "copyfield";
     String destFieldName1 = "destField1", destFieldName2 = "destField2";
     SchemaRequest.DeleteCopyField deleteCopyFieldsRequest =

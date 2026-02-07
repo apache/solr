@@ -17,7 +17,7 @@
 
 package org.apache.solr.handler.api;
 
-import static org.apache.solr.client.solrj.impl.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
+import static org.apache.solr.client.solrj.response.JavaBinResponseParser.JAVABIN_CONTENT_TYPE_V2;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.FILE_STREAM;
 
@@ -28,9 +28,11 @@ import java.util.Map;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.MapWriter.EntryWriter;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 
@@ -41,7 +43,7 @@ public class V2ApiUtils {
   }
 
   public static boolean isEnabled() {
-    return !"true".equals(System.getProperty("disable.v2.api", "false"));
+    return EnvUtils.getPropertyAsBool("solr.api.v2.enabled", true);
   }
 
   public static void flattenMapWithPrefix(
@@ -104,6 +106,10 @@ public class V2ApiUtils {
         return JAVABIN_CONTENT_TYPE_V2;
       case FILE_STREAM:
         return RawResponseWriter.CONTENT_TYPE;
+      case "prometheus":
+        return PrometheusResponseWriter.CONTENT_TYPE_PROMETHEUS;
+      case "openmetrics":
+        return PrometheusResponseWriter.CONTENT_TYPE_OPEN_METRICS;
       default:
         return defaultMediaType;
     }

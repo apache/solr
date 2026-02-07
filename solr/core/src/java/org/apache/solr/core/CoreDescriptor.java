@@ -54,17 +54,12 @@ public class CoreDescriptor {
   public static final String CORE_SCHEMA = "schema";
   public static final String CORE_SHARD = "shard";
   public static final String CORE_COLLECTION = "collection";
-  public static final String CORE_ROLES = "roles";
   public static final String CORE_PROPERTIES = "properties";
   public static final String CORE_LOADONSTARTUP = "loadOnStartup";
-  public static final String CORE_TRANSIENT = "transient";
   public static final String CORE_NODE_NAME = "coreNodeName";
   public static final String CORE_CONFIGSET = "configSet";
   public static final String CORE_CONFIGSET_PROPERTIES = "configSetProperties";
   public static final String SOLR_CORE_PROP_PREFIX = "solr.core.";
-
-  public static final String DEFAULT_EXTERNAL_PROPERTIES_FILE =
-      "conf" + FileSystems.getDefault().getSeparator() + "solrcore.properties";
 
   /**
    * Get the standard properties in persistable form
@@ -90,7 +85,6 @@ public class CoreDescriptor {
           CORE_SCHEMA, "schema.xml",
           CORE_CONFIGSET_PROPERTIES, ConfigSetProperties.DEFAULT_FILENAME,
           CORE_DATADIR, "data" + FileSystems.getDefault().getSeparator(),
-          CORE_TRANSIENT, "false",
           CORE_LOADONSTARTUP, "true");
 
   private static final List<String> requiredProperties = List.of(CORE_NAME);
@@ -105,14 +99,11 @@ public class CoreDescriptor {
           CORE_PROPERTIES,
           CORE_CONFIGSET_PROPERTIES,
           CORE_LOADONSTARTUP,
-          CORE_TRANSIENT,
           CORE_CONFIGSET,
           // cloud props
           CORE_SHARD,
           CORE_COLLECTION,
-          CORE_ROLES,
-          CORE_NODE_NAME,
-          CloudDescriptor.NUM_SHARDS);
+          CORE_NODE_NAME);
 
   private final CloudDescriptor cloudDesc;
 
@@ -225,14 +216,16 @@ public class CoreDescriptor {
   /**
    * Load properties specified in an external properties file.
    *
-   * <p>The file to load can be specified in a {@code properties} property on the original
-   * Properties object used to create this CoreDescriptor. If this has not been set, then we look
-   * for {@code conf/solrcore.properties} underneath the instance dir.
+   * <p>The file to load is specified in a {@code properties} property on the original Properties
+   * object used to create this CoreDescriptor.
    *
    * <p>File paths are taken as read from the core's instance directory if they are not absolute.
    */
   protected void loadExtraProperties() {
-    String filename = coreProperties.getProperty(CORE_PROPERTIES, DEFAULT_EXTERNAL_PROPERTIES_FILE);
+    String filename = coreProperties.getProperty(CORE_PROPERTIES);
+    if (filename == null) {
+      return;
+    }
     Path propertiesFile = instanceDir.resolve(filename);
     if (Files.exists(propertiesFile)) {
       try (Reader r = Files.newBufferedReader(propertiesFile, StandardCharsets.UTF_8)) {
@@ -339,11 +332,6 @@ public class CoreDescriptor {
   public boolean isLoadOnStartup() {
     String stringValue = coreProperties.getProperty(CORE_LOADONSTARTUP, "true");
     return Boolean.parseBoolean(stringValue);
-  }
-
-  public boolean isTransient() {
-    String stringValue = coreProperties.getProperty(CORE_TRANSIENT, "false");
-    return PropertiesUtil.toBoolean(stringValue);
   }
 
   public String getUlogDir() {

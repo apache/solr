@@ -21,7 +21,7 @@ import static org.apache.lucene.codecs.lucene90.Lucene90StoredFieldsFormat.MODE_
 import java.io.IOException;
 import java.util.Map;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.lucene912.Lucene912Codec.Mode;
+import org.apache.lucene.codecs.lucene103.Lucene103Codec;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.index.SegmentInfo;
@@ -120,12 +120,8 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     if (propertyValue != null) {
       System.setProperty("tests.COMPRESSION_MODE", propertyValue);
     }
-    try {
-      reloadCoreAndRecreateIndex();
-      assertCompressionMode(expectedModeString, h.getCore());
-    } finally {
-      System.clearProperty("tests.COMPRESSION_MODE");
-    }
+    reloadCoreAndRecreateIndex();
+    assertCompressionMode(expectedModeString, h.getCore());
   }
 
   protected void assertCompressionMode(String expectedModeString, SolrCore core)
@@ -186,7 +182,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertQ(req("q", "text:foo"), "//*[@numFound='3']");
     assertU(optimize("maxSegments", "1"));
     assertCompressionMode("BEST_SPEED", h.getCore());
-    System.clearProperty("tests.COMPRESSION_MODE");
   }
 
   public void testBadCompressionMode() {
@@ -224,7 +219,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals(
         "Default Solr compression mode changed. Is this expected?",
         SchemaCodecFactory.SOLR_DEFAULT_COMPRESSION_MODE,
-        Mode.valueOf("BEST_SPEED"));
+        Lucene103Codec.Mode.valueOf("BEST_SPEED"));
 
     String previousCoreName = h.coreName;
     String newCoreName = "core_with_default_compression";

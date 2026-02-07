@@ -29,19 +29,17 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.cli.CommonCLIOptions.DefaultValues;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.JsonMapResponseParser;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.SystemInfoResponse;
+import org.apache.solr.client.solrj.response.json.JsonMapResponseParser;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.ConfigSetService;
 import org.noggit.CharArr;
@@ -158,14 +156,9 @@ public class CreateTool extends ToolBase {
     }
     printDefaultConfigsetWarningIfNecessary(cli);
 
-    String coreRootDirectory; // usually same as solr home, but not always
-
-    NamedList<?> systemInfo =
-        solrClient.request(
-            new GenericSolrRequest(SolrRequest.METHOD.GET, CommonParams.SYSTEM_INFO_PATH));
-
-    // convert raw JSON into user-friendly output
-    coreRootDirectory = (String) systemInfo.get("core_root");
+    SystemInfoResponse sysResponse = (new SystemInfoRequest()).process(solrClient);
+    // usually same as solr home, but not always
+    String coreRootDirectory = sysResponse.getCoreRoot();
 
     if (CLIUtils.safeCheckCoreExists(
         solrUrl, coreName, cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION))) {
@@ -209,8 +202,8 @@ public class CreateTool extends ToolBase {
   }
 
   protected void createCollection(CommandLine cli) throws Exception {
-    Http2SolrClient.Builder builder =
-        new Http2SolrClient.Builder()
+    var builder =
+        new HttpJettySolrClient.Builder()
             .withIdleTimeout(30, TimeUnit.SECONDS)
             .withConnectionTimeout(15, TimeUnit.SECONDS)
             .withKeyStoreReloadInterval(-1, TimeUnit.SECONDS)
@@ -218,7 +211,7 @@ public class CreateTool extends ToolBase {
                 cli.getOptionValue(CommonCLIOptions.CREDENTIALS_OPTION));
     String zkHost = CLIUtils.getZkHost(cli);
     echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudHttp2SolrClient(zkHost, builder)) {
+    try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
       cloudSolrClient.connect();
       createCollection(cloudSolrClient, cli);
     }
@@ -255,13 +248,9 @@ public class CreateTool extends ToolBase {
     boolean configExistsInZk =
         confName != null
             && !confName.trim().isEmpty()
-            && ZkStateReader.from(cloudSolrClient)
-                .getZkClient()
-                .exists("/configs/" + confName, true);
+            && ZkStateReader.from(cloudSolrClient).getZkClient().exists("/configs/" + confName);
 
-    if (CollectionAdminParams.SYSTEM_COLL.equals(collectionName)) {
-      // do nothing
-    } else if (configExistsInZk) {
+    if (configExistsInZk) {
       echo("Re-using existing configuration directory " + confName);
     } else { // if (confdir != null && !confdir.trim().isEmpty()) {
       if (confName == null || confName.trim().isEmpty()) {

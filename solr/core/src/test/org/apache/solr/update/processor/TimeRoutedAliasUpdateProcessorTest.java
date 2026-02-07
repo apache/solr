@@ -17,7 +17,7 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
+import static org.apache.solr.client.solrj.request.RoutedAliasTypes.TIME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
 import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_START;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
@@ -72,7 +72,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@LuceneTestCase.BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059")
+@LuceneTestCase.AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13059") // TBD
 public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcessorTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -214,8 +214,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                     + "/"
                     + COLLECTION_PROPS_ZKNODE,
                 null,
-                null,
-                true);
+                null);
     assertNotNull(data);
     assertTrue(data.length > 0);
     @SuppressWarnings("unchecked")
@@ -1048,8 +1047,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
                 aliasUpdate.countDown();
               }
             },
-            stat,
-            true);
+            stat);
   }
 
   /**
@@ -1272,7 +1270,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     }
 
     // now grab the zk data, so we can hack in our legacy collections...
-    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null, true);
+    byte[] data = zkStateReader.getZkClient().getData("/aliases.json", null, null);
 
     // some tidbits for handling zk data here are swiped from Aliases.json
     Map<String, Map> aliasMap;
@@ -1293,7 +1291,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
     colAliases.put(alias, String.join(",", legacy24, legacy23));
 
     data = Utils.toJSON(aliasMap);
-    zkStateReader.getZkClient().setData("/aliases.json", data, true);
+    zkStateReader.getZkClient().setData("/aliases.json", data);
 
     zkStateReader.aliasesManager.update(); // make sure we've updated with the data we just sent
 

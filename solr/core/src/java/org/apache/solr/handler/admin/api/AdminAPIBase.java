@@ -21,8 +21,11 @@ import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTIO
 
 import java.util.Map;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.AsyncJerseyResponse;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.api.model.SubResponseAccumulatingJerseyResponse;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -70,11 +73,7 @@ public abstract class AdminAPIBase extends JerseyResource {
   }
 
   private String resolveAlias(String aliasName) {
-    return coreContainer
-        .getZkController()
-        .getZkStateReader()
-        .getAliases()
-        .resolveSimpleAlias(aliasName);
+    return coreContainer.getAliases().resolveSimpleAlias(aliasName);
   }
 
   public static void validateZooKeeperAwareCoreContainer(CoreContainer coreContainer) {
@@ -92,13 +91,7 @@ public abstract class AdminAPIBase extends JerseyResource {
 
   protected String resolveCollectionName(String collName, boolean followAliases) {
     final String collectionName =
-        followAliases
-            ? coreContainer
-                .getZkController()
-                .getZkStateReader()
-                .getAliases()
-                .resolveSimpleAlias(collName)
-            : collName;
+        followAliases ? coreContainer.getAliases().resolveSimpleAlias(collName) : collName;
 
     final ClusterState clusterState = coreContainer.getZkController().getClusterState();
     if (!clusterState.hasCollection(collectionName)) {
@@ -124,22 +117,55 @@ public abstract class AdminAPIBase extends JerseyResource {
     solrQueryResponse.setHttpCaching(false);
   }
 
+  protected SolrResponse submitRemoteMessageAndHandleException(
+      SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
+      throws Exception {
+    final SolrResponse remoteResponse =
+        CollectionsHandler.submitCollectionApiCommand(
+            coreContainer.getZkController(),
+            adminCmdContext,
+            remoteMessage,
+            DEFAULT_COLLECTION_OP_TIMEOUT);
+    if (remoteResponse.getException() != null) {
+      throw remoteResponse.getException();
+    }
+    return remoteResponse;
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleException(
+      SolrJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage)
+      throws Exception {
+    return submitRemoteMessageAndHandleException(
+        response, new AdminCmdContext(action, null), remoteMessage);
+  }
+
+  protected SolrResponse submitRemoteMessageAndHandleAsync(
+      AsyncJerseyResponse response,
+      CollectionParams.CollectionAction action,
+      ZkNodeProps remoteMessage,
+      String asyncId)
+      throws Exception {
+    var remoteResponse =
+        submitRemoteMessageAndHandleException(
+            response, new AdminCmdContext(action, asyncId), remoteMessage);
+
+    if (asyncId != null) {
+      response.requestId = asyncId;
+    }
+
+    return remoteResponse;
+  }
+
   protected SolrResponse submitRemoteMessageAndHandleResponse(
       SubResponseAccumulatingJerseyResponse response,
       CollectionParams.CollectionAction action,
       ZkNodeProps remoteMessage,
       String asyncId)
       throws Exception {
-    final SolrResponse remoteResponse =
-        CollectionsHandler.submitCollectionApiCommand(
-            coreContainer,
-            coreContainer.getDistributedCollectionCommandRunner(),
-            remoteMessage,
-            action,
-            DEFAULT_COLLECTION_OP_TIMEOUT);
-    if (remoteResponse.getException() != null) {
-      throw remoteResponse.getException();
-    }
+    var remoteResponse =
+        submitRemoteMessageAndHandleAsync(response, action, remoteMessage, asyncId);
 
     if (asyncId != null) {
       response.requestId = asyncId;
@@ -148,6 +174,7 @@ public abstract class AdminAPIBase extends JerseyResource {
     // Values fetched from remoteResponse may be null
     response.successfulSubResponsesByNodeName = remoteResponse.getResponse().get("success");
     response.failedSubResponsesByNodeName = remoteResponse.getResponse().get("failure");
+    response.warning = (String) remoteResponse.getResponse().get("warning");
 
     return remoteResponse;
   }

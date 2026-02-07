@@ -33,10 +33,11 @@ import java.awt.Dimension
 import kotlinx.coroutines.Dispatchers
 import org.apache.solr.ui.components.root.RootComponent
 import org.apache.solr.ui.components.root.integration.SimpleRootComponent
-import org.apache.solr.ui.views.root.RootContent
-import org.apache.solr.ui.views.theme.SolrTheme
 import org.apache.solr.ui.utils.DefaultAppComponentContext
 import org.apache.solr.ui.utils.getDefaultClient
+import org.apache.solr.ui.utils.runOnUiThread
+import org.apache.solr.ui.views.root.RootContent
+import org.apache.solr.ui.views.theme.SolrTheme
 
 /**
  * Entry point of the Compose application for all JVM-based (desktop) targets.
@@ -74,7 +75,7 @@ fun main() {
         Window(
             onCloseRequest = ::exitApplication,
             state = windowState,
-            title = "Solr Admin UI"
+            title = "Solr Admin UI",
         ) {
             window.minimumSize = Dimension(720, 560)
 

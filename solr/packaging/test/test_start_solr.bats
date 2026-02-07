@@ -60,6 +60,8 @@ teardown() {
   # for start/stop/restart we parse the args separate from picking the command
   # which means you don't get an error message for passing a start arg, like --jvm-opts to a stop commmand.
 
+  # Pre-check
+  timeout || skip "timeout utility is not available"
   # Set a timeout duration (in seconds)
   TIMEOUT_DURATION=2
 
@@ -81,10 +83,29 @@ teardown() {
   refute_output --partial 'Exception'
 }
 
+@test "deprecated system properties converted to modern properties" {
+  solr start -Ddisable.v2.api=true
+  assert_file_contains "${SOLR_LOGS_DIR}/solr.log" 'You are passing in deprecated system property disable.v2.api and should upgrade to using solr.api.v2.enabled instead.'
+}
+
 @test "start with custom jetty options" {
   export ENABLE_REMOTE_JMX_OPTS=true
   export RMI_PORT=65535 # need to make sure we don't exceed port range so hard code it
 
-  solr start -j "--module=server"
+  solr start --jettyconfig "--module=server"
   solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+}
+
+@test "bootstrapping a configset" {
+  local confdir_path="${SOLR_TIP}/server/solr/configsets/sample_techproducts_configs/conf"
+  
+  # Verify the source configset directory exists
+  test -d "${confdir_path}"
+
+  # Start Solr with bootstrap_confdir pointing to techproducts configset
+  solr start -Dbootstrap_confdir="${confdir_path}" -Dcollection.configName=techproducts
+  solr assert --started http://localhost:${SOLR_PORT} --timeout 5000
+  
+  # Verify the techproducts configset was uploaded
+  config_exists "techproducts"
 }

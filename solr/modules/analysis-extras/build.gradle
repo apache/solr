@@ -28,11 +28,14 @@ dependencies {
   implementation libs.apache.lucene.analysis.icu
   runtimeOnly libs.apache.lucene.analysis.morfologik
   implementation libs.apache.lucene.analysis.opennlp
+
+  implementation libs.onnxruntime
   runtimeOnly libs.apache.lucene.analysis.smartcn
   runtimeOnly libs.apache.lucene.analysis.stempel
   implementation libs.apache.lucene.core
   // NOTE: Need to stay on same version of opennlp-tools as lucene-analysis-opennlp
   implementation libs.apache.opennlp.tools
+  implementation libs.apache.opennlp.dl
   implementation libs.slf4j.api
 
   testImplementation project(':solr:test-framework')

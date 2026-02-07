@@ -21,7 +21,7 @@ setup() {
   common_clean_setup
   
   echo "Starting Solr"
-  solr start -Denable.packages=true
+  solr start -Dsolr.packages.enabled=true
   
   # The auth command exports some system variables that are injected as basic auth username and password, 
   # however that defeats our test so fake that out via --solr-include-file param specifing a bogus path.
@@ -90,4 +90,10 @@ run solr create -c COLL_NAME
   assert_output --partial "Collection(s) doesn't exist: [foo-1.2]"
   #assert_output --partial "Deployment successful"
   #refute_output --partial "Invalid collection"
+}
+
+@test "admin UI static content is excepted from basic auth" {
+  run curl -I -s http://localhost:${SOLR_PORT}/solr/
+  assert_output --partial "HTTP/1.1 200"
+  assert_output --partial "Content-Type: text/html"
 }

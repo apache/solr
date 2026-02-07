@@ -66,7 +66,7 @@
     </autoCommit>
     -->
 
-    <updateLog enable="${enable.update.log:true}">
+    <updateLog enable="${solr.index.updatelog.enabled:true}">
       <str name="dir">${solr.ulog.dir:}</str>
     </updateLog>
 
@@ -466,10 +466,6 @@
       <str name="facet.query">foo_s:bar</str>
     </lst>
   </requestHandler>
-
-  <!-- test getting system property -->
-  <propTest attr1="${solr.test.sys.prop1}-$${literal}"
-            attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
   <queryParser name="foo" class="FooQParserPlugin"/>
 

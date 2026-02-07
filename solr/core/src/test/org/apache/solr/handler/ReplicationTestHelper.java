@@ -34,9 +34,11 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
@@ -67,7 +69,8 @@ public final class ReplicationTestHelper {
     Properties nodeProperties = new Properties();
     nodeProperties.setProperty("solr.data.dir", instance.getDataDir());
     JettyConfig jettyConfig = JettyConfig.builder().setPort(0).build();
-    JettySolrRunner jetty = new JettySolrRunner(instance.getHomeDir(), nodeProperties, jettyConfig);
+    JettySolrRunner jetty =
+        new JettySolrRunner(instance.getHomeDir(), new Properties(), jettyConfig);
     jetty.start();
     return jetty;
   }
@@ -83,8 +86,8 @@ public final class ReplicationTestHelper {
    * @param baseUrl the root URL for a Solr node
    * @param collectionOrCore an optional default collection/core for the created client
    */
-  public static Http2SolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
-    return new Http2SolrClient.Builder(baseUrl)
+  public static HttpJettySolrClient createNewSolrClient(String baseUrl, String collectionOrCore) {
+    return new HttpJettySolrClient.Builder(baseUrl)
         .withDefaultCollection(collectionOrCore)
         .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withIdleTimeout(90000, TimeUnit.MILLISECONDS)
@@ -128,10 +131,12 @@ public final class ReplicationTestHelper {
 
     // check vs /replication?command=indexversion call
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("qt", ReplicationHandler.PATH);
     params.set("_trace", "assertVersions");
     params.set("command", "indexversion");
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
     NamedList<Object> resp = client1.request(req);
     assertReplicationResponseSucceeded(resp);
     Long version = (Long) resp.get("indexversion");
@@ -205,8 +210,10 @@ public final class ReplicationTestHelper {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("command", "details");
     params.set("_trace", "getDetails");
-    params.set("qt", ReplicationHandler.PATH);
-    QueryRequest req = new QueryRequest(params);
+    var req =
+        new GenericSolrRequest(
+                SolrRequest.METHOD.GET, ReplicationHandler.PATH, SolrRequestType.ADMIN, params)
+            .setRequiresCollection(true);
 
     NamedList<Object> res = s.request(req);
     assertReplicationResponseSucceeded(res);
@@ -286,9 +293,6 @@ public final class ReplicationTestHelper {
     }
 
     public void setUp() throws Exception {
-      System.setProperty("solr.test.sys.prop1", "propone");
-      System.setProperty("solr.test.sys.prop2", "proptwo");
-
       Properties props = new Properties();
       props.setProperty("name", "collection1");
 

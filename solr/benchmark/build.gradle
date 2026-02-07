@@ -42,11 +42,12 @@ task echoCp {
 
 dependencies {
   implementation project(':solr:test-framework')
+  implementation project(':solr:core')
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-jetty')
   implementation project(':solr:solrj-streaming')
 
   implementation libs.apache.lucene.core
-  implementation libs.apache.httpcomponents.httpclient
   implementation libs.commonsio.commonsio
   implementation libs.dropwizard.metrics.core
   implementation libs.apache.commons.math3

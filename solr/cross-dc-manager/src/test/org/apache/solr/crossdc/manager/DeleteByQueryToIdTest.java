@@ -29,9 +29,9 @@ import java.util.concurrent.CountDownLatch;
 import org.apache.kafka.streams.integration.utils.EmbeddedKafkaCluster;
 import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.solr.SolrIgnoredThreadsFilter;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -42,6 +42,7 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.manager.consumer.Consumer;
+import org.apache.solr.crossdc.manager.consumer.ConsumerMetrics;
 import org.apache.solr.crossdc.manager.consumer.KafkaCrossDcConsumer;
 import org.apache.solr.crossdc.manager.messageprocessor.SolrMessageProcessor;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
@@ -160,11 +161,12 @@ public class DeleteByQueryToIdTest extends SolrCloudTestCase {
         new Consumer() {
           @Override
           protected CrossDcConsumer getCrossDcConsumer(
-              KafkaCrossDcConf conf, CountDownLatch startLatch) {
-            return new KafkaCrossDcConsumer(conf, startLatch) {
+              KafkaCrossDcConf conf, ConsumerMetrics metrics, CountDownLatch startLatch) {
+            return new KafkaCrossDcConsumer(conf, metrics, startLatch) {
               @Override
               protected SolrMessageProcessor createSolrMessageProcessor() {
-                return new SolrMessageProcessor(solrClient, resubmitRequest -> 0L) {
+                return new SolrMessageProcessor(
+                    metrics, solrClientSupplier, resubmitRequest -> 0L) {
                   @Override
                   public Result<MirroredSolrRequest<?>> handleItem(
                       MirroredSolrRequest<?> mirroredSolrRequest) {

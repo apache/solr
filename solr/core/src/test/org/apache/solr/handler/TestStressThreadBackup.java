@@ -31,6 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -39,6 +40,7 @@ import org.apache.lucene.tests.util.LuceneTestCase.Nightly;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -54,7 +56,6 @@ import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,20 +76,14 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("solr.allowPaths", "*");
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("solr.allowPaths");
+    System.setProperty("solr.security.allow.paths", "*");
   }
 
   @Before
   public void beforeTest() throws Exception {
     backupDir = createTempDir(getTestClass().getSimpleName() + "_backups");
 
-    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient and I can't
-    // bring myself to deal with the nonsense that is SolrJettyTestBase.
+    // NOTE: we don't actually care about using SolrCloud, but we want to use SolrClient
 
     // We do however explicitly want a fresh "cluster" every time a test is run
     configureCluster(1)
@@ -133,8 +128,12 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
           final BackupStatusChecker backupStatus = new BackupStatusChecker(coreClient);
 
           /** no solrj API for ReplicationHandler */
-          private GenericSolrRequest makeReplicationReq(SolrParams p) {
-            return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p)
+          private SolrRequest<?> makeReplicationReq(SolrParams p) {
+            return new GenericSolrRequest(
+                    GenericSolrRequest.METHOD.POST,
+                    "/replication",
+                    SolrRequest.SolrRequestType.ADMIN,
+                    p)
                 .setRequiresCollection(true);
           }
 
@@ -334,7 +333,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     final int numRealDocsExpected = Integer.parseInt(m.group());
 
     try (Directory dir = FSDirectory.open(backup)) {
-      TestUtil.checkIndex(dir, true, true, true, null);
+      TestUtil.checkIndex(dir, CheckIndex.Level.MIN_LEVEL_FOR_SLOW_CHECKS, true, true, null);
       try (DirectoryReader r = DirectoryReader.open(dir)) {
         assertEquals(
             "num real docs in " + backup,

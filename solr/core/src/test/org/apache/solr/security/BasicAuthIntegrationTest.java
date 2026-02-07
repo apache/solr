@@ -19,7 +19,6 @@ package org.apache.solr.security;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
-import com.codahale.metrics.MetricRegistry;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -35,11 +34,12 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.solr.cli.CLITestHelper;
 import org.apache.solr.cli.StatusTool;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.CloudLegacySolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
+import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -111,7 +111,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       JettySolrRunner randomJetty = cluster.getRandomJetty(random());
       String baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(cl, baseUrl + authcPrefix, "/errorMessages", null, 20);
-      zkClient().setData("/security.json", STD_CONF.replace("'", "\"").getBytes(UTF_8), true);
+      zkClient().setData("/security.json", STD_CONF.replace("'", "\"").getBytes(UTF_8));
       verifySecurityStatus(
           cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
 
@@ -128,7 +128,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       baseUrl = randomJetty.getBaseUrl().toString();
       verifySecurityStatus(
           cl, baseUrl + authcPrefix, "authentication/class", "solr.BasicAuthPlugin", 20);
-      assertNumberOfMetrics(16); // Basic auth metrics available
+
       assertAuthMetricsMinimums(1, 0, 1, 0, 0, 0);
       assertPkiAuthMetricsMinimums(0, 0, 0, 0, 0, 0);
 
@@ -154,9 +154,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       httpClient.getConnectionManager().closeExpiredConnections();
       httpClient.getConnectionManager().closeIdleConnections(1, TimeUnit.MILLISECONDS);
 
-      SolrClient.RemoteSolrException exp =
+      RemoteSolrException exp =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 cluster.getSolrClient().request(genericReq);
               });
@@ -173,7 +173,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       verifySecurityStatus(cl, baseUrl + authcPrefix, "authentication.enabled", "true", 20);
       HttpResponse r = cl.execute(httpPost);
       int statusCode = r.getStatusLine().getStatusCode();
-      Utils.consumeFully(r.getEntity());
+      HttpClientUtil.consumeFully(r.getEntity());
       assertEquals("proper_cred sent, but access denied", 200, statusCode);
       assertPkiAuthMetricsMinimums(0, 0, 0, 0, 0, 0);
       assertAuthMetricsMinimums(4, 1, 3, 0, 0, 0);
@@ -223,9 +223,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
 
       try (SolrClient solrClient = getHttpSolrClient(baseUrl)) {
-        expectThrows(SolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
+        expectThrows(RemoteSolrException.class, () -> solrClient.request(reload));
         reload.setMethod(SolrRequest.METHOD.POST);
-        expectThrows(SolrClient.RemoteSolrException.class, () -> solrClient.request(reload));
+        expectThrows(RemoteSolrException.class, () -> solrClient.request(reload));
       }
       cluster
           .getSolrClient()
@@ -234,7 +234,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
                   .setBasicAuthCredentials("harry", "HarryIsUberCool"));
 
       expectThrows(
-          SolrClient.RemoteSolrException.class,
+          RemoteSolrException.class,
           () -> {
             cluster
                 .getSolrClient()
@@ -265,9 +265,9 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       delQuery.setBasicAuthCredentials("harry", "HarryIsUberCool");
       delQuery.process(aNewClient, COLLECTION); // this should succeed
       try {
-        SolrClient.RemoteSolrException e =
+        RemoteSolrException e =
             expectThrows(
-                SolrClient.RemoteSolrException.class,
+                RemoteSolrException.class,
                 () -> {
                   new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
                 });
@@ -306,7 +306,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
       // Query that fails due to missing credentials
       exp =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 cluster.getSolrClient().query(COLLECTION, params);
               });
@@ -399,16 +399,22 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     }
   }
 
-  private void assertNumberOfMetrics(int num) {
-    MetricRegistry registry0 =
-        cluster.getJettySolrRunner(0).getCoreContainer().getMetricManager().registry("solr.node");
-    assertNotNull(registry0);
-
-    assertEquals(
-        num,
-        registry0.getMetrics().entrySet().stream()
-            .filter(e -> e.getKey().startsWith("SECURITY"))
-            .count());
+  private void assertAuthMetricsMinimums(
+      int requests,
+      int authenticated,
+      int passThrough,
+      int failWrongCredentials,
+      int failMissingCredentials,
+      int errors)
+      throws InterruptedException {
+    super.assertAuthMetricsMinimums(
+        BasicAuthPlugin.class,
+        requests,
+        authenticated,
+        passThrough,
+        failWrongCredentials,
+        failMissingCredentials,
+        errors);
   }
 
   private QueryResponse executeQuery(ModifiableSolrParams params, String user, String pass)
@@ -463,7 +469,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals(
         "Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
-    Utils.consumeFully(r.getEntity());
+    HttpClientUtil.consumeFully(r.getEntity());
 
     // HACK (continued)...
     final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);

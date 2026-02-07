@@ -27,7 +27,6 @@ import org.apache.lucene.misc.document.LazyDocument;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.schema.IndexSchema;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -43,7 +42,7 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
     System.setProperty("managed.schema.mutable", "true");
     System.setProperty(
         "managed.schema.resourceName", "schema-one-field-no-dynamic-field-unique-key.xml");
-    System.setProperty("enable.update.log", "false");
+    System.setProperty("solr.index.updatelog.enabled", "false");
     System.setProperty("documentCache.enabled", "true");
     System.setProperty("enableLazyFieldLoading", "true");
 
@@ -75,12 +74,6 @@ public class LargeFieldTest extends SolrTestCaseJ4 {
             PERSIST_FALSE);
 
     h.getCore().setLatestSchema(schema);
-  }
-
-  @AfterClass
-  public static void afterClass() {
-    System.clearProperty("documentCache.enabled");
-    System.clearProperty("enableLazyFieldLoading");
   }
 
   @Test

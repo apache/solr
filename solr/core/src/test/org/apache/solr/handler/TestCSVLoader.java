@@ -35,7 +35,8 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty(
+        "solr.index.updatelog.enabled", "false"); // schema12 doesn't support _version_
     initCore("solrconfig.xml", "schema12.xml");
   }
 
@@ -78,8 +79,6 @@ public class TestCSVLoader extends SolrTestCaseJ4 {
   void loadLocal(String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
 
-    // TODO: stop using locally defined streams once stream.file and
-    // stream.body work everywhere
     List<ContentStream> cs = new ArrayList<>(1);
     ContentStreamBase f = new ContentStreamBase.FileStream(Path.of(filename));
     f.setContentType("text/csv");

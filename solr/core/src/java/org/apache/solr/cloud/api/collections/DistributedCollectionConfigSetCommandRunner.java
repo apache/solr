@@ -22,7 +22,6 @@ import static org.apache.solr.cloud.api.collections.CollectionHandlingUtils.logF
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.io.IOException;
@@ -44,8 +43,8 @@ import org.apache.solr.cloud.OverseerSolrResponse;
 import org.apache.solr.cloud.ZkDistributedCollectionLockFactory;
 import org.apache.solr.cloud.ZkDistributedConfigSetLockFactory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.ConfigSetParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -63,8 +62,8 @@ import org.slf4j.LoggerFactory;
  * going through Overseer and {@link OverseerCollectionMessageHandler} or {@link
  * org.apache.solr.cloud.OverseerConfigSetMessageHandler}.
  *
- * <p>This class is only called when Collection and Config Set API calls are configured to be
- * distributed, which implies cluster state updates are distributed as well.
+ * <p>This class is only called when the Overseer is disabled, which implies cluster state updates
+ * are distributed as well.
  */
 public class DistributedCollectionConfigSetCommandRunner {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -106,15 +105,10 @@ public class DistributedCollectionConfigSetCommandRunner {
 
   private volatile boolean shuttingDown = false;
 
-  public DistributedCollectionConfigSetCommandRunner(CoreContainer coreContainer) {
+  public DistributedCollectionConfigSetCommandRunner(
+      CoreContainer coreContainer, SolrZkClient zkClient) {
+    // note: coreContainer.getZkController() is not yet instantiated; don't call it right now
     this.coreContainer = coreContainer;
-
-    if (log.isInfoEnabled()) {
-      // Note is it hard to print a log when Collection API is handled by Overseer because Overseer
-      // is started regardless of how Collection API is handled, so it doesn't really know...
-      log.info(
-          "Creating DistributedCollectionConfigSetCommandRunner. Collection and ConfigSet APIs are running distributed (not Overseer based)");
-    }
 
     // TODO we should look at how everything is getting closed when the node is shutdown. But it
     // seems that CollectionsHandler (that creates instances of this class) is not really closed, so
@@ -144,8 +138,7 @@ public class DistributedCollectionConfigSetCommandRunner {
         new DistributedCollectionCommandContext(
             this.coreContainer, this.distributedCollectionApiExecutorService);
     commandMapper = new CollApiCmds.CommandMap(ccc);
-    asyncTaskTracker =
-        new DistributedApiAsyncTracker(ccc.getZkStateReader().getZkClient(), ZK_ASYNC_ROOT);
+    asyncTaskTracker = new DistributedApiAsyncTracker(zkClient, ZK_ASYNC_ROOT);
   }
 
   /** See {@link DistributedApiAsyncTracker#getAsyncTaskRequestStatus(String)} */
@@ -257,7 +250,7 @@ public class DistributedCollectionConfigSetCommandRunner {
    * </ul>
    */
   public OverseerSolrResponse runCollectionCommand(
-      ZkNodeProps message, CollectionParams.CollectionAction action, long timeoutMs) {
+      AdminCmdContext adminCmdContext, ZkNodeProps message, long timeoutMs) {
     // We refuse new tasks, but will wait for already submitted ones (i.e. those that made it
     // through this method earlier). See stopAndWaitForPendingTasksToComplete() below
     if (shuttingDown) {
@@ -266,35 +259,35 @@ public class DistributedCollectionConfigSetCommandRunner {
           "Solr is shutting down, no more Collection API tasks may be executed");
     }
 
-    final String asyncId = message.getStr(ASYNC);
-
     if (log.isInfoEnabled()) {
       log.info(
-          "Running Collection API locally for " + action.name() + " asyncId=" + asyncId); // nowarn
+          "Running Collection API locally for {} asyncId={}",
+          adminCmdContext.getAction().name(),
+          adminCmdContext.getAsyncId());
     }
 
     // Following the call below returning true, we must eventually cancel or complete the task.
     // Happens either in the CollectionCommandRunner below or in the catch when the runner would not
     // execute.
-    if (!asyncTaskTracker.createNewAsyncJobTracker(asyncId)) {
+    if (!asyncTaskTracker.createNewAsyncJobTracker(adminCmdContext.getAsyncId())) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
-          "Task with the same requestid already exists. (" + asyncId + ")");
+          "Task with the same requestid already exists. (" + adminCmdContext.getAsyncId() + ")");
     }
 
-    CollectionCommandRunner commandRunner = new CollectionCommandRunner(message, action, asyncId);
+    CollectionCommandRunner commandRunner = new CollectionCommandRunner(adminCmdContext, message);
     final Future<OverseerSolrResponse> taskFuture;
     try {
       taskFuture = commandsExecutor.submit(commandRunner);
     } catch (RejectedExecutionException ree) {
       // The command will not run, need to cancel the async ID so it can be reused on a subsequent
       // attempt by the client
-      asyncTaskTracker.cancelAsyncId(asyncId);
+      asyncTaskTracker.cancelAsyncId(adminCmdContext.getAsyncId());
       throw new SolrException(
           SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Too many executing commands", ree);
     }
 
-    if (asyncId == null) {
+    if (adminCmdContext.getAsyncId() == null) {
       // Non async calls wait for a while in case the command completes. If they time out, there's
       // no way to track the job progress (improvement suggestion: decorrelate having a task ID from
       // the fact of waiting for the job to complete)
@@ -302,18 +295,21 @@ public class DistributedCollectionConfigSetCommandRunner {
         return taskFuture.get(timeoutMs, TimeUnit.MILLISECONDS);
       } catch (TimeoutException te) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, action + " timed out after " + timeoutMs + "ms");
+            SolrException.ErrorCode.SERVER_ERROR,
+            adminCmdContext.getAction() + " timed out after " + timeoutMs + "ms");
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, action + " interrupted", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " interrupted", e);
       } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, action + " failed", e);
+        throw new SolrException(
+            SolrException.ErrorCode.SERVER_ERROR, adminCmdContext.getAction() + " failed", e);
       }
     } else {
       // Async calls do not wait for the command to finish but get instead back the async id (that
       // they just sent...)
       NamedList<Object> resp = new NamedList<>();
-      resp.add(CoreAdminParams.REQUESTID, asyncId);
+      resp.add(CoreAdminParams.REQUESTID, adminCmdContext.getAsyncId());
       return new OverseerSolrResponse(resp);
     }
   }
@@ -347,8 +343,7 @@ public class DistributedCollectionConfigSetCommandRunner {
   /**
    * Collection name can be found in either of two message parameters (why??). Return it from where
    * it's defined. (see also parameter {@code collectionNameParamName} of {@link
-   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(CollectionParams.CollectionAction,
-   * String)})
+   * org.apache.solr.cloud.DistributedClusterStateUpdater.MutatingCommand#MutatingCommand(String)})
    */
   public static String getCollectionName(ZkNodeProps message) {
     return message.containsKey(COLLECTION_PROP)
@@ -363,15 +358,12 @@ public class DistributedCollectionConfigSetCommandRunner {
    * similar to the one provided by Overseer based Collection API execution.
    */
   private class CollectionCommandRunner implements Callable<OverseerSolrResponse> {
+    private final AdminCmdContext adminCmdContext;
     private final ZkNodeProps message;
-    private final CollectionParams.CollectionAction action;
-    private final String asyncId;
 
-    private CollectionCommandRunner(
-        ZkNodeProps message, CollectionParams.CollectionAction action, String asyncId) {
+    private CollectionCommandRunner(AdminCmdContext adminCmdContext, ZkNodeProps message) {
+      this.adminCmdContext = adminCmdContext;
       this.message = message;
-      this.action = action;
-      this.asyncId = asyncId;
     }
 
     /**
@@ -404,36 +396,44 @@ public class DistributedCollectionConfigSetCommandRunner {
             new CollectionApiLockFactory(
                     new ZkDistributedCollectionLockFactory(
                         ccc.getZkStateReader().getZkClient(), ZK_COLLECTION_LOCKS))
-                .createCollectionApiLock(action.lockLevel, collName, shardId, replicaName);
+                .createCollectionApiLock(adminCmdContext, collName, shardId, replicaName);
 
         try {
-          log.debug(
-              "CollectionCommandRunner about to acquire lock for action {} lock level {}. {}/{}/{}",
-              action,
-              action.lockLevel,
-              collName,
-              shardId,
-              replicaName);
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "CollectionCommandRunner about to acquire lock for action {} lock level {}. {}/{}/{}",
+                adminCmdContext.getAction().name(),
+                adminCmdContext.getAction().lockLevel,
+                collName,
+                shardId,
+                replicaName);
+          }
 
           // Block this thread until all required locks are acquired.
           lock.waitUntilAcquired();
 
           // Got the lock so moving from submitted to running if we run for an async task (if
           // asyncId is null the asyncTaskTracker calls do nothing).
-          asyncTaskTracker.setTaskRunning(asyncId);
+          asyncTaskTracker.setTaskRunning(adminCmdContext.getAsyncId());
 
-          log.debug(
-              "DistributedCollectionConfigSetCommandRunner.runCollectionCommand. Lock acquired. Calling: {}, {}",
-              action,
-              message);
+          if (log.isDebugEnabled()) {
+            log.debug(
+                "DistributedCollectionConfigSetCommandRunner.runCollectionCommand. Lock acquired. Calling: {}, {}",
+                adminCmdContext.getAction(),
+                message);
+          }
 
-          CollApiCmds.CollectionApiCommand command = commandMapper.getActionCommand(action);
+          CollApiCmds.CollectionApiCommand command =
+              commandMapper.getActionCommand(adminCmdContext.getAction());
           if (command != null) {
-            command.call(ccc.getSolrCloudManager().getClusterState(), message, results);
+            command.call(
+                adminCmdContext.withClusterState(ccc.getSolrCloudManager().getClusterState()),
+                message,
+                results);
           } else {
-            asyncTaskTracker.cancelAsyncId(asyncId);
+            asyncTaskTracker.cancelAsyncId(adminCmdContext.getAsyncId());
             // Seeing this is a bug, not bad user data
-            String message = "Bug: Unknown operation " + action;
+            String message = "Bug: Unknown operation " + adminCmdContext.getAction();
             log.error(message);
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
           }
@@ -445,21 +445,25 @@ public class DistributedCollectionConfigSetCommandRunner {
             // hierarchy do no harm, and there shouldn't be too many of those.
             lock.release();
           } catch (SolrException se) {
-            log.error(
-                "Error when releasing collection locks for operation " + action, se); // nowarn
+            if (log.isErrorEnabled()) {
+              log.error(
+                  "Error when releasing collection locks for operation {}",
+                  adminCmdContext.getAction(),
+                  se);
+            }
           }
         }
       } catch (Exception e) {
         if (e instanceof InterruptedException) {
           Thread.currentThread().interrupt();
         }
-        logFailedOperation(action, e, collName);
-        addExceptionToNamedList(action, e, results);
+        logFailedOperation(adminCmdContext.getAction(), e, collName);
+        addExceptionToNamedList(adminCmdContext.getAction(), e, results);
       }
 
       OverseerSolrResponse res = new OverseerSolrResponse(results);
       // Following call marks success or failure depending on the contents of res
-      asyncTaskTracker.setTaskCompleted(asyncId, res);
+      asyncTaskTracker.setTaskCompleted(adminCmdContext.getAsyncId(), res);
       return res;
     }
   }

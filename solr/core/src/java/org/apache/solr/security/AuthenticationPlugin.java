@@ -16,9 +16,8 @@
  */
 package org.apache.solr.security;
 
-import com.codahale.metrics.Counter;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Timer;
+import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
@@ -27,10 +26,12 @@ import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.OtelUnit;
+import org.apache.solr.metrics.otel.instruments.AttributedLongCounter;
+import org.apache.solr.metrics.otel.instruments.AttributedLongTimer;
 import org.eclipse.jetty.client.Request;
 
 /**
@@ -38,21 +39,20 @@ import org.eclipse.jetty.client.Request;
  */
 public abstract class AuthenticationPlugin implements SolrInfoBean {
 
-  public static final String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
+  public static final String AUTHENTICATION_PLUGIN_PROP = "solr.security.auth.plugin";
   public static final String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
 
   // Metrics
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   protected SolrMetricsContext solrMetricsContext;
 
-  protected Meter numErrors = new Meter();
-  protected Counter requests = new Counter();
-  protected Timer requestTimes = new Timer();
-  protected Counter totalTime = new Counter();
-  protected Counter numAuthenticated = new Counter();
-  protected Counter numPassThrough = new Counter();
-  protected Counter numWrongCredentials = new Counter();
-  protected Counter numMissingCredentials = new Counter();
+  protected AttributedLongCounter numErrors;
+  protected AttributedLongCounter requests;
+  protected AttributedLongTimer requestTimes;
+  protected AttributedLongCounter numAuthenticated;
+  protected AttributedLongCounter numPassThrough;
+  protected AttributedLongCounter numWrongCredentials;
+  protected AttributedLongCounter numMissingCredentials;
 
   /**
    * This is called upon loading up of a plugin, used for setting it up.
@@ -85,16 +85,16 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   public final boolean authenticate(
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws Exception {
-    Timer.Context timer = requestTimes.time();
+    AttributedLongTimer.MetricTimer timer = requestTimes.start(TimeUnit.NANOSECONDS);
     requests.inc();
     try {
       return doAuthenticate(request, response, filterChain);
     } catch (Exception e) {
-      numErrors.mark();
+      numErrors.inc();
       throw e;
     } finally {
-      long elapsed = timer.stop();
-      totalTime.inc(elapsed);
+      // Record the timing metric
+      timer.stop();
     }
   }
 
@@ -128,25 +128,6 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
    * HttpClientBuilderPlugin}. This method can be overridden by subclasses e.g. to set HTTP headers,
    * even if you don't use a clientBuilder.
    *
-   * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
-   * @param httpContext the context of that request.
-   * @return true if this plugin handled authentication for the request, else false
-   */
-  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
-    return this instanceof HttpClientBuilderPlugin;
-  }
-
-  /**
-   * Override this method to intercept internode requests. This allows your authentication plugin to
-   * decide on per-request basis whether it should handle inter-node requests or delegate to {@link
-   * PKIAuthenticationPlugin}. Return true to indicate that your plugin did handle the request, or
-   * false to signal that PKI plugin should handle it. This method will be called by {@link
-   * PKIAuthenticationPlugin}'s interceptor.
-   *
-   * <p>If not overridden, this method will return true for plugins implementing {@link
-   * HttpClientBuilderPlugin}. This method can be overridden by subclasses e.g. to set HTTP headers,
-   * even if you don't use a clientBuilder.
-   *
    * @param request the httpRequest that is about to be sent to another internal Solr node
    * @return true if this plugin handled authentication for the request, else false
    */
@@ -163,21 +144,56 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
     this.solrMetricsContext = parentContext.getChildContext(this);
+    Attributes attrsWithCategory =
+        Attributes.builder()
+            .putAll(attributes)
+            .put(CATEGORY_ATTR, getCategory().toString())
+            .put(PLUGIN_NAME_ATTR, this.getClass().getSimpleName())
+            .build();
     // Metrics
-    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);
-    requests = this.solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    numErrors =
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_authentication_errors", "Count of errors during authentication"),
+            attrsWithCategory);
+    requests =
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_authentication_requests", "Count of requests for authentication"),
+            attrsWithCategory);
     numAuthenticated =
-        this.solrMetricsContext.counter("authenticated", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_authentication_num_authenticated",
+                "Count of successful requests for authentication"),
+            attrsWithCategory);
     numPassThrough =
-        this.solrMetricsContext.counter("passThrough", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            this.solrMetricsContext.longCounter(
+                "solr_authentication_num_pass_through",
+                "Count of requests allowed to pass through without authentication credentials (as enabled with configuration \"blockUnknown\": false)"),
+            attrsWithCategory);
+    LongCounter solrAuthenticationPluginFail =
+        this.solrMetricsContext.longCounter(
+            "solr_authentication_failures",
+            "Count of authentication failures (unsuccessful, but processed correctly)");
     numWrongCredentials =
-        this.solrMetricsContext.counter("failWrongCredentials", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            solrAuthenticationPluginFail,
+            attrsWithCategory.toBuilder().put(TYPE_ATTR, "wrong_credentials").build());
     numMissingCredentials =
-        this.solrMetricsContext.counter("failMissingCredentials", getCategory().toString(), scope);
-    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
-    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
+        new AttributedLongCounter(
+            solrAuthenticationPluginFail,
+            attrsWithCategory.toBuilder().put(TYPE_ATTR, "missing_credentials").build());
+    requestTimes =
+        new AttributedLongTimer(
+            this.solrMetricsContext.longHistogram(
+                "solr_authentication_request_times",
+                "Distribution of authentication request durations",
+                OtelUnit.NANOSECONDS),
+            attrsWithCategory);
   }
 
   @Override

@@ -18,6 +18,7 @@ package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.common.params.ModifiableSolrParams;
 
 // todo... when finalized make accessors
@@ -55,6 +56,12 @@ public class ShardRequest {
 
   /** may be null */
   public String nodeName;
+
+  /** may be null */
+  public String coreNodeName;
+
+  /** may be null */
+  public Map<String, String> headers;
 
   // TODO: one could store a list of numbers to correlate where returned docs
   // go in the top-level response rather than looking up by id...

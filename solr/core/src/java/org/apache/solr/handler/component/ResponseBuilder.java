@@ -130,7 +130,34 @@ public class ResponseBuilder {
   public static final int STAGE_GET_FIELDS = 3000;
   public static final int STAGE_DONE = Integer.MAX_VALUE;
 
-  public int stage; // What stage is this current request at?
+  private int stage; // What stage is this current request at?
+
+  public int getStage() {
+    return this.stage;
+  }
+
+  public String getStageName() {
+    switch (this.stage) {
+      case STAGE_START:
+        return "START";
+      case STAGE_PARSE_QUERY:
+        return "PARSE_QUERY";
+      case STAGE_TOP_GROUPS:
+        return "TOP_GROUPS";
+      case STAGE_EXECUTE_QUERY:
+        return "EXECUTE_QUERY";
+      case STAGE_GET_FIELDS:
+        return "GET_FIELDS";
+      case STAGE_DONE:
+        return "DONE";
+      default:
+        return Integer.toString(this.stage);
+    }
+  }
+
+  public void setStage(int stage) {
+    this.stage = stage;
+  }
 
   // The address of the Shard
   boolean isDistrib; // is this a distributed search?
@@ -141,6 +168,16 @@ public class ResponseBuilder {
   public List<ShardRequest> outgoing; // requests to be sent
   public List<ShardRequest> finished; // requests that have received responses from all shards
   public String shortCircuitedURL;
+  private boolean forcedDistrib = false;
+
+  public boolean isForcedDistrib() {
+    return forcedDistrib;
+  }
+
+  /** Force distributed-search / coordinator logic when not a sub-shard request. */
+  public void setForcedDistrib(boolean forcedDistrib) {
+    this.forcedDistrib = forcedDistrib;
+  }
 
   /** This function will return true if this was a distributed search request. */
   public boolean isDistributed() {
@@ -307,6 +344,9 @@ public class ResponseBuilder {
   }
 
   public NamedList<Object> getDebugInfo() {
+    if (debugInfo == null) {
+      debugInfo = new SimpleOrderedMap<>();
+    }
     return debugInfo;
   }
 

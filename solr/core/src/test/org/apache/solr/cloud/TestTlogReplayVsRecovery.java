@@ -29,15 +29,16 @@ import java.util.concurrent.TimeoutException;
 import org.apache.lucene.tests.util.LuceneTestCase.AwaitsFix;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TestInjection;
 import org.junit.After;
 import org.junit.Before;
@@ -105,9 +106,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
       proxies = null;
     }
     jettys = null;
-    System.clearProperty("solr.directoryFactory");
-    System.clearProperty("solr.ulog.numRecordsToKeep");
-    System.clearProperty("leaderVoteWait");
 
     shutdownCluster();
   }
@@ -274,11 +272,14 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
    */
   private void assertDocExists(final String clientName, final SolrClient client, final String docId)
       throws Exception {
-    final QueryResponse rsp =
-        (new QueryRequest(
-                params("qt", "/get", "id", docId, "_trace", clientName, "distrib", "false")))
+    final var rsp =
+        (new GenericSolrRequest(
+                    SolrRequest.METHOD.GET,
+                    "/get",
+                    SolrRequestType.QUERY,
+                    params("qt", "/get", "id", docId, "_trace", clientName, "distrib", "false"))
+                .setRequiresCollection(true))
             .process(client, COLLECTION);
-    assertEquals(0, rsp.getStatus());
 
     String match = JSONTestUtil.matchObj("/id", rsp.getResponse().get("doc"), docId);
     assertNull(

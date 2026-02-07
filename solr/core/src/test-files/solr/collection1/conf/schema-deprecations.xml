@@ -18,11 +18,6 @@
 <schema name="schema-deprecations" version="1.7">
 
   <types>
-    <fieldType name="lowertok" class="solr.TextField">
-      <analyzer>
-        <tokenizer class="solr.LowerCaseTokenizerFactory"/>
-      </analyzer>
-    </fieldType>
     <fieldType name="string" class="solr.StrField"/>
     <fieldType name="long" class="${solr.tests.LongFieldType}"/>
   </types>
@@ -30,7 +25,6 @@
   <fields>
     <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="true"/>
     <field name="_version_" type="long" indexed="false" stored="false"/>
-    <field name="lowertext" type="lowertok" indexed="true"/>
   </fields>
 
 </schema>

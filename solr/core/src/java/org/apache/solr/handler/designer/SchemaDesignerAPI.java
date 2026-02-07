@@ -33,6 +33,7 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -49,10 +50,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.solr.api.EndPoint;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -60,6 +61,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -86,8 +88,7 @@ import org.slf4j.LoggerFactory;
 /** All V2 APIs have a prefix of /api/schema-designer/ */
 public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
-  private static final Set<String> excludeConfigSetNames =
-      new HashSet<>(Arrays.asList(DEFAULT_CONFIGSET_NAME, BLOB_STORE_ID));
+  private static final Set<String> excludeConfigSetNames = Set.of(DEFAULT_CONFIGSET_NAME);
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -172,7 +173,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     // don't fail if loading sample docs fails
     try {
-      responseMap.put("numDocs", configSetHelper.getStoredSampleDocs(configSet).size());
+      responseMap.put("numDocs", configSetHelper.retrieveSampleDocs(configSet).size());
     } catch (Exception exc) {
       log.warn("Failed to load sample docs from blob store for {}", configSet, exc);
     }
@@ -216,7 +217,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     String filePath = getConfigSetZkPath(getMutableId(configSet), file);
     byte[] data;
     try {
-      data = zkStateReader().getZkClient().getData(filePath, null, null, true);
+      data = zkStateReader().getZkClient().getData(filePath, null, null);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading file: " + filePath, SolrZkClient.checkInterrupted(e));
     }
@@ -271,7 +272,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // apply the update and reload the temp collection / re-index sample docs
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      zkClient.setData(zkPath, data, true);
+      zkClient.setData(zkPath, data);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to save data in ZK at path: " + zkPath, SolrZkClient.checkInterrupted(e));
@@ -282,7 +283,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     ManagedIndexSchema schema = loadLatestSchema(mutableId);
     Map<Object, Throwable> errorsDuringIndexing = null;
     SolrException solrExc = null;
-    List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
     String[] analysisErrorHolder = new String[1];
     if (!docs.isEmpty()) {
       String idField = schema.getUniqueKeyField().getName();
@@ -318,7 +319,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     final String idField = getRequiredParam(UNIQUE_KEY_FIELD_PARAM, req);
     String docId = req.getParams().get(DOC_ID_PARAM);
 
-    final List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
+    final List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
     String textValue = null;
     if (StrUtils.isNullOrEmpty(docId)) {
       // no doc ID from client ... find the first doc with a non-empty string value for fieldName
@@ -395,8 +396,8 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     String configId = mutableId;
     try {
-      if (!zkClient.exists(getConfigSetZkPath(mutableId, null), true)) {
-        if (zkClient.exists(getConfigSetZkPath(configSet, null), true)) {
+      if (!zkClient.exists(getConfigSetZkPath(mutableId, null))) {
+        if (zkClient.exists(getConfigSetZkPath(configSet, null))) {
           configId = configSet;
         } else {
           throw new SolrException(
@@ -429,7 +430,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     ManagedIndexSchema schema = loadLatestSchema(mutableId);
     Map<String, Object> response =
-        buildResponse(configSet, schema, null, configSetHelper.getStoredSampleDocs(configSet));
+        buildResponse(configSet, schema, null, configSetHelper.retrieveSampleDocs(configSet));
     response.put(action, objectName);
     rsp.getValues().addAll(response);
   }
@@ -468,7 +469,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
 
     // re-index the docs if no error to this point
     final ManagedIndexSchema schema = loadLatestSchema(mutableId);
-    List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
+    List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
     Map<Object, Throwable> errorsDuringIndexing = null;
     String[] analysisErrorHolder = new String[1];
     if (solrExc == null && !docs.isEmpty()) {
@@ -571,7 +572,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       int rf = req.getParams().getInt("replicationFactor", 1);
       configSetHelper.createCollection(newCollection, configSet, numShards, rf);
       if (req.getParams().getBool(INDEX_TO_COLLECTION_PARAM, false)) {
-        List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
+        List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
         if (!docs.isEmpty()) {
           ManagedIndexSchema schema = loadLatestSchema(mutableId);
           errorsDuringIndexing =
@@ -773,7 +774,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
           mutableId,
           version,
           currentVersion);
-      List<SolrInputDocument> docs = configSetHelper.getStoredSampleDocs(configSet);
+      List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
       ManagedIndexSchema schema = loadLatestSchema(mutableId);
       errorsDuringIndexing =
           indexSampleDocsWithRebuildOnAnalysisError(
@@ -829,7 +830,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       if (!docs.isEmpty()) {
         // user posted in some docs, if there are already docs stored in the blob store, then add
         // these to the existing set
-        List<SolrInputDocument> stored = configSetHelper.getStoredSampleDocs(configSet);
+        List<SolrInputDocument> stored = configSetHelper.retrieveSampleDocs(configSet);
         if (!stored.isEmpty()) {
           // keep the docs in the request as newest
           ManagedIndexSchema latestSchema = loadLatestSchema(getMutableId(configSet));
@@ -838,14 +839,14 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
                   latestSchema.getUniqueKeyField().getName(), stored, MAX_SAMPLE_DOCS);
         }
 
-        // store in the blob store so that we always have access to these docs
+        // store in the Filestore so that we always have access to these docs
         configSetHelper.storeSampleDocs(configSet, docs);
       }
     }
 
     if (docs == null || docs.isEmpty()) {
       // no sample docs in the request ... find in blob store (or fail if no docs previously stored)
-      docs = configSetHelper.getStoredSampleDocs(configSet);
+      docs = configSetHelper.retrieveSampleDocs(configSet);
 
       // no docs? but if this schema has already been published, it's OK, we can skip the docs part
       if (docs.isEmpty() && !configExists(configSet)) {
@@ -1120,8 +1121,9 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     Map<String, Object> response = new HashMap<>();
 
     DocCollection coll = zkStateReader().getCollection(mutableId);
-    if (coll.getActiveSlicesArr().length > 0) {
-      String coreName = coll.getActiveSlicesArr()[0].getLeader().getCoreName();
+    Collection<Slice> activeSlices = coll.getActiveSlices();
+    if (!activeSlices.isEmpty()) {
+      String coreName = activeSlices.stream().findAny().orElseThrow().getLeader().getCoreName();
       response.put("core", coreName);
     }
 
@@ -1351,7 +1353,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
   private boolean pathExistsInZk(final String zkPath) throws IOException {
     SolrZkClient zkClient = zkStateReader().getZkClient();
     try {
-      return zkClient.exists(zkPath, true);
+      return zkClient.exists(zkPath);
     } catch (KeeperException | InterruptedException e) {
       throw new IOException(
           "Failed to check if path exists: " + zkPath, SolrZkClient.checkInterrupted(e));

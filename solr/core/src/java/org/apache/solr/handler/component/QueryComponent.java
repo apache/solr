@@ -90,6 +90,7 @@ import org.apache.solr.search.Grouping;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryCommand;
+import org.apache.solr.search.QueryLimits;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.QueryResult;
 import org.apache.solr.search.QueryUtils;
@@ -377,12 +378,8 @@ public class QueryComponent extends SearchComponent {
 
     final boolean multiThreaded = params.getBool(CommonParams.MULTI_THREADED, false);
 
-    // -1 as flag if not set.
-    long timeAllowed = params.getLong(CommonParams.TIME_ALLOWED, -1L);
-
     QueryCommand cmd = rb.createQueryCommand();
     cmd.setMultiThreaded(multiThreaded);
-    cmd.setTimeAllowed(timeAllowed);
     cmd.setMinExactCount(getMinExactCount(params));
     cmd.setDistribStatsDisabled(rb.isDistribStatsDisabled());
 
@@ -555,7 +552,13 @@ public class QueryComponent extends SearchComponent {
             }
 
             doc -= currentLeaf.docBase; // adjust for what segment this is in
-            leafComparator.setScorer(new ScoreAndDoc(doc, score));
+            leafComparator.setScorer(
+                new Scorable() {
+                  @Override
+                  public float score() {
+                    return score;
+                  }
+                });
             leafComparator.copy(0, doc);
             Object val = comparator.value(0);
             if (null != ft) val = ft.marshalSortValue(val);
@@ -598,24 +601,24 @@ public class QueryComponent extends SearchComponent {
     int nextStage = ResponseBuilder.STAGE_DONE;
     ShardRequestFactory shardRequestFactory = null;
 
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       nextStage = ResponseBuilder.STAGE_PARSE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage < ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_TOP_GROUPS) {
       nextStage = ResponseBuilder.STAGE_TOP_GROUPS;
-    } else if (rb.stage == ResponseBuilder.STAGE_TOP_GROUPS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_TOP_GROUPS) {
       shardRequestFactory = new SearchGroupsRequestFactory();
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       nextStage = ResponseBuilder.STAGE_EXECUTE_QUERY;
-    } else if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       shardRequestFactory = new TopGroupsShardRequestFactory();
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
-    } else if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    } else if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       shardRequestFactory = new StoredFieldsShardRequestFactory();
       nextStage = ResponseBuilder.STAGE_DONE;
     }
@@ -629,24 +632,24 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int regularDistributedProcess(ResponseBuilder rb) {
-    if (rb.stage < ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
       return ResponseBuilder.STAGE_PARSE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_PARSE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_PARSE_QUERY) {
       createDistributedStats(rb);
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage < ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() < ResponseBuilder.STAGE_EXECUTE_QUERY) {
       return ResponseBuilder.STAGE_EXECUTE_QUERY;
     }
-    if (rb.stage == ResponseBuilder.STAGE_EXECUTE_QUERY) {
+    if (rb.getStage() == ResponseBuilder.STAGE_EXECUTE_QUERY) {
       createMainQuery(rb);
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
       return ResponseBuilder.STAGE_DONE;
     }
@@ -693,7 +696,7 @@ public class QueryComponent extends SearchComponent {
 
   @Override
   public void finishStage(ResponseBuilder rb) {
-    if (rb.stage != ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() != ResponseBuilder.STAGE_GET_FIELDS) {
       return;
     }
 
@@ -751,14 +754,16 @@ public class QueryComponent extends SearchComponent {
   protected void regularFinishStage(ResponseBuilder rb) {
     // We may not have been able to retrieve all the docs due to an
     // index change.  Remove any null documents.
-    for (Iterator<SolrDocument> iter = rb.getResponseDocs().iterator(); iter.hasNext(); ) {
+    SolrDocumentList responseDocs =
+        rb.getResponseDocs() != null ? rb.getResponseDocs() : new SolrDocumentList();
+    for (Iterator<SolrDocument> iter = responseDocs.iterator(); iter.hasNext(); ) {
       if (iter.next() == null) {
         iter.remove();
-        rb.getResponseDocs().setNumFound(rb.getResponseDocs().getNumFound() - 1);
+        rb.getResponseDocs().setNumFound(responseDocs.getNumFound() - 1);
       }
     }
 
-    rb.rsp.addResponse(rb.getResponseDocs());
+    rb.rsp.addResponse(responseDocs);
     if (null != rb.getNextCursorMark()) {
       rb.rsp.add(CursorMarkParams.CURSOR_MARK_NEXT, rb.getNextCursorMark().getSerializedTotem());
     }
@@ -827,20 +832,24 @@ public class QueryComponent extends SearchComponent {
     // perhaps we shouldn't attempt to parse the query at this level?
     // Alternate Idea: instead of specifying all these things at the upper level,
     // we could just specify that this is a shard request.
+    int shardRows;
     if (rb.shards_rows > -1) {
       // if the client set shards.rows set this explicity
-      sreq.params.set(CommonParams.ROWS, rb.shards_rows);
+      shardRows = rb.shards_rows;
     } else {
-      // what if rows<0 as it is allowed for grouped request??
-      sreq.params.set(
-          CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
+      shardRows = rb.getSortSpec().getCount();
+      // If rows = -1 (grouped requests) or rows = 0, then there is no need to add the offset.
+      if (shardRows > 0) {
+        shardRows += rb.getSortSpec().getOffset();
+      }
     }
+    sreq.params.set(CommonParams.ROWS, shardRows);
 
     sreq.params.set(ResponseBuilder.FIELD_SORT_VALUES, "true");
 
     boolean shardQueryIncludeScore =
         (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0
-            || rb.getSortSpec().includesScore();
+            || (shardRows != 0 && rb.getSortSpec().includesScore());
     StringBuilder additionalFL = new StringBuilder();
     boolean additionalAdded = false;
     if (rb.onePassDistributedQuery) {
@@ -898,6 +907,67 @@ public class QueryComponent extends SearchComponent {
     return true;
   }
 
+  protected abstract static class ShardDocQueue {
+    public abstract boolean push(ShardDoc shardDoc);
+
+    public abstract Map<Object, ShardDoc> resultIds(int offset);
+  }
+  ;
+
+  protected ShardDocQueue newShardDocQueue(
+      SolrIndexSearcher searcher, SortField[] sortFields, Integer size) {
+    return new ShardDocQueue() {
+
+      // id to shard mapping, to eliminate any accidental dups
+      private final HashMap<Object, String> uniqueDoc = new HashMap<>();
+
+      private final ShardFieldSortedHitQueue queue =
+          new ShardFieldSortedHitQueue(sortFields, size, searcher);
+
+      @Override
+      public boolean push(ShardDoc shardDoc) {
+        final String prevShard = uniqueDoc.put(shardDoc.id, shardDoc.shard);
+        if (prevShard != null) {
+          // duplicate detected
+
+          // For now, just always use the first encountered since we can't currently
+          // remove the previous one added to the priority queue.  If we switched
+          // to the Java5 PriorityQueue, this would be easier.
+          return false;
+          // make which duplicate is used deterministic based on shard
+          // if (prevShard.compareTo(shardDoc.shard) >= 0) {
+          //  TODO: remove previous from priority queue
+          //  return false;
+          // }
+        }
+
+        queue.insertWithOverflow(shardDoc);
+        return true;
+      }
+
+      @Override
+      public Map<Object, ShardDoc> resultIds(int offset) {
+        final Map<Object, ShardDoc> resultIds = new HashMap<>();
+
+        // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
+        // So we want to pop the last documents off the queue to get
+        // the docs offset -> queuesize
+        int resultSize = queue.size() - offset;
+        resultSize = Math.max(0, resultSize); // there may not be any docs in range
+
+        for (int i = resultSize - 1; i >= 0; i--) {
+          ShardDoc shardDoc = queue.pop();
+          shardDoc.positionInResponse = i;
+          // Need the toString() for correlation with other lists that must
+          // be strings (like keys in highlighting, explain, etc)
+          resultIds.put(shardDoc.id.toString(), shardDoc);
+        }
+
+        return resultIds;
+      }
+    };
+  }
+
   protected void mergeIds(ResponseBuilder rb, ShardRequest sreq) {
     List<MergeStrategy> mergeStrategies = rb.getMergeStrategies();
     if (mergeStrategies != null) {
@@ -940,14 +1010,10 @@ public class QueryComponent extends SearchComponent {
     IndexSchema schema = rb.req.getSchema();
     SchemaField uniqueKeyField = schema.getUniqueKeyField();
 
-    // id to shard mapping, to eliminate any accidental dups
-    HashMap<Object, String> uniqueDoc = new HashMap<>();
-
     // Merge the docs via a priority queue so we don't have to sort *all* of the
     // documents... we only need to order the top (rows+start)
-    final ShardFieldSortedHitQueue queue =
-        new ShardFieldSortedHitQueue(
-            sortFields, ss.getOffset() + ss.getCount(), rb.req.getSearcher());
+    final ShardDocQueue shardDocQueue =
+        newShardDocQueue(rb.req.getSearcher(), sortFields, ss.getOffset() + ss.getCount());
 
     NamedList<Object> shardInfo = null;
     if (rb.req.getParams().getBool(ShardParams.SHARDS_INFO, false)) {
@@ -1118,23 +1184,6 @@ public class QueryComponent extends SearchComponent {
       for (int i = 0; i < docs.size(); i++) {
         SolrDocument doc = docs.get(i);
         Object id = doc.getFieldValue(uniqueKeyField.getName());
-
-        String prevShard = uniqueDoc.put(id, srsp.getShard());
-        if (prevShard != null) {
-          // duplicate detected
-          numFound--;
-
-          // For now, just always use the first encountered since we can't currently
-          // remove the previous one added to the priority queue.  If we switched
-          // to the Java5 PriorityQueue, this would be easier.
-          continue;
-          // make which duplicate is used deterministic based on shard
-          // if (prevShard.compareTo(srsp.shard) >= 0) {
-          //  TODO: remove previous from priority queue
-          //  continue;
-          // }
-        }
-
         ShardDoc shardDoc = new ShardDoc();
         shardDoc.id = id;
         shardDoc.shard = srsp.getShard();
@@ -1153,42 +1202,18 @@ public class QueryComponent extends SearchComponent {
 
         shardDoc.sortFieldValues = unmarshalledSortFieldValues;
 
-        queue.insertWithOverflow(shardDoc);
+        if (!shardDocQueue.push(shardDoc)) {
+          numFound--;
+        }
       } // end for-each-doc-in-response
     } // end for-each-response
-
-    // The queue now has 0 -> queuesize docs, where queuesize <= start + rows
-    // So we want to pop the last documents off the queue to get
-    // the docs offset -> queuesize
-    int resultSize = queue.size() - ss.getOffset();
-    resultSize = Math.max(0, resultSize); // there may not be any docs in range
-
-    Map<Object, ShardDoc> resultIds = new HashMap<>();
-    for (int i = resultSize - 1; i >= 0; i--) {
-      ShardDoc shardDoc = queue.pop();
-      shardDoc.positionInResponse = i;
-      // Need the toString() for correlation with other lists that must
-      // be strings (like keys in highlighting, explain, etc)
-      resultIds.put(shardDoc.id.toString(), shardDoc);
-    }
 
     // Add hits for distributed requests
     // https://issues.apache.org/jira/browse/SOLR-3518
     rb.rsp.addToLog("hits", numFound);
 
-    SolrDocumentList responseDocs = new SolrDocumentList();
-    if (maxScore != null) responseDocs.setMaxScore(maxScore);
-    responseDocs.setNumFound(numFound);
-    responseDocs.setNumFoundExact(hitCountIsExact);
-    responseDocs.setStart(ss.getOffset());
-    // size appropriately
-    for (int i = 0; i < resultSize; i++) responseDocs.add(null);
-
-    // save these results in a private area so we can access them
-    // again when retrieving stored fields.
-    // TODO: use ResponseBuilder (w/ comments) or the request context?
-    rb.resultIds = resultIds;
-    rb.setResponseDocs(responseDocs);
+    setResultIdsAndResponseDocs(
+        rb, shardDocQueue, maxScore, numFound, hitCountIsExact, ss.getOffset());
 
     populateNextCursorMarkFromMergedShards(rb);
 
@@ -1232,6 +1257,30 @@ public class QueryComponent extends SearchComponent {
                 SolrQueryResponse.RESPONSE_HEADER_APPROXIMATE_TOTAL_HITS_KEY, approximateTotalHits);
       }
     }
+  }
+
+  protected void setResultIdsAndResponseDocs(
+      ResponseBuilder rb,
+      ShardDocQueue shardDocQueue,
+      Float maxScore,
+      long numFound,
+      boolean hitCountIsExact,
+      int offset) {
+    final Map<Object, ShardDoc> resultIds = shardDocQueue.resultIds(offset);
+
+    final SolrDocumentList responseDocs = new SolrDocumentList();
+    if (maxScore != null) responseDocs.setMaxScore(maxScore);
+    responseDocs.setNumFound(numFound);
+    responseDocs.setNumFoundExact(hitCountIsExact);
+    responseDocs.setStart(offset);
+    // size appropriately
+    for (int i = 0; i < resultIds.size(); i++) responseDocs.add(null);
+
+    // save these results in a private area so we can access them
+    // again when retrieving stored fields.
+    // TODO: use ResponseBuilder (w/ comments) or the request context?
+    rb.resultIds = resultIds;
+    rb.setResponseDocs(responseDocs);
   }
 
   /**
@@ -1332,6 +1381,9 @@ public class QueryComponent extends SearchComponent {
 
     // for each shard, collect the documents for that shard.
     HashMap<String, Collection<ShardDoc>> shardMap = new HashMap<>();
+    if (rb.resultIds == null) {
+      rb.resultIds = new HashMap<>();
+    }
     for (ShardDoc sdoc : rb.resultIds.values()) {
       Collection<ShardDoc> shardDocs = shardMap.get(sdoc.shard);
       if (shardDocs == null) {
@@ -1787,6 +1839,11 @@ public class QueryComponent extends SearchComponent {
     }
     rb.setResult(result);
 
+    QueryLimits queryLimits = QueryLimits.getCurrentLimits();
+    if (queryLimits.maybeExitWithPartialResults("QueryComponent")) {
+      return;
+    }
+
     ResultContext ctx = new BasicResultContext(rb);
     rsp.addResponse(ctx);
     rsp.getToLog()
@@ -1828,31 +1885,5 @@ public class QueryComponent extends SearchComponent {
     }
 
     return localQueryID;
-  }
-
-  /**
-   * Fake scorer for a single document
-   *
-   * <p>TODO: when SOLR-5595 is fixed, this wont be needed, as we dont need to recompute sort values
-   * here from the comparator
-   */
-  protected static class ScoreAndDoc extends Scorable {
-    final int docid;
-    final float score;
-
-    ScoreAndDoc(int docid, float score) {
-      this.docid = docid;
-      this.score = score;
-    }
-
-    @Override
-    public int docID() {
-      return docid;
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
   }
 }

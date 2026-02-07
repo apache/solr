@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.component;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -105,8 +106,8 @@ public abstract class SearchComponent implements SolrInfoBean, NamedListInitiali
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    // By default, don't register any metrics - but prepare a child context
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    // By default don't register any metrics - but prepare a child context
     this.solrMetricsContext = parentContext.getChildContext(this);
   }
 

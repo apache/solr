@@ -1,0 +1,5 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove stream.url, stream.file, and stream.body params.
+type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh

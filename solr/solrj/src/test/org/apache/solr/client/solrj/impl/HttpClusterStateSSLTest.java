@@ -64,9 +64,7 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
 
     // verify the base_url is actually stored with https in it on the server-side
     byte[] stateJsonBytes =
-        cluster
-            .getZkClient()
-            .getData(DocCollection.getCollectionPath(collectionId), null, null, true);
+        cluster.getZkClient().getData(DocCollection.getCollectionPath(collectionId), null, null);
     assertNotNull(stateJsonBytes);
     Map<String, Object> replicasMap =
         (Map<String, Object>)
@@ -85,16 +83,15 @@ public class HttpClusterStateSSLTest extends SolrCloudTestCase {
     try (CloudSolrClient httpBasedCloudSolrClient =
         new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = httpBasedCloudSolrClient.getClusterStateProvider();
-      assertTrue(csp instanceof Http2ClusterStateProvider);
+      assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 
     // http2
     try (CloudSolrClient http2BasedClient =
-        new CloudHttp2SolrClient.Builder(Collections.singletonList(url0.toExternalForm()))
-            .build()) {
+        new CloudSolrClient.Builder(Collections.singletonList(url0.toExternalForm())).build()) {
       ClusterStateProvider csp = http2BasedClient.getClusterStateProvider();
-      assertTrue(csp instanceof Http2ClusterStateProvider);
+      assertTrue(csp instanceof HttpClusterStateProvider);
       verifyUrlSchemeInClusterState(csp.getCollection(collectionId), expectedReplicas);
     }
 

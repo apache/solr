@@ -29,11 +29,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.cloud.SocketProxy;
+import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -49,6 +48,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.util.SocketProxy;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,7 +89,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             name,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
+            (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 2));
     return name;
   }
 
@@ -167,7 +167,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
@@ -288,7 +288,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     // Add a few documents with diff routes
     cloudClient.add(testCollectionName, sdoc("id", "1", "routefield_s", "europe"));
@@ -322,7 +322,7 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
             testCollectionName,
             DEFAULT_TIMEOUT,
             TimeUnit.SECONDS,
-            (n, c1) -> DocCollection.isFullyActive(n, c1, 2, 2));
+            (n, c1) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c1, 2, 2));
 
     final DocCollection docCol = cloudClient.getClusterState().getCollection(testCollectionName);
     try (SolrClient shard1 = getHttpSolrClient(docCol.getSlice("shard1").getLeader());
@@ -464,15 +464,20 @@ public class FullSolrCloudDistribCmdsTest extends SolrCloudTestCase {
                 collectionName,
                 DEFAULT_TIMEOUT,
                 TimeUnit.SECONDS,
-                (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
+                (n, c) -> SolrCloudTestCase.replicasForCollectionAreFullyActive(n, c, 2, 1));
 
         { // HACK: Check the leaderProps for the shard hosted on the node we're going to kill...
-          final Replica leaderProps =
+          List<Replica> replicas =
               cloudClient
                   .getClusterState()
                   .getCollection(collectionName)
-                  .getLeaderReplicas(leaderToPartition.getNodeName())
-                  .get(0);
+                  .getReplicasOnNode(leaderToPartition.getNodeName());
+          assertNotNull(replicas);
+          assertFalse(replicas.isEmpty());
+          List<Replica> leaderReplicas = replicas.stream().filter(Replica::isLeader).toList();
+          assertFalse(leaderReplicas.isEmpty());
+          final Replica leaderProps = leaderReplicas.get(0);
+
           // No point in this test if these aren't true...
           assertNotNull(
               "Sanity check: leaderProps isn't a leader?: " + leaderProps.toString(),

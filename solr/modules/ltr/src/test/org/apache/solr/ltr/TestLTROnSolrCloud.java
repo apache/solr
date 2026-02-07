@@ -23,8 +23,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.apache.commons.io.file.PathUtils;
-import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -51,7 +51,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
   public void setUp() throws Exception {
     super.setUp();
     setupTestInit(solrconfig, schema, true);
-    System.setProperty("enable.update.log", "true");
+    System.setProperty("solr.index.updatelog.enabled", "true");
 
     int numberOfShards = random().nextInt(4) + 1;
     int numberOfReplicas = random().nextInt(2) + 1;
@@ -472,6 +472,5 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       PathUtils.deleteDirectory(tmpSolrHome);
       tmpSolrHome = null;
     }
-    System.clearProperty("managed.schema.mutable");
   }
 }

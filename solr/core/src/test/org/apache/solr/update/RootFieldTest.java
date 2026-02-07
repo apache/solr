@@ -19,22 +19,23 @@ package org.apache.solr.update;
 
 import static org.hamcrest.CoreMatchers.is;
 
-import org.apache.solr.EmbeddedSolrServerTestBase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.util.EmbeddedSolrServerTestRule;
 import org.apache.solr.util.RandomNoReverseMergePolicyFactory;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class RootFieldTest extends EmbeddedSolrServerTestBase {
+public class RootFieldTest extends SolrTestCase {
   private static boolean useRootSchema;
   private static final String MESSAGE =
       "Update handler should create and process _root_ field "
@@ -44,31 +45,28 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
     return useRootSchema;
   }
 
+  @ClassRule
+  public static final EmbeddedSolrServerTestRule solrTestRule = new EmbeddedSolrServerTestRule();
+
   // not necessary right now but will be once block logic is asserted
   @ClassRule
   public static final TestRule noReverseMerge = RandomNoReverseMergePolicyFactory.createRule();
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    solrClientTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
+    solrTestRule.startSolr(SolrTestCaseJ4.TEST_HOME());
 
     useRootSchema = random().nextBoolean();
     // schema15.xml declares _root_ field, while schema-rest.xml does not.
     String schema = useRootSchema ? "schema15.xml" : "schema-rest.xml";
     SolrTestCaseJ4.newRandomConfig();
-    System.setProperty("solr.test.sys.prop1", "propone"); // TODO yuck; remove
-    System.setProperty("solr.test.sys.prop2", "proptwo"); // TODO yuck; remove
 
-    solrClientTestRule
-        .newCollection()
-        .withConfigSet("../collection1")
-        .withSchemaFile(schema)
-        .create();
+    solrTestRule.newCollection().withConfigSet("../collection1").withSchemaFile(schema).create();
   }
 
   @Test
   public void testLegacyBlockProcessing() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     // Add child free doc
@@ -111,7 +109,7 @@ public class RootFieldTest extends EmbeddedSolrServerTestBase {
 
   @Test
   public void testUpdateWithChildDocs() throws Exception {
-    SolrClient client = getSolrClient();
+    SolrClient client = solrTestRule.getSolrClient();
     client.deleteByQuery("*:*"); // delete everything!
 
     // Add child free doc

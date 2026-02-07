@@ -18,7 +18,7 @@ package org.apache.solr.crossdc.manager.messageprocessor;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -36,6 +36,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.crossdc.common.IQueueHandler;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.crossdc.common.ResubmitBackoffPolicy;
+import org.apache.solr.crossdc.manager.consumer.OtelMetrics;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -55,7 +56,8 @@ public class SolrMessageProcessorTest {
   public void setUp() {
     client = mock(CloudSolrClient.class);
     resubmitBackoffPolicy = mock(ResubmitBackoffPolicy.class);
-    solrMessageProcessor = new SolrMessageProcessor(client, resubmitBackoffPolicy);
+    solrMessageProcessor =
+        new SolrMessageProcessor(mock(OtelMetrics.class), () -> client, resubmitBackoffPolicy);
   }
 
   /** Should handle MirroredSolrRequest and return a failed result with no retry */
@@ -76,6 +78,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
+    assertNotNull(result.getItem());
   }
 
   /** Should handle MirroredSolrRequest and return a failed result with resubmit */
@@ -92,6 +95,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.FAILED_RESUBMIT, result.status());
+    assertNotNull(result.getItem());
     assertEquals(mirroredSolrRequest, result.getItem());
   }
 
@@ -111,7 +115,7 @@ public class SolrMessageProcessorTest {
         solrMessageProcessor.handleItem(mirroredSolrRequest);
 
     assertEquals(IQueueHandler.ResultStatus.HANDLED, result.status());
-    assertNull(result.getItem());
+    assertNotNull(result.getItem());
   }
 
   /** Should connect to Solr if not connected and process the request */

@@ -25,7 +25,7 @@ import java.util.Random;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
+import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.RTimer;
 import org.slf4j.Logger;

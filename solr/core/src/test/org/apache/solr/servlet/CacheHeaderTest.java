@@ -16,17 +16,13 @@
  */
 package org.apache.solr.servlet;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Date;
+import java.util.Properties;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
-import org.apache.http.impl.cookie.DateUtils;
-import org.apache.solr.common.params.CommonParams;
+import org.apache.http.client.utils.DateUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -36,29 +32,27 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    System.setProperty("solr.enableRemoteStreaming", "true"); // needed for testCacheVetoHandler
+    // System properties are required by collection1 solrconfig.xml propTest configuration
+    // These cannot be removed as they are used for property substitution in the config
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
 
     Path solrHomeDirectory = createTempDir();
-    setupJettyTestHome(solrHomeDirectory, "collection1");
-    createAndStartJetty(solrHomeDirectory);
-  }
+    copySolrHomeToTemp(solrHomeDirectory, "collection1");
 
-  protected static final String CONTENTS = "id\n100\n101\n102";
+    Path coresDir = createTempDir().resolve("cores");
+    Properties props = new Properties();
+    props.setProperty("name", DEFAULT_TEST_CORENAME);
+    props.setProperty("configSet", "collection1");
 
-  @Test
-  public void testCacheVetoHandler() throws Exception {
-    Path f = makeFile(CacheHeaderTest.CONTENTS, StandardCharsets.UTF_8.name());
-    HttpRequestBase m =
-        getUpdateMethod(
-            "GET",
-            CommonParams.STREAM_FILE,
-            f.toRealPath().toString(),
-            CommonParams.STREAM_CONTENTTYPE,
-            "text/csv");
-    HttpResponse response = getHttpClient().execute(m);
-    assertEquals(200, response.getStatusLine().getStatusCode());
-    checkVetoHeaders(response, true);
-    Files.delete(f);
+    writeCoreProperties(coresDir.resolve("core"), props, "CacheHeaderTest");
+
+    Properties nodeProps = new Properties();
+    nodeProps.setProperty("coreRootDirectory", coresDir.toString());
+    nodeProps.setProperty("configSetBaseDir", solrHomeDirectory.toString());
+
+    solrTestRule.startSolr(
+        solrHomeDirectory, nodeProps, org.apache.solr.embedded.JettyConfig.builder().build());
   }
 
   @Test
@@ -67,11 +61,11 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
     HttpResponse response = getHttpClient().execute(m);
     assertNotEquals(200, response.getStatusLine().getStatusCode());
-    checkVetoHeaders(response, false);
+    checkVetoHeaders(response);
   }
 
   @SuppressForbidden(reason = "Needs currentTimeMillis to check against expiry headers from Solr")
-  protected void checkVetoHeaders(HttpResponse response, boolean checkExpires) throws Exception {
+  protected void checkVetoHeaders(HttpResponse response) {
     Header head = response.getFirstHeader("Cache-Control");
     assertNotNull("We got no Cache-Control header", head);
     assertTrue(
@@ -84,15 +78,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     head = response.getFirstHeader("Pragma");
     assertNotNull("We got no Pragma header", head);
     assertEquals("no-cache", head.getValue());
-
-    if (checkExpires) {
-      head = response.getFirstHeader("Expires");
-      assertNotNull("We got no Expires header:" + Arrays.asList(response.getAllHeaders()), head);
-      Date d = DateUtils.parseDate(head.getValue());
-      assertTrue(
-          "We got no Expires header far in the past",
-          System.currentTimeMillis() - d.getTime() > 100000);
-    }
   }
 
   @Override
@@ -262,16 +247,6 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
       head = response.getFirstHeader("Expires");
       assertNotNull("We got no Expires header in response", head);
-    }
-  }
-
-  protected Path makeFile(String contents, String charset) {
-    try {
-      Path f = createTempFile("cachetest", "csv");
-      Files.writeString(f, contents, Charset.forName(charset));
-      return f;
-    } catch (Exception e) {
-      throw new RuntimeException(e);
     }
   }
 }

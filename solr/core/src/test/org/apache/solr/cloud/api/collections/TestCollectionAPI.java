@@ -26,15 +26,15 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
-import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.NoOpResponseParser;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
@@ -171,9 +171,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail("Trying to unset an unknown property should have failed");
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         // expected
-        assertTrue(e.getMessage().contains("no supported values provided"));
+        assertTrue(e.toString().contains("no supported values provided"));
       }
     }
   }
@@ -193,7 +193,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(
             errorMessage.contains(
@@ -266,11 +266,11 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
   private void deleteThemAll(SolrZkClient zkClient, String node)
       throws KeeperException, InterruptedException {
-    List<String> kids = zkClient.getChildren(node, null, true);
+    List<String> kids = zkClient.getChildren(node, null);
     for (String kid : kids) {
       deleteThemAll(zkClient, node + "/" + kid);
     }
-    zkClient.delete(node, -1, true);
+    zkClient.delete(node, -1);
   }
 
   private void assertCountsForRepFactorAndNrtReplicas(CloudSolrClient client, String collectionName)
@@ -640,7 +640,6 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("collection", "notAnAliasOrCollection");
       request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setPath("/admin/collections");
 
       // SOLR-12938 - this should still cause an exception
       try {
@@ -666,9 +665,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("wt", "json");
       var request =
           new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
-      request.setResponseParser(new NoOpResponseParser("json"));
-      NamedList<Object> rsp = client.request(request);
-      String actualResponse = (String) rsp.get("response");
+      request.setResponseParser(new InputStreamResponseParser("json"));
+      NamedList<Object> res = client.request(request);
+      String actualResponse = InputStreamResponseParser.consumeResponseToString(res);
 
       Map<String, Object> result = mapper.readValue(actualResponse, Map.class);
 
@@ -1150,7 +1149,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid collection"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1173,7 +1172,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1194,7 +1193,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid alias"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1227,7 +1226,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       try {
         client.request(request);
         fail();
-      } catch (SolrClient.RemoteSolrException e) {
+      } catch (RemoteSolrException e) {
         final String errorMessage = e.getMessage();
         assertTrue(errorMessage.contains("Invalid shard"));
         assertTrue(errorMessage.contains("invalid@name#with$weird%characters"));
@@ -1258,11 +1257,10 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void missingParamsError(CloudSolrClient client, ModifiableSolrParams origParams)
       throws IOException, SolrServerException {
 
-    GenericSolrRequest request;
     try {
-      request =
+      var request =
           new GenericSolrRequest(
-              METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, origParams);
+              METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, origParams);
       client.request(request);
       fail("Should have thrown a SolrException due to lack of a required parameter.");
     } catch (SolrException se) {
@@ -1300,9 +1298,9 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
 
     try (CloudSolrClient client = createCloudClient(null)) {
       // first, try creating a collection with badconf
-      SolrClient.RemoteSolrException rse =
+      RemoteSolrException rse =
           expectThrows(
-              SolrClient.RemoteSolrException.class,
+              RemoteSolrException.class,
               () -> {
                 CollectionAdminRequest.createCollection("testcollection", "badconf", 1, 2)
                     .process(client);
@@ -1352,7 +1350,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
       params.set("numShards", "1");
       params.set(CollectionAdminParams.PER_REPLICA_STATE, "False");
       var request =
-          new GenericSolrRequest(METHOD.GET, "/admin/collections", SolrRequestType.ADMIN, params);
+          new GenericSolrRequest(METHOD.POST, "/admin/collections", SolrRequestType.ADMIN, params);
 
       try {
         client.request(request);

@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Set;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
@@ -97,12 +96,12 @@ public abstract class AbstractReRankQuery extends RankQuery {
   }
 
   @Override
-  public Query rewrite(IndexReader reader) throws IOException {
-    Query q = mainQuery.rewrite(reader);
+  public Query rewrite(IndexSearcher searcher) throws IOException {
+    Query q = mainQuery.rewrite(searcher);
     if (!q.equals(mainQuery)) {
       return rewrite(q);
     }
-    return super.rewrite(reader);
+    return super.rewrite(searcher);
   }
 
   protected abstract Query rewrite(Query rewrittenMainQuery) throws IOException;

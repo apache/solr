@@ -51,7 +51,7 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     System.setProperty("solr.tests.maxBufferedDocs", "1000");
     System.setProperty("solr.tests.ramBufferSizeMB", "5000");
 
-    System.setProperty("enable.update.log", "false"); // no _version_ in our schema
+    System.setProperty("solr.index.updatelog.enabled", "false"); // no _version_ in our schema
     // segments API shouldn't depend on _version_ or ulog
     initCore("solrconfig.xml", "schema12.xml");
 
@@ -91,9 +91,6 @@ public class SegmentsInfoRequestHandlerTest extends SolrTestCaseJ4 {
     int finalRefCount = iwRef.getRefcount();
     iwRef.decref();
     assertEquals("IW refcount mismatch", initialRefCount, finalRefCount);
-    systemClearPropertySolrTestsMergePolicyFactory();
-    System.clearProperty("solr.tests.maxBufferedDocs");
-    System.clearProperty("solr.tests.ramBufferSizeMB");
   }
 
   @Test

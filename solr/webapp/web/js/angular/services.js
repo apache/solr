@@ -22,9 +22,28 @@ solrAdminServices.factory('System',
     return $resource('admin/info/system', {"wt":"json", "nodes": "@nodes", "_":Date.now()});
   }])
 .factory('Metrics',
-    ['$resource', function($resource) {
-      return $resource('admin/metrics', {"wt":"json", "nodes": "@nodes", "prefix":"@prefix", "_":Date.now()});
-    }])
+  ['$resource', 'PrometheusParser', function($resource, PrometheusParser) {
+    return $resource('admin/metrics', {"wt":"prometheus", "node": "@node", "_":Date.now()}, {
+      get: {
+        method: 'GET',
+        transformResponse: function(data) {
+          // Parse the merged Prometheus text response
+          try {
+            return {metrics: PrometheusParser.parse(data)};
+          } catch (e) {
+            return {metrics: {}, error: e.message};
+          }
+        }
+      },
+      "raw": {
+        method: 'GET',
+        params: {wt: 'prometheus', core: '@core'},
+        transformResponse: function(data) {
+          return {data: data};
+        }
+      }
+    });
+  }])
 .factory('CollectionsV2',
     function() {
       solrApi.ApiClient.instance.basePath = '/api';
@@ -199,25 +218,6 @@ solrAdminServices.factory('System',
      "disable": {params:{action:"disable"}, headers: {doNotIntercept: "true"}},
      "status": {params:{action:"status"}, headers: {doNotIntercept: "true"}
     }});
-  }])
-.factory('Mbeans',
-  ['$resource', function($resource) {
-    return $resource(':core/admin/mbeans', {'wt':'json', core: '@core', '_':Date.now()}, {
-        stats: {params: {stats: true}},
-        info: {},
-        reference: {
-            params: {wt: "xml", stats: true}, transformResponse: function (data) {
-                return {reference: data}
-            }
-        },
-        delta: {method: "POST",
-                params: {stats: true, diff:true},
-                headers: {'Content-type': 'application/x-www-form-urlencoded'},
-                transformRequest: function(data) {
-                    return "stream.body=" + encodeURIComponent(data);
-                }
-        }
-    });
   }])
 .factory('Files',
   ['$resource', function($resource) {
@@ -424,6 +424,6 @@ solrAdminServices.factory('System',
           }
           return params;
         };
-        
+
         return service;
       }]);
