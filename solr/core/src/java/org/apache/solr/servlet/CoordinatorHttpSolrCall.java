@@ -69,11 +69,10 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
     if (!path.endsWith("/select")) return null;
-    return getCore(factory, this, collectionName, isPreferLeader);
+    return getCore(factory, this, collectionName);
   }
 
-  public static SolrCore getCore(
-      Factory factory, HttpSolrCall solrCall, String collectionName, boolean isPreferLeader) {
+  public static SolrCore getCore(Factory factory, HttpSolrCall solrCall, String collectionName) {
     String syntheticCoreName = factory.collectionVsCoreNameMapping.get(collectionName);
     if (syntheticCoreName != null) {
       SolrCore syntheticCore = solrCall.cores.getCore(syntheticCoreName);
@@ -147,7 +146,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   protected void init() throws Exception {
     super.init();
     if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
-      solrReq = wrappedReq(solrReq, collectionName, this);
+      solrReq = wrappedReq(solrReq, this);
     }
   }
 
@@ -156,8 +155,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
     return collectionName;
   }
 
-  public static SolrQueryRequest wrappedReq(
-      SolrQueryRequest delegate, String collectionName, HttpSolrCall httpSolrCall) {
+  public static SolrQueryRequest wrappedReq(SolrQueryRequest delegate, HttpSolrCall httpSolrCall) {
     return new DelegatingSolrQueryRequest(delegate) {
       @Override
       public HttpSolrCall getHttpSolrCall() {

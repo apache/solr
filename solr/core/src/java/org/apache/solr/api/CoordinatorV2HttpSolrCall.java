@@ -45,14 +45,14 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
     SolrCore core = super.getCoreByCollection(collectionName, isPreferLeader);
     if (core != null) return core;
     if (!path.endsWith("/select")) return null;
-    return CoordinatorHttpSolrCall.getCore(factory, this, collectionName, isPreferLeader);
+    return CoordinatorHttpSolrCall.getCore(factory, this, collectionName);
   }
 
   @Override
   protected void init() throws Exception {
     super.init();
     if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
-      solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, collectionName, this);
+      solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, this);
     }
   }
 }
