@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -386,7 +385,6 @@ public class ClusteringComponent extends SearchComponent implements SolrCoreAwar
           ((HighlightComponent) core.getSearchComponents().get(HighlightComponent.COMPONENT_NAME))
               .getHighlighter(new ModifiableSolrParams().add(HighlightParams.METHOD, "original"));
       ModifiableSolrParams params = new ModifiableSolrParams();
-      Map<String, Object> args = new HashMap<>();
       params.set(HighlightParams.FIELDS, fieldsToCluster);
       params.set(HighlightParams.HIGHLIGHT, "true");
       // We don't want any highlight marks.

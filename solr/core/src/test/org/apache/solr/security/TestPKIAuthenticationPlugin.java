@@ -88,13 +88,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   final CryptoKeys.RSAKeyPair aKeyPair = new CryptoKeys.RSAKeyPair();
 
-  final SolrQueryRequestBase SolrQueryRequestBase =
-      new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
-        @Override
-        public Principal getUserPrincipal() {
-          return principal.get();
-        }
-      };
+  final SolrQueryRequestBase solrQueryRequestBase =
+      new SolrQueryRequestBase(null, new ModifiableSolrParams());
 
   String headerKey;
   HttpServletRequest mockReq;
@@ -146,8 +141,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   public void testBasicRequest() throws Exception {
     String username = "solr user"; // with spaces
-    principal.set(new BasicUserPrincipal(username));
-    mock.solrRequestInfo = new SolrRequestInfo(SolrQueryRequestBase, new SolrQueryResponse());
+    solrQueryRequestBase.setUserPrincipalName(username);
+    mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
     mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
@@ -210,7 +205,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mockMetrics(mock);
 
     principal.set(new BasicUserPrincipal("solr"));
-    mock.solrRequestInfo = new SolrRequestInfo(SolrQueryRequestBase, new SolrQueryResponse());
+    mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
     mockSetHeaderOnRequest();
 
     HttpServletResponse response = mock(HttpServletResponse.class);
