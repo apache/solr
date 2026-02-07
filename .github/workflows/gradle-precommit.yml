@@ -1,6 +1,6 @@
 name: Gradle Precommit
 
-on: 
+on:
   pull_request:
     branches:
       - 'main'
@@ -11,9 +11,6 @@ jobs:
     name: gradle check w/ Java 11
 
     runs-on: ubuntu-latest
-
-    env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.DEVELOCITY_ACCESS_KEY }}
 
     steps:
     # Setup
