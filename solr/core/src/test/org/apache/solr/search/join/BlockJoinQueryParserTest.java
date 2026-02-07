@@ -42,7 +42,7 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-public class BJQParserTest extends SolrTestCaseJ4 {
+public class BlockJoinQueryParserTest extends SolrTestCaseJ4 {
 
   private static final String[] klm = new String[] {"k", "l", "m"};
   private static final List<String> xyz = Arrays.asList("x", "y", "z");
@@ -163,7 +163,7 @@ public class BJQParserTest extends SolrTestCaseJ4 {
         "//doc/arr[@name=\"parent_s\"]/str='c'",
         "//doc/arr[@name=\"parent_s\"]/str='d'",
         "//doc/arr[@name=\"parent_s\"]/str='e'",
-        "//doc/arr[@name=\"parent_s\"]/str='f'"
+        "//doc/arr[@name=\"parent_s\"]/str='f'",
       };
 
   @Test
@@ -637,6 +637,18 @@ public class BJQParserTest extends SolrTestCaseJ4 {
       final int count = req.getSearcher().count(query);
       assertEquals("expecting new doc is visible to old query", 2, count);
     }
+  }
+
+  @Test
+  public void testPureNegativeQueryInChildFilters() {
+    assertQ(
+        req(
+            "q", "{!parent tag=top filters=$childFq which=$pq}",
+            "pq", "parent_s:[* TO *]",
+            "childFq", "-child_s:l -child_s:k"
+        ),
+        "//*[@numFound='6']"
+    );
   }
 
   @After
