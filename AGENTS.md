@@ -16,28 +16,27 @@
  -->
 # AGENTS.md for Apache Solr
 
-While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see dev-docs/how-to-contribute.adoc for some guidelines when using genAI to contribute to Solr.
+While README.md and CONTRIBUTING.md are mainly written for humans, this file is a condensed knowledge base for LLM coding agents on the Solr codebase. See https://agents.md for more info and how to make various coding assistants consume this file. Also see `dev-docs/how-to-contribute.adoc` for some guidelines when using genAI to contribute to Solr.
 
 ## Licensing and Dependencies
 
 - Follow Apache Software Foundation licensing rules, avoid adding a dependency with a banned license
 - Always apply the Apache License to new source files
-- We use gradle version-catalog (gradle/libs.versions.toml) to encode dependency versions; never add versions directly to build.gradle files
-- If a dependency is covered by an existing Bill Of Materials (BOM), try first declaring it without a version
-- We use the "gradle-dependency-analyze" plugin, which requires explicit recording of all dependencies in a build.gradle file. Only in very rare cases use the 'permitUnusedDeclared' and other 'permit*' options.
-- Always run "gradlew updateLicenses resolveAndLockAll --write-locks" after adding or changing a dependency. See dev-docs/gradle-help/dependencies.txt for more info
+- All versions must be delcared in `gradle/libs.versions.toml`, never build.gradle files
+- Try first declaring a dependency without a version (the version might already be in a BOM); and if fails to resolve _then_ specify a version
+- The build may complain with "Dependency analysis found issues.", a category like "usedUndeclaredArtifacts", and a dependency list.  Declare or undeclare these dependencies, as the category will imply.  The special 'permit*' configurations are a choice of last resort.
+- Always run `gradlew updateLicenses resolveAndLockAll --write-locks` after adding or changing a dependency. See `dev-docs/gradle-help/dependencies.txt` for more info
 
 ## Build and Development Workflow
 
 - When done or preparing to commit changes to java source files, be sure to run `gradlew tidy` to format the code
-- Always run "gradlew check -x test" before declaring a feature done
-- Respect our .editorconfig
+- Always run `gradlew check -x test` before declaring a feature done
 
 ## Code Quality and Best Practices
 
-- Use the project's custom EnvUtils to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
-- Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in logger.isXxxEnabled() clause
-- Validate user input. For file paths, always call myCoreContainer.assertPathAllowed(myPath) before using
+- Use the project's custom `EnvUtils` to read system properties. It auto converts env.var SOLR_FOO_BAR to system property solr.foo.bar
+- Be careful to not add non-essential logging! If you add slf4j log calls, make sure to wrap debug/trace level calls in `logger.isXxxEnabled()` clause
+- Validate user input. For file paths, always call `myCoreContainer.assertPathAllowed(myPath)` before using
 
 ## Testing
 
@@ -47,7 +46,7 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
   - If SolrTestCase and need to embed Solr, use either EmbeddedSolrServerTestRule (doesn't use HTTP) or SolrJettyTestRule if HTTP/Jetty is relevant to what is being tested.
   - Avoid SolrTestCaseJ4 for new tests
 
-- See dev-docs/gradle-help/tests.txt for hints on running tests
+- See `dev-docs/gradle-help/tests.txt` for hints on running tests
 
 ## Documentation
 
@@ -60,6 +59,6 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 
 ## Changelog
 
-- We use the "logchange" tooling to manage our changelog. See dev-docs/changelog.adoc for details and conventions
-- To scaffold a new changelog entry, run "gradlew writeChangelog", and then edit the new file located in "changelog/unreleased/".
+- We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
+- To scaffold a new changelog entry, run `gradlew writeChangelog`, and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
