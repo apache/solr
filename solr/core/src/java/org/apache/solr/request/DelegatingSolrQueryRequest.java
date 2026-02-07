@@ -159,8 +159,7 @@ public class DelegatingSolrQueryRequest implements SolrQueryRequest {
     return delegate.getCoreContainer();
   }
 
-  @Override
   public CloudDescriptor getCloudDescriptor() {
-    return delegate.getCloudDescriptor();
+    return delegate.getCore().getCoreDescriptor().getCloudDescriptor();
   }
 }
