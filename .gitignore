@@ -43,7 +43,6 @@ gradle/wrapper/gradle-wrapper.jar
 CLAUDE.md
 .claude/
 .cursor/
-.aider*
 GEMINI.md
 .gemini/
 
