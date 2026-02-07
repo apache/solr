@@ -78,14 +78,12 @@ public class CoreInfoHandler extends RequestHandlerBase {
       dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
     } catch (IOException e) {
       log.warn("Problem getting the normalized data directory path", e);
-      dirs.add("data", "N/A");
     }
     dirs.add("dirimpl", core.getDirectoryFactory().getClass().getName());
     try {
       dirs.add("index", core.getDirectoryFactory().normalize(core.getIndexDir()));
     } catch (IOException e) {
       log.warn("Problem getting the normalized index directory path", e);
-      dirs.add("index", "N/A");
     }
     info.add("directory", dirs);
     return info;

@@ -99,10 +99,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
   private CoreContainer cc;
 
-  public SystemInfoHandler() {
-    this(null);
-  }
-
   public SystemInfoHandler(CoreContainer cc) {
     super();
     this.cc = cc;
