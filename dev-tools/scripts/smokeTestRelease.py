@@ -23,8 +23,10 @@ import hashlib
 import http.client
 import os
 import platform
+import random
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import textwrap
@@ -716,48 +718,34 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
   testChangelogMd('.', version)
 
 
-def readSolrOutput(p, startupEvent, failureEvent, logFile):
-  f = open(logFile, 'wb')
-  try:
-    while True:
-      line = p.stdout.readline()
-      if len(line) == 0:
-        p.poll()
-        if not startupEvent.isSet():
-          failureEvent.set()
-          startupEvent.set()
-        break
-      f.write(line)
-      f.flush()
-      #print('SOLR: %s' % line.strip())
-      if not startupEvent.isSet():
-        if line.find(b'Started ServerConnector@') != -1 and line.find(b'{HTTP/1.1}{0.0.0.0:8983}') != -1:
-          startupEvent.set()
-        elif p.poll() is not None:
-          failureEvent.set()
-          startupEvent.set()
-          break
-  except:
-    print()
-    print('Exception reading Solr output:')
-    traceback.print_exc()
-    failureEvent.set()
-    startupEvent.set()
-  finally:
-    f.close()
-
-def is_port_in_use(port):
-    import socket
+def find_available_port(max_attempts=100):
+  """Find an available port by randomly selecting from range 8901-8999.
+  Ensures both the port and port+1000 are available."""
+  for _ in range(max_attempts):
+    port = random.randint(8901, 8999)
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        return s.connect_ex(('localhost', port)) == 0
+      try:
+        s.bind(('localhost', port))
+        # Check if port+1000 is also available
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s2:
+          try:
+            s2.bind(('localhost', port + 1000))
+            return port
+          except OSError:
+            continue
+      except OSError:
+        continue
+  raise RuntimeError('Could not find an available port after %d attempts in range 8901-8999' % max_attempts)
+
 
 def testSolrExample(binaryDistPath, javaPath, isSlim):
   # test solr using some examples it comes with
+  port = find_available_port()
   logFile = '%s/solr-example.log' % binaryDistPath
   old_cwd = os.getcwd() # So we can back-track
   os.chdir(binaryDistPath)
 
-  print('      start Solr instance (log=%s)...' % logFile)
+  print('      start Solr instance on port %d (log=%s)...' % (port, logFile))
   env = {}
   env.update(os.environ)
   env['JAVA_HOME'] = javaPath
@@ -767,50 +755,37 @@ def testSolrExample(binaryDistPath, javaPath, isSlim):
   if isSlim:
     example = "films"
 
-  # Stop Solr running on port 8983 (in case a previous run didn't shutdown cleanly)
-  try:
-      if not cygwin:
-        subprocess.call(['bin/solr','stop','-p','8983'])
-      else:
-        subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
-  except:
-     print('      Stop failed due to: '+sys.exc_info()[0])
-
-  print('      Running %s example on port 8983 from %s' % (example, binaryDistPath))
+  print('      Running %s example on port %d from %s' % (example, port, binaryDistPath))
   try:
     if not cygwin:
-      runExampleStatus = subprocess.call(['bin/solr','start','-e',example])
+      runExampleStatus = subprocess.call(['bin/solr','start','-e',example,'-p',str(port)])
     else:
-      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd -e ' + example, shell=True)
+      runExampleStatus = subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd start -e %s -p %d' % (example, port), shell=True)
 
     if runExampleStatus != 0:
       raise RuntimeError('Failed to run the %s example, check log for previous errors.' % example)
 
     os.chdir('example')
     print('      run query...')
-    s = load('http://localhost:8983/solr/%s/select/?q=video' % example)
+    s = load('http://localhost:%d/solr/%s/select/?q=video' % (port, example))
     if s.find('"numFound":%d,' % (8 if isSlim else 3)) == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query on solr example instance failed')
-    s = load('http://localhost:8983/api/cores')
+    s = load('http://localhost:%d/api/cores' % port)
     if s.find('"status":0,') == -1:
       print('FAILED: response is:\n%s' % s)
       raise RuntimeError('query api v2 on solr example instance failed')
   finally:
     # Stop server:
-    print('      stop server using: bin/solr stop -p 8983')
+    print('      stop server using: bin/solr stop -p %d' % port)
     os.chdir(binaryDistPath)
 
     if not cygwin:
-      subprocess.call(['bin/solr','stop','-p','8983'])
+      subprocess.call(['bin/solr','stop','-p',str(port)])
     else:
-      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p 8983', shell=True)
+      subprocess.call('env "PATH=`cygpath -S -w`:$PATH" bin/solr.cmd stop -p %d' % port, shell=True)
 
   os.chdir(old_cwd)
-
-
-def removeTrailingZeros(version):
-  return re.sub(r'(\.0)*$', '', version)
 
 
 def checkMaven(baseURL, tmpDir, gitRevision, version, isSigned, keysFile):
@@ -1065,6 +1040,7 @@ def make_java_config(parser, alt_java_homes):
   jc = namedtuple('JavaConfig', 'run_java java_home run_alt_javas alt_java_homes alt_java_versions')
   return jc(run_java, java_home, run_alt_javas, alt_java_homes, alt_java_versions)
 
+
 version_re = re.compile(r'(\d+\.\d+\.\d+(-ALPHA|-BETA)?)')
 revision_re = re.compile(r'rev-([a-f\d]+)')
 def parse_config():
@@ -1194,9 +1170,6 @@ def smokeTest(java, baseURL, gitRevision, version, tmpDir, isSigned, local_keys,
     print("    Downloading online KEYS file %s" % keysFileURL)
     scriptutil.download('KEYS', keysFileURL, tmpDir, force_clean=FORCE_CLEAN)
     keysFile = '%s/KEYS' % (tmpDir)
-
-  if is_port_in_use(8983):
-    raise RuntimeError('Port 8983 is already in use. The smoketester needs it to test Solr')
 
   print()
   print('Test Solr...')

@@ -111,7 +111,7 @@ public class KafkaCrossDcConsumerTest {
     // Set necessary configurations
 
     kafkaCrossDcConsumer =
-        new KafkaCrossDcConsumer(conf, new CountDownLatch(0)) {
+        new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(0)) {
           @Override
           public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
               Properties properties) {
@@ -182,7 +182,7 @@ public class KafkaCrossDcConsumerTest {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer kafkaCrossDcConsumer =
         spy(
-            new KafkaCrossDcConsumer(conf, startLatch) {
+            new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, startLatch) {
               @Override
               public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
                   Properties properties) {
@@ -297,7 +297,7 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleValidMirroredSolrRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     SolrInputDocument doc = new SolrInputDocument();
@@ -336,7 +336,7 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleValidAdminRequest() throws Exception {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     CollectionAdminRequest.Create create =
@@ -417,7 +417,7 @@ public class KafkaCrossDcConsumerTest {
             CrossDcConf.COLLAPSE_UPDATES, collapseUpdates.name(),
             CrossDcConf.MAX_COLLAPSE_RECORDS, String.valueOf(maxCollapseRecords));
     KafkaCrossDcConsumer spyConsumer = createCrossDcConsumerSpy(mockConsumer);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(messageProcessorMock)
         .handleItem(any());
     List<ConsumerRecord<String, MirroredSolrRequest<?>>> records = new ArrayList<>();
@@ -452,12 +452,12 @@ public class KafkaCrossDcConsumerTest {
   public void testHandleInvalidMirroredSolrRequest() {
     KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer = mock(KafkaConsumer.class);
     SolrMessageProcessor mockSolrMessageProcessor = mock(SolrMessageProcessor.class);
-    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED))
+    doReturn(new IQueueHandler.Result<>(IQueueHandler.ResultStatus.HANDLED, null))
         .when(mockSolrMessageProcessor)
         .handleItem(any());
     KafkaCrossDcConsumer spyConsumer =
         spy(
-            new KafkaCrossDcConsumer(conf, new CountDownLatch(1)) {
+            new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(1)) {
               @Override
               public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
                   Properties properties) {
@@ -551,7 +551,7 @@ public class KafkaCrossDcConsumerTest {
   private KafkaCrossDcConsumer createCrossDcConsumerSpy(
       KafkaConsumer<String, MirroredSolrRequest<?>> mockConsumer) {
     return spy(
-        new KafkaCrossDcConsumer(conf, new CountDownLatch(1)) {
+        new KafkaCrossDcConsumer(conf, ConsumerMetrics.NOOP, new CountDownLatch(1)) {
           @Override
           public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(
               Properties properties) {
