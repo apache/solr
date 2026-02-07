@@ -21,17 +21,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.apache.solr.api.CoordinatorV2HttpSolrCall;
-import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SyntheticSolrCore;
 import org.apache.solr.logging.MDCLoggingContext;
@@ -162,25 +158,10 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
 
   public static SolrQueryRequest wrappedReq(
       SolrQueryRequest delegate, String collectionName, HttpSolrCall httpSolrCall) {
-    Properties p = new Properties();
-    if (collectionName != null) {
-      p.put(CoreDescriptor.CORE_COLLECTION, collectionName);
-    }
-    p.put(CloudDescriptor.REPLICA_TYPE, Replica.Type.PULL.toString());
-    p.put(CoreDescriptor.CORE_SHARD, "_");
-
-    CloudDescriptor cloudDescriptor =
-        new CloudDescriptor(
-            delegate.getCore().getCoreDescriptor(), delegate.getCore().getName(), p);
     return new DelegatingSolrQueryRequest(delegate) {
       @Override
       public HttpSolrCall getHttpSolrCall() {
         return httpSolrCall;
-      }
-
-      @Override
-      public CloudDescriptor getCloudDescriptor() {
-        return cloudDescriptor;
       }
     };
   }
