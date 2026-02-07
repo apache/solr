@@ -91,16 +91,6 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
     private final boolean isSet;
 
     @Override
-    public String getLevel() {
-      return (level != null) ? level : null;
-    }
-
-    @Override
-    public String getName() {
-      return name;
-    }
-
-    @Override
     public boolean isSet() {
       return isSet;
     }
@@ -199,12 +189,15 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
         continue;
       }
 
-      // NOTE: just because we have an explicit configuration, doesn't mean we have an explitly set
-      // level
-      // (Configuration might be for some other property, and level is still inherited)
+      // NOTE: just because we have an explicit configuration, doesn't mean we have an explicitly
+      // set level (Configuration might be for some other property, and level is still inherited)
       map.putIfAbsent(
           name,
           new Log4j2Info(name, logger.getLevel(), null != config.getValue().getExplicitLevel()));
+
+      // Also add parent loggers in the hierarchy, as they are relevant for level inheritance
+      // This ensures parent loggers appear even if not in ctx.getLoggers()
+      addParentLoggers(name, map, ctx);
     }
 
     // Now add any "in use" loggers (that aren't already explicitly configured) and their parents
@@ -218,16 +211,34 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
       // If we didn't already see a LoggerConfig for these loggers, then their level is
       // not (explicitly) set
       map.putIfAbsent(name, new Log4j2Info(name, logger.getLevel(), false));
-      while (true) {
-        int dot = name.lastIndexOf('.');
-        if (dot < 0) break;
-
-        name = name.substring(0, dot);
-        map.putIfAbsent(name, new Log4j2Info(name, logger.getLevel(), false));
-      }
+      addParentLoggers(name, map, ctx);
     }
 
     return map.values();
+  }
+
+  /**
+   * Adds all parent loggers in the hierarchy for the given logger name.
+   *
+   * <p>For example, given "org.apache.solr.core.SolrCore", this will add:
+   *
+   * <ul>
+   *   <li>"org.apache.solr.core"
+   *   <li>"org.apache.solr"
+   *   <li>"org"
+   * </ul>
+   */
+  private void addParentLoggers(
+      String loggerName, Map<String, LoggerInfo> map, LoggerContext ctx) {
+    String parentName = loggerName;
+    while (true) {
+      int dot = parentName.lastIndexOf('.');
+      if (dot < 0) break;
+
+      parentName = parentName.substring(0, dot);
+      map.putIfAbsent(
+          parentName, new Log4j2Info(parentName, ctx.getLogger(parentName).getLevel(), false));
+    }
   }
 
   @Override
