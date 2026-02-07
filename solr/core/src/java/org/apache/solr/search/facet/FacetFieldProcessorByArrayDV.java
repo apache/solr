@@ -53,17 +53,13 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
 
   @Override
   protected void findStartAndEndOrds() throws IOException {
-    if (multiValuedField) {
-      si = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf, null);
-      if (si instanceof MultiDocValues.MultiSortedSetDocValues) {
-        ordinalMap = ((MultiDocValues.MultiSortedSetDocValues) si).mapping;
-      }
+    si = FieldUtil.getSortedSetDocValues(fcontext.qcontext, sf);
+    if (si instanceof MultiDocValues.MultiSortedSetDocValues multi) {
+      ordinalMap = multi.mapping;
     } else {
-      // multi-valued view
-      SortedDocValues single = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
-      si = DocValues.singleton(single);
-      if (single instanceof MultiDocValues.MultiSortedDocValues) {
-        ordinalMap = ((MultiDocValues.MultiSortedDocValues) single).mapping;
+      SortedDocValues single = DocValues.unwrapSingleton(si);
+      if (single instanceof MultiDocValues.MultiSortedDocValues multi) {
+        ordinalMap = multi.mapping;
       }
     }
 
