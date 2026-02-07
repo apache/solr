@@ -48,6 +48,8 @@ dependencies {
     exclude group: 'com.google.api.grpc', module: 'proto-google-cloud-monitoring-v3'
     exclude group: 'com.google.cloud.opentelemetry', module: 'shared-resourcemapping'
     exclude group: 'com.google.cloud.opentelemetry', module: 'detector-resources-support'
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.semconv'
   }
   implementation libs.threeten.bp
 
@@ -64,6 +66,8 @@ dependencies {
     exclude group: 'com.google.api.grpc', module: 'proto-google-cloud-monitoring-v3'
     exclude group: 'com.google.cloud.opentelemetry', module: 'shared-resourcemapping'
     exclude group: 'com.google.cloud.opentelemetry', module: 'detector-resources-support'
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.semconv'
   }
 }
 
