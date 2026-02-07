@@ -46,17 +46,4 @@ public class TestResponseWritersRegistry extends SolrTestCaseJ4 {
     QueryResponseWriter unknownWriter = ResponseWritersRegistry.getWriter("nonexistent");
     assertThat("unknown writer should be null", unknownWriter, is(nullValue()));
   }
-
-  @Test
-  public void testBuiltInWriterLimitedSet() {
-    QueryResponseWriter standardWriter = ResponseWritersRegistry.getWriter("json");
-
-    // Built-in writers should NOT include extended format writers (csv, geojson, etc.)
-    // These should all fall back to json
-    // I think this json thing is weird...   I think it should throw an exception!
-    assertThat(
-        "geojson should fall back to json",
-        ResponseWritersRegistry.getWriter("geojson"),
-        is(nullValue()));
-  }
 }

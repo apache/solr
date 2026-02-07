@@ -112,16 +112,16 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testInvalidWTParamReturnsError() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
-    // Using an invalid wt parameter should return a 500 error
+    // Using an invalid wt parameter should return a 400 error
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
     String respString = InputStreamResponseParser.consumeResponseToString(res);
 
-    // Should get a 500 Server Error for unknown writer type
+    // Should get a 400 Server Error for unknown writer type
     assertTrue(
         "Expected error message about unknown writer type",
         respString.contains("Unknown response writer type"));
-    assertTrue("Expected 500 error code", respString.contains("500"));
+    assertTrue("Expected 400 error code", respString.contains("400"));
   }
 
   @Test
@@ -132,7 +132,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
     String respString = resp.toString();
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
+    assertFalse(respString.contains("400"));
     assertFalse(
         respString.contains(
             "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));

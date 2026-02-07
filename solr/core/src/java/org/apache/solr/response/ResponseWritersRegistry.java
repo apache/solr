@@ -107,7 +107,7 @@ public class ResponseWritersRegistry {
     if (writer == null) {
       if (!hasWriter(writerName)) {
         throw new SolrException(
-            SolrException.ErrorCode.SERVER_ERROR, "Unknown response writer type: " + writerName);
+            SolrException.ErrorCode.BAD_REQUEST, "Unknown response writer type: " + writerName);
       } else {
         writer = getWriter(writerName);
       }

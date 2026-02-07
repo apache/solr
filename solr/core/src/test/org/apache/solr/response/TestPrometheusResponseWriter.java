@@ -194,8 +194,8 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
-      // Unknown wt parameter should return a 500 error
-      assertEquals(500, res.get("responseStatus"));
+      // Unknown wt parameter should return a 400 error
+      assertEquals(400, res.get("responseStatus"));
     }
   }
 }
