@@ -21,7 +21,8 @@ commit(ubi_queries,
       timestamp,
       application,
       user_query,
-      query_attributes
+      query_attributes,
+      doc_ids
     )
   )
 )

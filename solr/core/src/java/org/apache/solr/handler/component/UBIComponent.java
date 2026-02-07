@@ -268,20 +268,50 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       return ResponseBuilder.STAGE_DONE;
     }
 
+    // Wait until STAGE_GET_FIELDS when rb.resultIds contains the merged document IDs
+    // from all shards, representing the final result set returned to the user
     if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
 
     if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+      // In distributed mode, rb.resultIds.keySet() contains the unique key values
+      // from all shards, merged and sorted by the coordinator
       storeUbiDetails(
           rb,
-          ubiQuery ->
+          ubiQuery -> {
+            if (rb.resultIds != null && !rb.resultIds.isEmpty()) {
               ubiQuery.setDocIds(
-                  String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList())));
+                  String.join(",", rb.resultIds.keySet().stream().map(Object::toString).toList()));
+            } else {
+              ubiQuery.setDocIds("");
+            }
+          });
       return ResponseBuilder.STAGE_DONE;
     }
 
     return ResponseBuilder.STAGE_DONE;
+  }
+
+  @Override
+  public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {
+    // UBI recording happens only on the coordinator node after results are merged.
+    // We don't need to send any UBI-related parameters to individual shards.
+    // The isInternalShardRequest() check in process() ensures shards don't record duplicates.
+  }
+
+  @Override
+  public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
+    // UBI doesn't need to process individual shard responses.
+    // We only care about the final merged result set available in rb.resultIds,
+    // which is handled in distributedProcess() at STAGE_GET_FIELDS.
+  }
+
+  @Override
+  public void finishStage(ResponseBuilder rb) {
+    // All UBI recording is handled in distributedProcess() at STAGE_GET_FIELDS.
+    // We don't need to do any final aggregation or merging of shard data since
+    // UBI records one event per user query (not per shard).
   }
 
   private static UBIQuery getUbiQuery(ResponseBuilder rb) {
@@ -387,9 +417,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
   protected Tuple getTuple(TupleStream tupleStream) throws IOException {
     tupleStream.open();
-    Tuple t = tupleStream.read();
-    tupleStream.close();
-    return t;
+    try {
+      return tupleStream.read();
+    } finally {
+      try {
+        tupleStream.close();
+      } catch (IOException e) {
+        log.warn("Error closing UBI tuple stream", e);
+      }
+    }
   }
 
   // this should be a shared utility method
