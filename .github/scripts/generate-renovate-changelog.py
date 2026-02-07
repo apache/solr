@@ -150,6 +150,36 @@ def find_existing_changelog_file(pr_number: int, changelog_dir: str = 'changelog
     return None
 
 
+def delete_old_changelog_files(pr_number: int, changelog_dir: str = 'changelog/unreleased') -> int:
+    """
+    Delete all existing changelog files for this PR number.
+
+    This ensures we don't accumulate orphaned files when the PR title/slug changes.
+
+    Returns:
+        Number of files deleted
+    """
+    pattern = f"PR#{pr_number}-*.yml"
+    path = Path(changelog_dir)
+
+    if not path.exists():
+        return 0
+
+    deleted_count = 0
+    for file in path.glob(pattern):
+        try:
+            file.unlink()
+            print(f"Deleted old changelog file: {file}")
+            deleted_count += 1
+        except Exception as e:
+            print(f"Warning: Could not delete file {file}: {e}", file=sys.stderr)
+
+    if deleted_count > 0:
+        print(f"Deleted {deleted_count} old changelog file(s) for PR#{pr_number}")
+
+    return deleted_count
+
+
 def should_update_changelog(existing_file: str, new_title: str) -> bool:
     """
     Check if we need to update the changelog file.
@@ -220,29 +250,22 @@ Examples:
 
     args = parser.parse_args()
 
+    # Delete any existing changelog files for this PR to ensure a clean slate
+    # This prevents orphaned files when the PR title/slug changes
+    delete_old_changelog_files(args.pr_number, args.changelog_dir)
+
     # Parse the PR title
     changelog_title, slug = parse_pr_title(args.pr_title)
 
     # Generate filename
     filename = f"PR#{args.pr_number}-{slug}.yml"
 
-    # Check if file already exists
-    existing_file = find_existing_changelog_file(args.pr_number, args.changelog_dir)
-
     # Generate the new entry
     entry = generate_changelog_entry(args.pr_number, changelog_title)
 
-    # Decide if we need to write
-    should_write = True
-    if existing_file and not should_update_changelog(existing_file, changelog_title):
-        print(f"Changelog entry already up-to-date: {existing_file}")
-        should_write = False
-
-    if should_write:
-        write_changelog_file(filename, entry, args.changelog_dir)
-        return 0
-    else:
-        return 0
+    # Write the changelog file
+    write_changelog_file(filename, entry, args.changelog_dir)
+    return 0
 
 
 if __name__ == '__main__':

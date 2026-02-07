@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
@@ -33,7 +32,6 @@ public final class SolrJMetricTestUtils {
   public static double getPrometheusMetricValue(SolrClient solrClient, String metricName)
       throws SolrServerException, IOException {
     var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     NamedList<Object> resp = solrClient.request(req);
     try (InputStream in = (InputStream) resp.get("stream")) {
@@ -52,7 +50,6 @@ public final class SolrJMetricTestUtils {
 
     try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
       var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-      req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
       try (InputStream in = (InputStream) resp.get("stream")) {
@@ -80,7 +77,6 @@ public final class SolrJMetricTestUtils {
 
     try (var client = new HttpJettySolrClient.Builder(baseUrl).build()) {
       var req = new MetricsRequest(SolrParams.of("wt", "prometheus"));
-      req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
       NamedList<Object> resp = client.request(req);
       try (InputStream in = (InputStream) resp.get("stream")) {

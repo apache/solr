@@ -71,6 +71,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 
 |StrField |String (UTF-8 encoded string or Unicode). Indexed `indexed="true"` strings are intended for small fields and are _not_ tokenized or analyzed in any way. They have a hard limit of slightly less than 32K. Non-indexed `indexed="false"` and non-DocValues `docValues="false"` strings are suitable for storing large strings.
 
+|StrFloatLateInteractionVectorField |Supports indexing dense "Multi-Vectors" of float values for use with Late Interaction Query Re-Ranking. See the section xref:query-guide:dense-vector-search.adoc[] for more information.
+
 |TextField |Text, usually multiple words or tokens. In normal usage, only fields of type TextField or SortableTextField will specify an xref:analyzers.adoc[analyzer].
 
 |UUIDField |Universally Unique Identifier (UUID). Pass in a value of `NEW` and Solr will create a new UUID.

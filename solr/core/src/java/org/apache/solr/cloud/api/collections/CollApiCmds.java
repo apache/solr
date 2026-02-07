@@ -314,7 +314,8 @@ public class CollApiCmds {
 
       String baseUrl = ccc.getZkStateReader().getBaseUrlForNodeName(message.getStr(NODE_NAME_PROP));
       ShardRequest sreq = new ShardRequest();
-      sreq.nodeName = message.getStr(ZkStateReader.CORE_NAME_PROP);
+      sreq.nodeName = message.getStr(NODE_NAME_PROP);
+      sreq.coreNodeName = message.getStr(CORE_NODE_NAME_PROP);
       // yes, they must use same admin handler path everywhere...
       params.set("qt", ccc.getAdminPath());
       sreq.purpose = ShardRequest.PURPOSE_PRIVATE;
