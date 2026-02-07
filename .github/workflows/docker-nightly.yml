@@ -1,5 +1,8 @@
 name: Nightly Docker Build & Publish
 
+# Note: This GHA workflow is unique in that it's not for PRs.  Solr's *non*-PR CI workflows are
+#  handled by Jenkins, but ASF's Jenkins is not equipped to build a multi-platform Docker image.
+
 on:
   schedule:
     # Run daily at 2 AM UTC
