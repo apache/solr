@@ -819,11 +819,7 @@ public class SolrQuery extends ModifiableSolrParams {
     return this;
   }
 
-  /**
-   * Enable User Behavior Insights tracking for this query.
-   *
-   * @param b
-   */
+  /** Enable User Behavior Insights tracking for this query. */
   public SolrQuery setUBITracking(boolean b) {
     if (b) {
       this.set("ubi", true);

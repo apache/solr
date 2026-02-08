@@ -244,10 +244,11 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
 
   /** Poll for a UBI query record with exponential backoff */
   private boolean awaitQueryRecord(String queryId, long timeoutMs) throws Exception {
-    long start = System.currentTimeMillis();
+    long start = System.nanoTime();
     long sleep = 50;
+    long timeoutNs = timeoutMs * 1_000_000; // Convert ms to ns
 
-    while (System.currentTimeMillis() - start < timeoutMs) {
+    while (System.nanoTime() - start < timeoutNs) {
       QueryResponse qr =
           cluster
               .getSolrClient("ubi_queries")

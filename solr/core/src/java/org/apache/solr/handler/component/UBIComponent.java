@@ -214,9 +214,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     streamExpression = StreamExpressionParser.parse(expr);
     if (!streamExpression.toString().contains("ubiQuery")) {
       log.error(
-          "The streaming expression "
-              + streamExpression
-              + " must include the 'ubiQuery()' to record UBI queries.");
+          "The streaming expression {} must include the 'ubiQuery()' to record UBI queries.",
+          streamExpression);
     }
 
     streamFactory = new DefaultStreamFactory();
