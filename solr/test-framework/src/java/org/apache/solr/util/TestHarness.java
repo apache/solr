@@ -32,7 +32,6 @@ import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -204,7 +203,7 @@ public class TestHarness extends BaseTestHarness {
    * @param args additional parameters as a map
    * @return SolrParams containing all the specified parameters
    */
-  public static SolrParams makeParams(
+  private static SolrParams makeParams(
       String query, String qtype, int start, int limit, Map<?, ?> args) {
     Map<String, String[]> map = new HashMap<>();
     for (Map.Entry<?, ?> e : args.entrySet()) {
@@ -455,15 +454,7 @@ public class TestHarness extends BaseTestHarness {
         throw new RuntimeException(
             "The length of the string array (query arguments) needs to be even");
       }
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry<String, String>[] entries = new NamedListEntry[q.length / 2];
-      for (int i = 0; i < q.length; i += 2) {
-        entries[i / 2] = new NamedListEntry<>(q[i], q[i + 1]);
-      }
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = new NamedList(entries);
-      if (nl.get("wt") == null) nl.add("wt", "xml");
-      return new SolrQueryRequestBase(TestHarness.this.getCore(), nl.toSolrParams());
+      return new SolrQueryRequestBase(TestHarness.this.getCore(), SolrTestCaseJ4.params(q));
     }
   }
 }

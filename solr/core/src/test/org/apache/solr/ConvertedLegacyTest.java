@@ -18,10 +18,12 @@ package org.apache.solr;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.util.ErrorLogMuter;
-import org.apache.solr.util.TestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -60,8 +62,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("val_s:[a TO z]"), "//*[@numFound='3'] ", "*[count(//doc)=3] ", "//*[@start='0']");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 2, 5, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 2, 5, args));
     assertQ(
         req,
         "//*[@numFound='3'] ",
@@ -70,65 +71,53 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
         "//*[@start='2']");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 3, 5, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 3, 5, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 4, 5, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 4, 5, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 25, 5, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 25, 5, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 0, 1, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 0, 1, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=1] ", "*//doc[1]/str[.='apple']");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 0, 2, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 0, 2, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=2] ", "*//doc[2]/str[.='banana']");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 1, 1, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 1, 1, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=1] ", "*//doc[1]/str[.='banana']");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 3, 1, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 3, 1, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 4, 1, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 4, 1, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 1, 0, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 1, 0, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 0, 0, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 0, 0, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     args.put("sort", "val_s1 asc");
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 0, 0, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 0, 0, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     args = new HashMap<>();
     args.put("sort", "val_s1 desc");
     req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("val_s:[a TO z]", "/select", 0, 0, args));
+        new SolrQueryRequestBase(h.getCore(), makeParams("val_s:[a TO z]", "/select", 0, 0, args));
     assertQ(req, "//*[@numFound='3'] ", "*[count(//doc)=0]");
     assertQ(req("val_s:[a TO b]"), "//*[@numFound='1']");
     assertQ(req("val_s:[a TO cat]"), "//*[@numFound='2']");
@@ -787,24 +776,18 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:44"));
     args = new HashMap<>();
     args.put("fl", "fname_s,arr_f  ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//str[.='Yonik']  ", "//float[.='1.4142135']");
     args = new HashMap<>();
     args.put("fl", "fname_s,score");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//str[.='Yonik']", "//float[@name='score' and . > 0]");
 
     // test addition of score field
 
     args = new HashMap<>();
     args.put("fl", "score,* ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(
         req,
         "//str[.='Yonik']  ",
@@ -813,9 +796,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
         "*[count(//doc/*)>=13]");
     args = new HashMap<>();
     args.put("fl", "*,score ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(
         req,
         "//str[.='Yonik']  ",
@@ -824,45 +805,33 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
         "*[count(//doc/*)>=13]");
     args = new HashMap<>();
     args.put("fl", "* ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//str[.='Yonik']  ", "//float[.='1.4142135'] ", "*[count(//doc/*)>=12]");
 
     // test maxScore
 
     args = new HashMap<>();
     args.put("fl", "score ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//result[@maxScore>0]");
     args = new HashMap<>();
     args.put("fl", "score ");
     args.put("sort", "id desc");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//result[@maxScore>0]");
     args = new HashMap<>();
     args.put("fl", "score ");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//@maxScore = //doc/float[@name='score']");
     args = new HashMap<>();
     args.put("fl", "score ");
     args.put("sort", "id desc");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 10, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 10, args));
     assertQ(req, "//@maxScore = //doc/float[@name='score']");
     args = new HashMap<>();
     args.put("fl", "*,score");
     args.put("sort", "id desc");
-    req =
-        new SolrQueryRequestBase(
-            h.getCore(), TestHarness.makeParams("id:44", "/select", 0, 0, args));
+    req = new SolrQueryRequestBase(h.getCore(), makeParams("id:44", "/select", 0, 0, args));
     assertQ(req, "//result[@maxScore>0]");
 
     //  test schema field attribute inheritance and overriding
@@ -935,5 +904,33 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("+id:44 +textgap:\"bb cc dd ee\"~90"), "//*[@numFound='0']");
     assertQ(req("+id:44 +textgap:\"bb cc dd ee\"~100"), "//*[@numFound='1']");
     assertQ(req("+id:45 +text:\"cc dd\""), "//*[@numFound='1']");
+  }
+
+  /**
+   * Utility method to build SolrParams from individual query components. This is a convenience
+   * method for legacy code that needs to construct params from separate query, qtype, start, limit,
+   * and additional args.
+   *
+   * @param query the query string (added as "q" param)
+   * @param qtype the query type (added as "qt" param)
+   * @param start the start offset (added as "start" param)
+   * @param limit the row limit (added as "rows" param)
+   * @param args additional parameters as a map
+   * @return SolrParams containing all the specified parameters
+   */
+  public static SolrParams makeParams(
+      String query, String qtype, int start, int limit, Map<?, ?> args) {
+    Map<String, String[]> map = new HashMap<>();
+    for (Map.Entry<?, ?> e : args.entrySet()) {
+      String k = e.getKey().toString();
+      Object v = e.getValue();
+      if (v instanceof String[]) map.put(k, (String[]) v);
+      else map.put(k, new String[] {v.toString()});
+    }
+    if (query != null) map.put(CommonParams.Q, new String[] {query});
+    if (qtype != null) map.put(CommonParams.QT, new String[] {qtype});
+    map.put(CommonParams.START, new String[] {Integer.toString(start)});
+    map.put(CommonParams.ROWS, new String[] {Integer.toString(limit)});
+    return new MultiMapSolrParams(map);
   }
 }
