@@ -1,4 +1,4 @@
-title: Update grpc to v1.78.0
+title: Update grpc to v1.79.0
 type: dependency_update
 authors:
 - name: solrbot
