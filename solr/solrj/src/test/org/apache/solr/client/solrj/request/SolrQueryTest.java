@@ -471,4 +471,17 @@ public class SolrQueryTest extends SolrTestCase {
     assertEquals(15, solrQuery.setMoreLikeThisMaxQueryTerms(15).getMoreLikeThisMaxQueryTerms());
     assertEquals(16, solrQuery.setMoreLikeThisCount(16).getMoreLikeThisCount());
   }
+
+  public void testUserBehaviorInsights() {
+    SolrQuery solrQuery = new SolrQuery();
+    solrQuery.setUBITracking(true);
+    assertTrue(solrQuery.getUBITracking());
+
+    assertNull(solrQuery.get("query_id"));
+    solrQuery.setQueryId("12345");
+    assertEquals("12345", solrQuery.get("query_id"));
+
+    // need to figure out how to test query_attributes
+
+  }
 }
