@@ -117,7 +117,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     NamedList<Object> res = cluster.getSolrClient().request(request);
     String respString = InputStreamResponseParser.consumeResponseToString(res);
 
-    // Should get a 400 Server Error for unknown writer type
+    // Should get a 400 Bad Request error for unknown writer type
     assertTrue(
         "Expected error message about unknown writer type",
         respString.contains("Unknown response writer type"));
