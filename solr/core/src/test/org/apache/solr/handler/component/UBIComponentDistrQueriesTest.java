@@ -22,11 +22,11 @@ import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
+import org.apache.solr.cloud.BasicDistributedZkTest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.cluster.api.SimpleMap;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -59,7 +59,7 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection(collection, 2, 2);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    BasicDistributedZkTest.waitForRecoveriesToFinish(
         collection, cluster.getZkStateReader(), false, true, TIMEOUT);
     if (useAlias) {
       CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection)
@@ -77,7 +77,7 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
 
     cluster.waitForActiveCollection("ubi_queries", 1, 1);
 
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(
+    BasicDistributedZkTest.waitForRecoveriesToFinish(
         "ubi_queries", cluster.getZkStateReader(), false, true, TIMEOUT);
   }
 
@@ -106,7 +106,9 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
                 new MapSolrParams(Map.of("q", "aa", "df", "subject", "rows", "2", "ubi", "true")));
 
     // Verify UBI response was added
-    String qid = (String) ((SimpleMap<?>) queryResponse.getResponse().get("ubi")).get("query_id");
+    @SuppressWarnings("unchecked")
+    NamedList<Object> ubiResponse = (NamedList<Object>) queryResponse.getResponse().get("ubi");
+    String qid = (String) ubiResponse.get("query_id");
     assertNotNull("Query ID should be present", qid);
     assertTrue("Query ID should be a valid UUID", qid.length() > 10);
 
@@ -194,7 +196,9 @@ public class UBIComponentDistrQueriesTest extends SolrCloudTestCase {
     // Verify we got results
     assertTrue("Should get results from distributed query", queryResponse.getResults().size() > 0);
 
-    String qid = (String) ((SimpleMap<?>) queryResponse.getResponse().get("ubi")).get("query_id");
+    @SuppressWarnings("unchecked")
+    NamedList<Object> ubiResponse = (NamedList<Object>) queryResponse.getResponse().get("ubi");
+    String qid = (String) ubiResponse.get("query_id");
     assertNotNull("Query ID should be present in distributed mode", qid);
 
     // Force commit and wait for record

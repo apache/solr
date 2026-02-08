@@ -80,7 +80,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>You provide a streaming expression that is parsed and loaded by the component to stream query
  * data to a target of your choice. If you do not, then the default expression of
- * 'logging(ubi_queries.jsonl,ubiQuery())"' is used which logs data to
+ * 'logging(ubi_queries.jsonl,ubiQuery())' is used which logs data to
  * $SOLR_HOME/userfiles/ubi_queries.jsonl file.
  *
  * <p>You must source your streaming events using the 'ubiQuery()' streaming expression to retrieve
@@ -94,12 +94,9 @@ import org.slf4j.LoggerFactory;
  *
  * <pre class="prettyprint">
  * &lt;searchComponent name="ubi" class="solr.UBIComponent"/&gt;
- *
  * &lt;requestHandler name="/select" class="solr.SearchHandler"&gt;
  *   &lt;lst name="defaults"&gt;
- *
  *     ...
- *
  *   &lt;/lst&gt;
  *   &lt;arr name="components"&gt;
  *     &lt;str&gt;ubi&lt;/str&gt;
@@ -270,11 +267,11 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     // Wait until STAGE_GET_FIELDS when rb.resultIds contains the merged document IDs
     // from all shards, representing the final result set returned to the user
-    if (rb.stage < ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() < ResponseBuilder.STAGE_GET_FIELDS) {
       return ResponseBuilder.STAGE_GET_FIELDS;
     }
 
-    if (rb.stage == ResponseBuilder.STAGE_GET_FIELDS) {
+    if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       // In distributed mode, rb.resultIds.keySet() contains the unique key values
       // from all shards, merged and sorted by the coordinator
       storeUbiDetails(
@@ -330,13 +327,13 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
     if (ubiQuery.getApplication() == null) {
       ubiQuery.setApplication(
           rb.isDistrib
-              ? rb.req.getCloudDescriptor().getCollectionName()
+              ? rb.req.getCore().getCoreDescriptor().getCollectionName()
               : searcher.getCore().getName());
     }
 
     String queryAttributes = params.get(QUERY_ATTRIBUTES);
 
-    if (queryAttributes != null && queryAttributes.toString().startsWith("{")) {
+    if (queryAttributes != null && queryAttributes.startsWith("{")) {
       // Look up the original nested JSON format, typically passed in
       // via the JSON formatted query.
       @SuppressWarnings("rawtypes")
@@ -490,15 +487,15 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
   /**
    * Handles all the data required for tracking a query using User Behavior Insights.
    *
-   * <p>Compatible with the
-   * https://github.com/o19s/ubi/blob/main/schema/1.2.0/query.request.schema.json.
+   * <p>Compatible with the <a
+   * href="https://github.com/o19s/ubi/blob/main/schema/1.2.0/query.request.schema.json">...</a>.
    */
   public static class UBIQuery {
 
     private String application;
     private String queryId;
     private String userQuery;
-    private Date timestamp;
+    private final Date timestamp;
 
     @SuppressWarnings("rawtypes")
     private Map queryAttributes;
@@ -530,21 +527,12 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
       return queryId;
     }
 
-    public void setQueryId(String queryId) {
-      this.queryId = queryId;
-    }
-
     public String getUserQuery() {
       return userQuery;
     }
 
     public void setUserQuery(String userQuery) {
       this.userQuery = userQuery;
-    }
-
-    @SuppressWarnings("rawtypes")
-    public Map getQueryAttributes() {
-      return queryAttributes;
     }
 
     @SuppressWarnings("rawtypes")
@@ -562,7 +550,7 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     public Map toMap() {
-      @SuppressWarnings({"rawtypes", "unchecked"})
+      @SuppressWarnings({"rawtypes"})
       Map map = new HashMap();
       map.put(QUERY_ID, this.queryId);
       map.put(
@@ -596,8 +584,8 @@ public class UBIComponent extends SearchComponent implements SolrCoreAware {
    * and returns it.
    *
    * <p>I suspect that if I had the right magic with a LetStream or a GetStream, I could somehow
-   * just use that to say "pluck the 'ubi-query' object out of the StreamContext and call .toTuple
-   * or make a map of it and that would be my tuple'.
+   * just use that to "pluck" the 'ubi-query' object out of the StreamContext and call .toTuple or
+   * make a map of it and that would be my tuple.
    */
   public static class UBIQueryStream extends TupleStream implements Expressible {
 
