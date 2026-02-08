@@ -138,7 +138,6 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   // The index schema associated with this request
   @Override
   public IndexSchema getSchema() {
-    // a request for a core admin will not have a core
     return schema;
   }
 
@@ -200,12 +199,11 @@ public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
 
   /**
    * Allows setting the 'name' of the User Principal for the purposes of creating local requests in
-   * a solr node when security is enabled. It is experimental and subject to removal
+   * a solr node when security is enabled.
    *
    * @see PKIAuthenticationPlugin#NODE_IS_USER
    * @see #getUserPrincipal
    * @lucene.internal
-   * @lucene.experimental
    */
   public void setUserPrincipalName(String s) {
     this.userPrincipalName = s;
