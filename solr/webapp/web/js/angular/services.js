@@ -99,7 +99,7 @@ solrAdminServices.factory('System',
     return $resource('admin/zookeeper', {wt:'json', _:Date.now()}, {
       "simple": {},
       "liveNodes": {params: {path: '/live_nodes'}},
-      "clusterState": {params: {detail: "true", path: "/clusterstate.json"}},
+      "clusterState": {params: {detail: "true"}},
       "detail": {params: {detail: "true", path: "@path"}},
       "configs": {params: {detail:false, path: "/configs/"}},
       "aliases": {params: {detail: "true", path: "/aliases.json"}, transformResponse:function(data) {

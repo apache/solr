@@ -21,9 +21,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
@@ -55,21 +53,17 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -360,7 +354,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
+    // Force JSON response and omit header for cleaner output
+    Map<String, String> map = Map.of(WT, "json", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
     synchronized (this) {
       if (pagingSupport == null) {
@@ -405,11 +400,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     ZKPrinter printer = new ZKPrinter(cores.getZkController());
     printer.detail = detail;
     printer.dump = dump;
+    // Graph formatted data is used in services.js to power the Admin UI Cloud - Graph
     boolean isGraphView = "graph".equals(params.get("view"));
-    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
-    // return collection listing. Need to change services.js if cleaning up here, collection list is
-    // used from Admin UI Cloud - Graph
-    boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
+    boolean paginateCollections = isGraphView;
     printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
     printer.pagingSupport = pagingSupport;
 
@@ -424,7 +417,22 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     } finally {
       printer.close();
     }
-    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
+
+    // Parse the JSON we built and return as structured data
+    // This allows any response writer (json, xml, etc.) to serialize it properly
+    Object parsedJson = Utils.fromJSONString(printer.getJsonString());
+
+    // If it's a Map, add its contents directly to the response
+    if (parsedJson instanceof Map) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> jsonMap = (Map<String, Object>) parsedJson;
+      for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
+        rsp.add(entry.getKey(), entry.getValue());
+      }
+    } else {
+      // Fallback: add as single value
+      rsp.add("zk_data", parsedJson);
+    }
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
@@ -436,7 +444,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   //
   // --------------------------------------------------------------------------------------
 
-  static class ZKPrinter implements ContentStream {
+  public static class ZKPrinter {
     static boolean FULLPATH_DEFAULT = false;
 
     boolean indent = true;
@@ -772,40 +780,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-    /* @Override
-        public void write(OutputStream os) throws IOException {
-          ByteBuffer bytes = baos.getByteBuffer();
-          os.write(bytes.array(),0,bytes.limit());
-        }
-    */
-    @Override
-    public String getName() {
-      return null;
-    }
-
-    @Override
-    public String getSourceInfo() {
-      return null;
-    }
-
-    @Override
-    public String getContentType() {
-      return JSONResponseWriter.CONTENT_TYPE_JSON_UTF8;
-    }
-
-    @Override
-    public Long getSize() {
-      return null;
-    }
-
-    @Override
-    public InputStream getStream() throws IOException {
-      return new ByteBufferInputStream(baos.getByteBuffer());
-    }
-
-    @Override
-    public Reader getReader() throws IOException {
-      return null;
+    /**
+     * Returns the JSON content as a string. This will be parsed back into objects for proper
+     * serialization by response writers.
+     */
+    public String getJsonString() {
+      return baos.toString();
     }
   }
 }
