@@ -65,12 +65,14 @@ fun OAuthContent(
 ) {
     val model by component.model.collectAsState()
 
-    if (showSupportingText) Text(
-        text = model.realm?.let {
-            stringResource(Res.string.desc_sign_in_with_oauth_to_realm, it)
-        } ?: stringResource(Res.string.desc_sign_in_with_oauth),
-        style = MaterialTheme.typography.bodyMedium,
-    )
+    if (showSupportingText) {
+        Text(
+            text = model.realm?.let {
+                stringResource(Res.string.desc_sign_in_with_oauth_to_realm, it)
+            } ?: stringResource(Res.string.desc_sign_in_with_oauth),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+    }
 
     Column {
         SolrButton(

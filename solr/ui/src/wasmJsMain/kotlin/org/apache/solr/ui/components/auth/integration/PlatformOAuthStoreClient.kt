@@ -67,8 +67,10 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
     ): Result<BearerTokens> {
         val queryParams = getQueryParams()
 
-        val code = queryParams["code"] ?: throw InvalidResponseException("code not retrieved but required")
-        val responseState = queryParams["state"] ?: throw InvalidResponseException("state not retrieved but required")
+        val code =
+            queryParams["code"] ?: throw InvalidResponseException("code not retrieved but required")
+        val responseState = queryParams["state"]
+            ?: throw InvalidResponseException("state not retrieved but required")
         if (state != responseState) {
             return Result.failure(
                 exception = InvalidResponseException(message = "Invalid state value received"),
@@ -122,7 +124,9 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
                         val parts = param.split("=")
                         if (parts.size == 2) {
                             parts[0] to parts[1]
-                        } else null
+                        } else {
+                            null
+                        }
                     }.toMap()
 
                 continuation.resumeWith(Result.success(params))
@@ -143,9 +147,9 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
     private fun pickRedirectUri(redirectUris: List<Url>): String = redirectUris.find {
         // We have in the Main.kt for web a handler that looks up for the last path segment
         // to send a postMessage, so that it can be captured here
-        it.rawSegments.last() == "callback"
+        it.rawSegments.last() == "callback" &&
             // Add also current window's origin as filter
-            && it.toString().contains(window.location.origin)
+            it.toString().contains(window.location.origin)
     }?.toString() ?: run {
         // fallback to default URI and log non-matching redirect URIs
         logger.warn {

@@ -129,10 +129,12 @@ fun UserAuthenticationContent(
             val oauthState by component.oAuthSlot.subscribeAsState()
 
             val hasMultiAuth = basicAuthState.child != null && oauthState.child != null
-            if (hasMultiAuth) Text(
-                modifier = Modifier.testTag("separator_text"),
-                text = stringResource(Res.string.seperator_or),
-            )
+            if (hasMultiAuth) {
+                Text(
+                    modifier = Modifier.testTag("separator_text"),
+                    text = stringResource(Res.string.seperator_or),
+                )
+            }
 
             oauthState.child?.let { oAuth ->
                 OAuthContent(

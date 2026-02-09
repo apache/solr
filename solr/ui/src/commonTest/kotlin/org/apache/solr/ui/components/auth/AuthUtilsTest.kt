@@ -30,7 +30,7 @@ class AuthUtilsTest {
         assertEquals(
             expected = CODE_VERIFIER_LENGTH,
             actual = codeVerifier.length,
-            message = "code verifier length should be $CODE_VERIFIER_LENGTH characters"
+            message = "code verifier length should be $CODE_VERIFIER_LENGTH characters",
         )
     }
 
@@ -52,7 +52,7 @@ class AuthUtilsTest {
         assertEquals(
             expected = STATE_LENGTH,
             actual = state.length,
-            message = "state length should be $STATE_LENGTH characters"
+            message = "state length should be $STATE_LENGTH characters",
         )
     }
 
@@ -71,7 +71,8 @@ class AuthUtilsTest {
     @Test
     fun `GIVEN valid code verifier WHEN generate code challenge THEN all output characters are URL safe`() {
         // Use a fix code verifier to include all characters, instead of randomly generating one
-        val codeVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        val codeVerifier =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         val actualCodeChallenge = generateCodeChallenge(codeVerifier)
         val urlSafeCharacters = CODE_VERIFIER_CHARSET
 
@@ -87,31 +88,33 @@ class AuthUtilsTest {
     @Test
     fun `GIVEN valid code verifier WHEN generate hashed code challenge THEN all characters are URL safe`() {
         // Use a fix code verifier to include all characters, instead of randomly generating one
-        val codeVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        val codeVerifier =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         val expectedCodeChallenge = "Gn88msbRKQ0wmy6Kms0RzrR4ZXFo3OGDewwvI9C7qZg"
         val actualCodeChallenge = generateCodeChallenge(codeVerifier)
         assertEquals(
             expected = expectedCodeChallenge,
             actual = actualCodeChallenge,
-            message = "code challenge hash "
+            message = "code challenge hash ",
         )
         assertFalse(
             actual = actualCodeChallenge.contains("="),
-            message = "Code challenge should not contain padding characters"
+            message = "Code challenge should not contain padding characters",
         )
     }
 
     @Test
     fun `GIVEN valid fixed code verifier WHEN generate hashed code challenge THEN no paddings included`() {
         // Use a fix code verifier to include all characters, instead of randomly generating one
-        val codeVerifier = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
+        val codeVerifier =
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
         val actualCodeChallenge = generateCodeChallenge(codeVerifier)
 
         // With padding the code verifier would generate Gn88msbRKQ0wmy6Kms0RzrR4ZXFo3OGDewwvI9C7qZg=
         // with a padding character at the end.
         assertFalse(
             actual = actualCodeChallenge.contains("="),
-            message = "Code challenge should not contain padding characters"
+            message = "Code challenge should not contain padding characters",
         )
     }
 }

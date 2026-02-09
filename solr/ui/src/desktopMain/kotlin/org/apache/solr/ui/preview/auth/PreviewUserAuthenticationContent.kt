@@ -47,7 +47,7 @@ internal fun PreviewBasicUserAuthenticationContent() = PreviewContainer {
         component = PreviewAuthenticationComponentWithBasicAuth(
             withBasicAuth = true,
             withOAuth = false,
-        )
+        ),
     )
 }
 
@@ -58,7 +58,7 @@ internal fun PreviewOAuthUserAuthenticationContent() = PreviewContainer {
         component = PreviewAuthenticationComponentWithBasicAuth(
             withBasicAuth = false,
             withOAuth = true,
-        )
+        ),
     )
 }
 
@@ -69,7 +69,7 @@ internal fun PreviewMultiUserAuthenticationContent() = PreviewContainer {
         component = PreviewAuthenticationComponentWithBasicAuth(
             withBasicAuth = true,
             withOAuth = true,
-        )
+        ),
     )
 }
 
@@ -87,39 +87,54 @@ private class PreviewAuthenticationComponentWithBasicAuth(
         model = AuthenticationComponent.Model(
             methods = listOfNotNull(
                 if (withBasicAuth) AuthMethod.BasicAuthMethod() else null,
-                if (withOAuth) AuthMethod.OAuthMethod(
-                    data = OAuthData(
-                        clientId = "",
-                        authorizationFlow = AuthorizationFlow.CodePKCE,
-                        scope = "",
-                        redirectUris = listOf(Url("http://localhost")),
-                        authorizationEndpoint = Url("http://localhost"),
-                        tokenEndpoint = Url("http://localhost"),
+                if (withOAuth) {
+                    AuthMethod.OAuthMethod(
+                        data = OAuthData(
+                            clientId = "",
+                            authorizationFlow = AuthorizationFlow.CodePKCE,
+                            scope = "",
+                            redirectUris = listOf(Url("http://localhost")),
+                            authorizationEndpoint = Url("http://localhost"),
+                            tokenEndpoint = Url("http://localhost"),
+                        ),
                     )
-                ) else null,
+                } else {
+                    null
+                },
             ),
         ),
     )
+
     override val model: StateFlow<AuthenticationComponent.Model> = MutableStateFlow(model)
 
     override val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>> =
         MutableValue(
-            if (withBasicAuth) ChildSlot(
-                Child.Created(
-                    configuration = BasicAuthConfiguration(),
-                    instance = PreviewBasicAuthComponent,
+            if (withBasicAuth) {
+                ChildSlot(
+                    Child.Created(
+                        configuration = BasicAuthConfiguration(),
+                        instance = PreviewBasicAuthComponent,
+                    ),
                 )
-            ) else ChildSlot(),
+            } else {
+                ChildSlot()
+            },
         )
 
     override val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>> =
         MutableValue(
-            if (withOAuth) ChildSlot(
-                Child.Created(
-                    configuration = OAuthConfiguration(method = model.methods.filterIsInstance<AuthMethod.OAuthMethod>().single()),
-                    instance = PreviewOAuthComponent,
+            if (withOAuth) {
+                ChildSlot(
+                    Child.Created(
+                        configuration = OAuthConfiguration(
+                            method = model.methods.filterIsInstance<AuthMethod.OAuthMethod>().single(),
+                        ),
+                        instance = PreviewOAuthComponent,
+                    ),
                 )
-            ) else ChildSlot(),
+            } else {
+                ChildSlot()
+            },
         )
 
     override fun onAbort() = Unit
@@ -134,7 +149,7 @@ private object PreviewBasicAuthComponent : BasicAuthComponent {
     override fun onAuthenticate() = Unit
 }
 
-private object PreviewOAuthComponent: OAuthComponent {
+private object PreviewOAuthComponent : OAuthComponent {
     override val model: StateFlow<OAuthComponent.Model> =
         MutableStateFlow(OAuthComponent.Model())
     override val labels: Flow<OAuthStore.Label> = MutableSharedFlow()

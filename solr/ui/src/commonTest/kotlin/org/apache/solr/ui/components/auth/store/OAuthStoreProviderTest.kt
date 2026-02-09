@@ -57,7 +57,7 @@ class OAuthStoreProviderTest {
             authorizationFlow = AuthorizationFlow.CodePKCE,
             redirectUris = listOf(Url("http://127.0.0.1:8983/callback")),
             tokenEndpoint = Url("https://auth.example.com/token"),
-        )
+        ),
     )
 
     private fun createStore(
@@ -71,7 +71,7 @@ class OAuthStoreProviderTest {
             client = client,
             mainContext = UnconfinedTestDispatcher(testScheduler),
             ioContext = StandardTestDispatcher(testScheduler),
-            method = method
+            method = method,
         ).provide()
         store.init()
     }
@@ -135,7 +135,7 @@ class OAuthStoreProviderTest {
     fun `WHEN authentication succeeds THEN Authenticated is published`() = runTest {
         val tokens = BearerTokens(
             accessToken = "access",
-            refreshToken = "refresh"
+            refreshToken = "refresh",
         )
 
         createStore(testScheduler) {
@@ -198,11 +198,11 @@ class OAuthStoreProviderTest {
 
         assertIs<InvalidCredentialsException>(
             value = failed.error,
-            message = "error should be InvalidCredentialsException"
+            message = "error should be InvalidCredentialsException",
         )
         assertIs<InvalidCredentialsException>(
             value = store.state.error,
-            message = "state error should be InvalidCredentialsException"
+            message = "state error should be InvalidCredentialsException",
         )
     }
 }

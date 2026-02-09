@@ -69,8 +69,10 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
     ): Result<BearerTokens> {
         val queryParams = listenForOAuthCallback()
 
-        val code = queryParams["code"] ?: throw InvalidResponseException("code not retrieved but required")
-        val responseState = queryParams["state"] ?: throw InvalidResponseException("state not retrieved but required")
+        val code =
+            queryParams["code"] ?: throw InvalidResponseException("code not retrieved but required")
+        val responseState = queryParams["state"]
+            ?: throw InvalidResponseException("state not retrieved but required")
         if (state != responseState) {
             return Result.failure(
                 exception = InvalidResponseException(message = "Invalid state value received"),
@@ -152,7 +154,7 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
                             <p>You can now return to the application. You may close this window.</p>
                           </body>
                         </html>
-                        """.trimIndent(),
+                            """.trimIndent(),
                             ContentType.Text.Html,
                         )
                         // complete and stop the server
@@ -186,7 +188,7 @@ actual class PlatformOAuthStoreClient actual constructor(private val httpClient:
                             </script>
                           </body>
                         </html>
-                        """.trimIndent(),
+                            """.trimIndent(),
                             ContentType.Text.Html,
                         )
                     }

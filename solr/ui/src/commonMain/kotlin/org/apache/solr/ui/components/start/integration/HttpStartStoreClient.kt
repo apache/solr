@@ -109,7 +109,7 @@ class HttpStartStoreClient(
                         val base64AuthData = headers.getAll("X-Solr-Authdata")
                             // Note that there is a chance the header values are merged again
                             // and separated by comma, so we split again
-                            ?.flatMap{ headerValue -> headerValue.split(",") }
+                            ?.flatMap { headerValue -> headerValue.split(",") }
                             ?.getOrNull(index)
 
                         base64AuthData?.let {

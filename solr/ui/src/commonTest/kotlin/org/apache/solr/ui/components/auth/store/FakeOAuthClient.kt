@@ -24,7 +24,7 @@ import org.apache.solr.ui.domain.OAuthData
  * OAuth client for mocking the OAuth server responses.
  */
 internal class FakeOAuthClient(
-    private val result: suspend () -> Result<BearerTokens>
+    private val result: suspend () -> Result<BearerTokens>,
 ) : OAuthStoreProvider.Client {
 
     var lastState: String? = null

@@ -58,11 +58,12 @@ fun main() {
     val destination = url.parameters["dest"]
 
     // TODO Extend the path and query params analysis for deep links and page reloads
-    if(url.rawSegments.last() == "callback") {
+    if (url.rawSegments.last() == "callback") {
         // This is a callback request from an authentication attempt,
         // notify other tab of same origin and close window.
         // Note that this is a simple way to handle deep links for OAuth callbacks
-        window.opener?.unsafeCast<Window>()?.postMessage(window.location.search.toJsString(), window.location.origin)
+        window.opener?.unsafeCast<Window>()
+            ?.postMessage(window.location.search.toJsString(), window.location.origin)
         window.close()
         return
     }
