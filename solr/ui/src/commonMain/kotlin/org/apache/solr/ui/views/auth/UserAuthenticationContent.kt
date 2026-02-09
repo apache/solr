@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +48,7 @@ import org.apache.solr.ui.generated.resources.action_go_back
 import org.apache.solr.ui.generated.resources.cd_back_navigation
 import org.apache.solr.ui.generated.resources.cd_solr_logo
 import org.apache.solr.ui.generated.resources.desc_solr_instance_with_auth
+import org.apache.solr.ui.generated.resources.seperator_or
 import org.apache.solr.ui.generated.resources.solr_sun
 import org.apache.solr.ui.generated.resources.title_sign_in_to_solr
 import org.apache.solr.ui.views.components.SolrCard
@@ -82,7 +85,9 @@ fun UserAuthenticationContent(
         contentDescription = stringResource(Res.string.cd_solr_logo),
     )
 
-    Column(modifier = Modifier.weight(1f).padding(16.dp)) {
+    Column(
+        modifier = Modifier.weight(1f).padding(16.dp),
+    ) {
         SolrTextButton(
             onClick = component::onAbort,
             contentPadding = ButtonDefaults.TextButtonWithIconContentPadding,
@@ -95,8 +100,11 @@ fun UserAuthenticationContent(
         }
 
         SolrCard(
-            modifier = Modifier.widthIn(min = 512.dp, max = 640.dp),
+            modifier = Modifier
+                .widthIn(min = 512.dp, max = 640.dp)
+                .verticalScroll(rememberScrollState()),
             verticalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
                 text = stringResource(Res.string.title_sign_in_to_solr),
@@ -120,11 +128,18 @@ fun UserAuthenticationContent(
 
             val oauthState by component.oAuthSlot.subscribeAsState()
 
+            val hasMultiAuth = basicAuthState.child != null && oauthState.child != null
+            if (hasMultiAuth) Text(
+                modifier = Modifier.testTag("separator_text"),
+                text = stringResource(Res.string.seperator_or),
+            )
+
             oauthState.child?.let { oAuth ->
                 OAuthContent(
                     modifier = Modifier.testTag("basic_auth_content"),
                     component = oAuth.instance,
                     isAuthenticating = model.isAuthenticating,
+                    showSupportingText = !hasMultiAuth,
                 )
             }
 

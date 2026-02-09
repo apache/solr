@@ -34,8 +34,8 @@ import androidx.compose.ui.unit.dp
 import org.apache.solr.ui.components.auth.OAuthComponent
 import org.apache.solr.ui.components.auth.store.OAuthStore
 import org.apache.solr.ui.generated.resources.Res
-import org.apache.solr.ui.generated.resources.action_sign_in_with_with_identity_provider
-import org.apache.solr.ui.generated.resources.action_sign_in_with_with_realm
+import org.apache.solr.ui.generated.resources.action_sign_in_with_identity_provider
+import org.apache.solr.ui.generated.resources.action_sign_in_with_realm
 import org.apache.solr.ui.generated.resources.authenticating
 import org.apache.solr.ui.generated.resources.desc_sign_in_with_oauth
 import org.apache.solr.ui.generated.resources.desc_sign_in_with_oauth_to_realm
@@ -50,19 +50,22 @@ import org.jetbrains.compose.resources.stringResource
  * @param modifier Modifier that is applied to the root of this composable.
  * @param isAuthenticating Whether the user is currently being authenticated. This disables the inputs
  * and updates the text shown in the button.
+ * @param showSupportingText Whether to show supporting text above the sign-in button. Settings this
+ * value to `false` allows a more compact view when multiple authentication options are available.
  */
 @Composable
 fun OAuthContent(
     component: OAuthComponent,
     modifier: Modifier = Modifier,
     isAuthenticating: Boolean = true,
+    showSupportingText: Boolean = true,
 ) = Column(
     modifier = modifier,
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
     val model by component.model.collectAsState()
 
-    Text(
+    if (showSupportingText) Text(
         text = model.realm?.let {
             stringResource(Res.string.desc_sign_in_with_oauth_to_realm, it)
         } ?: stringResource(Res.string.desc_sign_in_with_oauth),
@@ -80,8 +83,8 @@ fun OAuthContent(
                     stringResource(Res.string.authenticating)
                 } else {
                     model.realm?.let {
-                        stringResource(Res.string.action_sign_in_with_with_realm, it)
-                    } ?: stringResource(Res.string.action_sign_in_with_with_identity_provider)
+                        stringResource(Res.string.action_sign_in_with_realm, it)
+                    } ?: stringResource(Res.string.action_sign_in_with_identity_provider)
                 },
             )
         }
