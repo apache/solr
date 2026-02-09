@@ -29,13 +29,13 @@
     <filter-name>PathExclusionsFilter</filter-name>
     <filter-class>org.apache.solr.servlet.PathExclusionFilter</filter-class>
     <!--
-    Exclude patterns is a list of directories that would be short-circuited by this
-    Filter. It includes all Admin UI related static content.
-    NOTE: It is NOT a pattern but only matches the start of the HTTP ServletPath.
+    Requests with URL paths matching these patterns will be redirected to the "default" servlet.
+    It includes all Admin UI related static content.
+    Syntax: comma delimited regular expressions, and only need to match the start of the path.
     -->
     <init-param>
       <param-name>excludePatterns</param-name>
-      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+,/ui/.*</param-value>
+      <param-value>/$,/(partials|libs|css|js|img|templates|ui)/</param-value>
     </init-param>
   </filter>
 
@@ -64,15 +64,15 @@
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
-  <filter>
-    <filter-name>SolrRequestFilter</filter-name>
-    <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
-  </filter>
+  <servlet>
+    <servlet-name>SolrServlet</servlet-name>
+    <servlet-class>org.apache.solr.servlet.SolrDispatchFilter</servlet-class>
+  </servlet>
 
-  <filter-mapping>
-    <filter-name>SolrRequestFilter</filter-name>
+  <servlet-mapping>
+    <servlet-name>SolrServlet</servlet-name>
     <url-pattern>/*</url-pattern>
-  </filter-mapping>
+  </servlet-mapping>
 
   <servlet>
     <servlet-name>LoadAdminUI</servlet-name>

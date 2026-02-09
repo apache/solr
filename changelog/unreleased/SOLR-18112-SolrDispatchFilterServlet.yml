@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: SolrDispatchFilter is now a Servlet, not a Filter
+type: other
+authors:
+  - name: David Smiley
+links:
+  - name: SOLR-18112
+    url: https://issues.apache.org/jira/browse/SOLR-18112

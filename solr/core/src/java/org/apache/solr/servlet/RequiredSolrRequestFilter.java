@@ -70,7 +70,6 @@ public class RequiredSolrRequestFilter extends CoreContainerAwareHttpFilter {
       req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
 
       // put the core container in request attribute
-      // This is required for the LoadAdminUiServlet class. Removing it will cause 404
       req.setAttribute(CORE_CONTAINER_REQUEST_ATTRIBUTE, getCores());
       chain.doFilter(req, res);
     } finally {
