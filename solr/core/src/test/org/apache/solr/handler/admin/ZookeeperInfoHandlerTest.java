@@ -66,9 +66,8 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(collectionName, 1, 1);
 
     SolrClient client = cluster.getSolrClient();
-    // Test collections view (graph view with clusterstate.json)
+    // Return the data to power the Solr Admin UI - Graph.
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.PATH, "/clusterstate.json");
     params.set("view", "graph");
 
     GenericSolrRequest req =
