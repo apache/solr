@@ -353,73 +353,171 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
+
     // Force JSON response and omit header for cleaner output
     Map<String, String> map = Map.of(WT, "json", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
+
+    // Ensure paging support is initialized
+    ensurePagingSupportInitialized();
+
+    // Validate parameters
+    validateParameters(params);
+
+    // Determine request type and handle accordingly
+    boolean isGraphView = "graph".equals(params.get("view"));
+    String jsonResult = isGraphView
+        ? handleGraphViewRequest(params)
+        : handlePathViewRequest(params);
+
+    // Convert JSON string to structured response
+    addJsonToResponse(jsonResult, rsp);
+  }
+
+  /**
+   * Ensures the paging support is initialized (thread-safe lazy initialization).
+   */
+  private void ensurePagingSupportInitialized() {
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
         ZkController zkController = cores.getZkController();
         if (zkController != null) {
-          // get notified when the ZK session expires (so we can clear the cached collections and
-          // rebuild)
+          // Get notified when the ZK session expires (so we can clear cached collections)
           zkController.addOnReconnectListener(pagingSupport);
         }
       }
     }
+  }
 
-    String path = params.get(PATH);
-
+  /**
+   * Validates incoming parameters.
+   *
+   * @param params Request parameters to validate
+   * @throws SolrException if validation fails
+   */
+  private void validateParameters(SolrParams params) {
     if (params.get("addr") != null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
+  }
 
-    String detailS = params.get(PARAM_DETAIL);
-    boolean detail = detailS != null && detailS.equals("true");
-
-    String dumpS = params.get("dump");
-    boolean dump = dumpS != null && dumpS.equals("true");
-
-    int start = params.getInt("start", 0); // Note start ignored if rows not specified
+  /**
+   * Handles the graph view request with paginated collections.
+   *
+   * @param params Request parameters including pagination settings
+   * @return JSON string representing paginated collection data
+   * @throws IOException if an I/O error occurs
+   */
+  private String handleGraphViewRequest(SolrParams params) throws IOException {
+    // Extract pagination parameters
+    int start = params.getInt("start", 0);
     int rows = params.getInt("rows", -1);
 
-    String filterType = params.get("filterType");
-    if (filterType != null) {
-      filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0) filterType = null;
-    }
-    FilterType type = (filterType != null) ? FilterType.valueOf(filterType) : FilterType.none;
+    // Extract filter parameters
+    FilterType filterType = extractFilterType(params);
+    String filter = extractFilter(params, filterType);
 
-    String filter = (type != FilterType.none) ? params.get("filter") : null;
-    if (filter != null) {
-      filter = filter.trim();
-      if (filter.length() == 0) filter = null;
-    }
+    // Extract display options (applicable to graph view)
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
 
+    // Create printer for paginated collections
     ZKPrinter printer = new ZKPrinter(cores.getZkController());
     printer.detail = detail;
     printer.dump = dump;
-    // Graph formatted data is used in services.js to power the Admin UI Cloud - Graph
-    boolean isGraphView = "graph".equals(params.get("view"));
-    boolean paginateCollections = isGraphView;
-    printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
+    printer.page = new PageOfCollections(start, rows, filterType, filter);
     printer.pagingSupport = pagingSupport;
 
     try {
-      if (paginateCollections) {
-        // List collections and allow pagination, but no specific znode info like when looking at a
-        // normal ZK path
-        printer.printPaginatedCollections();
-      } else {
-        printer.print(path);
-      }
+      printer.printPaginatedCollections();
     } finally {
       printer.close();
     }
 
+    return printer.getJsonString();
+  }
+
+  /**
+   * Handles the path view request for a specific ZooKeeper path.
+   *
+   * @param params Request parameters including the path to display
+   * @return JSON string representing the ZooKeeper path data
+   * @throws IOException if an I/O error occurs
+   */
+  private String handlePathViewRequest(SolrParams params) throws IOException {
+    // Extract path parameter
+    String path = params.get(PATH);
+
+    // Extract display options
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
+
+    // Create printer for specific path
+    ZKPrinter printer = new ZKPrinter(cores.getZkController());
+    printer.detail = detail;
+    printer.dump = dump;
+    // Note: page and pagingSupport are null for path view
+
+    try {
+      printer.print(path);
+    } finally {
+      printer.close();
+    }
+
+    return printer.getJsonString();
+  }
+
+  /**
+   * Extracts and normalizes the filter type from request parameters.
+   *
+   * @param params Request parameters
+   * @return The filter type (defaults to FilterType.none if not specified)
+   */
+  private FilterType extractFilterType(SolrParams params) {
+    String filterType = params.get("filterType");
+    if (filterType != null) {
+      filterType = filterType.trim().toLowerCase(Locale.ROOT);
+      if (filterType.length() == 0) {
+        return FilterType.none;
+      }
+      return FilterType.valueOf(filterType);
+    }
+    return FilterType.none;
+  }
+
+  /**
+   * Extracts and normalizes the filter value from request parameters.
+   *
+   * @param params Request parameters
+   * @param filterType The filter type being used
+   * @return The filter string, or null if not applicable
+   */
+  private String extractFilter(SolrParams params, FilterType filterType) {
+    if (filterType == FilterType.none) {
+      return null;
+    }
+
+    String filter = params.get("filter");
+    if (filter != null) {
+      filter = filter.trim();
+      if (filter.length() > 0) {
+        return filter;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Converts JSON string to structured response objects and adds to SolrQueryResponse.
+   *
+   * @param jsonString The JSON string to parse
+   * @param rsp The response object to populate
+   */
+  private void addJsonToResponse(String jsonString, SolrQueryResponse rsp) {
     // Parse the JSON we built and return as structured data
     // This allows any response writer (json, xml, etc.) to serialize it properly
-    Object parsedJson = Utils.fromJSONString(printer.getJsonString());
+    Object parsedJson = Utils.fromJSONString(jsonString);
 
     // If it's a Map, add its contents directly to the response
     if (parsedJson instanceof Map) {
