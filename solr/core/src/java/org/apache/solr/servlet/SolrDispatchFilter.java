@@ -19,10 +19,10 @@ package org.apache.solr.servlet;
 import static org.apache.solr.servlet.ServletUtils.closeShield;
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
 
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.UnavailableException;
+import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -46,7 +46,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
+ * Solr's interface to Jetty.
  *
  * @since solr 1.2
  */
@@ -55,26 +55,26 @@ import org.slf4j.LoggerFactory;
 // servlets that are more focused in scope. This should become possible now that we have a
 // ServletContextListener for startup/shutdown of CoreContainer that sets up a service from which
 // things like CoreContainer can be requested. (or better yet injected)
-public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
+public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServlet
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected String abortErrorMessage = null;
 
   private HttpSolrCallFactory solrCallFactory;
+  private CoreContainerProvider containerProvider;
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
-  /**
-   * Enum to define action that needs to be processed. PASSTHROUGH: Pass through to another filter
-   * via webapp. FORWARD: Forward rewritten URI (without path prefix and core/collection name) to
-   * another filter in the chain RETURN: Returns the control, and no further specific processing is
-   * needed. This is generally when an error is set and returned. RETRY:Retry the request. In cases
-   * when a core isn't found to work with, this is set.
-   */
+  /** Enum to define action that needs to be processed. */
   public enum Action {
-    PASSTHROUGH,
+    /** Forwards the request via {@link jakarta.servlet.RequestDispatcher}. */
     FORWARD,
+    /**
+     * Returns the control, and no further specific processing is needed. This is generally when an
+     * error is set and returned.
+     */
     RETURN,
+    /** Retry the request. Currently used when a core isn't found, we refresh state, and retry. */
     RETRY,
     ADMIN,
     REMOTEPROXY,
@@ -98,9 +98,10 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   public static final String SOLR_LOG_LEVEL = "solr.log.level";
 
   @Override
-  public void init(FilterConfig config) throws ServletException {
+  public void init(ServletConfig config) throws ServletException {
     try {
       super.init(config);
+      containerProvider = CoreContainerProvider.serviceForContext(config.getServletContext());
       boolean isCoordinator =
           NodeRoles.MODE_ON.equals(getCores().nodeRoles.getRoleMode(NodeRoles.Role.COORDINATOR));
       solrCallFactory =
@@ -110,8 +111,8 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       }
 
     } catch (Throwable t) {
-      // catch this so our filter still works
-      log.error("Could not start Dispatch Filter.", t);
+      // catch this so our servlet still works
+      log.error("Could not start Servlet.", t);
       if (t instanceof Error) {
         throw (Error) t;
       }
@@ -120,12 +121,20 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
     }
   }
 
-  @Override
-  public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
-      throws IOException, ServletException {
-    // internal version of doFilter that tracks if we are in a retry
+  /**
+   * The CoreContainer. It's guaranteed to be constructed before this servlet is initialized, but
+   * could have been shut down. Never null.
+   */
+  public CoreContainer getCores() throws UnavailableException {
+    return containerProvider.getCoreContainer();
+  }
 
-    dispatch(chain, closeShield(request), closeShield(response), false);
+  @Override
+  protected void service(HttpServletRequest request, HttpServletResponse response)
+      throws IOException, ServletException {
+    // internal version that tracks if we are in a retry
+
+    dispatch(closeShield(request), closeShield(response), false);
   }
 
   /*
@@ -140,8 +149,7 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   before adding anything else to it.
    */
 
-  private void dispatch(
-      FilterChain chain, HttpServletRequest request, HttpServletResponse response, boolean retry)
+  private void dispatch(HttpServletRequest request, HttpServletResponse response, boolean retry)
       throws IOException, ServletException {
 
     AtomicReference<HttpServletRequest> wrappedRequest = new AtomicReference<>();
@@ -157,7 +165,7 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
             "Authentication Plugin threw SolrAuthenticationException without setting request status >= 400");
         response.sendError(401, "Authentication Plugin rejected credentials.");
       }
-      return; // Nothing more to do, chain.doFilter(req,res) doesn't get called.
+      return;
     }
     if (wrappedRequest.get() != null) {
       request = wrappedRequest.get();
@@ -182,25 +190,16 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
     try {
       Action result = call.call();
       switch (result) {
-        case PASSTHROUGH:
-          span.addEvent("SolrDispatchFilter PASSTHROUGH");
-          chain.doFilter(request, response);
-          break;
-        case RETRY:
+        case RETRY -> {
           span.addEvent("SolrDispatchFilter RETRY");
           // RECURSION
-          dispatch(chain, request, response, true);
-          break;
-        case FORWARD:
+          dispatch(request, response, true);
+        }
+        case FORWARD -> {
           span.addEvent("SolrDispatchFilter FORWARD");
           request.getRequestDispatcher(call.getPath()).forward(request, response);
-          break;
-        case ADMIN:
-        case PROCESS:
-        case REMOTEPROXY:
-        case ADMIN_OR_REMOTEPROXY:
-        case RETURN:
-          break;
+        }
+        default -> {}
       }
     } finally {
       call.destroy();

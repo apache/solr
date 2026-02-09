@@ -21,7 +21,6 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PASSTHROUGH;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
 import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
@@ -302,9 +301,11 @@ public class HttpSolrCall {
         return; // we are done with a valid handler
       }
     }
-    log.debug("no handler or core retrieved for {}, follow through...", path);
 
-    action = PASSTHROUGH;
+    String msg = "no handler, collection, or core for " + path;
+    sendError(404, msg);
+    log.info(msg); // not "error" since Solr isn't necessarily at fault
+    action = RETURN;
   }
 
   /**
