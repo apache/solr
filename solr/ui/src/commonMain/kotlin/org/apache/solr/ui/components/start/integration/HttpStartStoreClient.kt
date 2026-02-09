@@ -98,6 +98,7 @@ class HttpStartStoreClient(
             // Split by comma, as there is the chance that headers will be merged and separated by
             // comma (e.g. on web target)
             .flatMap { header -> header.split(",") }
+            .map(String::trim)
             .mapIndexed { index, authHeader ->
                 val (scheme, params) = parseWwwAuthenticate(authHeader)
 
