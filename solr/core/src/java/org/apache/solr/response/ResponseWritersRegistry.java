@@ -55,8 +55,6 @@ public class ResponseWritersRegistry {
             jsonWriter, // Alias for JSON
             "xml",
             new XMLResponseWriter(),
-            "raw",
-            new RawResponseWriter(),
             PROMETHEUS_METRICS_WT,
             prometheusWriter,
             OPEN_METRICS_WT,
