@@ -463,7 +463,18 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       if (filterType.length() == 0) {
         return FilterType.none;
       }
-      return FilterType.valueOf(filterType);
+      switch (filterType) {
+        case "none":
+          return FilterType.none;
+        case "name":
+          return FilterType.name;
+        case "status":
+          return FilterType.status;
+        default:
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+      }
     }
     return FilterType.none;
   }
