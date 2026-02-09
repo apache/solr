@@ -17,6 +17,8 @@
 package org.apache.solr.crossdc.update.processor;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -26,6 +28,10 @@ import static org.mockito.Mockito.when;
 import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -63,6 +69,7 @@ import org.mockito.ArgumentCaptor;
 
 public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
+
   private UpdateRequestProcessor next;
   private MirroringUpdateProcessor processor;
   private RequestMirroringHandler requestMirroringHandler;
@@ -77,6 +84,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   private ZkStateReader zkStateReader;
   private Replica replica;
   private ProducerMetrics producerMetrics;
+  private Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
+
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -90,6 +99,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
     req = mock(SolrQueryRequestBase.class);
     when(req.getParams()).thenReturn(new ModifiableSolrParams());
+
+    counters.clear();
 
     requestMock = mock(UpdateRequest.class);
 
@@ -117,76 +128,89 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     core = mock(SolrCore.class);
     when(core.getCoreAttributes()).thenReturn(Attributes.empty());
 
-    Map<String, Attr>
-
     producerMetrics =
         spy(
             new ProducerMetrics(mock(SolrMetricsContext.class), core) {
-              private final AttributedLongCounter counterMock = mock(AttributedLongCounter.class);
+              Map<String, AttributedLongCounter> counterMap = new ConcurrentHashMap<>();
+
+              AttributedLongCounter getMockCounter(String label) {
+                return counterMap.computeIfAbsent(label, k -> {
+                  AttributedLongCounter mockCounter = mock(AttributedLongCounter.class);
+                  doAnswer(inv -> {
+                    counters.computeIfAbsent(k, k2 -> new AtomicLong()).addAndGet(inv.getArgument(0));
+                    return null;
+                  }).when(mockCounter).add(anyLong());
+                  doAnswer(inv -> {
+                    counters.computeIfAbsent(k, k2 -> new AtomicLong()).incrementAndGet();
+                    return null;
+                  }).when(mockCounter).inc();
+                  return mockCounter;
+                });
+              }
 
               @Override
               public AttributedLongCounter getLocal() {
-                return counterMock;
+                return getMockCounter("local");
               }
 
               @Override
               public AttributedLongCounter getLocalError() {
-                return counterMock;
+                return getMockCounter("localError");
               }
 
               @Override
               public AttributedLongCounter getSubmitted() {
-                return counterMock;
+                return getMockCounter("submitted");
               }
 
               @Override
               public AttributedLongCounter getDocumentTooLarge() {
-                return counterMock;
+                return getMockCounter("documentTooLarge");
               }
 
               @Override
               public AttributedLongCounter getSubmitError() {
-                return counterMock;
+                return getMockCounter("submitError");
               }
 
               @Override
               public AttributedLongCounter getSubmittedAdd() {
-                return counterMock;
+                return getMockCounter("submittedAdd");
               }
 
               @Override
               public AttributedLongCounter getSubmittedAddError() {
-                return counterMock;
+                return getMockCounter("submittedAddError");
               }
 
               @Override
               public AttributedLongCounter getSubmittedDeleteById() {
-                return counterMock;
+                return getMockCounter("submittedDeleteById");
               }
 
               @Override
               public AttributedLongCounter getSubmittedDeleteByIdError() {
-                return counterMock;
+                return getMockCounter("submittedDeleteByIdError");
               }
 
               @Override
               public AttributedLongCounter getSubmittedDeleteByQuery() {
-                return counterMock;
+                return getMockCounter("submittedDeleteByQuery");
               }
 
               @Override
               public AttributedLongCounter getSubmittedDeleteByQueryError() {
-                return counterMock;
+                return getMockCounter("submittedDeleteByQueryError");
               }
 
               @Override
               public AttributedLongCounter getSubmittedCommit() {
-                return counterMock;
+                return getMockCounter("submittedCommit");
               }
 
               @Override
               public AttributedLongCounter getSubmittedCommitError() {
-                return counterMock;
+                return getMockCounter("submittedCommitError");
               }
 
               @Override
@@ -251,6 +275,10 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     try {
       processor.processDelete(deleteUpdateCommand);
       verify(requestMirroringHandler, times(1)).mirror(requestMock);
+      assertEquals(1, counters.get("local").get());
+      assertEquals(1, counters.get("submitted").get());
+      assertEquals(1, counters.get("submittedDeleteByQuery").get());
+      assertNull(counters.get("submittedDeleteById"));
     } catch (Exception e) {
       fail("IOException should not be thrown");
     }
@@ -266,6 +294,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
       when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
       processor.processAdd(addUpdateCommand);
       verify(requestMirroringHandler, times(1)).mirror(requestMock);
+      assertEquals(1, counters.get("local").get());
+      assertEquals(1, counters.get("submitted").get());
+      assertEquals(1, counters.get("submittedAdd").get());
     } catch (IOException e) {
       fail("IOException should not be thrown");
     } catch (Exception e) {
@@ -284,6 +315,11 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
       deleteUpdateCommand.setId("test");
       processor.processDelete(deleteUpdateCommand);
       verify(requestMirroringHandler, times(1)).mirror(requestMock);
+      // this is somewhat counter-intuitive, but the deleteById is IGNORED when query is set.
+      assertEquals(1, counters.get("local").get());
+      assertEquals(1, counters.get("submitted").get());
+      assertEquals(1, counters.get("submittedDeleteByQuery").get());
+      assertNull(counters.get("submittedDeleteById"));
     } catch (Exception e) {
       fail("IOException should not be thrown");
     }
@@ -297,6 +333,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
       processor.processCommit(commitUpdateCommand);
       verify(next).processCommit(commitUpdateCommand);
       verify(requestMirroringHandler, times(0)).mirror(requestMock);
+      assertEquals(1, counters.get("local").get());
+      assertNull(counters.get("submitted"));
     } catch (Exception e) {
       fail("IOException should not be thrown: " + e);
     }
@@ -305,12 +343,14 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   @Test
   public void processCommitOnlyNonLeader() {
     try {
-      // should skip if processing on non-leader replica
+      // should skip mirroring if processing on non-leader replica
       when(replica.getName()).thenReturn("foobar");
       when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
       processor.processCommit(commitUpdateCommand);
       verify(next).processCommit(commitUpdateCommand);
       verify(requestMirroringHandler, times(0)).mirror(requestMock);
+      assertEquals(1, counters.get("local").get());
+      assertNull(counters.get("submitted"));
     } catch (Exception e) {
       fail("IOException should not be thrown: " + e);
     }
@@ -337,6 +377,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
       processor.processCommit(commitUpdateCommand);
       verify(next).processCommit(commitUpdateCommand);
       verify(requestMirroringHandler, times(1)).mirror(captor.capture());
+      assertEquals(1, counters.get("local").get());
+      assertEquals(1, counters.get("submitted").get());
+      assertEquals(1, counters.get("submittedCommit").get());
       UpdateRequest req = captor.getValue();
       assertNotNull(req.getParams());
       SolrParams params = req.getParams();
@@ -373,6 +416,8 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
       processor.processCommit(commitUpdateCommand);
       verify(next).processCommit(commitUpdateCommand);
       verify(requestMirroringHandler, times(0)).mirror(requestMock);
+      assertEquals(1, counters.get("local").get());
+      assertNull(counters.get("submitted"));
     } catch (Exception e) {
       fail("Exception should not be thrown: " + e);
     }
@@ -390,6 +435,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     processor.processAdd(cmd);
     verify(next).processAdd(cmd);
     verify(requestMirroringHandler).mirror(requestMock);
+    assertEquals(1, counters.get("local").get());
+    assertEquals(1, counters.get("submitted").get());
+    assertEquals(1, counters.get("submittedAdd").get());
   }
 
   @Test
@@ -426,6 +474,7 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
     assertThrows(
         SolrException.class, () -> mirroringUpdateProcessorWithLimit.processAdd(addUpdateCommand));
+    assertEquals(1, counters.get("documentTooLarge").get());
   }
 
   @Test
@@ -433,6 +482,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
     processor.processAdd(addUpdateCommand);
     verify(requestMirroringHandler, times(1)).mirror(any());
+    assertEquals(1, counters.get("local").get());
+    assertEquals(1, counters.get("submitted").get());
+    assertEquals(1, counters.get("submittedAdd").get());
   }
 
   @Test
@@ -440,6 +492,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     when(cloudDesc.getCoreNodeName()).thenReturn("replica2");
     processor.processAdd(addUpdateCommand);
     verify(requestMirroringHandler, times(0)).mirror(any());
+    assertEquals(1, counters.get("local").get());
+    assertNull(counters.get("submitted"));
+    assertNull(counters.get("submittedAdd"));
   }
 
   @Test
@@ -447,6 +502,9 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     when(cloudDesc.getCoreNodeName()).thenReturn("replica1");
     processor.processDelete(deleteUpdateCommand);
     verify(requestMirroringHandler, times(1)).mirror(any());
+    assertEquals(1, counters.get("local").get());
+    assertEquals(1, counters.get("submitted").get());
+    assertEquals(1, counters.get("submittedDeleteByQuery").get());
   }
 
   @Test
@@ -476,6 +534,12 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     verify(requestMirroringHandler, times(1)).mirror(updateRequest);
     assertEquals("missing dbq", 1, updateRequest.getDeleteQuery().size());
     assertEquals("dbq value", "id:test*", updateRequest.getDeleteQuery().get(0));
+    // verify the metrics
+    assertEquals(1, counters.get("local").get());
+    assertEquals(1, counters.get("submittedDeleteByQuery").get());
+    assertEquals(1, counters.get("submitted").get());
+    // no expansion
+    assertNull(counters.get("submittedDeleteById"));
   }
 
   @Test
@@ -487,11 +551,15 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
     processor.processAdd(addUpdateCommand);
 
     SolrQuery query = new SolrQuery();
-    query.setQuery("*:*");
+    query.setQuery("id:*");
     query.setRows(1000);
     query.setSort("id", SolrQuery.ORDER.asc);
 
     processor.processDelete(deleteUpdateCommand);
+    assertEquals(2, counters.get("local").get());
+    assertEquals(2, counters.get("submitted").get());
+    assertEquals(1, counters.get("submittedAdd").get());
+    assertEquals(1, counters.get("submittedDeleteByQuery").get());
   }
 
   @Test

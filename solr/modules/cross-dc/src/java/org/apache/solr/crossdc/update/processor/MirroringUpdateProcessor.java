@@ -146,6 +146,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
     producerMetrics.getDocumentSize().record(estimatedDocSizeInBytes);
     final boolean tooLargeForKafka = estimatedDocSizeInBytes > maxMirroringDocSizeBytes;
     if (tooLargeForKafka && !indexUnmirrorableDocs) {
+      producerMetrics.getDocumentTooLarge().inc();
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Update exceeds the doc-size limit and is unmirrorable. id="
@@ -399,7 +400,10 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
   @Override
   public void processCommit(CommitUpdateCommand cmd) throws IOException {
     log.debug("process commit cmd={}", cmd);
-    if (next != null) next.processCommit(cmd);
+    if (next != null) {
+      next.processCommit(cmd);
+      producerMetrics.getLocal().inc();
+    }
     if (!mirrorCommits) {
       return;
     }
@@ -433,6 +437,7 @@ public class MirroringUpdateProcessor extends UpdateRequestProcessor {
       log.debug(" --doMirroring commit req={}", req);
       try {
         requestMirroringHandler.mirror(req);
+        producerMetrics.getSubmitted().inc();
         producerMetrics.getSubmittedCommit().inc();
       } catch (Exception e) {
         log.error("mirror submit failed", e);
