@@ -366,17 +366,14 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
     // Determine request type and handle accordingly
     boolean isGraphView = "graph".equals(params.get("view"));
-    String jsonResult = isGraphView
-        ? handleGraphViewRequest(params)
-        : handlePathViewRequest(params);
+    String jsonResult =
+        isGraphView ? handleGraphViewRequest(params) : handlePathViewRequest(params);
 
     // Convert JSON string to structured response
     addJsonToResponse(jsonResult, rsp);
   }
 
-  /**
-   * Ensures the paging support is initialized (thread-safe lazy initialization).
-   */
+  /** Ensures the paging support is initialized (thread-safe lazy initialization). */
   private void ensurePagingSupportInitialized() {
     synchronized (this) {
       if (pagingSupport == null) {
@@ -460,7 +457,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     // Note: page and pagingSupport are null for path view
 
     try {
-      printer.print(path);
+      printer.printPath(path);
     } finally {
       printer.close();
     }
@@ -517,18 +514,13 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private void addJsonToResponse(String jsonString, SolrQueryResponse rsp) {
     // Parse the JSON we built and return as structured data
     // This allows any response writer (json, xml, etc.) to serialize it properly
-    Object parsedJson = Utils.fromJSONString(jsonString);
+    // The JSON is always a Map since both printPath() and printPaginatedCollections()
+    // start with json.startObject() and end with json.endObject()
+    @SuppressWarnings("unchecked")
+    Map<String, Object> jsonMap = (Map<String, Object>) Utils.fromJSONString(jsonString);
 
-    // If it's a Map, add its contents directly to the response
-    if (parsedJson instanceof Map) {
-      @SuppressWarnings("unchecked")
-      Map<String, Object> jsonMap = (Map<String, Object>) parsedJson;
-      for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
-        rsp.add(entry.getKey(), entry.getValue());
-      }
-    } else {
-      // Fallback: add as single value
-      rsp.add("zk_data", parsedJson);
+    for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
+      rsp.add(entry.getKey(), entry.getValue());
     }
   }
 
@@ -542,10 +534,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   // --------------------------------------------------------------------------------------
 
   public static class ZKPrinter {
-    static boolean FULLPATH_DEFAULT = false;
-
     boolean indent = true;
-    boolean fullpath = FULLPATH_DEFAULT;
     boolean detail = false;
     boolean dump = false;
 
@@ -574,7 +563,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     // main entry point for printing from path
-    void print(String path) throws IOException {
+    void printPath(String path) throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -584,7 +573,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         path = "/";
       } else {
         path = path.trim();
-        if (path.length() == 0) {
+        if (path.isEmpty()) {
           path = "/";
         }
       }
@@ -595,7 +584,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       int idx = path.lastIndexOf('/');
       String parent = idx >= 0 ? path.substring(0, idx) : path;
-      if (parent.length() == 0) {
+      if (parent.isEmpty()) {
         parent = "/";
       }
 
@@ -681,11 +670,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       // For some reason, without this the Json is badly formed
       writeKeyValue(json, PATH, "Undefined", true);
 
-      if (collectionStates != null) {
-        CharArr collectionOut = new CharArr();
-        new JSONWriter(collectionOut, 2).write(collectionStates);
-        writeKeyValue(json, "data", collectionOut.toString(), false);
-      }
+      CharArr collectionOut = new CharArr();
+      new JSONWriter(collectionOut, 2).write(collectionStates);
+      writeKeyValue(json, "data", collectionOut.toString(), false);
 
       writeKeyValue(json, "paging", page.getPagingHeader(), false);
 
@@ -698,12 +685,11 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       throw new SolrException(ErrorCode.getErrorCode(code), msg);
     }
 
-    boolean printTree(JSONWriter json, String path) throws IOException {
-      String label = path;
-      if (!fullpath) {
-        int idx = path.lastIndexOf('/');
-        label = idx > 0 ? path.substring(idx + 1) : path;
-      }
+    boolean printTree(JSONWriter json, String path) {
+
+      int idx = path.lastIndexOf('/');
+      String label = idx > 0 ? path.substring(idx + 1) : path;
+
       json.startObject();
       writeKeyValue(json, "text", label, true);
       json.writeValueSeparator();

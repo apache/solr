@@ -40,7 +40,7 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkInfoHandler() throws SolrServerException, IOException {
+  public void testZkInfoHandlerDetailView() throws SolrServerException, IOException {
     SolrClient client = cluster.getSolrClient();
 
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -58,7 +58,7 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkInfoHandlerCollectionsView() throws Exception {
+  public void testZkInfoHandlerGraphView() throws Exception {
     // Create a test collection first
     String collectionName = "zkinfo_test_collection";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
@@ -78,9 +78,7 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     SimpleSolrResponse response = req.process(client);
     NamedList<Object> responseData = response.getResponse();
 
-    // Collections view should return znode with collection data
     assertNotNull("Response should not be null", responseData);
-
     assertNotNull(
         "Response should contain 'znode' for collections view", responseData.get("znode"));
   }
