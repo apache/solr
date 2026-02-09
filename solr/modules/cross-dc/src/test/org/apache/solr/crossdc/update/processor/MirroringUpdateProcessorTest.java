@@ -29,9 +29,7 @@ import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
-
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -69,7 +67,6 @@ import org.mockito.ArgumentCaptor;
 
 public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
 
-
   private UpdateRequestProcessor next;
   private MirroringUpdateProcessor processor;
   private RequestMirroringHandler requestMirroringHandler;
@@ -85,7 +82,6 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
   private Replica replica;
   private ProducerMetrics producerMetrics;
   private Map<String, AtomicLong> counters = new ConcurrentHashMap<>();
-
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -134,18 +130,30 @@ public class MirroringUpdateProcessorTest extends SolrTestCaseJ4 {
               Map<String, AttributedLongCounter> counterMap = new ConcurrentHashMap<>();
 
               AttributedLongCounter getMockCounter(String label) {
-                return counterMap.computeIfAbsent(label, k -> {
-                  AttributedLongCounter mockCounter = mock(AttributedLongCounter.class);
-                  doAnswer(inv -> {
-                    counters.computeIfAbsent(k, k2 -> new AtomicLong()).addAndGet(inv.getArgument(0));
-                    return null;
-                  }).when(mockCounter).add(anyLong());
-                  doAnswer(inv -> {
-                    counters.computeIfAbsent(k, k2 -> new AtomicLong()).incrementAndGet();
-                    return null;
-                  }).when(mockCounter).inc();
-                  return mockCounter;
-                });
+                return counterMap.computeIfAbsent(
+                    label,
+                    k -> {
+                      AttributedLongCounter mockCounter = mock(AttributedLongCounter.class);
+                      doAnswer(
+                              inv -> {
+                                counters
+                                    .computeIfAbsent(k, k2 -> new AtomicLong())
+                                    .addAndGet(inv.getArgument(0));
+                                return null;
+                              })
+                          .when(mockCounter)
+                          .add(anyLong());
+                      doAnswer(
+                              inv -> {
+                                counters
+                                    .computeIfAbsent(k, k2 -> new AtomicLong())
+                                    .incrementAndGet();
+                                return null;
+                              })
+                          .when(mockCounter)
+                          .inc();
+                      return mockCounter;
+                    });
               }
 
               @Override
