@@ -53,7 +53,7 @@ class HttpStartStoreClient(
         val url = URLBuilder(url).apply {
             // Try getting system data for checking if Solr host exists,
             // since there is no explicit endpoint for the connection establishment.
-            // TODO Consider http://127.0.0.1:8983/api/admin/authentication
+            // TODO Consider /api/admin/authentication
             path("api/node/system")
         }.build()
 

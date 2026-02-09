@@ -56,6 +56,9 @@ import org.jetbrains.compose.resources.stringResource
 /**
  * The user authentication content is the composable that will check and display
  * the available authentication options to the user.
+ *
+ * @param component The authentication component that manages the state of this composable.
+ * @param modifier Modifier to apply to the root composable.
  */
 @Composable
 fun UserAuthenticationContent(

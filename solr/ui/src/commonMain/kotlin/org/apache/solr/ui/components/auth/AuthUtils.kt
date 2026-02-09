@@ -83,6 +83,9 @@ internal fun generateOAuthState(): String = buildString {
  * Note that in future scenarios we will have to support a changed location path, as the user is
  * allowed to customize the base path that is right now /solr/ui/.
  *
+ * TODO Implement the function so that it also allows overriding the callback path. This will
+ *  allow us to customize the base path of Solr without affecting the new UI.
+ *
  * @return The redirect URI to use in OAuth.
  */
 internal expect fun getRedirectUri(): String

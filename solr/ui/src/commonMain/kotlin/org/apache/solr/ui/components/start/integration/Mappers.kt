@@ -54,6 +54,11 @@ internal fun SolrAuthData.toOAuthData() = OAuthData(
     tokenEndpoint = Url(urlString = tokenEndpoint),
 )
 
+/**
+ * Maps a string to the corresponding AuthorizationFlow enum value.
+ *
+ * Note that only Code flow with Proof Key for Code Exchange (PKCE) is supported right now.
+ */
 private fun String.toAuthorizationFlow(): AuthorizationFlow = when (this) {
     "code_pkce" -> AuthorizationFlow.CodePKCE
     else -> AuthorizationFlow.Unknown

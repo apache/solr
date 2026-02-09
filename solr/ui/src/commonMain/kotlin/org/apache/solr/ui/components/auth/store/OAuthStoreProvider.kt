@@ -25,9 +25,9 @@ import com.arkivanov.mvikotlin.extensions.coroutines.CoroutineExecutor
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.http.ParametersBuilder
 import io.ktor.http.URLBuilder
-import io.ktor.http.Url
+import io.ktor.utils.io.CancellationException
 import kotlin.coroutines.CoroutineContext
-import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.apache.solr.ui.components.auth.generateCodeChallenge
@@ -69,6 +69,9 @@ class OAuthStoreProvider(
     }
 
     private inner class ExecutorImpl : CoroutineExecutor<Intent, Unit, State, Message, Label>(mainContext) {
+
+        private var authJob: Job? = null
+
         override fun executeIntent(intent: Intent) {
             when (intent) {
                 is Intent.Authenticate -> authenticate()
@@ -78,7 +81,7 @@ class OAuthStoreProvider(
         private fun authenticate(): Unit = with(state()) {
             val verifier = generateCodeVerifier()
             val challenge = generateCodeChallenge(verifier)
-            val state = generateOAuthState()
+            val oAuthState = generateOAuthState()
             val authorizeUrl = URLBuilder(method.data.authorizationEndpoint)
                 .apply {
                     encodedParameters = ParametersBuilder().apply {
@@ -88,32 +91,35 @@ class OAuthStoreProvider(
                         set("response_type", "code")
                         set("code_challenge_method", "S256")
                         set("code_challenge", challenge)
-                        set("state", state)
+                        set("state", oAuthState)
                     }
                 }
                 .build()
 
-            publish(Label.AuthenticationStarted(url = authorizeUrl))
-            scope.launch(
-                context = CoroutineExceptionHandler { _, throwable ->
-                    // error returned here is platform-specific and needs further parsing
-                    publish(Label.AuthenticationFailed(error = parseError(throwable)))
-                    dispatch(Message.AuthenticationFailed(error = parseError(throwable)))
-                },
-            ) {
-                withContext(ioContext) {
-                    client.authenticate(state, verifier, method.data)
-                }.onSuccess {
-                    // Authentication succeeded with the given credentials
-                    publish(
-                        Label.Authenticated(
-                            method = method,
-                            accessToken = it.accessToken,
-                            refreshToken = it.refreshToken,
-                        ),
-                    )
-                }.onFailure { error ->
-                    handleConnectionError(error)
+            authJob?.cancel()
+            authJob = scope.launch {
+                publish(Label.AuthenticationStarted(url = authorizeUrl))
+                try {
+                    withContext(ioContext) {
+                        client.authenticate(oAuthState, verifier, method.data)
+                    }.onSuccess {
+                        // Authentication succeeded with the given credentials
+                        publish(
+                            Label.Authenticated(
+                                method = method,
+                                accessToken = it.accessToken,
+                                refreshToken = it.refreshToken,
+                            ),
+                        )
+                    }.onFailure { error ->
+                        handleConnectionError(error)
+                    }
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (throwable: Throwable) {
+                    val parsed = parseError(throwable)
+                    publish(Label.AuthenticationFailed(error = parsed))
+                    dispatch(Message.AuthenticationFailed(error = parsed))
                 }
             }
         }
