@@ -111,7 +111,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   /** Enumeration of ways to filter collections on the graph panel. */
-  static enum FilterType {
+  enum FilterType {
     none,
     name,
     status
@@ -176,7 +176,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
      * user is filtering by.
      */
     @SuppressWarnings("unchecked")
-    final boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
+    boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
 
       if (filterType != FilterType.status || filter == null || filter.length() == 0)
         return true; // no status filter, so all match
@@ -227,7 +227,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-    final boolean matches(final Pattern filter, final String collName) {
+    boolean matches(final Pattern filter, final String collName) {
       return filter.matcher(collName).matches();
     }
 
@@ -298,7 +298,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       // activate paging (if disabled) for large collection sets
       if (page.start == 0 && page.rows == -1 && page.filter == null && children.size() > 10) {
         page.rows = 20;
-        page.start = 0;
       }
 
       // apply the name filter if supplied (we don't need to pull state
@@ -462,7 +461,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     PagedCollectionSupport pagingSupport;
     ZkController zkController;
 
-    public ZKPrinter(ZkController controller) throws IOException {
+    public ZKPrinter(ZkController controller) {
       this.zkController = controller;
       keeperAddr = controller.getZkServerAddress();
       zkClient = controller.getZkClient();
@@ -564,7 +563,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           page.selectPage(matchesStatusFilter);
 
           // rebuild the Map of state data
-          SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
+          SortedMap<String, Object> map = new TreeMap<>(pagingSupport);
           for (String next : page.selected) map.put(next, collectionStates.get(next));
           collectionStates = map;
         }
@@ -597,25 +596,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       out.write(chars.toString());
     }
 
-    void writeError(int code, String msg) throws IOException {
+    void writeError(int code, String msg) {
       throw new SolrException(ErrorCode.getErrorCode(code), msg);
-      /*response.setStatus(code);
-
-      CharArr chars = new CharArr();
-      JSONWriter w = new JSONWriter(chars, 2);
-      w.startObject();
-      w.indent();
-      w.writeString("status");
-      w.writeNameSeparator();
-      w.write(code);
-      w.writeValueSeparator();
-      w.indent();
-      w.writeString("error");
-      w.writeNameSeparator();
-      w.writeString(msg);
-      w.endObject();
-
-      out.write(chars.toString());*/
     }
 
     boolean printTree(JSONWriter json, String path) throws IOException {
@@ -686,10 +668,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             }
             first = false;
           }
-        } catch (KeeperException e) {
-          writeError(500, e.toString());
-          return false;
-        } catch (InterruptedException e) {
+        } catch (KeeperException | InterruptedException e) {
           writeError(500, e.toString());
           return false;
         } catch (IllegalArgumentException e) {
@@ -705,7 +684,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     }
 
     String time(long ms) {
-      return (new Date(ms)).toString() + " (" + ms + ")";
+      return (new Date(ms)) + " (" + ms + ")";
     }
 
     public void writeKeyValue(JSONWriter json, String k, Object v, boolean isFirst) {
@@ -720,7 +699,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       json.write(v);
     }
 
-    boolean printZnode(JSONWriter json, String path) throws IOException {
+    boolean printZnode(JSONWriter json, String path) {
       try {
         String dataStr = null;
         String dataStrErr = null;
@@ -731,7 +710,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           try {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
-            dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+            dataStrErr = "data is not parsable as a utf8 String: " + e;
           }
         }
 
@@ -770,10 +749,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         }
 
         json.endObject();
-      } catch (KeeperException e) {
-        writeError(500, e.toString());
-        return false;
-      } catch (InterruptedException e) {
+      } catch (KeeperException | InterruptedException e) {
         writeError(500, e.toString());
         return false;
       }
