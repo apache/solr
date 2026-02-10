@@ -31,7 +31,7 @@ public class NoOpRequestHandlerTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig-noopxml", "schema.xml");
+    initCore("solrconfig-noop.xml", "schema.xml");
   }
 
   @Test

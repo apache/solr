@@ -25,6 +25,10 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+/**
+ * Test that demonstrates NoOpResponseWriter can be used to disable implicit response writers that
+ * are loaded via ImplicitPlugins.json.
+ */
 public class NoOpResponseWriterTest extends SolrTestCaseJ4 {
 
   @BeforeClass
