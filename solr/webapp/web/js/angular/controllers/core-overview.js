@@ -16,7 +16,7 @@
 */
 
 solrAdminApp.controller('CoreOverviewController',
-function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication, Ping, Constants) {
+function($scope, $rootScope, $routeParams, Luke, CoreInfo, Update, Replication, Ping, Constants) {
   $scope.resetMenu("overview", Constants.IS_CORE_PAGE);
   $scope.refreshIndex = function() {
     Luke.index({core: $routeParams.core},
@@ -42,8 +42,8 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
       });
   };
 
-  $scope.refreshSystem = function() {
-    CoreSystem.get({core: $routeParams.core},
+  $scope.refreshInfo = function() {
+    CoreInfo.get({core: $routeParams.core},
       function(data) {
         $scope.core = data.core;
         delete $scope.systemMessage;
@@ -86,10 +86,9 @@ function($scope, $rootScope, $routeParams, Luke, CoreSystem, Update, Replication
   $scope.refresh = function() {
     $scope.refreshIndex();
     $scope.refreshReplication();
-    $scope.refreshSystem();
+    $scope.refreshInfo();
     $scope.refreshPing();
   };
 
   $scope.refresh();
 });
-
