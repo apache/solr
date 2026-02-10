@@ -1,0 +1,4 @@
+title:  Dropdown for collection/core in Solr's backend is now using a contains-filtering
+type: changed
+authors:
+  - name: Renato Haeberli
