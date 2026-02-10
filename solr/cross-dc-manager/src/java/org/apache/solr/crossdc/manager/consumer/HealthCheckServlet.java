@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 public class HealthCheckServlet extends HttpServlet {
   private static final long serialVersionUID = -7848291432584409313L;
@@ -52,7 +53,7 @@ public class HealthCheckServlet extends HttpServlet {
     resp.setContentType("application/json");
     resp.setHeader("Cache-Control", "must-revalidate,no-cache,no-store");
     resp.setCharacterEncoding("UTF-8");
-    resp.getOutputStream().write(content.getBytes("UTF-8"));
+    resp.getOutputStream().write(content.getBytes(StandardCharsets.UTF_8));
     if (kafkaConnected && solrConnected && running) {
       resp.setStatus(HttpServletResponse.SC_OK);
     } else {
