@@ -30,6 +30,12 @@ public class LocalFSInstallShardTest extends AbstractInstallShardTest {
           + "    <repository name=\"trackingBackupRepository\" class=\"org.apache.solr.core.TrackingBackupRepository\"> \n"
           + "      <str name=\"delegateRepoName\">localfs</str>\n"
           + "    </repository>\n"
+          + "    <repository name=\"errorBackupRepository\" class=\""
+          + AbstractIncrementalBackupTest.ErrorThrowingTrackingBackupRepository.class.getName()
+          + "\"> \n"
+          + "      <str name=\"delegateRepoName\">localfs</str>\n"
+          + "      <str name=\"hostPort\">${hostPort:8983}</str>\n"
+          + "    </repository>\n"
           + "    <repository name=\"localfs\" class=\"org.apache.solr.core.backup.repository.LocalFileSystemRepository\"> \n"
           + "    </repository>\n"
           + "  </backup>\n";
@@ -43,7 +49,7 @@ public class LocalFSInstallShardTest extends AbstractInstallShardTest {
     final String tmpDirPrefix = whitespacesInPath ? "my install" : "myinstall";
     final String backupLocation = createTempDir(tmpDirPrefix).toAbsolutePath().toString();
 
-    configureCluster(1) // nodes
+    configureCluster(2) // nodes
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .withSolrXml(SOLR_XML.replace("ALLOWPATHS_TEMPLATE_VAL", backupLocation))

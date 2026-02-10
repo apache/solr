@@ -1300,11 +1300,11 @@ public class IndexFetcher {
       Directory indexDir, String filename, Long backupIndexFileLen, Long backupIndexFileChecksum) {
     CompareResult compareResult = new CompareResult();
     try {
-      try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
-        long indexFileLen = indexInput.length();
-        long indexFileChecksum = 0;
-
-        if (backupIndexFileChecksum != null) {
+      long indexFileLen;
+      long indexFileChecksum = 0;
+      if (backupIndexFileChecksum != null) {
+        try (final IndexInput indexInput = indexDir.openInput(filename, IOContext.READONCE)) {
+          indexFileLen = indexInput.length();
           try {
             indexFileChecksum = CodecUtil.retrieveChecksum(indexInput);
             compareResult.checkSummed = true;
@@ -1312,47 +1312,49 @@ public class IndexFetcher {
             log.warn("Could not retrieve checksum from file.", e);
           }
         }
+      } else {
+        indexFileLen = indexDir.fileLength(filename);
+      }
 
-        if (!compareResult.checkSummed) {
-          // we don't have checksums to compare
+      if (!compareResult.checkSummed) {
+        // we don't have checksums to compare
 
-          if (indexFileLen == backupIndexFileLen) {
-            compareResult.equal = true;
-            return compareResult;
-          } else {
-            log.info(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                backupIndexFileLen,
-                indexFileLen);
-            compareResult.equal = false;
-            return compareResult;
-          }
-        }
-
-        // we have checksums to compare
-
-        if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        if (indexFileLen == backupIndexFileLen) {
           compareResult.equal = true;
           return compareResult;
         } else {
-          log.warn(
-              "File {} did not match. expected checksum is {} and actual is checksum {}. "
-                  + "expected length is {} and actual length is {}",
+          log.info(
+              "File {} did not match. expected length is {} and actual length is {}",
               filename,
-              backupIndexFileChecksum,
-              indexFileChecksum,
               backupIndexFileLen,
               indexFileLen);
           compareResult.equal = false;
           return compareResult;
         }
       }
+
+      // we have checksums to compare
+
+      if (indexFileLen == backupIndexFileLen && indexFileChecksum == backupIndexFileChecksum) {
+        compareResult.equal = true;
+        return compareResult;
+      } else {
+        log.warn(
+            "File {} did not match. expected checksum is {} and actual is checksum {}. "
+                + "expected length is {} and actual length is {}",
+            filename,
+            backupIndexFileChecksum,
+            indexFileChecksum,
+            backupIndexFileLen,
+            indexFileLen);
+        compareResult.equal = false;
+        return compareResult;
+      }
     } catch (NoSuchFileException | FileNotFoundException e) {
       compareResult.equal = false;
       return compareResult;
     } catch (IOException e) {
-      log.error("Could not read file {}. Downloading it again", filename, e);
+      log.error("Could not read file {}. Assuming it is out of date", filename, e);
       compareResult.equal = false;
       return compareResult;
     }
@@ -1383,22 +1385,9 @@ public class IndexFetcher {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
       Long checksum = (Long) file.get(CHECKSUM);
-      if (slowFileExists(dir, filename)) {
-        if (checksum != null) {
-          if (!(compareFile(dir, filename, length, checksum).equal)) {
-            // file exists and size or checksum is different, therefore we must download it again
-            return true;
-          }
-        } else {
-          if (length != dir.fileLength(filename)) {
-            log.warn(
-                "File {} did not match. expected length is {} and actual length is {}",
-                filename,
-                length,
-                dir.fileLength(filename));
-            return true;
-          }
-        }
+      if (!(compareFile(dir, filename, length, checksum).equal)) {
+        // file exists and size or checksum is different, therefore we must download it again
+        return true;
       }
     }
     return false;
