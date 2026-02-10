@@ -16,14 +16,21 @@
  */
 package org.apache.solr.response;
 
-import static org.junit.Assert.assertEquals;
-
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class NoOpResponseWriterTest {
+public class NoOpResponseWriterTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-noop.xml", "schema.xml");
+  }
 
   @Test
   public void testWrite() throws IOException {
@@ -42,5 +49,21 @@ public class NoOpResponseWriterTest {
 
     String contentType = writer.getContentType(null, null);
     assertEquals(QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8, contentType);
+  }
+
+  @Test
+  public void testCsvResponseWriterDisabled() throws Exception {
+    QueryResponseWriter csvWriter = h.getCore().getQueryResponseWriter("csv");
+
+    assertNotNull("CSV response writer should be registered", csvWriter);
+    assertTrue(
+        "CSV response writer should be NoOpResponseWriter, not the implicit CSVResponseWriter",
+        csvWriter instanceof NoOpResponseWriter);
+
+    // Verify it returns the NoOp message when used
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    csvWriter.write(out, null, null);
+    String output = out.toString(StandardCharsets.UTF_8);
+    assertEquals("CSV writer should return NoOp message", NoOpResponseWriter.MESSAGE, output);
   }
 }
