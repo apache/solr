@@ -23,13 +23,6 @@
 
   <dataDir>${solr.data.dir:}</dataDir>
 
-  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.MockDirectoryFactory}">
-    <double name="maxWriteMBPerSecDefault">1000000</double>
-    <double name="maxWriteMBPerSecFlush">2000000</double>
-    <double name="maxWriteMBPerSecMerge">3000000</double>
-    <double name="maxWriteMBPerSecRead">4000000</double>   
-  </directoryFactory>
-
   <schemaFactory class="ClassicIndexSchemaFactory"/>
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
@@ -40,12 +33,8 @@
     </updateLog>
   </updateHandler>
 
-  <query>
-    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
-  </query>
-
-  <!-- 
-    Override the implicit /schema handler (from ImplicitPlugins.json) 
+  <!--
+    Override the implicit /schema handler (from ImplicitPlugins.json)
     with NoOpRequestHandler to demonstrate that implicit handlers can be disabled
   -->
   <requestHandler name="/schema" class="solr.NoOpRequestHandler" />
@@ -59,7 +48,7 @@
     </lst>
   </requestHandler>
 
-  <!-- 
+  <!--
     Override the implicit CSV response writer (from ImplicitPlugins.json)
     with NoOpResponseWriter to demonstrate that implicit response writers can be disabled
   -->
