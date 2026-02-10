@@ -135,6 +135,12 @@ Optional configuration properties:
 `solr.crossdc.expandDbq` _<enum>_ :: If set to `expand` (default) then Delete-By-Query will be expanded before mirroring into series of Delete-By-Id, which may help with correct processing of out-of-order requests on the consumer side.
 If set to `none` then Delete-By-Query requests will be mirrored as-is.
 
+Additional configuration specific to the Kafka client library can be passed through using either
+environment variables starting with `SOLR_CROSSDC_KAFKA_` or system properties starting with
+`solr.crossdc.kafka.`. For example, to adjust the `max.poll.records` property specific to the Kafka client
+library you can set either `SOLR_CROSSDC_KAFKA_MAX_POLL_RECORDS` environment variable or `solr.crossdc.kafka.max.poll.records`
+system property.
+
 === CrossDC Manager
 
 . Start the Manager process using the included start script at `solr/cross-dc-manager/bin/cross-dc-manager` (or `cross-dc-manager.cmd` for Windows).

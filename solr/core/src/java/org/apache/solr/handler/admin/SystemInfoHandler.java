@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  
   private CoreContainer cc;
 
   public SystemInfoHandler() {

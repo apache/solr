@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Remove deprecated streamFunctions in GraphHandler for registering streaming expressions.
+type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: PR#4100
+    url: https://github.com/apache/solr/pull/4100

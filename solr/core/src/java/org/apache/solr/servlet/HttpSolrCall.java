@@ -86,6 +86,7 @@ import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.QueryResponseWriter;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditEvent.EventType;
@@ -601,7 +602,7 @@ public class HttpSolrCall {
   private boolean shouldAuthorize() {
     if (PublicKeyHandler.PATH.equals(path)) return false;
     // admin/info/key is the path where public key is exposed . it is always unsecured
-    if ("/".equals(path) || "/solr/".equals(path))
+    if (StrUtils.isNullOrEmpty(path) || "/".equals(path) || "/solr/".equals(path))
       return false; // Static Admin UI files must always be served
     if (cores.getPkiAuthenticationSecurityBuilder() != null && req.getUserPrincipal() != null) {
       boolean b = cores.getPkiAuthenticationSecurityBuilder().needsAuthorization(req);
@@ -726,7 +727,7 @@ public class HttpSolrCall {
 
   protected void logAndFlushAdminRequest(SolrQueryResponse solrResp) throws IOException {
     if (solrResp.getToLog().size() > 0) {
-      // has to come second and in it's own if to keep ./gradlew check happy.
+      // has to come second and in its own "if" to keep ./gradlew check happy.
       if (log.isInfoEnabled()) {
         log.info(
             handler != null
@@ -735,8 +736,9 @@ public class HttpSolrCall {
             solrResp.getToLogAsString("[admin]"));
       }
     }
+    // node/container requests have no core, use built-in writers
     QueryResponseWriter respWriter =
-        SolrCore.DEFAULT_RESPONSE_WRITERS.get(solrReq.getParams().get(CommonParams.WT));
+        ResponseWritersRegistry.getWriter(solrReq.getParams().get(CommonParams.WT));
     if (respWriter == null) respWriter = getResponseWriter();
     writeResponse(solrResp, respWriter, Method.getMethod(req.getMethod()));
     if (shouldAudit()) {

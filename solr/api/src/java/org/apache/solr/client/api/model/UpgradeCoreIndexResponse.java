@@ -14,15 +14,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.servlet;
+package org.apache.solr.client.api.model;
 
-/*
- * This is not pretty, hope to remove it when tracing becomes a filter.
- */
-public class ExceptionWhileTracing extends RuntimeException {
-  public Exception e;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-  public ExceptionWhileTracing(Exception e) {
-    this.e = e;
-  }
+public class UpgradeCoreIndexResponse extends SolrJerseyResponse {
+  @Schema(description = "The name of the core.")
+  @JsonProperty
+  public String core;
+
+  @Schema(description = "The total number of segments eligible for upgrade.")
+  @JsonProperty
+  public Integer numSegmentsEligibleForUpgrade;
+
+  @Schema(description = "The number of segments successfully upgraded.")
+  @JsonProperty
+  public Integer numSegmentsUpgraded;
+
+  @Schema(description = "Status of the core index upgrade operation.")
+  @JsonProperty
+  public String upgradeStatus;
 }
