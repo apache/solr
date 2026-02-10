@@ -16,28 +16,7 @@
  */
 package org.apache.solr.handler.admin;
 
-<<<<<<< HEAD
-=======
-import static org.apache.solr.common.params.CommonParams.NAME;
-
-import java.beans.BeanInfo;
-import java.beans.IntrospectionException;
-import java.beans.Introspector;
-import java.beans.PropertyDescriptor;
->>>>>>> refs/remotes/origin-solr/main
 import java.lang.invoke.MethodHandles;
-<<<<<<< HEAD
-=======
-import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
-import java.lang.management.PlatformManagedObject;
-import java.lang.management.RuntimeMXBean;
-import java.lang.reflect.Method;
-import java.net.InetAddress;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.ArrayList;
->>>>>>> refs/remotes/origin-solr/main
 import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;

@@ -54,11 +54,13 @@ public class CoreInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
+    //TODO: use NodeSystemInfoProvider
     SolrCore core = req.getCore();
 
     rsp.add("core", getCoreInfo(core, req.getSchema()));
   }
 
+  //TODO: replace by use of NodeSystemInfoProvider.getCoreInfo()
   private SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
 

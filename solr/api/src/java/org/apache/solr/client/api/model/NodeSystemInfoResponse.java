@@ -29,6 +29,7 @@ public class NodeSystemInfoResponse extends SolrJerseyResponse {
 
   /** wrapper around the node info */
   public static class NodeSystemInfo {
+    @JsonProperty public String host;
     @JsonProperty public String node;
     @JsonProperty public String mode;
     @JsonProperty public String zkHost;
