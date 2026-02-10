@@ -90,7 +90,7 @@ fasterxml = "2.20.1"
 fasterxml-woodstox = "7.0.0"
 # @keep Flexmark used in classpath
 flexmark = "0.64.8"
-google-api-gax = "2.70.0"
+google-api-gax = "2.74.1"
 # @keep for version alignment
 google-api-grpc-proto = "2.61.1"
 google-auth = "1.19.0"
