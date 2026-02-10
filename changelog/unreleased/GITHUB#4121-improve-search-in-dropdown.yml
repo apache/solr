@@ -2,3 +2,6 @@ title:  Dropdown for collection/core in Solr's backend is now using a contains-f
 type: changed
 authors:
   - name: Renato Haeberli
+links:
+- name: GITHUB#4121
+  url: https://github.com/apache/solr/pull/4121
