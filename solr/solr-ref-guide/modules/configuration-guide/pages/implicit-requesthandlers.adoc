@@ -103,19 +103,15 @@ Segments:: Return info on last commit generation Lucene index segments.
 |`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
-System Info:: Return server statistics and settings.
+Core Info:: Return core information.
 +
-*Documentation*: xref:system-info-handler.adoc[]
+*Documentation*: xref:core-info-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/system`
-
-v2: `api/node/system` |{solr-javadocs}/core/org/apache/solr/handler/admin/SystemInfoHandler.html[SystemInfoHandler] |`_ADMIN_SYSTEM`
+|v1: `solr/<collection>/admin/info`|{solr-javadocs}/core/org/apache/solr/handler/admin/CoreInfoHandler.html[CoreInfoHandler] |
 |===
-+
-This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/system` or `solr/<core>/admin/system`) which will include all of the system-level information and additional information about the specific core that served the request.
 
 Threads:: Return info on all JVM threads.
 +
