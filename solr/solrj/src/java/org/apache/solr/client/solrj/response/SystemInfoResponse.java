@@ -114,6 +114,28 @@ public class SystemInfoResponse extends SolrResponseBase {
     return nodesInfo.get(node).mode;
   }
 
+  /** Get the hostname from a single node system info */
+  public String getHost() {
+    if (nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().orElseThrow().host;
+    } else {
+      throw new UnsupportedOperationException(
+          "Multiple nodes system info available, use method 'getAllHosts', or 'getHostForNode(String)'.");
+    }
+  }
+
+  /** Get all hostnames, per node */
+  public Map<String, String> getAllHosts() {
+    Map<String, String> allHosts = new HashMap<>();
+    nodesInfo.forEach((key, value) -> allHosts.put(key, value.host));
+    return allHosts;
+  }
+
+  /** Get the hostname for the given node name */
+  public String getHostForNode(String node) {
+    return nodesInfo.get(node).host;
+  }
+
   /** Get the ZK host from a single node system info */
   public String getZkHost() {
     if (nodesInfo.size() == 1) {

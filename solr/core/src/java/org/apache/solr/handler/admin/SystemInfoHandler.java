@@ -16,7 +16,28 @@
  */
 package org.apache.solr.handler.admin;
 
+<<<<<<< HEAD
+=======
+import static org.apache.solr.common.params.CommonParams.NAME;
+
+import java.beans.BeanInfo;
+import java.beans.IntrospectionException;
+import java.beans.Introspector;
+import java.beans.PropertyDescriptor;
+>>>>>>> refs/remotes/origin-solr/main
 import java.lang.invoke.MethodHandles;
+<<<<<<< HEAD
+=======
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.management.PlatformManagedObject;
+import java.lang.management.RuntimeMXBean;
+import java.lang.reflect.Method;
+import java.net.InetAddress;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.ArrayList;
+>>>>>>> refs/remotes/origin-solr/main
 import java.util.Collection;
 import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
@@ -35,18 +56,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This handler returns system info
- *
- * @since solr 1.2
+ * This handler returns node/container level info. See {@link
+ * org.apache.solr.handler.admin.CoreInfoHandler}
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private CoreContainer cc;
-
-  public SystemInfoHandler() {
-    this(null);
-  }
 
   public SystemInfoHandler(CoreContainer cc) {
     super();

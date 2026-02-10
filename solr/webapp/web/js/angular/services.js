@@ -137,9 +137,9 @@ solrAdminServices.factory('System',
       "command": {params: {}}
     });
   }])
-.factory('CoreSystem',
+.factory('CoreInfo',
   ['$resource', function($resource) {
-    return $resource(':core/admin/system', {wt:'json', core: "@core", _:Date.now()});
+    return $resource(':core/admin/info', {wt:'json', core: "@core", _:Date.now()});
   }])
 .factory('Update',
   ['$resource', function($resource) {
