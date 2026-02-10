@@ -73,9 +73,9 @@
       "class": "solr.LukeRequestHandler",
       "useParams":"_ADMIN_LUKE"
     },
-    "/admin/system": {
-      "class": "solr.SystemInfoHandler",
-      "useParams":"_ADMIN_SYSTEM"
+    "/admin/info": {
+      "class": "solr.CoreInfoHandler",
+      "useParams":"_ADMIN_CORE"
     },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",
@@ -156,6 +156,26 @@
       "components": [
         "activetaskslist"
       ]
+    }
+  },
+  "queryResponseWriter": {
+    "geojson": {
+      "class": "solr.GeoJSONResponseWriter"
+    },
+    "graphml": {
+      "class": "solr.GraphMLResponseWriter"
+    },
+    "cbor": {
+      "class": "solr.CborResponseWriter"
+    },
+    "csv": {
+      "class": "solr.CSVResponseWriter"
+    },
+    "schema.xml": {
+      "class": "solr.SchemaXmlResponseWriter"
+    },
+    "smile": {
+      "class": "solr.SmileResponseWriter"
     }
   }
 }
