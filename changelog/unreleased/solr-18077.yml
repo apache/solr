@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: CrossDC Consumer: fix potential out-of-order Kafka partition processing
+title: "CrossDC Consumer: fix potential out-of-order Kafka partition processing"
 type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Andrzej Bialecki
