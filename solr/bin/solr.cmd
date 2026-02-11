@@ -699,7 +699,7 @@ SHIFT
 goto parse_args
 
 :set_prompt
-set "PASS_TO_RUN_EXAMPLE=--prompt %~2 !PASS_TO_RUN_EXAMPLE!"
+set "PASS_TO_RUN_EXAMPLE=--prompts %~2 !PASS_TO_RUN_EXAMPLE!"
 
 SHIFT
 goto parse_args
