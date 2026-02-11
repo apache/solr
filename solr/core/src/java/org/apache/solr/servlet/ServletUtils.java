@@ -17,10 +17,7 @@
 
 package org.apache.solr.servlet;
 
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
 import jakarta.servlet.ReadListener;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.WriteListener;
@@ -32,11 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,83 +117,6 @@ public abstract class ServletUtils {
         };
       }
     };
-  }
-
-  /**
-   * Enforces rate limiting for a request. Should be converted to a servlet filter at some point.
-   * Currently, this is tightly coupled with request tracing which is not ideal either.
-   *
-   * @param request The request to limit
-   * @param response The associated response
-   * @param limitedExecution code that will be traced
-   */
-  static void rateLimitRequest(
-      RateLimitManager rateLimitManager,
-      HttpServletRequest request,
-      HttpServletResponse response,
-      Runnable limitedExecution)
-      throws ServletException, IOException {
-    try (RequestRateLimiter.SlotReservation accepted = rateLimitManager.handleRequest(request)) {
-      if (accepted == null) {
-        response.sendError(ErrorCode.TOO_MANY_REQUESTS.code, RateLimitManager.ERROR_MESSAGE);
-        return;
-      }
-      // todo: this shouldn't be required, tracing and rate limiting should be independently
-      // composable
-      traceHttpRequestExecution2(request, response, limitedExecution);
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage());
-    }
-  }
-
-  /**
-   * Sets up tracing for an HTTP request. Perhaps should be converted to a servlet filter at some
-   * point.
-   *
-   * @param request The request to limit
-   * @param response The associated response
-   * @param tracedExecution the executed code
-   */
-  private static void traceHttpRequestExecution2(
-      HttpServletRequest request, HttpServletResponse response, Runnable tracedExecution)
-      throws ServletException, IOException {
-    Context context = TraceUtils.extractContext(request);
-    Span span = TraceUtils.startHttpRequestSpan(request, context);
-
-    final Thread currentThread = Thread.currentThread();
-    final String oldThreadName = currentThread.getName();
-    try (var scope = context.with(span).makeCurrent()) {
-      assert scope != null; // prevent javac warning about scope being unused
-      TraceUtils.setSpan(request, span);
-      TraceUtils.ifValidTraceId(
-          span, s -> MDCLoggingContext.setTracerId(s.getSpanContext().getTraceId()));
-      String traceId = MDCLoggingContext.getTraceId();
-      if (traceId != null) {
-        currentThread.setName(oldThreadName + "-" + traceId);
-      }
-      tracedExecution.run();
-    } catch (ExceptionWhileTracing e) {
-      if (e.e instanceof SolrAuthenticationException) {
-        // done, the response and status code have already been sent
-        return;
-      }
-      if (e.e instanceof ServletException) {
-        throw (ServletException) e.e;
-      }
-      if (e.e instanceof IOException) {
-        throw (IOException) e.e;
-      }
-      if (e.e instanceof RuntimeException) {
-        throw (RuntimeException) e.e;
-      } else {
-        throw new RuntimeException(e.e);
-      }
-    } finally {
-      currentThread.setName(oldThreadName);
-      TraceUtils.setHttpStatus(span, response.getStatus());
-      span.end();
-    }
   }
 
   // we make sure we read the full client request so that the client does

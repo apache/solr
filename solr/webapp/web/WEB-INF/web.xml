@@ -46,11 +46,31 @@
 
   <filter>
     <filter-name>MDCLoggingFilter</filter-name>
-    <filter-class>org.apache.solr.servlet.EssentialSolrRequestFilter</filter-class>
+    <filter-class>org.apache.solr.servlet.RequiredSolrRequestFilter</filter-class>
   </filter>
 
   <filter-mapping>
     <filter-name>MDCLoggingFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>RateLimitFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.RateLimitFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>RateLimitFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <filter>
+    <filter-name>TracingFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.TracingFilter</filter-class>
+  </filter>
+
+  <filter-mapping>
+    <filter-name>TracingFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 
