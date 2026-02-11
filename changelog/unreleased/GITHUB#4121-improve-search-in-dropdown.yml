@@ -1,4 +1,4 @@
-title:  Dropdown for collection/core in Solr's backend is now using a contains-filtering
+title:  Dropdowns for collection/core, for fields on the schema-page and for field-types on the analyze page are now using a contains-filtering
 type: changed
 authors:
   - name: Renato Haeberli
