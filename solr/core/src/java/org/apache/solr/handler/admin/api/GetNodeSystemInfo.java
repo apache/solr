@@ -20,7 +20,7 @@ import jakarta.inject.Inject;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.handler.admin.NodeSystemInfoProvider;
@@ -46,7 +46,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
 
   @Override
   @PermissionName(PermissionNameProvider.Name.CONFIG_READ_PERM)
-  public NodeSystemInfoResponse getNodeSystemInfo(String nodes) {
+  public NodeSystemResponse getNodeSystemInfo(String nodes) {
     solrQueryResponse.setHttpCaching(false);
 
     // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
@@ -63,7 +63,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
-    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
+    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     provider.getNodeSystemInfo(response);
     if (response.nodeInfo != null && log.isTraceEnabled()) {
       log.trace("Node {}, core root: {}", response.nodeInfo.node, response.nodeInfo.coreRoot);
@@ -72,7 +72,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   }
 
   @Override
-  public NodeSystemInfoResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
+  public NodeSystemResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
     solrQueryResponse.setHttpCaching(false);
 
     // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
@@ -88,13 +88,13 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
           SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
     }
 
-    NodeSystemInfoResponse response = instantiateJerseyResponse(NodeSystemInfoResponse.class);
-    response.nodeInfo = new NodeSystemInfoResponse.NodeSystemInfo();
+    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
+    response.nodeInfo = new NodeSystemResponse.NodeSystemInfo();
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
     switch (requestedInfo) {
-      case "core":
-        response.nodeInfo.core = provider.getCoreInfo();
-        break;
+//      case "core":
+//        response.nodeInfo.core = provider.getCoreInfo();
+//        break;
       case "gpu":
         response.nodeInfo.gpu = provider.getGpuInfo();
         break;

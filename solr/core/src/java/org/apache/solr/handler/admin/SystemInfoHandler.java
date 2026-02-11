@@ -22,7 +22,7 @@ import java.util.Set;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeSystemInfo;
@@ -57,7 +57,7 @@ public class SystemInfoHandler extends RequestHandlerBase {
     }
 
     NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
-    NodeSystemInfoResponse response = provider.getNodeSystemInfo(new NodeSystemInfoResponse());
+    NodeSystemResponse response = provider.getNodeSystemInfo(new NodeSystemResponse());
     // V1 does not wrap the system info into "nodeInfo" field
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response.nodeInfo);
 

@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 
@@ -32,7 +32,7 @@ public class SystemInfoResponse extends SolrResponseBase {
 
   // AdminHandlersProxy wraps nodes responses in a map.
   // Mimic that here, even if the response might be just a single node.
-  protected final Map<String, NodeSystemInfoResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
+  protected final Map<String, NodeSystemResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
 
   protected SystemInfoResponse() {
     // allow a NamedList constructor in the V2 extension
@@ -58,14 +58,14 @@ public class SystemInfoResponse extends SolrResponseBase {
   @SuppressWarnings("unchecked")
   protected void parseResponse(NamedList<Object> response) {
     if (response.get("node") == null) {
-      // multi-nodes response, NamedList of "host:port_solr"-> NodeSystemInfoResponse
+      // multi-nodes response, NamedList of "host:port_solr"-> NodeSystemResponse
       for (Entry<String, Object> node : response) {
         if (node.getKey().endsWith("_solr")) {
           nodesInfo.put(
               node.getKey(),
               JacksonContentWriter.DEFAULT_MAPPER.convertValue(
                   removeHeader((NamedList<Object>) node.getValue()),
-                  NodeSystemInfoResponse.NodeSystemInfo.class));
+                  NodeSystemResponse.NodeSystemInfo.class));
         }
       }
 
@@ -75,7 +75,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         nodesInfo.put(
             null,
             JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                removeHeader(response), NodeSystemInfoResponse.NodeSystemInfo.class));
+                removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
       }
 
     } else {
@@ -83,7 +83,7 @@ public class SystemInfoResponse extends SolrResponseBase {
       nodesInfo.put(
           response.get("node").toString(),
           JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              removeHeader(response), NodeSystemInfoResponse.NodeSystemInfo.class));
+              removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
     }
   }
 
@@ -236,7 +236,7 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for a single node */
-  public NodeSystemInfoResponse.NodeSystemInfo getNodeResponse() {
+  public NodeSystemResponse.NodeSystemInfo getNodeResponse() {
     if (nodesInfo.size() == 1) {
       return nodesInfo.values().stream().findFirst().get();
     } else {
@@ -246,12 +246,12 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get all {@code NodeSystemResponse}s */
-  public Map<String, NodeSystemInfoResponse.NodeSystemInfo> getAllNodeResponses() {
+  public Map<String, NodeSystemResponse.NodeSystemInfo> getAllNodeResponses() {
     return nodesInfo;
   }
 
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for the given node name */
-  public NodeSystemInfoResponse.NodeSystemInfo getNodeResponseForNode(String node) {
+  public NodeSystemResponse.NodeSystemInfo getNodeResponseForNode(String node) {
     return nodesInfo.get(node);
   }
 

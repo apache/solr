@@ -21,7 +21,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.Constants;
 
 /** V2 API definition to fetch node system info, analogous to the v1 /admin/info/system. */
@@ -32,14 +32,14 @@ public interface NodeSystemInfoApi {
   @Operation(
       summary = "Retrieve all node system info.",
       tags = {"system"})
-  NodeSystemInfoResponse getNodeSystemInfo(@QueryParam(value = "nodes") String nodes);
+  NodeSystemResponse getNodeSystemInfo(@QueryParam(value = "nodes") String nodes);
 
   @GET
   @Operation(
       summary = "Retrieve specific node system info.",
       tags = {"system"})
   @Path("/{requestedInfo}")
-  NodeSystemInfoResponse getSpecificNodeSystemInfo(
+  NodeSystemResponse getSpecificNodeSystemInfo(
       @PathParam(value = "requestedInfo") String requestedInfo,
       @QueryParam(value = "nodes") String nodes);
 }

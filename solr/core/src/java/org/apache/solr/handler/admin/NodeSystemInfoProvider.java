@@ -46,7 +46,7 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
@@ -111,11 +111,11 @@ public class NodeSystemInfoProvider {
   }
 
   /** Fill-out the provided response with all system info. */
-  public NodeSystemInfoResponse getNodeSystemInfo(NodeSystemInfoResponse response) {
-    NodeSystemInfoResponse.NodeSystemInfo info = new NodeSystemInfoResponse.NodeSystemInfo();
+  public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
+    NodeSystemResponse.NodeSystemInfo info = new NodeSystemResponse.NodeSystemInfo();
 
-    SolrCore core = req.getCore();
-    if (core != null) info.core = getCoreInfo();
+    //SolrCore core = req.getCore();
+    //if (core != null) info.core = getCoreInfo();
 
     if (cc != null) {
       info.solrHome = cc.getSolrHome().toString();
@@ -154,37 +154,37 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get core info */
-  public NodeSystemInfoResponse.Core getCoreInfo() {
-    NodeSystemInfoResponse.Core info = new NodeSystemInfoResponse.Core();
-
-    SolrCore core = req.getCore();
-    IndexSchema schema = req.getSchema();
-
-    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
-    info.host = hostname;
-    info.now = new Date();
-    info.start = core.getStartTimeStamp();
-
-    // Solr Home
-    NodeSystemInfoResponse.Directory dirs = new NodeSystemInfoResponse.Directory();
-    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
-    dirs.instance = core.getInstancePath().toString();
-    try {
-      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-      dirs.data = "N/A";
-    }
-    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
-    try {
-      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-      dirs.index = "N/A";
-    }
-    info.directory = dirs;
-    return info;
-  }
+//  public NodeSystemResponse.Core getCoreInfo() {
+//    NodeSystemResponse.Core info = new NodeSystemResponse.Core();
+//
+//    SolrCore core = req.getCore();
+//    IndexSchema schema = req.getSchema();
+//
+//    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
+//    info.host = hostname;
+//    info.now = new Date();
+//    info.start = core.getStartTimeStamp();
+//
+//    // Solr Home
+//    NodeSystemResponse.Directory dirs = new NodeSystemResponse.Directory();
+//    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
+//    dirs.instance = core.getInstancePath().toString();
+//    try {
+//      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
+//    } catch (IOException e) {
+//      log.warn("Problem getting the normalized data directory path", e);
+//      dirs.data = "N/A";
+//    }
+//    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
+//    try {
+//      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
+//    } catch (IOException e) {
+//      log.warn("Problem getting the normalized index directory path", e);
+//      dirs.index = "N/A";
+//    }
+//    info.directory = dirs;
+//    return info;
+//  }
 
   /** Get system info */
   public Map<String, String> getSystemInfo() {
@@ -208,8 +208,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get JVM Info - including memory info */
-  public NodeSystemInfoResponse.JVM getJvmInfo() {
-    NodeSystemInfoResponse.JVM jvm = new NodeSystemInfoResponse.JVM();
+  public NodeSystemResponse.JVM getJvmInfo() {
+    NodeSystemResponse.JVM jvm = new NodeSystemResponse.JVM();
 
     final String javaVersion = System.getProperty("java.specification.version", "unknown");
     final String javaVendor = System.getProperty("java.specification.vendor", "unknown");
@@ -225,18 +225,18 @@ public class NodeSystemInfoProvider {
     jvm.name = jreVendor + " " + vmName;
 
     // details
-    NodeSystemInfoResponse.Vendor spec = new NodeSystemInfoResponse.Vendor();
+    NodeSystemResponse.Vendor spec = new NodeSystemResponse.Vendor();
     spec.vendor = javaVendor;
     spec.name = javaName;
     spec.version = javaVersion;
     jvm.spec = spec;
 
-    NodeSystemInfoResponse.Vendor jre = new NodeSystemInfoResponse.Vendor();
+    NodeSystemResponse.Vendor jre = new NodeSystemResponse.Vendor();
     jre.vendor = jreVendor;
     jre.version = jreVersion;
     jvm.jre = jre;
 
-    NodeSystemInfoResponse.Vendor vm = new NodeSystemInfoResponse.Vendor();
+    NodeSystemResponse.Vendor vm = new NodeSystemResponse.Vendor();
     vm.vendor = vmVendor;
     vm.name = vmName;
     vm.version = vmVersion;
@@ -248,8 +248,8 @@ public class NodeSystemInfoProvider {
     // not thread safe, but could be thread local
     DecimalFormat df = new DecimalFormat("#.#", DecimalFormatSymbols.getInstance(Locale.ROOT));
 
-    NodeSystemInfoResponse.JvmMemory mem = new NodeSystemInfoResponse.JvmMemory();
-    NodeSystemInfoResponse.JvmMemoryRaw raw = new NodeSystemInfoResponse.JvmMemoryRaw();
+    NodeSystemResponse.JvmMemory mem = new NodeSystemResponse.JvmMemory();
+    NodeSystemResponse.JvmMemoryRaw raw = new NodeSystemResponse.JvmMemoryRaw();
     long free = runtime.freeMemory();
     long max = runtime.maxMemory();
     long total = runtime.totalMemory();
@@ -269,7 +269,7 @@ public class NodeSystemInfoProvider {
     jvm.memory = mem;
 
     // JMX properties
-    NodeSystemInfoResponse.JvmJmx jmx = new NodeSystemInfoResponse.JvmJmx();
+    NodeSystemResponse.JvmJmx jmx = new NodeSystemResponse.JvmJmx();
     try {
       RuntimeMXBean mx = ManagementFactory.getRuntimeMXBean();
       if (mx.isBootClassPathSupported()) {
@@ -293,8 +293,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get Security Info */
-  public NodeSystemInfoResponse.Security getSecurityInfo() {
-    NodeSystemInfoResponse.Security info = new NodeSystemInfoResponse.Security();
+  public NodeSystemResponse.Security getSecurityInfo() {
+    NodeSystemResponse.Security info = new NodeSystemResponse.Security();
 
     if (cc != null) {
       if (cc.getAuthenticationPlugin() != null) {
@@ -336,8 +336,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get Lucene and Solr versions */
-  public NodeSystemInfoResponse.Lucene getLuceneInfo() {
-    NodeSystemInfoResponse.Lucene info = new NodeSystemInfoResponse.Lucene();
+  public NodeSystemResponse.Lucene getLuceneInfo() {
+    NodeSystemResponse.Lucene info = new NodeSystemResponse.Lucene();
 
     Package p = SolrCore.class.getPackage();
     String specVersion = p.getSpecificationVersion();
@@ -354,8 +354,8 @@ public class NodeSystemInfoProvider {
   }
 
   /** Get GPU info */
-  public NodeSystemInfoResponse.GPU getGpuInfo() {
-    NodeSystemInfoResponse.GPU gpuInfo = new NodeSystemInfoResponse.GPU();
+  public NodeSystemResponse.GPU getGpuInfo() {
+    NodeSystemResponse.GPU gpuInfo = new NodeSystemResponse.GPU();
     gpuInfo.available = false; // set below if available
 
     try {
@@ -375,7 +375,7 @@ public class NodeSystemInfoProvider {
         long gpuMemoryFree = provider.getGpuMemoryFree();
 
         if (gpuMemoryTotal > 0) {
-          NodeSystemInfoResponse.MemoryRaw memory = new NodeSystemInfoResponse.MemoryRaw();
+          NodeSystemResponse.MemoryRaw memory = new NodeSystemResponse.MemoryRaw();
           memory.total = gpuMemoryTotal;
           memory.used = gpuMemoryUsed;
           memory.free = gpuMemoryFree;

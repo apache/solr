@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.response;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import org.apache.solr.client.api.model.NodeSystemInfoResponse;
+import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
@@ -45,6 +45,6 @@ public class SystemInfoV2Response extends SystemInfoResponse {
     nodesInfo.put(
         nodeName,
         JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-            info, NodeSystemInfoResponse.NodeSystemInfo.class));
+            info, NodeSystemResponse.NodeSystemInfo.class));
   }
 }
