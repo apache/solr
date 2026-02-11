@@ -92,6 +92,7 @@ import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.ResponseWritersRegistry;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.AuthorizationContext;
@@ -615,12 +616,12 @@ public class SolrConfigHandler extends RequestHandlerBase
         CommandOperation op, ConfigOverlay overlay, String typ) {
       String name = op.getStr(CommandOperation.ROOT_OBJ);
       if (op.hasError()) return overlay;
-      
+
       // Check if it exists in the overlay
       if (overlay.getNamedPlugins(typ).containsKey(name)) {
         return overlay.deleteNamedPlugin(name, typ);
       }
-      
+
       // Check if it's an implicit handler (for requestHandler type)
       if (SolrRequestHandler.TYPE.equals(typ)) {
         List<PluginInfo> implicitHandlers = req.getCore().getImplicitHandlers();
@@ -631,15 +632,16 @@ public class SolrConfigHandler extends RequestHandlerBase
           }
         }
       }
-      
+
       // Check if it's a default response writer (for queryResponseWriter type)
       if ("queryResponseWriter".equals(typ)) {
-        if (SolrCore.DEFAULT_RESPONSE_WRITERS.containsKey(name)) {
-          // It's a default response writer, so we can delete it by adding a tombstone marker
+        if (ResponseWritersRegistry.hasWriter(name)) {
+          // It's a node/container level response writer, we can delete it by adding a tombstone
+          // marker
           return overlay.deleteNamedPlugin(name, typ);
         }
       }
-      
+
       // Not found anywhere
       op.addError(formatString("NO such {0} ''{1}'' ", typ, name));
       return overlay;
