@@ -31,6 +31,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.RequestApplyCoreUpdatesPayload;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 
 /**
@@ -58,7 +59,7 @@ public class RequestApplyCoreUpdatesAPI {
   public void requestApplyCoreUpdates(PayloadObj<RequestApplyCoreUpdatesPayload> obj)
       throws Exception {
     final RequestApplyCoreUpdatesPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, REQUESTAPPLYUPDATES.name().toLowerCase(Locale.ROOT));
     v1Params.put(NAME, obj.getRequest().getPathTemplateValues().get("core"));
 

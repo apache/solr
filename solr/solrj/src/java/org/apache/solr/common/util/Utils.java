@@ -179,7 +179,7 @@ public class Utils {
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
-      v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+      v = new SimpleOrderedMap<>((MapWriter) v);
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       List<Object> l = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
@@ -1027,7 +1027,7 @@ public class Utils {
    * <p>The provided object is not required to be a {@link MapWriter}.
    */
   public static Map<String, Object> reflectToMap(Object toReflect) {
-    return ((Utils.DelegateReflectWriter) Utils.getReflectWriter(toReflect)).toMap(new HashMap<>());
+    return convertToMap((MapWriter) Utils.getReflectWriter(toReflect), new HashMap<>());
   }
 
   @SuppressWarnings({"unchecked", "rawtypes"})
@@ -1041,12 +1041,13 @@ public class Utils {
             }
 
             private MapWriter.EntryWriter writeEntry(CharSequence k, Object v) {
-              if (v instanceof MapWriter) v = ((MapWriter) v).toMap(new LinkedHashMap<>());
+              if (v instanceof MapWriter) v = convertToMap((MapWriter) v, new LinkedHashMap<>());
               if (v instanceof IteratorWriter) v = ((IteratorWriter) v).toList(new ArrayList<>());
               if (v instanceof Iterable) {
                 List lst = new ArrayList();
                 for (Object vv : (Iterable) v) {
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   lst.add(vv);
@@ -1057,7 +1058,8 @@ public class Utils {
                 Map map = new LinkedHashMap();
                 for (Map.Entry<?, ?> entry : ((Map<?, ?>) v).entrySet()) {
                   Object vv = entry.getValue();
-                  if (vv instanceof MapWriter) vv = ((MapWriter) vv).toMap(new LinkedHashMap<>());
+                  if (vv instanceof MapWriter)
+                    vv = convertToMap((MapWriter) vv, new LinkedHashMap<>());
                   if (vv instanceof IteratorWriter)
                     vv = ((IteratorWriter) vv).toList(new ArrayList<>());
                   map.put(entry.getKey(), vv);

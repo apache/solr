@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -30,13 +31,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.ConfigNode;
-import org.apache.solr.common.MapSerializable;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.DOMConfigNode;
 import org.w3c.dom.Node;
 
 /** An Object which represents a Plugin of any type */
-public class PluginInfo implements MapSerializable {
+public class PluginInfo implements MapWriter {
   public final String name, className, type, pkgName;
   public final ClassName cName;
   public final NamedList<Object> initArgs;
@@ -193,27 +195,19 @@ public class PluginInfo implements MapSerializable {
   }
 
   @Override
-  @SuppressWarnings({"unchecked", "rawtypes"})
-  public Map<String, Object> toMap(Map<String, Object> map) {
-    map.putAll(attributes);
-    Map m = map;
-    if (initArgs != null) m.putAll(initArgs.asMap(3));
-    if (children != null) {
-      for (PluginInfo child : children) {
-        Object old = m.get(child.name);
-        if (old == null) {
-          m.put(child.name, child.toMap(new LinkedHashMap<>()));
-        } else if (old instanceof List list) {
-          list.add(child.toMap(new LinkedHashMap<>()));
-        } else {
-          ArrayList l = new ArrayList();
-          l.add(old);
-          l.add(child.toMap(new LinkedHashMap<>()));
-          m.put(child.name, l);
-        }
-      }
+  @SuppressWarnings("unchecked")
+  public void writeMap(EntryWriter ew) throws IOException {
+    new NamedList<>(attributes).writeMap(ew);
+    if (initArgs != null) {
+      new SimpleOrderedMap<>(initArgs).writeMap(ew);
     }
-    return m;
+    if (children == null || children.isEmpty()) {
+      return;
+    }
+
+    for (PluginInfo child : children) {
+      child.writeMap(ew);
+    }
   }
 
   /**

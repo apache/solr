@@ -23,7 +23,6 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Locale;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -81,8 +80,7 @@ public class InstallShardDataCmd implements CollApiCmds.CollectionApiCommand {
     final ModifiableSolrParams coreApiParams = new ModifiableSolrParams();
     coreApiParams.set(
         CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.INSTALLCOREDATA.toString());
-    typedMessage.toMap(new HashMap<>()).forEach((k, v) -> coreApiParams.set(k, v.toString()));
-
+    typedMessage._forEachEntry((k, v) -> coreApiParams.set(String.valueOf(k), String.valueOf(v)));
     // Send the core-admin request to each replica in the slice
     final ShardHandler shardHandler = ccc.newShardHandler();
     shardRequestTracker.sliceCmd(clusterState, coreApiParams, null, installSlice, shardHandler);

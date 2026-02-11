@@ -29,6 +29,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.request.beans.MigrateDocsPayload;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.admin.CollectionsHandler;
 
 /**
@@ -55,7 +56,7 @@ public class MigrateDocsAPI {
   @Command(name = V2_MIGRATE_DOCS_CMD)
   public void migrateDocs(PayloadObj<MigrateDocsPayload> obj) throws Exception {
     final MigrateDocsPayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+    final Map<String, Object> v1Params = Utils.convertToMap(v2Body, new HashMap<>());
     v1Params.put(ACTION, CollectionParams.CollectionAction.MIGRATE.toLower());
     v1Params.put(COLLECTION, obj.getRequest().getPathTemplateValues().get(COLLECTION));
 
