@@ -343,7 +343,7 @@ goto err
 @echo.
 @echo   -y/--no-prompt Don't prompt for input; accept all defaults when running examples that accept user input
 @echo.
-@echo   --prompts values Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
+@echo   --prompts "values" Don't prompt for input; comma delimited list of inputs read when running examples that accept user input.
 @echo.
 @echo   --verbose and -q/--quiet Verbose or quiet logging. Sets default log level to DEBUG or WARN instead of INFO
 @echo.
@@ -701,6 +701,7 @@ goto parse_args
 :set_prompts
 set "PASS_TO_RUN_EXAMPLE=--prompts %~2 !PASS_TO_RUN_EXAMPLE!"
 
+SHIFT
 SHIFT
 goto parse_args
 
