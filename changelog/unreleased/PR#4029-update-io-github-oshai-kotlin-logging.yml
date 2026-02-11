@@ -1,0 +1,7 @@
+title: Update io.github.oshai:kotlin-logging to v7.0.14
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4029
+  url: https://github.com/apache/solr/pull/4029
