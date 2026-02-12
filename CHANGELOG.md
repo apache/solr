@@ -60,14 +60,14 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Migrate Schema Designer to use FileStore API instead of BlobHandler for persisting working data. [SOLR-17852](https://issues.apache.org/jira/browse/SOLR-17852) (Eric Pugh)
 - Export tool should properly output exported documents in json, json w/ lines, and javabin formats. [SOLR-17867](https://issues.apache.org/jira/browse/SOLR-17867) (Eric Pugh)
 - Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. [SOLR-17926](https://issues.apache.org/jira/browse/SOLR-17926) (Andrzej Bialecki) (hossman)
-- MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now also be configured with a single plugin. [SOLR-17930](https://issues.apache.org/jira/browse/SOLR-17930)
+- MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now also be configured with a single plugin. [SOLR-17930](https://issues.apache.org/jira/browse/SOLR-17930) 
 - `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. [SOLR-17943](https://issues.apache.org/jira/browse/SOLR-17943) (James Dyer)
 - Return structured error information in responses, parse correctly in SolrJ to give useful SolrExceptions [SOLR-17998](https://issues.apache.org/jira/browse/SOLR-17998) [PR#1382](https://github.com/apache/solr/pull/1382) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 - PropertiesInputStream overrides bulk read method, and rename it to IndexInputInputStream to match symmetrical class IndexOutputOutputStream. [SOLR-18029](https://issues.apache.org/jira/browse/SOLR-18029) (Pierre Salagnac)
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
 - Rename vector search parameters and language model modules [SOLR-17927](https://issues.apache.org/jira/browse/SOLR-17927) (Ishan Chattopadhyaya) (Alessandro Benedetti) (Ilaria Petreti) (Chaitali Rajhans)
 
-### Fixed (7 changes)
+### Fixed (8 changes)
 
 - Restore actual infoStream logging when infoStream in solrconfig.xml is set to true. [SOLR-11373](https://issues.apache.org/jira/browse/SOLR-11373) (Eric Pugh)
 - ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. [SOLR-17294](https://issues.apache.org/jira/browse/SOLR-17294) (Mark Miller) (Jason Gerlowski)
@@ -76,6 +76,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES [SOLR-17940](https://issues.apache.org/jira/browse/SOLR-17940) (hossman)
 - Add the Jackson BOM import to solrj [SOLR-18003](https://issues.apache.org/jira/browse/SOLR-18003) ([Mark Prins](https://github.com/mprins) @mprins)
 - Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint [SOLR-18004](https://issues.apache.org/jira/browse/SOLR-18004) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (David Smiley)
+- Stale EndpointIterator state causes unexpected order when there are zombie servers in LBSolrClient [SOLR-18086](https://issues.apache.org/jira/browse/SOLR-18086) (Chris Hostetter) (Anshum Gupta)
 
 ### Removed (54 changes)
 
@@ -110,7 +111,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Removed the Hadoop Auth module, and thus Kerberos authentication and other exotic options. [SOLR-17540](https://issues.apache.org/jira/browse/SOLR-17540) (Eric Pugh)
 - Remove code in Assign used for backwards compatibility with Collections created prior to 7.0 [SOLR-17564](https://issues.apache.org/jira/browse/SOLR-17564) (Paul McArthur)
 - Remove deprecated master/slave option language from ReplicationHandler. [SOLR-17576](https://issues.apache.org/jira/browse/SOLR-17576) (Eric Pugh)
-- Removed the HDFS module and therefore support for storing indexes in HDFS. Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package. [SOLR-17609](https://issues.apache.org/jira/browse/SOLR-17609)
+- Removed the HDFS module and therefore support for storing indexes in HDFS. Existing "blockcache" code preserved by migrating it to core o.a.s.blackcache package. [SOLR-17609](https://issues.apache.org/jira/browse/SOLR-17609) 
 - Removed the "version" parameter that the SolrJ client would add to almost all Solr requests in relation to the version of the response format parsing ("wt" param). [SOLR-17634](https://issues.apache.org/jira/browse/SOLR-17634) (David Smiley)
 - Removed deprecated ExternalFileField field type. [SOLR-17655](https://issues.apache.org/jira/browse/SOLR-17655) (Eric Pugh)
 - Removed deprecated CurrencyField field type. [SOLR-17683](https://issues.apache.org/jira/browse/SOLR-17683) (Eric Pugh)
@@ -254,9 +255,13 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Upgrade to Lucene 10.3.1 [SOLR-17631](https://issues.apache.org/jira/browse/SOLR-17631) [SOLR-17917](https://issues.apache.org/jira/browse/SOLR-17917) (Ishan Chattopadhyaya) (noble) (Jason Gerlowski) (Eric Pugh) (janhoy) (Christine Poerschke) (hossman)
 - Upgrade Apache Lucene to 10.3.2 [SOLR-17997](https://issues.apache.org/jira/browse/SOLR-17997) (Anshum Gupta)
 
+### Security (1 change)
+
+- Ensure File Store API "getFrom" param rejects values not in liveNodes [SOLR-18014](https://issues.apache.org/jira/browse/SOLR-18014) (Jason Gerlowski) (monkeontheroof)
+
 ### Other (39 changes)
 
-- Logs: removed webapp=/solr and also removed from internal context map. [PR#3758](https://github.com/apache/solr/pull/3758)
+- Logs: removed webapp=/solr and also removed from internal context map. [PR#3758](https://github.com/apache/solr/pull/3758) 
 - Deprecate CloudSolrClient's ZooKeeper Hosts constructor. [SOLR-14070](https://issues.apache.org/jira/browse/SOLR-14070) (Abhishek Umarjikar)
 - Switch from SysV init script to systemd service definition [SOLR-14410](https://issues.apache.org/jira/browse/SOLR-14410) (Marius Ghita)
 - SolrJ modules like SolrJ-Zookeeper are now opt-in from a Maven POM perspective. Previously, the modules would come transitively. [SOLR-15730](https://issues.apache.org/jira/browse/SOLR-15730) (David Smiley)
@@ -356,7 +361,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Avoid creating grouping shard requests when timeAllowed has already run out. [SOLR-17869](https://issues.apache.org/jira/browse/SOLR-17869) (Andrzej Bialecki) (hossman)
 - Http2SolrClient wasn't honoring idle timeout configuration above 30 seconds -- a regression. [SOLR-17871](https://issues.apache.org/jira/browse/SOLR-17871) (Thomas Wöckinger) (David Smiley)
 - Http2SolrClient: followRedirects=true: if Http2SolrClient was created with followRedirects=true, and then was used to create future clients (via builder.withHttpClient), then redirect processing was wrongly disabled on the shared instance. [SOLR-17876](https://issues.apache.org/jira/browse/SOLR-17876) (David Smiley)
-- SolrCLI tools such as "bin/solr zk" can now access jars located in `&lt;install_dir&gt;/lib`. [SOLR-17883](https://issues.apache.org/jira/browse/SOLR-17883)
+- SolrCLI tools such as "bin/solr zk" can now access jars located in `&lt;install_dir&gt;/lib`. [SOLR-17883](https://issues.apache.org/jira/browse/SOLR-17883) 
 - Fix for LB/Cloud SolrClients that could leak on close() if concurrent request failed and triggered zombie server logic. [SOLR-3696](https://issues.apache.org/jira/browse/SOLR-3696) (hossman)
 
 ### Dependency Upgrades (37 changes)
@@ -593,7 +598,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 - Introduce unit testing for AssertTool. [SOLR-11318](https://issues.apache.org/jira/browse/SOLR-11318) (Eric Pugh) (Jason Gerlowski)
 - NamedList: deprecating methods: forEachEntry, forEachKey, abortableForEachKey, abortableForEach, asMap (no-arg only), get(key, default). Added getOrDefault. Deprecated the SimpleMap interface as well as the entirety of the SolrJ package org.apache.solr.cluster.api, which wasn't used except for SimpleMap. [SOLR-14680](https://issues.apache.org/jira/browse/SOLR-14680) (David Smiley)
-- "&lt;lib/&gt;" tags in solrconfig.xml are now quietly ignored by default unless explicitly enabled with the `SOLR_CONFIG_LIB_ENABLED=true` enviroment variable (or corresponding sysprop). These tags are now considered deprecated and will be removed in Solr 10. [SOLR-16781](https://issues.apache.org/jira/browse/SOLR-16781)
+- "&lt;lib/&gt;" tags in solrconfig.xml are now quietly ignored by default unless explicitly enabled with the `SOLR_CONFIG_LIB_ENABLED=true` enviroment variable (or corresponding sysprop). These tags are now considered deprecated and will be removed in Solr 10. [SOLR-16781](https://issues.apache.org/jira/browse/SOLR-16781) 
 - Fix Gradle build sometimes gives spurious "unreferenced license file" warnings. [SOLR-17142](https://issues.apache.org/jira/browse/SOLR-17142) (Uwe Schindler)
 - Remove Deprecated URL and replace it with URI in Preparation for Java 21 [SOLR-17321](https://issues.apache.org/jira/browse/SOLR-17321) (Sanjay Dutt) (David Smiley) (Uwe Schindler)
 - Move Zk Arg parsing into Java Code from bin/solr scripts. [SOLR-17359](https://issues.apache.org/jira/browse/SOLR-17359) (Eric Pugh) (Rahul Goswami)
@@ -861,7 +866,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Deprecate the V2RequestSupport interface, and the associated `setUseV2` and `setUseBinaryV2` SolrRequest methods. SolrJ users looking to make use of v2 APIs in their applications can use the SolrRequest implementations dedicated to that purpose. [SOLR-17042](https://issues.apache.org/jira/browse/SOLR-17042) (Jason Gerlowski)
 - package CLI tool prints error JSONPath [SOLR-17072](https://issues.apache.org/jira/browse/SOLR-17072) (Mikhail Khludnev)
 - The `train_and_upload_demo_model.py` script referenced in LTR documentation now uses Python3 [SOLR-17078](https://issues.apache.org/jira/browse/SOLR-17078) (Jason Gerlowski)
-- dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting cloud.sh has been updated to ignore the -slim.tgz version of the tarball. [SOLR-17091](https://issues.apache.org/jira/browse/SOLR-17091)
+- dev tools script cloud.sh became broken after changes in 9.3 added a new -slim.tgz file it was not expecting cloud.sh has been updated to ignore the -slim.tgz version of the tarball. [SOLR-17091](https://issues.apache.org/jira/browse/SOLR-17091) 
 
 
 [9.4.1] - 2024-01-18
@@ -940,7 +945,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Auto configure tracer without a &lt;tracerConfig&gt; tag in solr.xml [SOLR-16938](https://issues.apache.org/jira/browse/SOLR-16938) (Alex Deparvu)
 - Users can pass Java system properties to the SolrCLI via the SOLR_TOOL_OPTS environment variable. [SOLR-16940](https://issues.apache.org/jira/browse/SOLR-16940) (Houston Putman)
 - The SolrCLI now uses a smarter default for the Solr URL if none is provided, using the same envVars used when running Solr. [SOLR-16941](https://issues.apache.org/jira/browse/SOLR-16941) (Houston Putman)
-- SimpleTracer propagation for manual transaction ids [SOLR-16950](https://issues.apache.org/jira/browse/SOLR-16950)
+- SimpleTracer propagation for manual transaction ids [SOLR-16950](https://issues.apache.org/jira/browse/SOLR-16950) 
 - Make the internal CoresLocator implementation configurable in solr.xml [SOLR-16959](https://issues.apache.org/jira/browse/SOLR-16959) (Vincent Primault) (David Smiley)
 - The solr.jetty.ssl.sniHostCheck option now defaults to the value of SOLR_SSL_CHECK_PEER_NAME, if it is provided. This will enable client and server hostName check settings to be governed by the same environment variable. If users want separate client/server settings, they can manually override the solr.jetty.ssl.sniHostCheck option in SOLR_OPTS. [SOLR-16964](https://issues.apache.org/jira/browse/SOLR-16964) (Houston Putman)
 - Some ConfigSet operations formerly required that solrconfig.xml exist but should not have because the name of the file is configurable when creating cores / collections. [SOLR-16967](https://issues.apache.org/jira/browse/SOLR-16967) (David Smiley)
@@ -998,7 +1003,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 - Fix typos in org.apache.solr.core package [PR#1629](https://github.com/apache/solr/pull/1629) (Andrey Bozhko) (Marcus Eagan)
 - new SolrJettyTestRule for tests needing HTTP or Jetty. [SOLR-16623](https://issues.apache.org/jira/browse/SOLR-16623) (David Smiley) (Joshua Ouma)
-- Remove dependencies on methods defined in the SimplePostTool from Solr core and solrj modules. [SOLR-16803](https://issues.apache.org/jira/browse/SOLR-16803)
+- Remove dependencies on methods defined in the SimplePostTool from Solr core and solrj modules. [SOLR-16803](https://issues.apache.org/jira/browse/SOLR-16803) 
 - Eliminate special case code in Solr CLI by introducing explicit VersionTool.java. [SOLR-16842](https://issues.apache.org/jira/browse/SOLR-16842) (Eric Pugh) (Will White)
 - The default auto-soft-commit time has been set to 3 seconds. Previously, auto-soft-commit was disabled by default. [SOLR-16856](https://issues.apache.org/jira/browse/SOLR-16856) (Houston Putman)
 - Lower the AffinityPlacementPlugin's default minimalFreeDiskGB to 5 GB [SOLR-16915](https://issues.apache.org/jira/browse/SOLR-16915) (Houston Putman)
@@ -1210,7 +1215,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - FileSystemConfigSetService: implement the abstraction completely. It could be useful for putting ConfigSets on a shared file system. [SOLR-15787](https://issues.apache.org/jira/browse/SOLR-15787) (Nazerke Seidan) (David Smiley)
 - Certain Jetty "server" jars (jetty-util, jetty-io, etc.) are no longer duplicated between server/lib and WEB-INF/lib. All shared jars now live in server/lib/ext. By default, Jetty does not allow these jars to be shared by the Jetty server and the web-app (Solr). In order to accomplish this, explicit exclusions have been added to server/contexts/solr-jetty-context.xml that allow these "server" jars to be shared. Solr Core also no longer contains the JettySolrRunner (now living in the testing framework), removing the need for Jetty Server dependencies in solr-core. [SOLR-16158](https://issues.apache.org/jira/browse/SOLR-16158) (Houston Putman)
 - WARN when restoring backup if ConfigSet with same name already exists [SOLR-16302](https://issues.apache.org/jira/browse/SOLR-16302) (Albert Moser) (Kevin Risden)
-- A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive. ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}` DELETEREPLICAPROP is now `DELETE /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop` [SOLR-16392](https://issues.apache.org/jira/browse/SOLR-16392)
+- A number of v2 "replica" endpoints have been updated to be more REST-ful, and hopefully, intuitive. ADDREPLICAPROP is now `PUT /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop {"value": $val}` DELETEREPLICAPROP is now `DELETE /api/collections/$coll/shards/$shard/replicas/$rep/properties/$prop` [SOLR-16392](https://issues.apache.org/jira/browse/SOLR-16392) 
 - The path of the v2 "list alias" API has been tweaked slightly to be more intuitive, and is now available at `GET /api/aliases`. It is also now possible to request information about a specific alias at `GET /api/aliases/&lt;aliasName&gt;`. [SOLR-16393](https://issues.apache.org/jira/browse/SOLR-16393) (Alex Deparvu) (Jason Gerlowski)
 - /mlt now has a v2 API available at `GET /api/collections/collName/mlt` [SOLR-16397](https://issues.apache.org/jira/browse/SOLR-16397) (Ameer Albahem) (Jason Gerlowski)
 - Introducing `{!mlt_content}foo bar` to cover existing `/mlt` handler functionality for SolrCloud. [SOLR-16420](https://issues.apache.org/jira/browse/SOLR-16420) (Mikhail Khludnev)
@@ -2085,7 +2090,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- Internal logic for identifying 'Solr Home' has been refactored to make testing less error prone. Plugin developers using SolrPaths.locateSolrHome() or 'new SolrResourceLoader' should check deprecation warnings as existing some existing functionality will be removed in 9.0. See SOLR-14934 for more details. [SOLR-14934](https://issues.apache.org/jira/browse/SOLR-14934)
+- Internal logic for identifying 'Solr Home' has been refactored to make testing less error prone. Plugin developers using SolrPaths.locateSolrHome() or 'new SolrResourceLoader' should check deprecation warnings as existing some existing functionality will be removed in 9.0. See SOLR-14934 for more details. [SOLR-14934](https://issues.apache.org/jira/browse/SOLR-14934) 
 
 ### Added (3 changes)
 
@@ -2319,7 +2324,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Introducing {!bool excludeTags=...} for Query DSL. [SOLR-14539](https://issues.apache.org/jira/browse/SOLR-14539) (Mikhail Khludnev)
 - Add BlockMax-WAND support to ReRank queries [SOLR-14552](https://issues.apache.org/jira/browse/SOLR-14552) (Tomás Fernández Löbbe)
 - Add BlockMax-WAND support for queries where the score is requested [SOLR-14554](https://issues.apache.org/jira/browse/SOLR-14554) (Tomás Fernández Löbbe)
-- CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property 'solr.allowPaths' that allows you to add other allowed paths when needed. [SOLR-14561](https://issues.apache.org/jira/browse/SOLR-14561)
+- CoreAdminAPI's parameters instanceDir and dataDir are now validated, and must be relative to either SOLR_HOME, SOLR_DATA_HOME or coreRootDir. Added new solr.xml config 'allowPaths', controlled by system property 'solr.allowPaths' that allows you to add other allowed paths when needed. [SOLR-14561](https://issues.apache.org/jira/browse/SOLR-14561) 
 - Limit the HTTP security headers to "/solr" end point [SOLR-14634](https://issues.apache.org/jira/browse/SOLR-14634) (noble)
 - Do not collect expand documents when expand.rows=0 [SOLR-8306](https://issues.apache.org/jira/browse/SOLR-8306) (Marshall Sanders) (Amelia Henderson)
 
@@ -2533,7 +2538,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- Package manager now stores keys in package store instead of ZK. If you're using package manager and have already added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using: "bin/solr add-key &lt;keyfile.der&gt;" [SOLR-14158](https://issues.apache.org/jira/browse/SOLR-14158)
+- Package manager now stores keys in package store instead of ZK. If you're using package manager and have already added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using: "bin/solr add-key &lt;keyfile.der&gt;" [SOLR-14158](https://issues.apache.org/jira/browse/SOLR-14158) 
 
 ### Changed (1 change)
 
@@ -2552,17 +2557,17 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (11 changes)
 
-- QueryResponse.getExplainMap() type has changed from Map&lt;String, String&gt; to Map&lt;String, Object&gt; in order to accommodate structured explanations. This is a partially back-compatible change - compiled third-party components will work the same as before due to type erasure but source code changes may be required. [SOLR-13806](https://issues.apache.org/jira/browse/SOLR-13806)
+- QueryResponse.getExplainMap() type has changed from Map&lt;String, String&gt; to Map&lt;String, Object&gt; in order to accommodate structured explanations. This is a partially back-compatible change - compiled third-party components will work the same as before due to type erasure but source code changes may be required. [SOLR-13806](https://issues.apache.org/jira/browse/SOLR-13806) 
 - Deprecate legacy SolrCache implementations. Users are encouraged to transition their configurations to use org.apache.solr.search.CaffeineCache instead. [SOLR-13817](https://issues.apache.org/jira/browse/SOLR-13817) (ab)
-- org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used to set top-level query. build() would fail if called without setting mainQuery. [SOLR-13823](https://issues.apache.org/jira/browse/SOLR-13823)
+- org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used to set top-level query. build() would fail if called without setting mainQuery. [SOLR-13823](https://issues.apache.org/jira/browse/SOLR-13823) 
 - timeAllowed parameter is allowed to have 0 value [SOLR-13904](https://issues.apache.org/jira/browse/SOLR-13904) (Houston Putman) (Mikhail Khludnev)
-- Using Collapse filter or expand component with grouping is explicitly disallowed as the combination would cause inconsistent behavior and NPEs. [SOLR-13970](https://issues.apache.org/jira/browse/SOLR-13970)
+- Using Collapse filter or expand component with grouping is explicitly disallowed as the combination would cause inconsistent behavior and NPEs. [SOLR-13970](https://issues.apache.org/jira/browse/SOLR-13970) 
 - The default configset no longer has the following: - Library inclusions (&lt;lib ../&gt;) for extraction, solr-cell libs, clustering, velocity, LTR and language identifier - /browse, /tvrh and /update/extract handlers - TermVector component [SOLR-13978](https://issues.apache.org/jira/browse/SOLR-13978) (if someone wants it) (can be added using config APIs)
 - Some security-related http headers such as Content-Security-Policy are now set. If you have custom html served up by Solr's http server that contains inline javascript, it will no longer execute in modern browsers. You can fix your JS code to not run inline anymore, or edit etc/jetty.xml and weaken the CSP, or remove/alter the headers with a reverse proxy. [SOLR-13982](https://issues.apache.org/jira/browse/SOLR-13982) (rmuir)
-- VelocityResponseWriter has been hardened - only trusted configsets can render configset provided templates and rendering templates from request parameters has been removed. [SOLR-14025](https://issues.apache.org/jira/browse/SOLR-14025)
-- VelocityResponseWriter has been deprecated and may be removed in a future version. [SOLR-14065](https://issues.apache.org/jira/browse/SOLR-14065)
-- Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use &lt;lib&gt; directive. Consider enabling authentication/authorization so that the uploaded configsets are trusted. Note: If you already have a collection using untrusted configset that uses &lt;lib&gt; directive, it will not load after upgrading to 8.4. You can re-upload your configset using "bin/solr zk -upconfig .." or place your libraries in the classpath and restart Solr. [SOLR-14071](https://issues.apache.org/jira/browse/SOLR-14071)
-- The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now considered deprecated. The replacement to it is the "Package Management" system, which includes a "File Store". These are experimental currently but will grow/stabalize/mature. [SOLR-14072](https://issues.apache.org/jira/browse/SOLR-14072)
+- VelocityResponseWriter has been hardened - only trusted configsets can render configset provided templates and rendering templates from request parameters has been removed. [SOLR-14025](https://issues.apache.org/jira/browse/SOLR-14025) 
+- VelocityResponseWriter has been deprecated and may be removed in a future version. [SOLR-14065](https://issues.apache.org/jira/browse/SOLR-14065) 
+- Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use &lt;lib&gt; directive. Consider enabling authentication/authorization so that the uploaded configsets are trusted. Note: If you already have a collection using untrusted configset that uses &lt;lib&gt; directive, it will not load after upgrading to 8.4. You can re-upload your configset using "bin/solr zk -upconfig .." or place your libraries in the classpath and restart Solr. [SOLR-14071](https://issues.apache.org/jira/browse/SOLR-14071) 
+- The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now considered deprecated. The replacement to it is the "Package Management" system, which includes a "File Store". These are experimental currently but will grow/stabalize/mature. [SOLR-14072](https://issues.apache.org/jira/browse/SOLR-14072) 
 
 ### Added (9 changes)
 
@@ -2645,7 +2650,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- Velocity: The initialization parameters "params.resource.loader.enabled" and "solr.resource.loader.enabled" have been removed and replaced by Java system properties "velocity.resourceloader.params.enabled" and "velocity.resourceloader.solr.enabled" respectively (both turned off by default). Please see SOLR-13971 for more details. [SOLR-13971](https://issues.apache.org/jira/browse/SOLR-13971)
+- Velocity: The initialization parameters "params.resource.loader.enabled" and "solr.resource.loader.enabled" have been removed and replaced by Java system properties "velocity.resourceloader.params.enabled" and "velocity.resourceloader.solr.enabled" respectively (both turned off by default). Please see SOLR-13971 for more details. [SOLR-13971](https://issues.apache.org/jira/browse/SOLR-13971) 
 
 ### Fixed (5 changes)
 
@@ -2661,8 +2666,8 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (2 changes)
 
-- Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore(). This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset in tests that call initCore()/deleteCore() multiple times in a given test (class). initCoreDataDir is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place. See SOLR-13664 for more details. [SOLR-13664](https://issues.apache.org/jira/browse/SOLR-13664)
-- For JWTAuthPlugin, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl' instead. See SOLR-13734. [SOLR-13734](https://issues.apache.org/jira/browse/SOLR-13734)
+- Users who have written test cases that extend SolrTestCaseJ4 may see NullPointerExceptions if their tests directly reference both SolrTestCaseJ4.initCoreDataDir and SolrTestCaseJ4.deleteCore(). This change in behavior is due to a bug fix in deleteCore() to ensure the dataDir is properly reset in tests that call initCore()/deleteCore() multiple times in a given test (class). initCoreDataDir is now deprecated, and users are encouraged to use SolrTestCaseJ4.initAndGetDataDir() in it's place. See SOLR-13664 for more details. [SOLR-13664](https://issues.apache.org/jira/browse/SOLR-13664) 
+- For JWTAuthPlugin, the 'jwkUrl' configuration key is deprecated and may be removed later, please use 'jwksUrl' instead. See SOLR-13734. [SOLR-13734](https://issues.apache.org/jira/browse/SOLR-13734) 
 
 ### Added (15 changes)
 
@@ -2680,7 +2685,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - command line option to export documents to a file [SOLR-13682](https://issues.apache.org/jira/browse/SOLR-13682) (noble)
 - JWTAuthPlugin to support multiple JWKS endpoints [SOLR-13713](https://issues.apache.org/jira/browse/SOLR-13713) (janhoy)
 - JWTAuthPlugin now supports multiple IdP issuers through configuring a new 'issuers' configuration key. Access tokens issued and signed by any of the configured issuers will be validated [SOLR-13734](https://issues.apache.org/jira/browse/SOLR-13734) (janhoy)
-- Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki) [SOLR-8241](https://issues.apache.org/jira/browse/SOLR-8241)
+- Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki) [SOLR-8241](https://issues.apache.org/jira/browse/SOLR-8241) 
 
 ### Changed (19 changes)
 
@@ -2735,7 +2740,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SPLITSHARD (async) with failures in underlying sub-operations can result in data loss [SOLR-13718](https://issues.apache.org/jira/browse/SOLR-13718) (Ishan Chattopadhyaya)
 - Allow negative values for limit in TermsFacetMap [SOLR-13725](https://issues.apache.org/jira/browse/SOLR-13725) (Richard Walker) (Munendra S N)
 - Fixed V2Requests - HttpSolrClient replaced first instance of "/solr" with "/api" which caused a change in host names starting with "solr". [SOLR-13727](https://issues.apache.org/jira/browse/SOLR-13727) (Megan Carey) (yonik)
-- Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375 [SOLR-13760](https://issues.apache.org/jira/browse/SOLR-13760) [SOLR-13375](https://issues.apache.org/jira/browse/SOLR-13375)
+- Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375 [SOLR-13760](https://issues.apache.org/jira/browse/SOLR-13760) [SOLR-13375](https://issues.apache.org/jira/browse/SOLR-13375) 
 - Fix ClassCastException in NestableJsonFacet [SOLR-13780](https://issues.apache.org/jira/browse/SOLR-13780) (Tiago Martinho de Barros) (Munendra S N)
 - LRUStatsCache size explosion and ineffective caching. [SOLR-13790](https://issues.apache.org/jira/browse/SOLR-13790) (ab)
 - HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can bring down nodes containing the said collection [SOLR-13793](https://issues.apache.org/jira/browse/SOLR-13793) (Kesharee Nandan Vishwakarma) (Ishan Chattopadhyaya)
@@ -2774,9 +2779,9 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (6 changes)
 
-- Time Routed Aliases now have a '__TRA__' infix preceding the timestamp portion of the collection names. collections with the old format will not be altered and will continue to work, but any new TRA's or new collections for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to predict collection names in TRA's will probably need adjustment. [SOLR-13419](https://issues.apache.org/jira/browse/SOLR-13419)
-- Routed Aliases now use collection properties rather than core properties to identify collections that belong to the alias by default. This should be invisible and fully backwards compatible from within solr, and existing routed alias collections with core based properties will continue to work, but new collections created will not add a property to core.properties anymoore so any external code that inspected core.properties will not find the 'routedAliasName' key in new cores belonging to routed aliases. [SOLR-13420](https://issues.apache.org/jira/browse/SOLR-13420)
-- Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no longer be supported. [SOLR-13507](https://issues.apache.org/jira/browse/SOLR-13507)
+- Time Routed Aliases now have a '__TRA__' infix preceding the timestamp portion of the collection names. collections with the old format will not be altered and will continue to work, but any new TRA's or new collections for existing TRA's will use the new format. Solr will handle this invisibly, but any external code that attempted to predict collection names in TRA's will probably need adjustment. [SOLR-13419](https://issues.apache.org/jira/browse/SOLR-13419) 
+- Routed Aliases now use collection properties rather than core properties to identify collections that belong to the alias by default. This should be invisible and fully backwards compatible from within solr, and existing routed alias collections with core based properties will continue to work, but new collections created will not add a property to core.properties anymoore so any external code that inspected core.properties will not find the 'routedAliasName' key in new cores belonging to routed aliases. [SOLR-13420](https://issues.apache.org/jira/browse/SOLR-13420) 
+- Support for "addr" parameter from the "/solr/admin/zookeeper" endpoint has now been removed and will no longer be supported. [SOLR-13507](https://issues.apache.org/jira/browse/SOLR-13507) 
 - org.apache.solr.util.SolrPluginUtils.IdentityRegenerator has been removed, please use the identical org.apache.solr.search.NoOpRegenerator instead. [SOLR-13515](https://issues.apache.org/jira/browse/SOLR-13515) (David Smiley) (Christine Poerschke)
 - Upgrade Jetty to 9.4.19.v20190610. [SOLR-13541](https://issues.apache.org/jira/browse/SOLR-13541) (Erick Erickson) (Cao Manh Dat)
 - Upgrade ZooKeeper to 3.5.5. ZooKeeper 3.5.5 introduces more security features. Include in your zoo.cfg file at minimum the following: 4lw.commands.whitelist=mntr,conf,ruok You can use 4lw.commands.whitelist=* to enable all ZooKeeper "4 letter commands". [SOLR-8346](https://issues.apache.org/jira/browse/SOLR-8346) (Erick Erickson)
@@ -2802,7 +2807,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Expose IndexWriterConfig's ramPerThreadHardLimitMB through solrconfig.xml [SOLR-12554](https://issues.apache.org/jira/browse/SOLR-12554) (Ishan Chattopadhyaya) (Munendra S N)
 - Query Result Cache does not honor maxRamBytes parameter. [SOLR-13003](https://issues.apache.org/jira/browse/SOLR-13003) (ab) (Brian Ecker)
 - Make contrib/ltr Feature.defaultValue configurable. [SOLR-13049](https://issues.apache.org/jira/browse/SOLR-13049) (Stanislav Livotov) (Christine Poerschke)
-- Add a request parameter to execute a streaming expression locally [SOLR-13306](https://issues.apache.org/jira/browse/SOLR-13306)
+- Add a request parameter to execute a streaming expression locally [SOLR-13306](https://issues.apache.org/jira/browse/SOLR-13306) 
 - In autoscaling policies, use an explicit 'put : on-each-node' to specify the rules is applied on each node [SOLR-13329](https://issues.apache.org/jira/browse/SOLR-13329) (noble)
 - Transaction log to natively support UUID types [SOLR-13347](https://issues.apache.org/jira/browse/SOLR-13347) (Thomas Wöckinger) (noble)
 - Highlighting: Range queries will now highlight in hl.method=unified mode. [SOLR-13367](https://issues.apache.org/jira/browse/SOLR-13367) (David Smiley)
@@ -2829,7 +2834,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Fix "Search is temporarily disabled" logic to be consistent for entire request [SOLR-13474](https://issues.apache.org/jira/browse/SOLR-13474) (hossman)
 - Stop the leader from trying to rejoin the election on session expiration and harden our zk reconnect code path. [SOLR-13489](https://issues.apache.org/jira/browse/SOLR-13489) (Mark Miller) (Anshum Gupta)
 - Fix CollectionStateWatcher/CollectionStatePredicate based APIs in ZkStateReader and CloudSolrClient to be triggered on liveNode changes. Also add Predicate&lt;DocCollection&gt; equivalents for callers that don't care about liveNodes. [SOLR-13490](https://issues.apache.org/jira/browse/SOLR-13490) (hossman)
-- SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times. [SOLR-13491](https://issues.apache.org/jira/browse/SOLR-13491)
+- SolrZkClient's watch wrapper no longer allows zookeeper to hold the same watch object multiple times. [SOLR-13491](https://issues.apache.org/jira/browse/SOLR-13491) 
 - Fix distributed grouping related NullPointerException in JSONWriter.writeSolrDocument [SOLR-13496](https://issues.apache.org/jira/browse/SOLR-13496) (Christine Poerschke)
 - NPE on omitHeader=true is fixed by sending omitHeader=false to shard searches [SOLR-13509](https://issues.apache.org/jira/browse/SOLR-13509) (Munendra S N) (Mikhail Khludnev)
 - Fix input parameter handling in SchemaRequest.DynamicField and SchemaRequest.FieldTypes (Schema API) [SOLR-13521](https://issues.apache.org/jira/browse/SOLR-13521) (Tomás Fernández Löbbe)
@@ -2872,14 +2877,14 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (8 changes)
 
-- When requesting the status of an async request via REQUESTSTATUS collections API, the response will include the list of internal async requests (if any) in the "success" or "failed" keys (in addition to them being included outside those keys for backwards compatibility). See SOLR-12708 for more details [SOLR-12708](https://issues.apache.org/jira/browse/SOLR-12708)
-- Velocity and Velocity Tools were both upgraded as part of this release. Velocity upgraded from 1.7 to 2.0. Please see https://velocity.apache.org/engine/2.0/upgrading.html about upgrading. Velocity Tools upgraded from 2.0 to 3.0. For more details, please see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade. [SOLR-13335](https://issues.apache.org/jira/browse/SOLR-13335)
-- Solr's default behavior when dealing with 'maxBooleanClauses' has changed to reduce the risk of exponential query expansion when dealing with pathological query strings. A default upper limit of 1024 clauses (The same default prior to Solr 7.0) is now enforced at the node level, and can be overridden in solr.xml. The identically named solrconfig.xml setting is still available for limiting the size of 'explicit' boolean query strings, but this per-collection limit is still ristricted by the upper-bound of the global limit in solr.xml. See SOLR-13336 for more details. [SOLR-13336](https://issues.apache.org/jira/browse/SOLR-13336)
-- The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd. [SOLR-13394](https://issues.apache.org/jira/browse/SOLR-13394)
-- Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details. [SOLR-13400](https://issues.apache.org/jira/browse/SOLR-13400)
-- Update requests sent to non-routed aliases that point to multiple collections are no longer accepted. Until now Solr followed an obscure convention of updating only the first collection from the list, which usually was not what the user intended. This change explicitly rejects such update requests. [SOLR-13407](https://issues.apache.org/jira/browse/SOLR-13407)
+- When requesting the status of an async request via REQUESTSTATUS collections API, the response will include the list of internal async requests (if any) in the "success" or "failed" keys (in addition to them being included outside those keys for backwards compatibility). See SOLR-12708 for more details [SOLR-12708](https://issues.apache.org/jira/browse/SOLR-12708) 
+- Velocity and Velocity Tools were both upgraded as part of this release. Velocity upgraded from 1.7 to 2.0. Please see https://velocity.apache.org/engine/2.0/upgrading.html about upgrading. Velocity Tools upgraded from 2.0 to 3.0. For more details, please see https://velocity.apache.org/tools/3.0/upgrading.html for details about the upgrade. [SOLR-13335](https://issues.apache.org/jira/browse/SOLR-13335) 
+- Solr's default behavior when dealing with 'maxBooleanClauses' has changed to reduce the risk of exponential query expansion when dealing with pathological query strings. A default upper limit of 1024 clauses (The same default prior to Solr 7.0) is now enforced at the node level, and can be overridden in solr.xml. The identically named solrconfig.xml setting is still available for limiting the size of 'explicit' boolean query strings, but this per-collection limit is still ristricted by the upper-bound of the global limit in solr.xml. See SOLR-13336 for more details. [SOLR-13336](https://issues.apache.org/jira/browse/SOLR-13336) 
+- The default GC has been changed from CMS to G1. To override this (in order to switch to CMS or any other GC), use GC_TUNE section of bin/solr.in.sh or bin/solr.in.cmd. [SOLR-13394](https://issues.apache.org/jira/browse/SOLR-13394) 
+- Custom TransientSolrCoreCache implementations no longer use the Observer/Observable pattern. To notify Solr that a core has been aged out of the cache, call CoreContainer.queueCoreToClose(SolrCore). See SOLR-13400 for details. [SOLR-13400](https://issues.apache.org/jira/browse/SOLR-13400) 
+- Update requests sent to non-routed aliases that point to multiple collections are no longer accepted. Until now Solr followed an obscure convention of updating only the first collection from the list, which usually was not what the user intended. This change explicitly rejects such update requests. [SOLR-13407](https://issues.apache.org/jira/browse/SOLR-13407) 
 - Until now, the CREATE command of Collections API returned status 0 even in case of failure. Now, the status code will be non-zero in case of failures [SOLR-5970](https://issues.apache.org/jira/browse/SOLR-5970) (e.g. 4xx) (5xx)
-- SolrGangliaReporter has been removed from Solr because support for Ganglia has been removed from Dropwizard Metrics 4 due to a transitive dependency on LGPL.
+- SolrGangliaReporter has been removed from Solr because support for Ganglia has been removed from Dropwizard Metrics 4 due to a transitive dependency on LGPL. 
 
 ### Added (16 changes)
 
@@ -2902,7 +2907,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Changed (14 changes)
 
-- (at least) 2 distinct failures possible when clients attempt searches during SolrCore reload, added test band-aid for DocValuesNotIndexedTest. [SOLR-11035](https://issues.apache.org/jira/browse/SOLR-11035)
+- (at least) 2 distinct failures possible when clients attempt searches during SolrCore reload, added test band-aid for DocValuesNotIndexedTest. [SOLR-11035](https://issues.apache.org/jira/browse/SOLR-11035) 
 - Make HDFSDirectoryFactory support other prefixes (besides hdfs:/) [SOLR-11473](https://issues.apache.org/jira/browse/SOLR-11473) (Kevin Risden)
 - Throw an exception, instead of just a warning, when unknown atomic update operation is encountered [SOLR-12167](https://issues.apache.org/jira/browse/SOLR-12167) (Munendra S N) (Ishan Chattopadhyaya)
 - Avoid unnecessary memory cost when DistributedUpdateProcessor timed-out lock is not used. [SOLR-12833](https://issues.apache.org/jira/browse/SOLR-12833) (jefferyyuan) (ab)
@@ -2996,22 +3001,22 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 - The 'func' query parser now returns scores that are equal to 0 when a negative value is produced. This change is due to the fact that Lucene now requires scores to be positive. [LUCENE-7996](https://issues.apache.org/jira/browse/LUCENE-7996) (Adrien Grand)
 - Memory codecs have been removed from the codebase (MemoryPostings, MemoryDocValues). If you used postingsFormat="Memory" or docValuesFormat="Memory" then either remove it to use the default or experiment with one of the others. [LUCENE-8267](https://issues.apache.org/jira/browse/LUCENE-8267) (Dawid Weiss)
-- Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8. Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost. [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702)
-- In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. If you have a custom language identifier implementation you will need to adapt your code. [SOLR-11774](https://issues.apache.org/jira/browse/SOLR-11774)
+- Due to the introduction of LIR redesign since Solr 7.3 (SOLR-11702) and the removing of old LIR implementation in Solr 8. Rolling updates are not possible unless all nodes must be on Solr 7.3 or higher. If not updates can be lost. [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702) 
+- In 'langid' contrib, the LanguageIdentifierUpdateProcessor base class changed some method signatures. If you have a custom language identifier implementation you will need to adapt your code. [SOLR-11774](https://issues.apache.org/jira/browse/SOLR-11774) 
 - SolrMetric registries retained references to SolrCores when closed. A change of SolrMetricMAnager.registerGauge and SolrMetricProducer.initializeMetrics method signatures was required to fix it. Third party components that use this API need to be updated. [SOLR-11882](https://issues.apache.org/jira/browse/SOLR-11882) (Eros Taborelli) (Erick Erickson) (ab)
 - The date format patterns used by ParseDateFieldUpdateProcessorFactory (present in "schemaless mode") are now interpreted by Java 8's java.time.DateTimeFormatter instead of Joda Time. The pattern language is very similar but not the same. Typically, simply update the pattern by changing an uppercase 'Z' to lowercase 'z' and that's it. For the current recommended set of patterns in schemaless mode, see "Schemaless Mode" in the ref guide, or simply examine the default configSet. Also note that the set of patterns (formats) here have expanded from before to subsume those patterns previously handled by the "extract" contrib (Solr Cell / Tika). [SOLR-12586](https://issues.apache.org/jira/browse/SOLR-12586) (David Smiley) (Bar Rotstein)
 - The "extraction" contrib (Solr Cell) no longer does any date parsing, and thus no longer has the "date.formats" configuration. To ensure date strings are properly parsed, use ParseDateFieldUpdateProcessorFactory (an URP) commonly registered with the name "parse-date" in "schemaless mode". [SOLR-12593](https://issues.apache.org/jira/browse/SOLR-12593) (David Smiley) (Bar Rotstein)
-- UpdateShardHandler's updateOnlyClient is now a Http2SolrClient (previous HttpSolrClient). This new client does not support 'maxConnections','maxConnectionsPerHost' parameters. [SOLR-12605](https://issues.apache.org/jira/browse/SOLR-12605)
+- UpdateShardHandler's updateOnlyClient is now a Http2SolrClient (previous HttpSolrClient). This new client does not support 'maxConnections','maxConnectionsPerHost' parameters. [SOLR-12605](https://issues.apache.org/jira/browse/SOLR-12605) 
 - When JSON data is sent to Solr with nested child documents split using the "split" parameter, the child docs will now be associated to their parents by the field/label string used in the JSON instead of anonymously. Most users probably won't notice the distinction since the label is lost any way unless special fields are in the schema. This choice used to be toggleable with an internal/expert "anonChildDocs" parameter flag which is now gone. [SOLR-12633](https://issues.apache.org/jira/browse/SOLR-12633) (David Smiley)
-- HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous HttpSolrClient). This new client does not support 'maxConnections','maxConnectionsPerHost' parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead. [SOLR-12640](https://issues.apache.org/jira/browse/SOLR-12640)
-- Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}', 'UPDATE.updateShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}' [SOLR-12643](https://issues.apache.org/jira/browse/SOLR-12643)
-- The UnifiedHighlighter hl.weightMatches now defaults to true. If there are unforseen highlight problems, this may be the culprit. [SOLR-12754](https://issues.apache.org/jira/browse/SOLR-12754)
-- If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower due to SOLR-13025. But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' &lt; 8.0.0. See also explanation in Reference Guide chapter "Other Schema Elements". [SOLR-13025](https://issues.apache.org/jira/browse/SOLR-13025)
-- The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr 7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling will continue to be used if a cluster policy or preference is specified or a collection level policy is in use. The default replica placement strategy can be changed to use autoscaling again by setting a cluster property: curl -X POST -H 'Content-type:application/json' --data-binary ' { "set-obj-property": { "defaults" : { "cluster": { "useLegacyReplicaAssignment":false } } } }' http://$SOLR_HOST:$SOLR_PORT/api/cluster [SOLR-13248](https://issues.apache.org/jira/browse/SOLR-13248)
-- Deleting (or updating) documents by their uniqueKey is now scoped to only consider root documents, not child/nested documents. Thus a delete-by-id won't work on a child doc (no-op), and an attempt to update a child doc by providing a new doc with the same ID would add a new doc (probably erroneous). Both these actions were and still are problematic. In-place-updates are safe though. If you want to delete certain child documents and if you know they don't themselves have nested children then you must do so with a delete-by-query technique. [SOLR-5211](https://issues.apache.org/jira/browse/SOLR-5211)
+- HttpShardHandlerFactory's defaultClient is now a Http2SolrClient (previous HttpSolrClient). This new client does not support 'maxConnections','maxConnectionsPerHost' parameters. LBHttpSolrClient.Req and LBHttpSolrClient.Rsp are marked as deprecated, uses LBSolrClient.Req and LBSolrClient.Rsp instead. [SOLR-12640](https://issues.apache.org/jira/browse/SOLR-12640) 
+- Since Http2SolrClient does not support exposing connections related metrics. These metrics are no longer available 'QUERY.httpShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}', 'UPDATE.updateShardHandler.{availableConnections, leasedConnections, maxConnections, pendingConnections}' [SOLR-12643](https://issues.apache.org/jira/browse/SOLR-12643) 
+- The UnifiedHighlighter hl.weightMatches now defaults to true. If there are unforseen highlight problems, this may be the culprit. [SOLR-12754](https://issues.apache.org/jira/browse/SOLR-12754) 
+- If you explicitly use BM25SimilarityFactory in your schema, the absolute scoring will be lower due to SOLR-13025. But ordering of documents will not change in the normal case. Use LegacyBM25SimilarityFactory if you need to force the old 6.x/7.x scoring. Note that if you have not specified any similarity in schema or use the default SchemaSimilarityFactory, then LegacyBM25Similarity is automatically selected for 'luceneMatchVersion' &lt; 8.0.0. See also explanation in Reference Guide chapter "Other Schema Elements". [SOLR-13025](https://issues.apache.org/jira/browse/SOLR-13025) 
+- The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr 7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling will continue to be used if a cluster policy or preference is specified or a collection level policy is in use. The default replica placement strategy can be changed to use autoscaling again by setting a cluster property: curl -X POST -H 'Content-type:application/json' --data-binary ' { "set-obj-property": { "defaults" : { "cluster": { "useLegacyReplicaAssignment":false } } } }' http://$SOLR_HOST:$SOLR_PORT/api/cluster [SOLR-13248](https://issues.apache.org/jira/browse/SOLR-13248) 
+- Deleting (or updating) documents by their uniqueKey is now scoped to only consider root documents, not child/nested documents. Thus a delete-by-id won't work on a child doc (no-op), and an attempt to update a child doc by providing a new doc with the same ID would add a new doc (probably erroneous). Both these actions were and still are problematic. In-place-updates are safe though. If you want to delete certain child documents and if you know they don't themselves have nested children then you must do so with a delete-by-query technique. [SOLR-5211](https://issues.apache.org/jira/browse/SOLR-5211) 
 - Solr nodes can now listen and serve HTTP/2 requests. Most of internal requests (sent by UpdateShardHandler) (HttpShardHandler)
-- ALPN is not supported in Java 8 or lower version therefore when a node started in Java 8 or a lower version with SSL enabled, it will send and can only be able to handle HTTP/1.1 requests. In case of using SSL Java 9 or latter versions are recommended.
-- Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated.
+- ALPN is not supported in Java 8 or lower version therefore when a node started in Java 8 or a lower version with SSL enabled, it will send and can only be able to handle HTTP/1.1 requests. In case of using SSL Java 9 or latter versions are recommended. 
+- Custom AuthenticationPlugin must provide its own setup for Http2SolrClient through implementing HttpClientBuilderPlugin.setup, if not internal requests can't be authenticated. 
 
 ### Added (14 changes)
 
@@ -3076,9 +3081,9 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SPLITSHARD (async) with failures in underlying sub-operations can result in data loss [SOLR-13718](https://issues.apache.org/jira/browse/SOLR-13718) (Ishan Chattopadhyaya)
 - Use the safe fork of simple-xml for clustering contrib. [SOLR-13779](https://issues.apache.org/jira/browse/SOLR-13779) (Dawid Weiss) (Sachin Pattan)
 - HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can bring down nodes containing the said collection [SOLR-13793](https://issues.apache.org/jira/browse/SOLR-13793) (Kesharee Nandan Vishwakarma) (Ishan Chattopadhyaya)
-- Improve ExecutePlanAction error handling. [SOLR-13828](https://issues.apache.org/jira/browse/SOLR-13828)
+- Improve ExecutePlanAction error handling. [SOLR-13828](https://issues.apache.org/jira/browse/SOLR-13828) 
 - Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity response writer from _default configset. [SOLR-13971](https://issues.apache.org/jira/browse/SOLR-13971) (Ishan Chattopadhyaya) (Sachin Pattan)
-- VelocityResponseWriter has been hardened - only trusted configsets can render configset provided templates and rendering templates from request parameters has been removed. [SOLR-14025](https://issues.apache.org/jira/browse/SOLR-14025)
+- VelocityResponseWriter has been hardened - only trusted configsets can render configset provided templates and rendering templates from request parameters has been removed. [SOLR-14025](https://issues.apache.org/jira/browse/SOLR-14025) 
 - Back port javabin performance regression fixes from SOLR-14013 [SOLR-14259](https://issues.apache.org/jira/browse/SOLR-14259) [SOLR-14013](https://issues.apache.org/jira/browse/SOLR-14013) (noble)
 
 
@@ -3087,8 +3092,8 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (2 changes)
 
-- When requesting the status of an async request via REQUESTSTATUS collections API, the response will include the list of internal async requests (if any) in the "success" or "failed" keys (in addition to them being included outside those keys for backwards compatibility). See SOLR-12708 for more details [SOLR-12708](https://issues.apache.org/jira/browse/SOLR-12708)
-- The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the tool more frequently. [SOLR-13234](https://issues.apache.org/jira/browse/SOLR-13234)
+- When requesting the status of an async request via REQUESTSTATUS collections API, the response will include the list of internal async requests (if any) in the "success" or "failed" keys (in addition to them being included outside those keys for backwards compatibility). See SOLR-12708 for more details [SOLR-12708](https://issues.apache.org/jira/browse/SOLR-12708) 
+- The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before the next scheduled collection. This can impact the freshness of the metrics if prometheus is configured to query the tool more frequently. [SOLR-13234](https://issues.apache.org/jira/browse/SOLR-13234) 
 
 ### Fixed (25 changes)
 
@@ -3128,7 +3133,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- * SOLR-13248: The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr 7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling will continue to be used if a cluster policy or preference is specified or a collection level policy is in use. The default replica placement strategy can be changed to use autoscaling again by setting a cluster property: curl -X POST -H 'Content-type:application/json' --data-binary ' { "set-obj-property": { "defaults" : { "cluster": { "useLegacyReplicaAssignment":false } } } }' http://$SOLR_HOST:$SOLR_PORT/api/cluster [SOLR-13248](https://issues.apache.org/jira/browse/SOLR-13248)
+- * SOLR-13248: The default replica placement strategy used in Solr has been reverted to the 'legacy' policy used by Solr 7.4 and previous versions. This is due to multiple bugs in the autoscaling based replica placement strategy that was made default in Solr 7.5 which causes multiple replicas of the same shard to be placed on the same node in addition to the maxShardsPerNode and createNodeSet parameters being ignored. Although the default has changed, autoscaling will continue to be used if a cluster policy or preference is specified or a collection level policy is in use. The default replica placement strategy can be changed to use autoscaling again by setting a cluster property: curl -X POST -H 'Content-type:application/json' --data-binary ' { "set-obj-property": { "defaults" : { "cluster": { "useLegacyReplicaAssignment":false } } } }' http://$SOLR_HOST:$SOLR_PORT/api/cluster [SOLR-13248](https://issues.apache.org/jira/browse/SOLR-13248) 
 
 ### Fixed (2 changes)
 
@@ -3141,7 +3146,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770. [SOLR-12770](https://issues.apache.org/jira/browse/SOLR-12770)
+- The 'shards' parameter handling logic changes to use a new config element to determine what hosts can be requested. Please see Apache Solr Reference Guide chapter "Distributed Requests" for details, as well as SOLR-12770. [SOLR-12770](https://issues.apache.org/jira/browse/SOLR-12770) 
 
 ### Added (7 changes)
 
@@ -3208,10 +3213,10 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (4 changes)
 
-- Autoscaling policy framework is now used as the default strategy to select the nodes on which new replicas or replicas of new collections are created. Previously, the maxShardsPerNode parameter was not allowed on collections when autoscaling policy was configured. Also if an autoscaling policy was configured then the default was to set an unlimited maxShardsPerNode automatically. Now the maxShardsPerNode parameter is always allowed during collection creation and maxShardsPerNode should be set correctly (if required) regardless of whether autoscaling policies are in effect or not. The default value of maxShardsPerNode continues to be 1 as before. It can be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using autoscaling policy. [SOLR-12739](https://issues.apache.org/jira/browse/SOLR-12739)
+- Autoscaling policy framework is now used as the default strategy to select the nodes on which new replicas or replicas of new collections are created. Previously, the maxShardsPerNode parameter was not allowed on collections when autoscaling policy was configured. Also if an autoscaling policy was configured then the default was to set an unlimited maxShardsPerNode automatically. Now the maxShardsPerNode parameter is always allowed during collection creation and maxShardsPerNode should be set correctly (if required) regardless of whether autoscaling policies are in effect or not. The default value of maxShardsPerNode continues to be 1 as before. It can be set to -1 during collection creation to fall back to the old behavior of unlimited maxShardsPerNode when using autoscaling policy. [SOLR-12739](https://issues.apache.org/jira/browse/SOLR-12739) 
 - The min_rf parameter is no longer needed, Solr will always return the achieved replication factor [SOLR-12767](https://issues.apache.org/jira/browse/SOLR-12767) (rf)
-- The cluster wide defaults structure has changed from {collectionDefaults: {nrtReplicas : 2}} to {defaults : {collection : {nrtReplicas : 2}}}. The old format continues to be supported and can be read from ZK as well as written using the V2 set-obj-property syntax but it is deprecated and will be removed in Solr 9. We recommend that users change their API calls to use the new format going forward. [SOLR-12827](https://issues.apache.org/jira/browse/SOLR-12827)
-- Added a Solr factory for ByteBuffersDirectory, which will replace deprecated RAMDirectory in Solr 9.0. [SOLR-12861](https://issues.apache.org/jira/browse/SOLR-12861)
+- The cluster wide defaults structure has changed from {collectionDefaults: {nrtReplicas : 2}} to {defaults : {collection : {nrtReplicas : 2}}}. The old format continues to be supported and can be read from ZK as well as written using the V2 set-obj-property syntax but it is deprecated and will be removed in Solr 9. We recommend that users change their API calls to use the new format going forward. [SOLR-12827](https://issues.apache.org/jira/browse/SOLR-12827) 
+- Added a Solr factory for ByteBuffersDirectory, which will replace deprecated RAMDirectory in Solr 9.0. [SOLR-12861](https://issues.apache.org/jira/browse/SOLR-12861) 
 
 ### Added (25 changes)
 
@@ -3288,7 +3293,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Move TestCloudJSONFacetJoinDomain and TestCloudJSONFacetSKG to the facet test package [SOLR-12793](https://issues.apache.org/jira/browse/SOLR-12793) (Varun Thacker)
 - Migrate cluster wide defaults syntax in cluster properties to a nested structure. The structure has changed from {collectionDefaults: {nrtReplicas : 2}} to {defaults : {collection : {nrtReplicas : 2}}}. [SOLR-12827](https://issues.apache.org/jira/browse/SOLR-12827) (ab) (shalin)
 - Document statistics exposed by the Query Result Cache when maxRamMB is configured. [SOLR-12835](https://issues.apache.org/jira/browse/SOLR-12835) (shalin)
-- Add Solr factory for ByteBuffersDirectory. [SOLR-12861](https://issues.apache.org/jira/browse/SOLR-12861)
+- Add Solr factory for ByteBuffersDirectory. [SOLR-12861](https://issues.apache.org/jira/browse/SOLR-12861) 
 - Add Javadoc @since tag to Analyzer component classes [SOLR-12956](https://issues.apache.org/jira/browse/SOLR-12956) (Alexandre Rafalovitch)
 - Add Javadoc @since tag to URP classes [SOLR-12966](https://issues.apache.org/jira/browse/SOLR-12966) (Alexandre Rafalovitch)
 - ZkNodeProps to be able to load from both javabin and JSON [SOLR-13006](https://issues.apache.org/jira/browse/SOLR-13006) (noble)
@@ -3302,9 +3307,9 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - TieredMergePolicy now respects maxSegmentSizeMB by default when executing findForcedMerges (optimize) and findForcedDeletesMerges (expungeDeletes) [LUCENE-7976](https://issues.apache.org/jira/browse/LUCENE-7976) (Erick Erickson)
 - Extremely outdated UIMA contrib module has been removed [SOLR-11694](https://issues.apache.org/jira/browse/SOLR-11694) (Alexandre Rafalovitch)
 - The configuration file for log4j2.xml is now in ../server/resources/log4j2.xml. All other copies have been removed. WINDOWS USERS: This JIRA corrects a bug in the start scripts that put example logs under ...\server, solr.log is now under ...\example. [SOLR-12008](https://issues.apache.org/jira/browse/SOLR-12008) (Erick Erickson)
-- The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" SOLR-12350 [SOLR-12350](https://issues.apache.org/jira/browse/SOLR-12350)
-- SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated. [SOLR-12395](https://issues.apache.org/jira/browse/SOLR-12395)
-- The heatmap facet response structure, when returned in JSON, changed from an even/odd name/value array to an object style. Although the object style makes more sense, this was an overlooked back-compat break; sorry. [SOLR-12398](https://issues.apache.org/jira/browse/SOLR-12398)
+- The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" SOLR-12350 [SOLR-12350](https://issues.apache.org/jira/browse/SOLR-12350) 
+- SignificantTermsQParserPlugin's name is now 'significantTerms' and its old name 'sigificantTerms' is deprecated. [SOLR-12395](https://issues.apache.org/jira/browse/SOLR-12395) 
+- The heatmap facet response structure, when returned in JSON, changed from an even/odd name/value array to an object style. Although the object style makes more sense, this was an overlooked back-compat break; sorry. [SOLR-12398](https://issues.apache.org/jira/browse/SOLR-12398) 
 - The data-driven schema no longer returns the *_str field-copy of text fields by default. The *_str field is still created and can be used for e.g. sorting, but to retrieve it you now need to explicitly list it in "fl" (SOLR-12350)
 
 ### Added (42 changes)
@@ -3374,7 +3379,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Solr SQL does not work with point numeric fields [SOLR-11585](https://issues.apache.org/jira/browse/SOLR-11585) (Joel Bernstein) (Kiran Chitturi)
 - Improve error handling of shard splitting. Fix splitting of mixed replica types. [SOLR-11665](https://issues.apache.org/jira/browse/SOLR-11665) (ab)
 - Keep nrtReplicas and replicationFactor in sync while creating a collection and modifying a collection [SOLR-11676](https://issues.apache.org/jira/browse/SOLR-11676) (Varun Thacker)
-- NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors [SOLR-11770](https://issues.apache.org/jira/browse/SOLR-11770)
+- NPE in tvrh if no field is specified and document doesn't contain any fields with term vectors [SOLR-11770](https://issues.apache.org/jira/browse/SOLR-11770) 
 - Restoring collection now treats maxShardsPerNode=-1 as unlimited [SOLR-11807](https://issues.apache.org/jira/browse/SOLR-11807) (Varun Thacker)
 - JSON Facet API: terms facet shard requests now indicate if they have more buckets to prevent unnecessary refinement requests. [SOLR-12326](https://issues.apache.org/jira/browse/SOLR-12326) (yonk)
 - Fixed a bug in JSON Faceting that could cause incorrect counts/stats when using non default sort options. This also adds a new configurable "overrefine" option. [SOLR-12343](https://issues.apache.org/jira/browse/SOLR-12343) (Yonik Seeley) (hossman)
@@ -3449,9 +3454,9 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (3 changes)
 
-- Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log. Previously they would get logged in the solr.log file. [SOLR-11453](https://issues.apache.org/jira/browse/SOLR-11453)
-- Slave doesn't commit empty index when completely new index is detected on master during replication. To return the previous behavior pass false to skipCommitOnLeaderVersionZero in slave section of replication handler configuration, or pass it to the fetchindex command. [SOLR-11673](https://issues.apache.org/jira/browse/SOLR-11673)
-- Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either SOLR-12144 [SOLR-7887](https://issues.apache.org/jira/browse/SOLR-7887) [SOLR-12144](https://issues.apache.org/jira/browse/SOLR-12144)
+- Configuring slowQueryThresholdMillis now logs slow requests to a separate file - solr_slow_requests.log. Previously they would get logged in the solr.log file. [SOLR-11453](https://issues.apache.org/jira/browse/SOLR-11453) 
+- Slave doesn't commit empty index when completely new index is detected on master during replication. To return the previous behavior pass false to skipCommitOnLeaderVersionZero in slave section of replication handler configuration, or pass it to the fetchindex command. [SOLR-11673](https://issues.apache.org/jira/browse/SOLR-11673) 
+- Solr now uses Log4J 2.11 . The log4j configuration is now in log4j2.xml rather than log4j.properties files. This is a server side change only and clients using SolrJ won't need any changes. Clients can still use any logging implementation which is compatible with SLF4J. We now let log4j2 handle rotation of solr logs at startup, and bin/solr start scripts will no longer attempt this nor move existing console or GC logs into logs/archived either SOLR-12144 [SOLR-7887](https://issues.apache.org/jira/browse/SOLR-7887) [SOLR-12144](https://issues.apache.org/jira/browse/SOLR-12144) 
 
 ### Added (35 changes)
 
@@ -3620,16 +3625,16 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (10 changes)
 
-- If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. [LUCENE-8161](https://issues.apache.org/jira/browse/LUCENE-8161)
-- Collections created without specifying a configset name use a copy of the _default configset since 7.0. Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named with an additional ".AUTOCREATED" suffix. [SOLR-11624](https://issues.apache.org/jira/browse/SOLR-11624)
-- The old Leader-In-Recovery implementation (SOLR-5495) is now deprecated and replaced. Solr will support rolling upgrades from old 7.x versions of Solr to future 7.x releases until the last release of the 7.x major version. This means in order to upgrade to Solr 8 in the future, you must be on Solr 7.3 or higher. [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702) [SOLR-5495](https://issues.apache.org/jira/browse/SOLR-5495)
-- The behaviour of the autoscaling system has been modified to pause all triggers from execution between the start of actions and end of cool down period. The triggers will be resumed after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event complete and during this time, all triggers continued to run but any events were rejected to be tried later. [SOLR-11747](https://issues.apache.org/jira/browse/SOLR-11747)
-- The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the 'actionThrottlePeriodSeconds' setting in the set-properties Autoscaling API which is now a no-op. Use the 'triggerCooldownPeriodSeconds' instead to pause event processing. [SOLR-11748](https://issues.apache.org/jira/browse/SOLR-11748)
-- The top-level &lt;highlighting&gt; syntax in solrconfig.xml is now formally deprecated in favour of &lt;searchComponent&gt; equivalent syntax. See also SOLR-1696. [SOLR-11798](https://issues.apache.org/jira/browse/SOLR-11798) [SOLR-1696](https://issues.apache.org/jira/browse/SOLR-1696)
-- QueryComponent's rq parameter parsing no longer considers the defType parameter. [SOLR-11809](https://issues.apache.org/jira/browse/SOLR-11809)
-- The default Solr log file size and number of backups is raised to 32MB and 10 respectively [SOLR-11957](https://issues.apache.org/jira/browse/SOLR-11957)
-- A new mechanism is introduced in SOLR-11702 to maintain consistency in SolrCloud between leader and replicas. This mechanism lets Solr know whether a replica is in-sync with the leader or not, even when the leader is not live. If all the replicas who participate in the leader election are out-of-sync with previous leader, the election will pause until a timeout (named "leaderVoteWait") before allowing an out-of-sync replica to become leader. Note that the new leader still needs to contains more updates than any other active replicas in the same shard. Therefore by increasing leaderVoteWait will increase the consistency (over availability) of the system. The default value of leaderVoteWait is 180,000 ms (3 minutes) and it can be adjusted in the "solrcloud" section of the solr.xml [SOLR-12051](https://issues.apache.org/jira/browse/SOLR-12051) [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702)
-- The default value of `autoReplicaFailoverWaitAfterExpiration` has been increased to 120 seconds from the earlier default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown. [SOLR-12067](https://issues.apache.org/jira/browse/SOLR-12067)
+- If you are using the spatial JTS library with Solr, you must upgrade to 1.15.0. This new version of JTS is now dual-licensed to include a BSD style license. [LUCENE-8161](https://issues.apache.org/jira/browse/LUCENE-8161) 
+- Collections created without specifying a configset name use a copy of the _default configset since 7.0. Before 7.3, the copied over configset was named the same as the collection name, but 7.3 onwards it will be named with an additional ".AUTOCREATED" suffix. [SOLR-11624](https://issues.apache.org/jira/browse/SOLR-11624) 
+- The old Leader-In-Recovery implementation (SOLR-5495) is now deprecated and replaced. Solr will support rolling upgrades from old 7.x versions of Solr to future 7.x releases until the last release of the 7.x major version. This means in order to upgrade to Solr 8 in the future, you must be on Solr 7.3 or higher. [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702) [SOLR-5495](https://issues.apache.org/jira/browse/SOLR-5495) 
+- The behaviour of the autoscaling system has been modified to pause all triggers from execution between the start of actions and end of cool down period. The triggers will be resumed after the cool down period expires. Previously, the cool down period was a fixed period started after actions for a trigger event complete and during this time, all triggers continued to run but any events were rejected to be tried later. [SOLR-11747](https://issues.apache.org/jira/browse/SOLR-11747) 
+- The throttling mechanism used to limit the rate of autoscaling events processed has been removed. This deprecates the 'actionThrottlePeriodSeconds' setting in the set-properties Autoscaling API which is now a no-op. Use the 'triggerCooldownPeriodSeconds' instead to pause event processing. [SOLR-11748](https://issues.apache.org/jira/browse/SOLR-11748) 
+- The top-level &lt;highlighting&gt; syntax in solrconfig.xml is now formally deprecated in favour of &lt;searchComponent&gt; equivalent syntax. See also SOLR-1696. [SOLR-11798](https://issues.apache.org/jira/browse/SOLR-11798) [SOLR-1696](https://issues.apache.org/jira/browse/SOLR-1696) 
+- QueryComponent's rq parameter parsing no longer considers the defType parameter. [SOLR-11809](https://issues.apache.org/jira/browse/SOLR-11809) 
+- The default Solr log file size and number of backups is raised to 32MB and 10 respectively [SOLR-11957](https://issues.apache.org/jira/browse/SOLR-11957) 
+- A new mechanism is introduced in SOLR-11702 to maintain consistency in SolrCloud between leader and replicas. This mechanism lets Solr know whether a replica is in-sync with the leader or not, even when the leader is not live. If all the replicas who participate in the leader election are out-of-sync with previous leader, the election will pause until a timeout (named "leaderVoteWait") before allowing an out-of-sync replica to become leader. Note that the new leader still needs to contains more updates than any other active replicas in the same shard. Therefore by increasing leaderVoteWait will increase the consistency (over availability) of the system. The default value of leaderVoteWait is 180,000 ms (3 minutes) and it can be adjusted in the "solrcloud" section of the solr.xml [SOLR-12051](https://issues.apache.org/jira/browse/SOLR-12051) [SOLR-11702](https://issues.apache.org/jira/browse/SOLR-11702) 
+- The default value of `autoReplicaFailoverWaitAfterExpiration` has been increased to 120 seconds from the earlier default of 30 seconds. This affects how soon Solr adds new replicas to replace the replicas on nodes which have either crashed or shutdown. [SOLR-12067](https://issues.apache.org/jira/browse/SOLR-12067) 
 
 ### Added (44 changes)
 
@@ -3896,11 +3901,11 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 ### Upgrade Notes (6 changes)
 
 - in the ReplicationHandler the master.commitReserveDuration sub-element is deprecated. Instead please configure a direct commitReserveDuration element for use in all modes [SOLR-10962](https://issues.apache.org/jira/browse/SOLR-10962) (master) (slave) (cloud)
-- shard and cluster metric reporter configuration now requires a class attribute. If a reporter configures the group="shard" attribute then please also configure the class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute. If a reporter configures the group="cluster" attribute then please also configure the class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute. [SOLR-11195](https://issues.apache.org/jira/browse/SOLR-11195)
-- the abstract DocTransformer class now has an abstract score-less transform method variant. [SOLR-11254](https://issues.apache.org/jira/browse/SOLR-11254)
+- shard and cluster metric reporter configuration now requires a class attribute. If a reporter configures the group="shard" attribute then please also configure the class="org.apache.solr.metrics.reporters.solr.SolrShardReporter" attribute. If a reporter configures the group="cluster" attribute then please also configure the class="org.apache.solr.metrics.reporters.solr.SolrClusterReporter" attribute. [SOLR-11195](https://issues.apache.org/jira/browse/SOLR-11195) 
+- the abstract DocTransformer class now has an abstract score-less transform method variant. [SOLR-11254](https://issues.apache.org/jira/browse/SOLR-11254) 
 - all Stream Evaluators in solrj.io.eval have been refactored to have a simplier and more robust structure. This simplifies and condenses the code required to implement a new Evaluator and makes it much easier for evaluators to handle differing data types (primitives, objects, arrays, lists, and so forth). [SOLR-11283](https://issues.apache.org/jira/browse/SOLR-11283) (Dennis Gove)
 - in the XML query parser [SOLR-11477](https://issues.apache.org/jira/browse/SOLR-11477) (defType=xmlparser or {!xmlparser ... })
-- 'autoAddReplicas' feature is ported to autoscaling framework. Existing users of this feature should not have to change anything. Note these changes: 1. Behaviour: Changing the autoAddReplicas property from disabled to enabled using MODIFYCOLLECTION API no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while autoAddReplicas was enabled. The params autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay are no longer used. 2. Deprecations: Enabling/disabling autoAddReplicas cluster wide with the API will be deprecated; use suspend/resume trigger APIs with name='.auto_add_replicas' instead.
+- 'autoAddReplicas' feature is ported to autoscaling framework. Existing users of this feature should not have to change anything. Note these changes: 1. Behaviour: Changing the autoAddReplicas property from disabled to enabled using MODIFYCOLLECTION API no longer replaces down replicas for the collection immediately. Instead, replicas are only added if a node containing them went down while autoAddReplicas was enabled. The params autoReplicaFailoverBadNodeExpiration and autoReplicaFailoverWorkLoopDelay are no longer used. 2. Deprecations: Enabling/disabling autoAddReplicas cluster wide with the API will be deprecated; use suspend/resume trigger APIs with name='.auto_add_replicas' instead. 
 
 ### Added (39 changes)
 
@@ -4092,7 +4097,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Possible to set solr.data.home property as root dir for all data [SOLR-6671](https://issues.apache.org/jira/browse/SOLR-6671) (janhoy) (Shawn Heisey) (Mark Miller)
 - Refinement for JSON Facet API: Adding refine:true to any terms facet will cause an additional distributed search phase (overlapped with field retrieval) that requests additional info for top facet buckets from shards that did not previously contribute to that bucket. This will correct counts (and other statistics) for those top buckets collected in the first phase. [SOLR-7452](https://issues.apache.org/jira/browse/SOLR-7452) (yonik)
 - Data driven schema now indexes text field "foo" as both "foo" (text_general) and as "foo_str" (string) to facilitate both search and faceting. AddSchemaFieldsUpdateProcessor now has the ability to add a "copyField" to the type mappings, with an optional maxChars limitation. You can also define one typeMappings as default. This also solves issues SOLR-8495, SOLR-6966, and SOLR-7058 [SOLR-9526](https://issues.apache.org/jira/browse/SOLR-9526) [SOLR-8495](https://issues.apache.org/jira/browse/SOLR-8495) [SOLR-6966](https://issues.apache.org/jira/browse/SOLR-6966) [SOLR-7058](https://issues.apache.org/jira/browse/SOLR-7058) (janhoy) (Steve Rowe) (hossman) (Alexandre Rafalovitch) (Shawn Heisey) (Cao Manh Dat)
-- Create another replication mode for SolrCloud [SOLR-9835](https://issues.apache.org/jira/browse/SOLR-9835)
+- Create another replication mode for SolrCloud [SOLR-9835](https://issues.apache.org/jira/browse/SOLR-9835) 
 - Collect aggregated metrics from nodes and shard leaders in overseer. [SOLR-9857](https://issues.apache.org/jira/browse/SOLR-9857) [SOLR-9858](https://issues.apache.org/jira/browse/SOLR-9858) (ab)
 - Add solr/solr.cmd parameter to append jetty parameters to the start script. [SOLR-9910](https://issues.apache.org/jira/browse/SOLR-9910) (Mano Kovacs) (Mark Miller)
 - Add support for PointFields in FacetModule (JSON Facets) [SOLR-9989](https://issues.apache.org/jira/browse/SOLR-9989) (Cao Manh Dat)
@@ -4263,7 +4268,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Other (1 change)
 
-- Lucene only release
+- Lucene only release 
 
 
 [6.6.5] - 2018-06-03
@@ -4337,9 +4342,9 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (3 changes)
 
-- Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed.
-- JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any mincount greater than 1.
-- ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10.
+- Solr contribs map-reduce, morphlines-core and morphlines-cell have been removed. 
+- JSON Facet API now uses hyper-log-log for numBuckets cardinality calculation and calculates cardinality before filtering buckets by any mincount greater than 1. 
+- ZooKeeper dependency has been upgraded from 3.4.6 to 3.4.10. 
 
 ### Added (36 changes)
 
@@ -4479,7 +4484,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 ### Upgrade Notes (2 changes)
 
 - JMX metric "avgTimePerRequest" (and the corresponding metric in the metrics API for each handler) used to be a simple non-decaying average based on total cumulative time and the number of requests. New Codahale Metrics implementation applies exponential decay to this value, which heavily biases the average towards the last 5 minutes. [SOLR-10226](https://issues.apache.org/jira/browse/SOLR-10226) (ab)
-- Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change the default aggregation mode has been changed to facet rather than map_reduce. There has also been changes to the SQL aggregate response and some SQL syntax changes. Consult the documentation for full details. [SOLR-8593](https://issues.apache.org/jira/browse/SOLR-8593)
+- Parallel SQL now uses Apache Calcite as its SQL framework. As part of this change the default aggregation mode has been changed to facet rather than map_reduce. There has also been changes to the SQL aggregate response and some SQL syntax changes. Consult the documentation for full details. [SOLR-8593](https://issues.apache.org/jira/browse/SOLR-8593) 
 
 ### Added (31 changes)
 
@@ -4620,11 +4625,11 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (5 changes)
 
-- complexphrase query parser now supports leading wildcards, beware of its' possible heaviness. Users are encouraged to use ReversedWildcardFilter in index time analysis. [SOLR-7466](https://issues.apache.org/jira/browse/SOLR-7466)
-- Metrics related classes in org.apache.solr.util.stats have been removed in favor of the dropwizard metrics library. Any custom plugins using these classes should be changed to use the equivalent classes from the metrics library. As part of this, the following changes were made to the output of Overseer Status API: * The "totalTime" metric has been removed because it is no longer supported * The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime" and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime" and so on for consistency with stats output in other parts of Solr. * The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond" and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr. [SOLR-8785](https://issues.apache.org/jira/browse/SOLR-8785)
-- Export handler returns zero for numeric fields that are not in the original doc. One consequence of this change is that you must be aware that some tuples will not have values if there were none in the original document. [SOLR-9166](https://issues.apache.org/jira/browse/SOLR-9166)
-- You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the original Highlighter. That said, some options aren't supported yet. It will get more features in time, especially with your input. See HighlightParams.java for a listing of highlight parameters annotated with which highlighters use them. hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector. [SOLR-9708](https://issues.apache.org/jira/browse/SOLR-9708)
-- maxWarmingSearchers now defaults to 1, and more importantly commits will now block if this limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a risk in overlapping commits. Nonetheless users should continue to avoid excessive committing. Users are advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files. [SOLR-9712](https://issues.apache.org/jira/browse/SOLR-9712)
+- complexphrase query parser now supports leading wildcards, beware of its' possible heaviness. Users are encouraged to use ReversedWildcardFilter in index time analysis. [SOLR-7466](https://issues.apache.org/jira/browse/SOLR-7466) 
+- Metrics related classes in org.apache.solr.util.stats have been removed in favor of the dropwizard metrics library. Any custom plugins using these classes should be changed to use the equivalent classes from the metrics library. As part of this, the following changes were made to the output of Overseer Status API: * The "totalTime" metric has been removed because it is no longer supported * The metrics "75thPctlRequestTime", "95thPctlRequestTime", "99thPctlRequestTime" and "999thPctlRequestTime" in Overseer Status API have been renamed to "75thPcRequestTime", "95thPcRequestTime" and so on for consistency with stats output in other parts of Solr. * The metrics "avgRequestsPerMinute", "5minRateRequestsPerMinute" and "15minRateRequestsPerMinute" have been replaced by corresponding per-second rates viz. "avgRequestsPerSecond", "5minRateRequestsPerSecond" and "15minRateRequestsPerSecond" for consistency with stats output in other parts of Solr. [SOLR-8785](https://issues.apache.org/jira/browse/SOLR-8785) 
+- Export handler returns zero for numeric fields that are not in the original doc. One consequence of this change is that you must be aware that some tuples will not have values if there were none in the original document. [SOLR-9166](https://issues.apache.org/jira/browse/SOLR-9166) 
+- You are encouraged to try out the UnifiedHighlighter by setting hl.method=unified and report feedback. It might become the default in 7.0. It's more efficient/faster than the other highlighters, especially compared to the original Highlighter. That said, some options aren't supported yet. It will get more features in time, especially with your input. See HighlightParams.java for a listing of highlight parameters annotated with which highlighters use them. hl.useFastVectorHighlighter is now considered deprecated in lieu of hl.method=fastVector. [SOLR-9708](https://issues.apache.org/jira/browse/SOLR-9708) 
+- maxWarmingSearchers now defaults to 1, and more importantly commits will now block if this limit is exceeded instead of throwing an exception (a good thing). Consequently there is no longer a risk in overlapping commits. Nonetheless users should continue to avoid excessive committing. Users are advised to remove any pre-existing maxWarmingSearchers entries from their solrconfig.xml files. [SOLR-9712](https://issues.apache.org/jira/browse/SOLR-9712) 
 
 ### Added (40 changes)
 
@@ -4755,12 +4760,12 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (6 changes)
 
-- We are no longer backing up solr.log and solr_gc.log files in date-stamped copies forever. If you relied on the solr_log_&lt;date&gt; or solr_gc_log_&lt;date&gt; being in the logs folder that will no longer be the case. See SOLR-9570 for details. [SOLR-9570](https://issues.apache.org/jira/browse/SOLR-9570)
-- If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming behavior; otherwise it won't stream. Reminder: "method" is a hint that doesn't change defaults of other parameters.
-- If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the prefix, then you will now get an error as these options are incompatible with numeric faceting.
-- Solr's logging verbosity at the INFO level has been greatly reduced, and you may need to update the log configs to use the DEBUG level to see all the logging messages you used to see at INFO level before.
-- The create/deleteCollection methods on MiniSolrCloudCluster have been deprecated. Clients should instead use the CollectionAdminRequest API. In addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been deprecated in favour of #uploadConfigSet(Path, String)
-- The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so, which had the effect of masking existing environment variables.
+- We are no longer backing up solr.log and solr_gc.log files in date-stamped copies forever. If you relied on the solr_log_&lt;date&gt; or solr_gc_log_&lt;date&gt; being in the logs folder that will no longer be the case. See SOLR-9570 for details. [SOLR-9570](https://issues.apache.org/jira/browse/SOLR-9570) 
+- If you use the JSON Facet API (json.facet) with method=stream, you must now set sort='index asc' to get the streaming behavior; otherwise it won't stream. Reminder: "method" is a hint that doesn't change defaults of other parameters. 
+- If you use the JSON Facet API (json.facet) to facet on a numeric field and if you use mincount=0 or if you set the prefix, then you will now get an error as these options are incompatible with numeric faceting. 
+- Solr's logging verbosity at the INFO level has been greatly reduced, and you may need to update the log configs to use the DEBUG level to see all the logging messages you used to see at INFO level before. 
+- The create/deleteCollection methods on MiniSolrCloudCluster have been deprecated. Clients should instead use the CollectionAdminRequest API. In addition, MiniSolrCloudCluster#uploadConfigDir(File, String) has been deprecated in favour of #uploadConfigSet(Path, String) 
+- The bin/solr.in.sh (bin/solr.in.cmd on Windows) is now completely commented by default. Previously, this wasn't so, which had the effect of masking existing environment variables. 
 
 ### Added (27 changes)
 
@@ -4843,7 +4848,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Move lots of SolrCloud logging from 'info' to 'debug' [SOLR-5563](https://issues.apache.org/jira/browse/SOLR-5563) (janhoy) (Alan Woodward)
 - Remove unreachable printLayout usage in cloud tests. [SOLR-6090](https://issues.apache.org/jira/browse/SOLR-6090) (Cao Manh Dat) (shalin)
 - Reduced logging during startup and shutdown, moved more logs to DEBUG level [SOLR-6677](https://issues.apache.org/jira/browse/SOLR-6677) (janhoy) (Shawn Heisey) (Alan Woodward)
-- Updated the quickstart tutorial to cover the 6.2.0 release, and added ant target "generate-website-quickstart" to convert the bundled version of the tutorial into one suitable for the website. [SOLR-6871](https://issues.apache.org/jira/browse/SOLR-6871)
+- Updated the quickstart tutorial to cover the 6.2.0 release, and added ant target "generate-website-quickstart" to convert the bundled version of the tutorial into one suitable for the website. [SOLR-6871](https://issues.apache.org/jira/browse/SOLR-6871) 
 - Solr stops printing stacktraces in log and output [SOLR-7436](https://issues.apache.org/jira/browse/SOLR-7436) (janhoy) (hossman) (Markus Jelsma)
 - Refuse "bin/solr create" if run as root, unless -force is specified [SOLR-7826](https://issues.apache.org/jira/browse/SOLR-7826) (janhoy) (Binoy Dalal)
 - Moved defaults within bin/solr.in.sh (and bin/solr.in.cmd on Windows) to bin/solr (and bin/solr.cmd) such that the default state of these files is to set nothing. This makes Solr work better with Docker. [SOLR-7850](https://issues.apache.org/jira/browse/SOLR-7850) (David Smiley)
@@ -5122,7 +5127,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Upgrade Notes (1 change)
 
-- If you use historical dates, specifically on or before the year 1582, you should re-index.
+- If you use historical dates, specifically on or before the year 1582, you should re-index. 
 
 ### Fixed (24 changes)
 
@@ -5273,7 +5278,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SQL JDBC - DriverImpl loadParams doesn't support keys with no values in the connection string [SOLR-8179](https://issues.apache.org/jira/browse/SOLR-8179) (Kevin Risden) (Joel Bernstein)
 - Implement Closeable on TupleStream [SOLR-8190](https://issues.apache.org/jira/browse/SOLR-8190) (Kevin Risden) (Joel Bernstein)
 - Change default hdfs tlog replication factor from 1 to 3. [SOLR-8258](https://issues.apache.org/jira/browse/SOLR-8258) (Mark Miller)
-- Remove deprecated JettySolrRunner.getDispatchFilter() [SOLR-8259](https://issues.apache.org/jira/browse/SOLR-8259)
+- Remove deprecated JettySolrRunner.getDispatchFilter() [SOLR-8259](https://issues.apache.org/jira/browse/SOLR-8259) 
 - Change SchemaSimilarityFactory default to BM25Similarity [SOLR-8261](https://issues.apache.org/jira/browse/SOLR-8261) (hossman)
 - Remove Java Serialization from the Streaming API. The /stream handler now only accepts Streaming Expressions. [SOLR-8266](https://issues.apache.org/jira/browse/SOLR-8266) (Jason Gerlowski) (Joel Bernstein)
 - Change implicit default Similarity to use BM25 when luceneMatchVersion &gt;= 6 [SOLR-8270](https://issues.apache.org/jira/browse/SOLR-8270) (hossman)
@@ -5335,7 +5340,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Other (1 change)
 
-- Lucene only release
+- Lucene only release 
 
 
 [5.5.2] - 2016-06-25
@@ -5503,7 +5508,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Highlighting a geo RPT field would throw an NPE instead of doing nothing. [SOLR-8541](https://issues.apache.org/jira/browse/SOLR-8541) (Pawel Rog) (David Smiley)
 - Core discovery was not following symlinks [SOLR-8548](https://issues.apache.org/jira/browse/SOLR-8548) (Aaron LaBella) (Alan Woodward)
 - Make collection deletion more robust. [SOLR-8551](https://issues.apache.org/jira/browse/SOLR-8551) (Mark Miller)
-- Fix Embedded ZooKeeper to use &lt;solrHome&gt;/zoo_data for it's data directory [SOLR-8564](https://issues.apache.org/jira/browse/SOLR-8564)
+- Fix Embedded ZooKeeper to use &lt;solrHome&gt;/zoo_data for it's data directory [SOLR-8564](https://issues.apache.org/jira/browse/SOLR-8564) 
 - Fix HDFSLogReader replay status numbers, a performance bug where we can reopen FSDataInputStream much too often, and an hdfs tlog data integrity bug. [SOLR-8575](https://issues.apache.org/jira/browse/SOLR-8575) (Mark Miller) (Patrick Dvorack) (yonik)
 - memory leak in JsonRecordReader affecting /update/json/docs. Large payloads cause OOM [SOLR-8582](https://issues.apache.org/jira/browse/SOLR-8582) (noble) (shalin)
 - Regular expression queries starting with escaped forward slash caused an exception. [SOLR-8605](https://issues.apache.org/jira/browse/SOLR-8605) (Scott Blum) (yonik)
@@ -5608,7 +5613,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Add a LIST command to ConfigSets API [SOLR-7995](https://issues.apache.org/jira/browse/SOLR-7995) (Gregory Chanan)
 - Basic auth support in SolrJ [SOLR-8053](https://issues.apache.org/jira/browse/SOLR-8053) (noble)
 - CloneFieldUpdateProcessorFactory now supports choosing a "dest" field name based on a regex pattern and replacement init options. [SOLR-8113](https://issues.apache.org/jira/browse/SOLR-8113) (Gus Heck) (hossman)
-- Create/delete fields/dynamic fields/copy fields via schema tab on Angular UI [SOLR-8139](https://issues.apache.org/jira/browse/SOLR-8139)
+- Create/delete fields/dynamic fields/copy fields via schema tab on Angular UI [SOLR-8139](https://issues.apache.org/jira/browse/SOLR-8139) 
 - Introduce possibility to configure ParseContext in ExtractingRequestHandler/ExtractingDocumentLoader [SOLR-8166](https://issues.apache.org/jira/browse/SOLR-8166) (Andriy Binetsky) (Uwe Schindler)
 - JSON Facet API: add "method" param to terms/field facets to give an execution hint for what method should be used to facet. [SOLR-8217](https://issues.apache.org/jira/browse/SOLR-8217) (yonik)
 - SchemaSimilarityFactory now supports a 'defaultSimFromFieldType' init option for using a fieldType name to identify which Similarity to use as a default. [SOLR-8329](https://issues.apache.org/jira/browse/SOLR-8329) (hossman)
@@ -5737,7 +5742,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SolrResourceLoader now takes a Path as its instance directory [SOLR-8302](https://issues.apache.org/jira/browse/SOLR-8302) (Alan Woodward) (Shawn Heisey)
 - CustomBufferedIndexInput now includes resource description when throwing EOFException. [SOLR-8303](https://issues.apache.org/jira/browse/SOLR-8303) (Mike Drob) (Uwe Schindler)
 - Removed default core checks in the dispatch filter since we don't have a default core anymore [SOLR-8315](https://issues.apache.org/jira/browse/SOLR-8315) (Varun Thacker)
-- Standardize and fix logger creation and usage so that they aren't shared across source files.(Jason Gerlowski, Uwe Schindler, Anshum Gupta) [SOLR-8330](https://issues.apache.org/jira/browse/SOLR-8330)
+- Standardize and fix logger creation and usage so that they aren't shared across source files.(Jason Gerlowski, Uwe Schindler, Anshum Gupta) [SOLR-8330](https://issues.apache.org/jira/browse/SOLR-8330) 
 - Fix check-example-lucene-match-version Ant task and addVersion.py script to check and update luceneMatchVersion under solr/example/ configs as well logic. [SOLR-8363](https://issues.apache.org/jira/browse/SOLR-8363) (Varun Thacker)
 
 
@@ -5789,7 +5794,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Expose znodeVersion property for each of the collections returned for the clusterstatus operation in the collections API [SOLR-7389](https://issues.apache.org/jira/browse/SOLR-7389) (Marius Grama) (shalin)
 - Expose HDFS Block Locality Metrics via JMX [SOLR-7458](https://issues.apache.org/jira/browse/SOLR-7458) (Mike Drob) (Mark Miller)
 - A DocTransformer can now request fields from the SolrIndexSearcher that are not necessarily returned in the file SolrDocument by returning a list of fields from DocTransformer#getExtraRequestFields [SOLR-7622](https://issues.apache.org/jira/browse/SOLR-7622) (ryan)
-- MoreLikeThis QParser now supports all options provided by the MLT Handler i.e. mintf, mindf, minwl, maxwl, maxqt, and maxntp. [SOLR-7639](https://issues.apache.org/jira/browse/SOLR-7639)
+- MoreLikeThis QParser now supports all options provided by the MLT Handler i.e. mintf, mindf, minwl, maxwl, maxqt, and maxntp. [SOLR-7639](https://issues.apache.org/jira/browse/SOLR-7639) 
 - New response format added wt=smile [SOLR-7651](https://issues.apache.org/jira/browse/SOLR-7651) (noble)
 - Add 'port' tag support in replica placement rules [SOLR-7668](https://issues.apache.org/jira/browse/SOLR-7668) (Adam McElwee) (Noble Paul)
 - Faceting on nested objects / Block-join faceting with the new JSON Facet API. Example: Assuming books with nested pages and an input domain of pages, the following will switch the domain to books before faceting on the author field: authors:{ type:terms, field:author, domain:{toParent:"type:book"} } [SOLR-7676](https://issues.apache.org/jira/browse/SOLR-7676) (yonik)
@@ -5883,7 +5888,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Fix typo bug with TestConfigOverlay [SOLR-7740](https://issues.apache.org/jira/browse/SOLR-7740) (Christine Poerschke) (Ramkumar Aiyengar)
 - Change TestConfig.testDefaults to cover all SolrIndexConfig fields [SOLR-7750](https://issues.apache.org/jira/browse/SOLR-7750) (Christine Poerschke) (Ramkumar Aiyengar)
 - Removed fastutil and java-hll dependency, integrated HyperLogLog from java-hll into Solr core. [SOLR-7787](https://issues.apache.org/jira/browse/SOLR-7787) (Dawid Weiss)
-- JSON Facet API: the avg() facet function now skips missing values rather than treating them as a 0 value. The def() function can be used to treat missing values as 0 if that is desired. Example: facet:{ mean:"avg(def(myfield,0))" } [SOLR-7800](https://issues.apache.org/jira/browse/SOLR-7800)
+- JSON Facet API: the avg() facet function now skips missing values rather than treating them as a 0 value. The def() function can be used to treat missing values as 0 if that is desired. Example: facet:{ mean:"avg(def(myfield,0))" } [SOLR-7800](https://issues.apache.org/jira/browse/SOLR-7800) 
 - Prevent class loading deadlock in TrieDateField; refactor date formatting and parsing out of TrieDateField and move to static utility class DateFormatUtil. [SOLR-7803](https://issues.apache.org/jira/browse/SOLR-7803) (Markus Heiden) (Uwe Schindler)
 - Update Kite Morphlines to 1.1.0 [SOLR-7805](https://issues.apache.org/jira/browse/SOLR-7805) (Mark Miller)
 - TestMiniSolrCloudCluster.testCollectionCreateSearchDelete async collection-creation (sometimes) [SOLR-7823](https://issues.apache.org/jira/browse/SOLR-7823) (Christine Poerschke)
@@ -5978,7 +5983,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - SolrConfig#getConfigOverlay does not clean up it's resources. [SOLR-7426](https://issues.apache.org/jira/browse/SOLR-7426) (Mark Miller)
 - DebugComponent does not return the right requestPurpose for pivot facet refinements. [SOLR-7440](https://issues.apache.org/jira/browse/SOLR-7440) (shalin)
 - Implemented range faceting over date fields in the new facet module (JSON Facet API). [SOLR-7443](https://issues.apache.org/jira/browse/SOLR-7443) (yonik)
-- solr/server/etc/jetty-https-ssl.xml hard codes the key store file and password rather than pulling them from the sysprops defined in solr/bin/solr.in.{sh,cmd} [SOLR-7449](https://issues.apache.org/jira/browse/SOLR-7449)
+- solr/server/etc/jetty-https-ssl.xml hard codes the key store file and password rather than pulling them from the sysprops defined in solr/bin/solr.in.{sh,cmd} [SOLR-7449](https://issues.apache.org/jira/browse/SOLR-7449) 
 - Fix edge case which could cause `bin/solr stop` to hang forever [SOLR-7450](https://issues.apache.org/jira/browse/SOLR-7450) (Ramkumar Aiyengar)
 - Fix check-licenses to correctly detect if start.jar.sha1 is incorrect [SOLR-7469](https://issues.apache.org/jira/browse/SOLR-7469) (hossman)
 - Fix sample data to eliminate file order dependency for successful indexing, also fixed SolrCloudExampleTest to help catch this in the future. [SOLR-7470](https://issues.apache.org/jira/browse/SOLR-7470) (hossman)
@@ -6195,7 +6200,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Add an onlyIfDown flag for DELETEREPLICA collections API command [SOLR-6482](https://issues.apache.org/jira/browse/SOLR-6482) (Erick Erickson)
 - ReplicationHandler should have an option to throttle the speed of replication [SOLR-6485](https://issues.apache.org/jira/browse/SOLR-6485) (Varun Thacker) (Noble Paul)
 - Add a collections API call to add/delete arbitrary properties to a specific replica. Optionally adding sliceUnique=true will remove this property from all other replicas within a particular slice. [SOLR-6512](https://issues.apache.org/jira/browse/SOLR-6512) (Erick Erickson)
-- Add a collectionsAPI call BALANCESLICEUNIQUE. Allows the even distribution of custom replica properties across nodes making up a collection, at most one node per slice will have the property. [SOLR-6513](https://issues.apache.org/jira/browse/SOLR-6513)
+- Add a collectionsAPI call BALANCESLICEUNIQUE. Allows the even distribution of custom replica properties across nodes making up a collection, at most one node per slice will have the property. [SOLR-6513](https://issues.apache.org/jira/browse/SOLR-6513) 
 - Support editing common solrconfig.xml values [SOLR-6533](https://issues.apache.org/jira/browse/SOLR-6533) (Noble Paul)
 - Give HttpSolrClient the ability to send PUT requests [SOLR-6543](https://issues.apache.org/jira/browse/SOLR-6543) (Gregory Chanan)
 - SolrRequest support for query params [SOLR-6565](https://issues.apache.org/jira/browse/SOLR-6565) (Gregory Chanan)
@@ -6593,7 +6598,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Opened up "public" access to DataSource, DocBuilder, and EntityProcessorWrapper in DIH. [SOLR-6194](https://issues.apache.org/jira/browse/SOLR-6194) (Aaron LaBella) (ehatcher)
 - Fixed bug in TestReplicationHandler.doTestIndexAndConfigReplication. [SOLR-6228](https://issues.apache.org/jira/browse/SOLR-6228) (shalin)
 - Increased timeouts and hardened the RollingRestartTest. [SOLR-6231](https://issues.apache.org/jira/browse/SOLR-6231) (Noble Paul) (shalin)
-- CoreContainer.remove() replaced with CoreContainer.unload(). A call to unload will also close the core. [SOLR-6232](https://issues.apache.org/jira/browse/SOLR-6232)
+- CoreContainer.remove() replaced with CoreContainer.unload(). A call to unload will also close the core. [SOLR-6232](https://issues.apache.org/jira/browse/SOLR-6232) 
 - Removed unused coreName parameter in ZkStateReader.getReplicaProps. [SOLR-6240](https://issues.apache.org/jira/browse/SOLR-6240) (shalin)
 - Harden the HttpPartitionTest. [SOLR-6241](https://issues.apache.org/jira/browse/SOLR-6241) (shalin)
 - A couple of small improvements to UnInvertedField class. [SOLR-6252](https://issues.apache.org/jira/browse/SOLR-6252) (Vamsee Yarlagadda) (Gregory Chanan) (Mark Miller)
@@ -6675,7 +6680,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Fix method visibility of Evaluator, refactor DateFormatEvaluator for extensibility. [SOLR-6013](https://issues.apache.org/jira/browse/SOLR-6013) (Aaron LaBella) (shalin)
 - Deprecate getAnalyzer() in IndexField and FieldType, and add getIndexAnalyzer(). [SOLR-6022](https://issues.apache.org/jira/browse/SOLR-6022) (Ryan Ernst)
 - Replace mentions of CommonsHttpSolrServer with HttpSolrServer and StreamingUpdateSolrServer with ConcurrentUpdateSolrServer. [SOLR-6025](https://issues.apache.org/jira/browse/SOLR-6025) (Ahmet Arslan) (shalin)
-- REQUESTSTATUS Collection API now also checks for submitted tasks which are yet to begin execution. [SOLR-6026](https://issues.apache.org/jira/browse/SOLR-6026)
+- REQUESTSTATUS Collection API now also checks for submitted tasks which are yet to begin execution. [SOLR-6026](https://issues.apache.org/jira/browse/SOLR-6026) 
 - Refactor duplicate Collector code in SolrIndexSearcher [SOLR-6067](https://issues.apache.org/jira/browse/SOLR-6067) (Christine Poerschke) (hossman)
 - Refactor DocRouter.getDocRouter to accept routerName as a String. [SOLR-6116](https://issues.apache.org/jira/browse/SOLR-6116) (shalin)
 - Removed deprecated analysis factories and fieldTypes from the example schema.xml [SOLR-6128](https://issues.apache.org/jira/browse/SOLR-6128) (hossman)
@@ -6906,7 +6911,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Using the hdfs write cache can result in appearance of corrupted index. [SOLR-5666](https://issues.apache.org/jira/browse/SOLR-5666) (Mark Miller)
 - Performance problem when not using hdfs block cache. [SOLR-5667](https://issues.apache.org/jira/browse/SOLR-5667) (Mark Miller)
 - HTTPSolrServer doesn't set own property correctly in setFollowRedirects. [SOLR-5673](https://issues.apache.org/jira/browse/SOLR-5673) (Frank Wesemann) (shalin)
-- cloud-scripts/zkcli.bat: quote option log4j (Günther Ruck via steffkes [SOLR-5675](https://issues.apache.org/jira/browse/SOLR-5675)
+- cloud-scripts/zkcli.bat: quote option log4j (Günther Ruck via steffkes [SOLR-5675](https://issues.apache.org/jira/browse/SOLR-5675) 
 - SolrCloud updates rejected if talking to secure ZooKeeper. [SOLR-5676](https://issues.apache.org/jira/browse/SOLR-5676) (Greg Chanan) (Mark Miller)
 - SolrZkClient should throw a SolrException when connect times out rather than a RuntimeException. [SOLR-5678](https://issues.apache.org/jira/browse/SOLR-5678) (Karl Wright) (Anshum Gupta) (Mark Miller)
 - Shard splitting fails with ClassCastException on collections upgraded from 4.5 and earlier versions. [SOLR-5679](https://issues.apache.org/jira/browse/SOLR-5679) (Brett Hoerner) (shalin)
@@ -7198,7 +7203,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - HitRatio on caches is now exposed over JMX MBeans as a float. [SOLR-4616](https://issues.apache.org/jira/browse/SOLR-4616) (Greg Bowyer)
 - Solrj doesn't return "between" count in range facets [SOLR-4776](https://issues.apache.org/jira/browse/SOLR-4776) (Philip K. Warren) (shalin)
 - Multiple Entities DIH delta import: dataimporter.[entityName].last_index_time is empty. [SOLR-4788](https://issues.apache.org/jira/browse/SOLR-4788) (chakming wong) (James Dyer) (shalin)
-- Throw an error if a core has the same name as another core, both old and new style solr.xml [SOLR-4790](https://issues.apache.org/jira/browse/SOLR-4790)
+- Throw an error if a core has the same name as another core, both old and new style solr.xml [SOLR-4790](https://issues.apache.org/jira/browse/SOLR-4790) 
 - solr.xml sharedLib does not work in 4.3.0 [SOLR-4791](https://issues.apache.org/jira/browse/SOLR-4791) (Ryan Ernst) (Jan Høydahl via Erick Erickson)
 - Fixed core discovery mode (ie: new style solr.xml) to treat 'collection1' as the default core name. [SOLR-4803](https://issues.apache.org/jira/browse/SOLR-4803) (hossman)
 - SolrCore#reload should not call preRegister and publish a DOWN state to ZooKeeper. [SOLR-4805](https://issues.apache.org/jira/browse/SOLR-4805) (Mark Miller) (Jared Rodriguez)
@@ -7219,7 +7224,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Fix race conditions in shutdown of CoreContainer and getCore that could cause a request to attempt to use a core that has shut down. [SOLR-4960](https://issues.apache.org/jira/browse/SOLR-4960) (yonik)
 - Outgrowth of SOLR-4960 that includes transient cores and pending cores [SOLR-4974](https://issues.apache.org/jira/browse/SOLR-4974) [SOLR-4960](https://issues.apache.org/jira/browse/SOLR-4960) (Erick Erickson)
 - Time is stripped from datetime column when imported into Solr date field if convertType=true. [SOLR-4978](https://issues.apache.org/jira/browse/SOLR-4978) (Bill Au) (shalin)
-- Creating a core while referencing system properties looks like it loses files Actually, instanceDir, config, dataDir and schema are not dereferenced properly when creating cores that reference sys vars (e.g. &dataDir=${dir}). In the dataDir case in particular this leads to the index being put in a directory literally named ${dir} but on restart the sysvar will be properly dereferenced. [SOLR-4982](https://issues.apache.org/jira/browse/SOLR-4982)
+- Creating a core while referencing system properties looks like it loses files Actually, instanceDir, config, dataDir and schema are not dereferenced properly when creating cores that reference sys vars (e.g. &dataDir=${dir}). In the dataDir case in particular this leads to the index being put in a directory literally named ${dir} but on restart the sysvar will be properly dereferenced. [SOLR-4982](https://issues.apache.org/jira/browse/SOLR-4982) 
 - The splitshard api doesn't call commit on new sub shards before switching shard states. Multiple bugs related to sub shard recovery and replication are also fixed. [SOLR-4997](https://issues.apache.org/jira/browse/SOLR-4997) (shalin)
 - ManagedIndexSchema doesn't persist uniqueKey tag after calling addFields method. [SOLR-5000](https://issues.apache.org/jira/browse/SOLR-5000) (Jun Ohtani) (Steve Rowe)
 - The Overseer should avoid publishing the state for collections that do not exist under the /collections zk node. [SOLR-5018](https://issues.apache.org/jira/browse/SOLR-5018) (Mark Miller)
@@ -7227,7 +7232,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - ShardHandlerFactory was not being created properly when using new-style solr.xml, and was not being persisted properly when using old-style. [SOLR-5028](https://issues.apache.org/jira/browse/SOLR-5028) [SOLR-5029](https://issues.apache.org/jira/browse/SOLR-5029) (Tomás Fernández Löbbe) (Ryan Ernst) (Alan Woodward)
 - A facet.query that parses or analyzes down to a null Query would throw a NPE. Fixed. [SOLR-5034](https://issues.apache.org/jira/browse/SOLR-5034) (David Smiley)
 - The CSV loader now accepts field names that are not in the schema. [SOLR-5037](https://issues.apache.org/jira/browse/SOLR-5037) (gsingers) (ehatcher) (Steve Rowe)
-- Admin/Schema Browser displays -1 for term counts for multiValued fields. [SOLR-5039](https://issues.apache.org/jira/browse/SOLR-5039)
+- Admin/Schema Browser displays -1 for term counts for multiValued fields. [SOLR-5039](https://issues.apache.org/jira/browse/SOLR-5039) 
 
 ### Other (17 changes)
 
@@ -7469,7 +7474,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Other (15 changes)
 
-- Added more tests for VelocityResponseWriter [SOLR-2470](https://issues.apache.org/jira/browse/SOLR-2470)
+- Added more tests for VelocityResponseWriter [SOLR-2470](https://issues.apache.org/jira/browse/SOLR-2470) 
 - A bare * without a field specification is treated as *:* by the lucene and edismax query parsers. [SOLR-2996](https://issues.apache.org/jira/browse/SOLR-2996) (hossman) (Jan Høydahl) (Alan Woodward) (yonik)
 - SurroundQParserPlugin highlighting tests [SOLR-3060](https://issues.apache.org/jira/browse/SOLR-3060) (Ahmet Arslan) (hossman)
 - Include lucene codecs jar and enable per-field postings and docvalues support in the schema.xml [SOLR-3843](https://issues.apache.org/jira/browse/SOLR-3843) (Robert Muir) (Steve Rowe)
@@ -7491,7 +7496,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Added (35 changes)
 
-- The ability to specify "transient" and "loadOnStartup" as a new properties of &lt;core&gt; tags in solr.xml. Can specify "transientCacheSize" in the &lt;cores&gt; tag. Together these allow cores to be loaded only when needed and only transientCacheSize transient cores will be loaded at a time, the rest aged out on an LRU basis. [SOLR-1028](https://issues.apache.org/jira/browse/SOLR-1028)
+- The ability to specify "transient" and "loadOnStartup" as a new properties of &lt;core&gt; tags in solr.xml. Can specify "transientCacheSize" in the &lt;cores&gt; tag. Together these allow cores to be loaded only when needed and only transientCacheSize transient cores will be loaded at a time, the rest aged out on an LRU basis. [SOLR-1028](https://issues.apache.org/jira/browse/SOLR-1028) 
 - Add extra statistics to RequestHandlers - 5 & 15-minute reqs/sec rolling averages; median, 75th, 95th, 99th, 99.9th percentile request times [SOLR-1972](https://issues.apache.org/jira/browse/SOLR-1972) (Alan Woodward) (Shawn Heisey) (Adrien Grand) (Uwe Schindler)
 - DIH's "formatDate" function now supports a timezone as an optional fourth parameter [SOLR-2201](https://issues.apache.org/jira/browse/SOLR-2201) (James Dyer) (Mark Waddle)
 - Enhanced pivot faceting to use local-params in the same way that regular field value faceting can. This means support for excluding a filter query, using a different output key, and specifying 'threads' to do facet.method=fcs concurrently. PivotFacetHelper now extends SimpleFacet and the getFacetImplementation() extension hook was removed. [SOLR-2255](https://issues.apache.org/jira/browse/SOLR-2255) (dsmiley)
@@ -7691,7 +7696,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Boolean type added to function queries, along with new functions exists(), if(), and(), or(), xor(), not(), def(), and true and false constants. [SOLR-2136](https://issues.apache.org/jira/browse/SOLR-2136) (yonik)
 - You may now specify a 'soft' commit when committing. This will use Lucene's NRT feature to avoid guaranteeing documents are on stable storage in exchange for faster reopen times. There is also a new 'soft' autocommit tracker that can be configured. [SOLR-2193](https://issues.apache.org/jira/browse/SOLR-2193) [SOLR-2565](https://issues.apache.org/jira/browse/SOLR-2565) (Mark Miller) (Robert Muir)
 - Pseudo-join queries / filters. Examples: - To restrict to the set of parents with at least one blue-eyed child: fq={!join from=parent to=name}eyes:blue - To restrict to the set of children with at least one blue-eyed parent: fq={!join from=name to=parent}eyes:blue [SOLR-2272](https://issues.apache.org/jira/browse/SOLR-2272) (yonik)
-- New 'field("...")' function syntax for referring to complex field names (containing whitespace or special characters) in functions. [SOLR-2335](https://issues.apache.org/jira/browse/SOLR-2335)
+- New 'field("...")' function syntax for referring to complex field names (containing whitespace or special characters) in functions. [SOLR-2335](https://issues.apache.org/jira/browse/SOLR-2335) 
 - Add support for using &lt;similarity/&gt; in a schema's fieldType, for customizing scoring on a per-field basis. [SOLR-2338](https://issues.apache.org/jira/browse/SOLR-2338) (hossman) (yonik) (rmuir)
 - /browse improvements: generalize range and date facet display [SOLR-2383](https://issues.apache.org/jira/browse/SOLR-2383) (Jan Høydahl)
 - Add CollationField, which is much more efficient than the Solr 3.x CollationKeyFilterFactory, and also supports Locale-sensitive range queries. [SOLR-2396](https://issues.apache.org/jira/browse/SOLR-2396) (rmuir)
@@ -7893,7 +7898,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Other (81 changes)
 
-- FunctionQuery, DocValues (and its impls), ValueSource (and its impls) and BoostedQuery have been consolidated into the queries module. They can now be found at o.a.l.queries.function. [LUCENE-2883](https://issues.apache.org/jira/browse/LUCENE-2883)
+- FunctionQuery, DocValues (and its impls), ValueSource (and its impls) and BoostedQuery have been consolidated into the queries module. They can now be found at o.a.l.queries.function. [LUCENE-2883](https://issues.apache.org/jira/browse/LUCENE-2883) 
 - Moved some spellchecker and suggest APIs to modules/suggest: HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the suggester APIs and implementations. [LUCENE-2995](https://issues.apache.org/jira/browse/LUCENE-2995) (rmuir)
 - Moved MutableValue classes to new 'common' module. [LUCENE-3232](https://issues.apache.org/jira/browse/LUCENE-3232) (Chris Male)
 - 'luke' ant target has been disabled due to incompatibilities with XML queryparser location [LUCENE-3286](https://issues.apache.org/jira/browse/LUCENE-3286) (Chris Male)
@@ -7926,7 +7931,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Enhance CoreAdmin STATUS command to return index size. [SOLR-2698](https://issues.apache.org/jira/browse/SOLR-2698) (Yury Kats) (hossman) (Mark Miller)
 - Updated changes2html.pl to handle Solr's CHANGES.txt; added target 'changes-to-html' to solr/build.xml. [SOLR-2747](https://issues.apache.org/jira/browse/SOLR-2747) (Steve Rowe) (Robert Muir)
 - Maven configuration: Excluded transitive stax:stax-api dependency from org.codehaus.woodstox:wstx-asl dependency. [SOLR-2756](https://issues.apache.org/jira/browse/SOLR-2756) (David Smiley)
-- Due to low level changes to support SolrCloud, the uniqueKey field can no longer be populated via &lt;copyField/&gt; or &lt;field default=...&gt; in the schema.xml. [SOLR-2796](https://issues.apache.org/jira/browse/SOLR-2796)
+- Due to low level changes to support SolrCloud, the uniqueKey field can no longer be populated via &lt;copyField/&gt; or &lt;field default=...&gt; in the schema.xml. [SOLR-2796](https://issues.apache.org/jira/browse/SOLR-2796) 
 - The /update/json and /update/csv URLs were restored to aid in the migration of existing clients. [SOLR-2857](https://issues.apache.org/jira/browse/SOLR-2857) (yonik)
 - More explicit lexical resources location logged if Carrot2 clustering extension is used. Fixed solr. impl. of IResource and IResourceLookup. [SOLR-2862](https://issues.apache.org/jira/browse/SOLR-2862) (Dawid Weiss)
 - Default QueryResponseWriters are now initialized via init() with an empty NamedList. [SOLR-3005](https://issues.apache.org/jira/browse/SOLR-3005) (Gasol Wu) (Chris Male)
@@ -8066,7 +8071,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Boolean type added to function queries, along with new functions exists(), if(), and(), or(), xor(), not(), def(), and true and false constants. [SOLR-2136](https://issues.apache.org/jira/browse/SOLR-2136) (yonik)
 - You may now specify a 'soft' commit when committing. This will use Lucene's NRT feature to avoid guaranteeing documents are on stable storage in exchange for faster reopen times. There is also a new 'soft' autocommit tracker that can be configured. [SOLR-2193](https://issues.apache.org/jira/browse/SOLR-2193) [SOLR-2565](https://issues.apache.org/jira/browse/SOLR-2565) (Mark Miller) (Robert Muir)
 - Pseudo-join queries / filters. Examples: - To restrict to the set of parents with at least one blue-eyed child: fq={!join from=parent to=name}eyes:blue - To restrict to the set of children with at least one blue-eyed parent: fq={!join from=name to=parent}eyes:blue [SOLR-2272](https://issues.apache.org/jira/browse/SOLR-2272) (yonik)
-- New 'field("...")' function syntax for referring to complex field names (containing whitespace or special characters) in functions. [SOLR-2335](https://issues.apache.org/jira/browse/SOLR-2335)
+- New 'field("...")' function syntax for referring to complex field names (containing whitespace or special characters) in functions. [SOLR-2335](https://issues.apache.org/jira/browse/SOLR-2335) 
 - Add support for using &lt;similarity/&gt; in a schema's fieldType, for customizing scoring on a per-field basis. [SOLR-2338](https://issues.apache.org/jira/browse/SOLR-2338) (hossman) (yonik) (rmuir)
 - /browse improvements: generalize range and date facet display [SOLR-2383](https://issues.apache.org/jira/browse/SOLR-2383) (Jan Høydahl) (yonik)
 - Add CollationField, which is much more efficient than the Solr 3.x CollationKeyFilterFactory, and also supports Locale-sensitive range queries. [SOLR-2396](https://issues.apache.org/jira/browse/SOLR-2396) (rmuir)
@@ -8166,7 +8171,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 
 ### Other (49 changes)
 
-- FunctionQuery, DocValues (and its impls), ValueSource (and its impls) and BoostedQuery have been consolidated into the queries module. They can now be found at o.a.l.queries.function. [LUCENE-2883](https://issues.apache.org/jira/browse/LUCENE-2883)
+- FunctionQuery, DocValues (and its impls), ValueSource (and its impls) and BoostedQuery have been consolidated into the queries module. They can now be found at o.a.l.queries.function. [LUCENE-2883](https://issues.apache.org/jira/browse/LUCENE-2883) 
 - Moved some spellchecker and suggest APIs to modules/suggest: HighFrequencyDictionary, SortedIterator, TermFreqIterator, and the suggester APIs and implementations. [LUCENE-2995](https://issues.apache.org/jira/browse/LUCENE-2995) (rmuir)
 - Moved MutableValue classes to new 'common' module. [LUCENE-3232](https://issues.apache.org/jira/browse/LUCENE-3232) (Chris Male)
 - 'luke' ant target has been disabled due to incompatibilities with XML queryparser location [LUCENE-3286](https://issues.apache.org/jira/browse/LUCENE-3286) (Chris Male)
@@ -8196,7 +8201,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - FieldTypePluginLoader has been refactored out of IndexSchema and made public. [SOLR-2663](https://issues.apache.org/jira/browse/SOLR-2663) (hossman)
 - Enhance CoreAdmin STATUS command to return index size. [SOLR-2698](https://issues.apache.org/jira/browse/SOLR-2698) (Yury Kats) (hossman) (Mark Miller)
 - Maven configuration: Excluded transitive stax:stax-api dependency from org.codehaus.woodstox:wstx-asl dependency. [SOLR-2756](https://issues.apache.org/jira/browse/SOLR-2756) (David Smiley) (Steve Rowe)
-- Due to low level changes to support SolrCloud, the uniqueKey field can no longer be populated via &lt;copyField/&gt; or &lt;field default=...&gt; in the schema.xml. [SOLR-2796](https://issues.apache.org/jira/browse/SOLR-2796)
+- Due to low level changes to support SolrCloud, the uniqueKey field can no longer be populated via &lt;copyField/&gt; or &lt;field default=...&gt; in the schema.xml. [SOLR-2796](https://issues.apache.org/jira/browse/SOLR-2796) 
 - More explicit lexical resources location logged if Carrot2 clustering extension is used. Fixed solr. impl. of IResource and IResourceLookup. [SOLR-2862](https://issues.apache.org/jira/browse/SOLR-2862) (Dawid Weiss)
 - Default QueryResponseWriters are now initialized via init() with an empty NamedList. [SOLR-3005](https://issues.apache.org/jira/browse/SOLR-3005) (Gasol Wu) (Chris Male)
 - logOnce from SolrException logOnce and all the supporting structure is gone. abortOnConfigurationError is also gone as it is no longer referenced. Errors should be caught and logged at the top-most level or logged and NOT propagated up the chain. [SOLR-3032](https://issues.apache.org/jira/browse/SOLR-3032) (Erick Erickson)
@@ -8399,7 +8404,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Upgrade commons-compress to 1.2 [LUCENE-3457](https://issues.apache.org/jira/browse/LUCENE-3457) (Doron Cohen)
 - Upgrade Solr to Tika 0.10 [SOLR-2372](https://issues.apache.org/jira/browse/SOLR-2372) (janhoy)
 - Remove commitLockTimeout option from solrconfig.xml [SOLR-2591](https://issues.apache.org/jira/browse/SOLR-2591) (Luca Cavanna) (Martijn van Groningen)
-- Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar. [SOLR-2746](https://issues.apache.org/jira/browse/SOLR-2746)
+- Upgraded UIMA dependencies from *-2.3.1-SNAPSHOT.jar to *-2.3.1.jar. [SOLR-2746](https://issues.apache.org/jira/browse/SOLR-2746) 
 - Make both "update.chain" and the deprecated "update.param" work consistently everywhere; see also SOLR-2105. [SOLR-2750](https://issues.apache.org/jira/browse/SOLR-2750) [SOLR-2105](https://issues.apache.org/jira/browse/SOLR-2105) (Mark Miller) (janhoy)
 - min() and max() functions now support an arbitrary number of ValueSources [SOLR-2757](https://issues.apache.org/jira/browse/SOLR-2757) (Bill Bell) (hossman)
 - Moved ConcurrentLRUCache from o.a.s.common.util package in the solrj module to the o.a.s.util package in the Solr core module. [SOLR-2758](https://issues.apache.org/jira/browse/SOLR-2758) (David Smiley) (Steve Rowe)
@@ -8564,7 +8569,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Support sorting on trie fields with Distributed Search. [SOLR-1110](https://issues.apache.org/jira/browse/SOLR-1110) (Mark Miller) (Uwe Schindler) (shalin)
 - &lt;bool&gt;on&lt;/bool&gt; and &lt;bool&gt;yes&lt;/bool&gt; work as expected in solrconfig.xml. [SOLR-1115](https://issues.apache.org/jira/browse/SOLR-1115) (koji)
 - Add a Binary FieldType [SOLR-1116](https://issues.apache.org/jira/browse/SOLR-1116) (noble)
-- CoreAdminhandler should not need a core . This makes it possible to start a Solr server w/o a core .(noble) [SOLR-1121](https://issues.apache.org/jira/browse/SOLR-1121)
+- CoreAdminhandler should not need a core . This makes it possible to start a Solr server w/o a core .(noble) [SOLR-1121](https://issues.apache.org/jira/browse/SOLR-1121) 
 - Add a top() function query that causes its argument to have its values derived from the top level IndexReader, even when invoked from a sub-reader. top() is implicitly used for the ord() and rord() functions. [SOLR-1124](https://issues.apache.org/jira/browse/SOLR-1124) (yonik)
 - Added metadata output to extraction request handler "extract only" option. [SOLR-1128](https://issues.apache.org/jira/browse/SOLR-1128) (gsingers)
 - FieldTypes can now output multiple Fields per Type and still be searched. This can be handy for hiding the details of a particular implementation such as in the spatial case. [SOLR-1131](https://issues.apache.org/jira/browse/SOLR-1131) (Chris Mattmann) (shalin) (noble) (gsingers) (yonik)
@@ -8663,7 +8668,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Allow tagging and exclusion of main query for faceting. [SOLR-2325](https://issues.apache.org/jira/browse/SOLR-2325) (yonik)
 - Add configurable IndexReaderFactory so that alternate IndexReader implementations can be specified via solrconfig.xml. Note that using a custom IndexReader may be incompatible with ReplicationHandler (see comments in SOLR-1366). This should be treated as an experimental feature. [SOLR-243](https://issues.apache.org/jira/browse/SOLR-243) [SOLR-1366](https://issues.apache.org/jira/browse/SOLR-1366) (Andrzej Bialecki) (hossman) (Mark Miller) (John Wang)
 - Added support for extracting content from binary documents like MS Word and PDF using Apache Tika. See also contrib/extraction/CHANGES.txt [SOLR-284](https://issues.apache.org/jira/browse/SOLR-284) (Eric Pugh) (Chris Harris) (yonik) (gsingers)
-- Date Faceting now supports a "facet.date.include" param for specifying when the upper & lower end points of computed date ranges should be included in the range. Legal values are: "all", "lower", "upper", "edge", and "outer". For backwards compatibility the default value is the set: [lower,upper,edge], so that all ranges between start and end are inclusive of their endpoints, but the "before" and "after" ranges are not. [SOLR-397](https://issues.apache.org/jira/browse/SOLR-397)
+- Date Faceting now supports a "facet.date.include" param for specifying when the upper & lower end points of computed date ranges should be included in the range. Legal values are: "all", "lower", "upper", "edge", and "outer". For backwards compatibility the default value is the set: [lower,upper,edge], so that all ranges between start and end are inclusive of their endpoints, but the "before" and "after" ranges are not. [SOLR-397](https://issues.apache.org/jira/browse/SOLR-397) 
 - Add configurable DirectoryProvider so that alternate Directory implementations can be specified via solrconfig.xml. The default DirectoryProvider will use NIOFSDirectory for better concurrency on non Windows platforms. [SOLR-465](https://issues.apache.org/jira/browse/SOLR-465) (Mark Miller) (TJ Laurenzo) (yonik)
 - Add maxChars attribute for copyField function so that the length limit for destination can be specified. [SOLR-538](https://issues.apache.org/jira/browse/SOLR-538) (Georgios Stamatis) (Lars Kotthoff) (Chris Harris) (koji)
 - Add support for globbing in field names to highlight. For example, hl.fl=*_text will highlight all fieldnames ending with _text. [SOLR-540](https://issues.apache.org/jira/browse/SOLR-540) (Lars Kotthoff) (yonik)
@@ -8711,7 +8716,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Adding a StreamingUpdateSolrServer that writes update commands to an open HTTP connection. If you are using solrj for bulk update requests you should consider switching to this implementaion. However, note that the error handling is not immediate as it is with the standard SolrServer. [SOLR-906](https://issues.apache.org/jira/browse/SOLR-906) (ryan)
 - CommonGramsFilterFactory/CommonGramsQueryFilterFactory for speeding up phrase queries containing common words by indexing n-grams and using them at query time. [SOLR-908](https://issues.apache.org/jira/browse/SOLR-908) (Tom Burton-West) (Jason Rutherglen) (yonik)
 - Add a few utility commands to the DIH admin page such as full import, delta import, status, reload config. [SOLR-910](https://issues.apache.org/jira/browse/SOLR-910) (Ahmed Hammad) (shalin)
-- Add support for multi-select faceting by allowing filters to be tagged and facet commands to exclude certain filters. This patch also added the ability to change the output key for facets in the response, and optimized distributed faceting refinement by lowering parsing overhead and by making requests and responses smaller. [SOLR-911](https://issues.apache.org/jira/browse/SOLR-911)
+- Add support for multi-select faceting by allowing filters to be tagged and facet commands to exclude certain filters. This patch also added the ability to change the output key for facets in the response, and optimized distributed faceting refinement by lowering parsing overhead and by making requests and responses smaller. [SOLR-911](https://issues.apache.org/jira/browse/SOLR-911) 
 - SolrDocument and SolrInputDocument now implement the Map&lt;String,?&gt; interface. This should make plugging into other standard tools easier. [SOLR-928](https://issues.apache.org/jira/browse/SOLR-928) (ryan)
 - Add event listener API for DIH import start and end. [SOLR-938](https://issues.apache.org/jira/browse/SOLR-938) (Kay Kay) (Noble Paul) (shalin)
 - ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. [SOLR-939](https://issues.apache.org/jira/browse/SOLR-939) (yonik)
@@ -8992,7 +8997,7 @@ sample syntax.)
 - Add HSQLDB Jar to example-DIH, unzip database and update instructions. ================== Release 1.3.0 ================== Upgrading from Solr 1.2 ----------------------- IMPORTANT UPGRADE NOTE: In a master/slave configuration, all searchers/slaves should be upgraded before the master! If the master were to be updated first, the older searchers would not be able to read the new index format. The Porter snowball based stemmers in Lucene were updated (LUCENE-1142), and are not guaranteed to be backward compatible at the index level (the stem of certain words may have changed). Re-indexing is recommended. Older Apache Solr installations can be upgraded by replacing the relevant war file with the new version. No changes to configuration files should be needed. This version of Solr contains a new version of Lucene implementing an updated index format. This version of Solr/Lucene can still read and update indexes in the older formats, and will convert them to the new format on the first index change. Be sure to backup your index before upgrading in case you need to downgrade. Solr now recognizes HTTP Request headers related to HTTP Caching (see RFC 2616 sec13) and will by default respond with "304 Not Modified" when appropriate. This should only affect users who access Solr via an HTTP Cache, or via a Web-browser that has an internal cache, but if you wish to suppress this behavior an '&lt;httpCaching never304="true"/&gt;' option can be added to your solrconfig.xml. See the wiki (or the example solrconfig.xml) for more details... http://wiki.apache.org/solr/SolrConfigXml#HTTPCaching In Solr 1.2, DateField did not enforce the canonical representation of the ISO 8601 format when parsing incoming data, and did not generation the canonical format when generating dates from "Date Math" strings (particularly as it pertains to milliseconds ending in trailing zeros). As a result equivalent dates could not always be compared properly. This problem is corrected in Solr 1.3, but DateField users that might have been affected by indexing inconsistent formats of equivalent dates (ie: 1995-12-31T23:59:59Z vs 1995-12-31T23:59:59.000Z) may want to consider reindexing to correct these inconsistencies. Users who depend on some of the "broken" behavior of DateField in Solr 1.2 (specificly: accepting any input that ends in a 'Z') should consider using the LegacyDateField class as a possible alternative. Users that desire 100% backwards compatibility should consider using the Solr 1.2 version of DateField. Due to some changes in the lifecycle of TokenFilterFactories, users of Solr 1.2 who have written Java code which constructs new instances of StopFilterFactory, SynonymFilterFactory, or EnglishProterFilterFactory will need to modify their code by adding a line like the following prior to using the factory object... factory.inform(SolrCore.getSolrCore().getSolrConfig().getResourceLoader()); These lifecycle changes do not affect people who use Solr "out of the box" or who have developed their own TokenFilterFactory plugins. More info can be found in SOLR-594. The python client that used to ship with Solr is no longer included in the distribution [SOLR-1369](https://issues.apache.org/jira/browse/SOLR-1369) [LUCENE-1142](https://issues.apache.org/jira/browse/LUCENE-1142) [SOLR-594](https://issues.apache.org/jira/browse/SOLR-594) (see client) (python) (README.txt)
 - The TokenizerFactory API has changed to explicitly return a Tokenizer rather then a TokenStream (that may be or may not be a Tokenizer). This change is required to take advantage of the Token reuse improvements in lucene 2.9. [SOLR-1377](https://issues.apache.org/jira/browse/SOLR-1377) (ryan)
 - In build.xml, use longfile="gnu" in tar task to avoid warnings about long file names [SOLR-1386](https://issues.apache.org/jira/browse/SOLR-1386) (Mark Miller) (shalin)
-- Added Solr Powered By Logos [SOLR-1409](https://issues.apache.org/jira/browse/SOLR-1409)
+- Added Solr Powered By Logos [SOLR-1409](https://issues.apache.org/jira/browse/SOLR-1409) 
 - Errors and Exceptions are formated by ResponseWriter. [SOLR-141](https://issues.apache.org/jira/browse/SOLR-141) (Mike Sokolov) (Rich Cariens) (Daniel Naber) (ryan)
 - Log a warning if the deprecated charset option is used on GreekLowerCaseFilterFactory, RussianStemFilterFactory, RussianLowerCaseFilterFactory or RussianLetterTokenizerFactory. [SOLR-1410](https://issues.apache.org/jira/browse/SOLR-1410) (Robert Muir) (hossman)
 - Due to LUCENE-1906, Solr's tokenizer should use Tokenizer.correctOffset() instead of CharStream.correctOffset(). [SOLR-1423](https://issues.apache.org/jira/browse/SOLR-1423) [LUCENE-1906](https://issues.apache.org/jira/browse/LUCENE-1906) (Uwe Schindler) (koji)
@@ -9008,7 +9013,7 @@ sample syntax.)
 - Extract base class from TestDistributedSearch to make it easy to write test cases for other distributed components. [SOLR-1608](https://issues.apache.org/jira/browse/SOLR-1608) (shalin)
 - Generify SolrCache [SOLR-1610](https://issues.apache.org/jira/browse/SOLR-1610) (Jason Rutherglen) (shalin)
 - Added Lucene 2.9.1 collation contrib jar to lib [SOLR-1611](https://issues.apache.org/jira/browse/SOLR-1611) (shalin)
-- Remove ALIAS command [SOLR-1637](https://issues.apache.org/jira/browse/SOLR-1637)
+- Remove ALIAS command [SOLR-1637](https://issues.apache.org/jira/browse/SOLR-1637) 
 - Remove adminCore from CoreContainer . removed deprecated methods setAdminCore(), getAdminCore() [SOLR-1661](https://issues.apache.org/jira/browse/SOLR-1661) (noble)
 - Improve analysis tests and cut over to new TokenStream API. [SOLR-1674](https://issues.apache.org/jira/browse/SOLR-1674) (Robert Muir) (Mark Miller)
 - Improved error messages when adding a document that does not contain exactly one value for the uniqueKey field [SOLR-1695](https://issues.apache.org/jira/browse/SOLR-1695) (hossman)
@@ -9025,7 +9030,7 @@ sample syntax.)
 - luceneAutoCommit no longer has any effect - it has been remove [SOLR-1851](https://issues.apache.org/jira/browse/SOLR-1851) (Mark Miller)
 - SolrResourceLoader.getLines ignores Byte Order Markers (BOMs) at the beginning of input files, these are often created by editors such as Windows Notepad. [SOLR-1865](https://issues.apache.org/jira/browse/SOLR-1865) (rmuir) (hossman)
 - Make lucene-jars-to-solr fail if copying any of the jars fails, and update clean to remove the jars in that directory [SOLR-1891](https://issues.apache.org/jira/browse/SOLR-1891) (Mark Miller)
-- Upgraded to Tika 0.8 and changed deprecated parse call [SOLR-1902](https://issues.apache.org/jira/browse/SOLR-1902)
+- Upgraded to Tika 0.8 and changed deprecated parse call [SOLR-1902](https://issues.apache.org/jira/browse/SOLR-1902) 
 - ElisionFilterFactory will use a default set of French contractions if you do not supply a custom articles file. [SOLR-1938](https://issues.apache.org/jira/browse/SOLR-1938) (rmuir)
 - SolrResourceLoader will report any encoding errors, rather than silently using replacement characters for invalid inputs [SOLR-2003](https://issues.apache.org/jira/browse/SOLR-2003) (blargy) (rmuir)
 - Add mapping-FoldToASCII.txt to example conf directory. [SOLR-2013](https://issues.apache.org/jira/browse/SOLR-2013) (Steven Rowe) (koji)
@@ -9130,7 +9135,7 @@ sample syntax.)
 - Support sorting on trie fields with Distributed Search. [SOLR-1110](https://issues.apache.org/jira/browse/SOLR-1110) (Mark Miller) (Uwe Schindler) (shalin)
 - &lt;bool&gt;on&lt;/bool&gt; and &lt;bool&gt;yes&lt;/bool&gt; work as expected in solrconfig.xml. [SOLR-1115](https://issues.apache.org/jira/browse/SOLR-1115) (koji)
 - Add a Binary FieldType [SOLR-1116](https://issues.apache.org/jira/browse/SOLR-1116) (noble)
-- CoreAdminhandler should not need a core . This makes it possible to start a Solr server w/o a core .(noble) [SOLR-1121](https://issues.apache.org/jira/browse/SOLR-1121)
+- CoreAdminhandler should not need a core . This makes it possible to start a Solr server w/o a core .(noble) [SOLR-1121](https://issues.apache.org/jira/browse/SOLR-1121) 
 - Add a top() function query that causes its argument to have its values derived from the top level IndexReader, even when invoked from a sub-reader. top() is implicitly used for the ord() and rord() functions. [SOLR-1124](https://issues.apache.org/jira/browse/SOLR-1124) (yonik)
 - Added metadata output to extraction request handler "extract only" option. [SOLR-1128](https://issues.apache.org/jira/browse/SOLR-1128) (gsingers)
 - Add capability to specify an infoStream log file for the underlying Lucene IndexWriter in solrconfig.xml. This is an advanced debug log file that can be used to aid developers in fixing IndexWriter bugs. See the commented out example in the example solrconfig.xml under the indexDefaults section. [SOLR-1145](https://issues.apache.org/jira/browse/SOLR-1145) (Chris Harris) (Mark Miller)
@@ -9208,7 +9213,7 @@ sample syntax.)
 - Adding a StreamingUpdateSolrServer that writes update commands to an open HTTP connection. If you are using solrj for bulk update requests you should consider switching to this implementaion. However, note that the error handling is not immediate as it is with the standard SolrServer. [SOLR-906](https://issues.apache.org/jira/browse/SOLR-906) (ryan)
 - CommonGramsFilterFactory/CommonGramsQueryFilterFactory for speeding up phrase queries containing common words by indexing n-grams and using them at query time. [SOLR-908](https://issues.apache.org/jira/browse/SOLR-908) (Tom Burton-West) (Jason Rutherglen) (yonik)
 - Add a few utility commands to the DIH admin page such as full import, delta import, status, reload config. [SOLR-910](https://issues.apache.org/jira/browse/SOLR-910) (Ahmed Hammad) (shalin)
-- Add support for multi-select faceting by allowing filters to be tagged and facet commands to exclude certain filters. This patch also added the ability to change the output key for facets in the response, and optimized distributed faceting refinement by lowering parsing overhead and by making requests and responses smaller. [SOLR-911](https://issues.apache.org/jira/browse/SOLR-911)
+- Add support for multi-select faceting by allowing filters to be tagged and facet commands to exclude certain filters. This patch also added the ability to change the output key for facets in the response, and optimized distributed faceting refinement by lowering parsing overhead and by making requests and responses smaller. [SOLR-911](https://issues.apache.org/jira/browse/SOLR-911) 
 - SolrDocument and SolrInputDocument now implement the Map&lt;String,?&gt; interface. This should make plugging into other standard tools easier. [SOLR-928](https://issues.apache.org/jira/browse/SOLR-928) (ryan)
 - Add event listener API for DIH import start and end. [SOLR-938](https://issues.apache.org/jira/browse/SOLR-938) (Kay Kay) (Noble Paul) (shalin)
 - ValueSourceRangeFilter/Query - filter based on values in a FieldCache entry or on any arbitrary function of field values. [SOLR-939](https://issues.apache.org/jira/browse/SOLR-939) (yonik)
@@ -9374,10 +9379,10 @@ sample syntax.)
 - Upgrade to Tika 0.4. Note there are some differences in detecting Languages now in extracting request handler. See http://www.lucidimagination.com/search/document/d6f1899a85b2a45c/vote_apache_tika_0_4_release_candidate_2#d6f1899a85b2a45c for discussion on language detection. See http://www.apache.org/dist/lucene/tika/CHANGES-0.4.txt. [SOLR-1310](https://issues.apache.org/jira/browse/SOLR-1310) (gsingers)
 - Upgrade Solr Highlighter classes to new Lucene Highlighter API. This upgrade has resulted in a back compat break in the DefaultSolrHighlighter class - getQueryScorer is no longer protected. If you happened to be overriding that method in custom code, overide getHighlighter instead. Also, HighlightingUtils#getQueryScorer has been removed as it was deprecated and backcompat has been broken with it anyway. [SOLR-1319](https://issues.apache.org/jira/browse/SOLR-1319) [SOLR-1345](https://issues.apache.org/jira/browse/SOLR-1345) (Mark Miller)
 - SolrInputDocument cannot process dynamic fields [SOLR-1357](https://issues.apache.org/jira/browse/SOLR-1357) (Lars Grote) (noble)
-- Add HSQLDB Jar to example-DIH, unzip database and update instructions. [SOLR-1369](https://issues.apache.org/jira/browse/SOLR-1369)
+- Add HSQLDB Jar to example-DIH, unzip database and update instructions. [SOLR-1369](https://issues.apache.org/jira/browse/SOLR-1369) 
 - The TokenizerFactory API has changed to explicitly return a Tokenizer rather then a TokenStream (that may be or may not be a Tokenizer). This change is required to take advantage of the Token reuse improvements in lucene 2.9. [SOLR-1377](https://issues.apache.org/jira/browse/SOLR-1377) (ryan)
 - In build.xml, use longfile="gnu" in tar task to avoid warnings about long file names [SOLR-1386](https://issues.apache.org/jira/browse/SOLR-1386) (Mark Miller) (shalin)
-- Added Solr Powered By Logos [SOLR-1409](https://issues.apache.org/jira/browse/SOLR-1409)
+- Added Solr Powered By Logos [SOLR-1409](https://issues.apache.org/jira/browse/SOLR-1409) 
 - Log a warning if the deprecated charset option is used on GreekLowerCaseFilterFactory, RussianStemFilterFactory, RussianLowerCaseFilterFactory or RussianLetterTokenizerFactory. [SOLR-1410](https://issues.apache.org/jira/browse/SOLR-1410) (Robert Muir) (hossman)
 - Due to LUCENE-1906, Solr's tokenizer should use Tokenizer.correctOffset() instead of CharStream.correctOffset(). [SOLR-1423](https://issues.apache.org/jira/browse/SOLR-1423) [LUCENE-1906](https://issues.apache.org/jira/browse/LUCENE-1906) (Uwe Schindler) (koji)
 - Make it possible to run all tests in a package [SOLR-1441](https://issues.apache.org/jira/browse/SOLR-1441) (shalin)
@@ -9526,7 +9531,7 @@ sample syntax.)
 - Fix bug in RequiredSolrParams where requiring a field specific param would fail if a general default value had been supplied. [SOLR-297](https://issues.apache.org/jira/browse/SOLR-297) (hossman)
 - Add proper support for Long and Doubles in sorting, etc. [SOLR-324](https://issues.apache.org/jira/browse/SOLR-324) (gsingers)
 - Fix WordDelimiterFilter handling of offsets for synonyms or other injected tokens that can break highlighting. [SOLR-331](https://issues.apache.org/jira/browse/SOLR-331) (yonik)
-- Changed distributiondump.jsp to use Solr HOME instead of CWD to set path. [SOLR-333](https://issues.apache.org/jira/browse/SOLR-333)
+- Changed distributiondump.jsp to use Solr HOME instead of CWD to set path. [SOLR-333](https://issues.apache.org/jira/browse/SOLR-333) 
 - Removed duplicate contentType from raw-schema.jsp. [SOLR-393](https://issues.apache.org/jira/browse/SOLR-393) (bill)
 - SolrExceptionTest should now handle using OpenDNS as a DNS provider [SOLR-400](https://issues.apache.org/jira/browse/SOLR-400) (gsingers)
 - Requesting a large numbers of documents to be returned (limit) can result in an out-of-memory exception, even for a small index. [SOLR-413](https://issues.apache.org/jira/browse/SOLR-413) (yonik)
@@ -9553,7 +9558,7 @@ sample syntax.)
 - Now sets the QParser on the ResponseBuilder [SOLR-585](https://issues.apache.org/jira/browse/SOLR-585) (gsingers)
 - Improved handling of badly formated query strings [SOLR-589](https://issues.apache.org/jira/browse/SOLR-589) (Sean Timm) (Otis Gospodnetic)
 - Limitation in pgrep on Linux platform breaks script-utils fixUser. [SOLR-590](https://issues.apache.org/jira/browse/SOLR-590) (Hannes Schmidt) (billa)
-- SolrServlet no longer "caches" SolrCore. This was causing problems in Resin, and could potentially cause problems for customized usages of SolrServlet. [SOLR-597](https://issues.apache.org/jira/browse/SOLR-597)
+- SolrServlet no longer "caches" SolrCore. This was causing problems in Resin, and could potentially cause problems for customized usages of SolrServlet. [SOLR-597](https://issues.apache.org/jira/browse/SOLR-597) 
 - DebugComponent now always occurs last in the SearchHandler list unless the components are explicitly declared. [SOLR-598](https://issues.apache.org/jira/browse/SOLR-598) (gsingers)
 - If the spellchecking path is relative, make it relative to the Solr Data Directory. [SOLR-604](https://issues.apache.org/jira/browse/SOLR-604) (Shalin Shekhar Mangar) (gsingers)
 - Fixed spell check collation offset issue. [SOLR-606](https://issues.apache.org/jira/browse/SOLR-606) (Stefan Oestreicher) (Geoffrey Young) (gsingers)
@@ -9577,9 +9582,9 @@ sample syntax.)
 - Tweaks to post.jar so it prints the error message from Solr. [SOLR-268](https://issues.apache.org/jira/browse/SOLR-268) (Brian Whitman) (hossman)
 - The create method in all TokenFilter and Tokenizer Factories provided by Solr now declare their specific return types instead of just using "TokenStream" [SOLR-367](https://issues.apache.org/jira/browse/SOLR-367) (hossman)
 - Hooks add to build system for automatic generation of (stub) Tokenizer and TokenFilter Factories. Also: new Factories for all Tokenizers and TokenFilters provided by the lucene-analyzers-2.2.0.jar -- includes support for German, Chinese, Russan, Dutch, Greek, Brazilian, Thai, and French. [SOLR-396](https://issues.apache.org/jira/browse/SOLR-396) (hossman)
-- . Changed the names of the Solr JARs to use the defacto standard JAR names based on project-name-version.jar. This yields, for example: apache-solr-common-1.3-dev.jar apache-solr-solrj-1.3-dev.jar apache-solr-1.3-dev.jar [SOLR-411](https://issues.apache.org/jira/browse/SOLR-411)
+- . Changed the names of the Solr JARs to use the defacto standard JAR names based on project-name-version.jar. This yields, for example: apache-solr-common-1.3-dev.jar apache-solr-solrj-1.3-dev.jar apache-solr-1.3-dev.jar [SOLR-411](https://issues.apache.org/jira/browse/SOLR-411) 
 - Changed analysis.jsp to use POST instead of GET, also made the input area a bit bigger [SOLR-451](https://issues.apache.org/jira/browse/SOLR-451) (gsingers)
-- Added clover code coverage targets for committers and the nightly build. Requires the Clover library, as licensed to Apache and only available privately. To run: ant -Drun.clover=true clean clover test generate-clover-reports [SOLR-479](https://issues.apache.org/jira/browse/SOLR-479)
+- Added clover code coverage targets for committers and the nightly build. Requires the Clover library, as licensed to Apache and only available privately. To run: ant -Drun.clover=true clean clover test generate-clover-reports [SOLR-479](https://issues.apache.org/jira/browse/SOLR-479) 
 - Added in deprecation comments. [SOLR-489](https://issues.apache.org/jira/browse/SOLR-489) (Sean Timm) (Lars Kothoff) (gsingers)
 - Nightly release includes client sources. [SOLR-510](https://issues.apache.org/jira/browse/SOLR-510) (koji)
 - Changed luke.xsl to use divs w/css for generating histograms instead of SVG [SOLR-518](https://issues.apache.org/jira/browse/SOLR-518) (Thomas Peuss) (hossman)
@@ -9601,11 +9606,11 @@ sample syntax.)
 - / SOLR-695: If you have used "MultiCore" functionality in an unreleased version of 1.3-dev, many classes and configs have been renamed for the official 1.3 release. Speciffically, solr.xml has replaced multicore.xml, and uses a slightly different syntax. The solrj classes: MultiCore{Request/Response/Params} have been renamed: CoreAdmin{Request/Response/Params} [SOLR-689](https://issues.apache.org/jira/browse/SOLR-689) [SOLR-695](https://issues.apache.org/jira/browse/SOLR-695) (hossman) (ryan) (Henri Biestro)
 - Migrated to stable released builds of StAX API 1.0.1 and StAX 1.2.0 [SOLR-692](https://issues.apache.org/jira/browse/SOLR-692) (shalin)
 - SolrQueryParser now uses a ConstantScoreQuery for wildcard queries that prevent an exception from being thrown when the number of matching terms exceeds the BooleanQuery clause limit. [SOLR-737](https://issues.apache.org/jira/browse/SOLR-737) (yonik)
-- Upgraded to Lucene 2.2.0; June 18, 2007.
+- Upgraded to Lucene 2.2.0; June 18, 2007. 
 - Upgraded to commons-CSV r609327, which fixes escaping bugs and introduces new escaping and whitespace handling options to increase compatibility with different formats. (yonik)
-- Upgraded to Lucene 2.3.0; Jan 23, 2008.
-- Upgrade to Lucene 2.3.1
-- Upgrade to Lucene 2.3.2
+- Upgraded to Lucene 2.3.0; Jan 23, 2008. 
+- Upgrade to Lucene 2.3.1 
+- Upgrade to Lucene 2.3.2 
 - Upgraded to Lucene 2.4-dev (r686801) (yonik)
 - Upgraded to Lucene 2.4-dev (r688745) 27-Aug-2008 (yonik)
 - Upgraded to Lucene 2.4-dev (r691741) 03-Sep-2008 (yonik)
@@ -9693,8 +9698,8 @@ sample syntax.)
 - DisMaxRequestHandler's bq, bf, qf, and pf parameters can now accept multiple values (klaas)
 - Query are re-written before highlighting is performed. This enables proper highlighting of prefix and wildcard queries (klaas)
 - A meaningful exception is raised when attempting to add a doc missing a unique id if it is declared in the schema and allowDups=false. (ryan) (klaas)
-- Updated to Lucene 2.1
-- Updated to Lucene 2007-05-20_00-04-53
+- Updated to Lucene 2.1 
+- Updated to Lucene 2007-05-20_00-04-53 
 
 
 [1.1.0] - 2006-12-22
@@ -9723,27 +9728,27 @@ sample syntax.)
 - ${solr.home}/lib directory can now be used for specifying "plugin" jars SOLR-68 [SOLR-68](https://issues.apache.org/jira/browse/SOLR-68) (hossman)
 - Support for "Date Math" relative "NOW" when specifying values of a DateField in a query -- or when adding a document. SOLR-71 [SOLR-71](https://issues.apache.org/jira/browse/SOLR-71) (hossman)
 - useColdSearcher control in solrconfig.xml prevents the first searcher from being used before it's done warming. This can help prevent thrashing on startup when multiple requests hit a cold searcher. The default is "false", preventing use before warm. SOLR-77 [SOLR-77](https://issues.apache.org/jira/browse/SOLR-77) (yonik)
-- added support for setting Lucene's positionIncrementGap
-- Admin: new statistics for SolrIndexSearcher
-- Admin: caches now show config params on stats page
-- max() function added to FunctionQuery suite
-- postOptimize hook, mirroring the functionallity of the postCommit hook, but only called on an index optimize.
-- Ability to HTTP POST query requests to /select in addition to HTTP-GET
+- added support for setting Lucene's positionIncrementGap 
+- Admin: new statistics for SolrIndexSearcher 
+- Admin: caches now show config params on stats page 
+- max() function added to FunctionQuery suite 
+- postOptimize hook, mirroring the functionallity of the postCommit hook, but only called on an index optimize. 
+- Ability to HTTP POST query requests to /select in addition to HTTP-GET 
 - The default search field may now be overridden by requests to the standard request handler using the df query parameter. (Erik Hatcher)
 - Added DisMaxRequestHandler and SolrPluginUtils. (Chris Hostetter)
 - Added KeywordTokenizerFactory (hossman)
 - new DocSet.andNot(), DocSet.andNotSize() (yonik)
-- Made query parser default operator configurable via schema.xml: &lt;solrQueryParser defaultOperator="AND|OR"/&gt; The default operator remains "OR".
+- Made query parser default operator configurable via schema.xml: &lt;solrQueryParser defaultOperator="AND|OR"/&gt; The default operator remains "OR". 
 - Default operator for query parsing can now be specified with q.op=AND|OR from the client request, overriding the schema value. (ehatcher)
 
 ### Changed (6 changes)
 
 - OpenBitSet completed, replaces BitSet as the implementation for BitDocSet. Iteration is faster, and BitDocSet.intersectionSize(BitDocSet) and unionSize is between 3 and 4 times faster. SOLR-15 [SOLR-15](https://issues.apache.org/jira/browse/SOLR-15) (yonik)
-- getDocListAndSet can now generate both a DocList and a DocSet from a single lucene query.
-- BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate set
-- much faster unionSize when one of the sets is a HashDocSet: O(smaller_set_size)
+- getDocListAndSet can now generate both a DocList and a DocSet from a single lucene query. 
+- BitDocSet.intersectionSize(HashDocSet) no longer generates an intermediate set 
+- much faster unionSize when one of the sets is a HashDocSet: O(smaller_set_size) 
 - Optimized getDocSet() for term queries resulting in a 36% speedup of facet.field queries where DocSets aren't cached (for example, if the number of terms in the field is larger than the filter cache.) (yonik)
-- Optimized facet.field faceting by as much as 500 times when the field has a single token per document (not multiValued & not tokenized) by using the Lucene FieldCache entry for that field to tally term counts. The first request utilizing the FieldCache will take longer than subsequent ones.
+- Optimized facet.field faceting by as much as 500 times when the field has a single token per document (not multiValued & not tokenized) by using the Lucene FieldCache entry for that field to tally term counts. The first request utilizing the FieldCache will take longer than subsequent ones. 
 
 ### Fixed (13 changes)
 
@@ -9755,7 +9760,7 @@ sample syntax.)
 - Fixed delete-by-id for field types who's indexed form is different from the printable form (mainly sortable numeric types)
 - Added escaping of attribute values in the XML response (Erik Hatcher)
 - Added empty extractTerms() to FunctionQuery to enable use in a MultiSearcher (Yonik)
-- WordDelimiterFilter sometimes lost token positionIncrement information
+- WordDelimiterFilter sometimes lost token positionIncrement information 
 - Fix reverse sorting for fields were sortMissingFirst=true (Rob Staveley) (yonik)
 - Escape '&gt;' in XML output ([because ]]> is illegal in CharData]())
 - field boosts weren't being applied and doc boosts were being applied to fields (klaas)
@@ -9769,24 +9774,29 @@ sample syntax.)
 - Highlighter params changed to be prefixed with "hl."; allow fragmentsize customization and per-field overrides on many options SOLR-37 [SOLR-37](https://issues.apache.org/jira/browse/SOLR-37) (Andrew May) (klaas)
 - Default param values for DisMaxRequestHandler should now be specified using a '&lt;lst name="defaults"&gt;...&lt;/lst&gt;' init param, for backwards compatability all init prams will be used as defaults if an init param with that name does not exist. SOLR-43 [SOLR-43](https://issues.apache.org/jira/browse/SOLR-43) (hossman)
 - The DisMaxRequestHandler now supports multiple occurances of the "fq" param. SOLR-44 [SOLR-44](https://issues.apache.org/jira/browse/SOLR-44) (hossman)
-- Added javascript to catch empty query in admin query forms (Tomislav Nakic-Alfirevic via billa, SOLR-48 [SOLR-48](https://issues.apache.org/jira/browse/SOLR-48)
+- Added javascript to catch empty query in admin query forms (Tomislav Nakic-Alfirevic via billa, SOLR-48 [SOLR-48](https://issues.apache.org/jira/browse/SOLR-48) 
 - Lazy field loading can be enabled via a solrconfig directive. This will be faster when not all stored fields are needed from a document SOLR-52 [SOLR-52](https://issues.apache.org/jira/browse/SOLR-52) (klaas)
 - Made admin JSPs return XML and transform them with new XSL stylesheets SOLR-58 [SOLR-58](https://issues.apache.org/jira/browse/SOLR-58) (Otis Gospodnetic)
 - If the "echoParams=explicit" request parameter is set, request parameters are copied to the output. In an XML output, they appear in new &lt;lst name="params"&gt; list inside the new &lt;lst name="responseHeader"&gt; element, which replaces the old &lt;responseHeader&gt;. Adding a version=2.1 parameter to the request produces the old format, for backwards compatibility SOLR-59 [SOLR-59](https://issues.apache.org/jira/browse/SOLR-59) (bdelacretaz and yonik)
 - Modified admin styles to improve display in Internet Explorer SOLR-6 [SOLR-6](https://issues.apache.org/jira/browse/SOLR-6) (Greg Ludington) (billa)
-- check solr return code in admin scripts, SOLR-62 [SOLR-62](https://issues.apache.org/jira/browse/SOLR-62)
-- blackslash escape * in ssh command used in snappuller for zsh compatibility, SOLR-63 [SOLR-63](https://issues.apache.org/jira/browse/SOLR-63)
+- check solr return code in admin scripts, SOLR-62 [SOLR-62](https://issues.apache.org/jira/browse/SOLR-62) 
+- blackslash escape * in ssh command used in snappuller for zsh compatibility, SOLR-63 [SOLR-63](https://issues.apache.org/jira/browse/SOLR-63) 
 - Document update handling locking is much sparser, allowing performance gains through multiple threads. Large commits also might be faster SOLR-65 [SOLR-65](https://issues.apache.org/jira/browse/SOLR-65) (klaas)
 - Config parsing should now work useing DOM Level 2 parsers -- Solr previously relied on getTextContent which is a DOM Level 3 addition SOLR-78 [SOLR-78](https://issues.apache.org/jira/browse/SOLR-78) (Alexander Saar) (hossman)
-- classes reorganized into different packages, package names changed to Apache
-- force read of document stored fields in QuerySenderListener
-- Solr now looks in ./solr/conf for config, ./solr/data for data configurable via solr.solr.home system property
-- Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224, http://svn.apache.org/viewvc/lucene/java/trunk/CHANGES.txt?view=markup&pathrev=416224
-- Upgrade to Lucene 2.0 nightly build 2006-07-15, lucene SVN revision 422302,
-- Updated to Lucene 2.0 nightly build 2006-09-07, SVN revision 462111
-- Updated to Lucene 2.0 nightly build 2006-11-15, SVN revision 475069
+- classes reorganized into different packages, package names changed to Apache 
+- force read of document stored fields in QuerySenderListener 
+- Solr now looks in ./solr/conf for config, ./solr/data for data configurable via solr.solr.home system property 
+- Upgrade to Lucene 2.0 nightly build 2006-06-22, lucene SVN revision 416224, http://svn.apache.org/viewvc/lucene/java/trunk/CHANGES.txt?view=markup&pathrev=416224 
+- Upgrade to Lucene 2.0 nightly build 2006-07-15, lucene SVN revision 422302, 
+- Updated to Lucene 2.0 nightly build 2006-09-07, SVN revision 462111 
+- Updated to Lucene 2.0 nightly build 2006-11-15, SVN revision 475069 
 - Simplified index.jsp and form.jsp, primarily by removing/hiding XML specific params, and adding an option to pick the output type. (hossman)
 - Added new numeric build property "specversion" to allow clean MANIFEST.MF files (hossman)
 - Added Solr/Lucene versions to "Info" page (hossman)
 - Explicitly set mime-type of .xsl files in web.xml to application/xslt+xml (hossman)
+
+
+
+
+
 
