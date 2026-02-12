@@ -30,13 +30,14 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -111,8 +112,8 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(v2Path, v2Method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, Map.of()) {
+    final SolrQueryRequestBase req =
+        new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             if (v2RequestBody == null) return Collections.emptyList();
@@ -144,70 +145,6 @@ public abstract class V2ApiMappingTest<T extends RequestHandlerBase> extends Sol
   protected SolrParams captureConvertedV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return captureConvertedV1Request(path, method, v2RequestBody).getParams();
-  }
-
-  protected SolrParams captureConvertedV1Params(
-      String path, String method, Map<String, String[]> queryParams) throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, queryParams) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            return Collections.emptyList();
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockRequestHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
-  }
-
-  // TODO Combine with method above
-  protected SolrParams captureConvertedV1Params(String path, String method, SolrParams queryParams)
-      throws Exception {
-    return captureConvertedV1Params(path, method, queryParams, null);
-  }
-
-  protected SolrParams captureConvertedV1Params(
-      String path, String method, SolrParams queryParams, String v2RequestBody) throws Exception {
-    final HashMap<String, String> parts = new HashMap<>();
-    final Api api = apiBag.lookup(path, method, parts);
-    final SolrQueryResponse rsp = new SolrQueryResponse();
-    final LocalSolrQueryRequest req =
-        new LocalSolrQueryRequest(null, queryParams) {
-          @Override
-          public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
-            return ApiBag.getCommandOperations(
-                new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
-          }
-
-          @Override
-          public Map<String, String> getPathTemplateValues() {
-            return parts;
-          }
-
-          @Override
-          public String getHttpMethod() {
-            return method;
-          }
-        };
-
-    api.call(req, rsp);
-    verify(mockRequestHandler).handleRequestBody(queryRequestCaptor.capture(), any());
-    return queryRequestCaptor.getValue().getParams();
   }
 
   protected AnnotatedApi assertAnnotatedApiExistsFor(String method, String path) {
