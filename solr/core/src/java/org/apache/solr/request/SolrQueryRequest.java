@@ -203,14 +203,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    */
   default QueryResponseWriter getResponseWriter() {
     // it's weird this method is here instead of SolrQueryResponse, but it's practical/convenient
-    SolrCore core = getCore();
-    String wt = getParams().get(CommonParams.WT);
-    // Use core writers if available, otherwise fall back to built-in writers
-    if (core != null) {
-      return core.getQueryResponseWriter(wt);
-    } else {
-      return ResponseWritersRegistry.getWriter(wt);
-    }
+    return ResponseWritersRegistry.getWriter(getParams().get(CommonParams.WT), getCore());
   }
 
   /**

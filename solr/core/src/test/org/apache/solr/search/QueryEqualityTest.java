@@ -1018,6 +1018,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     }
   }
 
+  public void testFuncLateVector() throws Exception {
+    try (SolrQueryRequest req =
+        req(
+            "f", "late_vec_4",
+            "v1", "[[1,2,3,4],[4,5,6,7]]")) {
+      assertFuncEquals(
+          req,
+          "lateVector(late_vec_4, $v1)",
+          "lateVector($f, $v1)",
+          "lateVector($f, '[[1,2,3,4],[4,5,6,7]]')",
+          "lateVector(late_vec_4, '[[1.0,2.0,3.0,4.0],[4.0,5.0,6.0,7.0]]')",
+          "lateVector(late_vec_4, ' [[ 1, 2, 3, 4.0] ,[4,5,6,7]] ')");
+    }
+  }
+
   public void testFuncQuery() throws Exception {
     SolrQueryRequest req = req("myQ", "asdf");
     try {

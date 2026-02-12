@@ -253,6 +253,11 @@ An expression can be any function which outputs boolean values, or even function
 * `if(termfreq (cat,'electronics'),popularity,42)`: This function checks each document for to see if it contains the term "electronics" in the `cat` field.
 If it does, then the value of the `popularity` field is returned, otherwise the value of `42` is returned.
 
+=== lateVector Function
+Computes a Multi-Vector similarity score between a Late Interaction vector field and a target Multi-Vector.
+
+See the xref:query-guide:dense-vector-search.adoc#late-vector-queries[Dense Vector Search] section for more details
+
 === linear Function
 Implements `m*x+c` where `m` and `c` are constants and `x` is an arbitrary function.
 This is equivalent to `sum(product(m,x),c)`, but slightly more efficient as it is implemented as a single function.

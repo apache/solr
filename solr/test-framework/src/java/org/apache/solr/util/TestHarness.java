@@ -417,7 +417,8 @@ public class TestHarness extends BaseTestHarness {
      */
     @SuppressWarnings({"unchecked"})
     public SolrQueryRequestBase makeRequest(String... q) {
-      if (q.length == 1) {
+      args.computeIfAbsent("wt", k -> "xml");
+      if (q.length == 1) {        
         Map<String, String[]> map = new HashMap<>();
         for (Map.Entry<String, String> e : args.entrySet()) {
           map.put(e.getKey(), new String[] {e.getValue()});
