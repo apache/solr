@@ -136,8 +136,8 @@ import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.metrics.otel.OtelUnit;
 import org.apache.solr.pkg.SolrPackageLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.CacheConfig;
@@ -1976,7 +1976,7 @@ public class CoreContainer {
 
         // force commit on old core if the new one is readOnly and prevent any new updates
         if (newCore.readOnly) {
-          SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
+          SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
           core.getUpdateHandler().commit(CommitUpdateCommand.closeOnCommit(req, false));
         }
 

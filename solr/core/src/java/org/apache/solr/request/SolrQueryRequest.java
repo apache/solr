@@ -47,7 +47,6 @@ public interface SolrQueryRequest extends AutoCloseable {
   /** This is the system property for {@link #ALLOW_PARTIAL_RESULTS_DEFAULT} */
   String SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT = "solr.allowPartialResultsDefault";
 
-  // silly getBoolean doesn't take a default.
   /**
    * Users can set {@link SolrQueryRequest#SOLR_ALLOW_PARTIAL_RESULTS_DEFAULT} system property to
    * true, and solr will omit results when any shard fails due query execution limits (time, cpu
@@ -122,13 +121,13 @@ public interface SolrQueryRequest extends AutoCloseable {
   SolrCore getCore();
 
   /** The schema snapshot from core.getLatestSchema() at request creation. */
-  public IndexSchema getSchema();
+  IndexSchema getSchema();
 
   /** Replaces the current schema snapshot with the latest from the core. */
-  public void updateSchemaToLatest();
+  void updateSchemaToLatest();
 
   /** Returns a string representing all the important parameters. Suitable for logging. */
-  public String getParamString();
+  String getParamString();
 
   /**
    * Returns any associated JSON (or null if none) in deserialized generic form. Java classes used

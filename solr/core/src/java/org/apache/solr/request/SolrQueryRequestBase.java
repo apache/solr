@@ -31,10 +31,10 @@ import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.RefCounted;
 
@@ -45,7 +45,7 @@ import org.apache.solr.util.RefCounted;
  * <p>The <code>close()</code> method must be called on any instance of this class once it is no
  * longer in use.
  */
-public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
+public class SolrQueryRequestBase implements SolrQueryRequest, Closeable {
   protected final SolrCore core;
   protected final SolrParams origParams;
   protected volatile IndexSchema schema;
@@ -53,6 +53,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   protected Map<Object, Object> context;
   protected Iterable<ContentStream> streams;
   protected Map<String, Object> json;
+  protected String userPrincipalName = null;
 
   private final RTimerTree requestTimer;
   protected final long startTime;
@@ -128,7 +129,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     return searcherHolder.get();
   }
 
-  // The solr core (coordinator, etc) associated with this request
+  // The solr core (coordinator, etc.) associated with this request
   @Override
   public SolrCore getCore() {
     return core;
@@ -137,7 +138,6 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
   // The index schema associated with this request
   @Override
   public IndexSchema getSchema() {
-    // a request for a core admin will no have a core
     return schema;
   }
 
@@ -191,7 +191,22 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
 
   @Override
   public Principal getUserPrincipal() {
-    return null;
+    if (userPrincipalName == null) {
+      return null;
+    }
+    return new LocalPrincipal(userPrincipalName);
+  }
+
+  /**
+   * Allows setting the 'name' of the User Principal for the purposes of creating local requests in
+   * a solr node when security is enabled.
+   *
+   * @see PKIAuthenticationPlugin#NODE_IS_USER
+   * @see #getUserPrincipal
+   * @lucene.internal
+   */
+  public void setUserPrincipalName(String s) {
+    this.userPrincipalName = s;
   }
 
   List<CommandOperation> parsedCommands;
@@ -209,11 +224,15 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest, Closeabl
     return CommandOperation.clone(parsedCommands);
   }
 
-  protected ValidatingJsonMap getSpec() {
-    return null;
-  }
-
   protected Map<String, JsonSchemaValidator> getValidators() {
     return Collections.emptyMap();
+  }
+
+  private record LocalPrincipal(String user) implements Principal {
+
+    @Override
+    public String getName() {
+      return user;
+    }
   }
 }
