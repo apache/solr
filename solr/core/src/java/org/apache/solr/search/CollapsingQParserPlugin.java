@@ -1255,8 +1255,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             this.needsScores,
             boostedDocsCollector,
             sortSpec,
-            searcher,
-            collapseValues);
+            searcher
+        );
       } else if (funcQuery != null) {
         return new OrdValueSourceStrategy(
             maxDoc,
@@ -1266,8 +1266,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             this.needsScores,
             boostedDocsCollector,
             funcQuery,
-            searcher,
-            collapseValues);
+            searcher
+        );
       } else {
         NumberType numType = fieldType.getNumberType();
         if (null == numType) {
@@ -1282,24 +1282,24 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               valueCount,
               groupHeadSelector,
               this.needsScores,
-              boostedDocsCollector,
-              collapseValues);
+              boostedDocsCollector
+          );
           case FLOAT -> new OrdFloatStrategy(
               maxDoc,
               nullPolicy,
               valueCount,
               groupHeadSelector,
               this.needsScores,
-              boostedDocsCollector,
-              collapseValues);
+              boostedDocsCollector
+          );
           case LONG -> new OrdLongStrategy(
               maxDoc,
               nullPolicy,
               valueCount,
               groupHeadSelector,
               this.needsScores,
-              boostedDocsCollector,
-              collapseValues);
+              boostedDocsCollector
+          );
           default -> throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "min/max must be either Int/Long/Float field types");
@@ -2259,8 +2259,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int valueCount,
         int nullPolicy,
         boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortedDocValues values) {
+        BoostedDocsCollector boostedDocsCollector) {
       this.ords = new IntIntDynamicMap(valueCount, -1);
       this.nullPolicy = nullPolicy;
       this.needsScores = needsScores;
@@ -2334,10 +2333,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int valueCount,
         GroupHeadSelector groupHeadSelector,
         boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortedDocValues values)
+        BoostedDocsCollector boostedDocsCollector)
         throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
       this.field = groupHeadSelector.selectorText;
 
       assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
@@ -2410,10 +2408,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int valueCount,
         GroupHeadSelector groupHeadSelector,
         boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortedDocValues values)
+        BoostedDocsCollector boostedDocsCollector)
         throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
       this.field = groupHeadSelector.selectorText;
 
       assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
@@ -2490,10 +2487,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         int valueCount,
         GroupHeadSelector groupHeadSelector,
         boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortedDocValues values)
+        BoostedDocsCollector boostedDocsCollector)
         throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
       this.field = groupHeadSelector.selectorText;
 
       assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
@@ -2571,10 +2567,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         boolean needsScores,
         BoostedDocsCollector boostedDocsCollector,
         FunctionQuery funcQuery,
-        IndexSearcher searcher,
-        SortedDocValues values)
+        IndexSearcher searcher)
         throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
       this.needsScores4Collapsing = groupHeadSelector.needsScores(null);
       this.valueSource = funcQuery.getValueSource();
       this.rcontext = ValueSource.newContext(searcher);
@@ -2663,10 +2658,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         boolean needsScores,
         BoostedDocsCollector boostedDocsCollector,
         SortSpec sortSpec,
-        IndexSearcher searcher,
-        SortedDocValues values)
+        IndexSearcher searcher)
         throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector, values);
+      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
       this.needsScores4Collapsing = groupHeadSelector.needsScores(sortSpec);
 
       assert GroupHeadSelectorType.SORT.equals(groupHeadSelector.type);
