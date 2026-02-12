@@ -39,8 +39,8 @@ import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.PermissionNameProvider;
@@ -169,7 +169,7 @@ public class MergeIndexes extends CoreAdminAPIBase implements MergeIndexesApi {
 
               UpdateRequestProcessorChain processorChain =
                   core.getUpdateProcessingChain(requestBody.updateChain);
-              wrappedReq = new SolrQueryRequestBase(core, req.getParams());
+              wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
               UpdateRequestProcessor processor = processorChain.createProcessor(wrappedReq, rsp);
               processor.processMergeIndexes(new MergeIndexesCommand(readers, req));
             } catch (Exception e) {

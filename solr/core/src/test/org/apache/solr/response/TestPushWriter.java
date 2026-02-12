@@ -33,7 +33,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.util.BaseTestHarness;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +49,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
       JSONWriter pw =
           new JSONWriter(
               osw,
-              new SolrQueryRequestBase(null, new ModifiableSolrParams()),
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams()),
               new SolrQueryResponse());
       writeData(null, pw);
       osw.flush();
@@ -73,7 +73,7 @@ public class TestPushWriter extends SolrTestCaseJ4 {
       XMLWriter xml =
           new XMLWriter(
               osw,
-              new SolrQueryRequestBase(null, new ModifiableSolrParams()),
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams()),
               new SolrQueryResponse());
       writeData(null, xml);
       osw.flush();

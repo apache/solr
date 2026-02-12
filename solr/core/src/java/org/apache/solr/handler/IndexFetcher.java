@@ -117,8 +117,8 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -540,7 +540,7 @@ public class IndexFetcher {
           if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
-            SolrQueryRequest req = new SolrQueryRequestBase(solrCore, new ModifiableSolrParams());
+            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
             solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
           }
         }

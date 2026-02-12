@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -41,8 +42,8 @@ import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
 import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.handler.admin.ThreadDumpHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -203,21 +204,31 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
       RequestHandlerBase mockHandler)
       throws Exception {
     final HashMap<String, String> parts = new HashMap<>();
-    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    final Map<String, String[]> inputParamsMap = new HashMap<>();
     inputParams.stream()
         .forEach(
             e -> {
-              solrParams.add(e.getKey(), e.getValue());
+              inputParamsMap.put(e.getKey(), e.getValue());
             });
     final Api api = apiBag.lookup(path, method, parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final SolrQueryRequestBase req =
-        new SolrQueryRequestBase(null, solrParams) {
+    final LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(null, inputParamsMap) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             if (v2RequestBody == null) return Collections.emptyList();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
+          }
+
+          @Override
+          public Map<String, String> getPathTemplateValues() {
+            return parts;
+          }
+
+          @Override
+          public String getHttpMethod() {
+            return method;
           }
         };
 

@@ -35,8 +35,8 @@ import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.SolrKafkaTestsIgnoredThreadsFilter;
 import org.junit.Before;
@@ -126,7 +126,7 @@ public class MirroringCollectionsHandlerTest extends SolrTestCaseJ4 {
     MirroringCollectionsHandler handler =
         Mockito.spy(new MirroringCollectionsHandler(coreContainer, sink));
     Mockito.doNothing().when(handler).baseHandleRequestBody(Mockito.any(), Mockito.any());
-    SolrQueryRequest req = new SolrQueryRequestBase(null, params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(null, params);
     SolrQueryResponse rsp = new SolrQueryResponse();
     handler.handleRequestBody(req, rsp);
     if (expectResult) {

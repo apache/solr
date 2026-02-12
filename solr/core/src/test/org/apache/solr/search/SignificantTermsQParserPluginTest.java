@@ -32,8 +32,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -132,7 +132,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
   }
 
   private void addTestDocs(SolrCore core) throws IOException {
-    SolrQueryRequest coreReq = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     AddUpdateCommand cmd = new AddUpdateCommand(coreReq);
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("id", "1");
@@ -144,7 +144,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
   }
 
   private void deleteTestDocs(SolrCore core) throws IOException {
-    SolrQueryRequest coreReq = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+    SolrQueryRequest coreReq = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
     DeleteUpdateCommand cmd = new DeleteUpdateCommand(coreReq);
     cmd.id = "1";
     core.getUpdateHandler().delete(cmd);

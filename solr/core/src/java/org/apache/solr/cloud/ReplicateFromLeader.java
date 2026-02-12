@@ -28,8 +28,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.SolrIndexWriter;
 import org.apache.solr.update.UpdateLog;
@@ -101,7 +101,7 @@ public class ReplicateFromLeader {
                 if (commitVersion == null) return;
                 if (Long.parseLong(commitVersion) == lastVersion) return;
                 UpdateLog updateLog = solrCore.getUpdateHandler().getUpdateLog();
-                SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+                SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
                 CommitUpdateCommand cuc = new CommitUpdateCommand(req, false);
                 cuc.setVersion(Long.parseLong(commitVersion));
                 updateLog.commitAndSwitchToNewTlog(cuc);

@@ -51,8 +51,8 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.StatsField.HllOptions;
 import org.apache.solr.handler.component.StatsField.Stat;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.hll.HLL;
@@ -571,7 +571,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("f.active_dt.stats.calcdistinct", "true");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test date statistics values",
@@ -604,7 +604,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test date statistics values",
@@ -911,7 +911,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_i");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -949,7 +949,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_s");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -982,7 +982,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "active_dt");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test string statistics values",
@@ -1046,7 +1046,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!ex=id}id_i");
     args.put("fq", "{!tag=id}id_i:[2 TO 3]");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test excluding filter query",
@@ -1059,7 +1059,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "{!key=id2}id_i");
     args.put("fq", "{!tag=id}id_i:[2 TO 3]");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test rename field",
@@ -1105,7 +1105,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS, "true");
     args.put(StatsParams.STATS_FIELD, "cat_docValues");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test min/max on docValues and multiValued",
@@ -1156,7 +1156,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_CALC_DISTINCT, "true");
     args.put("indent", "true");
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "test min/max on docValues and multiValued",
@@ -1215,7 +1215,7 @@ public class StatsComponentTest extends SolrTestCaseJ4 {
     args.put(StatsParams.STATS_CALC_DISTINCT, "true");
     args.put("indent", "true");
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQEx("can not use FieldCache on multivalued field: cat_intDocValues", req, 400);
   }

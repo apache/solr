@@ -27,8 +27,8 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.join.CrossCollectionJoinQParser;
 import org.apache.solr.search.join.ScoreJoinQParserPlugin;
 import org.apache.solr.util.RefCounted;
@@ -170,7 +170,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         }
 
         RefCounted<SolrIndexSearcher> fromHolder = null;
-        SolrQueryRequestBase otherReq = new SolrQueryRequestBase(fromCore, qparser.params);
+        LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, qparser.params);
         try {
           QParser parser = QParser.getParser(v, otherReq);
           fromQuery = parser.getQuery();

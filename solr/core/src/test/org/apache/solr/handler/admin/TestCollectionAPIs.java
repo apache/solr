@@ -45,8 +45,8 @@ import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.ClusterAPI;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.junit.Test;
@@ -124,7 +124,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         "{operation : migrate ,collection : coll1, target.collection:coll2, forward.timeout:1800, split.key:'a123!'}");
   }
 
-  ZkNodeProps compareOutput(
+  static ZkNodeProps compareOutput(
       final ApiBag apiBag,
       final String path,
       final SolrRequest.METHOD method,
@@ -138,7 +138,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     return output;
   }
 
-  public Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
+  public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag, String path, final SolrRequest.METHOD method, final String payload) {
     SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
     if (path.indexOf('?') > 0) {
@@ -150,8 +150,8 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     Api api = apiBag.lookup(path, method.toString(), parts);
     if (api == null) throw new RuntimeException("No handler at path :" + path);
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequestBase req =
-        new SolrQueryRequestBase(null, queryParams) {
+    LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(null, queryParams) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
             if (payload == null) return Collections.emptyList();
@@ -162,6 +162,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
           @Override
           public Map<String, String> getPathTemplateValues() {
             return parts;
+          }
+
+          @Override
+          public String getHttpMethod() {
+            return method.toString();
           }
         };
     api.call(req, rsp);
@@ -185,6 +190,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   }
 
   static class MockCollectionsHandler extends CollectionsHandler {
+    LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {}
 

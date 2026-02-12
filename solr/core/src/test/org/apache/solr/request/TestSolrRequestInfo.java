@@ -39,7 +39,7 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
   public void testCloseHookTwice() {
     final SolrRequestInfo info =
         new SolrRequestInfo(
-            new SolrQueryRequestBase(h.getCore(), params()), new SolrQueryResponse());
+            new LocalSolrQueryRequest(h.getCore(), params()), new SolrQueryResponse());
     AtomicInteger counter = new AtomicInteger();
     info.addCloseHook(counter::incrementAndGet);
     SolrRequestInfo.setRequestInfo(info);
@@ -54,7 +54,7 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
   public void testThreadPool() throws InterruptedException {
     final SolrRequestInfo info =
         new SolrRequestInfo(
-            new SolrQueryRequestBase(h.getCore(), params()), new SolrQueryResponse());
+            new LocalSolrQueryRequest(h.getCore(), params()), new SolrQueryResponse());
     AtomicInteger counter = new AtomicInteger();
 
     SolrRequestInfo.setRequestInfo(info);
@@ -89,10 +89,10 @@ public class TestSolrRequestInfo extends SolrTestCaseJ4 {
    */
   public void testLimitsMaintained() {
     try {
-      SolrQueryRequestBase timeAllowed1000 =
-          new SolrQueryRequestBase(h.getCore(), params("timeAllowed", "1000"));
-      SolrQueryRequestBase timeAllowed20000 =
-          new SolrQueryRequestBase(h.getCore(), params("timeAllowed", "20000"));
+      LocalSolrQueryRequest timeAllowed1000 =
+          new LocalSolrQueryRequest(h.getCore(), params("timeAllowed", "1000"));
+      LocalSolrQueryRequest timeAllowed20000 =
+          new LocalSolrQueryRequest(h.getCore(), params("timeAllowed", "20000"));
 
       assertNull(timeAllowed1000.getContext().get(LIMITS_KEY));
       assertNull(timeAllowed20000.getContext().get(LIMITS_KEY));

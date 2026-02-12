@@ -29,10 +29,10 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
@@ -203,9 +203,9 @@ public class SolrFeature extends Feature {
       }
     }
 
-    private SolrQueryRequestBase makeRequest(
+    private LocalSolrQueryRequest makeRequest(
         SolrCore core, String solrQuery, List<String> fqs, String df) {
-      final ModifiableSolrParams returnList = new ModifiableSolrParams();
+      final NamedList<String> returnList = new NamedList<>();
       if ((solrQuery != null) && !solrQuery.isEmpty()) {
         returnList.add(CommonParams.Q, solrQuery);
       }
@@ -218,7 +218,7 @@ public class SolrFeature extends Feature {
         returnList.add(CommonParams.DF, df);
       }
       if (returnList.size() > 0) {
-        return new SolrQueryRequestBase(core, returnList);
+        return new LocalSolrQueryRequest(core, returnList);
       } else {
         return null;
       }
@@ -245,7 +245,8 @@ public class SolrFeature extends Feature {
         try {
           return in.score();
         } catch (UnsupportedOperationException e) {
-          throw new FeatureException(e + ": " + "Unable to extract feature for " + name, e);
+          throw new FeatureException(
+              e.toString() + ": " + "Unable to extract feature for " + name, e);
         }
       }
     }

@@ -22,6 +22,7 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.RejectedExecutionHandler;
@@ -35,15 +36,14 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory;
  *   <li>Periodically delete documents from the index based on an expiration field
  * </ol>
  *
- * <p>Documents with expiration field values computed from a TTL can be excluded from searchers
+ * <p>Documents with expiration field values computed from a TTL can be be excluded from searchers
  * using simple date based filters relative to <code>NOW</code>, or completely removed from the
  * index using the periodic delete function of this factory. Alternatively, the periodic delete
  * function of this factory can be used to remove any document with an expiration value - even if
@@ -267,7 +267,9 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
     executor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     executor.setContinueExistingPeriodicTasksAfterShutdownPolicy(false);
     // we don't want this firing right away, since the core may not be ready
-
+    final long initialDelay = deletePeriodSeconds;
+    // TODO: should we make initialDelay configurable
+    // TODO: should we make initialDelay some fraction of the period?
     executor.scheduleAtFixedRate(
         new DeleteExpiredDocsRunnable(this),
         deletePeriodSeconds,
@@ -282,7 +284,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
     String defaultTtl = (null == ttlParam) ? null : req.getParams().get(ttlParam);
 
     if (null == ttlField && null == defaultTtl) {
-      // nothing to do, short circuit ourselves out of the chain.
+      // nothing to do, shortcircut ourselves out of the chain.
       return next;
     } else {
       return new TTLUpdateProcessor(defaultTtl, expireField, ttlField, next);
@@ -359,13 +361,13 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
 
     @Override
     public void run() {
-      // set up the request context early so the logging (including any from
+      // setup the request context early so the logging (including any from
       // shouldWeDoPeriodicDelete() ) includes the core context info
-      final SolrQueryRequestBase req =
-          new SolrQueryRequestBase(factory.core, new ModifiableSolrParams());
+      final LocalSolrQueryRequest req =
+          new LocalSolrQueryRequest(factory.core, Collections.<String, String[]>emptyMap());
       try {
         // HACK: to indicate to PKI that this is a server initiated request for the purposes
-        // of distributed request/credential forwarding...
+        // of distributed requet/credential forwarding...
         req.setUserPrincipalName(PKIAuthenticationPlugin.NODE_IS_USER);
 
         final SolrQueryResponse rsp = new SolrQueryResponse();
@@ -434,7 +436,7 @@ public final class DocExpirationUpdateProcessorFactory extends UpdateRequestProc
 
   /**
    * Helper method that returns true if the Runnable managed by this factory should be responsible
-   * for doing periodical deletes.
+   * of doing periodical deletes.
    *
    * <p>In simple standalone installations this method always returns true, but in cloud mode it
    * will be true if and only if we are currently the leader of the (active) slice with the first

@@ -28,8 +28,8 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -100,7 +100,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
               return super.getReplicaListTransformer(req);
             }
           }.getReplicaListTransformer(
-              new SolrQueryRequestBase(null, new ModifiableSolrParams().add("toyRegEx", regex)));
+              new LocalSolrQueryRequest(null, new ModifiableSolrParams().add("toyRegEx", regex)));
     }
 
     final List<Replica> inputs = new ArrayList<>();
@@ -143,7 +143,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     assertEquals(expectedTransformed, actualTransformed);
   }
 
-  private List<String> createRandomUrls() {
+  private final List<String> createRandomUrls() throws Exception {
     final List<String> urls = new ArrayList<>();
     maybeAddUrl(urls, "a" + random().nextDouble());
     maybeAddUrl(urls, "bb" + random().nextFloat());
@@ -154,7 +154,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
     return urls;
   }
 
-  private void maybeAddUrl(final List<String> urls, final String url) {
+  private final void maybeAddUrl(final List<String> urls, final String url) {
     if (random().nextBoolean()) {
       urls.add(url);
     }

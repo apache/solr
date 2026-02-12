@@ -55,8 +55,8 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.ReplicationHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -689,7 +689,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
             syncSuccess = peerSyncWithLeader.sync(recentVersions).isSuccess();
           }
           if (syncSuccess) {
-            SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+            SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
             // force open a new searcher
             core.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
             req.close();
@@ -850,7 +850,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     }
     if (replicaType == Replica.Type.TLOG) {
       // roll over all updates during buffering to new tlog, make RTG available
-      SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
       core.getUpdateHandler()
           .getUpdateLog()
           .copyOverBufferingUpdates(new CommitUpdateCommand(req, false));

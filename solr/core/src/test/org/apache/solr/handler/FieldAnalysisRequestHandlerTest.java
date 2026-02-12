@@ -41,8 +41,8 @@ import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TextField;
 import org.junit.Before;
@@ -101,7 +101,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.add(AnalysisParams.FIELD_VALUE, "the quick red fox jumped over the lazy brown dogs");
     params.add(CommonParams.Q, "fox brown");
 
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
     FieldAnalysisRequest request = handler.resolveAnalysisRequest(req);
     List<String> fieldNames = request.getFieldNames();
     assertEquals("Expecting 2 field names", 2, fieldNames.size());
@@ -118,20 +118,20 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
     // testing override of query value using analysis.query param
     params.add(AnalysisParams.QUERY, "quick lazy");
-    req = new SolrQueryRequestBase(h.getCore(), params);
+    req = new LocalSolrQueryRequest(h.getCore(), params);
     request = handler.resolveAnalysisRequest(req);
     assertEquals("quick lazy", request.getQuery());
     req.close();
 
     // testing analysis.showmatch param
     params.add(AnalysisParams.SHOW_MATCH, "false");
-    req = new SolrQueryRequestBase(h.getCore(), params);
+    req = new LocalSolrQueryRequest(h.getCore(), params);
     request = handler.resolveAnalysisRequest(req);
     assertFalse(request.isShowMatch());
     req.close();
 
     params.set(AnalysisParams.SHOW_MATCH, "true");
-    req = new SolrQueryRequestBase(h.getCore(), params);
+    req = new LocalSolrQueryRequest(h.getCore(), params);
     request = handler.resolveAnalysisRequest(req);
     assertTrue(request.isShowMatch());
     req.close();
@@ -139,7 +139,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     // testing absence of query value
     params.remove(CommonParams.Q);
     params.remove(AnalysisParams.QUERY);
-    req = new SolrQueryRequestBase(h.getCore(), params);
+    req = new LocalSolrQueryRequest(h.getCore(), params);
     request = handler.resolveAnalysisRequest(req);
     assertNull(request.getQuery());
     req.close();
@@ -162,7 +162,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     params.remove(CommonParams.Q);
     params.remove(AnalysisParams.QUERY);
     params.remove(AnalysisParams.FIELD_VALUE);
-    try (SolrQueryRequest solrQueryRequest = new SolrQueryRequestBase(h.getCore(), params)) {
+    try (SolrQueryRequest solrQueryRequest = new LocalSolrQueryRequest(h.getCore(), params)) {
       SolrException ex =
           expectThrows(SolrException.class, () -> handler.resolveAnalysisRequest(solrQueryRequest));
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
@@ -813,7 +813,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   public void testNoDefaultField() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(CommonParams.Q, "fox brown");
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
     handler.resolveAnalysisRequest(req);
   }
 

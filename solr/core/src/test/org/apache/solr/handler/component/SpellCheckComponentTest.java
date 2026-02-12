@@ -29,8 +29,8 @@ import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
@@ -622,7 +622,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = core.getRequestHandler("/spellCheckCompRH");
     SolrQueryResponse rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    SolrQueryRequest req = new SolrQueryRequestBase(core, params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     NamedList<?> values = rsp.getValues();
@@ -635,7 +635,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     params.add(SpellingParams.SPELLCHECK_DICT, "threshold_direct");
     rsp = new SolrQueryResponse();
     rsp.addResponseHeader(new SimpleOrderedMap<>());
-    req = new SolrQueryRequestBase(core, params);
+    req = new LocalSolrQueryRequest(core, params);
     handler.handleRequest(req, rsp);
     req.close();
     values = rsp.getValues();

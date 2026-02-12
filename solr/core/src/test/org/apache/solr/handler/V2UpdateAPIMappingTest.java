@@ -27,11 +27,10 @@ import java.util.Map;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.handler.admin.api.UpdateAPI;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -40,6 +39,7 @@ import org.junit.Test;
 /** Unit tests for the v2 to v1 mapping logic in {@link UpdateAPI} */
 public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
   private ApiBag apiBag;
+  private UpdateRequestHandler mockUpdateHandler;
 
   @BeforeClass
   public static void ensureWorkingMockito() {
@@ -48,7 +48,7 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
 
   @Before
   public void setupApiBag() {
-    UpdateRequestHandler mockUpdateHandler = mock(UpdateRequestHandler.class);
+    mockUpdateHandler = mock(UpdateRequestHandler.class);
     apiBag = new ApiBag(false);
     final UpdateAPI updateAPI = new UpdateAPI(mockUpdateHandler);
 
@@ -89,30 +89,27 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
     final HashMap<String, String> parts = new HashMap<>();
     final Api api = apiBag.lookup(path, "POST", parts);
     final SolrQueryResponse rsp = new SolrQueryResponse();
-    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    final LocalSolrQueryRequest req =
+        new LocalSolrQueryRequest(null, Map.of()) {
+          @Override
+          public List<CommandOperation> getCommands(boolean validateInput) {
+            return Collections.emptyList();
+          }
+
+          @Override
+          public Map<String, String> getPathTemplateValues() {
+            return parts;
+          }
+
+          @Override
+          public String getHttpMethod() {
+            return "POST";
+          }
+        };
     req.getContext().put(PATH, path);
 
     api.call(req, rsp);
 
     return req;
-  }
-
-  private SolrQueryRequestBase createTestRequest(Map<String, String> pathTemplateValues) {
-    return new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
-      @Override
-      public List<CommandOperation> getCommands(boolean validateInput) {
-        return Collections.emptyList();
-      }
-
-      @Override
-      public Map<String, String> getPathTemplateValues() {
-        return pathTemplateValues;
-      }
-
-      @Override
-      public String getHttpMethod() {
-        return "POST";
-      }
-    };
   }
 }

@@ -26,7 +26,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.junit.After;
@@ -49,7 +49,7 @@ public class TemplateUpdateProcessorTest extends SolrCloudTestCase {
 
     var cmd =
         new AddUpdateCommand(
-            new SolrQueryRequestBase(
+            new LocalSolrQueryRequest(
                 null,
                 new ModifiableSolrParams()
                     .add("processor", "template")

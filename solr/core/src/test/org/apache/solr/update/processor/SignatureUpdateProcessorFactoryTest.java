@@ -31,8 +31,8 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -292,7 +292,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       ureq.add(doc);
     }
 
-    SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), mmparams);
+    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), mmparams);
     try {
       req.setContentStreams(
           Collections.singletonList(ContentStreamBase.create(new JavaBinRequestWriter(), ureq)));

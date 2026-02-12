@@ -24,10 +24,11 @@ import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.similarities.LMJelinekMercerSimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.update.AddUpdateCommand;
@@ -76,8 +77,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
 
   private void addDoc(SolrCore core, String... fieldValues) throws IOException {
     UpdateHandler updater = core.getUpdateHandler();
-    AddUpdateCommand cmd =
-        new AddUpdateCommand(new SolrQueryRequestBase(core, new ModifiableSolrParams()));
+    AddUpdateCommand cmd = new AddUpdateCommand(new LocalSolrQueryRequest(core, new NamedList<>()));
     cmd.solrDoc = sdoc((Object[]) fieldValues);
     updater.addDoc(cmd);
   }
@@ -121,7 +121,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
       addDoc(changed, "id", "2", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "3", "which", "15", "text", "some stuff with which");
       addDoc(changed, "id", "4", "which", "15", "text", "some stuff with which");
-      SolrQueryRequest req = new SolrQueryRequestBase(changed, new ModifiableSolrParams());
+      SolrQueryRequest req = new LocalSolrQueryRequest(changed, new NamedList<>());
       changed.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
 
       // write the new schema out and make it current

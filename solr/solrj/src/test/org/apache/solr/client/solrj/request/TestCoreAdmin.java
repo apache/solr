@@ -20,12 +20,14 @@ import static org.apache.solr.util.SolrJMetricTestUtils.getPrometheusMetricValue
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.core.Is.is;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.AbstractEmbeddedSolrServerTestCase;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.Create;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestRecovery;
@@ -104,7 +106,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
 
   @Test
-  public void testErrorCases() {
+  public void testErrorCases() throws Exception {
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("action", "BADACTION");
@@ -129,7 +131,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
 
   @Test
-  public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() {
+  public void testInvalidCoreNamesAreRejectedWhenRenamingExistingCore() throws Exception {
     SolrException e =
         expectThrows(
             SolrException.class,
@@ -265,7 +267,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   }
 
   @Test
-  public void testInvalidRequestRecovery() {
+  public void testInvalidRequestRecovery() throws SolrServerException, IOException {
     RequestRecovery recoverRequestCmd = new RequestRecovery();
     recoverRequestCmd.setCoreName("non_existing_core");
     expectThrows(SolrException.class, () -> recoverRequestCmd.process(getSolrAdmin()));

@@ -25,8 +25,8 @@ import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.Test;
 
 public class TestFileStreamResponseWriter extends SolrTestCase {
@@ -34,7 +34,7 @@ public class TestFileStreamResponseWriter extends SolrTestCase {
   @Test
   public void testWriteWithRawWriter() throws IOException {
     FileStreamResponseWriter writer = new FileStreamResponseWriter();
-    SolrQueryRequest request = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    SolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     SolrQueryResponse response = new SolrQueryResponse();
 
     // Create a mock RawWriter
@@ -56,7 +56,7 @@ public class TestFileStreamResponseWriter extends SolrTestCase {
   @Test
   public void testWriteWithoutRawWriter() throws IOException {
     FileStreamResponseWriter writer = new FileStreamResponseWriter();
-    SolrQueryRequest request = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    SolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     SolrQueryResponse response = new SolrQueryResponse();
 
     // Don't add any RawWriter to the response
@@ -72,7 +72,7 @@ public class TestFileStreamResponseWriter extends SolrTestCase {
   @Test
   public void testGetContentTypeWithRawWriter() {
     FileStreamResponseWriter writer = new FileStreamResponseWriter();
-    SolrQueryRequest request = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    SolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     SolrQueryResponse response = new SolrQueryResponse();
 
     // Create a mock RawWriter with custom content type
@@ -90,7 +90,7 @@ public class TestFileStreamResponseWriter extends SolrTestCase {
   @Test
   public void testGetContentTypeWithoutRawWriter() {
     FileStreamResponseWriter writer = new FileStreamResponseWriter();
-    SolrQueryRequest request = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    SolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     SolrQueryResponse response = new SolrQueryResponse();
 
     // Don't add any RawWriter to the response
@@ -106,7 +106,7 @@ public class TestFileStreamResponseWriter extends SolrTestCase {
   @Test
   public void testGetContentTypeWithRawWriterReturningNull() {
     FileStreamResponseWriter writer = new FileStreamResponseWriter();
-    SolrQueryRequest request = new SolrQueryRequestBase(null, new ModifiableSolrParams());
+    SolrQueryRequest request = new LocalSolrQueryRequest(null, new ModifiableSolrParams());
     SolrQueryResponse response = new SolrQueryResponse();
 
     // Create a mock RawWriter that returns null for content type

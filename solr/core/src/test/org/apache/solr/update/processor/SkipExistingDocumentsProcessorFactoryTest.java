@@ -26,10 +26,9 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.SkipExistingDocumentsProcessorFactory.SkipExistingDocumentsUpdateProcessor;
@@ -41,8 +40,8 @@ public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
 
   private BytesRef docId = new BytesRef();
 
-  private SolrQueryRequest defaultRequest =
-      new SolrQueryRequestBase(null, new ModifiableSolrParams());
+  @SuppressWarnings({"rawtypes"})
+  private SolrQueryRequest defaultRequest = new LocalSolrQueryRequest(null, new NamedList());
 
   @BeforeClass
   public static void beforeClass() {
@@ -169,9 +168,9 @@ public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipInsertIfExists", true);
     factory.init(initArgs);
-    ModifiableSolrParams requestArgs = new ModifiableSolrParams();
+    NamedList<String> requestArgs = new NamedList<>();
     requestArgs.add("skipInsertIfExists", "false");
-    SolrQueryRequest req = new SolrQueryRequestBase(null, requestArgs);
+    SolrQueryRequest req = new LocalSolrQueryRequest(null, requestArgs);
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
 
     SkipExistingDocumentsUpdateProcessor processor =
@@ -186,9 +185,9 @@ public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
     NamedList<Object> initArgs = new NamedList<>();
     initArgs.add("skipUpdateIfMissing", true);
     factory.init(initArgs);
-    ModifiableSolrParams requestArgs = new ModifiableSolrParams();
-    requestArgs.add("skipUpdateIfMissing", "false");
-    SolrQueryRequest req = new SolrQueryRequestBase(null, requestArgs);
+    NamedList<Object> requestArgs = new NamedList<>();
+    requestArgs.add("skipUpdateIfMissing", false);
+    SolrQueryRequest req = new LocalSolrQueryRequest(null, requestArgs);
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
 
     SkipExistingDocumentsUpdateProcessor processor =
@@ -204,9 +203,9 @@ public class SkipExistingDocumentsProcessorFactoryTest extends SolrTestCaseJ4 {
     initArgs.add("skipInsertIfExists", true);
     initArgs.add("skipUpdateIfMissing", false);
     factory.init(initArgs);
-    ModifiableSolrParams requestArgs = new ModifiableSolrParams();
+    NamedList<Object> requestArgs = new NamedList<>();
     requestArgs.add("skipUpdateIfMissing", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(null, requestArgs);
+    SolrQueryRequest req = new LocalSolrQueryRequest(null, requestArgs);
     UpdateRequestProcessor next = Mockito.mock(DistributedUpdateProcessor.class);
 
     SkipExistingDocumentsUpdateProcessor processor =

@@ -26,8 +26,8 @@ import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -134,7 +134,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
     assertTrue(processorFactory instanceof UUIDUpdateProcessorFactory);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams());
     AddUpdateCommand cmd = new AddUpdateCommand(req);
     cmd.solrDoc = new SolrInputDocument();
     cmd.solrDoc.addField("random_s", "random_val");
@@ -182,7 +182,7 @@ public class UUIDUpdateProcessorFallbackTest extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, params);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);

@@ -48,8 +48,8 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.solr.update.SplitIndexCommand;
@@ -201,7 +201,7 @@ class SplitOp implements CoreAdminHandler.CoreAdminOp {
         paths = Arrays.asList(pathsArr);
       }
 
-      req = new SolrQueryRequestBase(parentCore, params);
+      req = new LocalSolrQueryRequest(parentCore, params);
 
       SplitIndexCommand cmd =
           new SplitIndexCommand(

@@ -33,8 +33,8 @@ import org.apache.solr.crossdc.common.KafkaCrossDcConf;
 import org.apache.solr.crossdc.common.KafkaMirroringSink;
 import org.apache.solr.crossdc.common.MirroredSolrRequest;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +85,7 @@ public class MirroringConfigSetsHandler extends ConfigSetsHandler {
       return;
     }
     // fully read all streams and re-package them so they are re-readable
-    SolrQueryRequestBase localReq = new SolrQueryRequestBase(req.getCore(), req.getParams());
+    LocalSolrQueryRequest localReq = new LocalSolrQueryRequest(req.getCore(), req.getParams());
     List<ContentStream> contentStreams = null;
     if (req.getContentStreams() != null) {
       contentStreams = new ArrayList<>();

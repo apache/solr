@@ -24,8 +24,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
@@ -58,7 +58,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, requestParams);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, requestParams);
     try {
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req, rsp));
       AddUpdateCommand cmd = new AddUpdateCommand(req);
@@ -84,7 +84,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
     CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
@@ -102,7 +102,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
 
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
     DeleteUpdateCommand cmd = new DeleteUpdateCommand(req);
     cmd.setId(id);
@@ -120,7 +120,7 @@ public class UpdateProcessorTestBase extends SolrTestCaseJ4 {
     assertNotNull("No Chain named: " + chain, pc);
 
     SolrQueryResponse rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new ModifiableSolrParams());
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
 
     UpdateRequestProcessor processor = pc.createProcessor(req, rsp);
     try {

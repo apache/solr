@@ -19,8 +19,8 @@ package org.apache.solr.schema;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -53,7 +53,7 @@ public class IndexSchemaRuntimeFieldTest extends SolrTestCaseJ4 {
 
     SolrQuery query = new SolrQuery(fieldName + ":aaa");
     query.set("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, query);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, query);
 
     assertQ(
         "Make sure they got in",

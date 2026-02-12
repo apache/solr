@@ -43,8 +43,8 @@ import org.apache.solr.ltr.model.LTRScoringModel;
 import org.apache.solr.ltr.model.TestLinearModel;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -112,7 +112,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
+        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
 
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
@@ -162,7 +162,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
     assertU(commit());
 
     try (SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
+        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
       // Do ordinary BooleanQuery:
       final BooleanQuery.Builder bqBuilder = new BooleanQuery.Builder();
       bqBuilder.add(new TermQuery(new Term("field", "wizard")), BooleanClause.Occur.SHOULD);
@@ -235,7 +235,7 @@ public class TestLTRReRankingPipeline extends SolrTestCaseJ4 {
   @Test
   public void testDocParam() throws Exception {
     try (SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams())) {
+        new LocalSolrQueryRequest(h.getCore(), new ModifiableSolrParams())) {
       List<Feature> features = makeFieldValueFeatures(new int[] {0}, "finalScore");
       List<Normalizer> norms =
           new ArrayList<Normalizer>(

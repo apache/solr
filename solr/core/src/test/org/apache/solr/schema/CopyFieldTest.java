@@ -22,8 +22,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -155,7 +155,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "text_en:simple");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
 
     assertQ(
         "Make sure they got in",
@@ -166,7 +166,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put(CommonParams.Q, "highlight:simple");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ(
         "dynamic source",
         req,
@@ -177,13 +177,13 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put(CommonParams.Q, "text_en:functionality");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ("Make sure they got in", req, "//*[@numFound='1']");
 
     args = new HashMap<>();
     args.put(CommonParams.Q, "highlight:functionality");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ("dynamic source", req, "//*[@numFound='0']");
   }
 
@@ -231,14 +231,14 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "text:AAM46");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ(
         "sku2 copied to text", req, "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='5']");
 
     args = new HashMap<>();
     args.put(CommonParams.Q, "1_s:10-1839ACX-93");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ(
         "sku1 copied to dynamic dest *_s",
         req,
@@ -249,13 +249,13 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     args = new HashMap<>();
     args.put(CommonParams.Q, "1_dest_sub_s:10-1839ACX-93");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ("sku1 copied to *_dest_sub_s (*_s subset pattern)", req, "//*[@numFound='1']");
 
     args = new HashMap<>();
     args.put(CommonParams.Q, "dest_sub_no_ast_s:AAM46");
     args.put("indent", "true");
-    req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ(
         "sku2 copied to dest_sub_no_ast_s (*_s subset pattern no asterisk)",
         req,
@@ -281,7 +281,7 @@ public class CopyFieldTest extends SolrTestCaseJ4 {
     Map<String, String> args = new HashMap<>();
     args.put(CommonParams.Q, "text:AAM46");
     args.put("indent", "true");
-    SolrQueryRequest req = new SolrQueryRequestBase(core, new MapSolrParams(args));
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(args));
     assertQ(
         "sku2 copied to text", req, "//*[@numFound='1']", "//result/doc[1]/str[@name='id'][.='5']");
   }

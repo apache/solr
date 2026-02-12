@@ -39,8 +39,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SyntaxError;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -110,7 +110,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   @Test
   public void testReceivedSyntaxErrorsAreWrappedIn400SolrException() {
     final SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
           @Override
           public CoreContainer getCoreContainer() {
             return coreContainer;
@@ -128,7 +128,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   @Test
   public void testReceivedNonTragicNonSolrExceptionsAreNotModified() {
     final SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
           @Override
           public CoreContainer getCoreContainer() {
             return coreContainer;
@@ -145,7 +145,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   public void testTragicNonSolrExceptionsAreWrappedInA500SolrException() {
     when(coreContainer.checkTragicException(solrCore)).thenReturn(true);
     final SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
           @Override
           public CoreContainer getCoreContainer() {
             return coreContainer;
@@ -163,7 +163,7 @@ public class RequestHandlerBaseTest extends SolrTestCaseJ4 {
   @Test
   public void testIsInternalShardRequest() {
     final SolrQueryRequest solrQueryRequest =
-        new SolrQueryRequestBase(solrCore, new ModifiableSolrParams()) {
+        new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams()) {
           @Override
           public CoreContainer getCoreContainer() {
             return coreContainer;
