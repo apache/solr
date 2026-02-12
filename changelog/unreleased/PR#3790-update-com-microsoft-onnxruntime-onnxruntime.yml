@@ -1,0 +1,7 @@
+title: Update com.microsoft.onnxruntime:onnxruntime to v1.24.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3790
+  url: https://github.com/apache/solr/pull/3790
