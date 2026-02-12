@@ -3,8 +3,7 @@ title: Ensure File Store API "getFrom" param rejects values not in liveNodes
 type: security # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Jason Gerlowski
-  - name: Chris Hostetter
-  - name: Anshum Gupta
+  - name: monkeontheroof
 links:
   - name: SOLR-18014
     url: https://issues.apache.org/jira/browse/SOLR-18014
