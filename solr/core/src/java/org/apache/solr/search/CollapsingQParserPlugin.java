@@ -1383,8 +1383,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it =
-          new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
+      DocIdSetIterator it = collapseStrategy.getCollapsedDisi();
       int globalDoc = -1;
       int nullScoreIndex = 0;
       IntFloatDynamicMap scores = collapseStrategy.getScores();
@@ -1614,8 +1613,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it =
-          new BitSetIterator(collapseStrategy.getCollapsedSet(), 0); // cost is not useful here
+      DocIdSetIterator it = collapseStrategy.getCollapsedDisi();
       int globalDoc = -1;
       int nullScoreIndex = 0;
       IntIntHashMap cmap = collapseStrategy.getCollapseMap();
@@ -2278,7 +2276,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    public FixedBitSet getCollapsedSet() {
+    public DocIdSetIterator getCollapsedDisi() {
+      return new BitSetIterator(getCollapsedSet(), 0); // cost is not useful here
+    }
+
+    protected FixedBitSet getCollapsedSet() {
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
           collapsedSet,
@@ -2802,7 +2804,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
-    public FixedBitSet getCollapsedSet() {
+    public DocIdSetIterator getCollapsedDisi() {
+      return new BitSetIterator(getCollapsedSet(), 0); // cost is not useful here
+    }
+
+    protected FixedBitSet getCollapsedSet() {
 
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
