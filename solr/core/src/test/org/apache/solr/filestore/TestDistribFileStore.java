@@ -169,6 +169,19 @@ public class TestDistribFileStore extends SolrCloudTestCase {
         String url = baseUrl + "/cluster/filestore/metadata/package/mypkg/v1.0?wt=javabin";
         assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
       }
+
+      // Ensure that invalid 'getFrom' parameter causes failures
+      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+        final var fetchReq = new FileStoreApi.FetchFile("/package/mypkg/v1.0/runtimelibs.jar2");
+        fetchReq.setGetFrom("someFakeSolrNode:8983_solr");
+        try (final var solrClient = jettySolrRunner.newClient()) {
+          final var asdf = fetchReq.process(solrClient);
+          assertEquals(400, asdf.responseHeader.status);
+          assertThat(asdf.error.msg, containsString("File store cannot fetch from source node"));
+          assertThat(asdf.error.msg, containsString("does not appear in live-nodes"));
+        }
+      }
+
       // Delete Jars
       DistribFileStore.deleteZKFileEntry(
           cluster.getZkClient(), "/package/mypkg/v1.0/runtimelibs.jar");
