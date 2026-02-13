@@ -219,6 +219,9 @@ grant {
 };
 
 // Permissions for OTEL Runtime Java 17 telemetry and metrics
+// Also needed for Reactor (used by Azure SDK with OkHttp)
 grant {
   permission jdk.jfr.FlightRecorderPermission "accessFlightRecorder";
+  permission jdk.jfr.FlightRecorderPermission "registerEvent";
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.jfr.internal.event";
 };
