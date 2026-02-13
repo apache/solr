@@ -75,6 +75,7 @@ import org.eclipse.jetty.ee10.servlet.ServletContextHandler;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.eclipse.jetty.ee10.servlet.Source;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.parser.RateControl;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
@@ -323,6 +324,7 @@ public class JettySolrRunner {
 
           HTTP2ServerConnectionFactory http2ConnectionFactory =
               new HTTP2ServerConnectionFactory(configuration);
+          http2ConnectionFactory.setRateControlFactory(new RateControl.Factory() {}); // unlimited
 
           ALPNServerConnectionFactory alpn =
               new ALPNServerConnectionFactory(
