@@ -21,9 +21,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CommonParams.WT;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
@@ -55,21 +53,17 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
@@ -117,7 +111,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   /** Enumeration of ways to filter collections on the graph panel. */
-  static enum FilterType {
+  enum FilterType {
     none,
     name,
     status
@@ -182,7 +176,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
      * user is filtering by.
      */
     @SuppressWarnings("unchecked")
-    final boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
+    boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
 
       if (filterType != FilterType.status || filter == null || filter.length() == 0)
         return true; // no status filter, so all match
@@ -233,7 +227,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-    final boolean matches(final Pattern filter, final String collName) {
+    boolean matches(final Pattern filter, final String collName) {
       return filter.matcher(collName).matches();
     }
 
@@ -304,7 +298,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       // activate paging (if disabled) for large collection sets
       if (page.start == 0 && page.rows == -1 && page.filter == null && children.size() > 10) {
         page.rows = 20;
-        page.start = 0;
       }
 
       // apply the name filter if supplied (we don't need to pull state
@@ -360,71 +353,171 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
+
+    // Force JSON response and omit header for cleaner output
+    Map<String, String> map = Map.of(WT, "json", OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
+
+    // Ensure paging support is initialized
+    ensurePagingSupportInitialized();
+
+    // Validate parameters
+    validateParameters(params);
+
+    // Determine request type and handle accordingly
+    boolean isGraphView = "graph".equals(params.get("view"));
+    ZkBasePrinter printer =
+        isGraphView ? handleGraphViewRequest(params) : handlePathViewRequest(params);
+
+    try {
+      printer.print();
+    } finally {
+      printer.close();
+    }
+
+    addJsonToResponse(printer.getJsonString(), rsp);
+  }
+
+  /** Ensures the paging support is initialized (thread-safe lazy initialization). */
+  private void ensurePagingSupportInitialized() {
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
         ZkController zkController = cores.getZkController();
         if (zkController != null) {
-          // get notified when the ZK session expires (so we can clear the cached collections and
-          // rebuild)
+          // Get notified when the ZK session expires (so we can clear cached collections)
           zkController.addOnReconnectListener(pagingSupport);
         }
       }
     }
+  }
 
-    String path = params.get(PATH);
-
+  /**
+   * Validates incoming parameters.
+   *
+   * @param params Request parameters to validate
+   * @throws SolrException if validation fails
+   */
+  private void validateParameters(SolrParams params) {
     if (params.get("addr") != null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
+  }
 
-    String detailS = params.get(PARAM_DETAIL);
-    boolean detail = detailS != null && detailS.equals("true");
-
-    String dumpS = params.get("dump");
-    boolean dump = dumpS != null && dumpS.equals("true");
-
-    int start = params.getInt("start", 0); // Note start ignored if rows not specified
+  /**
+   * Handles the graph view request with paginated collections.
+   *
+   * @param params Request parameters including pagination settings
+   * @return JSON string representing paginated collection data
+   */
+  private ZkBasePrinter handleGraphViewRequest(SolrParams params) {
+    // Extract pagination parameters
+    int start = params.getInt("start", 0);
     int rows = params.getInt("rows", -1);
 
+    // Extract filter parameters
+    FilterType filterType = extractFilterType(params);
+    String filter = extractFilter(params, filterType);
+
+    // Extract display options (applicable to graph view)
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
+
+    // Create printer for paginated collections
+    return new ZkGraphPrinter(
+        cores.getZkController(),
+        new PageOfCollections(start, rows, filterType, filter),
+        pagingSupport,
+        detail,
+        dump);
+  }
+
+  /**
+   * Handles the path view request for a specific ZooKeeper path.
+   *
+   * @param params Request parameters including the path to display
+   * @return JSON string representing the ZooKeeper path data
+   */
+  private ZkBasePrinter handlePathViewRequest(SolrParams params) {
+    // Extract path parameter
+    String path = params.get(PATH);
+
+    // Extract display options
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
+
+    // Create printer for specific path
+    return new ZkPathPrinter(cores.getZkController(), path, detail, dump);
+  }
+
+  /**
+   * Extracts and normalizes the filter type from request parameters.
+   *
+   * @param params Request parameters
+   * @return The filter type (defaults to FilterType.none if not specified)
+   */
+  private FilterType extractFilterType(SolrParams params) {
     String filterType = params.get("filterType");
     if (filterType != null) {
       filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0) filterType = null;
+      if (filterType.length() == 0) {
+        return FilterType.none;
+      }
+      switch (filterType) {
+        case "none":
+          return FilterType.none;
+        case "name":
+          return FilterType.name;
+        case "status":
+          return FilterType.status;
+        default:
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST,
+              "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+      }
     }
-    FilterType type = (filterType != null) ? FilterType.valueOf(filterType) : FilterType.none;
+    return FilterType.none;
+  }
 
-    String filter = (type != FilterType.none) ? params.get("filter") : null;
+  /**
+   * Extracts and normalizes the filter value from request parameters.
+   *
+   * @param params Request parameters
+   * @param filterType The filter type being used
+   * @return The filter string, or null if not applicable
+   */
+  private String extractFilter(SolrParams params, FilterType filterType) {
+    if (filterType == FilterType.none) {
+      return null;
+    }
+
+    String filter = params.get("filter");
     if (filter != null) {
       filter = filter.trim();
-      if (filter.length() == 0) filter = null;
-    }
-
-    ZKPrinter printer = new ZKPrinter(cores.getZkController());
-    printer.detail = detail;
-    printer.dump = dump;
-    boolean isGraphView = "graph".equals(params.get("view"));
-    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
-    // return collection listing. Need to change services.js if cleaning up here, collection list is
-    // used from Admin UI Cloud - Graph
-    boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
-    printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
-    printer.pagingSupport = pagingSupport;
-
-    try {
-      if (paginateCollections) {
-        // List collections and allow pagination, but no specific znode info like when looking at a
-        // normal ZK path
-        printer.printPaginatedCollections();
-      } else {
-        printer.print(path);
+      if (filter.length() > 0) {
+        return filter;
       }
-    } finally {
-      printer.close();
     }
-    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
+    return null;
+  }
+
+  /**
+   * Converts JSON string to structured response objects and adds to SolrQueryResponse.
+   *
+   * @param jsonString The JSON string to parse
+   * @param rsp The response object to populate
+   */
+  private void addJsonToResponse(String jsonString, SolrQueryResponse rsp) {
+    // Parse the JSON we built and return as structured data
+    // This allows any response writer (json, xml, etc.) to serialize it properly
+    // The JSON is always a Map since both printPath() and printPaginatedCollections()
+    // start with json.startObject() and end with json.endObject()
+    @SuppressWarnings("unchecked")
+    Map<String, Object> jsonMap = (Map<String, Object>) Utils.fromJSONString(jsonString);
+
+    for (Map.Entry<String, Object> entry : jsonMap.entrySet()) {
+      rsp.add(entry.getKey(), entry.getValue());
+    }
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
@@ -436,29 +529,29 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   //
   // --------------------------------------------------------------------------------------
 
-  static class ZKPrinter implements ContentStream {
-    static boolean FULLPATH_DEFAULT = false;
+  /**
+   * Base class for ZooKeeper JSON printers. Provides common functionality for building JSON from
+   * ZooKeeper data.
+   */
+  abstract static class ZkBasePrinter {
+    protected boolean detail;
+    protected boolean dump;
 
-    boolean indent = true;
-    boolean fullpath = FULLPATH_DEFAULT;
-    boolean detail = false;
-    boolean dump = false;
+    protected final Utils.BAOS baos = new Utils.BAOS();
+    protected final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
+    protected final SolrZkClient zkClient;
+    protected final ZkController zkController;
+    protected final String keeperAddr;
 
-    String keeperAddr; // the address we're connected to
-
-    final Utils.BAOS baos = new Utils.BAOS();
-    final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
-    SolrZkClient zkClient;
-
-    PageOfCollections page;
-    PagedCollectionSupport pagingSupport;
-    ZkController zkController;
-
-    public ZKPrinter(ZkController controller) throws IOException {
+    public ZkBasePrinter(ZkController controller, boolean detail, boolean dump) {
       this.zkController = controller;
-      keeperAddr = controller.getZkServerAddress();
-      zkClient = controller.getZkClient();
+      this.detail = detail;
+      this.dump = dump;
+      this.keeperAddr = controller.getZkServerAddress();
+      this.zkClient = controller.getZkClient();
     }
+
+    public abstract void print() throws IOException;
 
     public void close() {
       try {
@@ -468,8 +561,50 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       }
     }
 
-    // main entry point for printing from path
-    void print(String path) throws IOException {
+    /**
+     * Returns the JSON content as a string. This will be parsed back into objects for proper
+     * serialization by response writers.
+     */
+    public String getJsonString() {
+      return baos.toString(StandardCharsets.UTF_8);
+    }
+
+    protected void writeError(int code, String msg) {
+      throw new SolrException(ErrorCode.getErrorCode(code), msg);
+    }
+
+    protected String time(long ms) {
+      return (new Date(ms)) + " (" + ms + ")";
+    }
+
+    protected void writeKeyValue(JSONWriter json, String k, Object v, boolean isFirst) {
+      if (!isFirst) {
+        json.writeValueSeparator();
+      }
+
+      json.indent();
+
+      json.writeString(k);
+      json.writeNameSeparator();
+      json.write(v);
+    }
+  }
+
+  /**
+   * Printer for specific ZooKeeper path details and tree structure. Used for the path view in the
+   * Admin UI.
+   */
+  static class ZkPathPrinter extends ZkBasePrinter {
+
+    private String path;
+
+    public ZkPathPrinter(ZkController controller, String path, boolean detail, boolean dump) {
+      super(controller, detail, dump);
+      this.path = path;
+    }
+
+    @Override
+    public void print() throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -479,7 +614,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         path = "/";
       } else {
         path = path.trim();
-        if (path.length() == 0) {
+        if (path.isEmpty()) {
           path = "/";
         }
       }
@@ -490,7 +625,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       int idx = path.lastIndexOf('/');
       String parent = idx >= 0 ? path.substring(0, idx) : path;
-      if (parent.length() == 0) {
+      if (parent.isEmpty()) {
         parent = "/";
       }
 
@@ -516,106 +651,10 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       out.write(chars.toString());
     }
 
-    // main entry point for printing collections
-    @SuppressWarnings("unchecked")
-    void printPaginatedCollections() throws IOException {
-      SortedMap<String, Object> collectionStates;
-      try {
-        // support paging of the collections graph view (in case there are many collections)
-        // fetch the requested page of collections and then retrieve the state for each
-        pagingSupport.fetchPage(page, zkClient);
-        // keep track of how many collections match the filter
-        boolean applyStatusFilter = (page.filterType == FilterType.status && page.filter != null);
-        List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<>() : null;
-        ClusterState cs = zkController.getZkStateReader().getClusterState();
-        Set<String> liveNodes = applyStatusFilter ? cs.getLiveNodes() : null;
+    private boolean printTree(JSONWriter json, String path) {
+      int idx = path.lastIndexOf('/');
+      String label = idx > 0 ? path.substring(idx + 1) : path;
 
-        collectionStates = new TreeMap<>(pagingSupport);
-        for (String collection : page.selected) {
-          DocCollection dc = cs.getCollectionOrNull(collection);
-          if (dc != null) {
-            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
-            // state to render correctly for the UI?
-            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
-            if (applyStatusFilter) {
-              // verify this collection matches the filtered state
-              if (page.matchesStatusFilter(collectionState, liveNodes)) {
-                matchesStatusFilter.add(collection);
-                collectionStates.put(
-                    collection, ClusterStatus.postProcessCollectionJSON(collectionState));
-              }
-            } else {
-              collectionStates.put(
-                  collection, ClusterStatus.postProcessCollectionJSON(collectionState));
-            }
-          }
-        }
-
-        if (applyStatusFilter) {
-          // update the paged navigation info after applying the status filter
-          page.selectPage(matchesStatusFilter);
-
-          // rebuild the Map of state data
-          SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
-          for (String next : page.selected) map.put(next, collectionStates.get(next));
-          collectionStates = map;
-        }
-      } catch (KeeperException | InterruptedException e) {
-        writeError(500, e.toString());
-        return;
-      }
-
-      CharArr chars = new CharArr();
-      JSONWriter json = new JSONWriter(chars, 2);
-      json.startObject();
-
-      json.writeString("znode");
-      json.writeNameSeparator();
-      json.startObject();
-
-      // For some reason, without this the Json is badly formed
-      writeKeyValue(json, PATH, "Undefined", true);
-
-      if (collectionStates != null) {
-        CharArr collectionOut = new CharArr();
-        new JSONWriter(collectionOut, 2).write(collectionStates);
-        writeKeyValue(json, "data", collectionOut.toString(), false);
-      }
-
-      writeKeyValue(json, "paging", page.getPagingHeader(), false);
-
-      json.endObject();
-      json.endObject();
-      out.write(chars.toString());
-    }
-
-    void writeError(int code, String msg) throws IOException {
-      throw new SolrException(ErrorCode.getErrorCode(code), msg);
-      /*response.setStatus(code);
-
-      CharArr chars = new CharArr();
-      JSONWriter w = new JSONWriter(chars, 2);
-      w.startObject();
-      w.indent();
-      w.writeString("status");
-      w.writeNameSeparator();
-      w.write(code);
-      w.writeValueSeparator();
-      w.indent();
-      w.writeString("error");
-      w.writeNameSeparator();
-      w.writeString(msg);
-      w.endObject();
-
-      out.write(chars.toString());*/
-    }
-
-    boolean printTree(JSONWriter json, String path) throws IOException {
-      String label = path;
-      if (!fullpath) {
-        int idx = path.lastIndexOf('/');
-        label = idx > 0 ? path.substring(idx + 1) : path;
-      }
       json.startObject();
       writeKeyValue(json, "text", label, true);
       json.writeValueSeparator();
@@ -655,9 +694,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       if (stat.getNumChildren() > 0) {
         json.writeValueSeparator();
-        if (indent) {
-          json.indent();
-        }
+
+        json.indent();
+
         json.writeString("children");
         json.writeNameSeparator();
         json.startArray();
@@ -678,10 +717,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             }
             first = false;
           }
-        } catch (KeeperException e) {
-          writeError(500, e.toString());
-          return false;
-        } catch (InterruptedException e) {
+        } catch (KeeperException | InterruptedException e) {
           writeError(500, e.toString());
           return false;
         } catch (IllegalArgumentException e) {
@@ -696,23 +732,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-    String time(long ms) {
-      return (new Date(ms)).toString() + " (" + ms + ")";
-    }
-
-    public void writeKeyValue(JSONWriter json, String k, Object v, boolean isFirst) {
-      if (!isFirst) {
-        json.writeValueSeparator();
-      }
-      if (indent) {
-        json.indent();
-      }
-      json.writeString(k);
-      json.writeNameSeparator();
-      json.write(v);
-    }
-
-    boolean printZnode(JSONWriter json, String path) throws IOException {
+    private boolean printZnode(JSONWriter json, String path) {
       try {
         String dataStr = null;
         String dataStrErr = null;
@@ -723,7 +743,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           try {
             dataStr = (new BytesRef(data)).utf8ToString();
           } catch (Exception e) {
-            dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
+            dataStrErr = "data is not parsable as a utf8 String: " + e;
           }
         }
 
@@ -757,55 +777,102 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           writeKeyValue(json, "data", dataStr, false);
         }
 
-        if (page != null) {
-          writeKeyValue(json, "paging", page.getPagingHeader(), false);
-        }
-
         json.endObject();
-      } catch (KeeperException e) {
-        writeError(500, e.toString());
-        return false;
-      } catch (InterruptedException e) {
+      } catch (KeeperException | InterruptedException e) {
         writeError(500, e.toString());
         return false;
       }
       return true;
     }
+  }
 
-    /* @Override
-        public void write(OutputStream os) throws IOException {
-          ByteBuffer bytes = baos.getByteBuffer();
-          os.write(bytes.array(),0,bytes.limit());
+  /**
+   * Printer for paginated collection data for the Admin UI graph view. Handles filtering,
+   * pagination, and collection state retrieval.
+   */
+  static class ZkGraphPrinter extends ZkBasePrinter {
+    private final PageOfCollections page;
+    private final PagedCollectionSupport pagingSupport;
+
+    public ZkGraphPrinter(
+        ZkController controller,
+        PageOfCollections page,
+        PagedCollectionSupport pagingSupport,
+        boolean detail,
+        boolean dump) {
+      super(controller, detail, dump);
+      this.page = page;
+      this.pagingSupport = pagingSupport;
+    }
+
+    @Override
+    public void print() throws IOException {
+      SortedMap<String, Object> collectionStates;
+      try {
+        // support paging of the collections graph view (in case there are many collections)
+        // fetch the requested page of collections and then retrieve the state for each
+        pagingSupport.fetchPage(page, zkClient);
+        // keep track of how many collections match the filter
+        boolean applyStatusFilter = (page.filterType == FilterType.status && page.filter != null);
+        List<String> matchesStatusFilter = applyStatusFilter ? new ArrayList<>() : null;
+        ClusterState cs = zkController.getZkStateReader().getClusterState();
+        Set<String> liveNodes = applyStatusFilter ? cs.getLiveNodes() : null;
+
+        collectionStates = new TreeMap<>(pagingSupport);
+        for (String collection : page.selected) {
+          DocCollection dc = cs.getCollectionOrNull(collection);
+          if (dc != null) {
+            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
+            // state to render correctly for the UI?
+            Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
+            if (applyStatusFilter) {
+              // verify this collection matches the filtered state
+              if (page.matchesStatusFilter(collectionState, liveNodes)) {
+                matchesStatusFilter.add(collection);
+                collectionStates.put(
+                    collection, ClusterStatus.postProcessCollectionJSON(collectionState));
+              }
+            } else {
+              collectionStates.put(
+                  collection, ClusterStatus.postProcessCollectionJSON(collectionState));
+            }
+          }
         }
-    */
-    @Override
-    public String getName() {
-      return null;
-    }
 
-    @Override
-    public String getSourceInfo() {
-      return null;
-    }
+        if (applyStatusFilter) {
+          // update the paged navigation info after applying the status filter
+          page.selectPage(matchesStatusFilter);
 
-    @Override
-    public String getContentType() {
-      return JSONResponseWriter.CONTENT_TYPE_JSON_UTF8;
-    }
+          // rebuild the Map of state data
+          SortedMap<String, Object> map = new TreeMap<>(pagingSupport);
+          for (String next : page.selected) map.put(next, collectionStates.get(next));
+          collectionStates = map;
+        }
+      } catch (KeeperException | InterruptedException e) {
+        writeError(500, e.toString());
+        return;
+      }
 
-    @Override
-    public Long getSize() {
-      return null;
-    }
+      CharArr chars = new CharArr();
+      JSONWriter json = new JSONWriter(chars, 2);
+      json.startObject();
 
-    @Override
-    public InputStream getStream() throws IOException {
-      return new ByteBufferInputStream(baos.getByteBuffer());
-    }
+      json.writeString("znode");
+      json.writeNameSeparator();
+      json.startObject();
 
-    @Override
-    public Reader getReader() throws IOException {
-      return null;
+      // For some reason, without this the Json is badly formed
+      writeKeyValue(json, PATH, "Undefined", true);
+
+      CharArr collectionOut = new CharArr();
+      new JSONWriter(collectionOut, 2).write(collectionStates);
+      writeKeyValue(json, "data", collectionOut.toString(), false);
+
+      writeKeyValue(json, "paging", page.getPagingHeader(), false);
+
+      json.endObject();
+      json.endObject();
+      out.write(chars.toString());
     }
   }
 }
