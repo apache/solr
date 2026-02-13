@@ -228,8 +228,7 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
    *   <li>"org"
    * </ul>
    */
-  private void addParentLoggers(
-      String loggerName, Map<String, LoggerInfo> map, LoggerContext ctx) {
+  private void addParentLoggers(String loggerName, Map<String, LoggerInfo> map, LoggerContext ctx) {
     String parentName = loggerName;
     while (true) {
       int dot = parentName.lastIndexOf('.');
