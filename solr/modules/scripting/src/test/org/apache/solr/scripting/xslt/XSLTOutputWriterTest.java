@@ -35,17 +35,17 @@ public class XSLTOutputWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testTrivialXsltWriter() throws Exception {
-    lrf.args.put("wt", "xslt");
-    lrf.args.put("tr", "dummy.xsl");
-    String out = h.query(req("*:*"));
+    // lrf.args.put("wt", "xslt");
+    // lrf.args.put("tr", "dummy.xsl");
+    String out = h.query(req("q", "*:*", "wt", "xslt", "tr", "dummy.xsl"));
     assertTrue(out.contains("DUMMY"));
   }
 
   @Test
   public void testTrivialXsltWriterInclude() throws Exception {
-    lrf.args.put("wt", "xslt");
-    lrf.args.put("tr", "dummy-using-include.xsl");
-    String out = h.query(req("*:*"));
+    // lrf.args.put("wt", "xslt");
+    // lrf.args.put("tr", "dummy-using-include.xsl");
+    String out = h.query(req("q", "*:*", "wt", "xslt", "tr", "dummy-using-include.xsl"));
     assertTrue(out.contains("DUMMY"));
   }
 }

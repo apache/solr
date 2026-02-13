@@ -40,17 +40,19 @@ public class EchoParamsTest extends SolrTestCaseJ4 {
   // call them directly above:
 
   private void defaultEchoParams() {
-    lrf.args.put("wt", "xml");
+    // lrf.args.put("wt", "xml");
     assertQ(req("foo"), HEADER_XPATH + "/int[@name='status']");
     assertQ(req("foo"), "not(//lst[@name='params'])");
   }
 
   private void explicitEchoParams() {
-    lrf.args.put("wt", "xml");
-    lrf.args.put("echoParams", "explicit");
-    assertQ(req("foo"), HEADER_XPATH + "/int[@name='status']");
-    assertQ(req("foo"), HEADER_XPATH + "/lst[@name='params']");
-    assertQ(req("foo"), HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
+    // lrf.args.put("wt", "xml");
+    //  lrf.args.put("echoParams", "explicit");
+    String[] params = {"q", "foo", "echoParams", "explicit"};
+
+    assertQ(req(params), HEADER_XPATH + "/int[@name='status']");
+    assertQ(req(params), HEADER_XPATH + "/lst[@name='params']");
+    assertQ(req(params), HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
   }
 
   private void allEchoParams() {

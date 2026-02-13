@@ -36,8 +36,8 @@ public class OutputWriterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testUselessWriter() throws Exception {
-    lrf.args.put("wt", "useless");
-    String out = h.query(req("foo"));
+    // lrf.args.put("wt", "useless");
+    String out = h.query(req("q", "foo", "wt", "useless"));
     assertEquals(UselessOutputWriter.USELESS_OUTPUT, out);
   }
 
