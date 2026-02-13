@@ -415,7 +415,6 @@ public class TestHarness extends BaseTestHarness {
      * TODO: this isn't really safe in the presence of core reloads! Perhaps the best we could do is
      * increment the core reference count and decrement it in the request close() method?
      */
-    @SuppressWarnings({"unchecked"})
     public SolrQueryRequestBase makeRequest(String... q) {
       // Validate input length - must be 1 (single query string) or even (key-value pairs)
       if (q.length != 1 && q.length % 2 != 0) {
@@ -427,7 +426,6 @@ public class TestHarness extends BaseTestHarness {
 
       if (q.length == 1) {
         // Single argument case: use args as base, add query string and defaults
-        args.computeIfAbsent("wt", k -> "xml");
         params = new ModifiableSolrParams();
         for (Map.Entry<String, String> e : args.entrySet()) {
           params.set(e.getKey(), e.getValue());
@@ -443,10 +441,10 @@ public class TestHarness extends BaseTestHarness {
       } else {
         // Multiple arguments case: use only the key-value pairs from q array
         params = SolrTestCaseJ4.params(q);
-        // Ensure wt defaults to xml if not explicitly set, for backwards compatibility
-        if (params.get(CommonParams.WT) == null) {
-          params.set(CommonParams.WT, "xml");
-        }
+      }
+      // Ensure wt defaults to xml if not explicitly set, for backwards compatibility
+      if (params.get(CommonParams.WT) == null) {
+        params.set(CommonParams.WT, "xml");
       }
 
       return new SolrQueryRequestBase(TestHarness.this.getCore(), params);
