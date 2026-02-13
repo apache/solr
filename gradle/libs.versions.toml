@@ -153,7 +153,7 @@ kotlinx-atomicfu = "0.29.0"
 kotlinx-browser = "0.3"
 kotlinx-coroutines = "1.10.1"
 kotlinx-datetime = "0.7.1"
-kotlinx-serialization = "1.9.0"
+kotlinx-serialization = "1.10.0"
 # @keep used by spotless
 ktlint = "1.7.1"
 ktor = "3.2.2"
