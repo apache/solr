@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -524,6 +525,10 @@ public class SolrCmdDistributor implements Closeable {
 
     public StdNode(ZkCoreNodeProps nodeProps) {
       this(nodeProps, null, null, 0);
+    }
+
+    public StdNode(Replica replica, String collection, String shardId) {
+      this(new ZkCoreNodeProps(replica), collection, shardId);
     }
 
     public StdNode(ZkCoreNodeProps nodeProps, String collection, String shardId) {

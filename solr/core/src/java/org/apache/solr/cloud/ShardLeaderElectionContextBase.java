@@ -182,8 +182,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                 .getClusterState()
                 .getCollection(collection)
                 .getSlice(shardId)
-                .getReplicas()
-                .size()
+                .getNumLeaderReplicas()
             < 2) {
       Replica leader = zkStateReader.getLeader(collection, shardId);
       if (leader != null

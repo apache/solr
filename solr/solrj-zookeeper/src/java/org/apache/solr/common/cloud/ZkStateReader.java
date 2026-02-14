@@ -1047,8 +1047,7 @@ public class ZkStateReader implements SolrCloseable {
         + (shardId != null ? ("/" + shardId + "/" + ELECTION_NODE) : "");
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(
-      String collection, String shardId, String thisCoreNodeName) {
+  public List<Replica> getReplicaProps(String collection, String shardId, String thisCoreNodeName) {
     // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
     return getReplicaProps(
         collection,
@@ -1059,7 +1058,7 @@ public class ZkStateReader implements SolrCloseable {
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
 
-  public List<ZkCoreNodeProps> getReplicaProps(
+  public List<Replica> getReplicaProps(
       String collection,
       String shardId,
       String thisCoreNodeName,
@@ -1078,39 +1077,37 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     Map<String, Slice> slices = docCollection.getSlicesMap();
-    Slice replicas = slices.get(shardId);
-    if (replicas == null) {
+    Slice shard = slices.get(shardId);
+    if (shard == null) {
       throw new ZooKeeperException(
           ErrorCode.BAD_REQUEST, "Could not find shardId in zk: " + shardId);
     }
 
-    Map<String, Replica> shardMap = replicas.getReplicasMap();
-    List<ZkCoreNodeProps> nodes = new ArrayList<>(shardMap.size());
+    Map<String, Replica> shardMap = shard.getReplicasMap();
+    List<Replica> replicas = new ArrayList<>(shardMap.size());
     for (Entry<String, Replica> entry :
         shardMap.entrySet().stream()
             .filter((e) -> acceptReplicaType.contains(e.getValue().getType()))
             .collect(Collectors.toList())) {
-      ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(entry.getValue());
+      Replica replica = entry.getValue();
 
       String coreNodeName = entry.getValue().getName();
 
-      if (clusterState.liveNodesContain(nodeProps.getNodeName())
+      if (clusterState.liveNodesContain(replica.getNodeName())
           && !coreNodeName.equals(thisCoreNodeName)) {
-        if (mustMatchStateFilter == null
-            || mustMatchStateFilter == Replica.State.getState(nodeProps.getState())) {
-          if (mustNotMatchStateFilter == null
-              || mustNotMatchStateFilter != Replica.State.getState(nodeProps.getState())) {
-            nodes.add(nodeProps);
+        if (mustMatchStateFilter == null || mustMatchStateFilter == replica.getState()) {
+          if (mustNotMatchStateFilter == null || mustNotMatchStateFilter != replica.getState()) {
+            replicas.add(replica);
           }
         }
       }
     }
-    if (nodes.size() == 0) {
+    if (replicas.size() == 0) {
       // no replicas
       return null;
     }
 
-    return nodes;
+    return replicas;
   }
 
   public SolrZkClient getZkClient() {

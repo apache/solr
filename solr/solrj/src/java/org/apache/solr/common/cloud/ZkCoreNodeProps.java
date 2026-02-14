@@ -47,6 +47,10 @@ public class ZkCoreNodeProps {
     return nodeProps.getStr(ReplicaStateProps.CORE_NAME);
   }
 
+  public String getCoreNodeName() {
+    return nodeProps.getStr(ReplicaStateProps.CORE_NODE_NAME);
+  }
+
   private static String getBaseUrl(ZkNodeProps nodeProps) {
     // if storing baseUrl in ZK is enabled, and it's stored, just use what's stored, i.e. no
     // self-healing here
