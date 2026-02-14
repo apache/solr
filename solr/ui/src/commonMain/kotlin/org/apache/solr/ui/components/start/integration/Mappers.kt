@@ -19,8 +19,12 @@ package org.apache.solr.ui.components.start.integration
 
 import io.ktor.client.network.sockets.ConnectTimeoutException
 import io.ktor.http.URLParserException
+import io.ktor.http.Url
 import org.apache.solr.ui.components.start.StartComponent
 import org.apache.solr.ui.components.start.store.StartStore
+import org.apache.solr.ui.data.SolrAuthData
+import org.apache.solr.ui.domain.AuthorizationFlow
+import org.apache.solr.ui.domain.OAuthData
 import org.apache.solr.ui.errors.HostNotFoundException
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.error_invalid_url
@@ -39,4 +43,23 @@ internal val startStateToModel: (StartStore.State) -> StartComponent.Model = {
             }
         },
     )
+}
+
+internal fun SolrAuthData.toOAuthData() = OAuthData(
+    clientId = clientId,
+    authorizationFlow = authorizationFlow.toAuthorizationFlow(),
+    scope = scope,
+    redirectUris = redirectUris.map { Url(urlString = it) },
+    authorizationEndpoint = Url(urlString = authorizationEndpoint),
+    tokenEndpoint = Url(urlString = tokenEndpoint),
+)
+
+/**
+ * Maps a string to the corresponding AuthorizationFlow enum value.
+ *
+ * Note that only Code flow with Proof Key for Code Exchange (PKCE) is supported right now.
+ */
+private fun String.toAuthorizationFlow(): AuthorizationFlow = when (this) {
+    "code_pkce" -> AuthorizationFlow.CodePKCE
+    else -> AuthorizationFlow.Unknown
 }

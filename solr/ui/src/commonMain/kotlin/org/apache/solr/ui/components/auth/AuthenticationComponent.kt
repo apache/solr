@@ -19,7 +19,6 @@ package org.apache.solr.ui.components.auth
 
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.Value
-import io.ktor.http.Url
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.serialization.Serializable
 import org.apache.solr.ui.domain.AuthMethod
@@ -29,6 +28,10 @@ import org.jetbrains.compose.resources.StringResource
 /**
  * The authentication component takes care of the authentication processes. This typically includes
  * user authentication with credentials, tokens or certificates.
+ *
+ * Note that Solr does not support multiple authentication methods of the same type with the
+ * MultiAuthPlugin, so there will be always up to one instance per method, hence the component-based
+ * child slots for each method.
  */
 interface AuthenticationComponent {
 
@@ -43,8 +46,17 @@ interface AuthenticationComponent {
      */
     val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>>
 
+    /**
+     * A child slot that holds the [OAuthComponent] for user authentication with OAuth
+     * (bearer token) if it is supported.
+     */
+    val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>>
+
     @Serializable
     data class BasicAuthConfiguration(val method: AuthMethod.BasicAuthMethod = AuthMethod.BasicAuthMethod())
+
+    @Serializable
+    data class OAuthConfiguration(val method: AuthMethod.OAuthMethod)
 
     /**
      * Aborts the authentication attempt.
