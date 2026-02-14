@@ -737,17 +737,68 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /**
+   * Abstract base class for all collapse collectors. Provides common configuration and result state
+   * shared across ordinal and integer-based collapse strategies.
+   *
+   * @lucene.internal
+   */
+  protected abstract static class AbstractCollapseCollector extends DelegatingCollector {
+    // Configuration
+    protected final LeafReaderContext[] contexts;
+    protected final int maxDoc;
+    protected final NullPolicy nullPolicy;
+    protected final boolean needsScores;
+    protected final boolean collectElevatedDocsWhenCollapsing;
+
+    // Results/accumulator
+    protected final FixedBitSet collapsedSet;
+    protected final BoostedDocsCollector boostedDocsCollector;
+    protected FloatArrayList nullScores;
+    protected float nullScore;
+    protected int nullDoc = -1;
+
+    protected AbstractCollapseCollector(
+        IndexSearcher searcher,
+        NullPolicy nullPolicy,
+        boolean needsScores,
+        boolean collectElevatedDocsWhenCollapsing,
+        IntIntHashMap boostDocsMap) {
+
+      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.maxDoc = searcher.getIndexReader().maxDoc();
+      this.nullPolicy = nullPolicy;
+      this.needsScores = needsScores;
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+      this.collapsedSet = new FixedBitSet(maxDoc);
+      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
+      if (needsScores && nullPolicy == NullPolicy.EXPAND) {
+        this.nullScores = new FloatArrayList();
+      }
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
+    }
+
+    @Override
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      // Do NOT set leafDelegate (calling super() would do this).
+      // That's handled in complete() for these collectors.
+      assert this.contexts[context.ord] == context;
+      assert leafDelegate == null;
+      this.context = context;
+      this.docBase = context.docBase;
+    }
+  }
+
+  /**
    * Collapses on Ordinal Values using Score to select the group head.
    *
    * @lucene.internal
    */
-  static class OrdScoreCollector extends DelegatingCollector {
-
-    // Configuration
-    private final LeafReaderContext[] contexts;
-    private final int maxDoc;
-    private final NullPolicy nullPolicy;
-    private final boolean collectElevatedDocsWhenCollapsing;
+  static class OrdScoreCollector extends AbstractCollapseCollector {
 
     // Source data
     private final DocValuesProducer collapseValuesProducer;
@@ -760,11 +811,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     // Results/accumulator
     private final IntIntDynamicMap ords;
     private final IntFloatDynamicMap scores;
-    private final FixedBitSet collapsedSet;
-    private final BoostedDocsCollector boostedDocsCollector;
-    private FloatArrayList nullScores;
-    private float nullScore = -Float.MAX_VALUE;
-    private int nullDoc = -1;
 
     public OrdScoreCollector(
         DocValuesProducer collapseValuesProducer,
@@ -773,10 +819,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         IndexSearcher searcher,
         boolean collectElevatedDocsWhenCollapsing)
         throws IOException {
-      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
-      this.maxDoc = searcher.getIndexReader().maxDoc();
-      this.nullPolicy = nullPolicy;
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+      super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
+
       this.collapseValuesProducer = collapseValuesProducer;
 
       this.collapseValues = collapseValuesProducer.getSorted(null);
@@ -788,22 +832,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       this.ords = new IntIntDynamicMap(valueCount, -1);
       this.scores = new IntFloatDynamicMap(valueCount, -Float.MAX_VALUE);
-      this.collapsedSet = new FixedBitSet(maxDoc);
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
-      if (nullPolicy == NullPolicy.EXPAND) {
-        nullScores = new FloatArrayList();
-      }
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE;
+      this.nullScore = -Float.MAX_VALUE;
     }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.contexts[context.ord] = context;
-      this.docBase = context.docBase;
+      super.doSetNextReader(context);
       if (ordinalMap != null) {
         this.segmentValues = this.multiSortedDocValues.values[context.ord];
         this.segmentOrdinalMap = ordinalMap.getGlobalOrds(context.ord);
@@ -961,25 +995,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    *
    * @lucene.internal
    */
-  static class IntScoreCollector extends DelegatingCollector {
+  static class IntScoreCollector extends AbstractCollapseCollector {
 
     // Configuration
-    private final LeafReaderContext[] contexts;
-    private final int maxDoc;
-    private final NullPolicy nullPolicy;
     private final String field;
-    private final boolean collectElevatedDocsWhenCollapsing;
 
     // Source data
     private NumericDocValues collapseValues;
 
     // Results/accumulator
     private final IntLongHashMap cmap;
-    private final FixedBitSet collapsedSet;
-    private final BoostedDocsCollector boostedDocsCollector;
-    private FloatArrayList nullScores;
-    private float nullScore = -Float.MAX_VALUE;
-    private int nullDoc = -1;
 
     public IntScoreCollector(
         NullPolicy nullPolicy,
@@ -988,29 +1013,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         IntIntHashMap boostDocsMap,
         SolrIndexSearcher searcher,
         boolean collectElevatedDocsWhenCollapsing) {
-      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
-      this.maxDoc = searcher.maxDoc();
-      this.nullPolicy = nullPolicy;
+      super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
+
       this.field = field;
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
       this.cmap = new IntLongHashMap(size);
-      this.collapsedSet = new FixedBitSet(maxDoc);
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
-      if (nullPolicy == NullPolicy.EXPAND) {
-        nullScores = new FloatArrayList();
-      }
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return ScoreMode.COMPLETE;
+      this.nullScore = -Float.MAX_VALUE;
     }
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.contexts[context.ord] = context;
-      this.docBase = context.docBase;
+      super.doSetNextReader(context);
       this.collapseValues = DocValues.getNumeric(context.reader(), this.field);
     }
 
@@ -1193,14 +1206,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    *
    * @lucene.internal
    */
-  protected abstract static class OrdFieldValueCollector extends DelegatingCollector {
-    // Configuration
-    protected final LeafReaderContext[] contexts;
-    protected final int maxDoc;
-    protected final NullPolicy nullPolicy;
-    protected final boolean needsScores;
-    protected final boolean collectElevatedDocsWhenCollapsing;
-
+  protected abstract static class OrdFieldValueCollector extends AbstractCollapseCollector {
     // Source data
     protected final DocValuesProducer collapseValuesProducer;
     protected SortedDocValues collapseValues;
@@ -1212,19 +1218,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     // Results/accumulator
     protected final IntIntDynamicMap ords;
-    protected final FixedBitSet collapsedSet;
-    protected final BoostedDocsCollector boostedDocsCollector;
     protected IntFloatDynamicMap scores;
-    protected FloatArrayList nullScores;
-    protected float nullScore;
-    protected int nullDoc = -1;
 
     protected OrdFieldValueCollector(OrdFieldCollectorBuilder ctx) throws IOException {
-      this.contexts = ctx.searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
-      this.maxDoc = ctx.searcher.maxDoc();
-      this.nullPolicy = ctx.nullPolicy;
-      this.needsScores = ctx.needsScores;
-      this.collectElevatedDocsWhenCollapsing = ctx.collectElevatedDocsWhenCollapsing;
+      super(
+          ctx.searcher,
+          ctx.nullPolicy,
+          ctx.needsScores,
+          ctx.collectElevatedDocsWhenCollapsing,
+          ctx.boostDocsMap);
+
       this.collapseValuesProducer = ctx.collapseValuesProducer;
 
       this.collapseValues = ctx.collapseValuesProducer.getSorted(null);
@@ -1234,21 +1237,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       this.ords = new IntIntDynamicMap(ctx.valueCount, -1);
-      this.collapsedSet = new FixedBitSet(ctx.searcher.maxDoc());
-      this.boostedDocsCollector = BoostedDocsCollector.build(ctx.boostDocsMap);
       if (this.needsScores) {
         this.scores = new IntFloatDynamicMap(ctx.valueCount, 0.0f);
-        if (ctx.nullPolicy == NullPolicy.EXPAND) {
-          this.nullScores = new FloatArrayList();
-        }
       } else {
         this.scores = null;
       }
-    }
-
-    @Override
-    public ScoreMode scoreMode() {
-      return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
     }
 
     @Override
@@ -1259,9 +1252,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
-      // not calling super here; see complete() instead
-      this.contexts[context.ord] = context;
-      this.docBase = context.docBase;
+      super.doSetNextReader(context);
       if (ordinalMap != null) {
         this.segmentValues = this.multiSortedDocValues.values[context.ord];
         this.segmentOrdinalMap = ordinalMap.getGlobalOrds(context.ord);
@@ -1413,7 +1404,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final String field;
     private final IntCompare comp;
 
-    // Source fields (per-segment state)
+    // Source data
     private NumericDocValues minMaxValues;
 
     // Results/accumulator
@@ -1480,7 +1471,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final String field;
     private final FloatCompare comp;
 
-    // Source fields (per-segment state)
+    // Source data
     private NumericDocValues minMaxValues;
 
     // Results/accumulator
@@ -1550,7 +1541,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final String field;
     private final LongCompare comp;
 
-    // Source fields (per-segment state)
+    // Source data
     private NumericDocValues minMaxVals;
 
     // Results/accumulator
@@ -1624,7 +1615,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final Map<Object, Object> rcontext;
     private final CollapseScore collapseScore = new CollapseScore();
 
-    // Source fields (per-segment state)
+    // Source data
     private FunctionValues functionValues;
 
     // Results/accumulator
@@ -1837,14 +1828,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    *
    * @lucene.internal
    */
-  protected abstract static class IntFieldValueCollector extends DelegatingCollector {
+  protected abstract static class IntFieldValueCollector extends AbstractCollapseCollector {
     // Configuration
-    protected final LeafReaderContext[] contexts;
-    protected final int maxDoc;
-    protected final NullPolicy nullPolicy;
-    protected final boolean needsScores;
     protected final String collapseField;
-    protected final boolean collectElevatedDocsWhenCollapsing;
 
     // Source data
     protected NumericDocValues collapseValues;
@@ -1853,32 +1839,24 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     // Results/accumulator
     protected final IntIntHashMap cmap;
     protected final IntIntDynamicMap docs;
-    protected final FixedBitSet collapsedSet;
-    protected final BoostedDocsCollector boostedDocsCollector;
     protected IntFloatDynamicMap scores;
-    protected FloatArrayList nullScores;
-    protected float nullScore;
-    protected int nullDoc = -1;
 
     protected IntFieldValueCollector(IntFieldCollectorBuilder ctx) throws IOException {
+      super(
+          ctx.searcher,
+          ctx.nullPolicy,
+          ctx.needsScores,
+          ctx.collectElevatedDocsWhenCollapsing,
+          ctx.boostDocsMap);
+
       assert !GroupHeadSelectorType.SCORE.equals(ctx.groupHeadSelector.type);
 
-      this.contexts = ctx.searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
-      this.maxDoc = ctx.searcher.getIndexReader().maxDoc();
-      this.nullPolicy = ctx.nullPolicy;
-      this.needsScores = ctx.needsScores;
       this.collapseField = ctx.collapseField;
-      this.collectElevatedDocsWhenCollapsing = ctx.collectElevatedDocsWhenCollapsing;
 
       this.cmap = new IntIntHashMap(ctx.size);
       this.docs = new IntIntDynamicMap(ctx.size, 0);
-      this.collapsedSet = new FixedBitSet(this.maxDoc);
-      this.boostedDocsCollector = BoostedDocsCollector.build(ctx.boostDocsMap);
       if (this.needsScores) {
         this.scores = new IntFloatDynamicMap(ctx.size, 0.0f);
-        if (ctx.nullPolicy == NullPolicy.EXPAND) {
-          nullScores = new FloatArrayList();
-        }
       } else {
         this.scores = null;
       }
@@ -1890,19 +1868,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         throws IOException;
 
     @Override
-    public ScoreMode scoreMode() {
-      return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
-    }
-
-    @Override
     public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
-      this.contexts[context.ord] = context;
-      this.docBase = context.docBase;
+      super.doSetNextReader(context);
       this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
     }
 
@@ -2025,7 +1997,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final String field;
     private final IntCompare comp;
 
-    // Source fields (per-segment state)
+    // Source data
     private NumericDocValues minMaxVals;
 
     // Results/accumulator
@@ -2114,7 +2086,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final String field;
     private final FloatCompare comp;
 
-    // Source fields (per-segment state)
+    // Source data
     private NumericDocValues minMaxVals;
 
     // Results/accumulator
@@ -2204,7 +2176,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final ValueSource valueSource;
     private final Map<Object, Object> rcontext;
 
-    // Source fields (per-segment state)
+    // Source data
     private FunctionValues functionValues;
 
     // Results/accumulator
@@ -2227,6 +2199,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
       this.valueSource = funcQuery.getValueSource();
       this.rcontext = ValueSource.newContext(ctx.searcher);
+
       collapseScore.setupIfNeeded(ctx.groupHeadSelector, rcontext);
 
       this.testValues = new IntFloatDynamicMap(ctx.size, 0.0f);
