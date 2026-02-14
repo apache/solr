@@ -1214,7 +1214,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected MultiDocValues.MultiSortedDocValues multiSortedDocValues;
     protected SortedDocValues segmentValues;
     protected LongValues segmentOrdinalMap;
-    protected Scorable scorer;
 
     // Results/accumulator
     protected final IntIntDynamicMap ords;
@@ -1242,12 +1241,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else {
         this.scores = null;
       }
-    }
-
-    @Override
-    public void setScorer(Scorable scorer) throws IOException {
-      // not calling super here; see complete() instead
-      this.scorer = scorer;
     }
 
     @Override
@@ -1834,7 +1827,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     // Source data
     protected NumericDocValues collapseValues;
-    protected Scorable scorer;
 
     // Results/accumulator
     protected final IntIntHashMap cmap;
@@ -1866,11 +1858,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     protected abstract void collapse(int collapseKey, int contextDoc, int globalDoc)
         throws IOException;
-
-    @Override
-    public void setScorer(Scorable scorer) throws IOException {
-      this.scorer = scorer;
-    }
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
@@ -2751,8 +2738,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      sortsCompare.setScorer(scorer);
       super.setScorer(scorer);
+      sortsCompare.setScorer(scorer);
     }
 
     private void setCurrentGroupBestMatch(final int contextDocId, final boolean isBoosted)
