@@ -18,12 +18,20 @@
 
 This API provides the same information displayed on the Dashboard.
 
-System information is available via:
+System information is available via the V2 API:
 
+[source,bash]
+----
+http://localhost:8983/api/node/info/system
+----
+
+The equivalent V1 API is available at:
 [source,bash]
 ----
 http://localhost:8983/solr/admin/info/system
 ----
+Examples on this page refer to the V2 API
+
 
 The keys in the result are:
 
@@ -40,7 +48,7 @@ An object containing information on the JVM
 Information on the system.
 
 `solr_home`::
-Solr base directory.  Only available under `/solr/admin/info/system`.
+Solr base directory.  Only available under `/api/node/info/system`.
 
 `zkHost`::
 Zookeeper host, when running in cloud mode.
@@ -96,7 +104,7 @@ Retrieve system information from a node in cloud mode.
 
 [source.bash]
 ----
-curl http://localhost:8983/solr/admin/info/system
+curl http://localhost:8983/api/node/info/system
 ----
 
 [source.json]

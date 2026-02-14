@@ -20,10 +20,13 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
+import java.lang.invoke.MethodHandles;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.handler.admin.SystemInfoHandler;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * V2 API for getting "system" information from the receiving node.
@@ -32,8 +35,14 @@ import org.apache.solr.response.SolrQueryResponse;
  * version, etc.), and JVM settings.
  *
  * <p>This API (GET /v2/node/system) is analogous to the v1 /admin/info/system.
+ *
+ * @deprecated Use the JAX-RS API: NodeSystemInfo (/node/info/system), implementing NodeSystemApi,
+ *     and returning NodeSystemResponse.
  */
+@Deprecated
 public class NodeSystemInfoAPI {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final SystemInfoHandler handler;
 
   public NodeSystemInfoAPI(SystemInfoHandler handler) {
@@ -45,6 +54,7 @@ public class NodeSystemInfoAPI {
       method = GET,
       permission = CONFIG_READ_PERM)
   public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    log.warn("Request to deprecated endpoint: /node/system.  Please use /node/info/system");
     handler.handleRequestBody(req, rsp);
   }
 }
