@@ -22,7 +22,7 @@ plugins {
   id 'base'
   id 'com.palantir.consistent-versions' version '2.32.0'
   id 'org.owasp.dependencycheck' version '12.1.3'
-  id 'ca.cutterslade.analyze' version '1.10.0'
+  id 'ca.cutterslade.analyze' version '2.0.0'
   id 'de.thetaphi.forbiddenapis' version '3.10' apply false
   id 'de.undercouch.download' version '5.6.0' apply false
   id 'net.ltgt.errorprone' version '3.1.0' apply false
