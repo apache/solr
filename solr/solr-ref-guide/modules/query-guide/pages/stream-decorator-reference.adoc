@@ -443,7 +443,6 @@ All tuples coming into the commit stream will be returned out of the commit stre
 * `collection`: The collection to send commit messages to (required)
 * `batchSize`: The commit batch size, sends commit message when batch size is hit.
 If not provided (or provided as value 0) then a commit is only sent at the end of the incoming stream.
-* `waitFlush`: The value passed directly to the commit handler (true/false, default: false)
 * `waitSearcher`: The value passed directly to the commit handler (true/false, default: false)
 * `softCommit`: The value passed directly to the commit handler (true/false, default: false)
 * `StreamExpression for StreamA` (required)

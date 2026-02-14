@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateBaseSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.common.SolrException;
@@ -293,14 +294,17 @@ public class SolrCmdDistributor implements Closeable {
 
   void addCommit(UpdateRequest ureq, CommitUpdateCommand cmd) {
     if (cmd == null) return;
+
+    CommitOptions options =
+        CommitOptions.commit(cmd.softCommit)
+            .waitSearcher(cmd.waitSearcher)
+            .openSearcher(cmd.openSearcher)
+            .expungeDeletes(cmd.expungeDeletes)
+            .maxOptimizeSegments(cmd.maxOptimizeSegments);
+
     ureq.setAction(
         cmd.optimize ? AbstractUpdateRequest.ACTION.OPTIMIZE : AbstractUpdateRequest.ACTION.COMMIT,
-        false,
-        cmd.waitSearcher,
-        cmd.maxOptimizeSegments,
-        cmd.softCommit,
-        cmd.expungeDeletes,
-        cmd.openSearcher);
+        options);
   }
 
   private void submit(final Req req, boolean isCommit) throws IOException {

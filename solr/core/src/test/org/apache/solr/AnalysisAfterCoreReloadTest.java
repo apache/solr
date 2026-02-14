@@ -17,6 +17,7 @@
 package org.apache.solr;
 
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
+import static org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -26,7 +27,7 @@ import java.nio.file.StandardCopyOption;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -53,7 +54,7 @@ public class AnalysisAfterCoreReloadTest extends SolrTestCaseJ4 {
     // default stopwords - stopworda and stopwordb
 
     UpdateRequest up = new UpdateRequest();
-    up.setAction(ACTION.COMMIT, true, true);
+    up.setAction(ACTION.COMMIT, CommitOptions.forHardCommit());
     up.add(doc);
     up.process(getSolrCore());
 

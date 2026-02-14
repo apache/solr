@@ -23,6 +23,7 @@ import java.util.Locale;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -66,7 +67,7 @@ public class ApiToolTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 2);
 
     UpdateRequest ur = new UpdateRequest();
-    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+    ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
 
     for (int i = 0; i < docCount; i++) {
       ur.add(
