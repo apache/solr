@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -121,8 +123,10 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
         };
     kafkaCluster.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    kafkaCluster.createTopic(TOPIC, 10, 1);
 
+    // ensure small batches to test multi-partition ordering
+    System.setProperty("batchSizeBytes", "128");
     System.setProperty("solr.crossdc.topicName", TOPIC);
     System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
@@ -182,6 +186,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     Thread.setDefaultUncaughtExceptionHandler(uceh);
   }
 
+  @Test
   public void testFullCloudToCloud() throws Exception {
     CloudSolrClient client = solrCluster1.getSolrClient(COLLECTION);
     SolrInputDocument doc = new SolrInputDocument();
@@ -197,6 +202,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 1);
   }
 
+  @Test
   public void testProducerToCloud() throws Exception {
     Properties properties = new Properties();
     properties.put("bootstrap.servers", kafkaCluster.bootstrapServers());
@@ -225,6 +231,39 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 2);
 
     producer.close();
+  }
+
+  private static final String LOREM_IPSUM =
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+  @Test
+  public void testStrictOrdering() throws Exception {
+    CloudSolrClient client = solrCluster1.getSolrClient();
+    int NUM_DOCS = 5000;
+    // delay deletes by this many docs
+    int DELTA = 100;
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id-" + i);
+      doc.addField("text", "some test with a relatively long field. " + LOREM_IPSUM);
+
+      client.add(COLLECTION, doc);
+      if (i >= DELTA) {
+        client.deleteById(COLLECTION, "id-" + (i - DELTA));
+      }
+    }
+
+    // send the remaining deletes in random order
+    ArrayList<Integer> ids = new ArrayList<>(DELTA);
+    IntStream.range(0, DELTA).forEach(i -> ids.add(i));
+    Collections.shuffle(ids, random());
+    for (Integer id : ids) {
+      client.deleteById(COLLECTION, "id-" + (NUM_DOCS - DELTA + id));
+    }
+
+    client.commit(COLLECTION);
+
+    assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 0);
   }
 
   @Test
