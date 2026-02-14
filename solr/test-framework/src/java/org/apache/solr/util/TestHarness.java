@@ -28,7 +28,7 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MultiMapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CloudConfig;
@@ -415,25 +415,39 @@ public class TestHarness extends BaseTestHarness {
      * TODO: this isn't really safe in the presence of core reloads! Perhaps the best we could do is
      * increment the core reference count and decrement it in the request close() method?
      */
-    @SuppressWarnings({"unchecked"})
     public SolrQueryRequestBase makeRequest(String... q) {
-      args.computeIfAbsent("wt", k -> "xml");
-      if (q.length == 1) {
-        Map<String, String[]> map = new HashMap<>();
-        for (Map.Entry<String, String> e : args.entrySet()) {
-          map.put(e.getKey(), new String[] {e.getValue()});
-        }
-        if (q[0] != null) map.put(CommonParams.Q, new String[] {q[0]});
-        if (qtype != null) map.put(CommonParams.QT, new String[] {qtype});
-        map.put(CommonParams.START, new String[] {Integer.toString(start)});
-        map.put(CommonParams.ROWS, new String[] {Integer.toString(limit)});
-        return new SolrQueryRequestBase(TestHarness.this.getCore(), new MultiMapSolrParams(map));
-      }
-      if (q.length % 2 != 0) {
+      // Validate input length - must be 1 (single query string) or even (key-value pairs)
+      if (q.length != 1 && q.length % 2 != 0) {
         throw new RuntimeException(
-            "The length of the string array (query arguments) needs to be even");
+            "The length of the string array (query arguments) needs to be 1 or even");
       }
-      return new SolrQueryRequestBase(TestHarness.this.getCore(), SolrTestCaseJ4.params(q));
+
+      ModifiableSolrParams params;
+
+      if (q.length == 1) {
+        // Single argument case: use args as base, add query string and defaults
+        params = new ModifiableSolrParams();
+        for (Map.Entry<String, String> e : args.entrySet()) {
+          params.set(e.getKey(), e.getValue());
+        }
+        if (q[0] != null) {
+          params.set(CommonParams.Q, q[0]);
+        }
+        if (qtype != null) {
+          params.set(CommonParams.QT, qtype);
+        }
+        params.set(CommonParams.START, Integer.toString(start));
+        params.set(CommonParams.ROWS, Integer.toString(limit));
+      } else {
+        // Multiple arguments case: use only the key-value pairs from q array
+        params = SolrTestCaseJ4.params(q);
+      }
+      // Ensure wt defaults to xml if not explicitly set, for backwards compatibility
+      if (params.get(CommonParams.WT) == null) {
+        params.set(CommonParams.WT, "xml");
+      }
+
+      return new SolrQueryRequestBase(TestHarness.this.getCore(), params);
     }
   }
 }
