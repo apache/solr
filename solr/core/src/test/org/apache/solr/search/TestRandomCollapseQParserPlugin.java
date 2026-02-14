@@ -268,10 +268,9 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
         "CollapsingPostFilter(CollapsingPostFilter(field=id, "
             + "nullPolicy="
             + nullPolicy
-            + ", GroupHeadSelector(selectorText="
+            + ", GroupHeadSelector[type=SORT, selectorText="
             + groupHeadSort.substring(1, groupHeadSort.length() - 1)
-            + ", type=SORT"
-            + "), hint="
+            + "], hint="
             + collapseHint
             + ", size="
             + collapseSize

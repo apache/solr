@@ -1642,6 +1642,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else {
         this.nullVal = Float.MAX_VALUE;
         comp = new MinFloatComp();
+        this.ordVals = new IntFloatDynamicMap(ctx.valueCount, Float.MAX_VALUE);
       }
       this.valueSource = funcQuery.getValueSource();
       this.rcontext = ValueSource.newContext(ctx.searcher);
