@@ -156,41 +156,31 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   @Deprecated public static final String HINT_MULTI_DOCVALUES = "multi_docvalues";
 
   public enum NullPolicy {
-    IGNORE("ignore", 0),
-    COLLAPSE("collapse", 1),
-    EXPAND("expand", 2);
+    IGNORE("ignore"),
+    COLLAPSE("collapse"),
+    EXPAND("expand");
 
     private final String name;
-    private final int code;
 
-    NullPolicy(String name, int code) {
+    NullPolicy(String name) {
       this.name = name;
-      this.code = code;
     }
 
     public String getName() {
       return name;
     }
 
-    public int getCode() {
-      return code;
-    }
-
     public static NullPolicy fromString(String nullPolicy) {
       if (StrUtils.isNullOrEmpty(nullPolicy)) {
         return DEFAULT_POLICY;
       }
-      switch (nullPolicy) {
-        case "ignore":
-          return IGNORE;
-        case "collapse":
-          return COLLAPSE;
-        case "expand":
-          return EXPAND;
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
-      }
+      return switch (nullPolicy) {
+        case "ignore" -> IGNORE;
+        case "collapse" -> COLLAPSE;
+        case "expand" -> EXPAND;
+        default -> throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, "Invalid nullPolicy: " + nullPolicy);
+      };
     }
 
     static final NullPolicy DEFAULT_POLICY = IGNORE;
@@ -485,7 +475,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               // (for the same reason cscore() isn't supported in 'sort' local param)
               && (!CollapseScore.wantsCScore(groupHeadSelector.selectorText))
               //
-              && NullPolicy.COLLAPSE.getCode() != nullPolicy.getCode());
+              && NullPolicy.COLLAPSE != nullPolicy);
       if (HINT_BLOCK.equals(hint) && !blockCollapse) {
         log.debug(
             "Query specifies hint={} but other local params prevent the use block based collapse",
@@ -514,9 +504,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      int maxDoc = searcher.maxDoc();
-      int leafCount = searcher.getTopReaderContext().leaves().size();
-
       SolrRequestInfo req = SolrRequestInfo.getRequestInfo();
       boolean collectElevatedDocsWhenCollapsing =
           req != null
@@ -526,26 +513,22 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
-            return new BlockOrdScoreCollector(collapseField, nullPolicy.getCode(), boostDocs);
+            return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
           }
           return new OrdScoreCollector(
-              maxDoc,
-              leafCount,
               docValuesProducer,
-              nullPolicy.getCode(),
+              nullPolicy,
               boostDocs,
               searcher,
               collectElevatedDocsWhenCollapsing);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
           if (blockCollapse) {
-            return new BlockIntScoreCollector(collapseField, nullPolicy.getCode(), boostDocs);
+            return new BlockIntScoreCollector(collapseField, nullPolicy, boostDocs);
           }
 
           return new IntScoreCollector(
-              maxDoc,
-              leafCount,
-              nullPolicy.getCode(),
+              nullPolicy,
               size,
               collapseField,
               boostDocs,
@@ -567,25 +550,22 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             // some (performance?) reason to specialize
             return new BlockOrdSortSpecCollector(
                 collapseField,
-                nullPolicy.getCode(),
+                nullPolicy,
                 boostDocs,
                 BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
                 needsScores);
           }
 
-          return new OrdFieldValueCollector(
-              maxDoc,
-              leafCount,
-              docValuesProducer,
-              nullPolicy.getCode(),
-              groupHeadSelector,
-              sortSpec,
-              needsScores,
-              minMaxFieldType,
-              boostDocs,
-              funcQuery,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
+          var builder = new OrdFieldCollectorBuilder();
+          builder.groupHeadSelector = groupHeadSelector;
+          builder.collapseValuesProducer = docValuesProducer;
+          builder.nullPolicy = nullPolicy;
+          builder.needsScores = needsScores;
+          builder.boostDocsMap = boostDocs;
+          builder.searcher = searcher;
+          builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+          return builder.build(sortSpec, minMaxFieldType, funcQuery);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
 
@@ -595,26 +575,23 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             // some (performance?) reason to specialize
             return new BlockIntSortSpecCollector(
                 collapseField,
-                nullPolicy.getCode(),
+                nullPolicy,
                 boostDocs,
                 BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
                 needsScores);
           }
 
-          return new IntFieldValueCollector(
-              maxDoc,
-              size,
-              leafCount,
-              nullPolicy.getCode(),
-              collapseField,
-              groupHeadSelector,
-              sortSpec,
-              needsScores,
-              minMaxFieldType,
-              boostDocs,
-              funcQuery,
-              searcher,
-              collectElevatedDocsWhenCollapsing);
+          var builder = new IntFieldCollectorBuilder();
+          builder.groupHeadSelector = groupHeadSelector;
+          builder.nullPolicy = nullPolicy;
+          builder.collapseField = collapseField;
+          builder.size = size;
+          builder.needsScores = needsScores;
+          builder.boostDocsMap = boostDocs;
+          builder.searcher = searcher;
+          builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+          return builder.build(sortSpec, minMaxFieldType, funcQuery);
         } else {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -766,58 +743,56 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   static class OrdScoreCollector extends DelegatingCollector {
 
-    private LeafReaderContext[] contexts;
+    // Configuration
+    private final LeafReaderContext[] contexts;
+    private final int maxDoc;
+    private final NullPolicy nullPolicy;
+    private final boolean collectElevatedDocsWhenCollapsing;
+
+    // Source data
     private final DocValuesProducer collapseValuesProducer;
-    private FixedBitSet collapsedSet;
     private SortedDocValues collapseValues;
     private OrdinalMap ordinalMap;
+    private MultiDocValues.MultiSortedDocValues multiSortedDocValues;
     private SortedDocValues segmentValues;
     private LongValues segmentOrdinalMap;
-    private MultiDocValues.MultiSortedDocValues multiSortedDocValues;
-    private IntIntDynamicMap ords;
-    private IntFloatDynamicMap scores;
-    private int maxDoc;
-    private int nullPolicy;
+
+    // Results/accumulator
+    private final IntIntDynamicMap ords;
+    private final IntFloatDynamicMap scores;
+    private final FixedBitSet collapsedSet;
+    private final BoostedDocsCollector boostedDocsCollector;
+    private FloatArrayList nullScores;
     private float nullScore = -Float.MAX_VALUE;
     private int nullDoc = -1;
-    private boolean collectElevatedDocsWhenCollapsing;
-    private FloatArrayList nullScores;
-
-    private final BoostedDocsCollector boostedDocsCollector;
 
     public OrdScoreCollector(
-        int maxDoc,
-        int segments,
         DocValuesProducer collapseValuesProducer,
-        int nullPolicy,
+        NullPolicy nullPolicy,
         IntIntHashMap boostDocsMap,
         IndexSearcher searcher,
         boolean collectElevatedDocsWhenCollapsing)
         throws IOException {
-      this.maxDoc = maxDoc;
-      this.contexts = new LeafReaderContext[segments];
+      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.maxDoc = searcher.getIndexReader().maxDoc();
+      this.nullPolicy = nullPolicy;
       this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
-      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for (int i = 0; i < con.size(); i++) {
-        contexts[i] = con.get(i);
-      }
-
-      this.collapsedSet = new FixedBitSet(maxDoc);
       this.collapseValuesProducer = collapseValuesProducer;
-      this.collapseValues = collapseValuesProducer.getSorted(null);
 
+      this.collapseValues = collapseValuesProducer.getSorted(null);
       int valueCount = collapseValues.getValueCount();
-      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
-        this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
-        this.ordinalMap = multiSortedDocValues.mapping;
+      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues multi) {
+        this.multiSortedDocValues = multi;
+        this.ordinalMap = multi.mapping;
       }
+
       this.ords = new IntIntDynamicMap(valueCount, -1);
       this.scores = new IntFloatDynamicMap(valueCount, -Float.MAX_VALUE);
-      this.nullPolicy = nullPolicy;
-      if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+      this.collapsedSet = new FixedBitSet(maxDoc);
+      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
+      if (nullPolicy == NullPolicy.EXPAND) {
         nullScores = new FloatArrayList();
       }
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
     }
 
     @Override
@@ -872,13 +847,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           ords.put(ord, globalDoc);
           scores.put(ord, score);
         }
-      } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
+      } else if (nullPolicy == NullPolicy.COLLAPSE) {
         float score = scorer.score();
         if (score > nullScore) {
           nullScore = score;
           nullDoc = globalDoc;
         }
-      } else if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+      } else if (nullPolicy == NullPolicy.EXPAND) {
         collapsedSet.set(globalDoc);
         nullScores.add(scorer.score());
       }
@@ -965,9 +940,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           dummy.score = scores.get(ord);
         } else if (mergeBoost.boost(docId)) {
           // Ignore so it doesn't mess up the null scoring.
-        } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
+        } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
           dummy.score = nullScore;
-        } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
+        } else if (this.nullPolicy == NullPolicy.EXPAND) {
           dummy.score = nullScores.get(++index);
         }
 
@@ -988,46 +963,43 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   static class IntScoreCollector extends DelegatingCollector {
 
-    private LeafReaderContext[] contexts;
-    private FixedBitSet collapsedSet;
+    // Configuration
+    private final LeafReaderContext[] contexts;
+    private final int maxDoc;
+    private final NullPolicy nullPolicy;
+    private final String field;
+    private final boolean collectElevatedDocsWhenCollapsing;
+
+    // Source data
     private NumericDocValues collapseValues;
-    private IntLongHashMap cmap;
-    private int maxDoc;
-    private int nullPolicy;
+
+    // Results/accumulator
+    private final IntLongHashMap cmap;
+    private final FixedBitSet collapsedSet;
+    private final BoostedDocsCollector boostedDocsCollector;
+    private FloatArrayList nullScores;
     private float nullScore = -Float.MAX_VALUE;
     private int nullDoc = -1;
-    private FloatArrayList nullScores;
-    private String field;
-    private boolean collectElevatedDocsWhenCollapsing;
-
-    private final BoostedDocsCollector boostedDocsCollector;
 
     public IntScoreCollector(
-        int maxDoc,
-        int segments,
-        int nullPolicy,
+        NullPolicy nullPolicy,
         int size,
         String field,
         IntIntHashMap boostDocsMap,
-        IndexSearcher searcher,
+        SolrIndexSearcher searcher,
         boolean collectElevatedDocsWhenCollapsing) {
-      this.maxDoc = maxDoc;
-      this.contexts = new LeafReaderContext[segments];
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
-      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for (int i = 0; i < con.size(); i++) {
-        contexts[i] = con.get(i);
-      }
-
-      this.collapsedSet = new FixedBitSet(maxDoc);
+      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.maxDoc = searcher.maxDoc();
       this.nullPolicy = nullPolicy;
-      if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+      this.field = field;
+      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+      this.cmap = new IntLongHashMap(size);
+      this.collapsedSet = new FixedBitSet(maxDoc);
+      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
+      if (nullPolicy == NullPolicy.EXPAND) {
         nullScores = new FloatArrayList();
       }
-      this.cmap = new IntLongHashMap(size);
-      this.field = field;
-
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
     }
 
     @Override
@@ -1078,13 +1050,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
 
-        if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
+        if (nullPolicy == NullPolicy.COLLAPSE) {
           float score = scorer.score();
           if (score > this.nullScore) {
             this.nullScore = score;
             this.nullDoc = globalDoc;
           }
-        } else if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+        } else if (nullPolicy == NullPolicy.EXPAND) {
           collapsedSet.set(globalDoc);
           nullScores.add(scorer.score());
         }
@@ -1154,9 +1126,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           if (mergeBoost.boost(globalDoc)) {
             // It's an elevated doc so no score is needed (and should not have been populated)
             dummy.score = 0F;
-          } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
+          } else if (nullPolicy == NullPolicy.COLLAPSE) {
             dummy.score = nullScore;
-          } else if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+          } else if (nullPolicy == NullPolicy.EXPAND) {
             dummy.score = nullScores.get(nullScoreIndex++);
           }
         }
@@ -1171,103 +1143,32 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  /**
-   * Collapse on Ordinal value field.
-   *
-   * @lucene.internal
-   */
-  protected static class OrdFieldValueCollector extends DelegatingCollector {
-    private LeafReaderContext[] contexts;
+  /** Builder for OrdFieldValueCollector subclasses. */
+  protected static class OrdFieldCollectorBuilder {
+    public GroupHeadSelector groupHeadSelector;
+    public DocValuesProducer collapseValuesProducer;
+    public NullPolicy nullPolicy;
+    public int valueCount;
+    public boolean needsScores;
+    public IntIntHashMap boostDocsMap;
+    public SolrIndexSearcher searcher;
+    public boolean collectElevatedDocsWhenCollapsing;
 
-    private DocValuesProducer collapseValuesProducer;
-    protected SortedDocValues collapseValues;
-    protected OrdinalMap ordinalMap;
-    protected SortedDocValues segmentValues;
-    protected LongValues segmentOrdinalMap;
-    protected MultiDocValues.MultiSortedDocValues multiSortedDocValues;
+    /** Builds the appropriate OrdFieldValueCollector subclass based on the selection strategy. */
+    public OrdFieldValueCollector build(
+        SortSpec sortSpec, FieldType fieldType, FunctionQuery funcQuery) throws IOException {
 
-    protected int maxDoc;
-    protected int nullPolicy;
-
-    private OrdFieldValueStrategy collapseStrategy;
-    protected boolean needsScores;
-
-    private boolean collectElevatedDocsWhenCollapsing;
-
-    protected final BoostedDocsCollector boostedDocsCollector;
-
-    public OrdFieldValueCollector(
-        int maxDoc,
-        int segments,
-        DocValuesProducer collapseValuesProducer,
-        int nullPolicy,
-        GroupHeadSelector groupHeadSelector,
-        SortSpec sortSpec,
-        boolean needsScores,
-        FieldType fieldType,
-        IntIntHashMap boostDocsMap,
-        FunctionQuery funcQuery,
-        IndexSearcher searcher,
-        boolean collectElevatedDocsWhenCollapsing)
-        throws IOException {
-
-      assert !GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
-
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
-      this.maxDoc = maxDoc;
-      this.contexts = new LeafReaderContext[segments];
-      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for (int i = 0; i < con.size(); i++) {
-        contexts[i] = con.get(i);
+      try {
+        SortedDocValues tempValues = collapseValuesProducer.getSorted(null);
+        valueCount = tempValues.getValueCount();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
       }
-      this.collapseValuesProducer = collapseValuesProducer;
-      this.collapseValues = collapseValuesProducer.getSorted(null);
-      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
-        this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
-        this.ordinalMap = multiSortedDocValues.mapping;
-      }
-
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
-
-      this.nullPolicy = nullPolicy;
-      this.needsScores = needsScores;
-      this.collapseStrategy =
-          createCollapseStrategy(
-              maxDoc, groupHeadSelector, sortSpec, fieldType, funcQuery, searcher);
-    }
-
-    protected OrdFieldValueStrategy createCollapseStrategy(
-        int maxDoc,
-        GroupHeadSelector groupHeadSelector,
-        SortSpec sortSpec,
-        FieldType fieldType,
-        FunctionQuery funcQuery,
-        IndexSearcher searcher)
-        throws IOException {
-      int valueCount = collapseValues.getValueCount();
 
       if (null != sortSpec) {
-        return new OrdSortSpecStrategy(
-            maxDoc,
-            nullPolicy,
-            valueCount,
-            groupHeadSelector,
-            this.needsScores,
-            boostedDocsCollector,
-            sortSpec,
-            searcher
-        );
+        return new OrdSortSpecCollector(this, sortSpec);
       } else if (funcQuery != null) {
-        return new OrdValueSourceStrategy(
-            maxDoc,
-            nullPolicy,
-            valueCount,
-            groupHeadSelector,
-            this.needsScores,
-            boostedDocsCollector,
-            funcQuery,
-            searcher
-        );
+        return new OrdValueSourceCollector(this, funcQuery);
       } else {
         NumberType numType = fieldType.getNumberType();
         if (null == numType) {
@@ -1276,34 +1177,72 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               "min/max must be either Int/Long/Float based field types");
         }
         return switch (numType) {
-          case INTEGER -> new OrdIntStrategy(
-              maxDoc,
-              nullPolicy,
-              valueCount,
-              groupHeadSelector,
-              this.needsScores,
-              boostedDocsCollector
-          );
-          case FLOAT -> new OrdFloatStrategy(
-              maxDoc,
-              nullPolicy,
-              valueCount,
-              groupHeadSelector,
-              this.needsScores,
-              boostedDocsCollector
-          );
-          case LONG -> new OrdLongStrategy(
-              maxDoc,
-              nullPolicy,
-              valueCount,
-              groupHeadSelector,
-              this.needsScores,
-              boostedDocsCollector
-          );
+          case INTEGER -> new OrdIntCollector(this);
+          case FLOAT -> new OrdFloatCollector(this);
+          case LONG -> new OrdLongCollector(this);
           default -> throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
               "min/max must be either Int/Long/Float field types");
         };
+      }
+    }
+  }
+
+  /**
+   * Collapse on Ordinal value field.
+   *
+   * @lucene.internal
+   */
+  protected abstract static class OrdFieldValueCollector extends DelegatingCollector {
+    // Configuration
+    protected final LeafReaderContext[] contexts;
+    protected final int maxDoc;
+    protected final NullPolicy nullPolicy;
+    protected final boolean needsScores;
+    protected final boolean collectElevatedDocsWhenCollapsing;
+
+    // Source data
+    protected final DocValuesProducer collapseValuesProducer;
+    protected SortedDocValues collapseValues;
+    protected OrdinalMap ordinalMap;
+    protected MultiDocValues.MultiSortedDocValues multiSortedDocValues;
+    protected SortedDocValues segmentValues;
+    protected LongValues segmentOrdinalMap;
+    protected Scorable scorer;
+
+    // Results/accumulator
+    protected final IntIntDynamicMap ords;
+    protected final FixedBitSet collapsedSet;
+    protected final BoostedDocsCollector boostedDocsCollector;
+    protected IntFloatDynamicMap scores;
+    protected FloatArrayList nullScores;
+    protected float nullScore;
+    protected int nullDoc = -1;
+
+    protected OrdFieldValueCollector(OrdFieldCollectorBuilder ctx) throws IOException {
+      this.contexts = ctx.searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.maxDoc = ctx.searcher.maxDoc();
+      this.nullPolicy = ctx.nullPolicy;
+      this.needsScores = ctx.needsScores;
+      this.collectElevatedDocsWhenCollapsing = ctx.collectElevatedDocsWhenCollapsing;
+      this.collapseValuesProducer = ctx.collapseValuesProducer;
+
+      this.collapseValues = ctx.collapseValuesProducer.getSorted(null);
+      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
+        this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
+        this.ordinalMap = multiSortedDocValues.mapping;
+      }
+
+      this.ords = new IntIntDynamicMap(ctx.valueCount, -1);
+      this.collapsedSet = new FixedBitSet(ctx.searcher.maxDoc());
+      this.boostedDocsCollector = BoostedDocsCollector.build(ctx.boostDocsMap);
+      if (this.needsScores) {
+        this.scores = new IntFloatDynamicMap(ctx.valueCount, 0.0f);
+        if (ctx.nullPolicy == NullPolicy.EXPAND) {
+          this.nullScores = new FloatArrayList();
+        }
+      } else {
+        this.scores = null;
       }
     }
 
@@ -1314,14 +1253,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      this.collapseStrategy.setScorer(scorer);
+      // not calling super here; see complete() instead
+      this.scorer = scorer;
     }
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
+      // not calling super here; see complete() instead
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
-      this.collapseStrategy.setNextReader(context);
       if (ordinalMap != null) {
         this.segmentValues = this.multiSortedDocValues.values[context.ord];
         this.segmentOrdinalMap = ordinalMap.getGlobalOrds(context.ord);
@@ -1354,7 +1294,33 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      collapseStrategy.collapse(ord, contextDoc, globalDoc);
+      collapse(ord, contextDoc, globalDoc);
+    }
+
+    /**
+     * Strategy-specific collapse logic. Subclasses implement this to define how to select the group
+     * head document.
+     */
+    protected abstract void collapse(int ord, int contextDoc, int globalDoc) throws IOException;
+
+    protected DocIdSetIterator getCollapsedDisi() {
+      // Handle the boosted docs.
+      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
+          collapsedSet,
+          (ord) -> {
+            ords.remove(ord);
+          },
+          () -> {
+            nullDoc = -1;
+          });
+
+      // Build the sorted DocSet of group heads.
+      if (nullDoc > -1) {
+        this.collapsedSet.set(nullDoc);
+      }
+      ords.forEachValue(doc -> collapsedSet.set(doc));
+
+      return new BitSetIterator(collapsedSet, 0); // cost is not useful here
     }
 
     @Override
@@ -1383,12 +1349,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = collapseStrategy.getCollapsedDisi();
+      DocIdSetIterator it = getCollapsedDisi();
       int globalDoc = -1;
       int nullScoreIndex = 0;
-      IntFloatDynamicMap scores = collapseStrategy.getScores();
-      FloatArrayList nullScores = collapseStrategy.getNullScores();
-      float nullScore = collapseStrategy.getNullScore();
       final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
 
       while ((globalDoc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -1423,14 +1386,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
 
           if (ord > -1) {
-            dummy.score = scores.get(ord);
+            dummy.score = this.scores.get(ord);
           } else if (mergeBoost.boost(globalDoc)) {
             // It's an elevated doc so no score is needed (and should not have been populated)
             dummy.score = 0F;
-          } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-            dummy.score = nullScore;
-          } else if (nullPolicy == NullPolicy.EXPAND.getCode()) {
-            dummy.score = nullScores.get(nullScoreIndex++);
+          } else if (nullPolicy == NullPolicy.COLLAPSE) {
+            dummy.score = this.nullScore;
+          } else if (nullPolicy == NullPolicy.EXPAND) {
+            dummy.score = this.nullScores.get(nullScoreIndex++);
           }
         }
 
@@ -1444,118 +1407,486 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
+  /** Collector for collapsing on ordinal using min/max of an int field to select group head. */
+  protected static class OrdIntCollector extends OrdFieldValueCollector {
+    // Configuration
+    private final String field;
+    private final IntCompare comp;
+
+    // Source fields (per-segment state)
+    private NumericDocValues minMaxValues;
+
+    // Results/accumulator
+    private final IntIntDynamicMap ordVals;
+    private int nullVal;
+
+    public OrdIntCollector(OrdFieldCollectorBuilder ctx) throws IOException {
+      super(ctx);
+      this.field = ctx.groupHeadSelector.selectorText;
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxIntComp();
+        this.ordVals = new IntIntDynamicMap(ctx.valueCount, Integer.MIN_VALUE);
+      } else {
+        comp = new MinIntComp();
+        this.ordVals = new IntIntDynamicMap(ctx.valueCount, Integer.MAX_VALUE);
+        this.nullVal = Integer.MAX_VALUE;
+      }
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    @Override
+    protected void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+      int currentVal;
+      if (minMaxValues.advanceExact(contextDoc)) {
+        currentVal = (int) minMaxValues.longValue();
+      } else {
+        currentVal = 0;
+      }
+
+      if (ord > -1) {
+        if (comp.test(currentVal, ordVals.get(ord))) {
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
+          if (needsScores) {
+            scores.put(ord, scorer.score());
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullVal)) {
+          nullVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /** Collector for collapsing on ordinal using min/max of a float field to select group head. */
+  protected static class OrdFloatCollector extends OrdFieldValueCollector {
+    // Configuration
+    private final String field;
+    private final FloatCompare comp;
+
+    // Source fields (per-segment state)
+    private NumericDocValues minMaxValues;
+
+    // Results/accumulator
+    private final IntFloatDynamicMap ordVals;
+    private float nullVal;
+
+    public OrdFloatCollector(OrdFieldCollectorBuilder ctx) throws IOException {
+      super(ctx);
+      this.field = ctx.groupHeadSelector.selectorText;
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxFloatComp();
+        this.ordVals = new IntFloatDynamicMap(ctx.valueCount, -Float.MAX_VALUE);
+        this.nullVal = -Float.MAX_VALUE;
+      } else {
+        comp = new MinFloatComp();
+        this.ordVals = new IntFloatDynamicMap(ctx.valueCount, Float.MAX_VALUE);
+        this.nullVal = Float.MAX_VALUE;
+      }
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    @Override
+    protected void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+      int currentMinMax;
+      if (minMaxValues.advanceExact(contextDoc)) {
+        currentMinMax = (int) minMaxValues.longValue();
+      } else {
+        currentMinMax = 0;
+      }
+
+      float currentVal = Float.intBitsToFloat(currentMinMax);
+
+      if (ord > -1) {
+        if (comp.test(currentVal, ordVals.get(ord))) {
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
+          if (needsScores) {
+            scores.put(ord, scorer.score());
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullVal)) {
+          nullVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /** Collector for collapsing on ordinal using min/max of a long field to select group head. */
+  protected static class OrdLongCollector extends OrdFieldValueCollector {
+    // Configuration
+    private final String field;
+    private final LongCompare comp;
+
+    // Source fields (per-segment state)
+    private NumericDocValues minMaxVals;
+
+    // Results/accumulator
+    private final IntLongDynamicMap ordVals;
+    private long nullVal;
+
+    public OrdLongCollector(OrdFieldCollectorBuilder ctx) throws IOException {
+      super(ctx);
+
+      this.field = ctx.groupHeadSelector.selectorText;
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxLongComp();
+        this.ordVals = new IntLongDynamicMap(ctx.valueCount, Long.MIN_VALUE);
+      } else {
+        this.nullVal = Long.MAX_VALUE;
+        comp = new MinLongComp();
+        this.ordVals = new IntLongDynamicMap(ctx.valueCount, Long.MAX_VALUE);
+      }
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    @Override
+    protected void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+      long currentVal;
+      if (minMaxVals.advanceExact(contextDoc)) {
+        currentVal = minMaxVals.longValue();
+      } else {
+        currentVal = 0;
+      }
+
+      if (ord > -1) {
+        if (comp.test(currentVal, ordVals.get(ord))) {
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
+          if (needsScores) {
+            scores.put(ord, scorer.score());
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullVal)) {
+          nullVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /**
+   * Collector for collapsing on ordinal using min/max of a value source function to select group
+   * head.
+   */
+  protected static class OrdValueSourceCollector extends OrdFieldValueCollector {
+    // Configuration
+    private final boolean needsScores4Collapsing;
+    private final FloatCompare comp;
+    private final ValueSource valueSource;
+    private final Map<Object, Object> rcontext;
+    private final CollapseScore collapseScore = new CollapseScore();
+
+    // Source fields (per-segment state)
+    private FunctionValues functionValues;
+
+    // Results/accumulator
+    private final IntFloatDynamicMap ordVals;
+    private float nullVal;
+
+    public OrdValueSourceCollector(OrdFieldCollectorBuilder ctx, FunctionQuery funcQuery)
+        throws IOException {
+      super(ctx);
+      this.needsScores4Collapsing = ctx.groupHeadSelector.needsScores(null);
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxFloatComp();
+        this.ordVals = new IntFloatDynamicMap(ctx.valueCount, -Float.MAX_VALUE);
+      } else {
+        this.nullVal = Float.MAX_VALUE;
+        comp = new MinFloatComp();
+      }
+      this.valueSource = funcQuery.getValueSource();
+      this.rcontext = ValueSource.newContext(ctx.searcher);
+      collapseScore.setupIfNeeded(ctx.groupHeadSelector, rcontext);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      functionValues = this.valueSource.getValues(rcontext, context);
+    }
+
+    @Override
+    protected void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+      float score = 0;
+
+      if (needsScores4Collapsing) {
+        score = scorer.score();
+        this.collapseScore.score = score;
+      }
+
+      float currentVal = functionValues.floatVal(contextDoc);
+
+      if (ord > -1) {
+        if (comp.test(currentVal, ordVals.get(ord))) {
+          ords.put(ord, globalDoc);
+          ordVals.put(ord, currentVal);
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              score = scorer.score();
+            }
+            scores.put(ord, score);
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullVal)) {
+          nullVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              score = scorer.score();
+            }
+            this.nullScore = score;
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            score = scorer.score();
+          }
+          nullScores.add(score);
+        }
+      }
+    }
+  }
+
+  /**
+   * Collector for collapsing on ordinal using the first document according to a complex sort as the
+   * group head.
+   */
+  protected static class OrdSortSpecCollector extends OrdFieldValueCollector {
+    // Configuration
+    private final boolean needsScores4Collapsing;
+    private final SortFieldsCompare compareState;
+
+    // Results/accumulator
+    private float score;
+
+    public OrdSortSpecCollector(OrdFieldCollectorBuilder ctx, SortSpec sortSpec)
+        throws IOException {
+      super(ctx);
+
+      this.needsScores4Collapsing = ctx.groupHeadSelector.needsScores(sortSpec);
+
+      assert GroupHeadSelectorType.SORT.equals(ctx.groupHeadSelector.type);
+
+      Sort sort = rewriteSort(sortSpec, ctx.searcher);
+      this.compareState = new SortFieldsCompare(sort.getSort(), ctx.valueCount);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      compareState.setNextReader(context);
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      super.setScorer(scorer);
+      this.compareState.setScorer(scorer);
+    }
+
+    @Override
+    protected void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
+      if (needsScores4Collapsing) {
+        this.score = scorer.score();
+      }
+
+      if (ord > -1) { // real collapseKey
+        if (-1 == ords.get(ord)) {
+          // we've never seen this ord (aka: collapseKey) before, treat it as group head for now
+          compareState.setGroupValues(ord, contextDoc);
+          ords.put(ord, globalDoc);
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              this.score = scorer.score();
+            }
+            scores.put(ord, score);
+          }
+        } else {
+          // test this ord to see if it's a new group leader
+          if (compareState.testAndSetGroupValues(ord, contextDoc)) {
+            ords.put(ord, globalDoc);
+            if (needsScores) {
+              if (!needsScores4Collapsing) {
+                this.score = scorer.score();
+              }
+              scores.put(ord, score);
+            }
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (-1 == nullDoc) {
+          // we've never seen a doc with null collapse key yet, treat it as the null group head for
+          // now
+          compareState.setNullGroupValues(contextDoc);
+          nullDoc = globalDoc;
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              this.score = scorer.score();
+            }
+            this.nullScore = score;
+          }
+        } else {
+          // test this doc to see if it's the new null leader
+          if (compareState.testAndSetNullGroupValues(contextDoc)) {
+            nullDoc = globalDoc;
+            if (needsScores) {
+              if (!needsScores4Collapsing) {
+                this.score = scorer.score();
+              }
+              this.nullScore = score;
+            }
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            this.score = scorer.score();
+          }
+          nullScores.add(score);
+        }
+      }
+    }
+  }
+
+  /** Builder for IntFieldValueCollector subclasses. */
+  protected static class IntFieldCollectorBuilder {
+    public GroupHeadSelector groupHeadSelector;
+    public NullPolicy nullPolicy;
+    public String collapseField;
+    public int size;
+    public boolean needsScores;
+    public IntIntHashMap boostDocsMap;
+    public IndexSearcher searcher;
+    public boolean collectElevatedDocsWhenCollapsing;
+
+    public IntFieldValueCollector build(
+        SortSpec sortSpec, FieldType fieldType, FunctionQuery funcQuery) throws IOException {
+      if (null != sortSpec) {
+        return new IntSortSpecCollector(this, sortSpec);
+      } else if (funcQuery != null) {
+        return new IntValueSourceCollector(this, funcQuery);
+      } else {
+        NumberType numType = fieldType.getNumberType();
+        assert null != numType; // shouldn't make it here for non-numeric types
+        return switch (numType) {
+          case INTEGER -> new IntIntCollector(this);
+          case FLOAT -> new IntFloatCollector(this);
+          default -> throw new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "min/max must be Int or Float field types when collapsing on numeric fields");
+        };
+      }
+    }
+  }
+
   /**
    * Collapses on an integer field.
    *
    * @lucene.internal
    */
-  static class IntFieldValueCollector extends DelegatingCollector {
-    private LeafReaderContext[] contexts;
-    private NumericDocValues collapseValues;
-    private int maxDoc;
-    private int nullPolicy;
+  protected abstract static class IntFieldValueCollector extends DelegatingCollector {
+    // Configuration
+    protected final LeafReaderContext[] contexts;
+    protected final int maxDoc;
+    protected final NullPolicy nullPolicy;
+    protected final boolean needsScores;
+    protected final String collapseField;
+    protected final boolean collectElevatedDocsWhenCollapsing;
 
-    private IntFieldValueStrategy collapseStrategy;
-    private boolean needsScores;
-    private String collapseField;
+    // Source data
+    protected NumericDocValues collapseValues;
+    protected Scorable scorer;
 
-    private final BoostedDocsCollector boostedDocsCollector;
-    private boolean collectElevatedDocsWhenCollapsing;
+    // Results/accumulator
+    protected final IntIntHashMap cmap;
+    protected final IntIntDynamicMap docs;
+    protected final FixedBitSet collapsedSet;
+    protected final BoostedDocsCollector boostedDocsCollector;
+    protected IntFloatDynamicMap scores;
+    protected FloatArrayList nullScores;
+    protected float nullScore;
+    protected int nullDoc = -1;
 
-    public IntFieldValueCollector(
-        int maxDoc,
-        int size,
-        int segments,
-        int nullPolicy,
-        String collapseField,
-        GroupHeadSelector groupHeadSelector,
-        SortSpec sortSpec,
-        boolean needsScores,
-        FieldType fieldType,
-        IntIntHashMap boostDocsMap,
-        FunctionQuery funcQuery,
-        IndexSearcher searcher,
-        boolean collectElevatedDocsWhenCollapsing)
-        throws IOException {
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+    protected IntFieldValueCollector(IntFieldCollectorBuilder ctx) throws IOException {
+      assert !GroupHeadSelectorType.SCORE.equals(ctx.groupHeadSelector.type);
 
-      assert !GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type);
+      this.contexts = ctx.searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.maxDoc = ctx.searcher.getIndexReader().maxDoc();
+      this.nullPolicy = ctx.nullPolicy;
+      this.needsScores = ctx.needsScores;
+      this.collapseField = ctx.collapseField;
+      this.collectElevatedDocsWhenCollapsing = ctx.collectElevatedDocsWhenCollapsing;
 
-      this.maxDoc = maxDoc;
-      this.contexts = new LeafReaderContext[segments];
-      List<LeafReaderContext> con = searcher.getTopReaderContext().leaves();
-      for (int i = 0; i < con.size(); i++) {
-        contexts[i] = con.get(i);
-      }
-      this.collapseField = collapseField;
-      this.nullPolicy = nullPolicy;
-      this.needsScores = needsScores;
-
-      this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
-
-      if (null != sortSpec) {
-        this.collapseStrategy =
-            new IntSortSpecStrategy(
-                maxDoc,
-                size,
-                collapseField,
-                nullPolicy,
-                groupHeadSelector,
-                this.needsScores,
-                boostedDocsCollector,
-                sortSpec,
-                searcher);
-      } else if (funcQuery != null) {
-        this.collapseStrategy =
-            new IntValueSourceStrategy(
-                maxDoc,
-                size,
-                collapseField,
-                nullPolicy,
-                groupHeadSelector,
-                this.needsScores,
-                boostedDocsCollector,
-                funcQuery,
-                searcher);
-      } else {
-        NumberType numType = fieldType.getNumberType();
-        assert null != numType; // shouldn't make it here for non-numeric types
-        switch (numType) {
-          case INTEGER:
-            {
-              this.collapseStrategy =
-                  new IntIntStrategy(
-                      maxDoc,
-                      size,
-                      collapseField,
-                      nullPolicy,
-                      groupHeadSelector,
-                      this.needsScores,
-                      boostedDocsCollector);
-              break;
-            }
-          case FLOAT:
-            {
-              this.collapseStrategy =
-                  new IntFloatStrategy(
-                      maxDoc,
-                      size,
-                      collapseField,
-                      nullPolicy,
-                      groupHeadSelector,
-                      this.needsScores,
-                      boostedDocsCollector);
-              break;
-            }
-          default:
-            {
-              throw new SolrException(
-                  SolrException.ErrorCode.BAD_REQUEST,
-                  "min/max must be Int or Float field types when collapsing on numeric fields");
-            }
+      this.cmap = new IntIntHashMap(ctx.size);
+      this.docs = new IntIntDynamicMap(ctx.size, 0);
+      this.collapsedSet = new FixedBitSet(this.maxDoc);
+      this.boostedDocsCollector = BoostedDocsCollector.build(ctx.boostDocsMap);
+      if (this.needsScores) {
+        this.scores = new IntFloatDynamicMap(ctx.size, 0.0f);
+        if (ctx.nullPolicy == NullPolicy.EXPAND) {
+          nullScores = new FloatArrayList();
         }
+      } else {
+        this.scores = null;
       }
     }
+
+    protected abstract void collapseNullGroup(int contextDoc, int globalDoc) throws IOException;
+
+    protected abstract void collapse(int collapseKey, int contextDoc, int globalDoc)
+        throws IOException;
 
     @Override
     public ScoreMode scoreMode() {
@@ -1564,14 +1895,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public void setScorer(Scorable scorer) throws IOException {
-      this.collapseStrategy.setScorer(scorer);
+      this.scorer = scorer;
     }
 
     @Override
     public void doSetNextReader(LeafReaderContext context) throws IOException {
       this.contexts[context.ord] = context;
       this.docBase = context.docBase;
-      this.collapseStrategy.setNextReader(context);
       this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
     }
 
@@ -1583,7 +1913,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
         // strategy based collection)
         if (boostedDocsCollector.collectIfBoosted(collapseKey, globalDoc)) return;
-        collapseStrategy.collapse(collapseKey, contextDoc, globalDoc);
+        collapse(collapseKey, contextDoc, globalDoc);
 
       } else { // Null Group...
 
@@ -1592,10 +1922,33 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           // strategy based collection)
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
-        if (NullPolicy.IGNORE.getCode() != nullPolicy) {
-          collapseStrategy.collapseNullGroup(contextDoc, globalDoc);
+        if (NullPolicy.IGNORE != nullPolicy) {
+          collapseNullGroup(contextDoc, globalDoc);
         }
       }
+    }
+
+    protected DocIdSetIterator getCollapsedDisi() {
+      // Handle the boosted docs.
+      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
+          collapsedSet,
+          (key) -> {
+            cmap.remove(key);
+          },
+          () -> {
+            nullDoc = -1;
+          });
+
+      // Build the sorted DocSet of group heads.
+      if (nullDoc > -1) {
+        this.collapsedSet.set(nullDoc);
+      }
+      for (IntIntCursor cursor : cmap) {
+        int pointer = cursor.value;
+        collapsedSet.set(docs.get(pointer));
+      }
+
+      return new BitSetIterator(collapsedSet, 0); // cost is not useful here
     }
 
     @Override
@@ -1613,13 +1966,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
       ScoreAndDoc dummy = new ScoreAndDoc();
       leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = collapseStrategy.getCollapsedDisi();
+      DocIdSetIterator it = getCollapsedDisi();
       int globalDoc = -1;
       int nullScoreIndex = 0;
-      IntIntHashMap cmap = collapseStrategy.getCollapseMap();
-      IntFloatDynamicMap scores = collapseStrategy.getScores();
-      FloatArrayList nullScores = collapseStrategy.getNullScores();
-      float nullScore = collapseStrategy.getNullScore();
       final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
 
       while ((globalDoc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
@@ -1649,9 +1998,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             if (mergeBoost.boost(globalDoc)) {
               // It's an elevated doc so no score is needed (and should not have been populated)
               dummy.score = 0F;
-            } else if (nullPolicy == NullPolicy.COLLAPSE.getCode()) {
+            } else if (nullPolicy == NullPolicy.COLLAPSE) {
               dummy.score = nullScore;
-            } else if (nullPolicy == NullPolicy.EXPAND.getCode()) {
+            } else if (nullPolicy == NullPolicy.EXPAND) {
               dummy.score = nullScores.get(nullScoreIndex++);
             }
           }
@@ -1668,30 +2017,433 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /**
+   * Collector for collapsing on int field using min/max of an integer field to select group head.
+   */
+  protected static class IntIntCollector extends IntFieldValueCollector {
+    // Configuration
+    private final String field;
+    private final IntCompare comp;
+
+    // Source fields (per-segment state)
+    private NumericDocValues minMaxVals;
+
+    // Results/accumulator
+    private final IntIntDynamicMap testValues;
+    private int nullCompVal;
+    private int index = -1;
+
+    public IntIntCollector(IntFieldCollectorBuilder ctx) throws IOException {
+      super(ctx);
+      this.field = ctx.groupHeadSelector.selectorText;
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxIntComp();
+        this.nullCompVal = Integer.MIN_VALUE;
+      } else {
+        comp = new MinIntComp();
+        this.nullCompVal = Integer.MAX_VALUE;
+      }
+
+      this.testValues = new IntIntDynamicMap(ctx.size, 0);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    private int advanceAndGetCurrentVal(int contextDoc) throws IOException {
+      if (minMaxVals.advanceExact(contextDoc)) {
+        return (int) minMaxVals.longValue();
+      }
+      return 0;
+    }
+
+    @Override
+    protected void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+      final int currentVal = advanceAndGetCurrentVal(contextDoc);
+
+      final int idx;
+      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
+        int pointer = cmap.indexGet(idx);
+        if (comp.test(currentVal, testValues.get(pointer))) {
+          testValues.put(pointer, currentVal);
+          docs.put(pointer, globalDoc);
+          if (needsScores) {
+            scores.put(pointer, scorer.score());
+          }
+        }
+      } else {
+        ++index;
+        cmap.put(collapseKey, index);
+        testValues.put(index, currentVal);
+        docs.put(index, globalDoc);
+        if (needsScores) {
+          scores.put(index, scorer.score());
+        }
+      }
+    }
+
+    @Override
+    protected void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
+      assert NullPolicy.IGNORE != this.nullPolicy;
+
+      final int currentVal = advanceAndGetCurrentVal(contextDoc);
+      if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullCompVal)) {
+          nullCompVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /** Collector for collapsing on int field using min/max of a float field to select group head. */
+  protected static class IntFloatCollector extends IntFieldValueCollector {
+    // Configuration
+    private final String field;
+    private final FloatCompare comp;
+
+    // Source fields (per-segment state)
+    private NumericDocValues minMaxVals;
+
+    // Results/accumulator
+    private final IntFloatDynamicMap testValues;
+    private float nullCompVal;
+    private int index = -1;
+
+    public IntFloatCollector(IntFieldCollectorBuilder ctx) throws IOException {
+      super(ctx);
+      this.field = ctx.groupHeadSelector.selectorText;
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxFloatComp();
+        this.nullCompVal = -Float.MAX_VALUE;
+      } else {
+        comp = new MinFloatComp();
+        this.nullCompVal = Float.MAX_VALUE;
+      }
+
+      this.testValues = new IntFloatDynamicMap(ctx.size, 0.0f);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
+    }
+
+    private float advanceAndGetCurrentVal(int contextDoc) throws IOException {
+      if (minMaxVals.advanceExact(contextDoc)) {
+        return Float.intBitsToFloat((int) minMaxVals.longValue());
+      }
+      return 0.0f;
+    }
+
+    @Override
+    protected void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+      final float currentVal = advanceAndGetCurrentVal(contextDoc);
+
+      final int idx;
+      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
+        int pointer = cmap.indexGet(idx);
+        if (comp.test(currentVal, testValues.get(pointer))) {
+          testValues.put(pointer, currentVal);
+          docs.put(pointer, globalDoc);
+          if (needsScores) {
+            scores.put(pointer, scorer.score());
+          }
+        }
+      } else {
+        ++index;
+        cmap.put(collapseKey, index);
+        testValues.put(index, currentVal);
+        docs.put(index, globalDoc);
+        if (needsScores) {
+          scores.put(index, scorer.score());
+        }
+      }
+    }
+
+    @Override
+    protected void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
+      assert NullPolicy.IGNORE != this.nullPolicy;
+      final float currentVal = advanceAndGetCurrentVal(contextDoc);
+      if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullCompVal)) {
+          nullCompVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            nullScore = scorer.score();
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          nullScores.add(scorer.score());
+        }
+      }
+    }
+  }
+
+  /** Collector for collapsing on int field using function query to select group head. */
+  protected static class IntValueSourceCollector extends IntFieldValueCollector {
+    // Configuration
+    private final boolean needsScores4Collapsing;
+    private final FloatCompare comp;
+    private final ValueSource valueSource;
+    private final Map<Object, Object> rcontext;
+
+    // Source fields (per-segment state)
+    private FunctionValues functionValues;
+
+    // Results/accumulator
+    private final CollapseScore collapseScore = new CollapseScore();
+    private final IntFloatDynamicMap testValues;
+    private float nullCompVal;
+    private int index = -1;
+
+    public IntValueSourceCollector(IntFieldCollectorBuilder ctx, FunctionQuery funcQuery)
+        throws IOException {
+      super(ctx);
+      this.needsScores4Collapsing = ctx.groupHeadSelector.needsScores(null);
+      assert GroupHeadSelectorType.MIN_MAX.contains(ctx.groupHeadSelector.type);
+      if (GroupHeadSelectorType.MAX.equals(ctx.groupHeadSelector.type)) {
+        comp = new MaxFloatComp();
+        nullCompVal = -Float.MAX_VALUE;
+      } else {
+        comp = new MinFloatComp();
+        nullCompVal = Float.MAX_VALUE;
+      }
+      this.valueSource = funcQuery.getValueSource();
+      this.rcontext = ValueSource.newContext(ctx.searcher);
+      collapseScore.setupIfNeeded(ctx.groupHeadSelector, rcontext);
+
+      this.testValues = new IntFloatDynamicMap(ctx.size, 0.0f);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      functionValues = this.valueSource.getValues(rcontext, context);
+    }
+
+    private float computeScoreIfNeeded4Collapse() throws IOException {
+      if (needsScores4Collapsing) {
+        this.collapseScore.score = scorer.score();
+        return this.collapseScore.score;
+      }
+      return 0F;
+    }
+
+    @Override
+    protected void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+      float score = computeScoreIfNeeded4Collapse();
+      final float currentVal = functionValues.floatVal(contextDoc);
+
+      final int idx;
+      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
+        int pointer = cmap.indexGet(idx);
+        if (comp.test(currentVal, testValues.get(pointer))) {
+          testValues.put(pointer, currentVal);
+          docs.put(pointer, globalDoc);
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              score = scorer.score();
+            }
+            scores.put(pointer, score);
+          }
+        }
+      } else {
+        ++index;
+        cmap.put(collapseKey, index);
+        docs.put(index, globalDoc);
+        testValues.put(index, currentVal);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            score = scorer.score();
+          }
+          scores.put(index, score);
+        }
+      }
+    }
+
+    @Override
+    protected void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
+      assert NullPolicy.IGNORE != this.nullPolicy;
+
+      float score = computeScoreIfNeeded4Collapse();
+      final float currentVal = functionValues.floatVal(contextDoc);
+
+      if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (comp.test(currentVal, nullCompVal)) {
+          nullCompVal = currentVal;
+          nullDoc = globalDoc;
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              score = scorer.score();
+            }
+            nullScore = score;
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            score = scorer.score();
+          }
+          nullScores.add(score);
+        }
+      }
+    }
+  }
+
+  /** Collector for collapsing on int field using a sort spec to select group head. */
+  protected static class IntSortSpecCollector extends IntFieldValueCollector {
+    // Configuration
+    private final boolean needsScores4Collapsing;
+    private final SortFieldsCompare compareState;
+
+    // Results/accumulator
+    private float score;
+    private int index = -1;
+
+    public IntSortSpecCollector(IntFieldCollectorBuilder ctx, SortSpec sortSpec)
+        throws IOException {
+      super(ctx);
+
+      this.needsScores4Collapsing = ctx.groupHeadSelector.needsScores(sortSpec);
+
+      assert GroupHeadSelectorType.SORT.equals(ctx.groupHeadSelector.type);
+
+      Sort sort = rewriteSort(sortSpec, ctx.searcher);
+      this.compareState = new SortFieldsCompare(sort.getSort(), ctx.size);
+    }
+
+    @Override
+    public void doSetNextReader(LeafReaderContext context) throws IOException {
+      super.doSetNextReader(context);
+      compareState.setNextReader(context);
+    }
+
+    @Override
+    public void setScorer(Scorable scorer) throws IOException {
+      super.setScorer(scorer);
+      this.compareState.setScorer(scorer);
+    }
+
+    private float computeScoreIfNeeded4Collapse() throws IOException {
+      if (needsScores4Collapsing) {
+        return scorer.score();
+      }
+      return 0f;
+    }
+
+    @Override
+    protected void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
+      score = computeScoreIfNeeded4Collapse();
+
+      final int idx;
+      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
+        int pointer = cmap.indexGet(idx);
+        if (compareState.testAndSetGroupValues(pointer, contextDoc)) {
+          docs.put(pointer, globalDoc);
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              this.score = scorer.score();
+            }
+            scores.put(pointer, score);
+          }
+        }
+      } else {
+        ++index;
+        cmap.put(collapseKey, index);
+        docs.put(index, globalDoc);
+        compareState.setGroupValues(index, contextDoc);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            this.score = scorer.score();
+          }
+          scores.put(index, score);
+        }
+      }
+    }
+
+    @Override
+    protected void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
+      assert NullPolicy.IGNORE != this.nullPolicy;
+
+      score = computeScoreIfNeeded4Collapse();
+
+      if (this.nullPolicy == NullPolicy.COLLAPSE) {
+        if (-1 == nullDoc) {
+          compareState.setNullGroupValues(contextDoc);
+          nullDoc = globalDoc;
+          if (needsScores) {
+            if (!needsScores4Collapsing) {
+              this.score = scorer.score();
+            }
+            nullScore = score;
+          }
+        } else {
+          if (compareState.testAndSetNullGroupValues(contextDoc)) {
+            nullDoc = globalDoc;
+            if (needsScores) {
+              if (!needsScores4Collapsing) {
+                this.score = scorer.score();
+              }
+              nullScore = score;
+            }
+          }
+        }
+      } else if (this.nullPolicy == NullPolicy.EXPAND) {
+        this.collapsedSet.set(globalDoc);
+        if (needsScores) {
+          if (!needsScores4Collapsing) {
+            this.score = scorer.score();
+          }
+          nullScores.add(score);
+        }
+      }
+    }
+  }
+
+  /**
    * Base class for collectors that will do collapsing using "block indexed" documents
    *
    * @lucene.internal
    */
   private abstract static class AbstractBlockCollector extends DelegatingCollector {
 
-    protected final BlockGroupState currentGroupState = new BlockGroupState();
+    // Configuration
     protected final String collapseField;
     protected final boolean needsScores;
     protected final boolean expandNulls;
+
+    // Results/accumulator
+    protected final BlockGroupState currentGroupState = new BlockGroupState();
     private final MergeBoost boostDocs;
 
     protected AbstractBlockCollector(
         final String collapseField,
-        final int nullPolicy,
+        final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
         final boolean needsScores) {
 
       this.collapseField = collapseField;
       this.needsScores = needsScores;
 
-      assert nullPolicy != NullPolicy.COLLAPSE.getCode();
-      assert nullPolicy == NullPolicy.IGNORE.getCode() || nullPolicy == NullPolicy.EXPAND.getCode();
-      this.expandNulls = (NullPolicy.EXPAND.getCode() == nullPolicy);
+      assert nullPolicy == NullPolicy.IGNORE || nullPolicy == NullPolicy.EXPAND;
+      this.expandNulls = (NullPolicy.EXPAND == nullPolicy);
       this.boostDocs = BoostedDocsCollector.build(boostDocsMap).getMergeBoost();
 
       currentGroupState.resetForNewGroup();
@@ -1808,7 +2560,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   abstract static class AbstractBlockScoreCollector extends AbstractBlockCollector {
 
     public AbstractBlockScoreCollector(
-        final String collapseField, final int nullPolicy, final IntIntHashMap boostDocsMap) {
+        final String collapseField, final NullPolicy nullPolicy, final IntIntHashMap boostDocsMap) {
       super(collapseField, nullPolicy, boostDocsMap, true);
     }
 
@@ -1909,7 +2661,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private SortedDocValues segmentValues;
 
     public BlockOrdScoreCollector(
-        final String collapseField, final int nullPolicy, final IntIntHashMap boostDocsMap)
+        final String collapseField, final NullPolicy nullPolicy, final IntIntHashMap boostDocsMap)
         throws IOException {
       super(collapseField, nullPolicy, boostDocsMap);
     }
@@ -1940,7 +2692,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private NumericDocValues segmentValues;
 
     public BlockIntScoreCollector(
-        final String collapseField, final int nullPolicy, final IntIntHashMap boostDocsMap)
+        final String collapseField, final NullPolicy nullPolicy, final IntIntHashMap boostDocsMap)
         throws IOException {
       super(collapseField, nullPolicy, boostDocsMap);
     }
@@ -2015,7 +2767,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public AbstractBlockSortSpecCollector(
         final String collapseField,
-        final int nullPolicy,
+        final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
         final Sort sort,
         final boolean needsScores) {
@@ -2136,7 +2888,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public BlockOrdSortSpecCollector(
         final String collapseField,
-        final int nullPolicy,
+        final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
         final Sort sort,
         final boolean needsScores)
@@ -2171,7 +2923,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     public BlockIntSortSpecCollector(
         final String collapseField,
-        final int nullPolicy,
+        final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
         final Sort sort,
         final boolean needsScores)
@@ -2227,1069 +2979,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     public float score;
-  }
-
-  /*
-   * Collapse Strategies
-   */
-
-  /**
-   * The abstract base Strategy for collapse strategies that collapse on an ordinal using min/max
-   * field value to select the group head.
-   */
-  protected abstract static class OrdFieldValueStrategy {
-    protected int nullPolicy;
-    protected IntIntDynamicMap ords;
-    protected Scorable scorer;
-    protected FloatArrayList nullScores;
-    protected float nullScore;
-    protected IntFloatDynamicMap scores;
-    protected FixedBitSet collapsedSet;
-    protected int nullDoc = -1;
-    protected boolean needsScores;
-
-    private final BoostedDocsCollector boostedDocsCollector;
-
-    public abstract void collapse(int ord, int contextDoc, int globalDoc) throws IOException;
-
-    public abstract void setNextReader(LeafReaderContext context) throws IOException;
-
-    public OrdFieldValueStrategy(
-        int maxDoc,
-        int valueCount,
-        int nullPolicy,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector) {
-      this.ords = new IntIntDynamicMap(valueCount, -1);
-      this.nullPolicy = nullPolicy;
-      this.needsScores = needsScores;
-      this.collapsedSet = new FixedBitSet(maxDoc);
-
-      this.boostedDocsCollector = boostedDocsCollector;
-
-      if (this.needsScores) {
-        this.scores = new IntFloatDynamicMap(valueCount, 0.0f);
-        if (nullPolicy == NullPolicy.EXPAND.getCode()) {
-          nullScores = new FloatArrayList();
-        }
-      }
-    }
-
-    public DocIdSetIterator getCollapsedDisi() {
-      return new BitSetIterator(getCollapsedSet(), 0); // cost is not useful here
-    }
-
-    protected FixedBitSet getCollapsedSet() {
-      // Handle the boosted docs.
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (ord) -> {
-            ords.remove(ord);
-          },
-          () -> {
-            nullDoc = -1;
-          });
-
-      // Build the sorted DocSet of group heads.
-      if (nullDoc > -1) {
-        this.collapsedSet.set(nullDoc);
-      }
-      ords.forEachValue(doc -> collapsedSet.set(doc));
-
-      return collapsedSet;
-    }
-
-    public void setScorer(Scorable scorer) throws IOException {
-      this.scorer = scorer;
-    }
-
-    public FloatArrayList getNullScores() {
-      return nullScores;
-    }
-
-    public float getNullScore() {
-      return this.nullScore;
-    }
-
-    public IntFloatDynamicMap getScores() {
-      return scores;
-    }
-  }
-
-  /*
-   * Strategy for collapsing on ordinal using min/max of an int field to select the group head.
-   */
-  private static class OrdIntStrategy extends OrdFieldValueStrategy {
-
-    private final String field;
-    private NumericDocValues minMaxValues;
-    private IntCompare comp;
-    private int nullVal;
-    private IntIntDynamicMap ordVals;
-
-    public OrdIntStrategy(
-        int maxDoc,
-        int nullPolicy,
-        int valueCount,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector)
-        throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
-      this.field = groupHeadSelector.selectorText;
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxIntComp();
-        this.ordVals = new IntIntDynamicMap(valueCount, Integer.MIN_VALUE);
-      } else {
-        comp = new MinIntComp();
-        this.ordVals = new IntIntDynamicMap(valueCount, Integer.MAX_VALUE);
-        this.nullVal = Integer.MAX_VALUE;
-      }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
-    }
-
-    @Override
-    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-
-      int currentVal;
-      if (minMaxValues.advanceExact(contextDoc)) {
-        currentVal = (int) minMaxValues.longValue();
-      } else {
-        currentVal = 0;
-      }
-
-      if (ord > -1) {
-        if (comp.test(currentVal, ordVals.get(ord))) {
-          ords.put(ord, globalDoc);
-          ordVals.put(ord, currentVal);
-          if (needsScores) {
-            scores.put(ord, scorer.score());
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullVal)) {
-          nullVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            nullScore = scorer.score();
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          nullScores.add(scorer.score());
-        }
-      }
-    }
-  }
-
-  /**
-   * Strategy for collapsing on ordinal and using the min/max value of a float field to select the
-   * group head
-   */
-  private static class OrdFloatStrategy extends OrdFieldValueStrategy {
-
-    private final String field;
-    private NumericDocValues minMaxValues;
-    private FloatCompare comp;
-    private float nullVal;
-    private IntFloatDynamicMap ordVals;
-
-    public OrdFloatStrategy(
-        int maxDoc,
-        int nullPolicy,
-        int valueCount,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector)
-        throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
-      this.field = groupHeadSelector.selectorText;
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxFloatComp();
-        this.ordVals = new IntFloatDynamicMap(valueCount, -Float.MAX_VALUE);
-        this.nullVal = -Float.MAX_VALUE;
-      } else {
-        comp = new MinFloatComp();
-        this.ordVals = new IntFloatDynamicMap(valueCount, Float.MAX_VALUE);
-        this.nullVal = Float.MAX_VALUE;
-      }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
-    }
-
-    @Override
-    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-
-      int currentMinMax;
-      if (minMaxValues.advanceExact(contextDoc)) {
-        currentMinMax = (int) minMaxValues.longValue();
-      } else {
-        currentMinMax = 0;
-      }
-
-      float currentVal = Float.intBitsToFloat(currentMinMax);
-
-      if (ord > -1) {
-        if (comp.test(currentVal, ordVals.get(ord))) {
-          ords.put(ord, globalDoc);
-          ordVals.put(ord, currentVal);
-          if (needsScores) {
-            scores.put(ord, scorer.score());
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullVal)) {
-          nullVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            nullScore = scorer.score();
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          nullScores.add(scorer.score());
-        }
-      }
-    }
-  }
-
-  /*
-   * Strategy for collapsing on ordinal and using the min/max value of a long
-   * field to select the group head
-   */
-
-  private static class OrdLongStrategy extends OrdFieldValueStrategy {
-
-    private final String field;
-    private NumericDocValues minMaxVals;
-    private LongCompare comp;
-    private long nullVal;
-    private IntLongDynamicMap ordVals;
-
-    public OrdLongStrategy(
-        int maxDoc,
-        int nullPolicy,
-        int valueCount,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector)
-        throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
-      this.field = groupHeadSelector.selectorText;
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxLongComp();
-        this.ordVals = new IntLongDynamicMap(valueCount, Long.MIN_VALUE);
-      } else {
-        this.nullVal = Long.MAX_VALUE;
-        comp = new MinLongComp();
-        this.ordVals = new IntLongDynamicMap(valueCount, Long.MAX_VALUE);
-      }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
-    }
-
-    @Override
-    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-
-      long currentVal;
-      if (minMaxVals.advanceExact(contextDoc)) {
-        currentVal = minMaxVals.longValue();
-      } else {
-        currentVal = 0;
-      }
-
-      if (ord > -1) {
-        if (comp.test(currentVal, ordVals.get(ord))) {
-          ords.put(ord, globalDoc);
-          ordVals.put(ord, currentVal);
-          if (needsScores) {
-            scores.put(ord, scorer.score());
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullVal)) {
-          nullVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            nullScore = scorer.score();
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          nullScores.add(scorer.score());
-        }
-      }
-    }
-  }
-
-  /*
-   * Strategy for collapsing on ordinal and using the min/max value of a value source function
-   * to select the group head
-   */
-  private static class OrdValueSourceStrategy extends OrdFieldValueStrategy {
-
-    private boolean needsScores4Collapsing;
-    private FloatCompare comp;
-    private float nullVal;
-    private ValueSource valueSource;
-    private FunctionValues functionValues;
-    private IntFloatDynamicMap ordVals;
-    private Map<Object, Object> rcontext;
-    private final CollapseScore collapseScore = new CollapseScore();
-
-    public OrdValueSourceStrategy(
-        int maxDoc,
-        int nullPolicy,
-        int valueCount,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        FunctionQuery funcQuery,
-        IndexSearcher searcher)
-        throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
-      this.needsScores4Collapsing = groupHeadSelector.needsScores(null);
-      this.valueSource = funcQuery.getValueSource();
-      this.rcontext = ValueSource.newContext(searcher);
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxFloatComp();
-        this.ordVals = new IntFloatDynamicMap(valueCount, -Float.MAX_VALUE);
-      } else {
-        this.nullVal = Float.MAX_VALUE;
-        comp = new MinFloatComp();
-        this.ordVals = new IntFloatDynamicMap(valueCount, Float.MAX_VALUE);
-      }
-
-      collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      functionValues = this.valueSource.getValues(rcontext, context);
-    }
-
-    @Override
-    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-
-      float score = 0;
-
-      if (needsScores4Collapsing) {
-        score = scorer.score();
-        this.collapseScore.score = score;
-      }
-
-      float currentVal = functionValues.floatVal(contextDoc);
-
-      if (ord > -1) {
-        if (comp.test(currentVal, ordVals.get(ord))) {
-          ords.put(ord, globalDoc);
-          ordVals.put(ord, currentVal);
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            scores.put(ord, score);
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullVal)) {
-          nullVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            nullScore = score;
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            score = scorer.score();
-          }
-          nullScores.add(score);
-        }
-      }
-    }
-  }
-
-  /*
-   * Strategy for collapsing on ordinal and using the first document according to a complex sort
-   * as the group head
-   */
-  private static class OrdSortSpecStrategy extends OrdFieldValueStrategy {
-
-    private final boolean needsScores4Collapsing;
-    private final SortFieldsCompare compareState;
-
-    private float score;
-
-    public OrdSortSpecStrategy(
-        int maxDoc,
-        int nullPolicy,
-        int valueCount,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortSpec sortSpec,
-        IndexSearcher searcher)
-        throws IOException {
-      super(maxDoc, valueCount, nullPolicy, needsScores, boostedDocsCollector);
-      this.needsScores4Collapsing = groupHeadSelector.needsScores(sortSpec);
-
-      assert GroupHeadSelectorType.SORT.equals(groupHeadSelector.type);
-
-      Sort sort = rewriteSort(sortSpec, searcher);
-
-      this.compareState = new SortFieldsCompare(sort.getSort(), valueCount);
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      compareState.setNextReader(context);
-    }
-
-    @Override
-    public void setScorer(Scorable s) throws IOException {
-      super.setScorer(s);
-      this.compareState.setScorer(s);
-    }
-
-    @Override
-    public void collapse(int ord, int contextDoc, int globalDoc) throws IOException {
-
-      if (needsScores4Collapsing) {
-        this.score = scorer.score();
-      }
-
-      if (ord > -1) { // real collapseKey
-        if (-1 == ords.get(ord)) {
-          // we've never seen this ord (aka: collapseKey) before, treat it as group head for now
-          compareState.setGroupValues(ord, contextDoc);
-          ords.put(ord, globalDoc);
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              this.score = scorer.score();
-            }
-            scores.put(ord, score);
-          }
-        } else {
-          // test this ord to see if it's a new group leader
-          if (compareState.testAndSetGroupValues(ord, contextDoc)) { // TODO X
-            ords.put(ord, globalDoc);
-            if (needsScores) {
-              if (!needsScores4Collapsing) {
-                this.score = scorer.score();
-              }
-              scores.put(ord, score);
-            }
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (-1 == nullDoc) {
-          // we've never seen a doc with null collapse key yet, treat it as the null group head for
-          // now
-          compareState.setNullGroupValues(contextDoc);
-          nullDoc = globalDoc;
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              this.score = scorer.score();
-            }
-            nullScore = score;
-          }
-        } else {
-          // test this doc to see if it's the new null leader
-          if (compareState.testAndSetNullGroupValues(contextDoc)) {
-            nullDoc = globalDoc;
-            if (needsScores) {
-              if (!needsScores4Collapsing) {
-                this.score = scorer.score();
-              }
-              nullScore = score;
-            }
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            this.score = scorer.score();
-          }
-          nullScores.add(score);
-        }
-      }
-    }
-  }
-
-  /*
-   * Base strategy for collapsing on a 32 bit numeric field and selecting a group head
-   * based on min/max value of a 32 bit numeric field.
-   */
-
-  private abstract static class IntFieldValueStrategy {
-    protected int nullPolicy;
-    protected IntIntHashMap cmap;
-    protected Scorable scorer;
-    protected FloatArrayList nullScores;
-    protected float nullScore;
-    protected IntFloatDynamicMap scores;
-    protected FixedBitSet collapsedSet;
-    protected int nullDoc = -1;
-    protected boolean needsScores;
-    protected String collapseField;
-    protected IntIntDynamicMap docs;
-
-    private final BoostedDocsCollector boostedDocsCollector;
-
-    public abstract void collapseNullGroup(int contextDoc, int globalDoc) throws IOException;
-
-    public abstract void collapse(int collapseKey, int contextDoc, int globalDoc)
-        throws IOException;
-
-    public abstract void setNextReader(LeafReaderContext context) throws IOException;
-
-    public IntFieldValueStrategy(
-        int maxDoc,
-        int size,
-        String collapseField,
-        int nullPolicy,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector) {
-      this.collapseField = collapseField;
-      this.nullPolicy = nullPolicy;
-      this.needsScores = needsScores;
-      this.collapsedSet = new FixedBitSet(maxDoc);
-      this.cmap = new IntIntHashMap(size);
-      this.docs = new IntIntDynamicMap(size, 0);
-
-      this.boostedDocsCollector = boostedDocsCollector;
-
-      if (needsScores) {
-        this.scores = new IntFloatDynamicMap(size, 0.0f);
-        if (nullPolicy == NullPolicy.EXPAND.getCode()) {
-          nullScores = new FloatArrayList();
-        }
-      }
-    }
-
-    public DocIdSetIterator getCollapsedDisi() {
-      return new BitSetIterator(getCollapsedSet(), 0); // cost is not useful here
-    }
-
-    protected FixedBitSet getCollapsedSet() {
-
-      // Handle the boosted docs.
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (key) -> {
-            cmap.remove(key);
-          },
-          () -> {
-            nullDoc = -1;
-          });
-
-      // Build the sorted DocSet of group heads.
-      if (nullDoc > -1) {
-        this.collapsedSet.set(nullDoc);
-      }
-      Iterator<IntIntCursor> it1 = cmap.iterator();
-      while (it1.hasNext()) {
-        IntIntCursor cursor = it1.next();
-        int pointer = cursor.value;
-        collapsedSet.set(docs.get(pointer));
-      }
-
-      return collapsedSet;
-    }
-
-    public void setScorer(Scorable scorer) throws IOException {
-      this.scorer = scorer;
-    }
-
-    public FloatArrayList getNullScores() {
-      return nullScores;
-    }
-
-    public IntIntHashMap getCollapseMap() {
-      return cmap;
-    }
-
-    public float getNullScore() {
-      return this.nullScore;
-    }
-
-    public IntFloatDynamicMap getScores() {
-      return scores;
-    }
-
-    public IntIntDynamicMap getDocs() {
-      return docs;
-    }
-  }
-
-  /*
-   *  Strategy for collapsing on a 32 bit numeric field and selecting the group head based
-   *  on the min/max value of a 32 bit field numeric field.
-   */
-  private static class IntIntStrategy extends IntFieldValueStrategy {
-
-    private final String field;
-    private NumericDocValues minMaxVals;
-    private IntIntDynamicMap testValues;
-    private IntCompare comp;
-    private int nullCompVal;
-
-    private int index = -1;
-
-    public IntIntStrategy(
-        int maxDoc,
-        int size,
-        String collapseField,
-        int nullPolicy,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector)
-        throws IOException {
-
-      super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
-      this.field = groupHeadSelector.selectorText;
-      this.testValues = new IntIntDynamicMap(size, 0);
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxIntComp();
-        this.nullCompVal = Integer.MIN_VALUE;
-      } else {
-        comp = new MinIntComp();
-        this.nullCompVal = Integer.MAX_VALUE;
-      }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
-    }
-
-    private int advanceAndGetCurrentVal(int contextDoc) throws IOException {
-      if (minMaxVals.advanceExact(contextDoc)) {
-        return (int) minMaxVals.longValue();
-      } // else...
-      return 0;
-    }
-
-    @Override
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
-      final int currentVal = advanceAndGetCurrentVal(contextDoc);
-
-      final int idx;
-      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
-        int pointer = cmap.indexGet(idx);
-        if (comp.test(currentVal, testValues.get(pointer))) {
-          testValues.put(pointer, currentVal);
-          docs.put(pointer, globalDoc);
-          if (needsScores) {
-            scores.put(pointer, scorer.score());
-          }
-        }
-      } else {
-        ++index;
-        cmap.put(collapseKey, index);
-        testValues.put(index, currentVal);
-        docs.put(index, globalDoc);
-        if (needsScores) {
-          scores.put(index, scorer.score());
-        }
-      }
-    }
-
-    @Override
-    public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
-      assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
-
-      final int currentVal = advanceAndGetCurrentVal(contextDoc);
-      if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullCompVal)) {
-          nullCompVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            nullScore = scorer.score();
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          nullScores.add(scorer.score());
-        }
-      }
-    }
-  }
-
-  private static class IntFloatStrategy extends IntFieldValueStrategy {
-
-    private final String field;
-    private NumericDocValues minMaxVals;
-    private IntFloatDynamicMap testValues;
-    private FloatCompare comp;
-    private float nullCompVal;
-
-    private int index = -1;
-
-    public IntFloatStrategy(
-        int maxDoc,
-        int size,
-        String collapseField,
-        int nullPolicy,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector)
-        throws IOException {
-
-      super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
-      this.field = groupHeadSelector.selectorText;
-      this.testValues = new IntFloatDynamicMap(size, 0.0f);
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        comp = new MaxFloatComp();
-        this.nullCompVal = -Float.MAX_VALUE;
-      } else {
-        comp = new MinFloatComp();
-        this.nullCompVal = Float.MAX_VALUE;
-      }
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
-    }
-
-    private float advanceAndGetCurrentVal(int contextDoc) throws IOException {
-      if (minMaxVals.advanceExact(contextDoc)) {
-        return Float.intBitsToFloat((int) minMaxVals.longValue());
-      } // else...
-      return Float.intBitsToFloat(0);
-    }
-
-    @Override
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
-      final float currentVal = advanceAndGetCurrentVal(contextDoc);
-
-      final int idx;
-      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
-        int pointer = cmap.indexGet(idx);
-        if (comp.test(currentVal, testValues.get(pointer))) {
-          testValues.put(pointer, currentVal);
-          docs.put(pointer, globalDoc);
-          if (needsScores) {
-            scores.put(pointer, scorer.score());
-          }
-        }
-      } else {
-        ++index;
-        cmap.put(collapseKey, index);
-        testValues.put(index, currentVal);
-        docs.put(index, globalDoc);
-        if (needsScores) {
-          scores.put(index, scorer.score());
-        }
-      }
-    }
-
-    @Override
-    public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
-      assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
-      final float currentVal = advanceAndGetCurrentVal(contextDoc);
-      if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullCompVal)) {
-          nullCompVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            nullScore = scorer.score();
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          nullScores.add(scorer.score());
-        }
-      }
-    }
-  }
-
-  /*
-   *  Strategy for collapsing on a 32 bit numeric field and selecting the group head based
-   *  on the min/max value of a Value Source Function.
-   */
-  private static class IntValueSourceStrategy extends IntFieldValueStrategy {
-
-    private boolean needsScores4Collapsing;
-    private FloatCompare comp;
-    private IntFloatDynamicMap testValues;
-    private float nullCompVal;
-
-    private ValueSource valueSource;
-    private FunctionValues functionValues;
-    private Map<Object, Object> rcontext;
-    private final CollapseScore collapseScore = new CollapseScore();
-    private int index = -1;
-
-    public IntValueSourceStrategy(
-        int maxDoc,
-        int size,
-        String collapseField,
-        int nullPolicy,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        FunctionQuery funcQuery,
-        IndexSearcher searcher)
-        throws IOException {
-
-      super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
-
-      this.needsScores4Collapsing = groupHeadSelector.needsScores(null);
-      this.testValues = new IntFloatDynamicMap(size, 0.0f);
-
-      this.valueSource = funcQuery.getValueSource();
-      this.rcontext = ValueSource.newContext(searcher);
-
-      assert GroupHeadSelectorType.MIN_MAX.contains(groupHeadSelector.type);
-
-      if (GroupHeadSelectorType.MAX.equals(groupHeadSelector.type)) {
-        this.nullCompVal = -Float.MAX_VALUE;
-        comp = new MaxFloatComp();
-      } else {
-        this.nullCompVal = Float.MAX_VALUE;
-        comp = new MinFloatComp();
-      }
-
-      collapseScore.setupIfNeeded(groupHeadSelector, rcontext);
-    }
-
-    @Override
-    @SuppressWarnings({"unchecked"})
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      functionValues = this.valueSource.getValues(rcontext, context);
-    }
-
-    private float computeScoreIfNeeded4Collapse() throws IOException {
-      if (needsScores4Collapsing) {
-        this.collapseScore.score = scorer.score();
-        return this.collapseScore.score;
-      } // else...
-      return 0F;
-    }
-
-    @Override
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
-
-      float score = computeScoreIfNeeded4Collapse();
-      final float currentVal = functionValues.floatVal(contextDoc);
-
-      final int idx;
-      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
-        int pointer = cmap.indexGet(idx);
-        if (comp.test(currentVal, testValues.get(pointer))) {
-          testValues.put(pointer, currentVal);
-          docs.put(pointer, globalDoc);
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            scores.put(pointer, score);
-          }
-        }
-      } else {
-        ++index;
-        cmap.put(collapseKey, index);
-        docs.put(index, globalDoc);
-        testValues.put(index, currentVal);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            score = scorer.score();
-          }
-          scores.put(index, score);
-        }
-      }
-    }
-
-    @Override
-    public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
-      assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
-
-      float score = computeScoreIfNeeded4Collapse();
-      final float currentVal = functionValues.floatVal(contextDoc);
-
-      if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (comp.test(currentVal, nullCompVal)) {
-          nullCompVal = currentVal;
-          nullDoc = globalDoc;
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            nullScore = score;
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            score = scorer.score();
-          }
-          nullScores.add(score);
-        }
-      }
-    }
-  }
-
-  /*
-   * Strategy for collapsing on a 32 bit numeric field and using the first document according
-   * to a complex sort as the group head
-   */
-  private static class IntSortSpecStrategy extends IntFieldValueStrategy {
-
-    private final boolean needsScores4Collapsing;
-    private final SortFieldsCompare compareState;
-
-    private int index = -1;
-
-    public IntSortSpecStrategy(
-        int maxDoc,
-        int size,
-        String collapseField,
-        int nullPolicy,
-        GroupHeadSelector groupHeadSelector,
-        boolean needsScores,
-        BoostedDocsCollector boostedDocsCollector,
-        SortSpec sortSpec,
-        IndexSearcher searcher)
-        throws IOException {
-
-      super(maxDoc, size, collapseField, nullPolicy, needsScores, boostedDocsCollector);
-      this.needsScores4Collapsing = groupHeadSelector.needsScores(sortSpec);
-
-      assert GroupHeadSelectorType.SORT.equals(groupHeadSelector.type);
-
-      Sort sort = rewriteSort(sortSpec, searcher);
-      this.compareState = new SortFieldsCompare(sort.getSort(), size);
-    }
-
-    @Override
-    public void setNextReader(LeafReaderContext context) throws IOException {
-      compareState.setNextReader(context);
-    }
-
-    @Override
-    public void setScorer(Scorable s) throws IOException {
-      super.setScorer(s);
-      this.compareState.setScorer(s);
-    }
-
-    private float computeScoreIfNeeded4Collapse() throws IOException {
-      return needsScores4Collapsing ? scorer.score() : 0F;
-    }
-
-    @Override
-    public void collapse(int collapseKey, int contextDoc, int globalDoc) throws IOException {
-      float score = computeScoreIfNeeded4Collapse();
-
-      final int idx;
-      if ((idx = cmap.indexOf(collapseKey)) >= 0) {
-        // we've seen this collapseKey before, test to see if it's a new group leader
-        int pointer = cmap.indexGet(idx);
-        if (compareState.testAndSetGroupValues(pointer, contextDoc)) {
-          docs.put(pointer, globalDoc);
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            scores.put(pointer, score);
-          }
-        }
-      } else {
-        // we've never seen this collapseKey before, treat it as group head for now
-        ++index;
-        cmap.put(collapseKey, index);
-        docs.put(index, globalDoc);
-        compareState.setGroupValues(index, contextDoc);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            score = scorer.score();
-          }
-          scores.put(index, score);
-        }
-      }
-    }
-
-    @Override
-    public void collapseNullGroup(int contextDoc, int globalDoc) throws IOException {
-      assert NullPolicy.IGNORE.getCode() != this.nullPolicy;
-
-      float score = computeScoreIfNeeded4Collapse();
-
-      if (this.nullPolicy == NullPolicy.COLLAPSE.getCode()) {
-        if (-1 == nullDoc) {
-          // we've never seen a doc with null collapse key yet, treat it as the null group head for
-          // now
-          compareState.setNullGroupValues(contextDoc);
-          nullDoc = globalDoc;
-          if (needsScores) {
-            if (!needsScores4Collapsing) {
-              score = scorer.score();
-            }
-            nullScore = score;
-          }
-        } else {
-          // test this doc to see if it's the new null leader
-          if (compareState.testAndSetNullGroupValues(contextDoc)) {
-            nullDoc = globalDoc;
-            if (needsScores) {
-              if (!needsScores4Collapsing) {
-                score = scorer.score();
-              }
-              nullScore = score;
-            }
-          }
-        }
-      } else if (this.nullPolicy == NullPolicy.EXPAND.getCode()) {
-        this.collapsedSet.set(globalDoc);
-        if (needsScores) {
-          if (!needsScores4Collapsing) {
-            score = scorer.score();
-          }
-          nullScores.add(score);
-        }
-      }
-    }
   }
 
   /**
