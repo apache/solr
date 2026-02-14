@@ -96,10 +96,18 @@
     <AsyncLogger name="org.apache.solr.bench.BaseBenchState.RandomCounts" level="info" additivity="false">
       <AppenderRef ref="RandomCountsFile"/>
     </AsyncLogger>
+<!--    <AsyncLogger name="org.eclipse.jetty" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.deploy" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.ee" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.session" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.server" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.http" level="${sys:solr.jetty.log.level:-DEBUG}"/>-->
+<!--    <AsyncLogger name="org.eclipse.jetty.http2" level="DEBUG"/>-->
+    <AsyncLogger name="org.eclipse.jetty.http2.FlowControlStrategy" level="DEBUG"/>
+    <AsyncLogger name="org.eclipse.jetty.http2.BufferingFlowControlStrategy" level="DEBUG"/>
 
     <AsyncRoot level="info">
       <AppenderRef ref="MainLogFile"/>
-      <!--  <AppenderRef ref="STDOUT"/> -->
     </AsyncRoot>
   </Loggers>
 </Configuration>
