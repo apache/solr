@@ -85,7 +85,7 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testZkGraphPrinterWithPagination() throws Exception {
+  public void testZkGraphResponseBuilderWithPagination() throws Exception {
     // Create multiple test collections for pagination testing
     String[] collectionNames = {
       "zkgraph_collection_a", "zkgraph_collection_b", "zkgraph_collection_c", "zkgraph_collection_d"
@@ -122,10 +122,20 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     assertNotNull("Paging information should be present", paging);
     assertTrue("Paging should include start position", paging.contains("0|"));
     assertTrue("Paging should include rows", paging.contains("|2|"));
+
+    // Verify data field contains collection state (already parsed by JsonMapResponseParser)
+    Object dataObj = znode.get("data");
+    assertNotNull("Data field should be present", dataObj);
+
+    // Data should be a Map containing collection information
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collectionData = (Map<String, Object>) dataObj;
+    assertNotNull("Collection data should not be null", collectionData);
+    assertFalse("Collection data should contain collections", collectionData.isEmpty());
   }
 
   @Test
-  public void testZkGraphPrinterWithNameFilter() throws Exception {
+  public void testZkGraphResponseBuilderWithNameFilter() throws Exception {
     // Create test collections with specific naming pattern
     String[] collectionNames = {"filter_test_alpha", "filter_test_beta", "other_collection"};
 
@@ -160,10 +170,25 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     assertNotNull("Paging information should be present", paging);
     assertTrue("Paging should include filter type", paging.contains("name"));
     assertTrue("Paging should include filter pattern", paging.contains("filter_test*"));
+
+    // Verify data field contains collection state (already parsed by JsonMapResponseParser)
+    Object dataObj = znode.get("data");
+    assertNotNull("Data field should be present", dataObj);
+
+    // Data should be a Map containing collection information
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collectionData = (Map<String, Object>) dataObj;
+    assertNotNull("Collection data should not be null", collectionData);
+
+    // Verify filtered collections are present in the data
+    assertTrue(
+        "Should contain filter_test_alpha or filter_test_beta",
+        collectionData.containsKey("filter_test_alpha")
+            || collectionData.containsKey("filter_test_beta"));
   }
 
   @Test
-  public void testZkGraphPrinterWithDetailParameter() throws Exception {
+  public void testZkGraphResponseBuilderWithDetailParameter() throws Exception {
     // Create a test collection
     String collectionName = "zkgraph_detail_test";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
@@ -189,11 +214,58 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     Map<String, Object> znode = (Map<String, Object>) responseData.get("znode");
     assertNotNull("Response should contain 'znode'", znode);
 
-    // Verify data field is present and contains collection state
-    String data = (String) znode.get("data");
-    assertNotNull("Data field should be present", data);
+    // Verify data field contains collection state (already parsed by JsonMapResponseParser)
+    Object dataObj = znode.get("data");
+    assertNotNull("Data field should be present", dataObj);
+
+    // Data should be a Map containing collection information
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collectionData = (Map<String, Object>) dataObj;
+    assertNotNull("Collection data should not be null", collectionData);
+    assertFalse("Collection data should contain collections", collectionData.isEmpty());
+
+    // Verify the collection exists in the data
     assertTrue(
-        "Data should contain collection information",
-        data.contains(collectionName) || data.length() > 2);
+        "Data should contain the test collection", collectionData.containsKey(collectionName));
+
+    // Verify collection has expected structure (shards, replicas, etc.)
+    @SuppressWarnings("unchecked")
+    Map<String, Object> collectionState = (Map<String, Object>) collectionData.get(collectionName);
+    assertNotNull("Collection state should not be null", collectionState);
+    assertTrue("Collection should have shards", collectionState.containsKey("shards"));
+  }
+
+  @Test
+  public void testZkInfoHandlerForcesJsonResponse() throws Exception {
+    // Create a test collection
+    String collectionName = "zkinfo_wt_test";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    SolrClient client = cluster.getSolrClient();
+
+    // Try to request XML format (wt=xml), but handler should force JSON
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("view", "graph");
+    params.set(CommonParams.WT, "xml");
+
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper", params);
+    req.setResponseParser(new JsonMapResponseParser());
+
+    // Should still get valid JSON response despite wt=xml parameter
+    SimpleSolrResponse response = req.process(client);
+    NamedList<Object> responseData = response.getResponse();
+
+    assertNotNull("Response should not be null", responseData);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> znode = (Map<String, Object>) responseData.get("znode");
+    assertNotNull("Response should contain 'znode' (JSON format)", znode);
+
+    // Verify we got proper JSON structure with data as Map
+    Object dataObj = znode.get("data");
+    assertNotNull("Data field should be present", dataObj);
+    assertTrue("Data should be a Map (JSON was parsed), not XML string", dataObj instanceof Map);
   }
 }
