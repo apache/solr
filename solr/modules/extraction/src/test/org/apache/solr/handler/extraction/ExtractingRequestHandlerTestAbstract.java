@@ -24,8 +24,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.BufferingRequestProcessor;
@@ -1046,7 +1046,7 @@ public abstract class ExtractingRequestHandlerTestAbstract extends SolrTestCaseJ
   SolrQueryResponse loadLocalFromHandler(String handler, String filename, String... args)
       throws Exception {
 
-    try (LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args)) {
+    try (SolrQueryRequestBase req = (SolrQueryRequestBase) req(args)) {
       List<ContentStream> cs = new ArrayList<>();
       cs.add(new ContentStreamBase.FileStream(getFile(filename)));
       req.setContentStreams(cs);

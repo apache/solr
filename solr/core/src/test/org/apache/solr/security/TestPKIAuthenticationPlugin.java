@@ -43,7 +43,7 @@ import org.apache.http.message.BasicHttpRequest;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.CryptoKeys;
@@ -88,13 +88,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   final CryptoKeys.RSAKeyPair aKeyPair = new CryptoKeys.RSAKeyPair();
 
-  final LocalSolrQueryRequest localSolrQueryRequest =
-      new LocalSolrQueryRequest(null, new ModifiableSolrParams()) {
-        @Override
-        public Principal getUserPrincipal() {
-          return principal.get();
-        }
-      };
+  final SolrQueryRequestBase solrQueryRequestBase =
+      new SolrQueryRequestBase(null, new ModifiableSolrParams());
 
   String headerKey;
   HttpServletRequest mockReq;
@@ -146,8 +141,8 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
 
   public void testBasicRequest() throws Exception {
     String username = "solr user"; // with spaces
-    principal.set(new BasicUserPrincipal(username));
-    mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
+    solrQueryRequestBase.setUserPrincipalName(username);
+    mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
     mockSetHeaderOnRequest();
     header.set(request.getFirstHeader(headerKey));
     assertNotNull(header.get());
@@ -210,7 +205,7 @@ public class TestPKIAuthenticationPlugin extends SolrTestCaseJ4 {
     mockMetrics(mock);
 
     principal.set(new BasicUserPrincipal("solr"));
-    mock.solrRequestInfo = new SolrRequestInfo(localSolrQueryRequest, new SolrQueryResponse());
+    mock.solrRequestInfo = new SolrRequestInfo(solrQueryRequestBase, new SolrQueryResponse());
     mockSetHeaderOnRequest();
 
     HttpServletResponse response = mock(HttpServletResponse.class);

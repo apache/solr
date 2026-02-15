@@ -31,8 +31,8 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -589,8 +589,8 @@ public class TestLazyCores extends SolrTestCaseJ4 {
     updater.addDoc(cmd);
   }
 
-  private LocalSolrQueryRequest makeReq(SolrCore core, String... paramPairs) {
-    return new LocalSolrQueryRequest(core, params(paramPairs));
+  private SolrQueryRequestBase makeReq(SolrCore core, String... paramPairs) {
+    return new SolrQueryRequestBase(core, params(paramPairs));
   }
 
   @Test
