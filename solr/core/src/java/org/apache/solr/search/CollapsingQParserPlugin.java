@@ -48,6 +48,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.OrdinalMap;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.FunctionValues;
@@ -736,6 +737,28 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
+  private abstract static class CachedScoreScorable extends Scorable {
+    private final DocIdSetIterator disi;
+    private int cachedDocId = -1;
+    private float cachedScore;
+
+    CachedScoreScorable(DocIdSetIterator disi) {
+      this.disi = disi;
+    }
+
+    @Override
+    public final float score() throws IOException {
+      int docId = disi.docID();
+      if (docId != cachedDocId) {
+        cachedDocId = docId;
+        cachedScore = computeScore(docId);
+      }
+      return cachedScore;
+    }
+
+    protected abstract float computeScore(int globalDoc) throws IOException;
+  }
+
   /**
    * Abstract base class for all collapse collectors. Provides common configuration and result state
    * shared across ordinal and integer-based collapse strategies.
@@ -792,25 +815,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.docBase = context.docBase;
     }
 
-    /**
-     * Build the collapsed doc ID set. Implementations should purge boosted docs, populate
-     * collapsedSet with group head doc IDs, and reset any doc values iterators needed for the
-     * complete() replay pass.
-     */
-    protected abstract DocIdSetIterator getCollapsedDisi() throws IOException;
-
-    /**
-     * Update per-segment state for the given segment during the complete() replay pass. Called for
-     * every segment visited, including the first.
-     */
-    protected abstract void advanceCompleteSegment(int contextIndex) throws IOException;
-
-    /**
-     * Look up the stored score for a collapsed doc during the complete() replay pass. Returns the
-     * score if the doc is in a non-null group, or {@link Float#NaN} for null-group docs.
-     */
-    protected abstract float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException;
-
+    /** Core/general algorithm */
     @Override
     public final void complete() throws IOException {
       if (contexts.isEmpty()) {
@@ -819,50 +824,69 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       DocIdSetIterator collapsedDocs = getCollapsedDisi();
 
-      int currentContext = -1;
-      int currentDocBase = 0;
       int nextDocBase = 0;
-      ScoreAndDoc dummy = new ScoreAndDoc();
-      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
-      int nullScoreIndex = 0;
       int globalDoc;
 
       while ((globalDoc = collapsedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        while (globalDoc >= nextDocBase) {
-          currentContext++;
-          currentDocBase = contexts.get(currentContext).docBase;
-          nextDocBase =
-              currentContext + 1 < contexts.size()
-                  ? contexts.get(currentContext + 1).docBase
-                  : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts.get(currentContext));
-          leafDelegate.setScorer(dummy);
-          advanceCompleteSegment(currentContext);
-        }
+        if (globalDoc >= nextDocBase) {
+          // finish previous leaf
+          if (leafDelegate != null) {
+            leafDelegate.finish();
+          }
 
-        int contextDoc = globalDoc - currentDocBase;
-
-        if (needsScores) {
-          float score = getGroupHeadScore(globalDoc, contextDoc);
-          if (!Float.isNaN(score)) {
-            dummy.score = score;
-          } else if (mergeBoost.boost(globalDoc)) {
-            dummy.score = 0F;
-          } else if (nullPolicy == NullPolicy.COLLAPSE) {
-            dummy.score = nullScore;
-          } else if (nullPolicy == NullPolicy.EXPAND) {
-            dummy.score = nullScores.get(nullScoreIndex++);
+          int ctxIdx = ReaderUtil.subIndex(globalDoc, contexts);
+          context = contexts.get(ctxIdx);
+          docBase = context.docBase;
+          nextDocBase = ctxIdx + 1 < contexts.size() ? contexts.get(ctxIdx + 1).docBase : maxDoc;
+          leafDelegate = delegate.getLeafCollector(context);
+          if (delegate.scoreMode().needsScores()) {
+            leafDelegate.setScorer(getCollapsedScores(collapsedDocs, context));
           }
         }
 
-        dummy.docId = contextDoc;
-        leafDelegate.collect(contextDoc);
+        leafDelegate.collect(globalDoc - docBase);
+      }
+
+      if (leafDelegate != null) {
+        leafDelegate.finish();
       }
 
       if (delegate instanceof DelegatingCollector) {
         ((DelegatingCollector) delegate).complete();
       }
     }
+
+    /**
+     * Return a DISI of global doc IDs that the collector has matched. This is the first step of
+     * {@link #complete()}.
+     */
+    protected abstract DocIdSetIterator getCollapsedDisi() throws IOException;
+
+    /**
+     * Return a {@link Scorable} that provides the score for the current doc in the given {@code
+     * disi} (global doc IDs). Called once per segment during {@link #complete()}.
+     */
+    protected abstract Scorable getCollapsedScores(DocIdSetIterator disi, LeafReaderContext context)
+        throws IOException;
+
+    private MergeBoost mergeBoost;
+    private int nullScoreIndex = 0; // next nullScores index to return from scoreNullGroup if EXPAND
+
+    /** Returns the score for a null-group doc during {@link #complete()}. Only called once. */
+    protected float scoreNullGroup(int globalDoc) {
+      if (mergeBoost == null) { // lazy init
+        mergeBoost = boostedDocsCollector.getMergeBoost();
+      }
+      if (mergeBoost.boost(globalDoc)) { // has side effect
+        return 0F;
+      } else if (nullPolicy == NullPolicy.COLLAPSE) {
+        return nullScore;
+      } else if (nullPolicy == NullPolicy.EXPAND) {
+        return nullScores.get(nullScoreIndex++); // side effect
+      }
+      return 0F;
+    }
+
   }
 
   /**
@@ -966,51 +990,58 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() throws IOException {
+    protected DocIdSetIterator getCollapsedDisi() {
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
           collapsedSet, ords::remove, () -> nullDoc = -1);
 
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      ords.forEachValue(doc -> collapsedSet.set(doc));
 
-      // Reset iterators for the complete pass
-      collapseValues = collapseValuesProducer.getSorted(null);
-      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
-        this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
-        this.ordinalMap = multiSortedDocValues.mapping;
-      }
+      ords.forEachValue(collapsedSet::set);
 
       return new BitSetIterator(collapsedSet, 0);
     }
 
+    private boolean collapsedScoresInitialized;
+
     @Override
-    protected void advanceCompleteSegment(int contextIndex) {
+    protected Scorable getCollapsedScores(DocIdSetIterator disi, LeafReaderContext context)
+        throws IOException {
+      if (!collapsedScoresInitialized) {
+        collapsedScoresInitialized = true;
+        collapseValues = collapseValuesProducer.getSorted(null);
+        if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
+          this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
+          this.ordinalMap = multiSortedDocValues.mapping;
+        }
+      }
       if (ordinalMap != null) {
-        this.segmentValues = this.multiSortedDocValues.values[contextIndex];
-        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(contextIndex);
+        this.segmentValues = this.multiSortedDocValues.values[context.ord];
+        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(context.ord);
       } else {
         this.segmentValues = collapseValues;
       }
-    }
-
-    @Override
-    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
-      int ord = -1;
-      if (this.ordinalMap != null) {
-        if (segmentValues.advanceExact(contextDoc)) {
-          ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
+      return new CachedScoreScorable(disi) {
+        @Override
+        protected float computeScore(int globalDoc) throws IOException {
+          int ord = -1;
+          if (ordinalMap != null) {
+            int contextDoc = globalDoc - context.docBase;
+            if (segmentValues.advanceExact(contextDoc)) {
+              ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
+            }
+          } else {
+            if (segmentValues.advanceExact(globalDoc)) {
+              ord = segmentValues.ordValue();
+            }
+          }
+          if (ord > -1) {
+            return scores.get(ord);
+          }
+          return scoreNullGroup(globalDoc);
         }
-      } else {
-        if (segmentValues.advanceExact(globalDoc)) {
-          ord = segmentValues.ordValue();
-        }
-      }
-      if (ord > -1) {
-        return scores.get(ord);
-      }
-      return Float.NaN;
+      };
     }
   }
 
@@ -1058,8 +1089,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final int collapseValue = (int) collapseValues.longValue();
 
         if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
-          // strategy based collection)
+          // Check to see if we have documents boosted by the QueryElevationComponent
           if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
         }
 
@@ -1082,8 +1112,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       } else { // Null Group...
 
         if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
-          // strategy based collection)
+          // Check to see if we have documents boosted by the QueryElevationComponent
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
 
@@ -1108,6 +1137,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
+
       for (IntLongCursor cursor : cmap) {
         collapsedSet.set((int) cursor.value);
       }
@@ -1116,18 +1146,21 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected void advanceCompleteSegment(int contextIndex) throws IOException {
-      this.collapseValues = DocValues.getNumeric(contexts.get(contextIndex).reader(), this.field);
-    }
-
-    @Override
-    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
-      if (collapseValues.advanceExact(contextDoc)) {
-        int collapseValue = (int) collapseValues.longValue();
-        long scoreDoc = cmap.get(collapseValue);
-        return Float.intBitsToFloat((int) (scoreDoc >> 32));
-      }
-      return Float.NaN;
+    protected Scorable getCollapsedScores(DocIdSetIterator disi, LeafReaderContext context)
+        throws IOException {
+      this.collapseValues = DocValues.getNumeric(context.reader(), this.field);
+      return new CachedScoreScorable(disi) {
+        @Override
+        protected float computeScore(int globalDoc) throws IOException {
+          int contextDoc = globalDoc - context.docBase;
+          if (collapseValues.advanceExact(contextDoc)) {
+            int collapseValue = (int) collapseValues.longValue();
+            long scoreDoc = cmap.get(collapseValue);
+            return Float.intBitsToFloat((int) (scoreDoc >> 32));
+          }
+          return scoreNullGroup(globalDoc);
+        }
+      };
     }
   }
 
@@ -1244,8 +1277,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       if (collectElevatedDocsWhenCollapsing) {
-        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
-        // strategy based collection)
+        // Check to see if we have documents boosted by the QueryElevationComponent
         if (-1 == ord) {
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         } else {
@@ -1263,53 +1295,58 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected abstract void collapse(int ord, int contextDoc, int globalDoc) throws IOException;
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() throws IOException {
+    protected DocIdSetIterator getCollapsedDisi() {
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
           collapsedSet, ords::remove, () -> nullDoc = -1);
 
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      ords.forEachValue(doc -> collapsedSet.set(doc));
 
-      // Reset iterators for the complete pass
-      collapseValues = collapseValuesProducer.getSorted(null);
-      if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
-        this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
-        this.ordinalMap = multiSortedDocValues.mapping;
-      }
+      ords.forEachValue(collapsedSet::set);
 
       return new BitSetIterator(collapsedSet, 0);
     }
 
+    private boolean collapsedScoresInitialized;
+
     @Override
-    protected void advanceCompleteSegment(int contextIndex) {
+    protected Scorable getCollapsedScores(DocIdSetIterator disi, LeafReaderContext context)
+        throws IOException {
+      if (!collapsedScoresInitialized) {
+        collapsedScoresInitialized = true;
+        collapseValues = collapseValuesProducer.getSorted(null);
+        if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
+          this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
+          this.ordinalMap = multiSortedDocValues.mapping;
+        }
+      }
       if (ordinalMap != null) {
-        this.segmentValues = this.multiSortedDocValues.values[contextIndex];
-        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(contextIndex);
+        this.segmentValues = this.multiSortedDocValues.values[context.ord];
+        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(context.ord);
       } else {
         this.segmentValues = collapseValues;
       }
-    }
-
-    @Override
-    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
-      int ord = -1;
-      if (this.ordinalMap != null) {
-        // Handle ordinalMapping case
-        if (segmentValues.advanceExact(contextDoc)) {
-          ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
+      return new CachedScoreScorable(disi) {
+        @Override
+        protected float computeScore(int globalDoc) throws IOException {
+          int ord = -1;
+          if (ordinalMap != null) {
+            int contextDoc = globalDoc - context.docBase;
+            if (segmentValues.advanceExact(contextDoc)) {
+              ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
+            }
+          } else {
+            if (segmentValues.advanceExact(globalDoc)) {
+              ord = segmentValues.ordValue();
+            }
+          }
+          if (ord > -1) {
+            return scores.get(ord);
+          }
+          return scoreNullGroup(globalDoc);
         }
-      } else {
-        // Handle top Level FieldCache or Single Segment Case
-        if (segmentValues.advanceExact(globalDoc)) {
-          ord = segmentValues.ordValue();
-        }
-      }
-      if (ord > -1) {
-        return scores.get(ord);
-      }
-      return Float.NaN;
+      };
     }
   }
 
@@ -1792,16 +1829,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       final int globalDoc = contextDoc + this.docBase;
       if (collapseValues.advanceExact(contextDoc)) {
         final int collapseKey = (int) collapseValues.longValue();
-        // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
-        // strategy based collection)
+        // Check to see if we have documents boosted by the QueryElevationComponent
         if (boostedDocsCollector.collectIfBoosted(collapseKey, globalDoc)) return;
         collapse(collapseKey, contextDoc, globalDoc);
 
       } else { // Null Group...
 
         if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent (skip normal
-          // strategy based collection)
+          // Check to see if we have documents boosted by the QueryElevationComponent
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         }
         if (NullPolicy.IGNORE != nullPolicy) {
@@ -1812,14 +1847,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     protected DocIdSetIterator getCollapsedDisi() {
-      // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
           collapsedSet, cmap::remove, () -> nullDoc = -1);
 
-      // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
         this.collapsedSet.set(nullDoc);
       }
+
       for (IntIntCursor cursor : cmap) {
         int pointer = cursor.value;
         collapsedSet.set(docs.get(pointer));
@@ -1829,19 +1863,21 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected void advanceCompleteSegment(int contextIndex) throws IOException {
-      this.collapseValues =
-          DocValues.getNumeric(contexts.get(contextIndex).reader(), this.collapseField);
-    }
-
-    @Override
-    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
-      if (collapseValues.advanceExact(contextDoc)) {
-        final int collapseValue = (int) collapseValues.longValue();
-        final int pointer = cmap.get(collapseValue);
-        return scores.get(pointer);
-      }
-      return Float.NaN;
+    protected Scorable getCollapsedScores(DocIdSetIterator disi, LeafReaderContext context)
+        throws IOException {
+      this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
+      return new CachedScoreScorable(disi) {
+        @Override
+        protected float computeScore(int globalDoc) throws IOException {
+          int contextDoc = globalDoc - context.docBase;
+          if (collapseValues.advanceExact(contextDoc)) {
+            final int collapseValue = (int) collapseValues.longValue();
+            final int pointer = cmap.get(collapseValue);
+            return scores.get(pointer);
+          }
+          return scoreNullGroup(globalDoc);
+        }
+      };
     }
   }
 
