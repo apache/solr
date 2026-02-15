@@ -518,7 +518,7 @@ The snapshot will be created in a directory called `snapshot.<name>` within the 
 By default the name is generated using date in `yyyyMMddHHmmssSSS` format.
 If the `location` parameter is passed, that would be used instead of the data directory.
 
-`repository`::: The name of the backup repository to use
+`repository`::: The name of the backup repository to use.
  When not specified, it defaults to local file system.
 
 `location`::: Backup location.
@@ -569,6 +569,9 @@ There are two supported parameters:
 `name`::: The name of the snapshot.
 A snapshot with the name `snapshot._name_` must exist or an error will be returned.
 
+`repository`::: The name of the backup repository to use.
+ When not specified, it defaults to local file system.
+ 
 `location`::: The location where the snapshot is created.
 
 
