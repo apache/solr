@@ -390,6 +390,7 @@ limitations under the License.
              ng-model="fieldOrType"
              chosen
              data-placeholder="Please select ..."
+             search-contains="true"
              ng-change="selectFieldOrType()"
              ng-options="f.value as f.label group by f.group for f in fieldsAndTypes"></select>
 
@@ -445,7 +446,7 @@ limitations under the License.
                 </form>
             </div>
         </dd>
-        
+
         <dt class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-show="leftbar.dynamicFields">Dynamic Field</dt>
         <dd class="dynamic-field" ng-class="{active: selectedType=='Dynamic Field'}" ng-repeat="field in leftbar.dynamicFields"><a href="#/{{core}}/schema?dynamic-field={{field}}">{{field}}</a></dd>
 
