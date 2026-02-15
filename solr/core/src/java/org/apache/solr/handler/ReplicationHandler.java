@@ -379,9 +379,37 @@ public class ReplicationHandler extends RequestHandlerBase
   private void deleteSnapshot(ModifiableSolrParams params, SolrQueryResponse rsp) {
     params.required().get(NAME);
 
+    String repoName = params.get(CoreAdminParams.BACKUP_REPOSITORY);
     String location = params.get(CoreAdminParams.BACKUP_LOCATION);
-    core.getCoreContainer().assertPathAllowed(location == null ? null : Path.of(location));
-    SnapShooter snapShooter = new SnapShooter(core, location, params.get(NAME));
+
+    // commitName is not documented in ref guide for the backup option.
+    // copying to here, an dit may be that both are just null?
+    String commitName = params.get(CoreAdminParams.COMMIT_NAME);
+
+    CoreContainer cc = core.getCoreContainer();
+    BackupRepository repo = null;
+    if (repoName != null) {
+      repo = cc.newBackupRepository(repoName);
+      location = repo.getBackupLocation(location);
+      if (location == null) {
+        throw new IllegalArgumentException("location is required");
+      }
+    } else {
+      repo = new LocalFileSystemRepository();
+      if (location == null) {
+        location = core.getDataDir();
+      } else {
+        location =
+            core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
+      }
+    }
+    if ("file".equals(repo.createURI("x").getScheme())) {
+      core.getCoreContainer().assertPathAllowed(Path.of(location));
+    }
+
+    URI locationUri = repo.createDirectoryURI(location);
+    SnapShooter snapShooter =
+        new SnapShooter(repo, core, locationUri, params.get(NAME), commitName);
     snapShooter.validateDeleteSnapshot();
     snapShooter.deleteSnapAsync(this);
     rsp.add(STATUS, OK_STATUS);
@@ -1505,7 +1533,11 @@ public class ReplicationHandler extends RequestHandlerBase
             if (numberToKeep < 1) {
               numberToKeep = Integer.MAX_VALUE;
             }
-            SnapShooter snapShooter = new SnapShooter(core, null, null);
+
+            URI locationUri = Path.of(core.getDataDir()).toUri();
+
+            SnapShooter snapShooter =
+                new SnapShooter(new LocalFileSystemRepository(), core, locationUri, null, null);
             snapShooter.validateCreateSnapshot();
             snapShooter.createSnapAsync(numberToKeep, (nl) -> snapShootDetails = nl);
           } catch (Exception e) {
