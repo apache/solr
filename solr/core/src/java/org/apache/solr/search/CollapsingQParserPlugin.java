@@ -791,6 +791,76 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.context = context;
       this.docBase = context.docBase;
     }
+
+    /**
+     * Build the collapsed doc ID set. Implementations should purge boosted docs, populate
+     * collapsedSet with group head doc IDs, and reset any doc values iterators needed for the
+     * complete() replay pass.
+     */
+    protected abstract DocIdSetIterator getCollapsedDisi() throws IOException;
+
+    /**
+     * Update per-segment state for the given segment during the complete() replay pass. Called for
+     * every segment visited, including the first.
+     */
+    protected abstract void advanceCompleteSegment(int contextIndex) throws IOException;
+
+    /**
+     * Look up the stored score for a collapsed doc during the complete() replay pass. Returns the
+     * score if the doc is in a non-null group, or {@link Float#NaN} for null-group docs.
+     */
+    protected abstract float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException;
+
+    @Override
+    public final void complete() throws IOException {
+      if (contexts.length == 0) {
+        return;
+      }
+
+      DocIdSetIterator collapsedDocs = getCollapsedDisi();
+
+      int currentContext = -1;
+      int currentDocBase = 0;
+      int nextDocBase = 0;
+      ScoreAndDoc dummy = new ScoreAndDoc();
+      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
+      int nullScoreIndex = 0;
+      int globalDoc;
+
+      while ((globalDoc = collapsedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        while (globalDoc >= nextDocBase) {
+          currentContext++;
+          currentDocBase = contexts[currentContext].docBase;
+          nextDocBase =
+              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
+          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
+          leafDelegate.setScorer(dummy);
+          advanceCompleteSegment(currentContext);
+        }
+
+        int contextDoc = globalDoc - currentDocBase;
+
+        if (needsScores) {
+          float score = getGroupHeadScore(globalDoc, contextDoc);
+          if (!Float.isNaN(score)) {
+            dummy.score = score;
+          } else if (mergeBoost.boost(globalDoc)) {
+            dummy.score = 0F;
+          } else if (nullPolicy == NullPolicy.COLLAPSE) {
+            dummy.score = nullScore;
+          } else if (nullPolicy == NullPolicy.EXPAND) {
+            dummy.score = nullScores.get(nullScoreIndex++);
+          }
+        }
+
+        dummy.docId = contextDoc;
+        leafDelegate.collect(contextDoc);
+      }
+
+      if (delegate instanceof DelegatingCollector) {
+        ((DelegatingCollector) delegate).complete();
+      }
+    }
   }
 
   /**
@@ -894,99 +964,51 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void complete() throws IOException {
-      if (contexts.length == 0) {
-        return;
-      }
-
-      // Handle the boosted docs.
+    protected DocIdSetIterator getCollapsedDisi() throws IOException {
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (ord) -> {
-            ords.remove(ord);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, ords::remove, () -> nullDoc = -1);
 
-      // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
       ords.forEachValue(doc -> collapsedSet.set(doc));
 
-      int currentContext = 0;
-      int currentDocBase = 0;
-
-      collapseValues = collapseValuesProducer.getSorted(null); // reset iterator
-
+      // Reset iterators for the complete pass
+      collapseValues = collapseValuesProducer.getSorted(null);
       if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
         this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
         this.ordinalMap = multiSortedDocValues.mapping;
       }
 
+      return new BitSetIterator(collapsedSet, 0);
+    }
+
+    @Override
+    protected void advanceCompleteSegment(int contextIndex) {
       if (ordinalMap != null) {
-        this.segmentValues = this.multiSortedDocValues.values[currentContext];
-        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(currentContext);
+        this.segmentValues = this.multiSortedDocValues.values[contextIndex];
+        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(contextIndex);
       } else {
         this.segmentValues = collapseValues;
       }
+    }
 
-      int nextDocBase =
-          currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      ScoreAndDoc dummy = new ScoreAndDoc();
-      leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = new BitSetIterator(collapsedSet, 0L); // cost is not useful here
-      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
-      int docId = -1;
-      int index = -1;
-      while ((docId = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-        while (docId >= nextDocBase) {
-          currentContext++;
-          currentDocBase = contexts[currentContext].docBase;
-          nextDocBase =
-              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-          leafDelegate.setScorer(dummy);
-          if (ordinalMap != null) {
-            this.segmentValues = this.multiSortedDocValues.values[currentContext];
-            this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(currentContext);
-          }
+    @Override
+    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
+      int ord = -1;
+      if (this.ordinalMap != null) {
+        if (segmentValues.advanceExact(contextDoc)) {
+          ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
         }
-
-        int contextDoc = docId - currentDocBase;
-
-        int ord = -1;
-        if (this.ordinalMap != null) {
-          // Handle ordinalMapping case
-          if (segmentValues.advanceExact(contextDoc)) {
-            ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
-          }
-        } else {
-          // Handle top Level FieldCache or Single Segment Case
-          if (segmentValues.advanceExact(docId)) {
-            ord = segmentValues.ordValue();
-          }
+      } else {
+        if (segmentValues.advanceExact(globalDoc)) {
+          ord = segmentValues.ordValue();
         }
-
-        if (ord > -1) {
-          dummy.score = scores.get(ord);
-        } else if (mergeBoost.boost(docId)) {
-          // Ignore so it doesn't mess up the null scoring.
-        } else if (this.nullPolicy == NullPolicy.COLLAPSE) {
-          dummy.score = nullScore;
-        } else if (this.nullPolicy == NullPolicy.EXPAND) {
-          dummy.score = nullScores.get(++index);
-        }
-
-        dummy.docId = contextDoc;
-        leafDelegate.collect(contextDoc);
       }
-
-      if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).complete();
+      if (ord > -1) {
+        return scores.get(ord);
       }
+      return Float.NaN;
     }
   }
 
@@ -1077,82 +1099,33 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void complete() throws IOException {
-      if (contexts.length == 0) {
-        return;
-      }
-
-      // Handle the boosted docs.
+    protected DocIdSetIterator getCollapsedDisi() {
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (key) -> {
-            cmap.remove(key);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, cmap::remove, () -> nullDoc = -1);
 
-      // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
         collapsedSet.set(nullDoc);
       }
-      Iterator<IntLongCursor> it1 = cmap.iterator();
-      while (it1.hasNext()) {
-        IntLongCursor cursor = it1.next();
-        int doc = (int) cursor.value;
-        collapsedSet.set(doc);
+      for (IntLongCursor cursor : cmap) {
+        collapsedSet.set((int) cursor.value);
       }
 
-      int currentContext = 0;
-      int currentDocBase = 0;
+      return new BitSetIterator(collapsedSet, 0);
+    }
 
-      collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
-      int nextDocBase =
-          currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      ScoreAndDoc dummy = new ScoreAndDoc();
-      leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = new BitSetIterator(collapsedSet, 0L); // cost is not useful here
-      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
-      int globalDoc = -1;
-      int nullScoreIndex = 0;
-      while ((globalDoc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+    @Override
+    protected void advanceCompleteSegment(int contextIndex) throws IOException {
+      this.collapseValues = DocValues.getNumeric(contexts[contextIndex].reader(), this.field);
+    }
 
-        while (globalDoc >= nextDocBase) {
-          currentContext++;
-          currentDocBase = contexts[currentContext].docBase;
-          nextDocBase =
-              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-          leafDelegate.setScorer(dummy);
-          collapseValues = DocValues.getNumeric(contexts[currentContext].reader(), this.field);
-        }
-
-        final int contextDoc = globalDoc - currentDocBase;
-        if (collapseValues.advanceExact(contextDoc)) {
-          final int collapseValue = (int) collapseValues.longValue();
-          final long scoreDoc = cmap.get(collapseValue);
-          dummy.score = Float.intBitsToFloat((int) (scoreDoc >> 32));
-
-        } else { // Null Group...
-
-          if (mergeBoost.boost(globalDoc)) {
-            // It's an elevated doc so no score is needed (and should not have been populated)
-            dummy.score = 0F;
-          } else if (nullPolicy == NullPolicy.COLLAPSE) {
-            dummy.score = nullScore;
-          } else if (nullPolicy == NullPolicy.EXPAND) {
-            dummy.score = nullScores.get(nullScoreIndex++);
-          }
-        }
-
-        dummy.docId = contextDoc;
-        leafDelegate.collect(contextDoc);
+    @Override
+    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
+      if (collapseValues.advanceExact(contextDoc)) {
+        int collapseValue = (int) collapseValues.longValue();
+        long scoreDoc = cmap.get(collapseValue);
+        return Float.intBitsToFloat((int) (scoreDoc >> 32));
       }
-
-      if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).complete();
-      }
+      return Float.NaN;
     }
   }
 
@@ -1287,107 +1260,54 @@ public class CollapsingQParserPlugin extends QParserPlugin {
      */
     protected abstract void collapse(int ord, int contextDoc, int globalDoc) throws IOException;
 
-    protected DocIdSetIterator getCollapsedDisi() {
-      // Handle the boosted docs.
+    @Override
+    protected DocIdSetIterator getCollapsedDisi() throws IOException {
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (ord) -> {
-            ords.remove(ord);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, ords::remove, () -> nullDoc = -1);
 
-      // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
-        this.collapsedSet.set(nullDoc);
+        collapsedSet.set(nullDoc);
       }
       ords.forEachValue(doc -> collapsedSet.set(doc));
 
-      return new BitSetIterator(collapsedSet, 0); // cost is not useful here
-    }
-
-    @Override
-    public void complete() throws IOException {
-      if (contexts.length == 0) {
-        return;
-      }
-
-      int currentContext = 0;
-      int currentDocBase = 0;
-
-      this.collapseValues = collapseValuesProducer.getSorted(null); // reset iterator
+      // Reset iterators for the complete pass
+      collapseValues = collapseValuesProducer.getSorted(null);
       if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
         this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
         this.ordinalMap = multiSortedDocValues.mapping;
       }
+
+      return new BitSetIterator(collapsedSet, 0);
+    }
+
+    @Override
+    protected void advanceCompleteSegment(int contextIndex) {
       if (ordinalMap != null) {
-        this.segmentValues = this.multiSortedDocValues.values[currentContext];
-        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(currentContext);
+        this.segmentValues = this.multiSortedDocValues.values[contextIndex];
+        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(contextIndex);
       } else {
         this.segmentValues = collapseValues;
       }
+    }
 
-      int nextDocBase =
-          currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      ScoreAndDoc dummy = new ScoreAndDoc();
-      leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = getCollapsedDisi();
-      int globalDoc = -1;
-      int nullScoreIndex = 0;
-      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
-
-      while ((globalDoc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-
-        while (globalDoc >= nextDocBase) {
-          currentContext++;
-          currentDocBase = contexts[currentContext].docBase;
-          nextDocBase =
-              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-          leafDelegate.setScorer(dummy);
-          if (ordinalMap != null) {
-            this.segmentValues = this.multiSortedDocValues.values[currentContext];
-            this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(currentContext);
-          }
+    @Override
+    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
+      int ord = -1;
+      if (this.ordinalMap != null) {
+        // Handle ordinalMapping case
+        if (segmentValues.advanceExact(contextDoc)) {
+          ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
         }
-
-        int contextDoc = globalDoc - currentDocBase;
-
-        if (this.needsScores) {
-          int ord = -1;
-          if (this.ordinalMap != null) {
-            // Handle ordinalMapping case
-            if (segmentValues.advanceExact(contextDoc)) {
-              ord = (int) segmentOrdinalMap.get(segmentValues.ordValue());
-            }
-          } else {
-            // Handle top Level FieldCache or Single Segment Case
-            if (segmentValues.advanceExact(globalDoc)) {
-              ord = segmentValues.ordValue();
-            }
-          }
-
-          if (ord > -1) {
-            dummy.score = this.scores.get(ord);
-          } else if (mergeBoost.boost(globalDoc)) {
-            // It's an elevated doc so no score is needed (and should not have been populated)
-            dummy.score = 0F;
-          } else if (nullPolicy == NullPolicy.COLLAPSE) {
-            dummy.score = this.nullScore;
-          } else if (nullPolicy == NullPolicy.EXPAND) {
-            dummy.score = this.nullScores.get(nullScoreIndex++);
-          }
+      } else {
+        // Handle top Level FieldCache or Single Segment Case
+        if (segmentValues.advanceExact(globalDoc)) {
+          ord = segmentValues.ordValue();
         }
-
-        dummy.docId = contextDoc;
-        leafDelegate.collect(contextDoc);
       }
-
-      if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).complete();
+      if (ord > -1) {
+        return scores.get(ord);
       }
+      return Float.NaN;
     }
   }
 
@@ -1888,16 +1808,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
     }
 
+    @Override
     protected DocIdSetIterator getCollapsedDisi() {
       // Handle the boosted docs.
       boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet,
-          (key) -> {
-            cmap.remove(key);
-          },
-          () -> {
-            nullDoc = -1;
-          });
+          collapsedSet, cmap::remove, () -> nullDoc = -1);
 
       // Build the sorted DocSet of group heads.
       if (nullDoc > -1) {
@@ -1912,67 +1827,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void complete() throws IOException {
-      if (contexts.length == 0) {
-        return;
-      }
-
-      int currentContext = 0;
-      int currentDocBase = 0;
+    protected void advanceCompleteSegment(int contextIndex) throws IOException {
       this.collapseValues =
-          DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
-      int nextDocBase =
-          currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-      leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-      ScoreAndDoc dummy = new ScoreAndDoc();
-      leafDelegate.setScorer(dummy);
-      DocIdSetIterator it = getCollapsedDisi();
-      int globalDoc = -1;
-      int nullScoreIndex = 0;
-      final MergeBoost mergeBoost = boostedDocsCollector.getMergeBoost();
+          DocValues.getNumeric(contexts[contextIndex].reader(), this.collapseField);
+    }
 
-      while ((globalDoc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-
-        while (globalDoc >= nextDocBase) {
-          currentContext++;
-          currentDocBase = contexts[currentContext].docBase;
-          nextDocBase =
-              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
-          leafDelegate.setScorer(dummy);
-          this.collapseValues =
-              DocValues.getNumeric(contexts[currentContext].reader(), this.collapseField);
-        }
-
-        final int contextDoc = globalDoc - currentDocBase;
-
-        if (this.needsScores) {
-          if (collapseValues.advanceExact(contextDoc)) {
-            final int collapseValue = (int) collapseValues.longValue();
-
-            final int pointer = cmap.get(collapseValue);
-            dummy.score = scores.get(pointer);
-
-          } else { // Null Group...
-
-            if (mergeBoost.boost(globalDoc)) {
-              // It's an elevated doc so no score is needed (and should not have been populated)
-              dummy.score = 0F;
-            } else if (nullPolicy == NullPolicy.COLLAPSE) {
-              dummy.score = nullScore;
-            } else if (nullPolicy == NullPolicy.EXPAND) {
-              dummy.score = nullScores.get(nullScoreIndex++);
-            }
-          }
-        }
-
-        dummy.docId = contextDoc;
-        leafDelegate.collect(contextDoc);
+    @Override
+    protected float getGroupHeadScore(int globalDoc, int contextDoc) throws IOException {
+      if (collapseValues.advanceExact(contextDoc)) {
+        final int collapseValue = (int) collapseValues.longValue();
+        final int pointer = cmap.get(collapseValue);
+        return scores.get(pointer);
       }
-
-      if (delegate instanceof DelegatingCollector) {
-        ((DelegatingCollector) delegate).complete();
-      }
+      return Float.NaN;
     }
   }
 
