@@ -45,6 +45,7 @@ import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepository.PathType;
+import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.slf4j.Logger;
@@ -65,6 +66,22 @@ public class SnapShooter {
   private URI snapshotDirPath = null;
   private BackupRepository backupRepo = null;
   private String commitName; // can be null
+
+  @Deprecated
+  public SnapShooter(SolrCore core, String location, String snapshotName) {
+    String snapDirStr = null;
+    // Note - This logic is only applicable to the usecase where a shared file-system is exposed via
+    // local file-system interface (primarily for backwards compatibility). For other use-cases,
+    // users will be required to specify "location" where the backup should be stored.
+    if (location == null) {
+      snapDirStr = core.getDataDir();
+    } else {
+      snapDirStr =
+          core.getCoreDescriptor().getInstanceDir().resolve(location).normalize().toString();
+    }
+    initialize(
+        new LocalFileSystemRepository(), core, Path.of(snapDirStr).toUri(), snapshotName, null);
+  }
 
   public SnapShooter(
       BackupRepository backupRepo,
@@ -228,7 +245,8 @@ public class SnapShooter {
             + solrCore.getName());
   }
 
-  public void createSnapAsync(final int numberToKeep, Consumer<NamedList<?>> result) {
+  public void createSnapAsync(final int numberToKeep, Consumer<NamedList<?>> result)
+      throws IOException {
     // TODO should use Solr's ExecutorUtil
     new Thread(
             () -> {
