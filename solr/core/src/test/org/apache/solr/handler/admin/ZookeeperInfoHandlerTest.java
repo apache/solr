@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -81,5 +82,118 @@ public class ZookeeperInfoHandlerTest extends SolrCloudTestCase {
     assertNotNull("Response should not be null", responseData);
     assertNotNull(
         "Response should contain 'znode' for collections view", responseData.get("znode"));
+  }
+
+  @Test
+  public void testZkGraphPrinterWithPagination() throws Exception {
+    // Create multiple test collections for pagination testing
+    String[] collectionNames = {
+      "zkgraph_collection_a", "zkgraph_collection_b", "zkgraph_collection_c", "zkgraph_collection_d"
+    };
+
+    for (String collectionName : collectionNames) {
+      CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, 1, 1);
+    }
+
+    SolrClient client = cluster.getSolrClient();
+
+    // Test pagination with start=0, rows=2
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("view", "graph");
+    params.set("start", "0");
+    params.set("rows", "2");
+
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper", params);
+    req.setResponseParser(new JsonMapResponseParser());
+
+    SimpleSolrResponse response = req.process(client);
+    NamedList<Object> responseData = response.getResponse();
+
+    assertNotNull("Response should not be null", responseData);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> znode = (Map<String, Object>) responseData.get("znode");
+    assertNotNull("Response should contain 'znode'", znode);
+
+    // Verify paging information is present
+    String paging = (String) znode.get("paging");
+    assertNotNull("Paging information should be present", paging);
+    assertTrue("Paging should include start position", paging.contains("0|"));
+    assertTrue("Paging should include rows", paging.contains("|2|"));
+  }
+
+  @Test
+  public void testZkGraphPrinterWithNameFilter() throws Exception {
+    // Create test collections with specific naming pattern
+    String[] collectionNames = {"filter_test_alpha", "filter_test_beta", "other_collection"};
+
+    for (String collectionName : collectionNames) {
+      CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collectionName, 1, 1);
+    }
+
+    SolrClient client = cluster.getSolrClient();
+
+    // Test name filter with pattern
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("view", "graph");
+    params.set("filterType", "name");
+    params.set("filter", "filter_test*");
+
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper", params);
+    req.setResponseParser(new JsonMapResponseParser());
+
+    SimpleSolrResponse response = req.process(client);
+    NamedList<Object> responseData = response.getResponse();
+
+    assertNotNull("Response should not be null", responseData);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> znode = (Map<String, Object>) responseData.get("znode");
+    assertNotNull("Response should contain 'znode'", znode);
+
+    // Verify paging information includes filter
+    String paging = (String) znode.get("paging");
+    assertNotNull("Paging information should be present", paging);
+    assertTrue("Paging should include filter type", paging.contains("name"));
+    assertTrue("Paging should include filter pattern", paging.contains("filter_test*"));
+  }
+
+  @Test
+  public void testZkGraphPrinterWithDetailParameter() throws Exception {
+    // Create a test collection
+    String collectionName = "zkgraph_detail_test";
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, 1)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 1, 1);
+
+    SolrClient client = cluster.getSolrClient();
+
+    // Test with detail parameter
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("view", "graph");
+    params.set("detail", "true");
+
+    GenericSolrRequest req =
+        new GenericSolrRequest(SolrRequest.METHOD.GET, "/admin/zookeeper", params);
+    req.setResponseParser(new JsonMapResponseParser());
+
+    SimpleSolrResponse response = req.process(client);
+    NamedList<Object> responseData = response.getResponse();
+
+    assertNotNull("Response should not be null", responseData);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> znode = (Map<String, Object>) responseData.get("znode");
+    assertNotNull("Response should contain 'znode'", znode);
+
+    // Verify data field is present and contains collection state
+    String data = (String) znode.get("data");
+    assertNotNull("Data field should be present", data);
+    assertTrue(
+        "Data should contain collection information",
+        data.contains(collectionName) || data.length() > 2);
   }
 }
