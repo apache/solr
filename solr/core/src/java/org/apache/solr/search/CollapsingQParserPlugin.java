@@ -744,7 +744,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   protected abstract static class AbstractCollapseCollector extends DelegatingCollector {
     // Configuration
-    protected final LeafReaderContext[] contexts;
+    protected final List<LeafReaderContext> contexts;
     protected final int maxDoc;
     protected final NullPolicy nullPolicy;
     protected final boolean needsScores;
@@ -764,7 +764,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         boolean collectElevatedDocsWhenCollapsing,
         IntIntHashMap boostDocsMap) {
 
-      this.contexts = searcher.getTopReaderContext().leaves().toArray(LeafReaderContext[]::new);
+      this.contexts = searcher.getTopReaderContext().leaves();
       this.maxDoc = searcher.getIndexReader().maxDoc();
       this.nullPolicy = nullPolicy;
       this.needsScores = needsScores;
@@ -786,7 +786,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
       // Do NOT set leafDelegate (calling super() would do this).
       // That's handled in complete() for these collectors.
-      assert this.contexts[context.ord] == context;
+      assert this.contexts.get(context.ord) == context;
       assert leafDelegate == null;
       this.context = context;
       this.docBase = context.docBase;
@@ -813,7 +813,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public final void complete() throws IOException {
-      if (contexts.length == 0) {
+      if (contexts.isEmpty()) {
         return;
       }
 
@@ -830,10 +830,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       while ((globalDoc = collapsedDocs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         while (globalDoc >= nextDocBase) {
           currentContext++;
-          currentDocBase = contexts[currentContext].docBase;
+          currentDocBase = contexts.get(currentContext).docBase;
           nextDocBase =
-              currentContext + 1 < contexts.length ? contexts[currentContext + 1].docBase : maxDoc;
-          leafDelegate = delegate.getLeafCollector(contexts[currentContext]);
+              currentContext + 1 < contexts.size()
+                  ? contexts.get(currentContext + 1).docBase
+                  : maxDoc;
+          leafDelegate = delegate.getLeafCollector(contexts.get(currentContext));
           leafDelegate.setScorer(dummy);
           advanceCompleteSegment(currentContext);
         }
@@ -1115,7 +1117,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     protected void advanceCompleteSegment(int contextIndex) throws IOException {
-      this.collapseValues = DocValues.getNumeric(contexts[contextIndex].reader(), this.field);
+      this.collapseValues = DocValues.getNumeric(contexts.get(contextIndex).reader(), this.field);
     }
 
     @Override
@@ -1829,7 +1831,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     protected void advanceCompleteSegment(int contextIndex) throws IOException {
       this.collapseValues =
-          DocValues.getNumeric(contexts[contextIndex].reader(), this.collapseField);
+          DocValues.getNumeric(contexts.get(contextIndex).reader(), this.collapseField);
     }
 
     @Override
