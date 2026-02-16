@@ -273,8 +273,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public final String hint;
     protected final boolean needsScores4Collapsing;
     protected final NullPolicy nullPolicy;
-    private final int initialSize;
-    private Set<BytesRef> boosted; // ordered by "priority"
+    protected final boolean collectElevatedDocsWhenCollapsing;
+    protected final int initialSize;
 
     public String getField() {
       return this.collapseField;
@@ -307,7 +307,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private boolean equalsTo(CollapsingPostFilter other) {
       return collapseField.equals(other.collapseField)
           && groupHeadSelector.equals(other.groupHeadSelector)
-          && nullPolicy == other.nullPolicy;
+          && nullPolicy == other.nullPolicy
+          && collectElevatedDocsWhenCollapsing == other.collectElevatedDocsWhenCollapsing;
     }
 
     @Override
@@ -403,6 +404,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       this.nullPolicy = NullPolicy.fromString(localParams.get("nullPolicy"));
+
+      this.collectElevatedDocsWhenCollapsing =
+          params.getBool(COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, true);
     }
 
     protected GroupHeadSelector buildGroupHeadSelector(SolrParams localParams) {
@@ -410,45 +414,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    @SuppressWarnings({"unchecked"})
     public DelegatingCollector getFilterCollector(IndexSearcher indexSearcher) {
       try {
-        // Deal with boosted docs.
-        // We have to deal with it here rather then the constructor because
-        // because the QueryElevationComponent runs after the Queries are constructed.
-
-        IntIntHashMap boostDocsMap = null;
-        Map<Object, Object> context = null;
-        SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
-        if (info != null) {
-          context = info.getReq().getContext();
-        }
-
-        if (this.boosted == null && context != null) {
-          this.boosted = (Set<BytesRef>) context.get(QueryElevationComponent.BOOSTED);
-        }
-
-        SolrIndexSearcher searcher = (SolrIndexSearcher) indexSearcher;
-        boostDocsMap = QueryElevationComponent.getBoostDocs(searcher, this.boosted, context);
-        return this.getCollector(boostDocsMap, searcher);
-
+        return this.getFilterCollector((SolrIndexSearcher) indexSearcher);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
-    /**
-     * @see #isNumericCollapsible
-     */
-    private static final EnumSet<NumberType> NUMERIC_COLLAPSIBLE_TYPES =
-        EnumSet.of(NumberType.INTEGER, NumberType.FLOAT);
-
-    private boolean isNumericCollapsible(FieldType collapseFieldType) {
-      return NUMERIC_COLLAPSIBLE_TYPES.contains(collapseFieldType.getNumberType());
-    }
-
-    protected DelegatingCollector getCollector(IntIntHashMap boostDocs, SolrIndexSearcher searcher)
+    protected DelegatingCollector getFilterCollector(SolrIndexSearcher searcher)
         throws IOException {
+      // We have to deal with it here rather than the constructor because
+      //  the QueryElevationComponent runs after the Queries are constructed.
+      IntIntHashMap boostDocs = getElevatedBoostDocsMap(searcher);
 
       // block collapsing logic is much simpler and uses less memory, but is only viable in specific
       // situations
@@ -488,36 +466,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      SolrRequestInfo req = SolrRequestInfo.getRequestInfo();
-      boolean collectElevatedDocsWhenCollapsing =
-          req != null
-              && req.getReq().getParams().getBool(COLLECT_ELEVATED_DOCS_WHEN_COLLAPSING, true);
-
       if (GroupHeadSelectorType.SCORE.equals(groupHeadSelector.type)) {
 
         if (collapseFieldType instanceof StrField) {
           if (blockCollapse) {
             return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
           }
-          return new OrdScoreCollector(
-              searcher,
-              docValuesProducer,
-              nullPolicy,
-              boostDocs,
-              collectElevatedDocsWhenCollapsing);
+          return new OrdScoreCollector(searcher, docValuesProducer, nullPolicy, boostDocs);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
           if (blockCollapse) {
             return new BlockIntScoreCollector(collapseField, nullPolicy, boostDocs);
           }
 
-          return new IntScoreCollector(
-              searcher,
-              nullPolicy,
-              boostDocs,
-              collectElevatedDocsWhenCollapsing,
-              collapseField,
-              initialSize);
+          return new IntScoreCollector(searcher, nullPolicy, boostDocs, collapseField, initialSize);
 
         } else {
           throw new SolrException(
@@ -546,7 +508,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           builder.nullPolicy = nullPolicy;
           builder.needsScores4Collapsing = needsScores4Collapsing;
           builder.boostDocsMap = boostDocs;
-          builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
           builder.collapseValuesProducer = docValuesProducer;
 
@@ -572,7 +533,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           builder.nullPolicy = nullPolicy;
           builder.needsScores4Collapsing = needsScores4Collapsing;
           builder.boostDocsMap = boostDocs;
-          builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
           builder.collapseField = collapseField;
           builder.initialSize = initialSize;
@@ -584,6 +544,28 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               "Collapsing field should be of either String, Int or Float type");
         }
       }
+    }
+
+    @SuppressWarnings({"unchecked"})
+    protected IntIntHashMap getElevatedBoostDocsMap(SolrIndexSearcher indexSearcher)
+        throws IOException {
+      if (!collectElevatedDocsWhenCollapsing) {
+        return null;
+      }
+      SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+      if (info != null) {
+        var context = info.getReq().getContext();
+        var boosted = (Set<BytesRef>) context.get(QueryElevationComponent.BOOSTED);
+        return QueryElevationComponent.getBoostDocs(indexSearcher, boosted, context);
+      }
+      return null;
+    }
+
+    private boolean isNumericCollapsible(FieldType collapseFieldType) {
+      return switch (collapseFieldType.getNumberType()) {
+        case NumberType.INTEGER, NumberType.FLOAT -> true;
+        default -> false;
+      };
     }
 
     protected DocValuesProducer getDocValuesProducer(
@@ -757,7 +739,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected final NullPolicy nullPolicy;
     protected final boolean needsScores4Collapsing;
     protected boolean needsScores; // cached from scoreMode()
-    protected final boolean collectElevatedDocsWhenCollapsing;
 
     // Results/accumulator
     protected FixedBitSet collapsedSet;
@@ -770,14 +751,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         IndexSearcher searcher,
         NullPolicy nullPolicy,
         boolean needsScores4Collapsing,
-        boolean collectElevatedDocsWhenCollapsing,
         IntIntHashMap boostDocsMap) {
 
       this.contexts = searcher.getTopReaderContext().leaves();
       this.maxDoc = searcher.getIndexReader().maxDoc();
       this.nullPolicy = nullPolicy;
       this.needsScores4Collapsing = needsScores4Collapsing;
-      this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
     }
@@ -901,10 +880,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         IndexSearcher searcher,
         DocValuesProducer collapseValuesProducer,
         NullPolicy nullPolicy,
-        IntIntHashMap boostDocsMap,
-        boolean collectElevatedDocsWhenCollapsing)
+        IntIntHashMap boostDocsMap)
         throws IOException {
-      super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
+      super(searcher, nullPolicy, true, boostDocsMap);
 
       this.collapseValuesProducer = collapseValuesProducer;
       initCollapseValues();
@@ -958,8 +936,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if (collectElevatedDocsWhenCollapsing) {
-        // Check to see if we have documents boosted by the QueryElevationComponent
+      if (boostedDocsCollector.hasBoosts()) {
         if (0 <= ord) {
           if (boostedDocsCollector.collectIfBoosted(ord, globalDoc)) return;
         } else {
@@ -1052,10 +1029,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         SolrIndexSearcher searcher,
         NullPolicy nullPolicy,
         IntIntHashMap boostDocsMap,
-        boolean collectElevatedDocsWhenCollapsing,
         String field,
         int initialSize) {
-      super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
+      super(searcher, nullPolicy, true, boostDocsMap);
 
       this.field = field;
 
@@ -1075,10 +1051,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       if (collapseValues.advanceExact(contextDoc)) {
         final int collapseValue = (int) collapseValues.longValue();
 
-        if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent
-          if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
-        }
+        if (boostedDocsCollector.collectIfBoosted(collapseValue, globalDoc)) return;
 
         float score = scorer.score();
         final int idx;
@@ -1098,10 +1071,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       } else { // Null Group...
 
-        if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent
-          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
-        }
+        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
 
         if (nullPolicy == NullPolicy.COLLAPSE) {
           float score = scorer.score();
@@ -1160,7 +1130,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public boolean needsScores4Collapsing;
     public IntIntHashMap boostDocsMap;
     public SolrIndexSearcher searcher;
-    public boolean collectElevatedDocsWhenCollapsing;
 
     /** Builds the appropriate OrdFieldValueCollector subclass based on the selection strategy. */
     public OrdFieldValueCollector build(
@@ -1209,12 +1178,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected IntFloatDynamicMap scores;
 
     protected OrdFieldValueCollector(OrdFieldCollectorBuilder ctx) throws IOException {
-      super(
-          ctx.searcher,
-          ctx.nullPolicy,
-          ctx.needsScores4Collapsing,
-          ctx.collectElevatedDocsWhenCollapsing,
-          ctx.boostDocsMap);
+      super(ctx.searcher, ctx.nullPolicy, ctx.needsScores4Collapsing, ctx.boostDocsMap);
 
       this.collapseValuesProducer = ctx.collapseValuesProducer;
 
@@ -1269,8 +1233,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         }
       }
 
-      if (collectElevatedDocsWhenCollapsing) {
-        // Check to see if we have documents boosted by the QueryElevationComponent
+      if (boostedDocsCollector.hasBoosts()) {
         if (-1 == ord) {
           if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         } else {
@@ -1741,7 +1704,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public boolean needsScores4Collapsing;
     public IntIntHashMap boostDocsMap;
     public IndexSearcher searcher;
-    public boolean collectElevatedDocsWhenCollapsing;
 
     public IntFieldValueCollector build(
         SortSpec sortSpec, FieldType fieldType, FunctionQuery funcQuery) throws IOException {
@@ -1782,12 +1744,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected IntFloatDynamicMap scores;
 
     protected IntFieldValueCollector(IntFieldCollectorBuilder ctx) throws IOException {
-      super(
-          ctx.searcher,
-          ctx.nullPolicy,
-          ctx.needsScores4Collapsing,
-          ctx.collectElevatedDocsWhenCollapsing,
-          ctx.boostDocsMap);
+      super(ctx.searcher, ctx.nullPolicy, ctx.needsScores4Collapsing, ctx.boostDocsMap);
 
       assert !GroupHeadSelectorType.SCORE.equals(ctx.groupHeadSelector.type);
 
@@ -1827,11 +1784,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         collapse(collapseKey, contextDoc, globalDoc);
 
       } else { // Null Group...
-
-        if (collectElevatedDocsWhenCollapsing) {
-          // Check to see if we have documents boosted by the QueryElevationComponent
-          if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
-        }
+        // Check to see if we have documents boosted by the QueryElevationComponent
+        if (boostedDocsCollector.collectInNullGroupIfBoosted(globalDoc)) return;
         if (NullPolicy.IGNORE != nullPolicy) {
           collapseNullGroup(contextDoc, globalDoc);
         }
@@ -2952,7 +2906,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
   }
 
-  static class MergeBoost {
+  protected static class MergeBoost {
 
     private int[] boostDocs;
     private int index = 0;
