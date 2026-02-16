@@ -280,9 +280,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected final GroupHeadSelector groupHeadSelector;
     protected final SortSpec sortSpec; // may be null, parsed at most once from groupHeadSelector
     public final String hint;
-    protected final boolean needsScores;
+    protected final boolean needsScores4Collapsing;
     protected final NullPolicy nullPolicy;
-    private final int size;
+    private final int initialSize;
     private Set<BytesRef> boosted; // ordered by "priority"
 
     public String getField() {
@@ -339,7 +339,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           + this.groupHeadSelector
           + (hint == null ? "" : ", hint=" + this.hint)
           + ", size="
-          + this.size
+          + this.initialSize
           + ")";
     }
 
@@ -392,7 +392,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               : null;
 
       this.hint = localParams.get("hint");
-      this.size = localParams.getInt("size", 100000); // Only used for collapsing on int fields.
+      this.initialSize =
+          localParams.getInt("size", 100_000); // Only used for collapsing on int fields.
 
       {
         final SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
@@ -400,21 +401,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
         // may be null in some esoteric corner usages
         final ResponseBuilder rb = info.getResponseBuilder();
-        final SortSpec topSort = null == rb ? null : rb.getSortSpec();
 
-        boolean needsScores4Collapsing = groupHeadSelector.needsScores(this.sortSpec);
-        this.needsScores =
-            needsScores4Collapsing
-                || (info.getRsp().getReturnFields().wantsScore()
-                    || (null != topSort && topSort.includesScore())
-                    || (this.boosted != null));
+        this.needsScores4Collapsing = groupHeadSelector.needsScores(this.sortSpec);
 
-        if (this.needsScores && null != rb) {
-          // regardless of why we need scores ensure the IndexSearcher will compute them
-          // for the "real" docs.  (ie: maybe we need them because we were
-          // asked to compute them for the collapsed docs, maybe we need them because in
-          // order to find the groupHead we need them computed for us.
-
+        if (this.needsScores4Collapsing && null != rb) {
+          // ensure the IndexSearcher will compute scores for the "real" docs
+          // when we need them to find the groupHead
           rb.setFieldFlags(rb.getFieldFlags() | SolrIndexSearcher.GET_SCORES);
         }
       }
@@ -517,10 +509,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             return new BlockOrdScoreCollector(collapseField, nullPolicy, boostDocs);
           }
           return new OrdScoreCollector(
+              searcher,
               docValuesProducer,
               nullPolicy,
               boostDocs,
-              searcher,
               collectElevatedDocsWhenCollapsing);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
@@ -529,12 +521,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
 
           return new IntScoreCollector(
-              nullPolicy,
-              size,
-              collapseField,
-              boostDocs,
               searcher,
-              collectElevatedDocsWhenCollapsing);
+              nullPolicy,
+              boostDocs,
+              collectElevatedDocsWhenCollapsing,
+              collapseField,
+              initialSize);
 
         } else {
           throw new SolrException(
@@ -553,18 +545,19 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                 collapseField,
                 nullPolicy,
                 boostDocs,
-                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
-                needsScores);
+                BlockOrdSortSpecCollector.getSort(
+                    groupHeadSelector, sortSpec, funcQuery, searcher));
           }
 
           var builder = new OrdFieldCollectorBuilder();
-          builder.groupHeadSelector = groupHeadSelector;
-          builder.collapseValuesProducer = docValuesProducer;
-          builder.nullPolicy = nullPolicy;
-          builder.needsScores = needsScores;
-          builder.boostDocsMap = boostDocs;
           builder.searcher = searcher;
+          builder.groupHeadSelector = groupHeadSelector;
+          builder.nullPolicy = nullPolicy;
+          builder.needsScores4Collapsing = needsScores4Collapsing;
+          builder.boostDocsMap = boostDocs;
           builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+          builder.collapseValuesProducer = docValuesProducer;
 
           return builder.build(sortSpec, minMaxFieldType, funcQuery);
 
@@ -578,19 +571,20 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                 collapseField,
                 nullPolicy,
                 boostDocs,
-                BlockOrdSortSpecCollector.getSort(groupHeadSelector, sortSpec, funcQuery, searcher),
-                needsScores);
+                BlockOrdSortSpecCollector.getSort(
+                    groupHeadSelector, sortSpec, funcQuery, searcher));
           }
 
           var builder = new IntFieldCollectorBuilder();
+          builder.searcher = searcher;
           builder.groupHeadSelector = groupHeadSelector;
           builder.nullPolicy = nullPolicy;
-          builder.collapseField = collapseField;
-          builder.size = size;
-          builder.needsScores = needsScores;
+          builder.needsScores4Collapsing = needsScores4Collapsing;
           builder.boostDocsMap = boostDocs;
-          builder.searcher = searcher;
           builder.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
+
+          builder.collapseField = collapseField;
+          builder.initialSize = initialSize;
 
           return builder.build(sortSpec, minMaxFieldType, funcQuery);
         } else {
@@ -770,7 +764,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected final List<LeafReaderContext> contexts;
     protected final int maxDoc;
     protected final NullPolicy nullPolicy;
-    protected final boolean needsScores;
+    protected final boolean needsScores4Collapsing;
+    protected boolean needsScores; // cached from scoreMode()
     protected final boolean collectElevatedDocsWhenCollapsing;
 
     // Results/accumulator
@@ -783,30 +778,39 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected AbstractCollapseCollector(
         IndexSearcher searcher,
         NullPolicy nullPolicy,
-        boolean needsScores,
+        boolean needsScores4Collapsing,
         boolean collectElevatedDocsWhenCollapsing,
         IntIntHashMap boostDocsMap) {
 
       this.contexts = searcher.getTopReaderContext().leaves();
       this.maxDoc = searcher.getIndexReader().maxDoc();
       this.nullPolicy = nullPolicy;
-      this.needsScores = needsScores;
+      this.needsScores4Collapsing = needsScores4Collapsing;
       this.collectElevatedDocsWhenCollapsing = collectElevatedDocsWhenCollapsing;
 
       this.collapsedSet = new FixedBitSet(maxDoc);
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
+    }
+
+    @Override
+    public ScoreMode scoreMode() {
+      return needsScores4Collapsing ? ScoreMode.COMPLETE : super.scoreMode();
+    }
+
+    /** Initialize score-related data structures. Called once before collecting begins. */
+    protected void initializeCollection() {
+      this.needsScores = scoreMode().needsScores();
       if (needsScores && nullPolicy == NullPolicy.EXPAND) {
         this.nullScores = new FloatArrayList();
       }
     }
 
     @Override
-    public ScoreMode scoreMode() {
-      return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
-    }
-
-    @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
+      if (this.context == null) {
+        initializeCollection();
+      }
+
       // Do NOT set leafDelegate (calling super() would do this).
       // That's handled in complete() for these collectors.
       assert this.contexts.get(context.ord) == context;
@@ -886,7 +890,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
       return 0F;
     }
-
   }
 
   /**
@@ -909,10 +912,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final IntFloatDynamicMap scores;
 
     public OrdScoreCollector(
+        IndexSearcher searcher,
         DocValuesProducer collapseValuesProducer,
         NullPolicy nullPolicy,
         IntIntHashMap boostDocsMap,
-        IndexSearcher searcher,
         boolean collectElevatedDocsWhenCollapsing)
         throws IOException {
       super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
@@ -1062,17 +1065,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private final IntLongHashMap cmap;
 
     public IntScoreCollector(
-        NullPolicy nullPolicy,
-        int size,
-        String field,
-        IntIntHashMap boostDocsMap,
         SolrIndexSearcher searcher,
-        boolean collectElevatedDocsWhenCollapsing) {
+        NullPolicy nullPolicy,
+        IntIntHashMap boostDocsMap,
+        boolean collectElevatedDocsWhenCollapsing,
+        String field,
+        int initialSize) {
       super(searcher, nullPolicy, true, collectElevatedDocsWhenCollapsing, boostDocsMap);
 
       this.field = field;
 
-      this.cmap = new IntLongHashMap(size);
+      this.cmap = new IntLongHashMap(initialSize);
       this.nullScore = -Float.MAX_VALUE;
     }
 
@@ -1170,7 +1173,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public DocValuesProducer collapseValuesProducer;
     public NullPolicy nullPolicy;
     public int valueCount;
-    public boolean needsScores;
+    public boolean needsScores4Collapsing;
     public IntIntHashMap boostDocsMap;
     public SolrIndexSearcher searcher;
     public boolean collectElevatedDocsWhenCollapsing;
@@ -1216,6 +1219,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
    */
   protected abstract static class OrdFieldValueCollector extends AbstractCollapseCollector {
     // Source data
+    protected final int valueCount;
     protected final DocValuesProducer collapseValuesProducer;
     protected SortedDocValues collapseValues;
     protected OrdinalMap ordinalMap;
@@ -1231,10 +1235,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       super(
           ctx.searcher,
           ctx.nullPolicy,
-          ctx.needsScores,
+          ctx.needsScores4Collapsing,
           ctx.collectElevatedDocsWhenCollapsing,
           ctx.boostDocsMap);
 
+      this.valueCount = ctx.valueCount;
       this.collapseValuesProducer = ctx.collapseValuesProducer;
 
       this.collapseValues = ctx.collapseValuesProducer.getSorted(null);
@@ -1244,10 +1249,13 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       }
 
       this.ords = new IntIntDynamicMap(ctx.valueCount, -1);
+    }
+
+    @Override
+    protected void initializeCollection() {
+      super.initializeCollection();
       if (this.needsScores) {
-        this.scores = new IntFloatDynamicMap(ctx.valueCount, 0.0f);
-      } else {
-        this.scores = null;
+        this.scores = new IntFloatDynamicMap(valueCount, 0.0f);
       }
     }
 
@@ -1749,8 +1757,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     public GroupHeadSelector groupHeadSelector;
     public NullPolicy nullPolicy;
     public String collapseField;
-    public int size;
-    public boolean needsScores;
+    public int initialSize;
+    public boolean needsScores4Collapsing;
     public IntIntHashMap boostDocsMap;
     public IndexSearcher searcher;
     public boolean collectElevatedDocsWhenCollapsing;
@@ -1783,6 +1791,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   protected abstract static class IntFieldValueCollector extends AbstractCollapseCollector {
     // Configuration
     protected final String collapseField;
+    protected final int initialSize; // data structure size hint
 
     // Source data
     protected NumericDocValues collapseValues;
@@ -1796,20 +1805,24 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       super(
           ctx.searcher,
           ctx.nullPolicy,
-          ctx.needsScores,
+          ctx.needsScores4Collapsing,
           ctx.collectElevatedDocsWhenCollapsing,
           ctx.boostDocsMap);
 
       assert !GroupHeadSelectorType.SCORE.equals(ctx.groupHeadSelector.type);
 
       this.collapseField = ctx.collapseField;
+      this.initialSize = ctx.initialSize;
 
-      this.cmap = new IntIntHashMap(ctx.size);
-      this.docs = new IntIntDynamicMap(ctx.size, 0);
-      if (this.needsScores) {
-        this.scores = new IntFloatDynamicMap(ctx.size, 0.0f);
-      } else {
-        this.scores = null;
+      this.cmap = new IntIntHashMap(ctx.initialSize);
+      this.docs = new IntIntDynamicMap(ctx.initialSize, 0);
+    }
+
+    @Override
+    protected void initializeCollection() {
+      super.initializeCollection();
+      if (needsScores) {
+        this.scores = new IntFloatDynamicMap(initialSize, 0.0f);
       }
     }
 
@@ -1909,7 +1922,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.nullCompVal = Integer.MAX_VALUE;
       }
 
-      this.testValues = new IntIntDynamicMap(ctx.size, 0);
+      this.testValues = new IntIntDynamicMap(ctx.initialSize, 0);
     }
 
     @Override
@@ -1998,7 +2011,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         this.nullCompVal = Float.MAX_VALUE;
       }
 
-      this.testValues = new IntFloatDynamicMap(ctx.size, 0.0f);
+      this.testValues = new IntFloatDynamicMap(ctx.initialSize, 0.0f);
     }
 
     @Override
@@ -2094,7 +2107,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
       collapseScore.setupIfNeeded(ctx.groupHeadSelector, rcontext);
 
-      this.testValues = new IntFloatDynamicMap(ctx.size, 0.0f);
+      this.testValues = new IntFloatDynamicMap(ctx.initialSize, 0.0f);
     }
 
     @Override
@@ -2192,7 +2205,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       assert GroupHeadSelectorType.SORT.equals(ctx.groupHeadSelector.type);
 
       Sort sort = rewriteSort(sortSpec, ctx.searcher);
-      this.compareState = new SortFieldsCompare(sort.getSort(), ctx.size);
+      this.compareState = new SortFieldsCompare(sort.getSort(), ctx.initialSize);
     }
 
     @Override
@@ -2292,7 +2305,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     // Configuration
     protected final String collapseField;
-    protected final boolean needsScores;
+    protected final boolean needsScores4Collapsing;
     protected final boolean expandNulls;
 
     // Results/accumulator
@@ -2303,10 +2316,10 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final String collapseField,
         final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
-        final boolean needsScores) {
+        final boolean needsScores4Collapsing) {
 
       this.collapseField = collapseField;
-      this.needsScores = needsScores;
+      this.needsScores4Collapsing = needsScores4Collapsing;
 
       assert nullPolicy == NullPolicy.IGNORE || nullPolicy == NullPolicy.EXPAND;
       this.expandNulls = (NullPolicy.EXPAND == nullPolicy);
@@ -2317,7 +2330,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     public ScoreMode scoreMode() {
-      return needsScores ? ScoreMode.COMPLETE : super.scoreMode();
+      return needsScores4Collapsing ? ScoreMode.COMPLETE : super.scoreMode();
     }
 
     /** If we have a candidate match, delegate the collection of that match. */
@@ -2635,9 +2648,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final String collapseField,
         final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
-        final Sort sort,
-        final boolean needsScores) {
-      super(collapseField, nullPolicy, boostDocsMap, needsScores);
+        final Sort sort) {
+      super(collapseField, nullPolicy, boostDocsMap, sort.needsScores());
       this.sortsCompare = new BlockBasedSortFieldsCompare(sort.getSort());
     }
 
@@ -2650,7 +2662,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     private void setCurrentGroupBestMatch(final int contextDocId, final boolean isBoosted)
         throws IOException {
       currentGroupState.setBestDocForCurrentGroup(contextDocId, isBoosted);
-      if (needsScores) {
+      if (scoreMode().needsScores()) {
         currentGroupState.score = scorer.score();
       }
     }
@@ -2756,10 +2768,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final String collapseField,
         final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
-        final Sort sort,
-        final boolean needsScores)
+        final Sort sort)
         throws IOException {
-      super(collapseField, nullPolicy, boostDocsMap, sort, needsScores);
+      super(collapseField, nullPolicy, boostDocsMap, sort);
     }
 
     @Override
@@ -2791,10 +2802,9 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         final String collapseField,
         final NullPolicy nullPolicy,
         final IntIntHashMap boostDocsMap,
-        final Sort sort,
-        final boolean needsScores)
+        final Sort sort)
         throws IOException {
-      super(collapseField, nullPolicy, boostDocsMap, sort, needsScores);
+      super(collapseField, nullPolicy, boostDocsMap, sort);
     }
 
     @Override
