@@ -741,7 +741,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected boolean needsScores; // cached from scoreMode()
 
     // Results/accumulator
-    protected FixedBitSet collapsedSet;
+    protected final FixedBitSet collapsedSet; // todo use DocIdSetBuilder instead
     protected final BoostedDocsCollector boostedDocsCollector;
     protected FloatArrayList nullScores;
     protected float nullScore;
@@ -758,6 +758,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.nullPolicy = nullPolicy;
       this.needsScores4Collapsing = needsScores4Collapsing;
 
+      this.collapsedSet = new FixedBitSet(maxDoc);
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
     }
 
@@ -769,7 +770,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     /** Initialize data structures for collection. Called once before collecting begins. */
     protected void initializeCollection() {
       this.needsScores = scoreMode().needsScores();
-      this.collapsedSet = new FixedBitSet(maxDoc);
       if (needsScores && nullPolicy == NullPolicy.EXPAND) {
         this.nullScores = new FloatArrayList();
       }
@@ -1798,7 +1798,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           collapsedSet, cmap::remove, () -> nullDoc = -1);
 
       if (nullDoc > -1) {
-        this.collapsedSet.set(nullDoc);
+        collapsedSet.set(nullDoc);
       }
 
       for (IntIntCursor cursor : cmap) {
