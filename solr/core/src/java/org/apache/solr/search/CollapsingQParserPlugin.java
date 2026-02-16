@@ -65,9 +65,8 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.GroupParams;
@@ -741,7 +740,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected boolean needsScores; // cached from scoreMode()
 
     // Results/accumulator
-    protected final FixedBitSet collapsedSet; // todo use DocIdSetBuilder instead
+    protected final DocIdSetBuilder collapsedSet;
     protected final BoostedDocsCollector boostedDocsCollector;
     protected FloatArrayList nullScores;
     protected float nullScore;
@@ -758,7 +757,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       this.nullPolicy = nullPolicy;
       this.needsScores4Collapsing = needsScores4Collapsing;
 
-      this.collapsedSet = new FixedBitSet(maxDoc);
+      this.collapsedSet = new DocIdSetBuilder(Math.max(1, maxDoc));
       this.boostedDocsCollector = BoostedDocsCollector.build(boostDocsMap);
     }
 
@@ -793,7 +792,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     @Override
     public final void complete() throws IOException {
 
-      DocIdSetIterator collapsedDocs = getCollapsedDisi();
+      DocIdSetIterator collapsedDocs = getCollapsedDocs();
 
       int nextDocBase = 0;
       int globalDoc;
@@ -811,7 +810,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           nextDocBase = ctxIdx + 1 < contexts.size() ? contexts.get(ctxIdx + 1).docBase : maxDoc;
           leafDelegate = delegate.getLeafCollector(context);
           if (delegate.scoreMode().needsScores()) {
-            leafDelegate.setScorer(getCollapsedScores(collapsedDocs, context));
+            scorer = getCollapsedScores(collapsedDocs, context);
+            leafDelegate.setScorer(scorer);
           }
         }
 
@@ -826,10 +826,41 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     /**
-     * Return a DISI of global doc IDs that the collector has matched. This is the first step of
-     * {@link #complete()}.
+     * Produce the final list of global docs that we'll pass on through to delegated/chained
+     * collectors. This is the first step of {@link #complete()}.
      */
-    protected abstract DocIdSetIterator getCollapsedDisi() throws IOException;
+    protected DocIdSetIterator getCollapsedDocs() throws IOException {
+      // all subclasses have this common logic to do first regarding boosted/elevated & nullDoc:
+
+      boostedDocsCollector.addBoostedDocsTo(collapsedSet);
+
+      if (boostedDocsCollector.isBoostedNullGroup()) {
+        // If we're using IGNORE then no (matching) null docs were collected (by caller)
+        // If we're using EXPAND then all (matching) null docs were already collected (by us)
+        //   ...and that's *good* because each is treated like its own group, our boosts don't
+        // matter
+        // We only have to worry about removing null docs when using COLLAPSE, in which case any
+        // boosted null doc means we clear the group head of the null group.
+        nullDoc = -1;
+      }
+
+      if (nullDoc > -1) {
+        collapsedSet.grow(1).add(nullDoc);
+      }
+
+      finishCollapsedSet();
+
+      DocIdSetIterator iterator = collapsedSet.build().iterator();
+      return iterator != null ? iterator : DocIdSetIterator.empty();
+    }
+
+    /**
+     * Finishes adding docs to {@link #collapsedSet} so that it's ready. First step is usually to
+     * call {@link BoostedDocsCollector#visitBoostedGroupKeys(IntProcedure)} to ensure we don't add
+     * docs for these group keys as they have already been added by the caller, which are query
+     * elevated / boosted docs. Called by {@link #getCollapsedDocs()}
+     */
+    protected abstract void finishCollapsedSet();
 
     /**
      * Return a {@link Scorable} that provides the score for the current doc in the given {@code
@@ -957,23 +988,17 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           nullDoc = globalDoc;
         }
       } else if (nullPolicy == NullPolicy.EXPAND) {
-        collapsedSet.set(globalDoc);
+        collapsedSet.grow(1).add(globalDoc);
         nullScores.add(scorer.score());
       }
     }
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() {
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet, ords::remove, () -> nullDoc = -1);
+    protected void finishCollapsedSet() {
+      boostedDocsCollector.visitBoostedGroupKeys(ords::remove);
 
-      if (nullDoc > -1) {
-        collapsedSet.set(nullDoc);
-      }
-
-      ords.forEachValue(collapsedSet::set);
-
-      return new BitSetIterator(collapsedSet, 0);
+      DocIdSetBuilder.BulkAdder adder = collapsedSet.grow(ords.size());
+      ords.forEachValue(adder::add);
     }
 
     private boolean collapsedScoresInitialized;
@@ -1080,27 +1105,21 @@ public class CollapsingQParserPlugin extends QParserPlugin {
             this.nullDoc = globalDoc;
           }
         } else if (nullPolicy == NullPolicy.EXPAND) {
-          collapsedSet.set(globalDoc);
+          collapsedSet.grow(1).add(globalDoc);
           nullScores.add(scorer.score());
         }
       }
     }
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() {
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet, cmap::remove, () -> nullDoc = -1);
+    protected void finishCollapsedSet() {
+      boostedDocsCollector.visitBoostedGroupKeys(cmap::remove);
 
-      if (nullDoc > -1) {
-        collapsedSet.set(nullDoc);
-      }
-
+      DocIdSetBuilder.BulkAdder adder = collapsedSet.grow(cmap.size());
       for (IntLongCursor cursor : cmap) {
         // the low bits of the long is the global doc ID
-        collapsedSet.set((int) cursor.value);
+        adder.add((int) cursor.value);
       }
-
-      return new BitSetIterator(collapsedSet, 0);
     }
 
     @Override
@@ -1251,17 +1270,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     protected abstract void collapse(int ord, int contextDoc, int globalDoc) throws IOException;
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() {
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet, ords::remove, () -> nullDoc = -1);
+    protected void finishCollapsedSet() {
+      boostedDocsCollector.visitBoostedGroupKeys(ords::remove);
 
-      if (nullDoc > -1) {
-        collapsedSet.set(nullDoc);
-      }
-
-      ords.forEachValue(collapsedSet::set);
-
-      return new BitSetIterator(collapsedSet, 0);
+      DocIdSetBuilder.BulkAdder adder = collapsedSet.grow(ords.size());
+      ords.forEachValue(adder::add);
     }
 
     private boolean collapsedScoresInitialized;
@@ -1365,7 +1378,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           nullScores.add(scorer.score());
         }
@@ -1435,7 +1448,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           nullScores.add(scorer.score());
         }
@@ -1503,7 +1516,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           nullScores.add(scorer.score());
         }
@@ -1586,7 +1599,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
             score = scorer.score();
@@ -1684,7 +1697,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
             this.score = scorer.score();
@@ -1793,20 +1806,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected DocIdSetIterator getCollapsedDisi() {
-      boostedDocsCollector.purgeGroupsThatHaveBoostedDocs(
-          collapsedSet, cmap::remove, () -> nullDoc = -1);
+    protected void finishCollapsedSet() {
+      boostedDocsCollector.visitBoostedGroupKeys(cmap::remove);
 
-      if (nullDoc > -1) {
-        collapsedSet.set(nullDoc);
-      }
-
+      DocIdSetBuilder.BulkAdder adder = collapsedSet.grow(cmap.size());
       for (IntIntCursor cursor : cmap) {
         int pointer = cursor.value;
-        collapsedSet.set(docs.get(pointer));
+        adder.add(docs.get(pointer));
       }
-
-      return new BitSetIterator(collapsedSet, 0); // cost is not useful here
     }
 
     @Override
@@ -1911,7 +1918,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           nullScores.add(scorer.score());
         }
@@ -1999,7 +2006,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           nullScores.add(scorer.score());
         }
@@ -2107,7 +2114,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
             score = scorer.score();
@@ -2214,7 +2221,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
           }
         }
       } else if (this.nullPolicy == NullPolicy.EXPAND) {
-        this.collapsedSet.set(globalDoc);
+        this.collapsedSet.grow(1).add(globalDoc);
         if (needsScores) {
           if (!needsScores4Collapsing) {
             this.score = scorer.score();
@@ -2819,12 +2826,6 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         public boolean collectInNullGroupIfBoosted(int globalDoc) {
           return false;
         }
-
-        @Override
-        public void purgeGroupsThatHaveBoostedDocs(
-            final FixedBitSet collapsedSet,
-            final IntProcedure removeGroupKey,
-            final Runnable resetNullGroupHead) {}
       };
     }
 
@@ -2876,33 +2877,25 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return false;
     }
 
+    // REMAINING METHODS ARE USED IN COMPLETE() TO CONSUME
+
+    /** Add all collected boosted docs to the collapsed set. */
+    public void addBoostedDocsTo(DocIdSetBuilder collapsedSet) {
+      DocIdSetBuilder.BulkAdder adder = collapsedSet.grow(boostedDocs.size());
+      boostedDocs.forEach((IntProcedure) adder::add);
+    }
+
+    /** Visit group keys that have boosted docs */
+    public void visitBoostedGroupKeys(IntProcedure procedure) {
+      boostedKeys.forEach(procedure);
+    }
+
     /**
-     * Kludgy API neccessary to deal with diff collectors/strategies using diff data structs for
-     * tracking collapse keys...
+     * Whether a boosted doc was collected in the null group. If true, the null group head should be
+     * reset so the boosted doc takes precedence.
      */
-    public void purgeGroupsThatHaveBoostedDocs(
-        final FixedBitSet collapsedSet,
-        final IntProcedure removeGroupKey,
-        final Runnable resetNullGroupHead) {
-      // Add the (collected) boosted docs to the collapsedSet
-      boostedDocs.forEach(
-          new IntProcedure() {
-            @Override
-            public void apply(int globalDoc) {
-              collapsedSet.set(globalDoc);
-            }
-          });
-      // Remove any group heads that are in the same groups as (collected) boosted documents.
-      boostedKeys.forEach(removeGroupKey);
-      if (boostedNullGroup) {
-        // If we're using IGNORE then no (matching) null docs were collected (by caller)
-        // If we're using EXPAND then all (matching) null docs were already collected (by us)
-        //   ...and that's *good* because each is treated like it's own group, our boosts don't
-        // matter
-        // We only have to worry about removing null docs when using COLLAPSE, in which case any
-        // boosted null doc means we clear the group head of the null group..
-        resetNullGroupHead.run();
-      }
+    public boolean isBoostedNullGroup() {
+      return boostedNullGroup;
     }
   }
 
