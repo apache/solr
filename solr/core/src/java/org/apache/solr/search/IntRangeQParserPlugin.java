@@ -36,8 +36,8 @@ import org.apache.solr.schema.SchemaField;
  *
  * <ul>
  *   <li><b>field</b> (required): The IntRangeField to query
- *   <li><b>criteria</b> (optional, default=intersects): Query relationship criteria. One of:
- *       intersects, within, contains, crosses
+ *   <li><b>criteria</b> (required): Query relationship criteria. One of: intersects, within,
+ *       contains, crosses
  * </ul>
  *
  * <h3>Query Types</h3>
@@ -54,20 +54,20 @@ import org.apache.solr.schema.SchemaField;
  *
  * <pre>
  * // 1D range queries
- * {!numericRange field=price_range}[100 TO 200]                           // intersects (default)
- * {!numericRange criteria="within" field=price_range}[0 TO 300]           // within
- * {!numericRange criteria="contains" field=price_range}[150 TO 175]       // contains
- * {!numericRange criteria="crosses" field=price_range}[150 TO 250]        // crosses
+ * {!numericRange criteria="intersects" field=price_range}[100 TO 200]
+ * {!numericRange criteria="within" field=price_range}[0 TO 300]
+ * {!numericRange criteria="contains" field=price_range}[150 TO 175]
+ * {!numericRange criteria="crosses" field=price_range}[150 TO 250]
  *
  * // 2D range queries (bounding boxes)
- * {!numericRange field=bbox}[0,0 TO 10,10]                                // intersects
- * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]          // within
+ * {!numericRange criteria="intersects" field=bbox}[0,0 TO 10,10]
+ * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]
  *
  * // 3D range queries (bounding cubes)
- * {!numericRange field=cube}[0,0,0 TO 10,10,10]                           // intersects
+ * {!numericRange criteria="intersects" field=cube}[0,0,0 TO 10,10,10]
  *
  * // 4D range queries (tesseracts)
- * {!numericRange field=tesseract}[0,0,0,0 TO 10,10,10,10]                 // intersects
+ * {!numericRange criteria="intersects" field=tesseract}[0,0,0,0 TO 10,10,10,10]
  * </pre>
  *
  * @see IntRangeField
@@ -84,9 +84,6 @@ public class IntRangeQParserPlugin extends QParserPlugin {
   /** Parameter name for the query criteria (intersects, within, contains, crosses) */
   public static final String CRITERIA_PARAM = "criteria";
 
-  /** Default query criteria if not specified */
-  public static final String DEFAULT_CRITERIA = "intersects";
-
   @Override
   public QParser createParser(
       String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
@@ -100,8 +97,13 @@ public class IntRangeQParserPlugin extends QParserPlugin {
               ErrorCode.BAD_REQUEST, "Missing required parameter: " + FIELD_PARAM);
         }
 
-        // Get query criteria parameter (default to intersects)
-        String queryCriteria = localParams.get(CRITERIA_PARAM, DEFAULT_CRITERIA).toLowerCase();
+        // Get required query criteria parameter
+        String queryCriteria = localParams.get(CRITERIA_PARAM);
+        if (queryCriteria == null || queryCriteria.trim().isEmpty()) {
+          throw new SolrException(
+              ErrorCode.BAD_REQUEST, "Missing required parameter: " + CRITERIA_PARAM);
+        }
+        queryCriteria = queryCriteria.toLowerCase();
 
         // Get the range value from the query string or 'v' param
         String rangeValue = localParams.get(QueryParsing.V, qstr);

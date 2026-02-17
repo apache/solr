@@ -68,7 +68,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * types:
  *
  * <ul>
- *   <li>Intersects (default): {@code {!numericRange field=price_range}[100 TO 200]}
+ *   <li>Intersects: {@code {!numericRange criteria="intersects" field=price_range}[100 TO 200]}
  *   <li>Within: {@code {!numericRange criteria="within" field=price_range}[0 TO 300]}
  *   <li>Contains: {@code {!numericRange criteria="contains" field=price_range}[150 TO 175]}
  *   <li>Crosses: {@code {!numericRange criteria="crosses" field=price_range}[150 TO 250]}
@@ -321,9 +321,7 @@ public class IntRangeField extends PrimitiveFieldType {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "Standard range query syntax only supports 1D ranges. "
-              + "Use {!numericRange field="
-              + field.getName()
-              + "} for multi-dimensional queries.");
+              + "Use {!numericRange ...} for multi-dimensional queries.");
     }
   }
 
