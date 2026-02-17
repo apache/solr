@@ -82,7 +82,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * @see IntRange
  * @see org.apache.solr.search.IntRangeQParserPlugin
  */
-public class IntRangeField extends PrimitiveFieldType implements IntValueFieldType {
+public class IntRangeField extends PrimitiveFieldType {
 
   private static final Pattern RANGE_PATTERN =
       Pattern.compile("\\[\\s*([^\\]]+?)\\s+TO\\s+([^\\]]+?)\\s*\\]");
