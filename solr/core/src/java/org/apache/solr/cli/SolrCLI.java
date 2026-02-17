@@ -313,9 +313,36 @@ public class SolrCLI implements CLIO {
 
   @SuppressForbidden(reason = "System.out for formatting")
   public static HelpFormatter getFormatter() {
-    TextHelpAppendable helpAppendable = new TextHelpAppendable(System.out);
+    TextHelpAppendable helpAppendable =
+        new TextHelpAppendable(System.out) {
+          @Override
+          public void appendTable(org.apache.commons.cli.help.TableDefinition table)
+              throws IOException {
+            if (table == null) {
+              return;
+            }
+            // Create a new TableDefinition with empty headers to suppress the header row
+            java.util.List<String> emptyHeaders =
+                java.util.Collections.nCopies(table.headers().size(), "");
+            org.apache.commons.cli.help.TableDefinition noHeaderTable =
+                org.apache.commons.cli.help.TableDefinition.from(
+                    table.caption(), table.columnTextStyles(), emptyHeaders, table.rows());
+            super.appendTable(noHeaderTable);
+          }
+
+          @Override
+          public void appendParagraph(CharSequence paragraph) throws IOException {
+            String text = paragraph.toString().stripTrailing();
+            if (!text.isEmpty()) {
+              super.append(text);
+              super.append("\n");
+            }
+          }
+        };
     helpAppendable.setMaxWidth(120);
-    return HelpFormatter.builder().setHelpAppendable(helpAppendable).get();
+    helpAppendable.setIndent(0);
+    helpAppendable.setLeftPad(0);
+    return HelpFormatter.builder().setHelpAppendable(helpAppendable).setShowSince(false).get();
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */
