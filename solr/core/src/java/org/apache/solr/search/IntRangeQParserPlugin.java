@@ -75,6 +75,60 @@ import org.apache.solr.schema.SchemaField;
  */
 public class IntRangeQParserPlugin extends QParserPlugin {
 
+  /** Query relationship criteria for range queries. */
+  public enum QueryCriteria {
+    /** Matches ranges that overlap with the query range (most permissive). */
+    INTERSECTS("intersects"),
+
+    /** Matches ranges completely contained by the query range. */
+    WITHIN("within"),
+
+    /** Matches ranges that completely contain the query range. */
+    CONTAINS("contains"),
+
+    /**
+     * Matches ranges that cross the query range boundaries (not disjoint, not wholly contained).
+     */
+    CROSSES("crosses");
+
+    private final String name;
+
+    QueryCriteria(String name) {
+      this.name = name;
+    }
+
+    /**
+     * Parse a criteria string into a QueryCriteria enum value.
+     *
+     * @param criteriaStr the criteria string (case-insensitive)
+     * @return the corresponding QueryCriteria
+     * @throws SolrException if the criteria string is not recognized
+     */
+    public static QueryCriteria fromString(String criteriaStr) {
+      if (criteriaStr == null || criteriaStr.trim().isEmpty()) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Query criteria cannot be null or empty");
+      }
+
+      String normalized = criteriaStr.trim().toLowerCase();
+      for (QueryCriteria criteria : values()) {
+        if (criteria.name.equals(normalized)) {
+          return criteria;
+        }
+      }
+
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "Unknown query criteria: '"
+              + criteriaStr
+              + "'. Valid criteria are: intersects, within, contains, crosses");
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+  }
+
   /** Parser name used in local params syntax: {@code {!numericRange ...}} */
   public static final String NAME = "numericRange";
 
@@ -97,13 +151,13 @@ public class IntRangeQParserPlugin extends QParserPlugin {
               ErrorCode.BAD_REQUEST, "Missing required parameter: " + FIELD_PARAM);
         }
 
-        // Get required query criteria parameter
-        String queryCriteria = localParams.get(CRITERIA_PARAM);
-        if (queryCriteria == null || queryCriteria.trim().isEmpty()) {
+        // Get required query criteria parameter and parse to enum
+        String criteriaStr = localParams.get(CRITERIA_PARAM);
+        if (criteriaStr == null || criteriaStr.trim().isEmpty()) {
           throw new SolrException(
               ErrorCode.BAD_REQUEST, "Missing required parameter: " + CRITERIA_PARAM);
         }
-        queryCriteria = queryCriteria.toLowerCase();
+        QueryCriteria criteria = QueryCriteria.fromString(criteriaStr);
 
         // Get the range value from the query string or 'v' param
         String rangeValue = localParams.get(QueryParsing.V, qstr);
@@ -139,7 +193,7 @@ public class IntRangeQParserPlugin extends QParserPlugin {
         }
 
         // Create appropriate query based on criteria
-        return createRangeQuery(fieldName, range.mins, range.maxs, queryCriteria);
+        return createRangeQuery(fieldName, range.mins, range.maxs, criteria);
       }
 
       /**
@@ -148,31 +202,26 @@ public class IntRangeQParserPlugin extends QParserPlugin {
        * @param fieldName the field to query
        * @param mins minimum values for each dimension
        * @param maxs maximum values for each dimension
-       * @param queryCriteria the query relationship criteria
+       * @param criteria the query relationship criteria
        * @return the created Lucene Query
-       * @throws SolrException if query criteria is invalid
        */
-      private Query createRangeQuery(String fieldName, int[] mins, int[] maxs, String queryCriteria)
-          throws SolrException {
-        switch (queryCriteria) {
-          case "intersects":
+      private Query createRangeQuery(
+          String fieldName, int[] mins, int[] maxs, QueryCriteria criteria) {
+        switch (criteria) {
+          case INTERSECTS:
             return IntRange.newIntersectsQuery(fieldName, mins, maxs);
 
-          case "within":
+          case WITHIN:
             return IntRange.newWithinQuery(fieldName, mins, maxs);
 
-          case "contains":
+          case CONTAINS:
             return IntRange.newContainsQuery(fieldName, mins, maxs);
 
-          case "crosses":
+          case CROSSES:
             return IntRange.newCrossesQuery(fieldName, mins, maxs);
 
           default:
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST,
-                "Unknown query criteria: '"
-                    + queryCriteria
-                    + "'. Valid criteria are: intersects, within, contains, crosses");
+            throw new AssertionError("Unhandled QueryCriteria: " + criteria);
         }
       }
     };
