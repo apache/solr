@@ -57,20 +57,8 @@ configure(allprojects
 
     // Align packaging configurations with tested runtimeClasspath versions
     // This ensures the distribution contains the same library versions that were tested
-    configurations.all { conf ->
-      if (conf.name in ['runtimeLibs', 'solrPlatformLibs']) {
-        conf.incoming.beforeResolve {
-          if (configurations.findByName('runtimeClasspath')?.state == Configuration.State.RESOLVED ||
-              configurations.findByName('runtimeClasspath')?.canBeResolved) {
-
-            configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-              def notation = "${artifact.moduleVersion.id.group}:${artifact.moduleVersion.id.name}:${artifact.moduleVersion.id.version}"
-              conf.resolutionStrategy.force(notation)
-            }
-          }
-        }
-      }
-    }
+    alignWithRuntimeClasspath(configurations.runtimeLibs)
+    alignWithRuntimeClasspath(configurations.solrPlatformLibs)
 
     dependencies {
       solrPlatformLibs project(":solr:core")

@@ -89,21 +89,12 @@ subprojects {
         extendsFrom compileClasspath
         extendsFrom testRuntimeClasspath
         extendsFrom testCompileClasspath
-
-        // Align jarValidation with tested runtimeClasspath versions
-        // This ensures validation uses the same versions that were tested
-        incoming.beforeResolve {
-          if (configurations.runtimeClasspath.state == Configuration.State.RESOLVED ||
-              configurations.runtimeClasspath.canBeResolved) {
-
-            configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-              def notation = "${artifact.moduleVersion.id.group}:${artifact.moduleVersion.id.name}:${artifact.moduleVersion.id.version}"
-              resolutionStrategy.force(notation)
-            }
-          }
-        }
       }
     }
+
+    // Align jarValidation with tested runtimeClasspath versions
+    // This ensures validation uses the same versions that were tested
+    alignWithRuntimeClasspath(configurations.jarValidation)
   }
 
   // Collects dependency JAR information for a project and saves it in
