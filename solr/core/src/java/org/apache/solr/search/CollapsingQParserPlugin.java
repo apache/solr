@@ -205,6 +205,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     MAX,
     SORT,
     SCORE,
+    /** For use outside the Solr codebase */
     CUSTOM;
     public static final EnumSet<GroupHeadSelectorType> MIN_MAX = EnumSet.of(MIN, MAX);
   }
@@ -226,6 +227,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     /** returns a new GroupHeadSelector based on the specified local params */
     public static GroupHeadSelector build(final SolrParams localParams) {
+      // note: subclasses using CUSTOM should do their own build logic
       final String sortString =
           StrUtils.isBlank(localParams.get(SORT)) ? null : localParams.get(SORT);
       final String max = StrUtils.isBlank(localParams.get("max")) ? null : localParams.get("max");
@@ -501,16 +503,14 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                     groupHeadSelector, sortSpec, funcQuery, searcher));
           }
 
-          var builder = new OrdFieldCollectorBuilder();
-          builder.searcher = searcher;
-          builder.groupHeadSelector = groupHeadSelector;
-          builder.nullPolicy = nullPolicy;
-          builder.needsScores4Collapsing = needsScores4Collapsing;
-          builder.boostDocsMap = boostDocs;
-
-          builder.collapseValuesProducer = docValuesProducer;
-
-          return builder.build(sortSpec, minMaxFieldType, funcQuery);
+          return new OrdFieldCollectorBuilder(
+                  groupHeadSelector,
+                  docValuesProducer,
+                  nullPolicy,
+                  needsScores4Collapsing,
+                  boostDocs,
+                  searcher)
+              .build(sortSpec, minMaxFieldType, funcQuery);
 
         } else if (isNumericCollapsible(collapseFieldType)) {
 
@@ -526,17 +526,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
                     groupHeadSelector, sortSpec, funcQuery, searcher));
           }
 
-          var builder = new IntFieldCollectorBuilder();
-          builder.searcher = searcher;
-          builder.groupHeadSelector = groupHeadSelector;
-          builder.nullPolicy = nullPolicy;
-          builder.needsScores4Collapsing = needsScores4Collapsing;
-          builder.boostDocsMap = boostDocs;
-
-          builder.collapseField = collapseField;
-          builder.initialSize = initialSize;
-
-          return builder.build(sortSpec, minMaxFieldType, funcQuery);
+          return new IntFieldCollectorBuilder(
+                  groupHeadSelector,
+                  nullPolicy,
+                  collapseField,
+                  initialSize,
+                  needsScores4Collapsing,
+                  boostDocs,
+                  searcher)
+              .build(sortSpec, minMaxFieldType, funcQuery);
         } else {
           throw new SolrException(
               SolrException.ErrorCode.BAD_REQUEST,
@@ -766,9 +764,12 @@ public class CollapsingQParserPlugin extends QParserPlugin {
       return needsScores4Collapsing ? ScoreMode.COMPLETE : super.scoreMode();
     }
 
-    /** Initialize data structures for collection. Called once before collecting begins. */
-    protected void initializeCollection() {
-      this.needsScores = scoreMode().needsScores();
+    /**
+     * Initialize data structures for collection. Called once before collecting begins. This is
+     * useful for initialization dependent on {@link #needsScores}, which isn't known in the
+     * constructor.
+     */
+    protected void initializeCollection(boolean needsScores) {
       if (needsScores && nullPolicy == NullPolicy.EXPAND) {
         this.nullScores = new FloatArrayList();
       }
@@ -776,8 +777,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
 
     @Override
     protected void doSetNextReader(LeafReaderContext context) throws IOException {
-      if (this.context == null) {
-        initializeCollection();
+      if (this.context == null) { // first time detection
+        initializeCollection(this.needsScores = scoreMode().needsScores());
       }
 
       // Do NOT set leafDelegate (calling super() would do this).
@@ -1142,16 +1143,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /** Builder for {@link OrdFieldValueCollector}. */
-  protected static class OrdFieldCollectorBuilder {
-    public GroupHeadSelector groupHeadSelector;
-    public DocValuesProducer collapseValuesProducer;
-    public NullPolicy nullPolicy;
-    public boolean needsScores4Collapsing;
-    public IntIntHashMap boostDocsMap;
-    public SolrIndexSearcher searcher;
+  public record OrdFieldCollectorBuilder(
+      GroupHeadSelector groupHeadSelector,
+      DocValuesProducer collapseValuesProducer,
+      NullPolicy nullPolicy,
+      boolean needsScores4Collapsing,
+      IntIntHashMap boostDocsMap,
+      SolrIndexSearcher searcher) {
 
     /** Builds the appropriate OrdFieldValueCollector subclass based on the selection strategy. */
-    public OrdFieldValueCollector build(
+    public DelegatingCollector build(
         SortSpec sortSpec, FieldType fieldType, FunctionQuery funcQuery) throws IOException {
 
       if (null != sortSpec) {
@@ -1216,15 +1217,15 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected void initializeCollection() {
-      super.initializeCollection();
-      if (this.needsScores) {
+    protected void initializeCollection(boolean needsScores) {
+      super.initializeCollection(needsScores);
+      if (needsScores) {
         this.scores = new IntFloatDynamicMap(valueCount, 0.0f);
       }
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       initSegmentValues(context);
     }
@@ -1284,18 +1285,11 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         throws IOException {
       if (!collapsedScoresInitialized) {
         collapsedScoresInitialized = true;
-        collapseValues = collapseValuesProducer.getSorted(null);
-        if (collapseValues instanceof MultiDocValues.MultiSortedDocValues) {
-          this.multiSortedDocValues = (MultiDocValues.MultiSortedDocValues) collapseValues;
-          this.ordinalMap = multiSortedDocValues.mapping;
-        }
+        initCollapseValues();
       }
-      if (ordinalMap != null) {
-        this.segmentValues = this.multiSortedDocValues.values[context.ord];
-        this.segmentOrdinalMap = this.ordinalMap.getGlobalOrds(context.ord);
-      } else {
-        this.segmentValues = collapseValues;
-      }
+
+      initSegmentValues(context);
+
       return new CachedScoreScorable(disi) {
         @Override
         protected float computeScore(int globalDoc) throws IOException {
@@ -1347,7 +1341,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -1415,7 +1409,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.minMaxValues = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -1485,7 +1479,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -1560,7 +1554,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       functionValues = this.valueSource.getValues(rcontext, context);
     }
@@ -1632,7 +1626,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       compareState.setNextReader(context);
     }
@@ -1709,16 +1703,16 @@ public class CollapsingQParserPlugin extends QParserPlugin {
   }
 
   /** Builder for {@link IntFieldValueCollector}. */
-  protected static class IntFieldCollectorBuilder {
-    public GroupHeadSelector groupHeadSelector;
-    public NullPolicy nullPolicy;
-    public String collapseField;
-    public int initialSize;
-    public boolean needsScores4Collapsing;
-    public IntIntHashMap boostDocsMap;
-    public IndexSearcher searcher;
+  public record IntFieldCollectorBuilder(
+      GroupHeadSelector groupHeadSelector,
+      NullPolicy nullPolicy,
+      String collapseField,
+      int initialSize,
+      boolean needsScores4Collapsing,
+      IntIntHashMap boostDocsMap,
+      IndexSearcher searcher) {
 
-    public IntFieldValueCollector build(
+    public DelegatingCollector build(
         SortSpec sortSpec, FieldType fieldType, FunctionQuery funcQuery) throws IOException {
       if (null != sortSpec) {
         return new IntSortSpecCollector(this, sortSpec);
@@ -1769,8 +1763,8 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    protected void initializeCollection() {
-      super.initializeCollection();
+    protected void initializeCollection(boolean needsScores) {
+      super.initializeCollection(needsScores);
       if (needsScores) {
         this.scores = new IntFloatDynamicMap(initialSize, 0.0f);
       }
@@ -1782,7 +1776,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
         throws IOException;
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.collapseValues = DocValues.getNumeric(context.reader(), this.collapseField);
     }
@@ -1867,7 +1861,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -1956,7 +1950,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       this.minMaxVals = DocValues.getNumeric(context.reader(), this.field);
     }
@@ -2050,7 +2044,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       functionValues = this.valueSource.getValues(rcontext, context);
     }
@@ -2145,7 +2139,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
     }
 
     @Override
-    public void doSetNextReader(LeafReaderContext context) throws IOException {
+    protected void doSetNextReader(LeafReaderContext context) throws IOException {
       super.doSetNextReader(context);
       compareState.setNextReader(context);
     }
