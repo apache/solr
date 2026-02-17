@@ -48,7 +48,7 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
 
     // make another using MetricUtils.addMXBeanMetrics()
     SimpleOrderedMap<Object> info2 = new SimpleOrderedMap<>();
-    NodeSystemInfoProvider.forEachGetterValue(os, OperatingSystemMXBean.class, info2::add);
+    SystemInfoProvider.forEachGetterValue(os, OperatingSystemMXBean.class, info2::add);
 
     // make sure they got the same thing
     for (String p : Arrays.asList("name", "version", "arch")) {
@@ -58,7 +58,7 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
 
   public void testGetNodeSystemInfo() {
     SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams()) {};
-    NodeSystemInfoProvider provider = new NodeSystemInfoProvider(req);
+    SystemInfoProvider provider = new SystemInfoProvider(req);
     NodeSystemResponse info = provider.getNodeSystemInfo(new NodeSystemResponse());
 
     Assert.assertNotNull(info.nodeInfo);
@@ -66,10 +66,6 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
     Assert.assertEquals(h.getCoreContainer().getSolrHome().toString(), info.nodeInfo.solrHome);
     Assert.assertEquals(
         h.getCoreContainer().getCoreRootDirectory().toString(), info.nodeInfo.coreRoot);
-    //Assert.assertNotNull(info.nodeInfo.core);
-    //Assert.assertNotNull(info.nodeInfo.core.directory);
-//    Assert.assertEquals(
-//        h.getCore().getInstancePath().toString(), info.nodeInfo.core.directory.instance);
     Assert.assertNotNull(info.nodeInfo.lucene);
     Assert.assertNotNull(info.nodeInfo.lucene.solrImplVersion);
     Assert.assertEquals(

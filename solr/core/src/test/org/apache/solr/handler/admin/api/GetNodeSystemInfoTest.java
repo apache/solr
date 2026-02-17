@@ -237,6 +237,6 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     Assert.assertNull(infoResponse.nodeInfo.gpu);
     Assert.assertNull(infoResponse.nodeInfo.jvm);
     Assert.assertNull(infoResponse.nodeInfo.security);
-    //Assert.assertNull(infoResponse.nodeInfo.core);
+    Assert.assertNull(infoResponse.nodeInfo.system);
   }
 }

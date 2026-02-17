@@ -46,11 +46,13 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.api.model.CoreInfoResponse;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
@@ -66,7 +68,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Used by GetNodeSystemInfo, and indirectly by SystemInfoHandler */
-public class NodeSystemInfoProvider {
+public class SystemInfoProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private SolrQueryRequest req;
@@ -103,7 +105,7 @@ public class NodeSystemInfoProvider {
    */
   private static final ConcurrentMap<Class<?>, BeanInfo> beanInfos = new ConcurrentHashMap<>();
 
-  public NodeSystemInfoProvider(SolrQueryRequest request) {
+  public SystemInfoProvider(SolrQueryRequest request) {
     req = request;
     params = request.getParams();
     cc = request.getCoreContainer();
@@ -113,9 +115,6 @@ public class NodeSystemInfoProvider {
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
     NodeSystemResponse.NodeSystemInfo info = new NodeSystemResponse.NodeSystemInfo();
-
-    //SolrCore core = req.getCore();
-    //if (core != null) info.core = getCoreInfo();
 
     if (cc != null) {
       info.solrHome = cc.getSolrHome().toString();
@@ -153,38 +152,77 @@ public class NodeSystemInfoProvider {
     return response;
   }
 
-  /** Get core info */
-//  public NodeSystemResponse.Core getCoreInfo() {
-//    NodeSystemResponse.Core info = new NodeSystemResponse.Core();
-//
-//    SolrCore core = req.getCore();
-//    IndexSchema schema = req.getSchema();
-//
-//    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
-//    info.host = hostname;
-//    info.now = new Date();
-//    info.start = core.getStartTimeStamp();
-//
-//    // Solr Home
-//    NodeSystemResponse.Directory dirs = new NodeSystemResponse.Directory();
-//    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
-//    dirs.instance = core.getInstancePath().toString();
-//    try {
-//      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
-//    } catch (IOException e) {
-//      log.warn("Problem getting the normalized data directory path", e);
-//      dirs.data = "N/A";
-//    }
-//    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
-//    try {
-//      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
-//    } catch (IOException e) {
-//      log.warn("Problem getting the normalized index directory path", e);
-//      dirs.index = "N/A";
-//    }
-//    info.directory = dirs;
-//    return info;
-//  }
+  /** Get core Info for V1 */
+  public static SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
+    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
+
+    info.add("schema", schema != null ? schema.getSchemaName() : "no schema!");
+
+    // Now
+    info.add("now", new Date());
+
+    // Start Time
+    info.add("start", core.getStartTimeStamp());
+
+    // Solr Home
+    SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
+    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
+    dirs.add("instance", core.getInstancePath().toString());
+    try {
+      dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized data directory path", e);
+    }
+    dirs.add("dirimpl", core.getDirectoryFactory().getClass().getName());
+    try {
+      dirs.add("index", core.getDirectoryFactory().normalize(core.getIndexDir()));
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized index directory path", e);
+    }
+    info.add("directory", dirs);
+    return info;
+  }
+
+  /** Get core info for V2 */
+  public CoreInfoResponse getCoreInfo(String coreName, CoreInfoResponse info) {
+
+    SolrCore core = req.getCore();
+    log.info("Request SolrCore: {}", core.getName());
+    if (req.getCoreContainer() != null
+        && req.getCoreContainer().getAllCoreNames().contains(coreName)) {
+      core = req.getCoreContainer().getCore(coreName);
+      log.info("Requested SolrCore: {}", core.getName());
+    }
+
+    if (core == null) return info;
+
+    IndexSchema schema = req.getSchema();
+
+    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
+    info.host = hostname;
+    info.now = new Date();
+    info.start = core.getStartTimeStamp();
+
+    // Solr Home
+    CoreInfoResponse.Directory dirs = new CoreInfoResponse.Directory();
+    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
+    dirs.instance = core.getInstancePath().toString();
+    try {
+      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized data directory path", e);
+      dirs.data = "N/A";
+    }
+    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
+    try {
+      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
+    } catch (IOException e) {
+      log.warn("Problem getting the normalized index directory path", e);
+      dirs.index = "N/A";
+    }
+    info.directory = dirs;
+    return info;
+  }
 
   /** Get system info */
   public Map<String, String> getSystemInfo() {

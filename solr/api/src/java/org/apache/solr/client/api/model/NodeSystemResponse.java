@@ -48,7 +48,6 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty(value = "environment_color")
     public String environmentColor;
 
-    //@JsonProperty public Core core;
     @JsonProperty public Lucene lucene;
     @JsonProperty public JVM jvm;
     @JsonProperty public Security security;
@@ -130,21 +129,5 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public long count;
     @JsonProperty public MemoryRaw memory;
     @JsonProperty public Map<String, Object> devices;
-  }
-
-//  public static class Core {
-//    @JsonProperty public String schema;
-//    @JsonProperty public String host;
-//    @JsonProperty public Date now;
-//    @JsonProperty public Date start;
-//    @JsonProperty public Directory directory;
-//  }
-
-  public static class Directory {
-    @JsonProperty public String cwd;
-    @JsonProperty public String instance;
-    @JsonProperty public String data;
-    @JsonProperty public String dirimpl;
-    @JsonProperty public String index;
   }
 }

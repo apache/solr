@@ -35,7 +35,7 @@ public class SystemInfoResponse extends SolrResponseBase {
   protected final Map<String, NodeSystemResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
 
   protected SystemInfoResponse() {
-    // allow a NamedList constructor in the V2 extension
+    // required constructor for the V2 extension
   }
 
   public SystemInfoResponse(NamedList<Object> namedList) {

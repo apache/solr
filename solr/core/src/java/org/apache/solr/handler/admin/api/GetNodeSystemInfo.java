@@ -23,7 +23,7 @@ import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
-import org.apache.solr.handler.admin.NodeSystemInfoProvider;
+import org.apache.solr.handler.admin.SystemInfoProvider;
 import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -62,7 +62,7 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
           SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
     }
 
-    NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
+    SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
     NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     provider.getNodeSystemInfo(response);
     if (response.nodeInfo != null && log.isTraceEnabled()) {
@@ -90,11 +90,8 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
 
     NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     response.nodeInfo = new NodeSystemResponse.NodeSystemInfo();
-    NodeSystemInfoProvider provider = new NodeSystemInfoProvider(solrQueryRequest);
+    SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
     switch (requestedInfo) {
-//      case "core":
-//        response.nodeInfo.core = provider.getCoreInfo();
-//        break;
       case "gpu":
         response.nodeInfo.gpu = provider.getGpuInfo();
         break;
@@ -106,6 +103,9 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
         break;
       case "security":
         response.nodeInfo.security = provider.getSecurityInfo();
+        break;
+      case "system":
+        response.nodeInfo.system = provider.getSystemInfo();
         break;
       default:
         throw new SolrException(
