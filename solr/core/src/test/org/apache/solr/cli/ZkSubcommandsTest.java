@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,8 +33,8 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
+import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -49,20 +48,11 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: This test would be a lot faster if it used a solrhome with fewer config
-// files - there are a lot of them to upload
 public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkTestServer zkServer;
-
-  protected Path zkDir;
-
-  private String solrHome;
-
   private SolrZkClient zkClient;
-
-  private PrintStream originalSystemOut;
 
   protected static final Path SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
 
@@ -77,20 +67,17 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());
     }
+    // originalSystemOut = System.out;
 
-    Path exampleHome = legacyExampleCollection1SolrHome();
+    String solrHome = createTempDir().toString();
+    System.setProperty("solr.home", solrHome);
 
-    Path tmpDir = createTempDir();
-    solrHome = exampleHome.toString();
+    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
 
-    originalSystemOut = System.out;
-
-    zkDir = tmpDir.resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    // zkClient.close();
 
     zkClient =
         new SolrZkClient.Builder()
@@ -138,7 +125,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testPutCompressed() throws Exception {
     // test put compressed
-    System.setProperty("solr.home", solrHome);
+
     System.setProperty("minStateByteLenForCompression", "0");
 
     String data = "my data";
@@ -240,7 +227,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testPutFileCompressed() throws Exception {
     // test put file compressed
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String[] args =
@@ -459,7 +445,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetCompressed() throws Exception {
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String getNode = "/getNode";
@@ -564,20 +549,17 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testUpdateAcls() throws Exception {
 
     System.setProperty(
+        SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        DigestZkCredentialsProvider.class.getName());
+    System.setProperty(
         SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
+    System.setProperty(
+        SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
+        VMParamsZkCredentialsInjector.class.getName());
     System.setProperty(
         VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
     System.setProperty(
         VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
-    System.setProperty(
-        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-        VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
-    System.setProperty(
-        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-        "user");
-    System.setProperty(
-        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
-        "pass");
 
     String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
     assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
@@ -604,7 +586,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (zkServer != null) {
       zkServer.shutdown();
     }
-    System.setOut(originalSystemOut);
+    // System.setOut(originalSystemOut);
     super.tearDown();
   }
 }
