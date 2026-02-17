@@ -57,34 +57,6 @@ allprojects {
       }
     }
   }
-
-  // Helper to align custom configurations with runtimeClasspath versions
-  // This ensures that packaging/distribution uses the same versions that were tested
-  ext.alignWithRuntimeClasspath = { Configuration customConfig ->
-    customConfig.resolutionStrategy.eachDependency { details ->
-      // Only align if this project has a runtimeClasspath (i.e., is a Java project)
-      if (project.configurations.findByName('runtimeClasspath')?.canBeResolved) {
-        try {
-          // Find the version that runtimeClasspath resolved to (including transitive deps)
-          def runtimeVersion = project.configurations.runtimeClasspath
-            .resolvedConfiguration
-            .resolvedArtifacts
-            .find {
-              it.moduleVersion.id.group == details.requested.group &&
-              it.moduleVersion.id.name == details.requested.name
-            }?.moduleVersion?.id?.version
-
-          if (runtimeVersion && runtimeVersion != details.requested.version) {
-            details.useVersion(runtimeVersion)
-            details.because("Align ${customConfig.name} with tested runtimeClasspath version")
-          }
-        } catch (Exception e) {
-          // Ignore resolution errors - some configurations may not be resolvable yet
-          logger.debug("Could not align ${details.requested} in ${customConfig.name}: ${e.message}")
-        }
-      }
-    }
-  }
 }
 
 // Configure version catalog cleanups plugin.

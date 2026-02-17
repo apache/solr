@@ -48,16 +48,9 @@ configure(allprojects
     }
 
     configurations {
-      solrPlatformLibs {
-        resolutionStrategy {
-          preferProjectModules()
-        }
-      }
+      solrPlatformLibs
       runtimeLibs {
         extendsFrom runtimeElements
-        resolutionStrategy {
-          preferProjectModules()
-        }
       }
       packaging
     }
