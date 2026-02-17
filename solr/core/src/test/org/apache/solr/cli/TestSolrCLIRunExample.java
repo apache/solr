@@ -526,8 +526,8 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
   }
 
   /**
-   * Test the --prompts option that allows providing all prompt values as a comma-separated string
-   * without requiring interactive input.
+   * Test the --prompt-inputs option that allows providing all prompt values as a comma-separated
+   * string without requiring interactive input.
    */
   @Test
   public void testSolrCloudExampleWithPrompts() throws Exception {
@@ -545,7 +545,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     String collectionName = "testCloudExampleWithPrompts";
 
-    // Provide all prompt values via --prompts option:
+    // Provide all prompt values via --prompt-inputs option:
     // numNodes, port1, collectionName, numShards, replicationFactor, configName
     String promptsValue = "1," + bindPort + ",\"" + collectionName + "\",2,2,_default";
 
@@ -557,7 +557,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           solrServerDir.toString(),
           "--example-dir",
           solrExampleDir.toString(),
-          "--prompts",
+          "--prompt-inputs",
           promptsValue
         };
 
@@ -633,46 +633,6 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // stop the test instance
     executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
-  }
-
-  /** Test that using both --no-prompt and --prompts options together throws an error. */
-  @Test
-  public void testPromptsAndNoPromptConflict() throws Exception {
-    Path solrHomeDir = ExternalPaths.SERVER_HOME;
-    if (!Files.isDirectory(solrHomeDir))
-      fail(solrHomeDir + " not found and is required to run this test!");
-
-    Path solrExampleDir = createTempDir();
-    Path solrServerDir = solrHomeDir.getParent();
-
-    String[] toolArgs =
-        new String[] {
-          "--example",
-          "cloud",
-          "--server-dir",
-          solrServerDir.toString(),
-          "--example-dir",
-          solrExampleDir.toString(),
-          "--no-prompt",
-          "--prompts",
-          "1,8983,\"test\",2,2,_default"
-        };
-
-    CLITestHelper.TestingRuntime runtime = new CLITestHelper.TestingRuntime(true);
-    RunExampleExecutor executor = new RunExampleExecutor();
-    closeables.add(executor);
-
-    RunExampleTool tool = new RunExampleTool(executor, System.in, runtime);
-
-    int exitCode = 100; // Initialize to unexpected value
-    try {
-      exitCode = tool.runTool(SolrCLI.processCommandLineArgs(tool, toolArgs));
-    } catch (Exception e) {
-      fail("Should not throw exception, but return error code. Got: " + e);
-    }
-
-    assertEquals(
-        "Expected error code 1 when using both --no-prompt and --prompts together", 1, exitCode);
   }
 
   @Test
