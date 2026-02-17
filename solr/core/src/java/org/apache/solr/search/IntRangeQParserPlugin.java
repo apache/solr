@@ -22,9 +22,9 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IntRangeField;
-import org.apache.solr.schema.IntRangeField.RangeValue;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.numericrange.IntRangeField;
+import org.apache.solr.schema.numericrange.IntRangeField.RangeValue;
 
 /**
  * Query parser for IntRangeField with support for different query relationship types.

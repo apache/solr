@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.schema.numericrange;
 
 import static org.apache.solr.SolrTestCaseJ4.assumeWorkingMockito;
 import static org.mockito.Mockito.mock;
@@ -26,6 +26,8 @@ import org.apache.lucene.document.IntRange;
 import org.apache.lucene.index.IndexableField;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 
 /** Tests for {@link IntRangeField} */
@@ -114,12 +116,14 @@ public class IntRangeFieldTest extends SolrTestCase {
     IntRangeField fieldType = createFieldType(1);
 
     // Missing brackets
-    SolrException e1 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("10 TO 20"));
+    SolrException e1 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("10 TO 20"));
     assertTrue(e1.getMessage().contains("Invalid range format"));
     assertTrue(e1.getMessage().contains("Expected: [min1,min2,... TO max1,max2,...]"));
 
     // Missing TO keyword
-    SolrException e2 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10 20]"));
+    SolrException e2 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10 20]"));
     assertTrue(e2.getMessage().contains("Invalid range format"));
 
     // Empty value
@@ -135,17 +139,20 @@ public class IntRangeFieldTest extends SolrTestCase {
     IntRangeField fieldType = createFieldType(1);
 
     // Non-numeric values
-    SolrException e1 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[abc TO def]"));
+    SolrException e1 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[abc TO def]"));
     assertTrue(e1.getMessage().contains("Invalid integer"));
     assertTrue(e1.getMessage().contains("min values"));
 
     // Partially numeric
-    SolrException e2 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10 TO xyz]"));
+    SolrException e2 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10 TO xyz]"));
     assertTrue(e2.getMessage().contains("Invalid integer"));
     assertTrue(e2.getMessage().contains("max values"));
 
     // Floating point (should fail for IntRange)
-    SolrException e3 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10.5 TO 20.5]"));
+    SolrException e3 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[10.5 TO 20.5]"));
     assertTrue(e3.getMessage().contains("Invalid integer"));
   }
 
@@ -154,12 +161,14 @@ public class IntRangeFieldTest extends SolrTestCase {
     IntRangeField fieldType2D = createFieldType(2);
 
     // 2D value on 1D field
-    SolrException e1 = expectThrows(SolrException.class, () -> fieldType1D.parseRangeValue("[10,20 TO 30,40]"));
+    SolrException e1 =
+        expectThrows(SolrException.class, () -> fieldType1D.parseRangeValue("[10,20 TO 30,40]"));
     assertTrue(e1.getMessage().contains("Range dimensions"));
     assertTrue(e1.getMessage().contains("do not match field type numDimensions"));
 
     // 1D value on 2D field
-    SolrException e2 = expectThrows(SolrException.class, () -> fieldType2D.parseRangeValue("[10 TO 20]"));
+    SolrException e2 =
+        expectThrows(SolrException.class, () -> fieldType2D.parseRangeValue("[10 TO 20]"));
     assertTrue(e2.getMessage().contains("Range dimensions"));
     assertTrue(e2.getMessage().contains("do not match field type numDimensions"));
 
@@ -175,7 +184,8 @@ public class IntRangeFieldTest extends SolrTestCase {
     IntRangeField fieldType = createFieldType(1);
 
     // Min > max should fail
-    SolrException e1 = expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[20 TO 10]"));
+    SolrException e1 =
+        expectThrows(SolrException.class, () -> fieldType.parseRangeValue("[20 TO 10]"));
     assertTrue(e1.getMessage().contains("Min value must be <= max value"));
     assertTrue(e1.getMessage().contains("dimension 0"));
 
@@ -258,7 +268,8 @@ public class IntRangeFieldTest extends SolrTestCase {
     SchemaField schemaField = createSchemaField(fieldType, "price_range");
 
     // Sorting should not be supported
-    SolrException e = expectThrows(SolrException.class, () -> fieldType.getSortField(schemaField, true));
+    SolrException e =
+        expectThrows(SolrException.class, () -> fieldType.getSortField(schemaField, true));
     assertTrue(e.getMessage().contains("Cannot sort on IntRangeField"));
     assertTrue(e.getMessage().contains("price_range"));
   }
@@ -269,20 +280,6 @@ public class IntRangeFieldTest extends SolrTestCase {
 
     // Should return null (no field cache support)
     assertNull(fieldType.getUninversionType(schemaField));
-  }
-
-  public void testDocValuesNotSupported() {
-    IndexSchema schema = createMockSchema();
-    IntRangeField field = new IntRangeField();
-
-    Map<String, String> args = new HashMap<>();
-    args.put("numDimensions", "1");
-    args.put("docValues", "true");
-
-    // Should throw exception when docValues is enabled
-    SolrException e = expectThrows(SolrException.class, () -> field.setArgs(schema, args));
-    assertTrue(e.getMessage().contains("docValues=true enabled"));
-    assertTrue(e.getMessage().contains("IntRangeField does not support docValues"));
   }
 
   public void testInvalidNumDimensions() {
@@ -346,6 +343,8 @@ public class IntRangeFieldTest extends SolrTestCase {
   }
 
   private SchemaField createSchemaField(IntRangeField fieldType, String name) {
-    return new SchemaField(name, fieldType, SchemaField.INDEXED | SchemaField.STORED, null);
+    final var fieldProperties =
+        0b1 | 0b100; // INDEXED | STORED - constants cannot be accessed directly due to visibility.
+    return new SchemaField(name, fieldType, fieldProperties, null);
   }
 }

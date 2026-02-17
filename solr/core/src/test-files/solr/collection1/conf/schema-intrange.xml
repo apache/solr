@@ -25,10 +25,10 @@
   <fieldType name="long" class="solr.LongPointField"/>
 
   <!-- IntRangeField types with different dimensions -->
-  <fieldType name="intrange" class="solr.IntRangeField" numDimensions="1"/>
-  <fieldType name="intrange2d" class="solr.IntRangeField" numDimensions="2"/>
-  <fieldType name="intrange3d" class="solr.IntRangeField" numDimensions="3"/>
-  <fieldType name="intrange4d" class="solr.IntRangeField" numDimensions="4"/>
+  <fieldType name="intrange" class="solr.numericrange.IntRangeField" numDimensions="1"/>
+  <fieldType name="intrange2d" class="solr.numericrange.IntRangeField" numDimensions="2"/>
+  <fieldType name="intrange3d" class="solr.numericrange.IntRangeField" numDimensions="3"/>
+  <fieldType name="intrange4d" class="solr.numericrange.IntRangeField" numDimensions="4"/>
 
   <!-- Field definitions -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>

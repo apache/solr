@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.solr.schema.numericrange;
 
 import java.io.IOException;
 import java.util.List;
@@ -29,6 +29,9 @@ import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.PrimitiveFieldType;
+import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
@@ -56,8 +59,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * <h3>Schema Configuration</h3>
  *
  * <pre>
- * &lt;fieldType name="intrange" class="org.apache.solr.schema.IntRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="intrange2d" class="org.apache.solr.schema.IntRangeField" numDimensions="2"/&gt;
+ * &lt;fieldType name="intrange" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="intrange2d" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="2"/&gt;
  * &lt;field name="price_range" type="intrange" indexed="true" stored="true"/&gt;
  * &lt;field name="bbox" type="intrange2d" indexed="true" stored="true"/&gt;
  * </pre>
