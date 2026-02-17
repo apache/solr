@@ -50,16 +50,10 @@ allprojects {
     }
   }
 
-  // Helper to force a configuration to use the same dependency versions as runtimeClasspath.
+  // Helper to align a configuration to use the same dependency versions as runtimeClasspath.
   // This ensures that packaging/distribution and validation use the same versions that were tested.
   ext.alignWithRuntimeClasspath = { Configuration conf ->
-    conf.incoming.beforeResolve {
-      configurations.runtimeClasspath.resolvedConfiguration.resolvedArtifacts.each { artifact ->
-        conf.resolutionStrategy.force(
-          "${artifact.moduleVersion.id.group}:${artifact.moduleVersion.id.name}:${artifact.moduleVersion.id.version}"
-        )
-      }
-    }
+    conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
   }
 
   dependencies {
