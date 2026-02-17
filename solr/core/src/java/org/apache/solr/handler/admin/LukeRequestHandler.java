@@ -19,6 +19,8 @@ package org.apache.solr.handler.admin;
 import static org.apache.lucene.index.IndexOptions.DOCS;
 import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS;
 import static org.apache.lucene.index.IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS;
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -28,6 +30,8 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -67,15 +71,23 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.api.model.CoreStatusResponse;
+import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.luke.FieldFlag;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.api.V2ApiUtils;
+import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.handler.component.ShardHandler;
+import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.handler.component.ShardRequest;
+import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.CopyField;
@@ -85,6 +97,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.update.SolrIndexWriter;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -97,7 +110,7 @@ import org.slf4j.LoggerFactory;
  * @see SegmentsInfoRequestHandler
  * @since solr 1.2
  */
-public class LukeRequestHandler extends RequestHandlerBase {
+public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String NUMTERMS = "numTerms";
@@ -107,6 +120,20 @@ public class LukeRequestHandler extends RequestHandlerBase {
   public static final int DEFAULT_COUNT = 10;
 
   static final int HIST_ARRAY_SIZE = 33;
+
+  // Response keys not available via LukeResponse typed accessors
+  private static final String KEY_DELETED_DOCS = "deletedDocs";
+  private static final String KEY_SEGMENT_COUNT = "segmentCount";
+  private static final String KEY_DYNAMIC_BASE = "dynamicBase";
+  private static final String KEY_INDEX_FLAGS = "index";
+  private static final String KEY_HISTOGRAM = "histogram";
+
+  private ShardHandlerFactory shardHandlerFactory;
+
+  @Override
+  public void inform(SolrCore core) {
+    this.shardHandlerFactory = core.getCoreContainer().getShardHandlerFactory();
+  }
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
@@ -131,10 +158,17 @@ public class LukeRequestHandler extends RequestHandlerBase {
 
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    SolrParams params = req.getParams();
+
+    if (params.getBool(DISTRIB, false)
+        && req.getCoreContainer().isZooKeeperAware()
+        && handleDistributed(req, rsp)) {
+      return;
+    }
+
     IndexSchema schema = req.getSchema();
     SolrIndexSearcher searcher = req.getSearcher();
     DirectoryReader reader = searcher.getIndexReader();
-    SolrParams params = req.getParams();
     ShowStyle style = ShowStyle.get(params.get("show"));
 
     // If no doc is given, show all fields and top terms
@@ -194,6 +228,280 @@ public class LukeRequestHandler extends RequestHandlerBase {
         "Document Frequency (df) is not updated when a document is marked for deletion.  df values include deleted documents.");
     rsp.add("info", info);
     rsp.setHttpCaching(false);
+  }
+
+  /**
+   * @return true if the request was handled in distributed mode, false if prepDistributed
+   *     short-circuited (e.g. single-shard collection) and the caller should fall through to local
+   *     logic.
+   */
+  private boolean handleDistributed(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
+    ResponseBuilder rb = new ResponseBuilder(req, rsp, Collections.emptyList());
+    shardHandler.prepDistributed(rb);
+
+    String[] shards = rb.shards;
+    if (shards == null || shards.length == 0) {
+      return false;
+    }
+
+    ShardRequest sreq = new ShardRequest();
+    sreq.shards = shards;
+    sreq.actualShards = shards;
+    sreq.responses = new ArrayList<>(shards.length);
+
+    String reqPath = (String) req.getContext().get(PATH);
+
+    for (String shard : shards) {
+      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      params.set(CommonParams.QT, reqPath != null ? reqPath : "/admin/luke");
+      ShardHandler.setShardAttributesToParams(params, ShardRequest.PURPOSE_PRIVATE);
+      shardHandler.submit(sreq, shard, params);
+    }
+
+    ShardResponse lastSrsp = shardHandler.takeCompletedOrError();
+    if (lastSrsp == null) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, "No responses received from shards");
+    }
+
+    List<ShardResponse> responses = sreq.responses;
+    for (ShardResponse srsp : responses) {
+      if (srsp.getException() != null) {
+        shardHandler.cancelAll();
+        if (srsp.getException() instanceof SolrException) {
+          throw (SolrException) srsp.getException();
+        }
+        throw new SolrException(ErrorCode.SERVER_ERROR, srsp.getException());
+      }
+    }
+
+    responses.sort(Comparator.comparing(LukeRequestHandler::shardSortKey));
+
+    mergeDistributedResponses(rsp, responses);
+    rsp.setHttpCaching(false);
+    return true;
+  }
+
+  private static String shardSortKey(ShardResponse srsp) {
+    return srsp.getShardAddress() != null ? srsp.getShardAddress() : srsp.getShard();
+  }
+
+  @SuppressWarnings("unchecked")
+  private void mergeDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
+    long totalNumDocs = 0;
+    long totalMaxDoc = 0;
+    long totalDeletedDocs = 0;
+    long totalSegmentCount = 0;
+
+    Map<String, SimpleOrderedMap<Object>> mergedFields = new TreeMap<>();
+    // fieldName -> (attrName -> (value -> shardAddress)) for mismatch diagnostics
+    Map<String, Map<String, Map<String, String>>> fieldAttrSources = new HashMap<>();
+    SimpleOrderedMap<Object> shardsInfo = new SimpleOrderedMap<>();
+    NamedList<Object> firstSchema = null;
+    NamedList<Object> firstInfo = null;
+
+    for (ShardResponse srsp : responses) {
+      String shardAddr = shardSortKey(srsp);
+      NamedList<Object> shardRsp = srsp.getSolrResponse().getResponse();
+
+      LukeResponse lukeRsp = new LukeResponse();
+      lukeRsp.setResponse(shardRsp);
+
+      SimpleOrderedMap<Object> perShardEntry = new SimpleOrderedMap<>();
+
+      NamedList<Object> shardIndex = lukeRsp.getIndexInfo();
+      if (shardIndex != null) {
+        if (lukeRsp.getNumDocs() != null) totalNumDocs += lukeRsp.getNumDocs();
+        if (lukeRsp.getMaxDoc() != null) totalMaxDoc += lukeRsp.getMaxDoc();
+        if (lukeRsp.getDeletedDocs() != null) totalDeletedDocs += lukeRsp.getDeletedDocs();
+        if (lukeRsp.getSegmentCount() != null) totalSegmentCount += lukeRsp.getSegmentCount();
+
+        perShardEntry.add("index", shardIndex);
+      }
+
+      Map<String, LukeResponse.FieldInfo> shardFieldInfo = lukeRsp.getFieldInfo();
+      NamedList<Object> shardFields = (NamedList<Object>) shardRsp.get("fields");
+      if (shardFieldInfo != null && shardFields != null) {
+        SimpleOrderedMap<Object> perShardFields = new SimpleOrderedMap<>();
+        boolean hasDetailedStats = false;
+
+        for (Map.Entry<String, LukeResponse.FieldInfo> entry : shardFieldInfo.entrySet()) {
+          String fieldName = entry.getKey();
+          LukeResponse.FieldInfo fi = entry.getValue();
+          NamedList<Object> fieldData = (NamedList<Object>) shardFields.get(fieldName);
+          if (fieldData == null) continue;
+
+          SimpleOrderedMap<Object> merged =
+              mergedFields.computeIfAbsent(fieldName, k -> new SimpleOrderedMap<>());
+
+          // Attributes parsed by LukeResponse.FieldInfo — validate consistency via string form
+          mergeValidatedAttr(merged, "type", fi.getType(), shardAddr, fieldName, fieldAttrSources);
+          mergeValidatedAttr(
+              merged, "schema", fi.getSchema(), shardAddr, fieldName, fieldAttrSources);
+
+          // Attributes not parsed by LukeResponse.FieldInfo — fall back to raw NamedList
+          mergeValidatedStringAttr(
+              merged, fieldData, fieldName, KEY_INDEX_FLAGS, shardAddr, fieldAttrSources);
+          mergeValidatedStringAttr(
+              merged, fieldData, fieldName, KEY_DYNAMIC_BASE, shardAddr, fieldAttrSources);
+
+          long docs = fi.getDocs();
+          if (docs > 0 || fieldData.get("docs") != null) {
+            Long currentDocs = (Long) merged.get("docs");
+            if (currentDocs == null) {
+              merged.add("docs", docs);
+            } else {
+              merged.setVal(merged.indexOf("docs", 0), currentDocs + docs);
+            }
+          }
+
+          // Detailed stats not parsed by FieldInfo — kept per-shard, not merged
+          NamedList<Integer> topTerms = fi.getTopTerms();
+          Object histogram = fieldData.get(KEY_HISTOGRAM);
+
+          if (topTerms != null || fi.getDistinct() > 0 || histogram != null) {
+            hasDetailedStats = true;
+            SimpleOrderedMap<Object> detailedFieldInfo = new SimpleOrderedMap<>();
+            if (topTerms != null) detailedFieldInfo.add("topTerms", topTerms);
+            if (fi.getDistinct() > 0) detailedFieldInfo.add("distinct", fi.getDistinct());
+            if (histogram != null) detailedFieldInfo.add(KEY_HISTOGRAM, histogram);
+            perShardFields.add(fieldName, detailedFieldInfo);
+          }
+        }
+
+        if (hasDetailedStats) {
+          perShardEntry.add("fields", perShardFields);
+        }
+      }
+
+      if (firstSchema == null) {
+        firstSchema = (NamedList<Object>) shardRsp.get("schema");
+      }
+      if (firstInfo == null) {
+        firstInfo = (NamedList<Object>) shardRsp.get("info");
+      }
+
+      shardsInfo.add(shardAddr, perShardEntry);
+    }
+
+    SimpleOrderedMap<Object> mergedIndex = new SimpleOrderedMap<>();
+    mergedIndex.add("numDocs", totalNumDocs);
+    mergedIndex.add("maxDoc", totalMaxDoc);
+    mergedIndex.add(KEY_DELETED_DOCS, totalDeletedDocs);
+    mergedIndex.add(KEY_SEGMENT_COUNT, totalSegmentCount);
+    rsp.add("index", mergedIndex);
+
+    if (!mergedFields.isEmpty()) {
+      SimpleOrderedMap<Object> fieldsResult = new SimpleOrderedMap<>();
+      for (Map.Entry<String, SimpleOrderedMap<Object>> entry : mergedFields.entrySet()) {
+        fieldsResult.add(entry.getKey(), entry.getValue());
+      }
+      rsp.add("fields", fieldsResult);
+    }
+
+    if (firstSchema != null) {
+      rsp.add("schema", firstSchema);
+    }
+    if (firstInfo != null) {
+      rsp.add("info", firstInfo);
+    }
+
+    rsp.add("shards", shardsInfo);
+  }
+
+  /** Validates that a typed attribute value is identical across shards. */
+  private void mergeValidatedAttr(
+      SimpleOrderedMap<Object> merged,
+      String attrName,
+      Object val,
+      String shardAddr,
+      String fieldName,
+      Map<String, Map<String, Map<String, String>>> fieldAttrSources) {
+    if (val == null) return;
+    String valStr = val.toString();
+    Object existing = merged.get(attrName);
+
+    if (existing == null) {
+      merged.add(attrName, val);
+      fieldAttrSources
+          .computeIfAbsent(fieldName, k -> new HashMap<>())
+          .computeIfAbsent(attrName, k -> new HashMap<>())
+          .put(valStr, shardAddr);
+    } else {
+      String existingStr = existing.toString();
+      if (!existingStr.equals(valStr)) {
+        String firstShard =
+            fieldAttrSources
+                .getOrDefault(fieldName, Collections.emptyMap())
+                .getOrDefault(attrName, Collections.emptyMap())
+                .getOrDefault(existingStr, "unknown");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field '"
+                + fieldName
+                + "' has inconsistent '"
+                + attrName
+                + "' across shards: '"
+                + existingStr
+                + "' (from "
+                + firstShard
+                + ") vs '"
+                + valStr
+                + "' (from "
+                + shardAddr
+                + ")");
+      }
+    }
+  }
+
+  /**
+   * Validates that a string attribute is identical across shards, merging it into the target. Throws
+   * a SolrException on mismatch.
+   */
+  private void mergeValidatedStringAttr(
+      SimpleOrderedMap<Object> merged,
+      NamedList<Object> fieldData,
+      String fieldName,
+      String attrName,
+      String shardAddr,
+      Map<String, Map<String, Map<String, String>>> fieldAttrSources) {
+    Object val = fieldData.get(attrName);
+    if (val == null) return;
+
+    String valStr = val.toString();
+    Object existing = merged.get(attrName);
+
+    if (existing == null) {
+      merged.add(attrName, val);
+      fieldAttrSources
+          .computeIfAbsent(fieldName, k -> new HashMap<>())
+          .computeIfAbsent(attrName, k -> new HashMap<>())
+          .put(valStr, shardAddr);
+    } else {
+      String existingStr = existing.toString();
+      if (!existingStr.equals(valStr)) {
+        String firstShard =
+            fieldAttrSources
+                .getOrDefault(fieldName, Collections.emptyMap())
+                .getOrDefault(attrName, Collections.emptyMap())
+                .getOrDefault(existingStr, "unknown");
+        throw new SolrException(
+            ErrorCode.SERVER_ERROR,
+            "Field '"
+                + fieldName
+                + "' has inconsistent '"
+                + attrName
+                + "' across shards: '"
+                + existingStr
+                + "' (from "
+                + firstShard
+                + ") vs '"
+                + valStr
+                + "' (from "
+                + shardAddr
+                + ")");
+      }
+    }
   }
 
   /**
@@ -422,7 +730,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
       if (sfield != null
           && schema.isDynamicField(sfield.getName())
           && schema.getDynamicPattern(sfield.getName()) != null) {
-        fieldMap.add("dynamicBase", schema.getDynamicPattern(sfield.getName()));
+        fieldMap.add(KEY_DYNAMIC_BASE, schema.getDynamicPattern(sfield.getName()));
       }
       Terms terms = reader.terms(fieldName);
       // Not indexed, so we need to report what we can (it made it through the fl param if
@@ -441,10 +749,9 @@ public class LukeRequestHandler extends RequestHandlerBase {
             try {
               IndexableField fld = doc.getField(fieldName);
               if (fld != null) {
-                fieldMap.add("index", getFieldFlags(fld));
+                fieldMap.add(KEY_INDEX_FLAGS, getFieldFlags(fld));
               } else {
-                // it is a non-stored field...
-                fieldMap.add("index", "(unstored field)");
+                fieldMap.add(KEY_INDEX_FLAGS, "(unstored field)");
               }
             } catch (Exception ex) {
               log.warn("error reading field: {}", fieldName);
@@ -734,7 +1041,7 @@ public class LukeRequestHandler extends RequestHandlerBase {
     fieldMap.add("topTerms", tiq.toNamedList(req.getSearcher().getSchema()));
 
     // Add a histogram
-    fieldMap.add("histogram", tiq.histogram.toNamedList());
+    fieldMap.add(KEY_HISTOGRAM, tiq.histogram.toNamedList());
   }
 
   private static List<String> toListOfStrings(SchemaField[] raw) {

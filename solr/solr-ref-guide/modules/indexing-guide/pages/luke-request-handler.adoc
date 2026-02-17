@@ -83,6 +83,18 @@ The number of top terms for each field.
 Choose whether `/luke` should return the index-flags for each field.
 Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to `/luke`.
 
+`distrib`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+When set to `true` in SolrCloud mode, the handler aggregates results from all shards in the collection.
+Additive index metrics (`numDocs`, `maxDoc`, `deletedDocs`, `segmentCount`) are summed across shards.
+Field types and schema flags are validated for consistency across shards.
+Per-shard index details and per-field detailed statistics are returned under a `shards` key.
+
 == LukeRequestHandler Examples
 
 All of the examples in this section assume you are running the "techproducts" Solr example:
@@ -118,3 +130,39 @@ Alternatively, to work through the Lucene native id:
 http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
 
 From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.
+
+== Distributed Mode (SolrCloud)
+
+When running in SolrCloud, the Luke handler can aggregate results from all shards in a collection by setting `distrib=true`.
+By default, `distrib` is `false` and the handler inspects only the local shard's index.
+
+To get a collection-wide view:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?distrib=true&numTerms=0
+
+To get detailed field statistics across all shards for a specific field:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?distrib=true&fl=manu
+
+=== Response Structure
+
+In distributed mode, the response contains:
+
+* `index` -- Merged additive metrics summed across all shards: `numDocs`, `maxDoc`, `deletedDocs`, `segmentCount`.
+* `fields` -- Merged field metadata. For each field: `type`, `schema` flags, `index` flags, and `dynamicBase` are validated to be consistent across shards. The `docs` count is summed. Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are _not_ included at this level.
+* `schema` -- Schema information from the first responding shard (identical across shards sharing the same configset).
+* `info` -- Static info from the first responding shard.
+* `shards` -- Per-shard details, ordered lexicographically by shard address. Each entry contains:
+** `index` -- Full index info for that shard (including `directory`, `segmentsFile`, `version`, `current`, `hasDeletions`, `lastModified`, `userData`).
+** `fields` -- Only present when `fl` triggers detailed statistics. Contains per-field `topTerms`, `distinct`, and `histogram` from that shard.
+
+=== Merge Semantics
+
+Field `type`, `schema` flags, `index` flags, and `dynamicBase` are validated for consistency across shards.
+If a mismatch is detected, the handler returns an error identifying the field, the conflicting values, and the shard addresses involved.
+
+Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not merged across shards.
+These statistics are shard-local and appear in each shard's entry under the `shards` key.
+For cross-shard term-level aggregation, use Solr's xref:query-guide:faceting.adoc[faceting API] which provides refinement and distributed aggregation.

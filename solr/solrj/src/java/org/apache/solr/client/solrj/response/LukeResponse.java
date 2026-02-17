@@ -114,8 +114,8 @@ public class LukeResponse extends SolrResponseBase {
     String name;
     String type;
     String schema;
-    int docs;
-    int distinct;
+    long docs;
+    long distinct;
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
@@ -135,9 +135,9 @@ public class LukeResponse extends SolrResponseBase {
         } else if ("schema".equals(entry.getKey())) {
           schema = (String) entry.getValue();
         } else if ("docs".equals(entry.getKey())) {
-          docs = (Integer) entry.getValue();
+          docs = ((Number) entry.getValue()).longValue();
         } else if ("distinct".equals(entry.getKey())) {
-          distinct = (Integer) entry.getValue();
+          distinct = ((Number) entry.getValue()).longValue();
         } else if ("cacheableFaceting".equals(entry.getKey())) {
           cacheableFaceting = (Boolean) entry.getValue();
         } else if ("topTerms".equals(entry.getKey())) {
@@ -170,11 +170,11 @@ public class LukeResponse extends SolrResponseBase {
       return type;
     }
 
-    public int getDistinct() {
+    public long getDistinct() {
       return distinct;
     }
 
-    public int getDocs() {
+    public long getDocs() {
       return docs;
     }
 
@@ -257,19 +257,30 @@ public class LukeResponse extends SolrResponseBase {
     return (String) indexInfo.get("directory");
   }
 
-  public Integer getNumDocs() {
+  private Long getIndexLong(String key) {
     if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("numDocs");
+    Number n = (Number) indexInfo.get(key);
+    return n != null ? n.longValue() : null;
   }
 
-  public Integer getMaxDoc() {
-    if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("maxDoc");
+  public Long getNumDocs() {
+    return getIndexLong("numDocs");
   }
 
-  public Integer getNumTerms() {
-    if (indexInfo == null) return null;
-    return (Integer) indexInfo.get("numTerms");
+  public Long getMaxDoc() {
+    return getIndexLong("maxDoc");
+  }
+
+  public Long getDeletedDocs() {
+    return getIndexLong("deletedDocs");
+  }
+
+  public Long getSegmentCount() {
+    return getIndexLong("segmentCount");
+  }
+
+  public Long getNumTerms() {
+    return getIndexLong("numTerms");
   }
 
   public Map<String, FieldTypeInfo> getFieldTypeInfo() {
