@@ -42,7 +42,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * range values. Ranges can be 1-dimensional (simple ranges), 2-dimensional (bounding boxes),
  * 3-dimensional (bounding cubes), or 4-dimensional (tesseracts).
  *
- * <h3>Value Format</h3>
+ * <h2>Value Format</h2>
  *
  * Values are specified using bracket notation with a TO keyword separator:
  *
@@ -56,7 +56,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * As the name suggests minimum values (those on the left) must always be less than or equal to the
  * maximum value for the corresponding dimension.
  *
- * <h3>Schema Configuration</h3>
+ * <h2>Schema Configuration</h2>
  *
  * <pre>
  * &lt;fieldType name="intrange" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="1"/&gt;
@@ -65,7 +65,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * &lt;field name="bbox" type="intrange2d" indexed="true" stored="true"/&gt;
  * </pre>
  *
- * <h3>Querying</h3>
+ * <h2>Querying</h2>
  *
  * Use the {@code numericRange} query parser for range queries with support for different query
  * types:
@@ -77,7 +77,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  *   <li>Crosses: {@code {!numericRange criteria="crosses" field=price_range}[150 TO 250]}
  * </ul>
  *
- * <h3>Limitations</h3>
+ * <h2>Limitations</h2>
  *
  * The main limitation of this field type is that it doesn't support docValues or uninversion, and
  * therefore can't be used for sorting, faceting, etc.

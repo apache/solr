@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search.numericrange;
 
+import java.util.Locale;
 import org.apache.lucene.document.IntRange;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -36,7 +37,7 @@ import org.apache.solr.search.SyntaxError;
  * <p>This parser enables queries against {@link IntRangeField} fields with explicit control over
  * the query relationship type (intersects, within, contains, crosses).
  *
- * <h3>Parameters</h3>
+ * <h2>Parameters</h2>
  *
  * <ul>
  *   <li><b>field</b> (required): The IntRangeField to query
@@ -44,7 +45,7 @@ import org.apache.solr.search.SyntaxError;
  *       contains, crosses
  * </ul>
  *
- * <h3>Query Types</h3>
+ * <h2>Query Types</h2>
  *
  * <ul>
  *   <li><b>intersects</b>: Matches ranges that overlap with the query range (most permissive)
@@ -54,7 +55,7 @@ import org.apache.solr.search.SyntaxError;
  *       wholly contained)
  * </ul>
  *
- * <h3>Example Usage</h3>
+ * <h2>Example Usage</h2>
  *
  * <pre>
  * // 1D range queries
@@ -113,7 +114,7 @@ public class IntRangeQParserPlugin extends QParserPlugin {
         throw new SolrException(ErrorCode.BAD_REQUEST, "Query criteria cannot be null or empty");
       }
 
-      String normalized = criteriaStr.trim().toLowerCase();
+      String normalized = criteriaStr.trim().toLowerCase(Locale.ROOT);
       for (QueryCriteria criteria : values()) {
         if (criteria.name.equals(normalized)) {
           return criteria;
