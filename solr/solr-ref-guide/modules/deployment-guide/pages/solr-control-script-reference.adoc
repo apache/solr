@@ -277,7 +277,7 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 +
 *Example*: `bin/solr start -e cloud --no-prompt`
 
-`--prompts <values>`::
+`--prompt-inputs <values>`::
 +
 [%autowidth,frame=none]
 |===
@@ -286,9 +286,9 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 +
 Don't prompt for input; provide defaults in comma delimited format when running examples that accept user input.
 +
-For example, when using the "cloud" example, can start a three node cluster on specific ports:
+For example, when using the "cloud" example, start a three node cluster on specific ports:
 +
-*Example*: `bin/solr start -e cloud --prompts 3,9000,9001,9002,"mycollection",2,2,_defaults`
+*Example*: `bin/solr start -e cloud --prompt-inputs 3,9000,9001,9002,"mycollection",2,2,_defaults`
 
 On Windows please wrap the prompts value in double quotes to preserve the comma delimited format.
 
