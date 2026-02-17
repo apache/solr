@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.search;
+package org.apache.solr.search.numericrange;
 
 import org.apache.lucene.document.IntRange;
 import org.apache.lucene.search.Query;
@@ -25,6 +25,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.numericrange.IntRangeField;
 import org.apache.solr.schema.numericrange.IntRangeField.RangeValue;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
+import org.apache.solr.search.QueryParsing;
+import org.apache.solr.search.SyntaxError;
 
 /**
  * Query parser for IntRangeField with support for different query relationship types.

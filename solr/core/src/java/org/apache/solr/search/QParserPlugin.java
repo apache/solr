@@ -28,6 +28,7 @@ import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
+import org.apache.solr.search.numericrange.IntRangeQParserPlugin;
 import org.apache.solr.search.vector.KnnQParserPlugin;
 import org.apache.solr.search.vector.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;

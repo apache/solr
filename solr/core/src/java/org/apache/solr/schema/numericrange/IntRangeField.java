@@ -83,7 +83,7 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * therefore can't be used for sorting, faceting, etc.
  *
  * @see IntRange
- * @see org.apache.solr.search.IntRangeQParserPlugin
+ * @see org.apache.solr.search.numericrange.IntRangeQParserPlugin
  */
 public class IntRangeField extends PrimitiveFieldType {
 
