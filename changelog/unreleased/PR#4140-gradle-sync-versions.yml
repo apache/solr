@@ -1,0 +1,11 @@
+title: Gradle now syncs dependency versions across more configurations, forcing the choosing of one version in most cases
+type: other
+authors:
+  - name: Jan Høydahl
+  - name: David Smiley
+  - name: Christos Malliaridis
+links:
+  - name: PR#4140
+    url: https://github.com/apache/solr/pull/4140
+
+
