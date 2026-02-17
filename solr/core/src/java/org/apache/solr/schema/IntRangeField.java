@@ -103,14 +103,20 @@ public class IntRangeField extends PrimitiveFieldType {
       numDimensions = Integer.parseInt(numDimensionsStr);
       if (numDimensions < 1 || numDimensions > 4) {
         throw new SolrException(
-            ErrorCode.SERVER_ERROR, "numDimensions must be between 1 and 4, got: " + numDimensions);
+            ErrorCode.SERVER_ERROR,
+            "numDimensions must be between 1 and 4, but was ["
+                + numDimensions
+                + "] for field type "
+                + typeName);
       }
     }
 
     // IntRange does not support docValues - validate this wasn't explicitly set
     if (hasProperty(DOC_VALUES)) {
       throw new SolrException(
-          ErrorCode.SERVER_ERROR, "IntRangeField does not support docValues: " + typeName);
+          ErrorCode.SERVER_ERROR,
+          "docValues=true enabled but IntRangeField does not support docValues for field type "
+              + typeName);
     }
   }
 
@@ -268,6 +274,7 @@ public class IntRangeField extends PrimitiveFieldType {
     return new StoredField(sf.getName(), value.toString());
   }
 
+  // TODO - how would this be invoked?  Should we force all queries to come through {!numericRange}
   @Override
   protected Query getSpecializedRangeQuery(
       QParser parser,
