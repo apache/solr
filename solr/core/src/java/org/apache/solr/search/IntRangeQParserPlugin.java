@@ -54,20 +54,20 @@ import org.apache.solr.schema.SchemaField;
  *
  * <pre>
  * // 1D range queries
- * {!myRange field=price_range}[100 TO 200]                           // intersects (default)
- * {!myRange criteria="within" field=price_range}[0 TO 300]           // within
- * {!myRange criteria="contains" field=price_range}[150 TO 175]       // contains
- * {!myRange criteria="crosses" field=price_range}[150 TO 250]        // crosses
+ * {!numericRange field=price_range}[100 TO 200]                           // intersects (default)
+ * {!numericRange criteria="within" field=price_range}[0 TO 300]           // within
+ * {!numericRange criteria="contains" field=price_range}[150 TO 175]       // contains
+ * {!numericRange criteria="crosses" field=price_range}[150 TO 250]        // crosses
  *
  * // 2D range queries (bounding boxes)
- * {!myRange field=bbox}[0,0 TO 10,10]                                // intersects
- * {!myRange criteria="within" field=bbox}[-10,-10 TO 20,20]          // within
+ * {!numericRange field=bbox}[0,0 TO 10,10]                                // intersects
+ * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]          // within
  *
  * // 3D range queries (bounding cubes)
- * {!myRange field=cube}[0,0,0 TO 10,10,10]                           // intersects
+ * {!numericRange field=cube}[0,0,0 TO 10,10,10]                           // intersects
  *
  * // 4D range queries (tesseracts)
- * {!myRange field=tesseract}[0,0,0,0 TO 10,10,10,10]                 // intersects
+ * {!numericRange field=tesseract}[0,0,0,0 TO 10,10,10,10]                 // intersects
  * </pre>
  *
  * @see IntRangeField
@@ -75,8 +75,8 @@ import org.apache.solr.schema.SchemaField;
  */
 public class IntRangeQParserPlugin extends QParserPlugin {
 
-  /** Parser name used in local params syntax: {@code {!myRange ...}} */
-  public static final String NAME = "myRange";
+  /** Parser name used in local params syntax: {@code {!numericRange ...}} */
+  public static final String NAME = "numericRange";
 
   /** Parameter name for the field to query */
   public static final String FIELD_PARAM = "field";

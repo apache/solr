@@ -47,21 +47,21 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find ranges intersecting [120 TO 180]
     assertQ(
-        req("q", "{!myRange field=price_range}[120 TO 180]"),
+        req("q", "{!numericRange field=price_range}[120 TO 180]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
 
     // Query: find ranges intersecting [0 TO 100]
     assertQ(
-        req("q", "{!myRange field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange field=price_range}[0 TO 100]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     // Query: find ranges intersecting [175 TO 225]
     assertQ(
-        req("q", "{!myRange field=price_range}[175 TO 225]"),
+        req("q", "{!numericRange field=price_range}[175 TO 225]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -77,18 +77,18 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find ranges within [0 TO 300]
     assertQ(
-        req("q", "{!myRange criteria=\"within\" field=price_range}[0 TO 300]"),
+        req("q", "{!numericRange criteria=\"within\" field=price_range}[0 TO 300]"),
         "//result[@numFound='3']");
 
     // Query: find ranges within [100 TO 200]
     assertQ(
-        req("q", "{!myRange criteria=\"within\" field=price_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"within\" field=price_range}[100 TO 200]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Query: find ranges within [0 TO 100]
     assertQ(
-        req("q", "{!myRange criteria=\"within\" field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange criteria=\"within\" field=price_range}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
   }
@@ -102,7 +102,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find ranges containing [160 TO 170]
     assertQ(
-        req("q", "{!myRange criteria=\"contains\" field=price_range}[160 TO 170]"),
+        req("q", "{!numericRange criteria=\"contains\" field=price_range}[160 TO 170]"),
         "//result[@numFound='3']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']",
@@ -110,12 +110,12 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find ranges containing [0 TO 400]
     assertQ(
-        req("q", "{!myRange criteria=\"contains\" field=price_range}[0 TO 400]"),
+        req("q", "{!numericRange criteria=\"contains\" field=price_range}[0 TO 400]"),
         "//result[@numFound='0']");
 
     // Query: find ranges containing [100 TO 200]
     assertQ(
-        req("q", "{!myRange criteria=\"contains\" field=price_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"contains\" field=price_range}[100 TO 200]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='3']");
@@ -132,7 +132,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     // Query: find ranges crossing [150 TO 250]
     // Should match ranges that intersect but are not within
     assertQ(
-        req("q", "{!myRange criteria=\"crosses\" field=price_range}[150 TO 250]"),
+        req("q", "{!numericRange criteria=\"crosses\" field=price_range}[150 TO 250]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='4']");
@@ -148,19 +148,19 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find bboxes intersecting [8,8 TO 12,12]
     assertQ(
-        req("q", "{!myRange field=bbox}[8,8 TO 12,12]"),
+        req("q", "{!numericRange field=bbox}[8,8 TO 12,12]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
 
     // Query: find bboxes intersecting [25,25 TO 35,35]
     assertQ(
-        req("q", "{!myRange field=bbox}[25,25 TO 35,35]"),
+        req("q", "{!numericRange field=bbox}[25,25 TO 35,35]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='3']");
 
     // Query: find bboxes intersecting [100,100 TO 200,200]
-    assertQ(req("q", "{!myRange field=bbox}[100,100 TO 200,200]"), "//result[@numFound='0']");
+    assertQ(req("q", "{!numericRange field=bbox}[100,100 TO 200,200]"), "//result[@numFound='0']");
   }
 
   @Test
@@ -172,14 +172,14 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find bboxes within [0,0 TO 20,20]
     assertQ(
-        req("q", "{!myRange criteria=\"within\" field=bbox}[0,0 TO 20,20]"),
+        req("q", "{!numericRange criteria=\"within\" field=bbox}[0,0 TO 20,20]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
 
     // Query: find bboxes within [0,0 TO 30,30]
     assertQ(
-        req("q", "{!myRange criteria=\"within\" field=bbox}[0,0 TO 30,30]"),
+        req("q", "{!numericRange criteria=\"within\" field=bbox}[0,0 TO 30,30]"),
         "//result[@numFound='3']");
   }
 
@@ -192,7 +192,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find cubes intersecting [8,8,8 TO 12,12,12]
     assertQ(
-        req("q", "{!myRange field=cube}[8,8,8 TO 12,12,12]"),
+        req("q", "{!numericRange field=cube}[8,8,8 TO 12,12,12]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -207,7 +207,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query: find tesseracts intersecting [8,8,8,8 TO 12,12,12,12]
     assertQ(
-        req("q", "{!myRange field=tesseract}[8,8,8,8 TO 12,12,12,12]"),
+        req("q", "{!numericRange field=tesseract}[8,8,8,8 TO 12,12,12,12]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
         "//result/doc/str[@name='id'][.='2']");
@@ -223,18 +223,19 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query should match doc 1 via first range
     assertQ(
-        req("q", "{!myRange field=price_range_multi}[110 TO 120]"),
+        req("q", "{!numericRange field=price_range_multi}[110 TO 120]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Query should match doc 1 via second range
     assertQ(
-        req("q", "{!myRange field=price_range_multi}[310 TO 320]"),
+        req("q", "{!numericRange field=price_range_multi}[310 TO 320]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Query should match both docs
-    assertQ(req("q", "{!myRange field=price_range_multi}[150 TO 250]"), "//result[@numFound='2']");
+    assertQ(
+        req("q", "{!numericRange field=price_range_multi}[150 TO 250]"), "//result[@numFound='2']");
   }
 
   @Test
@@ -246,7 +247,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertQEx(
         "Missing field parameter should fail",
         "Missing required parameter: field",
-        req("q", "{!myRange}[100 TO 200]"),
+        req("q", "{!numericRange}[100 TO 200]"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -259,7 +260,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertQEx(
         "Query on wrong field type should fail",
         "must be of type IntRangeField",
-        req("q", "{!myRange field=title}[100 TO 200]"),
+        req("q", "{!numericRange field=title}[100 TO 200]"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -272,7 +273,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertQEx(
         "Invalid query criteria should fail",
         "Unknown query criteria",
-        req("q", "{!myRange criteria=\"invalid\" field=price_range}[100 TO 200]"),
+        req("q", "{!numericRange criteria=\"invalid\" field=price_range}[100 TO 200]"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -285,7 +286,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertQEx(
         "Invalid range format should fail",
         "Invalid range",
-        req("q", "{!myRange field=price_range}invalid"),
+        req("q", "{!numericRange field=price_range}invalid"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -297,7 +298,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     // Query with empty range should fail
     assertQEx(
         "Empty range value should fail",
-        req("q", "{!myRange field=price_range}"),
+        req("q", "{!numericRange field=price_range}"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
 
@@ -309,7 +310,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query without type parameter should default to intersects
     assertQ(
-        req("q", "{!myRange field=price_range}[150 TO 180]"),
+        req("q", "{!numericRange field=price_range}[150 TO 180]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
@@ -321,7 +322,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertU(commit());
 
     // Query with negative range
-    assertQ(req("q", "{!myRange field=price_range}[-80 TO -60]"), "//result[@numFound='2']");
+    assertQ(req("q", "{!numericRange field=price_range}[-80 TO -60]"), "//result[@numFound='2']");
   }
 
   @Test
@@ -334,7 +335,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Query should match the extreme range
     assertQ(
-        req("q", "{!myRange field=price_range}[0 TO 100]"),
+        req("q", "{!numericRange field=price_range}[0 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }
@@ -347,13 +348,13 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
 
     // Intersects query with point
     assertQ(
-        req("q", "{!myRange field=price_range}[100 TO 100]"),
+        req("q", "{!numericRange field=price_range}[100 TO 100]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
 
     // Intersects query containing point
     assertQ(
-        req("q", "{!myRange field=price_range}[50 TO 150]"),
+        req("q", "{!numericRange field=price_range}[50 TO 150]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
   }

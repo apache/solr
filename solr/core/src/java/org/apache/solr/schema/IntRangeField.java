@@ -64,13 +64,14 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  *
  * <h3>Querying</h3>
  *
- * Use the {@code myRange} query parser for range queries with support for different query types:
+ * Use the {@code numericRange} query parser for range queries with support for different query
+ * types:
  *
  * <ul>
- *   <li>Intersects (default): {@code {!myRange field=price_range}[100 TO 200]}
- *   <li>Within: {@code {!myRange criteria="within" field=price_range}[0 TO 300]}
- *   <li>Contains: {@code {!myRange criteria="contains" field=price_range}[150 TO 175]}
- *   <li>Crosses: {@code {!myRange criteria="crosses" field=price_range}[150 TO 250]}
+ *   <li>Intersects (default): {@code {!numericRange field=price_range}[100 TO 200]}
+ *   <li>Within: {@code {!numericRange criteria="within" field=price_range}[0 TO 300]}
+ *   <li>Contains: {@code {!numericRange criteria="contains" field=price_range}[150 TO 175]}
+ *   <li>Crosses: {@code {!numericRange criteria="crosses" field=price_range}[150 TO 250]}
  * </ul>
  *
  * <h3>Limitations</h3>
@@ -313,7 +314,7 @@ public class IntRangeField extends PrimitiveFieldType implements IntValueFieldTy
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
           "Standard range query syntax only supports 1D ranges. "
-              + "Use {!myRange field="
+              + "Use {!numericRange field="
               + field.getName()
               + "} for multi-dimensional queries.");
     }
