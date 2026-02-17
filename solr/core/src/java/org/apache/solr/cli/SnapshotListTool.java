@@ -35,7 +35,7 @@ public class SnapshotListTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of collection to list snapshots for.")
-          .build();
+          .get();
 
   public SnapshotListTool(ToolRuntime runtime) {
     super(runtime);

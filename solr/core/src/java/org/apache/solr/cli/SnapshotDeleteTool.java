@@ -33,7 +33,7 @@ public class SnapshotDeleteTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of collection to manage.")
-          .build();
+          .get();
 
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
@@ -42,7 +42,7 @@ public class SnapshotDeleteTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the snapshot to delete")
-          .build();
+          .get();
 
   public SnapshotDeleteTool(ToolRuntime runtime) {
     super(runtime);

@@ -17,6 +17,7 @@
 package org.apache.solr.cli;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.net.URL;
@@ -34,14 +35,16 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.DefaultParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.cli.help.HelpFormatter;
+import org.apache.commons.cli.help.TextHelpAppendable;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,7 +59,7 @@ public class SolrCLI implements CLIO {
     ToolRuntime runtime = new DefaultToolRuntime();
 
     final boolean hasNoCommand =
-        args == null || args.length == 0 || args[0] == null || args[0].trim().length() == 0;
+        args == null || args.length == 0 || args[0] == null || args[0].trim().isEmpty();
     final boolean isHelpCommand = !hasNoCommand && Arrays.asList("-h", "--help").contains(args[0]);
 
     if (hasNoCommand || isHelpCommand) {
@@ -118,7 +121,7 @@ public class SolrCLI implements CLIO {
     return newTool(toolType, runtime);
   }
 
-  public static CommandLine parseCmdLine(Tool tool, String[] args) {
+  public static CommandLine parseCmdLine(Tool tool, String[] args) throws IOException {
     // the parser doesn't like -D props
     List<String> toolArgList = new ArrayList<>();
     List<String> dashDList = new ArrayList<>();
@@ -249,7 +252,7 @@ public class SolrCLI implements CLIO {
   }
 
   /** Parses the command-line arguments passed by the user. */
-  public static CommandLine processCommandLineArgs(Tool tool, String[] args) {
+  public static CommandLine processCommandLineArgs(Tool tool, String[] args) throws IOException {
     Options options = tool.getOptions();
     ToolRuntime runtime = tool.getRuntime();
 
@@ -258,7 +261,7 @@ public class SolrCLI implements CLIO {
       cli =
           DefaultParser.builder()
               .setDeprecatedHandler(SolrCLI::deprecatedHandlerStdErr)
-              .build()
+              .get()
               .parse(options, args);
     } catch (ParseException exp) {
       // Check if we passed in a help argument with a non parsing set of arguments.
@@ -290,7 +293,7 @@ public class SolrCLI implements CLIO {
   }
 
   /** Prints tool help for a given tool */
-  public static void printToolHelp(Tool tool) {
+  public static void printToolHelp(Tool tool) throws IOException {
     HelpFormatter formatter = getFormatter();
     Options nonDeprecatedOptions = new Options();
 
@@ -308,10 +311,11 @@ public class SolrCLI implements CLIO {
         autoGenerateUsage);
   }
 
+  @SuppressForbidden(reason = "System.out for formatting")
   public static HelpFormatter getFormatter() {
-    HelpFormatter formatter = HelpFormatter.builder().get();
-    formatter.setWidth(120);
-    return formatter;
+    TextHelpAppendable helpAppendable = new TextHelpAppendable(System.out);
+    helpAppendable.setMaxWidth(120);
+    return HelpFormatter.builder().setHelpAppendable(helpAppendable).get();
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */

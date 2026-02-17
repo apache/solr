@@ -72,8 +72,10 @@ public class StreamTool extends ToolBase {
   @Override
   public String getUsage() {
     // Specify that the last argument is the streaming expression
-    return "bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields\n"
-        + "       <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>\n";
+    return """
+        bin/solr stream [--array-delimiter <CHARACTER>] [-c <NAME>] [--delimiter <CHARACTER>] [--execution <ENVIRONMENT>] [--fields
+               <FIELDS>] [-h] [--header] [-s <HOST>] [-u <credentials>] [-v] [-z <HOST>]  <streaming expression OR stream_file.expr>
+        """;
   }
 
   private static final Option EXECUTION_OPTION =
@@ -83,7 +85,7 @@ public class StreamTool extends ToolBase {
           .argName("ENVIRONMENT")
           .desc(
               "Execution environment is either 'local' (i.e CLI process) or via a 'remote' Solr server. Default environment is 'remote'.")
-          .build();
+          .get();
 
   private static final Option COLLECTION_OPTION =
       Option.builder("c")
@@ -92,7 +94,7 @@ public class StreamTool extends ToolBase {
           .hasArg()
           .desc(
               "Name of the specific collection to execute expression on if the execution is set to 'remote'. Required for 'remote' execution environment.")
-          .build();
+          .get();
 
   private static final Option FIELDS_OPTION =
       Option.builder()
@@ -101,10 +103,10 @@ public class StreamTool extends ToolBase {
           .hasArg()
           .desc(
               "The fields in the tuples to output. Defaults to fields in the first tuple of result set.")
-          .build();
+          .get();
 
   private static final Option HEADER_OPTION =
-      Option.builder().longOpt("header").desc("Specify to include a header line.").build();
+      Option.builder().longOpt("header").desc("Specify to include a header line.").get();
 
   private static final Option DELIMITER_OPTION =
       Option.builder()
@@ -112,14 +114,14 @@ public class StreamTool extends ToolBase {
           .argName("CHARACTER")
           .hasArg()
           .desc("The output delimiter. Default to using three spaces.")
-          .build();
+          .get();
   private static final Option ARRAY_DELIMITER_OPTION =
       Option.builder()
           .longOpt("array-delimiter")
           .argName("CHARACTER")
           .hasArg()
           .desc("The delimiter multi-valued fields. Default to using a pipe (|) delimiter.")
-          .build();
+          .get();
 
   @Override
   public Options getOptions() {
@@ -268,6 +270,7 @@ public class StreamTool extends ToolBase {
 
     Lang.register(streamFactory);
 
+    assert streamExpression != null;
     stream = streamFactory.constructStream(streamExpression);
 
     pushBackStream = new PushBackStream(stream);
@@ -467,7 +470,7 @@ public class StreamTool extends ToolBase {
   static String listToString(List values, String internalDelim) {
     StringBuilder buf = new StringBuilder();
     for (Object value : values) {
-      if (buf.length() > 0) {
+      if (!buf.isEmpty()) {
         buf.append(internalDelim);
       }
 
@@ -504,7 +507,7 @@ public class StreamTool extends ToolBase {
 
       // Substitute parameters
 
-      if (line.length() > 0) {
+      if (!line.isEmpty()) {
         for (int i = 1; i < args.length; i++) {
           String arg = args[i];
           line = line.replace("$" + i, arg);

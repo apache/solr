@@ -35,7 +35,7 @@ public class ZkMkrootTool extends ToolBase {
           .longOpt("fail-on-exists")
           .hasArg()
           .desc("Raise an error if the root exists.  Defaults to false.")
-          .build();
+          .get();
 
   public ZkMkrootTool(ToolRuntime runtime) {
     super(runtime);

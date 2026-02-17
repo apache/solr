@@ -48,7 +48,7 @@ public class ZkCpTool extends ToolBase {
           .hasArg()
           .argName("DIR")
           .desc("Required to look up configuration for compressing state.json.")
-          .build();
+          .get();
 
   public ZkCpTool(ToolRuntime runtime) {
     super(runtime);
