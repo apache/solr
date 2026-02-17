@@ -50,7 +50,9 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
         req("q", "{!numericRange criteria=intersects field=price_range}[120 TO 180]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
-        "//result/doc/str[@name='id'][.='2']");
+        "//result/doc/str[@name='id'][.='2']",
+        "//result/doc/str[@name='price_range'][.='[100 TO 200]']",
+        "//result/doc/str[@name='price_range'][.='[150 TO 250]']");
 
     // Query: find ranges intersecting [0 TO 100]
     assertQ(
@@ -151,7 +153,9 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
         req("q", "{!numericRange criteria=intersects field=bbox}[8,8 TO 12,12]"),
         "//result[@numFound='2']",
         "//result/doc/str[@name='id'][.='1']",
-        "//result/doc/str[@name='id'][.='2']");
+        "//result/doc/str[@name='id'][.='2']",
+        "//result/doc/str[@name='bbox'][.='[0,0 TO 10,10]']",
+        "//result/doc/str[@name='bbox'][.='[5,5 TO 15,15]']");
 
     // Query: find bboxes intersecting [25,25 TO 35,35]
     assertQ(
@@ -227,7 +231,9 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     assertQ(
         req("q", "{!numericRange criteria=intersects field=price_range_multi}[110 TO 120]"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='id'][.='1']");
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/arr[@name='price_range_multi']/str[1][.='[100 TO 200]']",
+        "//result/doc/arr[@name='price_range_multi']/str[2][.='[300 TO 400]']");
 
     // Query should match doc 1 via second range
     assertQ(
@@ -362,5 +368,61 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
         req("q", "{!numericRange criteria=intersects field=price_range}[50 TO 150]"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='id'][.='1']");
+  }
+
+  @Test
+  public void testFieldFormatting() {
+    // Test 1D field formatting
+    assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
+    // Test 2D field formatting
+    assertU(adoc("id", "2", "bbox", "[10,20 TO 30,40]"));
+    // Test 3D field formatting
+    assertU(adoc("id", "3", "cube", "[5,10,15 TO 25,30,35]"));
+    // Test 4D field formatting
+    assertU(adoc("id", "4", "tesseract", "[1,2,3,4 TO 11,12,13,14]"));
+    // Test multi-valued field formatting
+    assertU(
+        adoc(
+            "id",
+            "5",
+            "price_range_multi",
+            "[50 TO 100]",
+            "price_range_multi",
+            "[200 TO 300]",
+            "price_range_multi",
+            "[400 TO 500]"));
+    assertU(commit());
+
+    // Verify 1D field returns correctly formatted value
+    assertQ(
+        req("q", "id:1"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='price_range'][.='[100 TO 200]']");
+
+    // Verify 2D field returns correctly formatted value
+    assertQ(
+        req("q", "id:2"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='bbox'][.='[10,20 TO 30,40]']");
+
+    // Verify 3D field returns correctly formatted value
+    assertQ(
+        req("q", "id:3"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='cube'][.='[5,10,15 TO 25,30,35]']");
+
+    // Verify 4D field returns correctly formatted value
+    assertQ(
+        req("q", "id:4"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='tesseract'][.='[1,2,3,4 TO 11,12,13,14]']");
+
+    // Verify multi-valued field returns all values correctly formatted
+    assertQ(
+        req("q", "id:5"),
+        "//result[@numFound='1']",
+        "//result/doc/arr[@name='price_range_multi']/str[1][.='[50 TO 100]']",
+        "//result/doc/arr[@name='price_range_multi']/str[2][.='[200 TO 300]']",
+        "//result/doc/arr[@name='price_range_multi']/str[3][.='[400 TO 500]']");
   }
 }

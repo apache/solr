@@ -151,7 +151,7 @@ public class IntRangeField extends PrimitiveFieldType {
 
   @Override
   public void write(TextResponseWriter writer, String name, IndexableField f) throws IOException {
-    writer.writeStr(name, f.stringValue(), false);
+    writer.writeStr(name, toExternal(f), false);
   }
 
   @Override
