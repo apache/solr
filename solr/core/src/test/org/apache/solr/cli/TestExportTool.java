@@ -292,7 +292,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
   private void assertJavabinDocsCount(ExportTool.Info info, int expected) throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
     try (FileInputStream fis = new FileInputStream(info.out)) {
       int[] count = new int[] {0};
       FastInputStream in = FastInputStream.wrap(fis);
@@ -309,14 +309,14 @@ public class TestExportTool extends SolrCloudTestCase {
 
   private void assertJsonDocsCount(ExportTool.Info info, int expected) {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
   }
 
   private void assertJsonDocsCount(
       ExportTool.Info info, int expected, Predicate<Map<String, Object>> predicate)
       throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;
@@ -342,7 +342,7 @@ public class TestExportTool extends SolrCloudTestCase {
       ExportTool.Info info, int expected, Predicate<Map<String, Object>> predicate)
       throws IOException {
     assertTrue(
-        "" + info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
+        info.docsWritten.get() + " expected " + expected, info.docsWritten.get() >= expected);
 
     JsonRecordReader jsonReader;
     Reader rdr;

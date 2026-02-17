@@ -171,8 +171,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     dataBytes = data.getBytes(StandardCharsets.UTF_8);
     expected = zLibCompressor.compressBytes(dataBytes);
 
-    byte[] fromLoca = new ZLibCompressor().compressBytes(Files.readAllBytes(localFile));
-    assertArrayEquals("Should get back what we put in ZK", fromLoca, expected);
+    byte[] fromLocal = new ZLibCompressor().compressBytes(Files.readAllBytes(localFile));
+    assertArrayEquals("Should get back what we put in ZK", fromLocal, expected);
 
     args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), localFile.toString(), "zk:/state.json"};
@@ -268,7 +268,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertArrayEquals(
         "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
 
-    // Lets do it again
+    // Let's do it again
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     locFile = SOLR_HOME.resolve("solr-stress-new.xml");

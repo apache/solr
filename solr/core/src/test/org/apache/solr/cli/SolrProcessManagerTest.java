@@ -79,13 +79,15 @@ public class SolrProcessManagerTest extends SolrTestCase {
     }
   }
 
+  @SuppressWarnings("SystemGetProperty")
   private static Pair<Integer, Process> createProcess(int port, boolean https) throws IOException {
     // Get the path to the java executable from the current JVM
+
+    String pathSeparator = System.getProperty("path.separator");
     String classPath =
-        Arrays.stream(
-                System.getProperty("java.class.path").split(System.getProperty("path.separator")))
+        Arrays.stream(System.getProperty("java.class.path").split(pathSeparator))
             .filter(p -> p.contains("solr") && p.contains("core") && p.contains("build"))
-            .collect(Collectors.joining(System.getProperty("path.separator")));
+            .collect(Collectors.joining(pathSeparator));
 
     ProcessBuilder processBuilder =
         new ProcessBuilder(
@@ -184,7 +186,7 @@ public class SolrProcessManagerTest extends SolrTestCase {
 
   /**
    * This class is started as new java process by {@link SolrProcessManagerTest#createProcess}, and
-   * it listens to a HTTP(s) port to simulate a real Solr process.
+   * it listens to an HTTP(s) port to simulate a real Solr process.
    */
   @SuppressWarnings("NewClassNamingConvention")
   public static class MockSolrProcess {
