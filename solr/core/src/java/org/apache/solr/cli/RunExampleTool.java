@@ -787,7 +787,7 @@ public class RunExampleTool extends ToolBase {
       executor.execute(startCmd, startEnv, handler);
       // wait for execution.
       try {
-        handler.waitFor(Duration.ofMillis(3000));
+        handler.waitFor(Duration.ofSeconds(3));
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
         // safe to ignore ...
