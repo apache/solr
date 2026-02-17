@@ -115,8 +115,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   static final class PageOfCollections {
     List<String> selected;
     int numFound = 0; // total number of matches (across all pages)
-    int start = 0;
-    int rows = -1;
+    int start;
+    int rows;
     FilterType filterType;
     String filter;
 
@@ -157,7 +157,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       if (!regexFilter.startsWith("(?i)")) regexFilter = "(?i)" + regexFilter;
 
       Pattern filterRegex = Pattern.compile(regexFilter);
-      List<String> filtered = new ArrayList<String>();
+      List<String> filtered = new ArrayList<>();
       for (String next : collections) {
         if (matches(filterRegex, next)) filtered.add(next);
       }
@@ -172,7 +172,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     @SuppressWarnings("unchecked")
     boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
 
-      if (filterType != FilterType.status || filter == null || filter.length() == 0)
+      if (filterType != FilterType.status || filter == null || filter.isEmpty())
         return true; // no status filter, so all match
 
       boolean isHealthy = true; // means all replicas for all shards active
@@ -270,7 +270,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         throws KeeperException, InterruptedException {
       if (cachedCollections == null) {
         // cache is stale, rebuild the full list ...
-        cachedCollections = new ArrayList<String>();
+        cachedCollections = new ArrayList<>();
 
         List<String> fromZk = zkClient.getChildren("/collections", this);
         if (fromZk != null) cachedCollections.addAll(fromZk);
@@ -324,7 +324,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             // using longs here as we don't know how long the 2nd group is
             int leftGroup2 = Integer.parseInt(leftMatcher.group(2));
             int rightGroup2 = Integer.parseInt(rightMatcher.group(2));
-            return (leftGroup2 > rightGroup2) ? 1 : ((leftGroup2 == rightGroup2) ? 0 : -1);
+            return Integer.compare(leftGroup2, rightGroup2);
           }
         }
       }
@@ -344,7 +344,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private PagedCollectionSupport pagingSupport;
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
 
@@ -450,21 +449,17 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     String filterType = params.get("filterType");
     if (filterType != null) {
       filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0) {
+      if (filterType.isEmpty()) {
         return FilterType.none;
       }
-      switch (filterType) {
-        case "none":
-          return FilterType.none;
-        case "name":
-          return FilterType.name;
-        case "status":
-          return FilterType.status;
-        default:
-          throw new SolrException(
-              ErrorCode.BAD_REQUEST,
-              "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
-      }
+      return switch (filterType) {
+        case "none" -> FilterType.none;
+        case "name" -> FilterType.name;
+        case "status" -> FilterType.status;
+        default -> throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+      };
     }
     return FilterType.none;
   }
@@ -484,7 +479,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
     String filter = params.get("filter");
     if (filter != null) {
       filter = filter.trim();
-      if (filter.length() > 0) {
+      if (!filter.isEmpty()) {
         return filter;
       }
     }
