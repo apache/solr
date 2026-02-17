@@ -50,6 +50,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -685,33 +686,33 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           }
         }
 
-        Map<String, Object> znodeMap = new LinkedHashMap<>();
-        Map<String, Object> znodeContent = new LinkedHashMap<>();
+        SimpleOrderedMap<Object> znodeMap = new SimpleOrderedMap<>();
+        SimpleOrderedMap<Object> znodeContent = new SimpleOrderedMap<>();
 
-        znodeContent.put(PATH, path);
+        znodeContent.add(PATH, path);
 
-        Map<String, Object> prop = new LinkedHashMap<>();
-        prop.put("version", stat.getVersion());
-        prop.put("aversion", stat.getAversion());
-        prop.put("children_count", stat.getNumChildren());
-        prop.put("ctime", time(stat.getCtime()));
-        prop.put("cversion", stat.getCversion());
-        prop.put("czxid", stat.getCzxid());
-        prop.put("ephemeralOwner", stat.getEphemeralOwner());
-        prop.put("mtime", time(stat.getMtime()));
-        prop.put("mzxid", stat.getMzxid());
-        prop.put("pzxid", stat.getPzxid());
-        prop.put("dataLength", stat.getDataLength());
+        SimpleOrderedMap<Object> prop = new SimpleOrderedMap<>();
+        prop.add("version", stat.getVersion());
+        prop.add("aversion", stat.getAversion());
+        prop.add("children_count", stat.getNumChildren());
+        prop.add("ctime", time(stat.getCtime()));
+        prop.add("cversion", stat.getCversion());
+        prop.add("czxid", stat.getCzxid());
+        prop.add("ephemeralOwner", stat.getEphemeralOwner());
+        prop.add("mtime", time(stat.getMtime()));
+        prop.add("mzxid", stat.getMzxid());
+        prop.add("pzxid", stat.getPzxid());
+        prop.add("dataLength", stat.getDataLength());
         if (null != dataStrErr) {
-          prop.put("dataNote", dataStrErr);
+          prop.add("dataNote", dataStrErr);
         }
-        znodeContent.put("prop", prop);
+        znodeContent.add("prop", prop);
 
         if (null != dataStr) {
-          znodeContent.put("data", dataStr);
+          znodeContent.add("data", dataStr);
         }
 
-        znodeMap.put("znode", znodeContent);
+        znodeMap.add("znode", znodeContent);
         return znodeMap;
       } catch (KeeperException | InterruptedException e) {
         writeError(500, e.toString());
