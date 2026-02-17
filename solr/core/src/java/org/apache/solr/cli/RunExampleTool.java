@@ -410,10 +410,11 @@ public class RunExampleTool extends ToolBase {
                           "name":"knn_vector_10",
                           "class":"solr.DenseVectorField",
                           "vectorDimension":10,
-                          "similarityFunction":cosine
-                          "knnAlgorithm":hnsw
+                          "similarityFunction":"cosine",
+                          "knnAlgorithm":"hnsw"
                         }
-                      }""");
+                      }
+                """);
 
         echo(
             "Adding name, genre, directed_by, initial_release_date, and film_vector fields to films schema");
@@ -448,7 +449,7 @@ public class RunExampleTool extends ToolBase {
                         "add-field" : {
                           "name":"film_vector",
                           "type":"knn_vector_10",
-                          "indexed":true
+                          "indexed":true,
                           "stored":true
                         },
                         "add-copy-field" : {
