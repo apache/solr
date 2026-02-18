@@ -91,7 +91,7 @@ Fetching and returning the index-flags for each field in the index has non-zero 
 |===
 +
 When set to `true` in SolrCloud mode, the handler aggregates results from all shards in the collection.
-Additive index metrics (`numDocs`, `maxDoc`, `deletedDocs`, `segmentCount`) are summed across shards.
+Additive index metrics (`numDocs`, `deletedDocs`, `segmentCount`) are summed across shards; `maxDoc` is the maximum across shards.
 Field types and schema flags are validated for consistency across shards.
 Per-shard index details and per-field detailed statistics are returned under a `shards` key.
 
@@ -150,18 +150,19 @@ http://localhost:8983/solr/techproducts/admin/luke?distrib=true&fl=manu
 
 In distributed mode, the response contains:
 
-* `index` -- Merged additive metrics summed across all shards: `numDocs`, `maxDoc`, `deletedDocs`, `segmentCount`.
-* `fields` -- Merged field metadata. For each field: `type`, `schema` flags, `index` flags, and `dynamicBase` are validated to be consistent across shards. The `docs` count is summed. Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are _not_ included at this level.
+* `index` -- Merged metrics across all shards: `numDocs`, `deletedDocs`, `segmentCount` are summed; `maxDoc` is the maximum across shards.
+* `fields` -- Merged field metadata. For each field: `type`, `schema` flags, and `dynamicBase` are validated to be consistent across shards; `index` flags use the first non-null value. The `docs` count is summed. Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are _not_ included at this level.
 * `schema` -- Schema information from the first responding shard (identical across shards sharing the same configset).
 * `info` -- Static info from the first responding shard.
-* `shards` -- Per-shard details, ordered lexicographically by shard address. Each entry contains:
+* `shards` -- Per-shard details in response-completion order. Each entry contains:
 ** `index` -- Full index info for that shard (including `directory`, `segmentsFile`, `version`, `current`, `hasDeletions`, `lastModified`, `userData`).
 ** `fields` -- Only present when `fl` triggers detailed statistics. Contains per-field `topTerms`, `distinct`, and `histogram` from that shard.
 
 === Merge Semantics
 
-Field `type`, `schema` flags, `index` flags, and `dynamicBase` are validated for consistency across shards.
+Field `type`, `schema` flags, and `dynamicBase` are validated for consistency across shards.
 If a mismatch is detected, the handler returns an error identifying the field, the conflicting values, and the shard addresses involved.
+The `index` flags are index-derived (not schema-derived) and may legitimately differ across shards; the first non-null value is used.
 
 Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not merged across shards.
 These statistics are shard-local and appear in each shard's entry under the `shards` key.

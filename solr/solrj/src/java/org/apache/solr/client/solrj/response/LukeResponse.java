@@ -119,6 +119,7 @@ public class LukeResponse extends SolrResponseBase {
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
+    Map<String, Object> extras = new HashMap<>();
 
     public FieldInfo(String n) {
       name = n;
@@ -127,21 +128,16 @@ public class LukeResponse extends SolrResponseBase {
     @SuppressWarnings("unchecked")
     public void read(NamedList<Object> nl) {
       for (Map.Entry<String, Object> entry : nl) {
-        if ("type".equals(entry.getKey())) {
-          type = (String) entry.getValue();
-        }
-        if ("flags".equals(entry.getKey())) {
-          flags = parseFlags((String) entry.getValue());
-        } else if ("schema".equals(entry.getKey())) {
-          schema = (String) entry.getValue();
-        } else if ("docs".equals(entry.getKey())) {
-          docs = ((Number) entry.getValue()).longValue();
-        } else if ("distinct".equals(entry.getKey())) {
-          distinct = ((Number) entry.getValue()).longValue();
-        } else if ("cacheableFaceting".equals(entry.getKey())) {
-          cacheableFaceting = (Boolean) entry.getValue();
-        } else if ("topTerms".equals(entry.getKey())) {
-          topTerms = (NamedList<Integer>) entry.getValue();
+        String key = entry.getKey();
+        switch (key) {
+          case "type" -> type = (String) entry.getValue();
+          case "flags" -> flags = parseFlags((String) entry.getValue());
+          case "schema" -> schema = (String) entry.getValue();
+          case "docs" -> docs = ((Number) entry.getValue()).longValue();
+          case "distinct" -> distinct = ((Number) entry.getValue()).longValue();
+          case "cacheableFaceting" -> cacheableFaceting = (Boolean) entry.getValue();
+          case "topTerms" -> topTerms = (NamedList<Integer>) entry.getValue();
+          default -> extras.put(key, entry.getValue());
         }
       }
     }
@@ -192,6 +188,10 @@ public class LukeResponse extends SolrResponseBase {
 
     public NamedList<Integer> getTopTerms() {
       return topTerms;
+    }
+
+    public Map<String, Object> getExtras() {
+      return extras;
     }
   }
 
