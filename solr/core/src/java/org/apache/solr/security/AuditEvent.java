@@ -19,7 +19,6 @@ package org.apache.solr.security;
 import static org.apache.solr.security.AuditEvent.EventType.ANONYMOUS;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.servlet.http.HttpServletRequest;
 import java.lang.invoke.MethodHandles;
 import java.security.Principal;
@@ -391,19 +390,6 @@ public class AuditEvent {
   /** In case of ERROR event, find the exception causing the error */
   public Throwable getException() {
     return exception;
-  }
-
-  /**
-   * Get baseUrl as StringBuffer for back compat with previous version
-   *
-   * @deprecated Please use {@link #getBaseUrl()} instead
-   * @return StringBuffer of the base url without query part
-   */
-  @Deprecated
-  @JsonIgnore
-  @SuppressWarnings("JdkObsolete")
-  public StringBuffer getRequestUrl() {
-    return new StringBuffer(baseUrl);
   }
 
   /**
