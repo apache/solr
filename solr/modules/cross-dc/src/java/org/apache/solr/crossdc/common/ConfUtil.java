@@ -21,9 +21,11 @@ import static org.apache.solr.crossdc.common.KafkaCrossDcConf.TOPIC_NAME;
 
 import java.io.ByteArrayInputStream;
 import java.lang.invoke.MethodHandles;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.SuppressForbidden;
@@ -33,6 +35,9 @@ import org.slf4j.LoggerFactory;
 @SuppressForbidden(reason = "load properties from byte array")
 public class ConfUtil {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String KAFKA_ENV_PREFIX = "SOLR_CROSSDC_KAFKA_";
+  public static final String KAFKA_PROP_PREFIX = "solr.crossdc.kafka.";
 
   public static void fillProperties(SolrZkClient solrClient, Map<String, Object> properties) {
     // fill in from environment
@@ -47,6 +52,14 @@ public class ConfUtil {
         properties.put(configKey.getKey(), val);
       }
     }
+    // fill in aux Kafka env with prefix
+    env.forEach(
+        (key, val) -> {
+          if (key.startsWith(KAFKA_ENV_PREFIX)) {
+            properties.put(normalizeKafkaEnvKey(key), val);
+          }
+        });
+
     // fill in from system properties
     for (ConfigProperty configKey : KafkaCrossDcConf.CONFIG_PROPERTIES) {
       String val = System.getProperty(configKey.getKey());
@@ -54,6 +67,15 @@ public class ConfUtil {
         properties.put(configKey.getKey(), val);
       }
     }
+    // fill in aux Kafka system properties with prefix
+    System.getProperties()
+        .forEach(
+            (key, val) -> {
+              if (key.toString().startsWith(KAFKA_PROP_PREFIX)) {
+                properties.put(normalizeKafkaSysPropKey(key.toString()), val);
+              }
+            });
+
     Properties zkProps = new Properties();
     if (solrClient != null) {
       try {
@@ -89,6 +111,34 @@ public class ConfUtil {
             "Exception looking for CrossDC configuration in Zookeeper",
             e);
       }
+    }
+    // normalize any left aux properties by stripping prefixes
+    if (!properties.isEmpty()) {
+      Set<String> keys = new HashSet<>(properties.keySet());
+      keys.forEach(
+          key -> {
+            if (key.startsWith(KAFKA_ENV_PREFIX)) {
+              properties.put(normalizeKafkaEnvKey(key), properties.remove(key));
+            } else if (key.startsWith(KAFKA_PROP_PREFIX)) {
+              properties.put(normalizeKafkaSysPropKey(key), properties.remove(key));
+            }
+          });
+    }
+  }
+
+  public static String normalizeKafkaEnvKey(String key) {
+    if (key.startsWith(KAFKA_ENV_PREFIX)) {
+      return key.substring(KAFKA_ENV_PREFIX.length()).toLowerCase(Locale.ROOT).replace('_', '.');
+    } else {
+      return key;
+    }
+  }
+
+  public static String normalizeKafkaSysPropKey(String key) {
+    if (key.startsWith(KAFKA_PROP_PREFIX)) {
+      return key.substring(KAFKA_PROP_PREFIX.length()).toLowerCase(Locale.ROOT);
+    } else {
+      return key;
     }
   }
 

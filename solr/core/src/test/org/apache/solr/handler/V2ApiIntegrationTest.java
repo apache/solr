@@ -48,7 +48,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private static String COLL_NAME = "collection1";
+  private static final String COLL_NAME = "collection1";
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -80,11 +80,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build();
     v2Request.setResponseParser(responseParser);
     RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class,
-            () -> {
-              v2Request.process(cluster.getSolrClient());
-            });
+        expectThrows(RemoteSolrException.class, () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }
 
@@ -114,28 +110,29 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWTParam() throws Exception {
+  public void testInvalidWTParamReturnsError() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
-    // TODO: If possible do this in a better way
+    // Using an invalid wt parameter should return a 400 error
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
     String respString = InputStreamResponseParser.consumeResponseToString(res);
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
-    assertFalse(respString.contains("500"));
-    assertFalse(respString.contains("NullPointerException"));
-    assertFalse(
-        respString.contains(
-            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
-    // since no-op response writer is used, doing contains match
-    assertTrue(respString.contains("/c/collection1/get"));
+    // Should get a 400 Bad Request error for unknown writer type
+    assertTrue(
+        "Expected error message about unknown writer type",
+        respString.contains("Unknown response writer type"));
+    assertTrue("Expected 400 error code", respString.contains("400"));
+  }
 
-    // no response parser
+  @Test
+  public void testWTParam() throws Exception {
+    // When no response parser is set, the default JSON writer should be used
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
     request.setResponseParser(null);
     Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
-    respString = resp.toString();
+    String respString = resp.toString();
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
+    assertFalse(respString.contains("400"));
     assertFalse(
         respString.contains(
             "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));

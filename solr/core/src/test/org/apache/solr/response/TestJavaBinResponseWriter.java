@@ -29,8 +29,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ByteUtils;
 import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.JavaBinResponseWriter.Resolver;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
@@ -72,7 +72,7 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
     String s = UUID.randomUUID().toString().toLowerCase(Locale.ROOT);
     assertU(adoc("id", "101", "uuid", s));
     assertU(commit());
-    LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");
+    SolrQueryRequestBase req = lrf.makeRequest("q", "*:*");
     SolrQueryResponse rsp = h.queryAndResponse(req.getParams().get(CommonParams.QT), req);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     h.getCore().getQueryResponseWriter("javabin").write(baos, req, rsp);
@@ -109,7 +109,7 @@ public class TestJavaBinResponseWriter extends SolrTestCaseJ4 {
   }
 
   public void testResolverSolrDocumentPartialFields() throws Exception {
-    LocalSolrQueryRequest req =
+    SolrQueryRequestBase req =
         lrf.makeRequest(
             "q", "*:*",
             "fl", "id,xxx,ddd_s");
