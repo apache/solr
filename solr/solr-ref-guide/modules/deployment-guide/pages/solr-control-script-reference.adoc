@@ -270,7 +270,7 @@ See the section <<Running with Example Configurations>> below for more details o
 |Optional |Default: none
 |===
 +
-Don't prompt for input; accept all defaults when running examples that accept user input.
+Don't prompt for input; accept all defaults when running examples that accept input.
 +
 For example, when using the "cloud" example, an interactive session guides you through several options for your SolrCloud cluster.
 If you want to accept all of the defaults, you can simply add the `--no-prompt` option to your request.
@@ -284,9 +284,9 @@ If you want to accept all of the defaults, you can simply add the `--no-prompt` 
 |Optional |Default: none
 |===
 +
-Don't prompt for input; provide defaults in comma delimited format when running examples that accept user input.
+Don't prompt for input; instead supply ordered answers in comma delimited format when running examples that accept input.
 +
-For example, when using the "cloud" example, start a three node cluster on specific ports:
+For example, when using the "cloud" example, you can answer the prompts non-interactively to start a three node cluster on specific ports:
 +
 *Example*: `bin/solr start -e cloud --prompt-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
 
