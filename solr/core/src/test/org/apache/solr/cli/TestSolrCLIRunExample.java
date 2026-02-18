@@ -585,7 +585,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     String solrUrl = "http://localhost:" + bindPort + "/solr";
     if (!CLIUtils.safeCheckCollectionExists(solrUrl, collectionName, null)) {
       fail(
-          "After running Solr cloud example with --prompts, test collection '"
+          "After running Solr cloud example with --prompt-inputs, test collection '"
               + collectionName
               + "' not found in Solr at: "
               + solrUrl
