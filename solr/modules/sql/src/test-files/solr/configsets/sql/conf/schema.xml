@@ -57,9 +57,8 @@
 
   <!-- Used to test proper type handling for custom field types based on built-in type classes -->
   <fieldType name="stringx" class="solr.StrField"/>
-  <fieldType name="tintx" class="solr.TrieIntField"/>
   <fieldType name="pintx" class="solr.IntPointField"/>
-  <fieldType name="tfloatx" class="solr.TrieFloatField"/>
+
   <fieldType name="pfloatx" class="solr.FloatPointField"/>
   <fieldType name="tlongx" class="solr.TrieLongField"/>
   <fieldType name="plongx" class="solr.LongPointField"/>

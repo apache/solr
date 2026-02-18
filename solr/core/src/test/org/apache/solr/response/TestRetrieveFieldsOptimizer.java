@@ -391,11 +391,6 @@ class RetrieveFieldType {
   final String solrTypeClass;
 
   static enum TEST_TYPE {
-    TINT,
-    TLONG,
-    TFLOAT,
-    TDOUBLE,
-    TDATE,
     PINT,
     PLONG,
     PFLOAT,
@@ -407,11 +402,6 @@ class RetrieveFieldType {
 
   static final Map<TEST_TYPE, String> solrClassMap =
       Map.ofEntries(
-          Map.entry(TEST_TYPE.TINT, "solr.TrieIntField"),
-          Map.entry(TEST_TYPE.TLONG, "solr.TrieLongField"),
-          Map.entry(TEST_TYPE.TFLOAT, "solr.TrieFloatField"),
-          Map.entry(TEST_TYPE.TDOUBLE, "solr.TrieDoubleField"),
-          Map.entry(TEST_TYPE.TDATE, "solr.TrieDateField"),
           Map.entry(TEST_TYPE.PINT, "solr.IntPointField"),
           Map.entry(TEST_TYPE.PLONG, "solr.LongPointField"),
           Map.entry(TEST_TYPE.PFLOAT, "solr.FloatPointField"),

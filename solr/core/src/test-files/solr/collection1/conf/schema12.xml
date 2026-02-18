@@ -751,13 +751,6 @@
   <dynamicField name="*_pd" type="pdouble" indexed="true" multiValued="false"/>
   <dynamicField name="*_pdt" type="pdate" indexed="true" multiValued="false"/>
 
-  <!-- some trie-coded dynamic fields for faster range queries -->
-  <dynamicField name="*_ti" type="tint" indexed="true" stored="true"/>
-  <dynamicField name="*_tl" type="tlong" indexed="true" stored="true"/>
-  <dynamicField name="*_tf" type="tfloat" indexed="true" stored="true"/>
-  <dynamicField name="*_td" type="tdouble" indexed="true" stored="true"/>
-  <dynamicField name="*_tdt" type="tdate" indexed="true" stored="true"/>
-
   <dynamicField name="*_ii" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
   <dynamicField name="*_iis" type="pint" indexed="false" stored="false" useDocValuesAsStored="true"/>
   <dynamicField name="*_ff" type="pfloat" indexed="false" stored="false" useDocValuesAsStored="false"/>
