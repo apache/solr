@@ -344,8 +344,8 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
               mergedFields.computeIfAbsent(fieldName, k -> new SimpleOrderedMap<>());
 
           // Attributes parsed by LukeResponse.FieldInfo — validate consistency via string form
-          validateAndMerge(merged, fieldName, fieldData, shardAddr, "type", fieldAttrSources);
-          validateAndMerge(merged, fieldName, fieldData, shardAddr, "schema", fieldAttrSources);
+          validateAndMerge(merged, fieldName, fieldData, "type", shardAddr, fieldAttrSources);
+          validateAndMerge(merged, fieldName, fieldData, "schema", shardAddr, fieldAttrSources);
 
           // Attributes not parsed by LukeResponse.FieldInfo — fall back to raw NamedList
           validateAndMerge(merged, fieldName, fieldData, KEY_INDEX_FLAGS, shardAddr, fieldAttrSources);
