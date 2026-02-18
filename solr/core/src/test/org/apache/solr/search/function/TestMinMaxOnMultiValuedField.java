@@ -31,7 +31,6 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IntValueFieldType;
 import org.apache.solr.schema.LongValueFieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
@@ -964,33 +963,6 @@ public class TestMinMaxOnMultiValuedField extends SolrTestCaseJ4 {
 
     String minFunc = "field(" + f + ",min)";
     String maxFunc = "field(" + f + ",max)";
-
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-      // we don't need to mess with this hack at all if we're using all point numerics
-      trieFieldHack = false;
-    }
-
-    if (trieFieldHack // SOLR-8005
-        // if this line of code stops compiling, then trie fields have been removed from solr
-        // and the entire trieFieldHack param should be removed from this method (and callers)
-        && null != TrieField.class) {
-
-      // the SOLR-8005 hack is only needed if/when a doc has no value...
-      trieFieldHack = false; // assume we're safe
-      for (Object val : vals) {
-        if (null == val) { // we're not safe
-          trieFieldHack = true;
-          break;
-        }
-      }
-    }
-    if (trieFieldHack) {
-      // if we've made it this far, and we still need the hack, we have to wrap our
-      // functions with a default...
-      minFunc = "def(" + minFunc + ",0)";
-      maxFunc = "def(" + maxFunc + ",0)";
-      // and we can't test implicit min/max default behavior...
-    }
 
     // // // // min
 

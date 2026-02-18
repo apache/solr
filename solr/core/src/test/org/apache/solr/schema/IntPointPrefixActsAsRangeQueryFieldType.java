@@ -24,7 +24,6 @@ import org.apache.solr.search.QParser;
  * Integer.MAX_VALUE]. * This is used for testing overridden prefix query for custom fields in
  * TestOverriddenPrefixQueryForCustomFieldType
  *
- * @see TrieIntPrefixActsAsRangeQueryFieldType
  */
 public class IntPointPrefixActsAsRangeQueryFieldType extends IntPointField {
 

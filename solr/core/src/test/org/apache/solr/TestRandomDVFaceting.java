@@ -27,7 +27,6 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieIntField;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -62,15 +61,6 @@ public class TestRandomDVFaceting extends SolrTestCaseJ4 {
     assertTrue(
         "DocValues: Schema assumptions are broken",
         h.getCore().getLatestSchema().getField("foo_i_p").hasDocValues());
-
-    assertEquals(
-        "Type: Schema assumptions are broken",
-        TrieIntField.class,
-        h.getCore().getLatestSchema().getField("foo_i").getType().getClass());
-    assertEquals(
-        "Type: Schema assumptions are broken",
-        TrieIntField.class,
-        h.getCore().getLatestSchema().getField("foo_i_dv").getType().getClass());
     assertEquals(
         "Type: Schema assumptions are broken",
         IntPointField.class,

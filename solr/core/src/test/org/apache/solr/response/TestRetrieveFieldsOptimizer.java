@@ -52,7 +52,6 @@ import org.apache.solr.schema.DatePointField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SolrReturnFields;
 import org.apache.solr.util.RefCounted;
@@ -507,7 +506,7 @@ class RetrieveField {
     // Why do multiValued date fields get here as Strings whereas single-valued fields are Dates?
     // Why do BoolFields sometimes get here as "F" or "T"?
     if (val instanceof String) {
-      if (fieldType instanceof TrieDateField || fieldType instanceof DatePointField) {
+      if (fieldType instanceof DatePointField) {
         long lVal = Long.parseLong((String) val);
         return (new Date(lVal).toInstant().toString());
       }
@@ -517,7 +516,7 @@ class RetrieveField {
       }
       return (String) val;
     }
-    if (fieldType instanceof TrieDateField || fieldType instanceof DatePointField) {
+    if (fieldType instanceof DatePointField) {
       return ((Date) val).toInstant().toString();
     }
 

@@ -24,7 +24,6 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieIntField;
 import org.junit.Test;
 
 public class TestFacetMethods extends SolrTestCase {
@@ -42,7 +41,7 @@ public class TestFacetMethods extends SolrTestCase {
   public void testNumericSingleValuedDV() {
 
     for (int props : Arrays.asList(DOC_VALUES ^ UNINVERTIBLE, DOC_VALUES)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
+      SchemaField field = new SchemaField("field", new IntPointField(), props, null);
       // default is FCS, can't use ENUM due to trie-field terms, FC rewrites to FCS for efficiency
       for (int mincount : Arrays.asList(0, 1)) {
         // behavior should be independent of mincount
@@ -67,7 +66,7 @@ public class TestFacetMethods extends SolrTestCase {
 
     for (int props :
         Arrays.asList(DOC_VALUES ^ MULTIVALUED ^ UNINVERTIBLE, DOC_VALUES ^ MULTIVALUED)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
+      SchemaField field = new SchemaField("field", new IntPointField(), props, null);
       // default value is FC
       for (int mincount : Arrays.asList(0, 1)) {
         // behavior should be independent of mincount
@@ -91,7 +90,7 @@ public class TestFacetMethods extends SolrTestCase {
   public void testNumericSingleValuedNoDV() {
 
     for (int props : Arrays.asList(0 ^ UNINVERTIBLE, 0)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
+      SchemaField field = new SchemaField("field", new IntPointField(), props, null);
       // FCS is used by default for most requested methods other than UIF -- regardless of mincount
       for (int mincount : Arrays.asList(0, 1)) {
         assertEquals(FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, mincount));
@@ -114,7 +113,7 @@ public class TestFacetMethods extends SolrTestCase {
   public void testNumericMultiValuedNoDV() {
 
     for (int props : Arrays.asList(MULTIVALUED ^ UNINVERTIBLE, MULTIVALUED)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
+      SchemaField field = new SchemaField("field", new IntPointField(), props, null);
       // FC is used by default for most requested methods other than UIF -- regardless of mincount
       for (int mincount : Arrays.asList(0, 1)) {
         assertEquals(FacetMethod.FC, SimpleFacets.selectFacetMethod(field, null, mincount));

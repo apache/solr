@@ -531,10 +531,6 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     Object fieldHighlights;
     if (schemaField == null) {
       fieldHighlights = null;
-    } else if (schemaField.getType() instanceof org.apache.solr.schema.TrieField) {
-      // TODO: highlighting numeric fields is broken (Lucene) - so we disable them until fixed (see
-      // LUCENE-3080)!
-      fieldHighlights = null;
     } else if (useFastVectorHighlighter(params, schemaField)) {
       if (fvhContainer.fieldQuery == null) {
         FastVectorHighlighter fvh =

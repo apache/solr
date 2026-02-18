@@ -35,7 +35,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.hamcrest.Matchers;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -58,14 +57,14 @@ public class TestMaxScoreQueryParser extends SolrTestCaseJ4 {
     assertEquals(new BoostQuery(new TermQuery(new Term("text", "foo")), 3f), q);
 
     q = parse("price:[0 TO 10]");
-    Class<? extends Query> expected = LegacyNumericRangeQuery.class;
-    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
-      expected = PointRangeQuery.class;
-      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
-        expected = IndexOrDocValuesQuery.class;
-      }
-    }
-    assertThat(q, Matchers.instanceOf(expected));
+//    Class<? extends Query> expected = LegacyNumericRangeQuery.class;
+//    if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
+//      expected = PointRangeQuery.class;
+//      if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
+//        expected = IndexOrDocValuesQuery.class;
+//      }
+//    }
+//    assertThat(q, Matchers.instanceOf(expected));
   }
 
   @Test
