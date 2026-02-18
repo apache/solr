@@ -99,7 +99,7 @@ public class AuditEvent {
 
   /**
    * Empty event, must be filled by user using setters. Message and Loglevel will be initialized
-   * from EventType but can be overridden with setters afterwards.
+   * from EventType but can be overridden with setters afterward.
    *
    * @param eventType a predefined or custom EventType
    */
@@ -120,7 +120,7 @@ public class AuditEvent {
 
   /**
    * Event based on an HttpServletRequest, typically used during authentication. Solr will fill in
-   * details such as ip, http method etc from the request, and username if Principal exists on the
+   * details such as ip, http method etc. from the request, and username if Principal exists on the
    * request.
    *
    * @param eventType a predefined or custom EventType
@@ -162,7 +162,7 @@ public class AuditEvent {
 
   /**
    * Event based on request and AuthorizationContext. Solr will fill in details such as collections,
-   * ip, http method etc from the context.
+   * ip, http method etc. from the context.
    *
    * @param eventType a predefined or custom EventType
    * @param httpRequest the request to initialize from
@@ -191,7 +191,7 @@ public class AuditEvent {
 
   /**
    * Event to log completed requests. Takes time and status. Solr will fill in details such as
-   * collections, ip, http method etc from the HTTP request and context.
+   * collections, ip, http method etc. from the HTTP request and context.
    *
    * @param eventType a predefined or custom EventType
    * @param httpRequest the request to initialize from
@@ -247,7 +247,7 @@ public class AuditEvent {
     }
   }
 
-  /** The human readable message about this event */
+  /** The human-readable message about this event */
   public String getMessage() {
     return message;
   }
@@ -266,7 +266,7 @@ public class AuditEvent {
     return date;
   }
 
-  /** Username of logged in user, or null if no authenticated user */
+  /** Username of logged-in user, or null if no authenticated user */
   public String getUsername() {
     return username;
   }
@@ -348,7 +348,7 @@ public class AuditEvent {
    * Gets first value of a certain Solr request parameter
    *
    * @param key name of request parameter to retrieve
-   * @return String value of the first value, regardless of number of valies
+   * @return String value of the first value, regardless of number of values
    */
   public String getSolrParamAsString(String key) {
     List<String> v = getSolrParams().get(key);
@@ -566,11 +566,11 @@ public class AuditEvent {
       Arrays.asList(".*/select.*", ".*/query.*");
 
   private static final List<Pattern> ADMIN_PATH_PATTERNS =
-      ADMIN_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+      ADMIN_PATH_REGEXES.stream().map(Pattern::compile).toList();
   private static final List<Pattern> STREAMING_PATH_PATTERNS =
-      STREAMING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+      STREAMING_PATH_REGEXES.stream().map(Pattern::compile).toList();
   private static final List<Pattern> INDEXING_PATH_PATTERNS =
-      INDEXING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+      INDEXING_PATH_REGEXES.stream().map(Pattern::compile).toList();
   private static final List<Pattern> SEARCH_PATH_PATTERNS =
-      SEARCH_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+      SEARCH_PATH_REGEXES.stream().map(Pattern::compile).toList();
 }
