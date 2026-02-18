@@ -56,10 +56,10 @@
        field first in an ascending sort and last in a descending sort.
   -->
 
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" indexed="true"
              stored="false"/>
@@ -70,7 +70,7 @@
   <fieldType name="tdouble" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" indexed="true"
              stored="false"/>
 
-  <fieldType name="tdouble4" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="4" omitNorms="true"
+  <fieldType name="tdouble4" class="${solr.tests.DoubleFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true"
              positionIncrementGap="0" indexed="true" stored="false"/>
 
   <fieldType name="tdate" class="${solr.tests.DateFieldType}" docValues="${solr.tests.numeric.dv}" omitNorms="true" positionIncrementGap="0" indexed="true"

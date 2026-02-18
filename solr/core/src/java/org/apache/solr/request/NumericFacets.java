@@ -345,7 +345,7 @@ final class NumericFacets {
 
         final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
         if (terms != null) {
-          final String prefixStr = null;//TrieField.getMainValuePrefix(ft);
+          final String prefixStr = null; // TrieField.getMainValuePrefix(ft);
           final BytesRef prefix;
           if (prefixStr != null) {
             prefix = new BytesRef(prefixStr);
@@ -408,7 +408,7 @@ final class NumericFacets {
       }
       final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
-        final String prefixStr = null;//TrieField.getMainValuePrefix(ft);
+        final String prefixStr = null; // TrieField.getMainValuePrefix(ft);
         final BytesRef prefix;
         if (prefixStr != null) {
           prefix = new BytesRef(prefixStr);

@@ -742,8 +742,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     public DateRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest, final Date now) {
       super(rangeFacetRequest);
       this.now = now;
-      if (
-          !(field.getType() instanceof DateRangeField)
+      if (!(field.getType() instanceof DateRangeField)
           && !(field.getType() instanceof DatePointField)) {
         throw new IllegalArgumentException(TYPE_ERR_MSG);
       }

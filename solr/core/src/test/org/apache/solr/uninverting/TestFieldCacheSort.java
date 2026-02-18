@@ -584,10 +584,6 @@ public class TestFieldCacheSort extends SolrTestCase {
     dir.close();
   }
 
-
-
-
-
   /** Tests sorting on type long */
   public void testLong() throws IOException {
     Directory dir = newDirectory();
@@ -727,7 +723,6 @@ public class TestFieldCacheSort extends SolrTestCase {
     ir.close();
     dir.close();
   }
-
 
   /** Tests sorting on type float */
   public void testFloat() throws IOException {
@@ -1085,7 +1080,6 @@ public class TestFieldCacheSort extends SolrTestCase {
     ir.close();
     dir.close();
   }
-
 
   public void testEmptyStringVsNullStringSort() throws Exception {
     Directory dir = newDirectory();

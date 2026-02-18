@@ -195,7 +195,8 @@ public class UnInvertedField extends DocTermOrds {
 
     assert TestInjection.injectUIFOutOfMemoryError();
 
-    final String prefix = null; //TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
+    final String prefix =
+        null; // TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
       // TODO: it's wasteful to create one of these each time

@@ -18,14 +18,14 @@
 
 <schema name="test-non-stored-docvalues" version="1.7">
 
-  <fieldType name="int" class="${solr.tests.IntegerFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="float" class="${solr.tests.FloatFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
-  <fieldType name="double" class="${solr.tests.DoubleFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" omitNorms="true" positionIncrementGap="0"/>
 
   <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true"/>
   <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
-  <fieldType name="date" class="${solr.tests.DateFieldType}" precisionStep="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}"/>
   <fieldType name="enumField" class="solr.EnumFieldType" docValues="true" enumsConfig="enumsConfig.xml" enumName="severity"/>
 
   <fieldType name="binary" class="solr.BinaryField" />

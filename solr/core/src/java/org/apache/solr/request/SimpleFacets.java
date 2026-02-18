@@ -758,9 +758,9 @@ public class SimpleFacets {
 
     /* ENUM can't deal with trie fields that index several terms per value */
     // What to do here?
-   // if (method == FacetMethod.ENUM /* && TrieField.getMainValuePrefix(type) != null */) {
-   //   method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
-    //}
+    // if (method == FacetMethod.ENUM /* && TrieField.getMainValuePrefix(type) != null */) {
+    //   method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+    // }
 
     /* FCS can't deal with multi token fields */
     final boolean multiToken = field.multiValued() || type.multiValuedFieldCache();

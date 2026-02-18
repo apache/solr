@@ -54,7 +54,6 @@ public final class LegacyNumericUtils {
 
   private LegacyNumericUtils() {} // no instance!
 
-
   /**
    * Longs are stored at lower precision by shifting off lower bits. The shift count is stored as
    * <code>SHIFT_START_LONG+shift</code> in the first byte

@@ -254,7 +254,7 @@ public class QueryParsing {
       }
 
       out.append(q.includesUpper() ? ']' : '}');
-    }  else if (query instanceof BooleanQuery q) {
+    } else if (query instanceof BooleanQuery q) {
       boolean needParens = false;
 
       if (q.getMinimumNumberShouldMatch() != 0 || (flags & (FLAG_IS_CLAUSE | FLAG_BOOSTED)) != 0) {

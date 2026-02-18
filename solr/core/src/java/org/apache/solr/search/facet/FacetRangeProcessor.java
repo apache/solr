@@ -197,7 +197,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    */
   private static Calc getCalcForField(SchemaField sf) {
     final FieldType ft = sf.getType();
-    if ( ft.isPointField()) {
+    if (ft.isPointField()) {
       return getNumericCalc(sf);
     } else if (ft instanceof CurrencyFieldType) {
       return new CurrencyCalc(sf);
@@ -871,8 +871,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public DateCalc(final SchemaField f, final Date now) {
       super(f);
       this.now = now;
-      if (!( field.getType().isPointField()
-          || field.getType() instanceof DateRangeField)) {
+      if (!(field.getType().isPointField() || field.getType() instanceof DateRangeField)) {
         throw new IllegalArgumentException(
             "SchemaField must use field type extending TrieDateField, DateRangeField or PointField");
       }

@@ -277,7 +277,7 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
       Terms toTerms = toReader.terms(toField);
       if (terms == null || toTerms == null) return DocSet.empty();
       String prefixStr =
-          null;//TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
+          null; // TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);
 
       BytesRef term = null;

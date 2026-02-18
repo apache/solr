@@ -21,7 +21,7 @@
 -->
 <schema name="spatial" version="1.7">
 
-  <fieldType name="long" class="${solr.tests.LongFieldType}" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" omitNorms="true" positionIncrementGap="0"/>
   <fieldType name="srpt_quad" class="solr.SpatialRecursivePrefixTreeFieldType" prefixTree="quad" distanceUnits="degrees" />
   <fieldtype name="string" class="solr.StrField" sortMissingLast="true"/>
 
