@@ -324,7 +324,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       HttpClientUtil.resetHttpClientBuilder();
       HttpJettySolrClient.resetSslContextFactory();
 
-
       // clean up static
       sslConfig = null;
       testSolrHome = null;
@@ -2816,8 +2815,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * numerics that should be used in tests.
    *
    * @see #NUMERIC_DOCVALUES_SYSPROP
-   * @see #NUMERIC_POINTS_SYSPROP
-   * @see #clearNumericTypesProperties
    * @lucene.experimental
    * @lucene.internal
    */
@@ -2826,9 +2823,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     final boolean useDV = random().nextBoolean();
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "" + useDV);
 
-
-
-   {
+    {
       log.info(
           "Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
