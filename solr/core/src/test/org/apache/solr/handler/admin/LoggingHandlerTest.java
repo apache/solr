@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.LoggerContext;
 import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.solr.SolrTestCaseJ4;
@@ -46,6 +47,12 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   private final String B_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusClass_B";
   private final String BX_LOGGER_NAME = B_LOGGER_NAME + ".BogusNestedClass_X";
 
+  // Hold strong references to prevent GC from removing loggers during test
+  private Logger parentLogger;
+  private Logger aLogger;
+  private Logger bLogger;
+  private Logger bxLogger;
+
   // TODO: This only tests Log4j at the moment, as that's what's defined
   // through the CoreContainer.
 
@@ -65,6 +72,13 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
     assumeTrue("Test only works when log4j is in use", null != ctx);
 
     final Configuration config = ctx.getConfiguration();
+
+    // Create and hold strong references to loggers to prevent GC from removing them
+    // during test execution (Log4j2 uses weak references internally)
+    parentLogger = LogManager.getLogger(PARENT_LOGGER_NAME);
+    aLogger = LogManager.getLogger(A_LOGGER_NAME);
+    bLogger = LogManager.getLogger(B_LOGGER_NAME);
+    bxLogger = LogManager.getLogger(BX_LOGGER_NAME);
 
     { // sanity check our setup...
 
@@ -88,11 +102,11 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
             config.getLoggerConfig(logger));
       }
 
-      // Either explicit, or inherited, effictive logger values...
-      for (String logger :
-          Arrays.asList(PARENT_LOGGER_NAME, A_LOGGER_NAME, B_LOGGER_NAME, BX_LOGGER_NAME)) {
-        assertEquals(Level.DEBUG, LogManager.getLogger(logger).getLevel());
-      }
+      // Either explicit, or inherited, effective logger values...
+      assertEquals(Level.DEBUG, parentLogger.getLevel());
+      assertEquals(Level.DEBUG, aLogger.getLevel());
+      assertEquals(Level.DEBUG, bLogger.getLevel());
+      assertEquals(Level.DEBUG, bxLogger.getLevel());
     }
 
     SolrClient client = new EmbeddedSolrServer(h.getCore());
@@ -130,18 +144,18 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
       assertLoggerLevel(updatedLoggerLevel, B_LOGGER_NAME, "TRACE", true);
       assertLoggerLevel(updatedLoggerLevel, BX_LOGGER_NAME, "TRACE", false);
 
-      // check directly with log4j what it's (updated) config has...
+      // check directly with log4j what its (updated) config has...
       assertEquals(Level.DEBUG, config.getLoggerConfig(PARENT_LOGGER_NAME).getExplicitLevel());
       assertEquals(Level.TRACE, config.getLoggerConfig(B_LOGGER_NAME).getExplicitLevel());
       assertEquals(
           "Unexpected config for BX ... expected B's config",
           config.getLoggerConfig(B_LOGGER_NAME),
           config.getLoggerConfig(BX_LOGGER_NAME));
-      // ...and what it's effective values
-      assertEquals(Level.DEBUG, LogManager.getLogger(PARENT_LOGGER_NAME).getLevel());
-      assertEquals(Level.DEBUG, LogManager.getLogger(A_LOGGER_NAME).getLevel());
-      assertEquals(Level.TRACE, LogManager.getLogger(B_LOGGER_NAME).getLevel());
-      assertEquals(Level.TRACE, LogManager.getLogger(BX_LOGGER_NAME).getLevel());
+      // ...and with its effective values
+      assertEquals(Level.DEBUG, parentLogger.getLevel());
+      assertEquals(Level.DEBUG, aLogger.getLevel());
+      assertEquals(Level.TRACE, bLogger.getLevel());
+      assertEquals(Level.TRACE, bxLogger.getLevel());
     }
 
     { // UNSET
@@ -177,10 +191,10 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
           config.getLoggerConfig(B_LOGGER_NAME),
           config.getLoggerConfig(BX_LOGGER_NAME));
       // ...and what it's effective values
-      assertEquals(Level.DEBUG, LogManager.getLogger(PARENT_LOGGER_NAME).getLevel());
-      assertEquals(Level.DEBUG, LogManager.getLogger(A_LOGGER_NAME).getLevel());
-      assertEquals(Level.DEBUG, LogManager.getLogger(B_LOGGER_NAME).getLevel());
-      assertEquals(Level.DEBUG, LogManager.getLogger(BX_LOGGER_NAME).getLevel());
+      assertEquals(Level.DEBUG, parentLogger.getLevel());
+      assertEquals(Level.DEBUG, aLogger.getLevel());
+      assertEquals(Level.DEBUG, bLogger.getLevel());
+      assertEquals(Level.DEBUG, bxLogger.getLevel());
     }
   }
 
