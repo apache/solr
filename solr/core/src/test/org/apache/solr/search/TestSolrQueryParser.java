@@ -379,13 +379,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
 
       // large numeric filter query should use TermsQuery
       qParser =
-          QParser.getParser("foo_ti:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
+          QParser.getParser("foo_pi:(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 11)", req);
       qParser.setIsFilter(true); // this may change in the future
       qParser.setParams(params);
       q = qParser.getQuery();
       if (Boolean.getBoolean(NUMERIC_POINTS_SYSPROP)) {
         if (Boolean.getBoolean(NUMERIC_DOCVALUES_SYSPROP)) {
-          assertTrue(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertTrue(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
           assertEquals(
               "Expecting IndexOrDocValuesQuery when type is IntPointField AND docValues are enabled",
               IndexOrDocValuesQuery.class,
@@ -396,7 +396,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
                   .getPackedPoints()
                   .size());
         } else {
-          assertFalse(req.getCore().getLatestSchema().getField("foo_ti").hasDocValues());
+          assertFalse(req.getCore().getLatestSchema().getField("foo_pi").hasDocValues());
           assertEquals(
               "Expecting PointInSetQuery when type is IntPointField AND docValues are disabled",
               20,
@@ -1695,7 +1695,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     QParser qParser;
     String[] fieldSuffix =
         new String[] {
-          "ti", "tf", "td", "tl",
           "i", "f", "d", "l",
           "is", "fs", "ds", "ls",
           "i_dv", "f_dv", "d_dv", "l_dv",
@@ -1731,11 +1730,6 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     SolrQueryRequest req = req();
     String[] fieldSuffix =
         new String[] {
-          "ti",
-          "tf",
-          "td",
-          "tl",
-          "tdt", // trie types
           "pi",
           "pf",
           "pd",
