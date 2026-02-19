@@ -28,9 +28,9 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.NamedList.NamedListEntry;
 import org.apache.solr.core.CloudConfig;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -42,8 +42,8 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.logging.MDCSnapshot;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -288,7 +288,7 @@ public class TestHarness extends BaseTestHarness {
    * @return null if all good, otherwise the first test that fails.
    * @exception Exception any exception in the response.
    * @exception IOException if there is a problem writing the XML
-   * @see LocalSolrQueryRequest
+   * @see SolrQueryRequestBase
    */
   public String validateQuery(SolrQueryRequest req, String... tests) throws Exception {
 
@@ -303,7 +303,7 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the query
    * @exception Exception any exception in the response.
    * @exception IOException if there is a problem writing the XML
-   * @see LocalSolrQueryRequest
+   * @see SolrQueryRequestBase
    */
   public String query(SolrQueryRequest req) throws Exception {
     return query(req.getParams().get(CommonParams.QT), req);
@@ -318,7 +318,7 @@ public class TestHarness extends BaseTestHarness {
    * @return The XML response to the query
    * @exception Exception any exception in the response.
    * @exception IOException if there is a problem writing the XML
-   * @see LocalSolrQueryRequest
+   * @see SolrQueryRequestBase
    */
   public String query(String handler, SolrQueryRequest req) throws Exception {
     try (var mdcSnap = MDCSnapshot.create()) {
@@ -388,8 +388,7 @@ public class TestHarness extends BaseTestHarness {
   }
 
   /**
-   * A Factory that generates LocalSolrQueryRequest objects using a specified set of default
-   * options.
+   * A Factory that generates SolrQueryRequestBase objects using a specified set of default options.
    */
   public class LocalRequestFactory {
     public String qtype = null;
@@ -400,41 +399,55 @@ public class TestHarness extends BaseTestHarness {
     public LocalRequestFactory() {}
 
     /**
-     * Creates a LocalSolrQueryRequest based on variable args; for historical reasons, this method
+     * Creates a SolrQueryRequestBase based on variable args; for historical reasons, this method
      * has some peculiar behavior:
      *
      * <ul>
      *   <li>If there is a single arg, then it is treated as the "q" param, and the
-     *       LocalSolrQueryRequest consists of that query string along with "qt", "start", and
-     *       "rows" params (based on the qtype, start, and limit properties of this factory) along
-     *       with any other default "args" set on this factory.
+     *       SolrQueryRequestBase consists of that query string along with "qt", "start", and "rows"
+     *       params (based on the qtype, start, and limit properties of this factory) along with any
+     *       other default "args" set on this factory.
      *   <li>If there are multiple args, then there must be an even number of them, and each pair of
-     *       args is used as a key=value param in the LocalSolrQueryRequest. <b>NOTE: In this usage,
+     *       args is used as a key=value param in the SolrQueryRequestBase. <b>NOTE: In this usage,
      *       the "qtype", "start", "limit", and "args" properties of this factory are ignored.</b>
      * </ul>
      *
      * TODO: this isn't really safe in the presence of core reloads! Perhaps the best we could do is
      * increment the core reference count and decrement it in the request close() method?
      */
-    @SuppressWarnings({"unchecked"})
-    public LocalSolrQueryRequest makeRequest(String... q) {
-      if (q.length == 1) {
-        return new LocalSolrQueryRequest(
-            TestHarness.this.getCore(), q[0], qtype, start, limit, args);
-      }
-      if (q.length % 2 != 0) {
+    public SolrQueryRequestBase makeRequest(String... q) {
+      // Validate input length - must be 1 (single query string) or even (key-value pairs)
+      if (q.length != 1 && q.length % 2 != 0) {
         throw new RuntimeException(
-            "The length of the string array (query arguments) needs to be even");
+            "The length of the string array (query arguments) needs to be 1 or even");
       }
-      @SuppressWarnings({"rawtypes"})
-      Map.Entry<String, String>[] entries = new NamedListEntry[q.length / 2];
-      for (int i = 0; i < q.length; i += 2) {
-        entries[i / 2] = new NamedListEntry<>(q[i], q[i + 1]);
+
+      ModifiableSolrParams params;
+
+      if (q.length == 1) {
+        // Single argument case: use args as base, add query string and defaults
+        params = new ModifiableSolrParams();
+        for (Map.Entry<String, String> e : args.entrySet()) {
+          params.set(e.getKey(), e.getValue());
+        }
+        if (q[0] != null) {
+          params.set(CommonParams.Q, q[0]);
+        }
+        if (qtype != null) {
+          params.set(CommonParams.QT, qtype);
+        }
+        params.set(CommonParams.START, Integer.toString(start));
+        params.set(CommonParams.ROWS, Integer.toString(limit));
+      } else {
+        // Multiple arguments case: use only the key-value pairs from q array
+        params = SolrTestCaseJ4.params(q);
       }
-      @SuppressWarnings({"rawtypes"})
-      NamedList nl = new NamedList(entries);
-      if (nl.get("wt") == null) nl.add("wt", "xml");
-      return new LocalSolrQueryRequest(TestHarness.this.getCore(), nl);
+      // Ensure wt defaults to xml if not explicitly set, for backwards compatibility
+      if (params.get(CommonParams.WT) == null) {
+        params.set(CommonParams.WT, "xml");
+      }
+
+      return new SolrQueryRequestBase(TestHarness.this.getCore(), params);
     }
   }
 }
