@@ -79,35 +79,33 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDistributedMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("distrib", "true");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
-    assertEquals("merged numDocs should equal total docs", NUM_DOCS, rsp.getNumDocs().longValue());
-    assertTrue("merged maxDoc should be > 0", rsp.getMaxDoc() > 0);
-    assertNotNull("deletedDocs should be present", rsp.getDeletedDocs());
-    assertNotNull("segmentCount should be present", rsp.getSegmentCount());
+    assertEquals(
+        "merged numDocs should equal total docs", NUM_DOCS, rsp.getNumDocsAsLong().longValue());
+    assertTrue("merged maxDoc should be > 0", rsp.getMaxDocAsLong() > 0);
+    assertNotNull("deletedDocs should be present", rsp.getDeletedDocsAsLong());
+    assertNotNull("segmentCount should be present", rsp.getSegmentCountAsLong());
 
-    NamedList<Object> shards = (NamedList<Object>) rsp.getResponse().get("shards");
+    Map<String, LukeResponse> shards = rsp.getShardResponses();
     assertNotNull("shards section should be present", shards);
     assertEquals("should have 2 shard entries", 2, shards.size());
 
     // Each shard should have its own index info; per-shard numDocs should sum to total
     long sumShardDocs = 0;
-    for (int i = 0; i < shards.size(); i++) {
-      NamedList<Object> shardEntry = (NamedList<Object>) shards.getVal(i);
-      LukeResponse shardLuke = new LukeResponse();
-      shardLuke.setResponse(shardEntry);
-      assertNotNull("each shard should have numDocs", shardLuke.getNumDocs());
-      assertNotNull("each shard should have maxDoc", shardLuke.getMaxDoc());
-      sumShardDocs += shardLuke.getNumDocs();
+    for (Map.Entry<String, LukeResponse> entry : shards.entrySet()) {
+      LukeResponse shardLuke = entry.getValue();
+      assertNotNull("each shard should have numDocs", shardLuke.getNumDocsAsLong());
+      assertNotNull("each shard should have maxDoc", shardLuke.getMaxDocAsLong());
+      sumShardDocs += shardLuke.getNumDocsAsLong();
     }
     assertEquals(
         "sum of per-shard numDocs should equal merged numDocs",
-        rsp.getNumDocs().longValue(),
+        rsp.getNumDocsAsLong().longValue(),
         sumShardDocs);
   }
 
@@ -125,7 +123,10 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertNotNull("'name' field should be present", nameField);
     assertNotNull("field type should be present", nameField.getType());
     assertNotNull("schema flags should be present", nameField.getSchema());
-    assertEquals("merged docs count for 'name' should equal total docs", NUM_DOCS, nameField.getDocs());
+    assertEquals(
+        "merged docs count for 'name' should equal total docs",
+        NUM_DOCS,
+        nameField.getDocsAsLong().longValue());
 
     LukeResponse.FieldInfo idField = fields.get("id");
     assertNotNull("'id' field should be present", idField);
@@ -149,13 +150,15 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertEquals("distinct should NOT be in top-level fields", 0, nameField.getDistinct());
 
     // Per-shard entries should have detailed stats
-    NamedList<Object> shards = (NamedList<Object>) rsp.getResponse().get("shards");
+    Map<String, LukeResponse> shards = rsp.getShardResponses();
     assertNotNull("shards section should be present", shards);
 
     boolean foundDetailedStats = false;
-    for (int i = 0; i < shards.size(); i++) {
-      NamedList<Object> shardEntry = (NamedList<Object>) shards.getVal(i);
-      NamedList<Object> shardFields = (NamedList<Object>) shardEntry.get("fields");
+    for (Map.Entry<String, LukeResponse> entry : shards.entrySet()) {
+      LukeResponse shardLuke = entry.getValue();
+      // Access the raw shard entry for per-shard fields
+      NamedList<Object> shardRaw = shardLuke.getResponse();
+      NamedList<Object> shardFields = (NamedList<Object>) shardRaw.get("fields");
       if (shardFields != null) {
         NamedList<Object> shardNameField = (NamedList<Object>) shardFields.get("name");
         if (shardNameField != null) {
@@ -176,7 +179,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     LukeResponse rsp = requestLuke(COLLECTION, null);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
-    assertNull("shards key should NOT be present in local mode", rsp.getResponse().get("shards"));
+    assertNull("shards should NOT be present in local mode", rsp.getShardResponses());
   }
 
   @Test
@@ -187,8 +190,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
     assertNotNull("index info should be present", rsp.getIndexInfo());
-    assertNull(
-        "shards key should NOT be present with distrib=false", rsp.getResponse().get("shards"));
+    assertNull("shards should NOT be present with distrib=false", rsp.getShardResponses());
   }
 
   /**
@@ -220,22 +222,20 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       LukeResponse rsp = requestLuke(collection, params);
 
       // Index-level stats
-      assertEquals("numDocs should be 1", 1, rsp.getNumDocs().longValue());
-      assertTrue("maxDoc should be > 0", rsp.getMaxDoc() > 0);
-      assertEquals("deletedDocs should be 0", 0, rsp.getDeletedDocs().longValue());
+      assertEquals("numDocs should be 1", 1, rsp.getNumDocsAsLong().longValue());
+      assertTrue("maxDoc should be > 0", rsp.getMaxDocAsLong() > 0);
+      assertEquals("deletedDocs should be 0", 0, rsp.getDeletedDocsAsLong().longValue());
 
-      NamedList<Object> shards = (NamedList<Object>) rsp.getResponse().get("shards");
+      Map<String, LukeResponse> shards = rsp.getShardResponses();
       assertNotNull("shards section should be present", shards);
       assertEquals("should have 12 shard entries", 12, shards.size());
 
       // Exactly one shard should have numDocs=1
       long sumShardDocs = 0;
-      for (int i = 0; i < shards.size(); i++) {
-        NamedList<Object> shardEntry = (NamedList<Object>) shards.getVal(i);
-        LukeResponse shardLuke = new LukeResponse();
-        shardLuke.setResponse(shardEntry);
-        assertNotNull("each shard should have numDocs", shardLuke.getNumDocs());
-        sumShardDocs += shardLuke.getNumDocs();
+      for (Map.Entry<String, LukeResponse> entry : shards.entrySet()) {
+        LukeResponse shardLuke = entry.getValue();
+        assertNotNull("each shard should have numDocs", shardLuke.getNumDocsAsLong());
+        sumShardDocs += shardLuke.getNumDocsAsLong();
       }
       assertEquals("sum of per-shard numDocs should be 1", 1, sumShardDocs);
 
@@ -253,7 +253,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull("'name' field should be present", nameField);
       assertNotNull("name type", nameField.getType());
       assertNotNull("name schema flags", nameField.getSchema());
-      assertEquals("name docs should be 1", 1, nameField.getDocs());
+      assertEquals("name docs should be 1", 1, nameField.getDocsAsLong().longValue());
 
       // Dynamic field — should have dynamicBase in extras
       LukeResponse.FieldInfo catField = fields.get("cat_s");
@@ -302,10 +302,9 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull(
           "index info should be present even with distrib=true on single shard",
           rsp.getIndexInfo());
-      assertEquals("should see the 1 doc we indexed", 1, rsp.getNumDocs().longValue());
+      assertEquals("should see the 1 doc we indexed", 1, rsp.getNumDocsAsLong().longValue());
       assertNull(
-          "shards key should NOT be present when falling back to local",
-          rsp.getResponse().get("shards"));
+          "shards should NOT be present when falling back to local", rsp.getShardResponses());
     } finally {
       CollectionAdminRequest.deleteCollection(singleShardCollection)
           .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);

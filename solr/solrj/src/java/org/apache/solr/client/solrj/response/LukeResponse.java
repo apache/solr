@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.common.luke.FieldFlag;
@@ -114,8 +115,10 @@ public class LukeResponse extends SolrResponseBase {
     String name;
     String type;
     String schema;
-    long docs;
-    long distinct;
+    int docs;
+    int distinct;
+    Long docsAsLong;
+    Long distinctAsLong;
     EnumSet<FieldFlag> flags;
     boolean cacheableFaceting;
     NamedList<Integer> topTerms;
@@ -133,8 +136,17 @@ public class LukeResponse extends SolrResponseBase {
           case "type" -> type = (String) entry.getValue();
           case "flags" -> flags = parseFlags((String) entry.getValue());
           case "schema" -> schema = (String) entry.getValue();
-          case "docs" -> docs = ((Number) entry.getValue()).longValue();
-          case "distinct" -> distinct = ((Number) entry.getValue()).longValue();
+          case "docs" -> {
+            docs = (Integer) entry.getValue();
+            docsAsLong = (long) docs; // widen, lossless
+          }
+          case "docsAsLong" -> docsAsLong = (Long) entry.getValue();
+          // Don't set docs — narrowing Long→int is lossy
+          case "distinct" -> {
+            distinct = (Integer) entry.getValue();
+            distinctAsLong = (long) distinct; // widen, lossless
+          }
+          case "distinctAsLong" -> distinctAsLong = (Long) entry.getValue();
           case "cacheableFaceting" -> cacheableFaceting = (Boolean) entry.getValue();
           case "topTerms" -> topTerms = (NamedList<Integer>) entry.getValue();
           default -> extras.put(key, entry.getValue());
@@ -166,12 +178,20 @@ public class LukeResponse extends SolrResponseBase {
       return type;
     }
 
-    public long getDistinct() {
+    public int getDistinct() {
       return distinct;
     }
 
-    public long getDocs() {
+    public Long getDistinctAsLong() {
+      return distinctAsLong;
+    }
+
+    public int getDocs() {
       return docs;
+    }
+
+    public Long getDocsAsLong() {
+      return docsAsLong;
     }
 
     public String getName() {
@@ -199,6 +219,7 @@ public class LukeResponse extends SolrResponseBase {
   private Map<String, FieldInfo> fieldInfo;
   private Map<String, FieldInfo> dynamicFieldInfo;
   private Map<String, FieldTypeInfo> fieldTypeInfo;
+  private Map<String, LukeResponse> shardResponses;
 
   @Override
   @SuppressWarnings("unchecked")
@@ -247,6 +268,17 @@ public class LukeResponse extends SolrResponseBase {
         }
       }
     }
+
+    // Parse shards section (present in distributed responses)
+    NamedList<Object> shardsNL = (NamedList<Object>) res.get("shards");
+    if (shardsNL != null) {
+      shardResponses = new LinkedHashMap<>();
+      for (Map.Entry<String, Object> entry : shardsNL) {
+        LukeResponse shardRsp = new LukeResponse();
+        shardRsp.setResponse((NamedList<Object>) entry.getValue());
+        shardResponses.put(entry.getKey(), shardRsp);
+      }
+    }
   }
 
   // ----------------------------------------------------------------
@@ -263,23 +295,41 @@ public class LukeResponse extends SolrResponseBase {
     return n != null ? n.longValue() : null;
   }
 
-  public Long getNumDocs() {
+  public Integer getNumDocs() {
+    if (indexInfo == null) return null;
+    Object val = indexInfo.get("numDocs");
+    return val instanceof Integer i ? i : null;
+  }
+
+  public Long getNumDocsAsLong() {
     return getIndexLong("numDocs");
   }
 
-  public Long getMaxDoc() {
+  public Integer getMaxDoc() {
+    if (indexInfo == null) return null;
+    Object val = indexInfo.get("maxDoc");
+    return val instanceof Integer i ? i : null;
+  }
+
+  public Long getMaxDocAsLong() {
     return getIndexLong("maxDoc");
   }
 
-  public Long getDeletedDocs() {
+  public Long getDeletedDocsAsLong() {
     return getIndexLong("deletedDocs");
   }
 
-  public Long getSegmentCount() {
+  public Long getSegmentCountAsLong() {
     return getIndexLong("segmentCount");
   }
 
-  public Long getNumTerms() {
+  public Integer getNumTerms() {
+    if (indexInfo == null) return null;
+    Object val = indexInfo.get("numTerms");
+    return val instanceof Integer i ? i : null;
+  }
+
+  public Long getNumTermsAsLong() {
     return getIndexLong("numTerms");
   }
 
@@ -309,6 +359,10 @@ public class LukeResponse extends SolrResponseBase {
 
   public FieldInfo getDynamicFieldInfo(String f) {
     return dynamicFieldInfo.get(f);
+  }
+
+  public Map<String, LukeResponse> getShardResponses() {
+    return shardResponses;
   }
 
   // ----------------------------------------------------------------
