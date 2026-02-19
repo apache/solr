@@ -136,6 +136,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final String KEY_TYPE = "type";
   private static final String KEY_SCHEMA_FLAGS = "schema";
   private static final String KEY_DOCS = "docs";
+  private static final String KEY_DOCS_AS_LONG = "docsAsLong";
   private static final String KEY_DISTINCT = "distinct";
   private static final String KEY_TOP_TERMS = "topTerms";
   private static final String KEY_DYNAMIC_BASE = "dynamicBase";
@@ -244,7 +245,23 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.setHttpCaching(false);
   }
 
-  private record FieldOrigin(String shardAddr, LukeResponse.FieldInfo fieldInfo) {}
+  /** Tracks the first-seen valid properties of a field across shards. */
+  private static class ExpectedFieldConfig {
+    final String shardAddr;
+    final LukeResponse.FieldInfo fieldInfo;
+    Object indexFlags;
+    String indexFlagsShardAddr;
+
+    ExpectedFieldConfig(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
+      this.shardAddr = shardAddr;
+      this.fieldInfo = fieldInfo;
+      Object flags = fieldInfo.getExtras().get(KEY_INDEX_FLAGS);
+      if (flags != null) {
+        this.indexFlags = flags;
+        this.indexFlagsShardAddr = shardAddr;
+      }
+    }
+  }
 
   /**
    * @return true if the request was handled in distributed mode, false if prepDistributed
@@ -301,16 +318,14 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     return srsp.getShardAddress() != null ? srsp.getShardAddress() : srsp.getShard();
   }
 
-  @SuppressWarnings("unchecked")
   private void mergeDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
     long totalNumDocs = 0;
     int totalMaxDoc = 0;
     long totalDeletedDocs = 0;
     int totalSegmentCount = 0;
 
-    Map<String, SimpleOrderedMap<Object>> fieldLookup = new HashMap<>();
-    SimpleOrderedMap<Object> fieldsResult = new SimpleOrderedMap<>();
-    Map<String, FieldOrigin> fieldOrigins = new HashMap<>();
+    Map<String, SimpleOrderedMap<Object>> mergedFields = new HashMap<>();
+    Map<String, ExpectedFieldConfig> expectedFieldConfigs = new HashMap<>();
     SimpleOrderedMap<Object> shardsInfo = new SimpleOrderedMap<>();
 
     if (!responses.isEmpty()) {
@@ -356,15 +371,29 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
           String fieldName = entry.getKey();
           LukeResponse.FieldInfo fi = entry.getValue();
 
-          SimpleOrderedMap<Object> merged = fieldLookup.get(fieldName);
-          if (merged == null) {
-            merged = new SimpleOrderedMap<>();
-            fieldLookup.put(fieldName, merged);
-            fieldsResult.add(fieldName, merged);
-          }
+          SimpleOrderedMap<Object> merged =
+              mergedFields.computeIfAbsent(fieldName, k -> new SimpleOrderedMap<>());
 
-          mergeShardField(
-              shardAddr, fi, fieldName, merged, fieldOrigins, perShardFields, perShardEntry);
+          mergeShardField(shardAddr, fi, merged, expectedFieldConfigs);
+
+          // Detailed stats — kept per-shard, not merged
+          NamedList<Integer> topTerms = fi.getTopTerms();
+          Object histogram = fi.getExtras().get(KEY_HISTOGRAM);
+
+          if (topTerms != null || fi.getDistinct() > 0 || histogram != null) {
+            perShardEntry.putIfAbsent(RSP_FIELDS, perShardFields);
+            SimpleOrderedMap<Object> detailedFieldInfo = new SimpleOrderedMap<>();
+            if (topTerms != null) {
+              detailedFieldInfo.add(KEY_TOP_TERMS, topTerms);
+            }
+            if (fi.getDistinct() > 0) {
+              detailedFieldInfo.add(KEY_DISTINCT, fi.getDistinct());
+            }
+            if (histogram != null) {
+              detailedFieldInfo.add(KEY_HISTOGRAM, histogram);
+            }
+            perShardFields.add(fieldName, detailedFieldInfo);
+          }
         }
       }
       shardsInfo.add(shardAddr, perShardEntry);
@@ -377,8 +406,12 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     mergedIndex.add(KEY_SEGMENT_COUNT, totalSegmentCount);
     rsp.add(RSP_INDEX, mergedIndex);
 
-    if (fieldsResult.size() > 0) {
-      rsp.add(RSP_FIELDS, fieldsResult);
+    if (!mergedFields.isEmpty()) {
+      SimpleOrderedMap<Object> mergedFieldsNL = new SimpleOrderedMap<>();
+      for (Map.Entry<String, SimpleOrderedMap<Object>> entry : mergedFields.entrySet()) {
+        mergedFieldsNL.add(entry.getKey(), entry.getValue());
+      }
+      rsp.add(RSP_FIELDS, mergedFieldsNL);
     }
 
     rsp.add(RSP_SHARDS, shardsInfo);
@@ -387,73 +420,70 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private void mergeShardField(
       String shardAddr,
       LukeResponse.FieldInfo fi,
-      String fieldName,
       SimpleOrderedMap<Object> merged,
-      Map<String, FieldOrigin> fieldOrigins,
-      SimpleOrderedMap<Object> perShardFields,
-      SimpleOrderedMap<Object> perShardEntry) {
+      Map<String, ExpectedFieldConfig> expectedFieldConfigs) {
 
-    FieldOrigin origin = fieldOrigins.get(fieldName);
+    String fieldName = fi.getName();
+    ExpectedFieldConfig origin = expectedFieldConfigs.get(fieldName);
     if (origin == null) {
-      fieldOrigins.put(fieldName, new FieldOrigin(shardAddr, fi));
-      // First shard: populate merged with schema-derived attrs
+      origin = new ExpectedFieldConfig(shardAddr, fi);
+      expectedFieldConfigs.put(fieldName, origin);
+      // First shard to report this field: populate merged with schema-derived attrs
       merged.add(KEY_TYPE, fi.getType());
       merged.add(KEY_SCHEMA_FLAGS, fi.getSchema());
       Object dynBase = fi.getExtras().get(KEY_DYNAMIC_BASE);
       if (dynBase != null) {
         merged.add(KEY_DYNAMIC_BASE, dynBase);
       }
+      if (origin.indexFlags != null) {
+        merged.add(KEY_INDEX_FLAGS, origin.indexFlags);
+      }
     } else {
-      // Subsequent shards: validate consistency of schema-derived attrs
+      // Subsequent shards: validate consistency
       validateFieldAttr(
           fieldName,
           KEY_TYPE,
           fi.getType(),
-          origin.fieldInfo().getType(),
+          origin.fieldInfo.getType(),
           shardAddr,
-          origin.shardAddr());
+          origin.shardAddr);
       validateFieldAttr(
           fieldName,
           KEY_SCHEMA_FLAGS,
           fi.getSchema(),
-          origin.fieldInfo().getSchema(),
+          origin.fieldInfo.getSchema(),
           shardAddr,
-          origin.shardAddr());
+          origin.shardAddr);
       validateFieldAttr(
           fieldName,
           KEY_DYNAMIC_BASE,
           fi.getExtras().get(KEY_DYNAMIC_BASE),
-          origin.fieldInfo().getExtras().get(KEY_DYNAMIC_BASE),
+          origin.fieldInfo.getExtras().get(KEY_DYNAMIC_BASE),
           shardAddr,
-          origin.shardAddr());
-    }
+          origin.shardAddr);
 
-    // Index flags: take first non-null (index-derived, may differ across shards)
-    merged.computeIfAbsent(KEY_INDEX_FLAGS, k -> fi.getExtras().get(KEY_INDEX_FLAGS));
+      Object indexFlags = fi.getExtras().get(KEY_INDEX_FLAGS);
+      if (indexFlags != null) {
+        if (origin.indexFlags == null) {
+          origin.indexFlags = indexFlags;
+          origin.indexFlagsShardAddr = shardAddr;
+          merged.add(KEY_INDEX_FLAGS, indexFlags);
+        } else {
+          validateFieldAttr(
+              fieldName,
+              KEY_INDEX_FLAGS,
+              indexFlags,
+              origin.indexFlags,
+              shardAddr,
+              origin.indexFlagsShardAddr);
+        }
+      }
+    }
 
     Long docsAsLong = fi.getDocsAsLong();
     if (docsAsLong != null && docsAsLong > 0) {
       merged.compute(
-          "docsAsLong", (key, val) -> val == null ? docsAsLong : (Long) val + docsAsLong);
-    }
-
-    // Detailed stats — kept per-shard, not merged
-    NamedList<Integer> topTerms = fi.getTopTerms();
-    Object histogram = fi.getExtras().get(KEY_HISTOGRAM);
-
-    if (topTerms != null || fi.getDistinct() > 0 || histogram != null) {
-      perShardEntry.putIfAbsent(RSP_FIELDS, perShardFields);
-      SimpleOrderedMap<Object> detailedFieldInfo = new SimpleOrderedMap<>();
-      if (topTerms != null) {
-        detailedFieldInfo.add(KEY_TOP_TERMS, topTerms);
-      }
-      if (fi.getDistinct() > 0) {
-        detailedFieldInfo.add(KEY_DISTINCT, fi.getDistinct());
-      }
-      if (histogram != null) {
-        detailedFieldInfo.add(KEY_HISTOGRAM, histogram);
-      }
-      perShardFields.add(fieldName, detailedFieldInfo);
+          KEY_DOCS_AS_LONG, (key, val) -> val == null ? docsAsLong : (Long) val + docsAsLong);
     }
   }
 

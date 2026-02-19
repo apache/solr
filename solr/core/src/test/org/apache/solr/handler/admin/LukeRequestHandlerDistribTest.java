@@ -108,6 +108,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testDistributedFieldsMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("distrib", "true");
@@ -129,6 +130,14 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     LukeResponse.FieldInfo idField = fields.get("id");
     assertNotNull("'id' field should be present", idField);
     assertEquals("id field type should be string", "string", idField.getType());
+
+    // Index flags should be consistent across shards (both shards have data for "name").
+    // The merge validates non-null index flags for consistency; if they were inconsistent,
+    // the request would have thrown an error. Verify the merged result has index flags.
+    NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
+    NamedList<Object> rawNameField = (NamedList<Object>) mergedFieldsNL.get("name");
+    assertNotNull(
+        "index flags should be present when both shards have data", rawNameField.get("index"));
   }
 
   @Test
@@ -259,12 +268,14 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull("cat_s type", catField.getType());
       assertNotNull("cat_s dynamicBase", catField.getExtras().get("dynamicBase"));
 
-      // Verify index flags are present (from the one shard that has the document).
-      // Fields that are indexed and have a live doc should get index flags via the merge's
-      // computeIfAbsent (take-first-non-null) logic.
-      NamedList<Object> mergedFields = (NamedList<Object>) rsp.getResponse().get("fields");
-      assertNotNull("merged fields NamedList should be present", mergedFields);
-      NamedList<Object> rawNameField = (NamedList<Object>) mergedFields.get("name");
+      // Verify index flags in the merged response for the static "name" field.
+      // Luke only reports fields present in the Lucene index (via reader.getFieldInfos()),
+      // so only the shard with the document contributes "name" to the merge. The merge
+      // validates consistency of index flags across shards (null is always consistent),
+      // but with 11 empty shards, only one shard contributes index flags here.
+      NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
+      assertNotNull("merged fields NamedList should be present", mergedFieldsNL);
+      NamedList<Object> rawNameField = (NamedList<Object>) mergedFieldsNL.get("name");
       assertNotNull("raw 'name' field should be in merged fields", rawNameField);
       // The index flags key may or may not be present depending on whether the field is indexed
       // and stored — but if present, it should be a non-empty string
