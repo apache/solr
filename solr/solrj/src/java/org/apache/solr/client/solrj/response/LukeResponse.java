@@ -130,21 +130,26 @@ public class LukeResponse extends SolrResponseBase {
     @SuppressWarnings("unchecked")
     public void read(NamedList<Object> nl) {
       for (Map.Entry<String, Object> entry : nl) {
-        String key = entry.getKey();
-        switch (key) {
-          case "type" -> type = (String) entry.getValue();
-          case "flags" -> flags = parseFlags((String) entry.getValue());
-          case "schema" -> schema = (String) entry.getValue();
-          case "docs" -> {
-            docs = (Integer) entry.getValue();
-            docsAsLong = (long) docs; // widen, lossless
-          }
-          case "docsAsLong" -> docsAsLong = (Long) entry.getValue();
+        if ("type".equals(entry.getKey())) {
+          type = (String) entry.getValue();
+        } else if ("flags".equals(entry.getKey())) {
+          flags = parseFlags((String) entry.getValue());
+        } else if ("schema".equals(entry.getKey())) {
+          schema = (String) entry.getValue();
+        } else if ("docs".equals(entry.getKey())) {
+          docs = (Integer) entry.getValue();
+          docsAsLong = (long) docs; // widen, lossless
+        } else if ("docsAsLong".equals(entry.getKey())) {
           // Don't set docs — narrowing Long→int is lossy
-          case "distinct" -> distinct = (Integer) entry.getValue();
-          case "cacheableFaceting" -> cacheableFaceting = (Boolean) entry.getValue();
-          case "topTerms" -> topTerms = (NamedList<Integer>) entry.getValue();
-          default -> extras.put(key, entry.getValue());
+          docsAsLong = (Long) entry.getValue();
+        } else if ("distinct".equals(entry.getKey())) {
+          distinct = (Integer) entry.getValue();
+        } else if ("cacheableFaceting".equals(entry.getKey())) {
+          cacheableFaceting = (Boolean) entry.getValue();
+        } else if ("topTerms".equals(entry.getKey())) {
+          topTerms = (NamedList<Integer>) entry.getValue();
+        } else {
+          extras.put(entry.getKey(), entry.getValue());
         }
       }
     }
@@ -287,7 +292,9 @@ public class LukeResponse extends SolrResponseBase {
   }
 
   public Integer getNumDocs() {
-    if (indexInfo == null) return null;
+    if (indexInfo == null) {
+      return null;
+    }
     Object val = indexInfo.get("numDocs");
     return val instanceof Integer i ? i : null;
   }
@@ -297,7 +304,9 @@ public class LukeResponse extends SolrResponseBase {
   }
 
   public Integer getMaxDoc() {
-    if (indexInfo == null) return null;
+    if (indexInfo == null) {
+      return null;
+    }
     Object val = indexInfo.get("maxDoc");
     return val instanceof Integer i ? i : null;
   }
@@ -307,7 +316,9 @@ public class LukeResponse extends SolrResponseBase {
   }
 
   public Integer getNumTerms() {
-    if (indexInfo == null) return null;
+    if (indexInfo == null) {
+      return null;
+    }
     Object val = indexInfo.get("numTerms");
     return val instanceof Integer i ? i : null;
   }

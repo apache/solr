@@ -66,8 +66,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     params.set("qt", "/admin/luke");
     params.set("numTerms", "0");
     if (extra != null) {
-      for (Map.Entry<String, String[]> entry :
-          extra.getMap().entrySet()) {
+      for (Map.Entry<String, String[]> entry : extra.getMap().entrySet()) {
         params.set(entry.getKey(), entry.getValue());
       }
     }

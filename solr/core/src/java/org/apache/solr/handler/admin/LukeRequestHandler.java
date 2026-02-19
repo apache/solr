@@ -251,7 +251,8 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
    *     short-circuited (e.g. single-shard collection) and the caller should fall through to local
    *     logic.
    */
-  private boolean handleDistributed(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+  private boolean handleDistributed(SolrQueryRequest req, SolrQueryResponse rsp)
+      throws IOException {
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ResponseBuilder rb = new ResponseBuilder(req, rsp, Collections.emptyList());
     shardHandler.prepDistributed(rb);
@@ -321,9 +322,13 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
             "Unexpected empty response from shard: " + shardAddress(firstRsp));
       }
       Object schema = firstShardRsp.get(RSP_SCHEMA);
-      if (schema != null) rsp.add(RSP_SCHEMA, schema);
+      if (schema != null) {
+        rsp.add(RSP_SCHEMA, schema);
+      }
       Object info = firstShardRsp.get(RSP_INFO);
-      if (info != null) rsp.add(RSP_INFO, info);
+      if (info != null) {
+        rsp.add(RSP_INFO, info);
+      }
     }
 
     for (ShardResponse srsp : responses) {
@@ -335,8 +340,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       NamedList<Object> shardIndex = lukeRsp.getIndexInfo();
       if (shardIndex != null) {
         totalNumDocs += Optional.ofNullable(lukeRsp.getNumDocsAsLong()).orElse(0L);
-        totalMaxDoc =
-            Math.max(totalMaxDoc, Optional.ofNullable(lukeRsp.getMaxDoc()).orElse(0));
+        totalMaxDoc = Math.max(totalMaxDoc, Optional.ofNullable(lukeRsp.getMaxDoc()).orElse(0));
         totalDeletedDocs += Optional.ofNullable(lukeRsp.getDeletedDocsAsLong()).orElse(0L);
         Number segCount = (Number) shardIndex.get(KEY_SEGMENT_COUNT);
         totalSegmentCount += segCount != null ? segCount.intValue() : 0;
