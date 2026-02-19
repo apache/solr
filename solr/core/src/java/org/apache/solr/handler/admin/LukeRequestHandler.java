@@ -303,9 +303,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   @SuppressWarnings("unchecked")
   private void mergeDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
     long totalNumDocs = 0;
-    long totalMaxDoc = 0;
+    int totalMaxDoc = 0;
     long totalDeletedDocs = 0;
-    long totalSegmentCount = 0;
+    int totalSegmentCount = 0;
 
     Map<String, SimpleOrderedMap<Object>> fieldLookup = new HashMap<>();
     SimpleOrderedMap<Object> fieldsResult = new SimpleOrderedMap<>();
@@ -336,9 +336,10 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       if (shardIndex != null) {
         totalNumDocs += Optional.ofNullable(lukeRsp.getNumDocsAsLong()).orElse(0L);
         totalMaxDoc =
-            Math.max(totalMaxDoc, Optional.ofNullable(lukeRsp.getMaxDocAsLong()).orElse(0L));
+            Math.max(totalMaxDoc, Optional.ofNullable(lukeRsp.getMaxDoc()).orElse(0));
         totalDeletedDocs += Optional.ofNullable(lukeRsp.getDeletedDocsAsLong()).orElse(0L);
-        totalSegmentCount += Optional.ofNullable(lukeRsp.getSegmentCountAsLong()).orElse(0L);
+        Number segCount = (Number) shardIndex.get(KEY_SEGMENT_COUNT);
+        totalSegmentCount += segCount != null ? segCount.intValue() : 0;
 
         perShardEntry.add(RSP_INDEX, shardIndex);
       }

@@ -87,9 +87,8 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
     assertEquals(
         "merged numDocs should equal total docs", NUM_DOCS, rsp.getNumDocsAsLong().longValue());
-    assertTrue("merged maxDoc should be > 0", rsp.getMaxDocAsLong() > 0);
+    assertTrue("merged maxDoc should be > 0", rsp.getMaxDoc() > 0);
     assertNotNull("deletedDocs should be present", rsp.getDeletedDocsAsLong());
-    assertNotNull("segmentCount should be present", rsp.getSegmentCountAsLong());
 
     Map<String, LukeResponse> shards = rsp.getShardResponses();
     assertNotNull("shards section should be present", shards);
@@ -100,7 +99,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     for (Map.Entry<String, LukeResponse> entry : shards.entrySet()) {
       LukeResponse shardLuke = entry.getValue();
       assertNotNull("each shard should have numDocs", shardLuke.getNumDocsAsLong());
-      assertNotNull("each shard should have maxDoc", shardLuke.getMaxDocAsLong());
+      assertNotNull("each shard should have maxDoc", shardLuke.getMaxDoc());
       sumShardDocs += shardLuke.getNumDocsAsLong();
     }
     assertEquals(
@@ -223,7 +222,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
       // Index-level stats
       assertEquals("numDocs should be 1", 1, rsp.getNumDocsAsLong().longValue());
-      assertTrue("maxDoc should be > 0", rsp.getMaxDocAsLong() > 0);
+      assertTrue("maxDoc should be > 0", rsp.getMaxDoc() > 0);
       assertEquals("deletedDocs should be 0", 0, rsp.getDeletedDocsAsLong().longValue());
 
       Map<String, LukeResponse> shards = rsp.getShardResponses();
