@@ -129,7 +129,7 @@ public class SolrSchemalessExampleTest extends SolrExampleTestsBase {
   public SolrClient createNewSolrClient() {
     HttpSolrClient.Builder httpSolrClientBuilder =
         new HttpSolrClient.Builder(getBaseUrl())
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .allowMultiPartPost(random().nextBoolean());
     if (random().nextBoolean()) {
       httpSolrClientBuilder

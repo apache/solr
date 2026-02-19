@@ -30,18 +30,12 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the streaming update
  * client for communication.
  */
 public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
 
   @Override
   public SolrClient createNewSolrClient() {
@@ -54,7 +48,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
             .build();
     var concurrentClient =
         new ErrorTrackingConcurrentUpdateSolrClient.Builder(url, solrClient)
-            .withDefaultCollection(DEFAULT_TEST_CORENAME)
+            .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
             .withQueueSize(2)
             .withThreadCount(5)
             .build();
@@ -68,7 +62,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)
-                .withDefaultCollection(DEFAULT_TEST_CORENAME)
+                .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
                 .withQueueSize(2)
                 .withThreadCount(2)
                 .build()) {

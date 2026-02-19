@@ -17,17 +17,10 @@
 package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.SolrExampleTests;
-import org.junit.BeforeClass;
 
 /**
  * This runs SolrServer test using
  *
  * @since solr 1.3
  */
-public class SolrExampleEmbeddedTest extends SolrExampleTests {
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-}
+public class SolrExampleEmbeddedTest extends SolrExampleTests {}

@@ -143,7 +143,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
       assertEquals("text/plain", content.getContentType());
     }
   }
-  
+
   public void testIllegalContentType() throws SolrServerException, IOException {
     SolrClient client = solrTestRule.getSolrClient();
     var request =

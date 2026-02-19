@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP1 client and the streaming update
@@ -36,16 +35,11 @@ import org.junit.BeforeClass;
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
     // smaller queue size hits locks more often
     return new ErrorTrackingConcurrentUpdateSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withQueueSize(2)
         .withThreadCount(5)
         .withResponseParser(new XMLResponseParser())

@@ -69,7 +69,8 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return SolrTestCaseJ4.getHttpSolrClient(solrTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
+    return SolrTestCaseJ4.getHttpSolrClient(
+        solrTestRule.getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME);
   }
 
   protected static String getCoreUrl() {
