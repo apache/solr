@@ -143,12 +143,7 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
       assertEquals("text/plain", content.getContentType());
     }
   }
-
-  public void testContentTypeHtmlDefault() {
-    // Skip this test - example.html doesn't exist in the default configset
-    // The getSafeContentType() method is already tested in testGetSafeContentType()
-  }
-
+  
   public void testIllegalContentType() throws SolrServerException, IOException {
     SolrClient client = solrTestRule.getSolrClient();
     var request =
