@@ -47,6 +47,7 @@ import org.apache.solr.client.solrj.apache.HttpClientUtil;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -362,7 +363,9 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         new UpdateRequest()
             .add(id, "0", "a_t", "hello1")
             .add(id, "2", "a_t", "hello2")
-            .setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+            .setAction(
+                AbstractUpdateRequest.ACTION.COMMIT,
+                CommitOptions.forHardCommit().waitSearcher(true));
 
     // Test single threaded routed updates for UpdateRequest
     NamedList<Object> response = getRandomClient().request(request, "routing_collection");

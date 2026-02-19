@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
@@ -34,7 +35,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
   public void testProperties() throws Exception {
 
     UpdateRequest up = new UpdateRequest();
-    up.setAction(ACTION.COMMIT, true, true);
+    up.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     up.deleteByQuery("*:*");
     up.process(getSolrCore0());
     up.process(getSolrCore1());

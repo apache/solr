@@ -41,6 +41,7 @@ import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.DistributedClusterStateUpdater;
@@ -260,7 +261,7 @@ public class CollectionHandlingUtils {
       HttpJettySolrClient solrClient, String baseUrl, String coreName)
       throws SolrServerException, IOException {
     UpdateRequest ureq = new UpdateRequest();
-    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true, true);
+    ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forSoftCommit());
     return ureq.processWithBaseUrl(solrClient, baseUrl, coreName);
   }
 
