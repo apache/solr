@@ -338,7 +338,11 @@ public class S3BackupRepositoryTest extends AbstractBackupRepositoryTest {
   private File pullObject(String path) throws IOException {
     try (S3Client s3 = S3_MOCK_RULE.createS3ClientV2()) {
       File file = temporaryFolder.newFile();
-      InputStream input = s3.getObject(b -> b.bucket(BUCKET_NAME).key(path));
+      InputStream input =
+          s3.getObject(
+              b -> b.bucket(BUCKET_NAME).key(path),
+              software.amazon.awssdk.core.sync.ResponseTransformer.toInputStream(
+                  java.time.Duration.ZERO));
       FileUtils.copyInputStreamToFile(input, file);
       return file;
     }
