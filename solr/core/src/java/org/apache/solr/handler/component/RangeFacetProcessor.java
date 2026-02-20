@@ -39,7 +39,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 
 /** Processor for Range Facets */
-public class RangeFacetProcessor extends SimpleFacets {
+public abstract class RangeFacetProcessor extends SimpleFacets {
 
   public RangeFacetProcessor(
       SolrQueryRequest req, DocSet docs, SolrParams params, ResponseBuilder rb) {

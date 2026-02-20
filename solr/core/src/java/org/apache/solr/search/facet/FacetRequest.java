@@ -42,7 +42,6 @@ import org.apache.solr.util.RTimer;
  * A request to do facets/stats that might itself be composed of sub-FacetRequests. This is a
  * cornerstone of the facet module.
  *
- * @see #parse(SolrQueryRequest, Map)
  */
 public abstract class FacetRequest {
 
@@ -339,44 +338,6 @@ public abstract class FacetRequest {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
         }
       }
-    }
-  }
-
-  /**
-   * Factory method to parse a facet request tree. The outer keys are arbitrary labels and their
-   * values are facet request specifications. Will throw a {@link SolrException} if it fails to
-   * parse.
-   *
-   * @param req the overall request
-   * @param params a typed parameter structure (unlike SolrParams which are all string values).
-   */
-  public static FacetRequest parse(SolrQueryRequest req, Map<String, Object> params) {
-    FacetParser<?> parser = new FacetParser.FacetTopParser(req);
-    try {
-      return parser.parse(params);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
-    }
-  }
-
-  // TODO it would be nice if there was no distinction.  If the top level request had "type" as
-  // special then there wouldn't be a need.
-
-  /**
-   * Factory method to parse out a rooted facet request tree that would normally go one level below
-   * a label. The params must contain a "type". This is intended to be useful externally, such as by
-   * {@link org.apache.solr.request.SimpleFacets}.
-   *
-   * @param req the overall request
-   * @param params a typed parameter structure (unlike SolrParams which are all string values).
-   */
-  public static FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> params) {
-    @SuppressWarnings("rawtypes")
-    FacetParser parser = new FacetParser.FacetTopParser(req);
-    try {
-      return (FacetRequest) parser.parseFacetOrStat("", params);
-    } catch (SyntaxError syntaxError) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, syntaxError);
     }
   }
 

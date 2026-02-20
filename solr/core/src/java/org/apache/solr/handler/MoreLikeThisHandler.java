@@ -16,16 +16,6 @@
  */
 package org.apache.solr.handler;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
 import net.jcip.annotations.NotThreadSafe;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.ExitableDirectoryReader;
@@ -58,24 +48,20 @@ import org.apache.solr.request.SimpleFacets;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.QParser;
-import org.apache.solr.search.QParserPlugin;
-import org.apache.solr.search.QueryCommand;
-import org.apache.solr.search.QueryLimits;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.QueryUtils;
-import org.apache.solr.search.ReturnFields;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.search.SolrReturnFields;
-import org.apache.solr.search.SortSpec;
-import org.apache.solr.search.SyntaxError;
+import org.apache.solr.search.*;
+import org.apache.solr.search.facet.FacetParserFactory;
+import org.apache.solr.search.facet.FacetRequest;
+import org.apache.solr.search.facet.OneFacetParser;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.invoke.MethodHandles;
+import java.util.*;
+import java.util.regex.Pattern;
 
 /**
  * Solr MoreLikeThis --
@@ -224,7 +210,13 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
           final ResponseBuilder responseBuilder =
               new ResponseBuilder(req, rsp, Collections.emptyList());
           responseBuilder.setQuery(mlt.getRealMLTQuery());
-          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder);
+          SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder){
+            @Override
+            public FacetRequest parseOneFacetReq(SolrQueryRequest req, Map<String, Object> jsonFacet) {
+              OneFacetParser facetRequestFactory = new FacetParserFactory();
+              return facetRequestFactory.parseOneFacetReq(req, jsonFacet);
+            }
+          };
           FacetComponent.FacetContext.initContext(responseBuilder);
           rsp.add("facet_counts", FacetComponent.getFacetCounts(f));
         }
@@ -274,6 +266,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
       queryLimits.maybeExitWithPartialResults("MoreLikeThis");
     }
   }
+
 
   @Override
   public Name getPermissionName(AuthorizationContext request) {
