@@ -1,0 +1,7 @@
+title: Update com.google.api.grpc:proto-google-common-protos to v2.65.1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3687
+  url: https://github.com/apache/solr/pull/3687
