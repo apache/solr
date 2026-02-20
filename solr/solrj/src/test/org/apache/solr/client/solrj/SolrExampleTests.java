@@ -114,7 +114,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
   public void emptyCollection() throws Exception {
     SolrClient client = getSolrClient();
     // delete everything!
-    client.deleteByQuery(DEFAULT_TEST_COLLECTION_NAME, "*:*");
+    client.deleteByQuery("*:*");
     client.commit();
   }
 
@@ -2305,10 +2305,8 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", "DOCID");
     doc.addField("name", "hello");
-    client.add(DEFAULT_TEST_COLLECTION_NAME, doc);
-    client.commit(
-        DEFAULT_TEST_COLLECTION_NAME); // Since the transaction log is disabled in the example, we
-    // need to commit
+    client.add(doc);
+    client.commit(); // Since the transaction log is disabled in the example, we need to commit
 
     SolrQuery q = new SolrQuery();
     q.set("id", "DOCID");
