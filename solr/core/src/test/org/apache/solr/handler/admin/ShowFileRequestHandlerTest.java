@@ -75,11 +75,6 @@ public class ShowFileRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   public void test404Locally() {
-    // we need to test that executing the handler directly does not
-    // throw an exception, just sets the exception on the response.
-
-    // bypass TestHarness since it will throw any exception found in the
-    // response.
     try (SolrCore core = solrTestRule.getCoreContainer().getCore("collection1")) {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrQueryRequest req =
