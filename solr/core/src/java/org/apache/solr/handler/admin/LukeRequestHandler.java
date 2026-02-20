@@ -384,7 +384,11 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       NamedList<Object> shardRsp = srsp.getSolrResponse().getResponse();
       LukeResponse lukeRsp = new LukeResponse();
       lukeRsp.setResponse(shardRsp);
-      ShardData shardData = new ShardData(shardAddress(srsp), lukeRsp.getFieldInfo());
+      // Only process field info if the shard explicitly included it in its response.
+      // LukeResponse.getFieldInfo() falls back to schema.fields which has incomplete data.
+      Map<String, LukeResponse.FieldInfo> fieldInfo =
+          shardRsp.get(RSP_FIELDS) != null ? lukeRsp.getFieldInfo() : null;
+      ShardData shardData = new ShardData(shardAddress(srsp), fieldInfo);
 
       NamedList<Object> shardIndex = lukeRsp.getIndexInfo();
       if (shardIndex != null) {

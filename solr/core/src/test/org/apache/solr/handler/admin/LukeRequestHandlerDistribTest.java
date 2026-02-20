@@ -290,6 +290,38 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void testDistribShowSchema() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("distrib", "true");
+    params.set("show", "schema");
+
+    LukeResponse rsp = requestLuke(COLLECTION, params);
+
+    NamedList<Object> raw = rsp.getResponse();
+    NamedList<Object> schema = (NamedList<Object>) raw.get("schema");
+    assertNotNull("schema section should be present", schema);
+
+    NamedList<Object> fields = (NamedList<Object>) schema.get("fields");
+    assertNotNull("schema fields should be present", fields);
+    assertNotNull("'id' should be in schema fields", fields.get("id"));
+    assertNotNull("'name' should be in schema fields", fields.get("name"));
+
+    assertNotNull("dynamicFields should be present", schema.get("dynamicFields"));
+    assertNotNull("uniqueKeyField should be present", schema.get("uniqueKeyField"));
+    assertEquals("uniqueKeyField should be 'id'", "id", schema.get("uniqueKeyField"));
+    assertNotNull("types should be present", schema.get("types"));
+    assertNotNull("similarity should be present", schema.get("similarity"));
+
+    // show=schema should not produce merged top-level fields (matches local mode behavior)
+    assertNull("top-level fields should not be present with show=schema", raw.get("fields"));
+
+    // Shards are present for consistency: each shard entry mirrors the per-shard index info,
+    // just as the top-level index section is present in local mode with show=schema
+    assertNotNull("shards should still be present with show=schema", raw.get("shards"));
+  }
+
+  @Test
   public void testDistribTrueOnSingleShardFallsBackToLocal() throws Exception {
     String singleShardCollection = "lukeSingleShard";
     CollectionAdminRequest.createCollection(singleShardCollection, "conf", 1, 1)
