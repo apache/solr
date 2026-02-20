@@ -1,0 +1,7 @@
+title: Update org.apache.hadoop:* to v3.4.2 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3588
+  url: https://github.com/apache/solr/pull/3588
