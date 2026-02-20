@@ -86,10 +86,8 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   /** query the example */
   @Test
   public void testCommitWithinOnAdd() throws Exception {
-    // make sure it is empty...
     SolrClient client = getSolrClient();
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
+
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
@@ -161,10 +159,8 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
 
   @Test
   public void testCommitWithinOnDelete() throws Exception {
-    // make sure it is empty...
     SolrClient client = getSolrClient();
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
+
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
@@ -207,9 +203,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @Test
   public void testAddDelete() throws Exception {
     SolrClient client = getSolrClient();
-
-    // Empty the database...
-    client.deleteByQuery("*:*"); // delete everything!
 
     SolrInputDocument[] doc = new SolrInputDocument[3];
     for (int i = 0; i < 3; i++) {
@@ -255,10 +248,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();
-    // Empty the database...
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
-    assertNumFound("*:*", 0); // make sure it got in
 
     // Add some docs to the index
     UpdateRequest req = new UpdateRequest();
