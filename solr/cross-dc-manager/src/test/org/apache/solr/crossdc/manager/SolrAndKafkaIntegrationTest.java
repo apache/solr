@@ -381,6 +381,21 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
       assertEquals(Boolean.TRUE, map.get("kafka"));
       assertEquals(Boolean.TRUE, map.get("solr"));
       assertEquals(Boolean.TRUE, map.get("running"));
+
+      // kill Solr to trigger unhealthy state
+      solrCluster2.shutdown();
+      solrCluster2 = null;
+      Thread.sleep(5000);
+      rsp = httpJettySolrClient.request(req);
+      content =
+          IOUtils.toString(
+              (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
+      assertEquals(Integer.valueOf(503), rsp.get("responseStatus"));
+      map = (Map<String, Object>) ObjectBuilder.fromJSON(content);
+      assertEquals(Boolean.TRUE, map.get("kafka"));
+      assertEquals(Boolean.FALSE, map.get("solr"));
+      assertEquals(Boolean.TRUE, map.get("running"));
+
     } finally {
       httpJettySolrClient.close();
       client.close();
