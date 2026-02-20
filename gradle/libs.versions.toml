@@ -118,7 +118,7 @@ gulp-cli = "3.1.0"
 hamcrest = "3.0"
 hk2 = "3.1.1"
 hsqldb = "2.7.4"
-ibm-icu = "77.1"
+ibm-icu = "78.2"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
 # Keep these Jakarta versions aligned with EE 10
