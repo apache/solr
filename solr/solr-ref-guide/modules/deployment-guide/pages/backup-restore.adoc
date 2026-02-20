@@ -396,6 +396,39 @@ Any children under the `<repository>` tag are passed as additional configuration
 
 Information on each of the repository implementations provided with Solr is provided below.
 
+=== Parallel File Transfers
+
+Backup and restore operations can transfer multiple index files in parallel to improve throughput, especially when using cloud storage repositories like S3 or GCS where latency is higher.
+The parallelism is controlled via system properties or environment variables:
+
+`solr.backup.maxparalleluploads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+Maximum number of index files to upload in parallel during backup operations.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELUPLOADS` environment variable.
+For cloud storage repositories (S3, GCS), consider setting this to `8` or higher to improve backup performance.
+
+`solr.backup.maxparalleldownloads`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `1`
+|===
++
+Maximum number of index files to download in parallel during restore operations.
+Can also be set via the `SOLR_BACKUP_MAXPARALLELDOWNLOADS` environment variable.
+For cloud storage repositories (S3, GCS), consider setting this to `8` or higher to improve restore performance.
+
+TIP: When using cloud storage, increasing parallelism significantly improves backup and restore speed by overlapping network latency.
+However, higher parallelism also increases memory usage.
+Start with a value of `8` and adjust based on your available heap memory and network bandwidth.
+
+=== Checksum Verification
+
 By default, all the repository implementations verify the integrity of the index files before they are copied to the destination. However, it is possible to disable this integrity check by setting the optional configuration property `verifyChecksum`.
 
 `verifyChecksum`::
