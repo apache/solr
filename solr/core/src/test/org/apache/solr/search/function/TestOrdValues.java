@@ -19,7 +19,6 @@ package org.apache.solr.search.function;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
@@ -40,8 +39,6 @@ import org.apache.lucene.tests.index.RandomIndexWriter;
 import org.apache.lucene.tests.search.QueryUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.legacy.LegacyFloatField;
-import org.apache.solr.legacy.LegacyIntField;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -267,12 +264,12 @@ public class TestOrdValues extends SolrTestCase {
             customType2); // for regular search
     d.add(f);
 
-    f = new LegacyIntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
-    d.add(f);
+    // f = new LegacyIntField(INT_FIELD, scoreAndID, Store.YES); // for function scoring
+    // d.add(f);
     d.add(new NumericDocValuesField(INT_FIELD, scoreAndID));
 
-    f = new LegacyFloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
-    d.add(f);
+    // f = new LegacyFloatField(FLOAT_FIELD, scoreAndID, Store.YES); // for function scoring
+    // d.add(f);
     d.add(new NumericDocValuesField(FLOAT_FIELD, Float.floatToRawIntBits(scoreAndID)));
 
     iw.addDocument(d);

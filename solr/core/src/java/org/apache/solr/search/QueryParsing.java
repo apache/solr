@@ -34,7 +34,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
@@ -255,27 +254,6 @@ public class QueryParsing {
       }
 
       out.append(q.includesUpper() ? ']' : '}');
-    } else if (query instanceof LegacyNumericRangeQuery<?> q) {
-      String fname = q.getField();
-      FieldType ft = writeFieldName(fname, schema, out, flags);
-      out.append(q.includesMin() ? '[' : '{');
-      Number lt = q.getMin();
-      Number ut = q.getMax();
-      if (lt == null) {
-        out.append('*');
-      } else {
-        out.append(lt.toString());
-      }
-
-      out.append(" TO ");
-
-      if (ut == null) {
-        out.append('*');
-      } else {
-        out.append(ut.toString());
-      }
-
-      out.append(q.includesMax() ? ']' : '}');
     } else if (query instanceof BooleanQuery q) {
       boolean needParens = false;
 

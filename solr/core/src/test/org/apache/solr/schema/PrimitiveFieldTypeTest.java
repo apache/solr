@@ -56,11 +56,6 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
 
     final List<Class<? extends FieldType>> types =
         Arrays.asList(
-            TrieDateField.class, DatePointField.class,
-            TrieIntField.class, IntPointField.class,
-            TrieLongField.class, IntPointField.class,
-            TrieFloatField.class, FloatPointField.class,
-            TrieDoubleField.class, DoublePointField.class,
             StrField.class, BoolField.class,
             // Non-prims, omitNorms always defaults to false regardless of schema version...
             TextField.class, BinaryField.class);
@@ -100,17 +95,6 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
         IndexSchemaFactory.buildIndexSchema(
             testConfHome.resolve("schema15.xml").toString(), config);
 
-    final TrieDateField tdt = new TrieDateField();
-    {
-      final Map<String, String> args = new HashMap<>();
-      args.put("sortMissingLast", "true");
-      args.put("indexed", "true");
-      args.put("stored", "false");
-      args.put("docValues", "true");
-      args.put("precisionStep", "16");
-      tdt.setArgs(schema, args);
-      assertEquals(16, tdt.getPrecisionStep());
-    }
     final DatePointField pdt = new DatePointField();
     {
       final Map<String, String> args = new HashMap<>();
@@ -121,7 +105,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
       pdt.setArgs(schema, args);
     }
 
-    for (FieldType ft : Arrays.asList(tdt, pdt)) {
+    for (FieldType ft : Arrays.asList(pdt)) {
       assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.OMIT_NORMS));
       assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.SORT_MISSING_LAST));
       assertTrue(ft.getClass().getName(), ft.hasProperty(FieldType.INDEXED));

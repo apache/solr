@@ -18,14 +18,14 @@
 
 <schema name="test" version="1.7">
 
-  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" uninvertible="true"/>
-  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" uninvertible="true"/>
-  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" precisionStep="8" uninvertible="true"/>
+  <fieldType name="tint" class="${solr.tests.IntegerFieldType}" docValues="${solr.tests.numeric.dv}" uninvertible="true"/>
+  <fieldType name="tfloat" class="${solr.tests.FloatFieldType}" docValues="${solr.tests.numeric.dv}" uninvertible="true"/>
+  <fieldType name="tlong" class="${solr.tests.LongFieldType}" docValues="${solr.tests.numeric.dv}" uninvertible="true"/>
   
   <!-- tdouble class can't be randomized, because BBoxField requires TrieDoubleField.  See SOLR-11111. -->
-  <fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" precisionStep="8" uninvertible="true"/>
+  <!--fieldType name="tdouble" class="solr.TrieDoubleField" docValues="${solr.tests.numeric.dv}" uninvertible="true"/-->
   
-  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}" precisionStep="8"/>
+  <fieldType name="tdoubleDV" class="${solr.tests.DoubleFieldType}"/>
 
   <fieldType name="pdouble" class="solr.DoublePointField"/>
   
@@ -56,6 +56,7 @@
   <fieldType name="srptgeom_s2_geo3d" class="solr.RptWithGeometrySpatialField"
              spatialContextFactory="Geo3D" prefixTree="s2" planetModel="sphere"/>
 
+  <!-->
   <fieldType name="bbox" class="solr.BBoxField"
              numberType="tdoubleDV" distanceUnits="degrees" storeSubFields="false"/>
 
@@ -64,6 +65,7 @@
 
   <fieldType name="pbbox" class="solr.BBoxField"
              numberType="pdouble" distanceUnits="degrees" storeSubFields="false"/>
+             -->
 
   <fieldType name="llp" class="solr.LatLonPointSpatialField" distanceUnits="degrees" multiValued="true" />
   <fieldType name="oslocation" class="solr.SpatialRecursivePrefixTreeFieldType" geo="false" maxDistErr="0.000009"

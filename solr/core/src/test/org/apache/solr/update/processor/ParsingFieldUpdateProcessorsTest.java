@@ -65,18 +65,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertQ(req("id:9"), "//date[@name='date_dt'][.='" + dateString + "']");
   }
 
-  public void testParseTrieDateRoundTrip() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("date_tdt")); // should match "*_tdt" dynamic field
-    String dateString = "2010-11-12T13:14:15.168Z";
-    SolrInputDocument d = processAdd("parse-date", doc(f("id", "39"), f("date_tdt", dateString)));
-    assertNotNull(d);
-    assertTrue(d.getFieldValue("date_tdt") instanceof Date);
-    assertEquals(Instant.parse(dateString), ((Date) d.getFieldValue("date_tdt")).toInstant());
-    assertU(commit());
-    assertQ(req("id:39"), "//date[@name='date_tdt'][.='" + dateString + "']");
-  }
-
   public void testParseDateFieldNotInSchema() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
@@ -329,29 +317,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertEquals(value, ((Integer) d.getFieldValue("not_in_schema")).intValue());
   }
 
-  public void testParseTrieIntRoundTrip() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("int1_ti")); // should match dynamic field "*_ti"
-    assertNotNull(schema.getFieldOrNull("int2_ti")); // should match dynamic field "*_ti"
-    int value = 1089883491;
-    String intString1 = "1089883491";
-    String intString2 = "1,089,883,491";
-    SolrInputDocument d =
-        processAdd(
-            "parse-int", doc(f("id", "113"), f("int1_ti", intString1), f("int2_ti", intString2)));
-    assertNotNull(d);
-    assertTrue(d.getFieldValue("int1_ti") instanceof Integer);
-    assertEquals(value, ((Integer) d.getFieldValue("int1_ti")).intValue());
-    assertTrue(d.getFieldValue("int2_ti") instanceof Integer);
-    assertEquals(value, ((Integer) d.getFieldValue("int2_ti")).intValue());
-
-    assertU(commit());
-    assertQ(
-        req("id:113"),
-        "//int[@name='int1_ti'][.='" + value + "']",
-        "//int[@name='int2_ti'][.='" + value + "']");
-  }
-
   public void testIntOverflow() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema1"));
@@ -445,30 +410,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertEquals(value, ((Long) d.getFieldValue("not_in_schema")).longValue());
   }
 
-  public void testParseTrieLongRoundTrip() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("long1_tl")); // should match dynamic field "*_tl"
-    assertNotNull(schema.getFieldOrNull("long2_tl")); // should match dynamic field "*_tl"
-    long value = 1089883491L;
-    String longString1 = "1089883491";
-    String longString2 = "1,089,883,491";
-    SolrInputDocument d =
-        processAdd(
-            "parse-long",
-            doc(f("id", "113"), f("long1_tl", longString1), f("long2_tl", longString2)));
-    assertNotNull(d);
-    assertTrue(d.getFieldValue("long1_tl") instanceof Long);
-    assertEquals(value, ((Long) d.getFieldValue("long1_tl")).longValue());
-    assertTrue(d.getFieldValue("long2_tl") instanceof Long);
-    assertEquals(value, ((Long) d.getFieldValue("long2_tl")).longValue());
-
-    assertU(commit());
-    assertQ(
-        req("id:113"),
-        "//long[@name='long1_tl'][.='" + value + "']",
-        "//long[@name='long2_tl'][.='" + value + "']");
-  }
-
   public void testFailedParseMixedLong() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
     assertNull(schema.getFieldOrNull("not_in_schema"));
@@ -544,33 +485,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertEquals(value, (Float) d.getFieldValue("not_in_schema"), EPSILON);
   }
 
-  public void testParseTrieFloatRoundTrip() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("float1_tf")); // should match dynamic field "*_tf"
-    assertNotNull(schema.getFieldOrNull("float2_tf")); // should match dynamic field "*_tf"
-    float value = 10898.835f;
-    String floatString1 = "10898.83491";
-    String floatString2 = "10,898.83491";
-    SolrInputDocument d =
-        processAdd(
-            "parse-float",
-            doc(f("id", "728"), f("float1_tf", floatString1), f("float2_tf", floatString2)));
-    assertNotNull(d);
-    assertTrue(d.getFieldValue("float1_tf") instanceof Float);
-    assertEquals(value, (Float) d.getFieldValue("float1_tf"), EPSILON);
-    assertTrue(d.getFieldValue("float2_tf") instanceof Float);
-    assertEquals(value, (Float) d.getFieldValue("float2_tf"), EPSILON);
-
-    assertU(commit());
-    assertQ(
-        req("id:728"),
-        "//float[@name='float1_tf'][.='" + value + "']",
-        "//float[@name='float2_tf'][.='" + value + "']");
-  }
-
   public void testMixedFloats() throws Exception {
     IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("float_tf")); // should match dynamic field "*_tf"
+    assertNotNull(schema.getFieldOrNull("float_pf")); // should match dynamic field "*_pf"
     Map<Float, Object> mixedFloats = new HashMap<>();
     mixedFloats.put(85.0f, "85");
     mixedFloats.put(2894518.0f, "2,894,518");
@@ -579,9 +496,9 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     SolrInputDocument d =
         processAdd(
             "parse-float-no-run-processor",
-            doc(f("id", "342"), f("float_tf", mixedFloats.values())));
+            doc(f("id", "342"), f("float_pf", mixedFloats.values())));
     assertNotNull(d);
-    for (Object o : d.getFieldValues("float_tf")) {
+    for (Object o : d.getFieldValues("float_pf")) {
       assertTrue(o instanceof Float);
       mixedFloats.remove(o);
     }
@@ -661,30 +578,6 @@ public class ParsingFieldUpdateProcessorsTest extends UpdateProcessorTestBase {
     assertEquals(value, (Double) d.getFieldValue("double_d"), EPSILON);
     assertTrue(d.getFieldValue("not_in_schema") instanceof Double);
     assertEquals(value, (Double) d.getFieldValue("not_in_schema"), EPSILON);
-  }
-
-  public void testParseTrieDoubleRoundTrip() throws Exception {
-    IndexSchema schema = h.getCore().getLatestSchema();
-    assertNotNull(schema.getFieldOrNull("double1_td")); // should match dynamic field "*_td"
-    assertNotNull(schema.getFieldOrNull("double2_td")); // should match dynamic field "*_td"
-    double value = 10898.83491;
-    String doubleString1 = "10898.83491";
-    String doubleString2 = "10,898.83491";
-    SolrInputDocument d =
-        processAdd(
-            "parse-double",
-            doc(f("id", "728"), f("double1_td", doubleString1), f("double2_td", doubleString2)));
-    assertNotNull(d);
-    assertTrue(d.getFieldValue("double1_td") instanceof Double);
-    assertEquals(value, (Double) d.getFieldValue("double1_td"), EPSILON);
-    assertTrue(d.getFieldValue("double2_td") instanceof Double);
-    assertEquals(value, (Double) d.getFieldValue("double2_td"), EPSILON);
-
-    assertU(commit());
-    assertQ(
-        req("id:728"),
-        "//double[@name='double1_td'][.='" + value + "']",
-        "//double[@name='double2_td'][.='" + value + "']");
   }
 
   public void testFailedParseMixedDouble() throws Exception {

@@ -46,7 +46,7 @@ public class SolrCoreParser extends CoreParser implements NamedListInitializedPl
 
   public SolrCoreParser(String defaultField, Analyzer analyzer, SolrQueryRequest req) {
     super(defaultField, analyzer);
-    queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
+    // queryFactory.addBuilder("LegacyNumericRangeQuery", new LegacyNumericRangeQueryBuilder());
     this.req = req;
     if (null == req) {
       throw new NullPointerException("req must not be null");

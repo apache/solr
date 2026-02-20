@@ -33,8 +33,6 @@
   <updateRequestProcessorChain name="comprehensive">
     <processor class="solr.FieldLengthUpdateProcessorFactory">
       <arr name="typeClass">
-        <str>solr.TrieIntField</str>
-        <str>solr.TrieLongField</str>
         <str>solr.IntPointField</str>
         <str>solr.LongPointField</str>
       </arr>
@@ -93,7 +91,6 @@
       <str name="fieldRegex">bar.*</str>
       <!-- each set of exclusions is checked independently -->
       <lst name="exclude">
-        <str name="typeClass">solr.TrieDateField</str>
         <str name="typeClass">solr.DatePointField</str>
       </lst>
       <lst name="exclude">
@@ -107,7 +104,6 @@
       <str name="fieldRegex">bar.*</str>
       <!-- only excluded if it matches all in set -->
       <lst name="exclude">
-        <str name="typeClass">solr.TrieDateField</str>
         <str name="fieldRegex">.*HOSS.*</str>
       </lst>
     </processor>
@@ -144,7 +140,6 @@
 
   <updateRequestProcessorChain name="trim-classes">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
-      <str name="typeClass">solr.TrieDateField</str>
       <str name="typeClass">solr.DatePointField</str>
       <str name="typeClass">solr.StrField</str>
     </processor>
@@ -152,7 +147,6 @@
 
   <updateRequestProcessorChain name="trim-multi">
     <processor class="solr.TrimFieldUpdateProcessorFactory">
-      <str name="typeClass">solr.TrieDateField</str>
       <str name="typeClass">solr.StrField</str>
       <arr name="fieldRegex">
         <str>foo.*</str>

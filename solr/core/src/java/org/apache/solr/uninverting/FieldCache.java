@@ -161,116 +161,6 @@ public interface FieldCache {
       };
 
   /**
-   * A parser instance for int values encoded by {@link org.apache.solr.legacy.LegacyNumericUtils},
-   * e.g. when indexed via {@link org.apache.solr.legacy.LegacyIntField}/{@link
-   * org.apache.solr.legacy.LegacyNumericTokenStream}.
-   *
-   * @deprecated Index with points and use {@link #INT_POINT_PARSER} instead.
-   */
-  @Deprecated
-  public static final Parser LEGACY_INT_PARSER =
-      new Parser() {
-        @Override
-        public long parseValue(BytesRef term) {
-          return LegacyNumericUtils.prefixCodedToInt(term);
-        }
-
-        @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
-        }
-
-        @Override
-        public String toString() {
-          return FieldCache.class.getName() + ".LEGACY_INT_PARSER";
-        }
-      };
-
-  /**
-   * A parser instance for float values encoded with {@link
-   * org.apache.solr.legacy.LegacyNumericUtils}, e.g. when indexed via {@link
-   * org.apache.solr.legacy.LegacyFloatField}/{@link
-   * org.apache.solr.legacy.LegacyNumericTokenStream}.
-   *
-   * @deprecated Index with points and use {@link #FLOAT_POINT_PARSER} instead.
-   */
-  @Deprecated
-  public static final Parser LEGACY_FLOAT_PARSER =
-      new Parser() {
-        @Override
-        public long parseValue(BytesRef term) {
-          int val = LegacyNumericUtils.prefixCodedToInt(term);
-          if (val < 0) val ^= 0x7fffffff;
-          return val;
-        }
-
-        @Override
-        public String toString() {
-          return FieldCache.class.getName() + ".LEGACY_FLOAT_PARSER";
-        }
-
-        @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedInts(terms.iterator());
-        }
-      };
-
-  /**
-   * A parser instance for long values encoded by {@link org.apache.solr.legacy.LegacyNumericUtils},
-   * e.g. when indexed via {@link org.apache.solr.legacy.LegacyLongField}/{@link
-   * org.apache.solr.legacy.LegacyNumericTokenStream}.
-   *
-   * @deprecated Index with points and use {@link #LONG_POINT_PARSER} instead.
-   */
-  @Deprecated
-  public static final Parser LEGACY_LONG_PARSER =
-      new Parser() {
-        @Override
-        public long parseValue(BytesRef term) {
-          return LegacyNumericUtils.prefixCodedToLong(term);
-        }
-
-        @Override
-        public String toString() {
-          return FieldCache.class.getName() + ".LEGACY_LONG_PARSER";
-        }
-
-        @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
-        }
-      };
-
-  /**
-   * A parser instance for double values encoded with {@link
-   * org.apache.solr.legacy.LegacyNumericUtils}, e.g. when indexed via {@link
-   * org.apache.solr.legacy.LegacyDoubleField}/{@link
-   * org.apache.solr.legacy.LegacyNumericTokenStream}.
-   *
-   * @deprecated Index with points and use {@link #DOUBLE_POINT_PARSER} instead.
-   */
-  @Deprecated
-  public static final Parser LEGACY_DOUBLE_PARSER =
-      new Parser() {
-        @Override
-        public long parseValue(BytesRef term) {
-          long val = LegacyNumericUtils.prefixCodedToLong(term);
-          if (val < 0) val ^= 0x7fffffffffffffffL;
-          return val;
-        }
-
-        @Override
-        public String toString() {
-          return FieldCache.class.getName() + ".LEGACY_DOUBLE_PARSER";
-        }
-
-        @Override
-        public TermsEnum termsEnum(Terms terms) throws IOException {
-          return LegacyNumericUtils.filterPrefixCodedLongs(terms.iterator());
-        }
-      };
-
-  /**
    * Checks the internal cache for an appropriate entry, and if none is found, reads the
    * terms/points in <code>field</code> and returns a bit set at the size of <code>reader.maxDoc()
    * </code>, with turned on bits for each docid that does have a value for this field.
@@ -291,7 +181,7 @@ public interface FieldCache {
    * @param reader Used to get field values.
    * @param field Which field contains the longs.
    * @param parser Computes long for string values. May be {@code null} if the requested field was
-   *     indexed as {@link NumericDocValuesField} or {@link org.apache.solr.legacy.LegacyLongField}.
+   *     indexed as {@link NumericDocValuesField}.
    * @return The values in the given field for each document.
    * @throws IOException If any error occurs.
    */

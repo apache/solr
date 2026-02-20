@@ -24,7 +24,6 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.IntPointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieIntField;
 import org.junit.Test;
 
 public class TestFacetMethods extends SolrTestCase {
@@ -36,101 +35,6 @@ public class TestFacetMethods extends SolrTestCase {
 
   protected static boolean propsMatch(int x, int y) {
     return (x & y) != 0;
-  }
-
-  @Test
-  public void testNumericSingleValuedDV() {
-
-    for (int props : Arrays.asList(DOC_VALUES ^ UNINVERTIBLE, DOC_VALUES)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // default is FCS, can't use ENUM due to trie-field terms, FC rewrites to FCS for efficiency
-      for (int mincount : Arrays.asList(0, 1)) {
-        // behavior should be independent of mincount
-        assertEquals(FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, mincount));
-
-        // UIF only allowed if field is UNINVERTIBLE
-        assertEquals(
-            propsMatch(props, UNINVERTIBLE) ? FacetMethod.UIF : FacetMethod.FCS,
-            SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, 0));
-      }
-    }
-  }
-
-  @Test
-  public void testNumericMultiValuedDV() {
-
-    for (int props :
-        Arrays.asList(DOC_VALUES ^ MULTIVALUED ^ UNINVERTIBLE, DOC_VALUES ^ MULTIVALUED)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // default value is FC
-      for (int mincount : Arrays.asList(0, 1)) {
-        // behavior should be independent of mincount
-        assertEquals(FacetMethod.FC, SimpleFacets.selectFacetMethod(field, null, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, mincount));
-
-        // UIF only allowed if field is UNINVERTIBLE
-        assertEquals(
-            propsMatch(props, UNINVERTIBLE) ? FacetMethod.UIF : FacetMethod.FC,
-            SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, mincount));
-      }
-    }
-  }
-
-  @Test
-  public void testNumericSingleValuedNoDV() {
-
-    for (int props : Arrays.asList(0 ^ UNINVERTIBLE, 0)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // FCS is used by default for most requested methods other than UIF -- regardless of mincount
-      for (int mincount : Arrays.asList(0, 1)) {
-        assertEquals(FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, null, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, mincount));
-        assertEquals(
-            FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, mincount));
-      }
-      // UIF allowed only if UNINVERTIBLE *AND* mincount > 0
-      assertEquals(FacetMethod.FCS, SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, 0));
-      assertEquals(
-          propsMatch(props, UNINVERTIBLE) ? FacetMethod.UIF : FacetMethod.FCS,
-          SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, 1));
-    }
-  }
-
-  @Test
-  public void testNumericMultiValuedNoDV() {
-
-    for (int props : Arrays.asList(MULTIVALUED ^ UNINVERTIBLE, MULTIVALUED)) {
-      SchemaField field = new SchemaField("field", new TrieIntField(), props, null);
-      // FC is used by default for most requested methods other than UIF -- regardless of mincount
-      for (int mincount : Arrays.asList(0, 1)) {
-        assertEquals(FacetMethod.FC, SimpleFacets.selectFacetMethod(field, null, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.ENUM, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.FC, mincount));
-        assertEquals(
-            FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.FCS, mincount));
-      }
-      // UIF allowed only if UNINVERTIBLE *AND* mincount > 0
-      assertEquals(FacetMethod.FC, SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, 0));
-      assertEquals(
-          propsMatch(props, UNINVERTIBLE) ? FacetMethod.UIF : FacetMethod.FC,
-          SimpleFacets.selectFacetMethod(field, FacetMethod.UIF, 1));
-    }
   }
 
   @Test

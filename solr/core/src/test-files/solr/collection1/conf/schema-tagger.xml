@@ -50,8 +50,8 @@
   <types>
     <fieldType name="string" class="solr.StrField"/>
 
-    <fieldType name="long" class="solr.TrieLongField" precisionStep="0" positionIncrementGap="0"/>
-    <fieldType name="int" class="solr.TrieIntField" precisionStep="0" positionIncrementGap="0"/>
+    <fieldType name="long" class="solr.TrieLongField" positionIncrementGap="0"/>
+    <fieldType name="int" class="solr.TrieIntField" positionIncrementGap="0"/>
 
     <fieldType name="tag" class="solr.TextField" positionIncrementGap="100"
                postingsFormat="FST50" omitTermFreqAndPositions="true" omitNorms="true">

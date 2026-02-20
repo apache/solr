@@ -49,7 +49,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.join.GraphPointsCollector;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -278,7 +277,7 @@ class JoinQuery extends Query implements SolrSearcherRequirer {
       Terms toTerms = toReader.terms(toField);
       if (terms == null || toTerms == null) return DocSet.empty();
       String prefixStr =
-          TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
+          null; // TrieField.getMainValuePrefix(fromSearcher.getSchema().getFieldType(fromField));
       BytesRef prefix = prefixStr == null ? null : new BytesRef(prefixStr);
 
       BytesRef term = null;
