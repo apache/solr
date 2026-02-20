@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Remove deprecated StandardRequestHandler in favour of SearchHand;er
+title: Remove deprecated StandardRequestHandler in favor of SearchHandler
 type: removed # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Eric Pugh
