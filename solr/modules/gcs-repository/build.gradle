@@ -41,7 +41,16 @@ dependencies {
   implementation libs.google.auth.credentials
   implementation libs.google.cloud.core
   implementation libs.google.cloud.corehttp
-  implementation libs.google.cloud.storage
+  implementation(libs.google.cloud.storage) {
+    exclude group: 'io.grpc', module: 'grpc-opentelemetry'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'exporter-metrics'
+    exclude group: 'com.google.cloud', module: 'google-cloud-monitoring'
+    exclude group: 'com.google.api.grpc', module: 'proto-google-cloud-monitoring-v3'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'shared-resourcemapping'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'detector-resources-support'
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.semconv'
+  }
   implementation libs.threeten.bp
 
   testImplementation project(':solr:test-framework')
@@ -51,6 +60,14 @@ dependencies {
 
   testImplementation(libs.google.cloud.nio) {
     exclude group: 'javax.inject'
+    exclude group: 'io.grpc', module: 'grpc-opentelemetry'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'exporter-metrics'
+    exclude group: 'com.google.cloud', module: 'google-cloud-monitoring'
+    exclude group: 'com.google.api.grpc', module: 'proto-google-cloud-monitoring-v3'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'shared-resourcemapping'
+    exclude group: 'com.google.cloud.opentelemetry', module: 'detector-resources-support'
+    exclude group: 'io.opentelemetry'
+    exclude group: 'io.opentelemetry.semconv'
   }
 }
 
