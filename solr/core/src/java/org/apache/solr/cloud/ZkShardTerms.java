@@ -120,6 +120,11 @@ public class ZkShardTerms implements AutoCloseable {
     mutate(terms -> terms.increaseTerms(leader, replicasNeedingRecovery));
   }
 
+  public void ensureHighestTerms(Set<String> mostUpToDateCores) {
+    if (mostUpToDateCores.isEmpty()) return;
+    mutate(terms -> terms.setHighestTerms(mostUpToDateCores));
+  }
+
   public ShardTerms getShardTerms() {
     return terms.get();
   }
