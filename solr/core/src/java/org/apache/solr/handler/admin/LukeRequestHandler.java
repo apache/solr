@@ -322,7 +322,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     for (String shard : shards) {
       ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
-      params.set(CommonParams.QT, reqPath != null ? reqPath : "/admin/luke");
+      params.set(CommonParams.QT, reqPath);
       ShardHandler.setShardAttributesToParams(params, sreq.purpose);
       shardHandler.submit(sreq, shard, params);
     }
