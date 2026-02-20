@@ -96,6 +96,8 @@ public class Consumer {
       context.setAttribute(
           MetricsServlet.SOLR_METRICS_MANAGER_ATTRIBUTE, metrics.getMetricManager());
       context.addServlet(MetricsServlet.class, "/metrics/*");
+      context.setAttribute(HealthCheckServlet.KAFKA_CROSSDC_CONSUMER, crossDcConsumer);
+      context.addServlet(HealthCheckServlet.class, "/health/*");
 
       for (ServletMapping mapping : context.getServletHandler().getServletMappings()) {
         if (log.isInfoEnabled()) {
