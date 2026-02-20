@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.handler.admin.CollectionsHandler.DEFAULT_COLLECTION_OP_TIMEOUT;
 
 import java.util.Map;
@@ -120,6 +121,8 @@ public abstract class AdminAPIBase extends JerseyResource {
   protected SolrResponse submitRemoteMessageAndHandleException(
       SolrJerseyResponse response, AdminCmdContext adminCmdContext, ZkNodeProps remoteMessage)
       throws Exception {
+    adminCmdContext.setCallingLockIds(
+        (String) solrQueryRequest.getContext().get(CALLING_LOCK_IDS_HEADER));
     final SolrResponse remoteResponse =
         CollectionsHandler.submitCollectionApiCommand(
             coreContainer.getZkController(),
@@ -138,7 +141,7 @@ public abstract class AdminAPIBase extends JerseyResource {
       ZkNodeProps remoteMessage)
       throws Exception {
     return submitRemoteMessageAndHandleException(
-        response, new AdminCmdContext(action, null), remoteMessage);
+        response, new AdminCmdContext(action), remoteMessage);
   }
 
   protected SolrResponse submitRemoteMessageAndHandleAsync(
