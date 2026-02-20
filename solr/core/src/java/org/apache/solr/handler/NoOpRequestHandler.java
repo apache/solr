@@ -16,14 +16,28 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.handler.component.SearchHandler;
+import static org.apache.solr.common.params.CommonParams.PATH;
 
-@Deprecated
-public class StandardRequestHandler extends SearchHandler {
-  //////////////////////// SolrInfoMBeans methods //////////////////////
+import org.apache.solr.common.SolrException;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.AuthorizationContext;
+
+/** Does nothing other than showing a 403 message */
+public class NoOpRequestHandler extends RequestHandlerBase {
+  @Override
+  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+    throw new SolrException(
+        SolrException.ErrorCode.FORBIDDEN, req.getContext().get(PATH) + " has been disabled");
+  }
 
   @Override
   public String getDescription() {
-    return "The standard Solr request handler";
+    return "No Operation";
+  }
+
+  @Override
+  public Name getPermissionName(AuthorizationContext request) {
+    return Name.ALL;
   }
 }
