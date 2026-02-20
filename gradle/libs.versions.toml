@@ -84,7 +84,7 @@ dropwizard-metrics = "4.2.26"
 eclipse-ecj = "3.39.0"
 eclipse-jetty = "12.0.27"
 # @keep jgit version used by git-status.gradle
-eclipse-jgit = "7.3.0.202506031305-r"
+eclipse-jgit = "7.5.0.202512021534-r"
 essenty = "2.5.0"
 fasterxml = "2.20.1"
 fasterxml-woodstox = "7.0.0"
