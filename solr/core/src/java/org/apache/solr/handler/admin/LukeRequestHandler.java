@@ -427,8 +427,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(RSP_SHARDS, shardsInfo);
   }
 
-  private void processShardFields(
-      ShardData shardData, Map<String, MergedFieldData> mergedFields) {
+  private void processShardFields(ShardData shardData, Map<String, MergedFieldData> mergedFields) {
     if (shardData.shardFieldInfo == null) {
       return;
     }
@@ -481,17 +480,26 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     } else {
       // Subsequent shards: validate consistency
       validateFieldAttr(
-          fieldName, KEY_TYPE, fi.getType(),
+          fieldName,
+          KEY_TYPE,
+          fi.getType(),
           fieldData.originalFieldInfo.getType(),
-          shardAddr, fieldData.originalShardAddr);
+          shardAddr,
+          fieldData.originalShardAddr);
       validateFieldAttr(
-          fieldName, KEY_SCHEMA_FLAGS, fi.getSchema(),
+          fieldName,
+          KEY_SCHEMA_FLAGS,
+          fi.getSchema(),
           fieldData.originalFieldInfo.getSchema(),
-          shardAddr, fieldData.originalShardAddr);
+          shardAddr,
+          fieldData.originalShardAddr);
       validateFieldAttr(
-          fieldName, KEY_DYNAMIC_BASE, fi.getExtras().get(KEY_DYNAMIC_BASE),
+          fieldName,
+          KEY_DYNAMIC_BASE,
+          fi.getExtras().get(KEY_DYNAMIC_BASE),
           fieldData.originalFieldInfo.getExtras().get(KEY_DYNAMIC_BASE),
-          shardAddr, fieldData.originalShardAddr);
+          shardAddr,
+          fieldData.originalShardAddr);
 
       Object indexFlags = fi.getExtras().get(KEY_INDEX_FLAGS);
       if (indexFlags != null) {
@@ -501,8 +509,12 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
           fieldData.merged.add(KEY_INDEX_FLAGS, indexFlags);
         } else {
           validateFieldAttr(
-              fieldName, KEY_INDEX_FLAGS, indexFlags, fieldData.indexFlags,
-              shardAddr, fieldData.indexFlagsShardAddr);
+              fieldName,
+              KEY_INDEX_FLAGS,
+              indexFlags,
+              fieldData.indexFlags,
+              shardAddr,
+              fieldData.indexFlagsShardAddr);
         }
       }
     }
