@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Introduce advice on how to scale Solr from 1 node to 100's of nodes in Ref Guide
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-17492
+    url: https://issues.apache.org/jira/browse/SOLR-17492
