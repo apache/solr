@@ -60,6 +60,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.TrackingBackupRepository;
@@ -88,12 +89,13 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static long docsSeed; // see indexDocs()
-  protected static final int NUM_NODES = 2;
+  protected static final int NUM_NODES = 3;
   protected static final int NUM_SHARDS = 2; // granted we sometimes shard split to get more
   protected static final int LARGE_NUM_SHARDS = 11; // Periodically chosen via randomization
   protected static final int REPL_FACTOR = 2;
   protected static final String BACKUPNAME_PREFIX = "mytestbackup";
   protected static final String BACKUP_REPO_NAME = "trackingBackupRepository";
+  protected static final String ERROR_BACKUP_REPO_NAME = "errorBackupRepository";
 
   protected String testSuffix = "test1";
 
@@ -234,7 +236,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
 
   @SuppressWarnings("unchecked")
   @Test
-  @Nightly
+  // @Nightly
   public void testBackupIncremental() throws Exception {
     setTestSuffix("testbackupinc");
     CloudSolrClient solrClient = cluster.getSolrClient();
@@ -490,6 +492,125 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testRestoreToOriginalSucceedsWithErrors() throws Exception {
+    setTestSuffix("testRestoreToOriginalSucceedsOnASingleError");
+    final String backupCollectionName = getCollectionName();
+    final String backupName = BACKUPNAME_PREFIX + testSuffix;
+
+    // Bootstrap the backup collection with seed docs
+    CollectionAdminRequest.createCollection(backupCollectionName, "conf1", NUM_SHARDS, NUM_NODES)
+        .process(cluster.getSolrClient());
+    int backupDocs = indexDocs(backupCollectionName, true);
+
+    // Backup and immediately add more docs to the collection
+    try (BackupRepository repository =
+        cluster
+            .getJettySolrRunner(0)
+            .getCoreContainer()
+            .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
+      final String backupLocation = repository.getBackupLocation(getBackupLocation());
+      final RequestStatusState result =
+          CollectionAdminRequest.backupCollection(backupCollectionName, backupName)
+              .setBackupConfigset(false)
+              .setLocation(backupLocation)
+              .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 20);
+      assertEquals(RequestStatusState.COMPLETED, result);
+    }
+    assertEquals(backupDocs, getNumDocsInCollection(backupCollectionName));
+    clearDocs(backupCollectionName);
+    assertEquals(0, getNumDocsInCollection(backupCollectionName));
+
+    /*
+    Restore original docs and validate that doc count is correct
+    */
+    // Test a single bad node
+    try (BackupRepository repository =
+        cluster
+            .getJettySolrRunner(0)
+            .getCoreContainer()
+            .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
+      // Only the first jetty will fail
+      ErrorThrowingTrackingBackupRepository.portsToFailOn =
+          Set.of(cluster.getJettySolrRunner(0).getLocalPort());
+      final String backupLocation = repository.getBackupLocation(getBackupLocation());
+      final RequestStatusState result =
+          CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 30);
+      assertEquals(RequestStatusState.COMPLETED, result);
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          backupCollectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(NUM_SHARDS, NUM_SHARDS * NUM_NODES));
+    }
+    assertEquals(backupDocs, getNumDocsInCollection(backupCollectionName));
+    clearDocs(backupCollectionName);
+    assertEquals(0, getNumDocsInCollection(backupCollectionName));
+
+    // Test a single good node
+    try (BackupRepository repository =
+        cluster
+            .getJettySolrRunner(0)
+            .getCoreContainer()
+            .newBackupRepository(ERROR_BACKUP_REPO_NAME)) {
+      final String backupLocation = repository.getBackupLocation(getBackupLocation());
+      // All but the first jetty will fail
+      ErrorThrowingTrackingBackupRepository.portsToFailOn =
+          cluster.getJettySolrRunners().subList(1, NUM_NODES).stream()
+              .map(JettySolrRunner::getLocalPort)
+              .collect(Collectors.toSet());
+      final RequestStatusState result =
+          CollectionAdminRequest.restoreCollection(backupCollectionName, backupName)
+              .setLocation(backupLocation)
+              .setRepositoryName(ERROR_BACKUP_REPO_NAME)
+              .processAndWait(cluster.getSolrClient(), 30);
+      assertEquals(RequestStatusState.COMPLETED, result);
+      waitForState(
+          "The failed core-install should recover and become healthy",
+          backupCollectionName,
+          30,
+          TimeUnit.SECONDS,
+          SolrCloudTestCase.activeClusterShape(NUM_SHARDS, NUM_SHARDS * NUM_NODES));
+    }
+    assertEquals(backupDocs, getNumDocsInCollection(backupCollectionName));
+  }
+
+  public static class ErrorThrowingTrackingBackupRepository extends TrackingBackupRepository {
+
+    public static Set<Integer> portsToFailOn = new HashSet<>();
+
+    private int port;
+
+    @Override
+    public void init(NamedList<?> args) {
+      super.init(args);
+      port = Integer.parseInt((String) args.get("hostPort"));
+    }
+
+    @Override
+    public void copyFileTo(URI sourceRepo, String fileName, Directory dest) throws IOException {
+      if (portsToFailOn.contains(port)) {
+        throw new UnsupportedOperationException();
+      }
+      super.copyFileTo(sourceRepo, fileName, dest);
+    }
+
+    @Override
+    public void copyIndexFileTo(
+        URI sourceRepo, String sourceFileName, Directory dest, String destFileName)
+        throws IOException {
+      if (portsToFailOn.contains(port)) {
+        throw new UnsupportedOperationException();
+      }
+      super.copyIndexFileTo(sourceRepo, sourceFileName, dest, destFileName);
+    }
+  }
+
   protected void corruptIndexFiles() throws IOException {
     List<Slice> slices = new ArrayList<>(getCollectionState(getCollectionName()).getSlices());
     Replica leader = slices.get(random().nextInt(slices.size())).getLeader();
@@ -566,6 +687,14 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteCollection(restoreCollectionName).process(solrClient);
   }
 
+  protected void clearDocs(String collectionName) throws Exception {
+    CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection(collectionName, "conf1", NUM_SHARDS, NUM_NODES)
+        .process(cluster.getSolrClient());
+
+    log.info("Cleared all docs in collection: {}", collectionName);
+  }
+
   private void indexDocs(String collectionName, int numDocs, boolean useUUID) throws Exception {
     Random random = new Random(docsSeed);
 
@@ -604,7 +733,7 @@ public abstract class AbstractIncrementalBackupTest extends SolrCloudTestCase {
     }
   }
 
-  private long getNumDocsInCollection(String collectionName) throws Exception {
+  protected long getNumDocsInCollection(String collectionName) throws Exception {
     return new QueryRequest(new SolrQuery("*:*"))
         .process(cluster.getSolrClient(), collectionName)
         .getResults()

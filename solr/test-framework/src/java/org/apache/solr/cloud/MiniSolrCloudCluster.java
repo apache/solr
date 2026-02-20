@@ -513,6 +513,15 @@ public class MiniSolrCloudCluster {
   }
 
   /**
+   * Start a new Solr instance, using the default config but with a custom Solr xml
+   *
+   * @return a JettySolrRunner
+   */
+  public JettySolrRunner startJettySolrRunner(String solrXml) throws Exception {
+    return startJettySolrRunner(newNodeName(), jettyConfig, solrXml);
+  }
+
+  /**
    * Add a previously stopped node back to the cluster on a different port
    *
    * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
