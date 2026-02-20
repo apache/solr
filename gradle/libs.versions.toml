@@ -125,7 +125,7 @@ j256-simplemagic = "1.17"
 jakarta-annotation = "2.1.1"
 jakarta-inject = "2.0.1"
 jakarta-servlet = "6.1.0"
-jakarta-ws = "3.1.0"
+jakarta-ws = "4.0.0"
 # @keep This is the minimum required Java version for the project.
 java-min = "21"
 # @keep This is the minimum required Java version for SolrJ.
