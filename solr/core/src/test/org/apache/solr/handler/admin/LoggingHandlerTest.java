@@ -47,12 +47,6 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
   private final String B_LOGGER_NAME = PARENT_LOGGER_NAME + ".BogusClass_B";
   private final String BX_LOGGER_NAME = B_LOGGER_NAME + ".BogusNestedClass_X";
 
-  // Hold strong references to prevent GC from removing loggers during test
-  private Logger parentLogger;
-  private Logger aLogger;
-  private Logger bLogger;
-  private Logger bxLogger;
-
   // TODO: This only tests Log4j at the moment, as that's what's defined
   // through the CoreContainer.
 
@@ -75,14 +69,14 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
 
     // Create and hold strong references to loggers to prevent GC from removing them
     // during test execution (Log4j2 uses weak references internally)
-    parentLogger = LogManager.getLogger(PARENT_LOGGER_NAME);
-    aLogger = LogManager.getLogger(A_LOGGER_NAME);
-    bLogger = LogManager.getLogger(B_LOGGER_NAME);
-    bxLogger = LogManager.getLogger(BX_LOGGER_NAME);
+    Logger parentLogger = LogManager.getLogger(PARENT_LOGGER_NAME);
+    Logger aLogger = LogManager.getLogger(A_LOGGER_NAME);
+    Logger bLogger = LogManager.getLogger(B_LOGGER_NAME);
+    Logger bxLogger = LogManager.getLogger(BX_LOGGER_NAME);
 
     { // sanity check our setup...
 
-      // did anybody break the anotations?
+      // did anybody break the annotations?
       assertNotNull(this.getClass().getAnnotation(LogLevel.class));
       final String annotationConfig = this.getClass().getAnnotation(LogLevel.class).value();
       assertTrue("WTF: " + annotationConfig, annotationConfig.startsWith(PARENT_LOGGER_NAME));
@@ -151,7 +145,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
           "Unexpected config for BX ... expected B's config",
           config.getLoggerConfig(B_LOGGER_NAME),
           config.getLoggerConfig(BX_LOGGER_NAME));
-      // ...and with its effective values
+      // ...and what its effective values are
       assertEquals(Level.DEBUG, parentLogger.getLevel());
       assertEquals(Level.DEBUG, aLogger.getLevel());
       assertEquals(Level.TRACE, bLogger.getLevel());
@@ -175,7 +169,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
       assertLoggerLevel(removedLoggerLevel, B_LOGGER_NAME, "DEBUG", false);
       assertLoggerLevel(removedLoggerLevel, BX_LOGGER_NAME, "DEBUG", false);
 
-      // check directly with log4j what it's (updated) config has...
+      // check directly with log4j what its (updated) config has...
       //
       // NOTE: LoggingHandler must not actually "remove" the LoggerConfig for B on 'unset'
       // (it might have already been defined in log4j's original config for some other reason,
@@ -190,7 +184,7 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
           "Unexpected config for BX ... expected B's config",
           config.getLoggerConfig(B_LOGGER_NAME),
           config.getLoggerConfig(BX_LOGGER_NAME));
-      // ...and what it's effective values
+      // ...and what its effective values are
       assertEquals(Level.DEBUG, parentLogger.getLevel());
       assertEquals(Level.DEBUG, aLogger.getLevel());
       assertEquals(Level.DEBUG, bLogger.getLevel());
