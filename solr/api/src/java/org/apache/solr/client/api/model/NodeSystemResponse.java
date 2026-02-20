@@ -20,34 +20,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-/** Response from /node/system */
+/** Response from /node/info/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
-  @JsonProperty public String mode;
-  @JsonProperty public String host;
-  @JsonProperty public String zkHost;
+  @JsonProperty public NodeSystemInfo nodeInfo;
 
-  @JsonProperty("solr_home")
-  public String solrHome;
+  /** wrapper around the node info */
+  public static class NodeSystemInfo {
+    @JsonProperty public String host;
+    @JsonProperty public String node;
+    @JsonProperty public String mode;
+    @JsonProperty public String zkHost;
 
-  @JsonProperty("core_root")
-  public String coreRoot;
+    @JsonProperty("solr_home")
+    public String solrHome;
 
-  @JsonProperty public String environment;
+    @JsonProperty("core_root")
+    public String coreRoot;
 
-  @JsonProperty(value = "environment_label")
-  public String environmentLabel;
+    @JsonProperty public String environment;
 
-  @JsonProperty(value = "environment_color")
-  public String environmentColor;
+    @JsonProperty(value = "environment_label")
+    public String environmentLabel;
 
-  @JsonProperty public String node;
-  @JsonProperty public Lucene lucene;
-  @JsonProperty public JVM jvm;
-  @JsonProperty public Security security;
-  @JsonProperty public GPU gpu;
-  @JsonProperty public Map<String, String> system;
+    @JsonProperty(value = "environment_color")
+    public String environmentColor;
+
+    @JsonProperty public Lucene lucene;
+    @JsonProperty public JVM jvm;
+    @JsonProperty public Security security;
+    @JsonProperty public GPU gpu;
+    @JsonProperty public Map<String, String> system;
+  }
 
   /** /node/system/security */
   public static class Security {
@@ -55,8 +61,8 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public String authenticationPlugin;
     @JsonProperty public String authorizationPlugin;
     @JsonProperty public String username;
-    @JsonProperty public List<String> roles;
-    @JsonProperty public List<String> permissions;
+    @JsonProperty public Set<String> roles;
+    @JsonProperty public Set<String> permissions;
   }
 
   /** /node/system/lucene */
@@ -122,6 +128,6 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public boolean available;
     @JsonProperty public long count;
     @JsonProperty public MemoryRaw memory;
-    @JsonProperty Map<String, Object> devices;
+    @JsonProperty public Map<String, Object> devices;
   }
 }
