@@ -1,0 +1,7 @@
+title: Update plugin net.ltgt.errorprone to v4 (branch_9x)
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3584
+  url: https://github.com/apache/solr/pull/3584
