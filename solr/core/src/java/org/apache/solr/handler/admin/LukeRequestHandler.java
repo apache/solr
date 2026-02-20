@@ -245,17 +245,20 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.setHttpCaching(false);
   }
 
-  /** Per-field accumulation state across shards: merged response data and index flags tracking. */
+  /** Per-field accumulation state across shards: merged response data and field validation. */
   private static class MergedFieldData {
     final SimpleOrderedMap<Object> merged = new SimpleOrderedMap<>();
     final String originalShardAddr;
+    final LukeResponse.FieldInfo originalFieldInfo;
     private Object indexFlags;
     private String indexFlagsShardAddr;
 
-    MergedFieldData(String shardAddr, Object indexFlags) {
+    MergedFieldData(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
       this.originalShardAddr = shardAddr;
-      if (indexFlags != null) {
-        this.indexFlags = indexFlags;
+      this.originalFieldInfo = fieldInfo;
+      Object flags = fieldInfo.getExtras().get(KEY_INDEX_FLAGS);
+      if (flags != null) {
+        this.indexFlags = flags;
         this.indexFlagsShardAddr = shardAddr;
       }
     }
@@ -459,11 +462,10 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       String shardAddr, LukeResponse.FieldInfo fi, Map<String, MergedFieldData> mergedFields) {
 
     String fieldName = fi.getName();
-    Object indexFlags = fi.getExtras().get(KEY_INDEX_FLAGS);
 
     MergedFieldData fieldData = mergedFields.get(fieldName);
     if (fieldData == null) {
-      fieldData = new MergedFieldData(shardAddr, indexFlags);
+      fieldData = new MergedFieldData(shardAddr, fi);
       mergedFields.put(fieldName, fieldData);
 
       // First shard to report this field: populate merged with schema-derived attrs
@@ -476,16 +478,32 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       if (fieldData.indexFlags != null) {
         fieldData.merged.add(KEY_INDEX_FLAGS, fieldData.indexFlags);
       }
-    } else if (indexFlags != null) {
-      // Subsequent shards: validate index flags consistency
-      if (fieldData.indexFlags == null) {
-        fieldData.indexFlags = indexFlags;
-        fieldData.indexFlagsShardAddr = shardAddr;
-        fieldData.merged.add(KEY_INDEX_FLAGS, indexFlags);
-      } else {
-        validateFieldAttr(
-            fieldName, KEY_INDEX_FLAGS, indexFlags, fieldData.indexFlags,
-            shardAddr, fieldData.indexFlagsShardAddr);
+    } else {
+      // Subsequent shards: validate consistency
+      validateFieldAttr(
+          fieldName, KEY_TYPE, fi.getType(),
+          fieldData.originalFieldInfo.getType(),
+          shardAddr, fieldData.originalShardAddr);
+      validateFieldAttr(
+          fieldName, KEY_SCHEMA_FLAGS, fi.getSchema(),
+          fieldData.originalFieldInfo.getSchema(),
+          shardAddr, fieldData.originalShardAddr);
+      validateFieldAttr(
+          fieldName, KEY_DYNAMIC_BASE, fi.getExtras().get(KEY_DYNAMIC_BASE),
+          fieldData.originalFieldInfo.getExtras().get(KEY_DYNAMIC_BASE),
+          shardAddr, fieldData.originalShardAddr);
+
+      Object indexFlags = fi.getExtras().get(KEY_INDEX_FLAGS);
+      if (indexFlags != null) {
+        if (fieldData.indexFlags == null) {
+          fieldData.indexFlags = indexFlags;
+          fieldData.indexFlagsShardAddr = shardAddr;
+          fieldData.merged.add(KEY_INDEX_FLAGS, indexFlags);
+        } else {
+          validateFieldAttr(
+              fieldName, KEY_INDEX_FLAGS, indexFlags, fieldData.indexFlags,
+              shardAddr, fieldData.indexFlagsShardAddr);
+        }
       }
     }
 
