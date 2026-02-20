@@ -156,7 +156,7 @@ kotlinx-datetime = "0.7.1"
 kotlinx-serialization = "1.9.0"
 # @keep used by spotless
 ktlint = "1.7.1"
-ktor = "3.2.2"
+ktor = "3.4.0"
 langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
