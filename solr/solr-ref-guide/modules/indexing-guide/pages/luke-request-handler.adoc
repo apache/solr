@@ -166,4 +166,5 @@ The `index` flags are index-derived (not schema-derived) and may legitimately di
 
 Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not merged across shards.
 These statistics are shard-local and appear in each shard's entry under the `shards` key.
-For cross-shard term-level aggregation, use Solr's xref:query-guide:faceting.adoc[faceting API] which provides refinement and distributed aggregation.
+For cross-shard term-level aggregation, Solr's xref:query-guide:faceting.adoc[faceting API] provides refinement and distributed aggregation, though it differs from Luke's term statistics: faceting ignores deleted documents, is more flexible, and is generally more expensive.
+A case could be made for adding merge strategies for Luke-powered term statistics (which offer better performance at the cost of flexibility), however this would require community interest to motivate.
