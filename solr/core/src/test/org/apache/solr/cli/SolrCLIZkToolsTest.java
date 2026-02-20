@@ -576,7 +576,7 @@ public class SolrCLIZkToolsTest extends SolrCloudTestCase {
     assertNotEquals("Should fail when trying to remove /.", 0, res);
   }
 
-  // Check that all children of fileRoot are children of zkRoot and vice-versa
+  // Check that all children of fileRoot are children of zkRoot and vice versa
   private void verifyZkLocalPathsMatch(Path fileRoot, String zkRoot)
       throws IOException, KeeperException, InterruptedException {
     verifyAllFilesAreZNodes(fileRoot, zkRoot);

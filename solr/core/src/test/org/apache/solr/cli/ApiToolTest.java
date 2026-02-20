@@ -102,7 +102,7 @@ public class ApiToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testSolrUrlParsing() throws Exception {
+  public void testSolrUrlParsing() {
     assertEquals(
         "https://test-host.solr:8983/solr",
         ApiTool.getSolrUrlFromUri(URI.create("https://test-host.solr:8983/solr")));

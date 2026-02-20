@@ -198,7 +198,6 @@ public final class CLIUtils {
                 + ".");
       } else {
         try (CloudSolrClient cloudSolrClient = getCloudSolrClient(zkHost)) {
-          cloudSolrClient.connect();
           Set<String> liveNodes = cloudSolrClient.getClusterState().getLiveNodes();
           if (liveNodes.isEmpty())
             throw new IllegalStateException(
@@ -262,7 +261,7 @@ public final class CLIUtils {
     return zkHost;
   }
 
-  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) throws Exception {
+  public static SolrZkClient getSolrZkClient(CommandLine cli, String zkHost) {
     if (zkHost == null) {
       throw new IllegalStateException(
           "Solr at "
@@ -322,7 +321,6 @@ public final class CLIUtils {
     return exists;
   }
 
-  @SuppressWarnings("unchecked")
   public static boolean safeCheckCoreExists(String solrUrl, String coreName, String credentials) {
     boolean exists = false;
     try (var solrClient = getSolrClient(solrUrl, credentials)) {
@@ -330,8 +328,13 @@ public final class CLIUtils {
       final long startWaitAt = System.nanoTime();
       do {
         if (wait) {
-          final int clamPeriodForStatusPollMs = 1000;
-          Thread.sleep(clamPeriodForStatusPollMs);
+          final int pollIntervalMs = 1000;
+          try {
+            TimeUnit.MILLISECONDS.sleep(pollIntervalMs);
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            break;
+          }
         }
         final var coreStatusReq = new CoresApi.GetCoreStatus(coreName);
         final var coreStatusRsp = coreStatusReq.process(solrClient);

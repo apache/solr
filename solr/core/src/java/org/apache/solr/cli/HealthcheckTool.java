@@ -56,7 +56,7 @@ public class HealthcheckTool extends ToolBase {
           .argName("COLLECTION")
           .required()
           .desc("Name of the collection to check.")
-          .build();
+          .get();
 
   @Override
   public Options getOptions() {
@@ -87,7 +87,6 @@ public class HealthcheckTool extends ToolBase {
     }
     try (var cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost)) {
       echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
-      cloudSolrClient.connect();
       runCloudTool(cloudSolrClient, cli);
     }
   }
@@ -194,7 +193,7 @@ public class HealthcheckTool extends ToolBase {
 
       ShardHealth shardHealth = new ShardHealth(shardName, replicaList);
       if (ShardState.healthy != shardHealth.getShardState()) {
-        collectionIsHealthy = false; // at least one shard is un-healthy
+        collectionIsHealthy = false; // at least one shard is unhealthy
       }
 
       shardList.add(shardHealth.asMap());
@@ -280,10 +279,8 @@ class ReplicaHealth implements Comparable<ReplicaHealth> {
   @Override
   public int compareTo(ReplicaHealth other) {
     if (this == other) return 0;
-    if (other == null) return 1;
 
     int myShardIndex = Integer.parseInt(this.shard.substring("shard".length()));
-
     int otherShardIndex = Integer.parseInt(other.shard.substring("shard".length()));
 
     if (myShardIndex == otherShardIndex) {

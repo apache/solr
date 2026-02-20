@@ -42,7 +42,7 @@ public class ClusterTool extends ToolBase {
           .argName("PROPERTY")
           .required()
           .desc("Name of the Cluster property to apply the action to, such as: 'urlScheme'.")
-          .build();
+          .get();
 
   private static final Option VALUE_OPTION =
       Option.builder()
@@ -50,7 +50,7 @@ public class ClusterTool extends ToolBase {
           .hasArg()
           .argName("VALUE")
           .desc("Set the property to this value.")
-          .build();
+          .get();
 
   public ClusterTool(ToolRuntime runtime) {
     super(runtime);
