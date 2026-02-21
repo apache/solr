@@ -1,0 +1,7 @@
+title: Update com.nvidia.cuvs.lucene:cuvs-lucene to v26
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4134
+  url: https://github.com/apache/solr/pull/4134
