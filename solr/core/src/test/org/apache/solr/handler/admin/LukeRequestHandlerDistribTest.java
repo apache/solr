@@ -16,19 +16,30 @@
  */
 package org.apache.solr.handler.admin;
 
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
@@ -37,7 +48,10 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2).addConfig("conf", configset("cloud-dynamic")).configure();
+    configureCluster(2)
+        .addConfig("conf", configset("cloud-dynamic"))
+        .addConfig("managed", configset("cloud-managed"))
+        .configure();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -58,6 +72,19 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     shutdownCluster();
+  }
+
+  /** Walks the exception cause chain and concatenates all messages. */
+  private static String getExceptionChainMessage(Throwable t) {
+    StringBuilder sb = new StringBuilder();
+    while (t != null) {
+      if (t.getMessage() != null) {
+        if (sb.length() > 0) sb.append(" -> ");
+        sb.append(t.getMessage());
+      }
+      t = t.getCause();
+    }
+    return sb.toString();
   }
 
   /** Sends a luke request and wraps the raw response in a typed {@link LukeResponse}. */
@@ -319,6 +346,118 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     // Shards are present for consistency: each shard entry mirrors the per-shard index info,
     // just as the top-level index section is present in local mode with show=schema
     assertNotNull("shards should still be present with show=schema", raw.get("shards"));
+  }
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  /**
+   * Verifies that distributed Luke detects inconsistent index flags across shards. Uses Schema API
+   * to change a field's {@code stored} property between indexing on different shards, producing
+   * different Lucene FieldInfo (and thus different index flags strings) on each shard.
+   */
+  @Test
+  public void testInconsistentIndexFlagsAcrossShards() throws Exception {
+    String collection = "lukeInconsistentFlags";
+    try {
+      System.setProperty("managed.schema.mutable", "true");
+      CollectionAdminRequest.createCollection(collection, "managed", 2, 1)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    } catch (Exception e) {
+      log.error("yooo", e);
+    }
+
+    cluster.waitForActiveCollection(collection, 2, 2);
+
+    try {
+      // Add a field with stored=true, indexed=true
+      Map<String, Object> fieldAttrs = new LinkedHashMap<>();
+      fieldAttrs.put("name", "test_flag_s");
+      fieldAttrs.put("type", "string");
+      fieldAttrs.put("stored", true);
+      fieldAttrs.put("indexed", true);
+      new SchemaRequest.AddField(fieldAttrs).process(cluster.getSolrClient(), collection);
+
+      // Index a target doc WITH the field, plus seed docs without it
+      SolrInputDocument targetDoc = new SolrInputDocument();
+      targetDoc.addField("id", "target");
+      targetDoc.addField("test_flag_s", "has_indexed");
+      cluster.getSolrClient().add(collection, targetDoc);
+
+      List<SolrInputDocument> seedDocs = new ArrayList<>();
+      for (int i = 0; i < 20; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", "seed_" + i);
+        seedDocs.add(doc);
+      }
+      cluster.getSolrClient().add(collection, seedDocs);
+      cluster.getSolrClient().commit(collection);
+
+      // Find which shard has the target doc by querying each replica directly.
+      // Must use distrib=false — SolrCloud defaults distrib to true even on direct replica queries.
+      DocCollection docColl = cluster.getSolrClient().getClusterState().getCollection(collection);
+      String targetSliceName = null;
+      for (Slice slice : docColl.getSlices()) {
+        Replica leader = slice.getLeader();
+        try (SolrClient client = getHttpSolrClient(leader)) {
+          SolrQuery q = new SolrQuery("id:target");
+          q.set("distrib", "false");
+          QueryResponse qr = client.query(q);
+          if (qr.getResults().getNumFound() > 0) {
+            targetSliceName = slice.getName();
+          }
+        }
+      }
+      assertNotNull("target doc should exist on a shard", targetSliceName);
+
+      // Find a seed doc on the other shard
+      String otherDocId = null;
+      for (Slice slice : docColl.getSlices()) {
+        if (!slice.getName().equals(targetSliceName)) {
+          Replica leader = slice.getLeader();
+          try (SolrClient client = getHttpSolrClient(leader)) {
+            SolrQuery q = new SolrQuery("*:*");
+            q.setRows(1);
+            q.set("distrib", "false");
+            QueryResponse qr = client.query(q);
+            assertTrue("other shard should have seed docs", qr.getResults().getNumFound() > 0);
+            otherDocId = (String) qr.getResults().get(0).getFieldValue("id");
+          }
+          break;
+        }
+      }
+      assertNotNull("should find a seed doc on the other shard", otherDocId);
+
+      // Change the field to stored=false via Schema API
+      fieldAttrs.put("stored", false);
+      new SchemaRequest.ReplaceField(fieldAttrs).process(cluster.getSolrClient(), collection);
+
+      // Reload collection to pick up schema change
+      CollectionAdminRequest.reloadCollection(collection).process(cluster.getSolrClient());
+
+      // Update the other-shard doc to include the field (now unstored in the new segment)
+      SolrInputDocument updateDoc = new SolrInputDocument();
+      updateDoc.addField("id", otherDocId);
+      updateDoc.addField("test_flag_s", "not_indexed");
+      cluster.getSolrClient().add(collection, updateDoc);
+      cluster.getSolrClient().commit(collection);
+
+      // Distributed Luke should detect inconsistent index flags between the two shards.
+      // One shard has stored=true segments, the other has stored=false segments for test_flag_s.
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("distrib", "true");
+      params.set("fl", "test_flag_s");
+
+      Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
+      // The server throws SolrException, but CloudSolrClient may wrap it in
+      // SolrServerException after retry exhaustion. Check the full exception chain.
+      String fullMessage = getExceptionChainMessage(ex);
+      assertTrue(
+          "exception chain should mention inconsistent index flags: " + fullMessage,
+          fullMessage.contains("inconsistent"));
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
   }
 
   @Test
