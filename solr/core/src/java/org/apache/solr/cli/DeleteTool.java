@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.CoresApi;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -176,7 +177,14 @@ public class DeleteTool extends ToolBase {
 
     try {
       var req = new CollectionsApi.DeleteCollection(collectionName);
-      req.process(cloudSolrClient);
+      var response = req.process(cloudSolrClient);
+      if (isVerbose() && response != null) {
+        echo(
+            JacksonContentWriter.DEFAULT_MAPPER
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(response));
+        echo("\n");
+      }
     } catch (SolrServerException sse) {
       throw new Exception(
           "Failed to delete collection '" + collectionName + "' due to: " + sse.getMessage());
@@ -209,7 +217,14 @@ public class DeleteTool extends ToolBase {
       req.setDeleteIndex(true);
       req.setDeleteDataDir(true);
       req.setDeleteInstanceDir(true);
-      req.process(solrClient);
+      var response = req.process(solrClient);
+      if (isVerbose() && response != null) {
+        echo(
+            JacksonContentWriter.DEFAULT_MAPPER
+                .writerWithDefaultPrettyPrinter()
+                .writeValueAsString(response));
+        echo("\n");
+      }
     } catch (SolrServerException sse) {
       throw new Exception("Failed to delete core '" + coreName + "' due to: " + sse.getMessage());
     }
