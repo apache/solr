@@ -34,6 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -42,6 +43,14 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private SolrClient client;
+
+  @Before
+  public void emptyCollection() throws Exception {
+    SolrClient client = getSolrClient();
+    // delete everything!
+    client.deleteByQuery("*:*");
+    client.commit();
+  }
 
   @Override
   public void tearDown() throws Exception {
@@ -72,16 +81,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
     return SolrTestCaseJ4.getHttpSolrClient(
         solrTestRule.getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME);
   }
-
-  protected static String getCoreUrl() {
-    return solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
-  }
-
-  protected static String getBaseUrl() {
-    return solrTestRule.getBaseUrl();
-  }
-
-  // Backward compatibility methods for existing subclasses
 
   /** query the example */
   @Test

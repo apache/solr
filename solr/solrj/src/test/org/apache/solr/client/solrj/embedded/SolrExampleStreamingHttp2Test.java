@@ -39,7 +39,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    String url = getBaseUrl();
+    String url = solrTestRule.getBaseUrl();
     // smaller queue size hits locks more often
     var solrClient =
         new HttpJettySolrClient.Builder()
@@ -58,7 +58,7 @@ public class SolrExampleStreamingHttp2Test extends SolrExampleTests {
   public void testWaitOptions() throws Exception {
     // SOLR-3903
     final List<Throwable> failures = new ArrayList<>();
-    final String serverUrl = getBaseUrl();
+    final String serverUrl = solrTestRule.getBaseUrl();
     try (var http2Client = new HttpJettySolrClient.Builder().build();
         var concurrentClient =
             new FailureRecordingConcurrentUpdateSolrClient.Builder(serverUrl, http2Client)

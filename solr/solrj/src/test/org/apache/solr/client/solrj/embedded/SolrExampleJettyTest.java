@@ -63,7 +63,9 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
       // two docs, one with uniqueKey, another without it
       String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-      HttpPost post = new HttpPost(getRandomizedUpdateUri(getCoreUrl()));
+      HttpPost post =
+          new HttpPost(
+              getRandomizedUpdateUri(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME));
       post.setHeader("Content-Type", "application/json");
       post.setEntity(
           new InputStreamEntity(

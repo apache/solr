@@ -81,7 +81,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RTimer;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.noggit.JSONParser;
@@ -108,14 +107,6 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
         .newCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
         .create();
-  }
-
-  @Before
-  public void emptyCollection() throws Exception {
-    SolrClient client = getSolrClient();
-    // delete everything!
-    client.deleteByQuery("*:*");
-    client.commit();
   }
 
   @Test
@@ -445,7 +436,7 @@ public abstract class SolrExampleTests extends SolrExampleTestsBase {
 
     if (solrTestRule.getJetty() != null) {
       // check system wide system handler + "/admin/info/system"
-      String url = getBaseUrl();
+      String url = solrTestRule.getBaseUrl();
       try (SolrClient adminClient = getHttpSolrClient(url)) {
         SolrQuery q = new SolrQuery();
         q.set("qt", CommonParams.SYSTEM_INFO_PATH);

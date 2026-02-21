@@ -32,7 +32,7 @@ public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpJettySolrClient.Builder(getBaseUrl())
+    return new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
         .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withRequestWriter(new JavaBinRequestWriter())
