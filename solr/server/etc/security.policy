@@ -30,6 +30,13 @@ grant {
   // tmpdir
   permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
+  // Allow custom SSL keystore locations (commonly /tmp for testing)
+  permission java.io.FilePermission "/tmp", "read,write";
+  permission java.io.FilePermission "/tmp/-", "read,write,delete";
+  permission java.io.FilePermission "/private/tmp", "read,write";
+  permission java.io.FilePermission "/private/tmp/-", "read,write,delete";
+  // macOS temp directory (TMPDIR resolves to /var/folders/... on macOS)
+  permission java.io.FilePermission "/var/folders/-", "read,write,delete";
 
   // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
@@ -106,6 +113,10 @@ grant {
   // needed by aws s3 sdk (Apache HTTP Client)
   permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.reflect";
   permission java.lang.RuntimePermission "accessSystemModules";
+  // needed by Java Flight Recorder (JFR)
+  permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.event";
+  // needed by SIP-6 SSL certificate auto-generation (setting file permissions)
+  permission java.lang.RuntimePermission "accessUserInformation";
 
   // These two *have* to be spelled out a separate
   permission java.lang.management.ManagementPermission "control";
@@ -136,6 +147,11 @@ grant {
   // Needed by JWT integration tests & S3 clients
   permission java.lang.RuntimePermission "setFactory";
   permission java.security.SecurityPermission "getProperty.org.bouncycastle.pkcs12.default";
+  // Needed by SIP-6 SSL certificate auto-generation (BouncyCastle provider registration)
+  permission java.security.SecurityPermission "putProviderProperty.BC";
+  permission java.security.SecurityPermission "insertProvider";
+  permission java.security.SecurityPermission "insertProvider.BC";
+  permission java.security.SecurityPermission "removeProviderProperty.BC";
 
   permission javax.xml.bind.JAXBPermission "setDatatypeConverter";
 

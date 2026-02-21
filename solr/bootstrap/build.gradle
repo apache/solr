@@ -1,0 +1,84 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+apply plugin: 'java-library'
+
+description = 'Solr Bootstrap - Embedded Jetty Launcher for SIP-6'
+
+dependencies {
+  // Solr dependencies
+  implementation project(':solr:core')
+  implementation project(':solr:solrj')  // For EnvUtils
+
+  // Jetty Server dependencies
+  implementation platform(project(":platform"))
+  implementation libs.eclipse.jetty.server
+  implementation libs.eclipse.jetty.session
+  implementation libs.eclipse.jetty.util
+  implementation libs.eclipse.jetty.rewrite
+
+  // Servlet support
+  implementation libs.eclipse.jetty.ee10.servlet
+  implementation libs.jakarta.servlet.api
+
+  // HTTP/2 and ALPN support
+  implementation libs.eclipse.jetty.http2.server
+  implementation libs.eclipse.jetty.http2.common
+  implementation libs.eclipse.jetty.alpnserver
+
+  // Logging
+  implementation libs.slf4j.api
+  implementation libs.slf4j.jultoslf4j  // For SLF4J bridge
+
+  // BouncyCastle for SSL certificate generation
+  implementation libs.bouncycastle.bcprov
+  implementation libs.bouncycastle.bcpkix
+
+  // Test dependencies
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  testImplementation libs.hamcrest.hamcrest
+}
+
+// Create executable JAR
+jar {
+  archiveBaseName = 'solr-start'
+
+  manifest {
+    attributes(
+      'Main-Class': 'org.apache.solr.bootstrap.SolrStart',
+      'Implementation-Title': 'Apache Solr Bootstrap',
+      'Implementation-Version': project.version,
+      'Specification-Title': 'Apache Solr',
+      'Specification-Version': project.version
+    )
+  }
+}
+
+// Export BouncyCastle JARs for server module packaging
+// This avoids adding BouncyCastle to server module's dependency graph
+task exportBouncyCastle(type: Copy) {
+  from {
+    configurations.runtimeClasspath.files.findAll {
+      it.name.startsWith('bc') && it.name.contains('jdk18on') && it.name.endsWith('.jar')
+    }
+  }
+  into "${buildDir}/bouncycastle"
+}
+
+// Make jar task depend on exportBouncyCastle so it's available when server module needs it
+jar.finalizedBy exportBouncyCastle
