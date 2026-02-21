@@ -30,12 +30,10 @@ import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
 import org.apache.solr.cli.SolrProcessManager.SolrProcess;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.ClusterApi;
 import org.apache.solr.client.solrj.request.CollectionsApi;
-import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.URLUtil;
 import org.noggit.CharArr;
 import org.noggit.JSONWriter;
@@ -324,17 +322,13 @@ public class StatusTool extends ToolBase {
    *
    * <p>Uses GET /cluster/nodes for live node count and GET /collections for collection count.
    */
-  @SuppressWarnings("unchecked")
   private static Map<String, String> getCloudStatus(SolrClient solrClient, String zkHost)
       throws Exception {
     Map<String, String> cloudStatus = new LinkedHashMap<>();
     cloudStatus.put("ZooKeeper", (zkHost != null) ? zkHost : "?");
 
-    NamedList<Object> nodesResponse =
-        solrClient.request(
-            new GenericV2SolrRequest(
-                SolrRequest.METHOD.GET, "/cluster/nodes", SolrRequest.SolrRequestType.ADMIN));
-    var liveNodes = (Collection<?>) nodesResponse.get("nodes");
+    var nodesResponse = new ClusterApi.ListClusterNodes().process(solrClient);
+    var liveNodes = nodesResponse != null ? nodesResponse.nodes : null;
     cloudStatus.put("liveNodes", String.valueOf(liveNodes != null ? liveNodes.size() : 0));
 
     var collectionsResponse = new CollectionsApi.ListCollections().process(solrClient);
