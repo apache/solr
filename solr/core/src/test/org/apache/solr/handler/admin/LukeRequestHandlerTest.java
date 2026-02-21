@@ -308,20 +308,40 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     try {
       initCore("solrconfig.xml", "schema12.xml");
 
-      // Three docs in a single commit so they share one segment. Delete the lexical edges
-      // ("aaa" and "ccc") and keep the middle term ("bbb") live, so the test is robust
-      // regardless of whether terms are iterated in ascending or descending order.
+      // Three docs in a single commit so they share one segment. Delete the middle term
+      // ("bbb") and keep the lexical edges ("aaa" and "ccc") live, so the first term
+      // encountered is always a live doc regardless of ascending or descending iteration.
+      // The bug's inverted liveDocs check skips live docs, so getFirstLiveDoc returns null
+      // and index flags go missing.
       assertU(adoc("id", "1", "solr_s", "aaa"));
       assertU(adoc("id", "2", "solr_s", "bbb"));
       assertU(adoc("id", "3", "solr_s", "ccc"));
       assertU(commit());
 
-      assertU(delI("1"));
-      assertU(delI("3"));
+      assertU(delI("2"));
       assertU(commit());
 
       assertQ(
           "index flags should be present for solr_s despite deletion in segment",
+          req("qt", "/admin/luke", "fl", "solr_s"),
+          getFieldXPathPrefix("solr_s") + "[@name='index']");
+
+      // Now test the inverse: delete the edges and keep the middle. The first term
+      // encountered ("aaa" or "ccc") is deleted, so getFirstLiveDoc must skip it and
+      // continue to the live term ("bbb"). This exercises the retry loop — without it,
+      // the method gives up after the first deleted term.
+      clearIndex();
+      assertU(adoc("id", "4", "solr_s", "aaa"));
+      assertU(adoc("id", "5", "solr_s", "bbb"));
+      assertU(adoc("id", "6", "solr_s", "ccc"));
+      assertU(commit());
+
+      assertU(delI("4"));
+      assertU(delI("6"));
+      assertU(commit());
+
+      assertQ(
+          "index flags should be present for solr_s when edges are deleted",
           req("qt", "/admin/luke", "fl", "solr_s"),
           getFieldXPathPrefix("solr_s") + "[@name='index']");
     } finally {
