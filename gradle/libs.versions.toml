@@ -112,7 +112,7 @@ google-javaformat = "1.18.1"
 google-protobuf = "3.25.8"
 # @keep Gradle version to run the build
 gradle = "8.10"
-grpc = "1.65.1"
+grpc = "1.79.0"
 # @keep Gulp version used in ref-guide
 gulp-cli = "3.1.0"
 hamcrest = "3.0"
