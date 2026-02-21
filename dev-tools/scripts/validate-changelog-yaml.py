@@ -30,6 +30,7 @@ Checks:
 - Contains required 'type' field (one of: added, changed, fixed, deprecated, removed, dependency_update, security, other)
 - Contains required 'authors' field with at least one author
 - Each author has a 'name' field (non-empty string)
+- Comment block is removed
 """
 
 import sys
@@ -40,10 +41,12 @@ import yaml
 def validate_changelog_yaml(file_path):
     """Validate a changelog YAML file. Returns True if valid."""
     valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
+    not_allowed_text = ['DELETE ALL COMMENTS UP HERE', 'Most such changes are too small']
 
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = yaml.safe_load(f)
+            raw_content = f.read()
+            data = yaml.safe_load(raw_content)
 
         # Check if file contains a mapping (dictionary)
         if not isinstance(data, dict):
@@ -84,6 +87,12 @@ def validate_changelog_yaml(file_path):
                 return False
             if not isinstance(author['name'], str) or not author['name'].strip():
                 print(f"::error file={file_path}::Author {i} 'name' must be a non-empty string")
+                return False
+
+        # Validate that comments are removed
+        for not_allowed in not_allowed_text:
+            if not_allowed in raw_content:
+                print(f"::error file={file_path}::File still contains commented template text. Please remove the comment block at the top of the file.")
                 return False
 
         # All validations passed
