@@ -17,6 +17,7 @@
 
 package org.apache.solr.ui.components.start.integration
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.HttpClient
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.get
@@ -25,10 +26,15 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.path
+import kotlin.io.encoding.Base64
+import kotlinx.serialization.json.Json
 import org.apache.solr.ui.components.start.store.StartStoreProvider
+import org.apache.solr.ui.data.SolrAuthData
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.errors.UnauthorizedException
 import org.apache.solr.ui.errors.UnknownResponseException
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * Client implementation of the [StartStoreProvider.Client] that makes use
@@ -47,6 +53,7 @@ class HttpStartStoreClient(
         val url = URLBuilder(url).apply {
             // Try getting system data for checking if Solr host exists,
             // since there is no explicit endpoint for the connection establishment.
+            // TODO Consider /api/admin/authentication
             path("api/node/system")
         }.build()
 
@@ -91,11 +98,36 @@ class HttpStartStoreClient(
             // Split by comma, as there is the chance that headers will be merged and separated by
             // comma (e.g. on web target)
             .flatMap { header -> header.split(",") }
-            .map { authHeader ->
+            .map(String::trim)
+            .mapIndexed { index, authHeader ->
                 val (scheme, params) = parseWwwAuthenticate(authHeader)
 
                 when (scheme.lowercase()) {
                     "basic", "xbasic" -> AuthMethod.BasicAuthMethod(realm = params["realm"])
+                    "bearer" -> {
+                        // There should be one X-Solr-Authdata header for each scheme
+                        val base64AuthData = headers.getAll("X-Solr-Authdata")
+                            // Note that there is a chance the header values are merged again
+                            // and separated by comma, so we split again
+                            ?.flatMap { headerValue -> headerValue.split(",") }
+                            ?.getOrNull(index)
+
+                        base64AuthData?.let {
+                            val rawAuthData = Base64.decode(source = it)
+                            val jsonAuthData = Json.decodeFromString<SolrAuthData>(rawAuthData.decodeToString())
+
+                            AuthMethod.OAuthMethod(
+                                data = jsonAuthData.toOAuthData(),
+                                realm = params["realm"],
+                            )
+                        } ?: run {
+                            // Without X-Solr-Authdata value we cannot authenticate with OAuth
+                            logger.error {
+                                "Missing X-Solr-Authdata for authentication scheme \"${scheme}\"."
+                            }
+                            AuthMethod.Unknown
+                        }
+                    }
                     else -> AuthMethod.Unknown
                 }
             }

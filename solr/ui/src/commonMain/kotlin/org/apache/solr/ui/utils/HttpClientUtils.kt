@@ -21,7 +21,9 @@ import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.auth.Auth
 import io.ktor.client.plugins.auth.providers.BasicAuthCredentials
+import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.basic
+import io.ktor.client.plugins.auth.providers.bearer
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.Url
@@ -61,6 +63,12 @@ fun getHttpClientWithAuthOption(option: AuthOption) = when (option) {
         username = option.username,
         password = option.password,
     )
+    is AuthOption.OAuthOption -> getHttpClientWithBearerTokens(
+        url = option.url,
+        realm = option.realm,
+        accessToken = option.accessToken,
+        refreshToken = option.refreshToken,
+    )
 }
 
 fun getHttpClientWithCredentials(
@@ -76,6 +84,26 @@ fun getHttpClientWithCredentials(
             // not protected asset (web-assembly app)
             sendWithoutRequest { true }
             this.realm = realm
+        }
+    }
+}
+
+fun getHttpClientWithBearerTokens(
+    accessToken: String,
+    refreshToken: String? = null,
+    url: Url = Url("http://127.0.0.1:8983/"),
+    realm: String? = null,
+) = getDefaultClient(url) {
+    install(Auth) {
+        bearer {
+            loadTokens {
+                BearerTokens(accessToken, refreshToken)
+            }
+            refreshTokens {
+                TODO("Not implemented yet")
+            }
+            this.realm = realm
+            sendWithoutRequest { true }
         }
     }
 }

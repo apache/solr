@@ -15,30 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.components.auth.integration
 
-import kotlinx.serialization.Serializable
+import io.ktor.client.HttpClient
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import org.apache.solr.ui.components.auth.store.OAuthStoreProvider
+import org.apache.solr.ui.domain.OAuthData
 
 /**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
+ * OAuth store implementation that uses a server instance for handling callbacks.
  *
- * @see AuthOption
+ * @property httpClient A preconfigured HTTP client that has the base URL of a Solr instance
+ * already set.
  */
-@Serializable
-sealed interface AuthMethod {
-
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
-
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
+expect class PlatformOAuthStoreClient(httpClient: HttpClient) : OAuthStoreProvider.Client {
+    override suspend fun authenticate(
+        state: String,
+        verifier: String,
+        data: OAuthData,
+    ): Result<BearerTokens>
 }
