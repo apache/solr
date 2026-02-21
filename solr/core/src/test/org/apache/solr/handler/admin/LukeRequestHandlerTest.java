@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CustomAnalyzerStrField;
 import org.apache.solr.schema.IndexSchema;
@@ -293,5 +294,40 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     // Put back the configuration expected by the rest of the tests in this suite
     deleteCore();
     initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  /**
+   * Tests that Luke reports index flags for fields even when a document has been deleted. Uses
+   * NoMergePolicy so the deleted doc remains in the same segment, keeping liveDocs non-null and
+   * exposing the inverted liveDocs check in getFirstLiveDoc.
+   */
+  @Test
+  public void testIndexFlagsWithDeletedDocs() throws Exception {
+    deleteCore();
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
+    try {
+      initCore("solrconfig.xml", "schema12.xml");
+
+      // Three docs in a single commit so they share one segment. Delete the lexical edges
+      // ("aaa" and "ccc") and keep the middle term ("bbb") live, so the test is robust
+      // regardless of whether terms are iterated in ascending or descending order.
+      assertU(adoc("id", "1", "solr_s", "aaa"));
+      assertU(adoc("id", "2", "solr_s", "bbb"));
+      assertU(adoc("id", "3", "solr_s", "ccc"));
+      assertU(commit());
+
+      assertU(delI("1"));
+      assertU(delI("3"));
+      assertU(commit());
+
+      assertQ(
+          "index flags should be present for solr_s despite deletion in segment",
+          req("qt", "/admin/luke", "fl", "solr_s"),
+          getFieldXPathPrefix("solr_s") + "[@name='index']");
+    } finally {
+      deleteCore();
+      System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
+      initCore("solrconfig.xml", "schema12.xml");
+    }
   }
 }
