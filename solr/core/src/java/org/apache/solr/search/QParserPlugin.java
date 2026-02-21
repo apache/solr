@@ -28,6 +28,7 @@ import org.apache.solr.search.join.GraphQParserPlugin;
 import org.apache.solr.search.join.HashRangeQParserPlugin;
 import org.apache.solr.search.mlt.MLTContentQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
+import org.apache.solr.search.numericrange.IntRangeQParserPlugin;
 import org.apache.solr.search.vector.KnnQParserPlugin;
 import org.apache.solr.search.vector.VectorSimilarityQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -90,6 +91,7 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin {
     map.put(KnnQParserPlugin.NAME, new KnnQParserPlugin());
     map.put(VectorSimilarityQParserPlugin.NAME, new VectorSimilarityQParserPlugin());
     map.put(FuzzyQParserPlugin.NAME, new FuzzyQParserPlugin());
+    map.put(IntRangeQParserPlugin.NAME, new IntRangeQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
