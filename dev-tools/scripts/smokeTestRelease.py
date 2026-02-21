@@ -390,6 +390,60 @@ def testChangelogMd(dir, version):
   if 'v%s' % version not in content and version not in content:
     raise RuntimeError('Version %s not found in CHANGELOG.md' % version)
 
+
+def testChangelogFolder(dir, version):
+  "Checks changelog folder structure."
+  changelog_folder = os.path.join(dir, 'changelog')
+
+  if not os.path.exists(changelog_folder):
+    raise RuntimeError('changelog folder not found at %s' % changelog_folder)
+
+  print('  check changelog folder structure...')
+
+  # Check that 'unreleased' folder exists and is empty
+  unreleased_folder = os.path.join(changelog_folder, 'unreleased')
+  if not os.path.exists(unreleased_folder):
+    raise RuntimeError('changelog/unreleased folder not found')
+
+  unreleased_contents = os.listdir(unreleased_folder)
+  # Filter out hidden files like .gitkeep
+  unreleased_contents = [f for f in unreleased_contents if not f.startswith('.')]
+  if len(unreleased_contents) > 0:
+    raise RuntimeError('changelog/unreleased folder is not empty, contains: %s' % unreleased_contents)
+
+  # Pattern to match version folders (e.g., v9.5.0, v10.0.0 or v10.1.0-beta1)
+  version_pattern = re.compile(r'^v\d+\.\d+\.\d+(-\w+)?$')
+
+  # Check all subdirectories in changelog
+  for entry in os.listdir(changelog_folder):
+    entry_path = os.path.join(changelog_folder, entry)
+
+    # Skip if not a directory
+    if not os.path.isdir(entry_path):
+      continue
+
+    # Skip the unreleased folder (already checked)
+    if entry == 'unreleased':
+      continue
+
+    release_date_file = os.path.join(entry_path, 'release-date.txt')
+
+    # Check if this is a version folder (vX.Y.Z format)
+    if version_pattern.match(entry):
+      # Version folders for the current release should NOT have release-date.txt
+      # Only check if this is the version being released
+      if entry == 'v%s' % version:
+        if os.path.exists(release_date_file):
+          raise RuntimeError('changelog/%s folder should not contain release-date.txt (version not yet released)' % entry)
+      else:
+        # Other version folders (past releases) should have release-date.txt
+        if not os.path.exists(release_date_file):
+          raise RuntimeError('changelog/%s folder is missing release-date.txt' % entry)
+    else:
+      # Non-version folders (e.g., documentation or support directories) are allowed
+      # and are not required to contain a release-date.txt file.
+      # They are intentionally ignored by this check.
+
 reChangesSectionHREF = re.compile('<a id="(.*?)".*?>(.*?)</a>', re.IGNORECASE)
 reUnderbarNotDashHTML = re.compile(r'<li>(\s*(SOLR)_\d\d\d\d+)')
 reUnderbarNotDashTXT = re.compile(r'\s+((SOLR)_\d\d\d\d+)', re.MULTILINE)
@@ -400,6 +454,38 @@ def checkChangesContent(s, version, name, isHTML):
 
   if isHTML and s.find('Release %s' % version) == -1:
     raise RuntimeError('did not see "Release %s" in %s' % (version, name))
+
+  # Validate h2 header structure for Changes.html
+  if isHTML:
+    print('    validate h2 header structure...')
+    h2_pattern = re.compile(r'<h2[^>]*>\s*<a[^>]*>(Release\s+[^<]+)</a>\s*</h2>', re.IGNORECASE | re.DOTALL)
+    headers = h2_pattern.findall(s)
+
+    if len(headers) < 2:
+      raise RuntimeError('Expected at least 2 release h2 headers in %s, found %d' % (name, len(headers)))
+
+    # First header should be "Release {version}" without a date
+    first_header = headers[0].strip()
+    expected_first = 'Release %s' % version
+
+    # Check if first header matches version and does NOT have a date pattern [yyyy-mm-dd]
+    if not first_header.startswith(expected_first):
+      raise RuntimeError('First h2 header should start with "%s", but got "%s" in %s' % (expected_first, first_header, name))
+
+    date_pattern = re.compile(r'\[\d{4}-\d{2}-\d{2}\]')
+    if date_pattern.search(first_header):
+      raise RuntimeError('First h2 header for "%s" should NOT contain a release date, but got "%s" in %s' % (version, first_header, name))
+
+    # Second header should be "Release {version} [yyyy-mm-dd]" with a date
+    second_header = headers[1].strip()
+    if not second_header.startswith('Release '):
+      raise RuntimeError('Second h2 header should start with "Release", but got "%s" in %s' % (second_header, name))
+
+    if not date_pattern.search(second_header):
+      raise RuntimeError('Second h2 header should contain a release date [yyyy-mm-dd], but got "%s" in %s' % (second_header, name))
+
+    print('      ✓ First h2: "%s" (no date)' % first_header)
+    print('      ✓ Second h2: "%s" (with date)' % second_header)
 
   if isHTML:
     r = reUnderbarNotDashHTML
@@ -652,6 +738,7 @@ def verifyUnpacked(java, artifact, unpackPath, gitRevision, version, testArgs):
     raise RuntimeError('solr: unexpected files/dirs in artifact %s: %s' % (artifact, in_root_folder))
 
   if isSrc:
+    testChangelogFolder('.', version)
     print('    make sure no JARs/WARs in src dist...')
     lines = os.popen('find . -name \\*.jar').readlines()
     if len(lines) != 0:
