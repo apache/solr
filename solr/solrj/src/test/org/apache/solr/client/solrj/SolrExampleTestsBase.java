@@ -34,6 +34,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.apache.solr.util.TimeOut;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -42,6 +43,14 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private SolrClient client;
+
+  @Before
+  public void emptyCollection() throws Exception {
+    SolrClient client = getSolrClient();
+    // delete everything!
+    client.deleteByQuery("*:*");
+    client.commit();
+  }
 
   @Override
   public void tearDown() throws Exception {
@@ -69,26 +78,15 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
    * options.
    */
   public SolrClient createNewSolrClient() {
-    return SolrTestCaseJ4.getHttpSolrClient(solrTestRule.getBaseUrl(), DEFAULT_TEST_CORENAME);
+    return SolrTestCaseJ4.getHttpSolrClient(
+        solrTestRule.getBaseUrl(), DEFAULT_TEST_COLLECTION_NAME);
   }
-
-  protected static String getCoreUrl() {
-    return solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME;
-  }
-
-  protected static String getBaseUrl() {
-    return solrTestRule.getBaseUrl();
-  }
-
-  // Backward compatibility methods for existing subclasses
 
   /** query the example */
   @Test
   public void testCommitWithinOnAdd() throws Exception {
-    // make sure it is empty...
     SolrClient client = getSolrClient();
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
+
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
@@ -160,10 +158,8 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
 
   @Test
   public void testCommitWithinOnDelete() throws Exception {
-    // make sure it is empty...
     SolrClient client = getSolrClient();
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
+
     QueryResponse rsp = client.query(new SolrQuery("*:*"));
     assertEquals(0, rsp.getResults().getNumFound());
 
@@ -206,9 +202,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @Test
   public void testAddDelete() throws Exception {
     SolrClient client = getSolrClient();
-
-    // Empty the database...
-    client.deleteByQuery("*:*"); // delete everything!
 
     SolrInputDocument[] doc = new SolrInputDocument[3];
     for (int i = 0; i < 3; i++) {
@@ -254,10 +247,6 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
   @Test
   public void testStreamingRequest() throws Exception {
     SolrClient client = getSolrClient();
-    // Empty the database...
-    client.deleteByQuery("*:*"); // delete everything!
-    client.commit();
-    assertNumFound("*:*", 0); // make sure it got in
 
     // Add some docs to the index
     UpdateRequest req = new UpdateRequest();

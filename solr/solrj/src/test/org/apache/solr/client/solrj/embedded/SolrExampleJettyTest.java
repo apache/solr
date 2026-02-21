@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
@@ -45,11 +44,6 @@ import org.junit.Test;
  */
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleJettyTest extends SolrExampleTests {
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
 
   @Test
   public void testBadSetup() {
@@ -69,7 +63,9 @@ public class SolrExampleJettyTest extends SolrExampleTests {
 
       // two docs, one with uniqueKey, another without it
       String json = "{\"id\":\"abc1\", \"name\": \"name1\"} {\"name\" : \"name2\"}";
-      HttpPost post = new HttpPost(getRandomizedUpdateUri(getCoreUrl()));
+      HttpPost post =
+          new HttpPost(
+              getRandomizedUpdateUri(solrTestRule.getBaseUrl() + "/" + DEFAULT_TEST_CORENAME));
       post.setHeader("Content-Type", "application/json");
       post.setEntity(
           new InputStreamEntity(

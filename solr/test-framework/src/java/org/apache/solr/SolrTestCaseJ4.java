@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -74,8 +73,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
-import org.apache.lucene.tests.mockfile.FilterPath;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
@@ -132,9 +129,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
-import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
@@ -2277,40 +2272,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("solrconfig.xml"), subHome.resolve("solrconfig.xml"));
     Files.copy(top.resolve("stopwords.txt"), subHome.resolve("stopwords.txt"));
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
-  }
-
-  /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
-  public static Path legacyExampleCollection1SolrHome() {
-    Path sourceHome = ExternalPaths.SOURCE_HOME;
-    if (sourceHome == null)
-      throw new IllegalStateException(
-          "No source home! Cannot create the legacy example solr home directory.");
-
-    try {
-      Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
-      Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-
-      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
-      Path collection1Dir = tempSolrHome.resolve("collection1");
-
-      DirectoryUtil.copyDirectoryContents(
-          sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
-
-      Properties props = new Properties();
-      props.setProperty("name", "collection1");
-      try (Writer writer =
-          new OutputStreamWriter(
-              Files.newOutputStream(collection1Dir.resolve("core.properties")),
-              StandardCharsets.UTF_8)) {
-        props.store(writer, null);
-      }
-      return tempSolrHome;
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
   }
 
   public boolean compareSolrDocument(Object expected, Object actual) {
