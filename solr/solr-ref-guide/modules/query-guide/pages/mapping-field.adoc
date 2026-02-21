@@ -1,0 +1,107 @@
+= Mapping Field
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+With the *Mapping Field* module you can index key-value pairs as value of a Solr field.
+
+The module also supports searching for keys or values within the mapping field's key-value pairs.
+
+== Configuration
+
+=== Query Parser Plugin
+
+Mapping Field is a module and therefore its query parser plugin must be configured in `solrconfig.xml`.
+
+* Enable the `mapping-field` module to make the Mapping Field classes available on Solr's classpath.
+See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
+
+* Declaration of the `mappings` query parser.
++
+[source,xml]
+----
+<queryParser name="mappings" class="org.apache.solr.mappings.search.MappingsQParserPlugin" />
+----
+
+=== Schema
+
+==== Field Type Definition
+
+The `solr.MappingType` field type requires defining only one of `subFieldSuffix` or `subFieldType`, to set the type of the `value` in the mapping.  The `key` field type defaults to the first defined `solr.StrField`.
+
+* `subFieldSuffix`: One of the `dynamicField` suffixes available in the schema.  This property defines the field type of the `value` in the mapping.  Ignored if `subFieldType`. is provided.
+* `subFieldType`: Name of one of the `fieldType` available in the schema.  This property defines the field type of the `value` in the mapping.  Optional if `subFieldSuffix` is provided.
+* `keyFieldSuffix`: One of the `dynamicField` suffixes available in the schema.  This property defines the field type of the `key` in the mapping.  Ignored if `keyFieldType`. is provided.
+* `keyFieldType`: Name of one of the `fieldType` available in the schema.  This property defines the field type of the `key` in the mapping.  Optional if `keyFieldSuffix` is provided.
+
+Examples:
+----
+<fieldType name="str_fl_mapping_type" class="solr.MappingType" subFieldType="float" keyFieldType="string" docValues="true" />
+<fieldType name="str_str_mapping_type" class="solr.MappingType" subFieldType="string" docValues="false" />
+----
+
+IMPORTANT: Set `docValues=true` on the field type to enable `docValues`.  DocValues cannot be enabled on multiValued mapping field definitions.
+
+[NOTE]
+Only primitive field types are supported for keys and values: the numeric and date field types `solr.*PointField`, the boolean field type `solr.BoolField`, and the string field type `solr.StrField`.
+
+==== Field Definition
+
+Field of type `solr.MappingType` are defined using Solr fields general properties, except `docValues=true`, which must be enabled only on the field type.
+
+[source,xml]
+----
+<field name="str_fl_mapping" type="str_fl_mapping_type" indexed="true" stored="true" required="false" multiValued="false"/>
+<field name="str_str_mapping" type="str_fl_mapping_type" indexed="true" stored="true" required="false" multiValued="true" />
+----
+
+== Usage
+
+=== Indexing
+
+In a Solr input document, the value of a mapping field must be a CVS representing the key-value mapping.  Only one CSV key-value mapping is supported per input field.
+
+----
+<field name="str_str_mapping">"key 1","value 1"</field>
+<field name="str_fl_mapping">"key 1","12.34"</field>
+----
+
+=== Searching
+
+The field type `solr.MappingType` support existence query using the mapping field name.
+
+[source,text]
+http://localhost:8983/solr/my_collection/select?q=str_fl_mapping:*
+
+*Query Parser Plugin*
+
+The query parser `MappingsQParserPlugin` supports searching for values of the keys and/or values of a given mapping field, or across all mappings.
+
+[source,text]
+http://localhost:8983/solr/my_collection/select?q={!mappings f=str_fl_mapping key="key 1" value="[10.0 TO *]"}
+
+_*Local Parameters*_
+
+See xref:query-guide:local-params.adoc[Local Params] for general usage of local parameters.
+
+* `type=mappings`, or `!mappings`: Enables the `MappingsQParserPlugin`.
+* `f`: Optional. Name of a mapping field.  If omitted, all mapping fields will be searched.
+* `key`: Optional. Value of a mapping key to search for.  May contain wildcards `*`or `?`.  May be a range query if the mapping key field type supports range queries.
+* `value`: Optional. Value of a mapping value to search for.  May contain wildcards `*`or `?`.  May be a range query if the mapping value field type supports range queries.
+
+[NOTE]
+IMPORTANT: A range query used in the local parameters *must* be URL-encoded OR wrapped in quotes.
+

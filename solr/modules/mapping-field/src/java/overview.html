@@ -1,0 +1,62 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<html>
+<body>
+Apache Solr Search Server: Mapping Field module
+
+<p>
+This module contains logic to <strong>index and search key-value mappings in a single field in Solr</strong>.
+</p>
+<p>
+Solr allows indexing single keys (i.e.: field names) to one or many values (i.e.: field value).  However, in some use cases,
+it can be useful for the field value itself to be a key-value mapping, and for such mapping to be indexed as one field.
+For example, if a document goes through a classification engine before indexing, the results may include the name of the 
+taxonomy, the document's classification(s), and some sort of relevance or confidence score per classification.
+In such a use case, when multiple taxonomies are used, the indexed metadata can become unusable if results from all taxonomies 
+are indexed as separate fields (as with Solr's other field types).
+</p>
+<p>
+This module allows indexing data as key-value mappings with a single heading:
+{@code
+  <arr name="ClassificationTaxonomy">
+    <mapping name="classification1">
+      <str name="key">classification1</str>
+      <float name="value">98.5</float>
+    </mapping>
+    <mapping name="classification2">
+      <str name="key">classification1</str>
+      <float name="value">82.6</float>
+    </mapping>
+   </arr>
+}
+</p>
+<p>
+When searching, a local params query can be used to match specific keys and/or values in a given mapping, or across any 
+mapping fields.  Note that a range query must be wrapped in quotes.
+<ul>
+<li>{@code /select?q={!mappings key=classification1}</li>
+<li>{@code /select?q={!mappings f=ClassificationTaxonomy value="[90.0 TO *]"}}</li>
+</ul>
+</p>
+<h1> Code structure </h1>
+<p>
+The code consists of a field type {@link org.apache.solr.schema.MappingType}, which is an extension of 
+{@link org.apache.solr.schema.AbstractSubTypeFieldType}, and it's corresponding parser plugin and parser 
+implementations: {@link org.apache.solr.mappings.search.MappingsQParserPlugin}, and 
+{@link org.apache.solr.mappings.search.MappingsQParserPlugin.MappingsQParser}.
+</body>
+</html>
