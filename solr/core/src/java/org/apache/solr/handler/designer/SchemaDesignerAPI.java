@@ -800,12 +800,14 @@ public class SchemaDesignerAPI extends JerseyResource
           version,
           currentVersion);
       List<SolrInputDocument> docs = configSetHelper.retrieveSampleDocs(configSet);
-      ManagedIndexSchema schema = loadLatestSchema(mutableId);
-      errorsDuringIndexing =
-          indexSampleDocsWithRebuildOnAnalysisError(
-              schema.getUniqueKeyField().getName(), docs, mutableId, true, null);
-      // the version changes when you index (due to field guessing URP)
-      currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
+      if (!docs.isEmpty()) {
+        ManagedIndexSchema schema = loadLatestSchema(mutableId);
+        errorsDuringIndexing =
+            indexSampleDocsWithRebuildOnAnalysisError(
+                schema.getUniqueKeyField().getName(), docs, mutableId, true, null);
+        // the version changes when you index (due to field guessing URP)
+        currentVersion = configSetHelper.getCurrentSchemaVersion(mutableId);
+      }
       indexedVersion.put(mutableId, currentVersion);
     }
 
