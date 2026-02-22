@@ -64,7 +64,7 @@ browserify = "17.0.0"
 bytebuddy = "1.18.3"
 carrot2-core = "4.8.1"
 carrotsearch-hppc = "0.10.0"
-carrotsearch-randomizedtesting = "2.8.3"
+carrotsearch-randomizedtesting = "2.8.4"
 # @keep for version alignment
 checkerframework = "3.44.0"
 codehaus-woodstox = "4.2.2"
