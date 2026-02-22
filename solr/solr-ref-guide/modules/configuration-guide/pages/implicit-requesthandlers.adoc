@@ -47,7 +47,9 @@ Health:: Report the health of the node (_available only in SolrCloud mode_)
 |API Endpoints |Class & Javadocs |Paramset
 |v1: `solr/admin/info/health`
 
-v2: `api/node/health` |{solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler] |
+v2: `api/node/health` |v1: {solr-javadocs}/core/org/apache/solr/handler/admin/HealthCheckHandler.html[HealthCheckHandler]
+
+v2: {solr-javadocs}/core/org/apache/solr/handler/admin/api/NodeHealthAPI.html[NodeHealthAPI] |
 |===
 +
 This endpoint also accepts additional request parameters.
