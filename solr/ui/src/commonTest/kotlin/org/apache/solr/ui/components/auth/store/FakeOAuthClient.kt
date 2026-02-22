@@ -15,30 +15,30 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.components.auth.store
 
-import kotlinx.serialization.Serializable
+import io.ktor.client.plugins.auth.providers.BearerTokens
+import org.apache.solr.ui.domain.OAuthData
 
 /**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
- *
- * @see AuthOption
+ * OAuth client for mocking the OAuth server responses.
  */
-@Serializable
-sealed interface AuthMethod {
+internal class FakeOAuthClient(
+    private val result: suspend () -> Result<BearerTokens>,
+) : OAuthStoreProvider.Client {
 
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
+    var lastState: String? = null
+    var lastVerifier: String? = null
+    var lastData: OAuthData? = null
 
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
+    override suspend fun authenticate(
+        state: String,
+        verifier: String,
+        data: OAuthData,
+    ): Result<BearerTokens> {
+        lastState = state
+        lastVerifier = verifier
+        lastData = data
+        return result()
+    }
 }
