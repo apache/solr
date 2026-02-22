@@ -15,30 +15,16 @@
  * limitations under the License.
  */
 
-package org.apache.solr.ui.domain
+package org.apache.solr.ui.components.auth
 
-import kotlinx.serialization.Serializable
+import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
+import kotlinx.browser.window
 
-/**
- * The authentication method is used for determining what methods of authenticating are available.
- * These methods hold information for displaying and trying to authenticate.
- *
- * @see AuthOption
- */
-@Serializable
-sealed interface AuthMethod {
-
-    /**
-     * Basic authentication method that uses username and password for
-     * authenticating.
-     *
-     * @property realm The realm of the basic auth.
-     */
-    @Serializable
-    data class BasicAuthMethod(val realm: String? = null) : AuthMethod
-
-    @Serializable
-    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
-
-    data object Unknown : AuthMethod
+internal actual fun getRedirectUri(): String {
+    // For wasmJs we return the current origin with the full path
+    // TODO window.location.href may not be reliable, update if necessary
+    return URLBuilder(window.location.href).apply {
+        appendPathSegments("callback")
+    }.buildString()
 }
