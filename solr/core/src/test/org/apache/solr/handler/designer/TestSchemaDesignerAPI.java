@@ -396,7 +396,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     schemaVersion = (Integer) response.unknownProperties().get(SCHEMA_VERSION_PARAM);
 
-    // add back all the default languages (using "*" wildcard → empty list)
+    // add back all the default languages (using "*" wildcard -> empty list)
     response =
         schemaDesignerAPI.analyze(
             configSet, schemaVersion, null, null, List.of("*"), false, null, null);
@@ -443,7 +443,8 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(response.unknownProperties().get("fields"));
 
     // update an existing field
-    // switch a single-valued field to a multi-valued field, which triggers a full rebuild
+    // switch a single-valued field to a multi-valued field, which triggers a full rebuild of the
+    // "temp" collection
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
     stream.setContentType(JSON_MIME);
     when(mockReq.getContentStreams()).thenReturn(Collections.singletonList(stream));

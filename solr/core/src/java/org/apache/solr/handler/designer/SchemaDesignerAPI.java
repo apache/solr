@@ -195,11 +195,10 @@ public class SchemaDesignerAPI extends JerseyResource
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     validateNewConfigSetName(configSet);
 
-    if (copyFrom == null) {
-      copyFrom = DEFAULT_CONFIGSET_NAME;
-    }
+    final String effectiveCopyFrom = copyFrom != null ? copyFrom : DEFAULT_CONFIGSET_NAME;
 
-    SchemaDesignerSettings settings = getMutableSchemaForConfigSet(configSet, -1, copyFrom);
+    SchemaDesignerSettings settings =
+        getMutableSchemaForConfigSet(configSet, -1, effectiveCopyFrom);
     ManagedIndexSchema schema = settings.getSchema();
     String mutableId = getMutableId(configSet);
 
