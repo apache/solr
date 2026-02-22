@@ -35,7 +35,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
-import org.apache.solr.handler.admin.HealthCheckHandler;
 import org.apache.solr.handler.admin.InfoHandler;
 import org.apache.solr.handler.admin.LoggingHandler;
 import org.apache.solr.handler.admin.PropertiesRequestHandler;
@@ -58,7 +57,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private SystemInfoHandler mockSystemInfoHandler;
   private LoggingHandler mockLoggingHandler;
   private PropertiesRequestHandler mockPropertiesHandler;
-  private HealthCheckHandler mockHealthCheckHandler;
   private ThreadDumpHandler mockThreadDumpHandler;
 
   @BeforeClass
@@ -73,14 +71,12 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     mockSystemInfoHandler = mock(SystemInfoHandler.class);
     mockLoggingHandler = mock(LoggingHandler.class);
     mockPropertiesHandler = mock(PropertiesRequestHandler.class);
-    mockHealthCheckHandler = mock(HealthCheckHandler.class);
     mockThreadDumpHandler = mock(ThreadDumpHandler.class);
     queryRequestCaptor = ArgumentCaptor.forClass(SolrQueryRequest.class);
 
     when(infoHandler.getSystemInfoHandler()).thenReturn(mockSystemInfoHandler);
     when(infoHandler.getLoggingHandler()).thenReturn(mockLoggingHandler);
     when(infoHandler.getPropertiesHandler()).thenReturn(mockPropertiesHandler);
-    when(infoHandler.getHealthCheckHandler()).thenReturn(mockHealthCheckHandler);
     when(infoHandler.getThreadDumpHandler()).thenReturn(mockThreadDumpHandler);
 
     apiBag = new ApiBag(false);
@@ -156,19 +152,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     assertEquals("anyParamValue", v1Params.get("anyParamName"));
   }
 
-  @Test
-  public void testHealthCheckApiAllProperties() throws Exception {
-    final ModifiableSolrParams solrParams = new ModifiableSolrParams();
-    solrParams.add("requireHealthyCores", "true");
-    solrParams.add("maxGenerationLag", "123");
-    final SolrParams v1Params =
-        captureConvertedHealthCheckV1Params("/node/health", "GET", solrParams);
-
-    // All parameters are passed through to v1 API as-is.
-    assertEquals(true, v1Params.getBool("requireHealthyCores"));
-    assertEquals(123, v1Params.getPrimitiveInt("maxGenerationLag"));
-  }
-
   private SolrParams captureConvertedCoreV1Params(String path, String method, String v2RequestBody)
       throws Exception {
     return doCaptureParams(
@@ -183,11 +166,6 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
   private SolrParams captureConvertedPropertiesV1Params(
       String path, String method, SolrParams inputParams) throws Exception {
     return doCaptureParams(path, method, inputParams, null, mockPropertiesHandler);
-  }
-
-  private SolrParams captureConvertedHealthCheckV1Params(
-      String path, String method, SolrParams inputParams) throws Exception {
-    return doCaptureParams(path, method, inputParams, null, mockHealthCheckHandler);
   }
 
   private SolrParams captureConvertedThreadDumpV1Params(
@@ -233,6 +211,5 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
     apiBag.registerObject(new NodePropertiesAPI(infoHandler.getPropertiesHandler()));
     apiBag.registerObject(new NodeThreadsAPI(infoHandler.getThreadDumpHandler()));
     apiBag.registerObject(new NodeSystemInfoAPI(infoHandler.getSystemInfoHandler()));
-    apiBag.registerObject(new NodeHealthAPI(infoHandler.getHealthCheckHandler()));
   }
 }
