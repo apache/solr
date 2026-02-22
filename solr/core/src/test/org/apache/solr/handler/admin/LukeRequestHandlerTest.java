@@ -297,9 +297,9 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
   }
 
   /**
-   * Tests that Luke reports index flags for fields even when a document has been deleted. Uses
-   * NoMergePolicy so the deleted doc remains in the same segment, keeping liveDocs non-null and
-   * exposing the inverted liveDocs check in getFirstLiveDoc.
+   * SOLR-18125: Tests that Luke reports index flags for fields even when a document has been
+   * deleted. Uses NoMergePolicy so the deleted doc remains in the same segment, keeping liveDocs
+   * non-null and exposing the inverted liveDocs check in getFirstLiveDoc.
    */
   @Test
   public void testIndexFlagsWithDeletedDocs() throws Exception {
