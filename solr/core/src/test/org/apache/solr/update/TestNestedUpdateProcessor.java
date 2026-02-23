@@ -273,6 +273,59 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
     assertThat(thrown.getMessage(), containsString(errMsg));
   }
 
+  @Test
+  public void testMultiValuedDenseVectorExpandedToNestedChildren() throws Exception {
+    SolrInputDocument root =
+        sdoc(
+            "id",
+            "10",
+            "vector_multivalued",
+            List.of(List.of(1.0f, 2.0f, 3.0f, 4.0f), List.of(5.0f, 6.0f, 7.0f, 8.0f)));
+    UpdateRequestProcessor nestedUpdate =
+        new NestedUpdateProcessorFactory().getInstance(req(), null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = root;
+    nestedUpdate.processAdd(cmd);
+    cmd.clear();
+
+    assertNull(root.getFieldValue("vector_multivalued"));
+    Collection<Object> generatedChildren =
+        root.getFieldValues(IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME);
+    assertNotNull(generatedChildren);
+    assertEquals(2, generatedChildren.size());
+
+    @SuppressWarnings({"rawtypes"})
+    List children = new ArrayList<>(generatedChildren);
+    SolrInputDocument firstChild = (SolrInputDocument) children.get(0);
+    SolrInputDocument secondChild = (SolrInputDocument) children.get(1);
+
+    assertEquals("10/vector_multivalued#0", firstChild.getFieldValue("id"));
+    assertEquals("10", firstChild.getFieldValue(IndexSchema.NEST_PARENT_FIELD_NAME));
+    assertEquals(
+        "/vector_multivalued#0", firstChild.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME));
+    assertEquals(List.of(1.0f, 2.0f, 3.0f, 4.0f), firstChild.getFieldValues("vector_multivalued"));
+
+    assertEquals("10/vector_multivalued#1", secondChild.getFieldValue("id"));
+    assertEquals("10", secondChild.getFieldValue(IndexSchema.NEST_PARENT_FIELD_NAME));
+    assertEquals(
+        "/vector_multivalued#1", secondChild.getFieldValue(IndexSchema.NEST_PATH_FIELD_NAME));
+    assertEquals(List.of(5.0f, 6.0f, 7.0f, 8.0f), secondChild.getFieldValues("vector_multivalued"));
+  }
+
+  @Test
+  public void testSingleValuedDenseVectorRemainsOnParent() throws Exception {
+    SolrInputDocument root = sdoc("id", "11", "vector_single", List.of(1.0f, 2.0f, 3.0f, 4.0f));
+    UpdateRequestProcessor nestedUpdate =
+        new NestedUpdateProcessorFactory().getInstance(req(), null, null);
+    AddUpdateCommand cmd = new AddUpdateCommand(req());
+    cmd.solrDoc = root;
+    nestedUpdate.processAdd(cmd);
+    cmd.clear();
+
+    assertEquals(List.of(1.0f, 2.0f, 3.0f, 4.0f), root.getFieldValues("vector_single"));
+    assertNull(root.getFieldValues(IndexSchema.NESTED_VECTORS_PSEUDO_FIELD_NAME));
+  }
+
   private void indexSampleData(String cmd) throws Exception {
     updateJ(cmd, null);
     assertU(commit());
