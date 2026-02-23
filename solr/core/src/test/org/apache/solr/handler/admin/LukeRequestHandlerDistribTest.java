@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -81,19 +82,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  /** Walks the exception cause chain and concatenates all messages. */
-  private static String getExceptionChainMessage(Throwable t) {
-    StringBuilder sb = new StringBuilder();
-    while (t != null) {
-      if (t.getMessage() != null) {
-        if (sb.length() > 0) sb.append(" -> ");
-        sb.append(t.getMessage());
-      }
-      t = t.getCause();
-    }
-    return sb.toString();
-  }
-
   /** Sends a luke request and wraps the raw response in a typed {@link LukeResponse}. */
   private LukeResponse requestLuke(String collection, ModifiableSolrParams extra) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -114,7 +102,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @Test
   public void testDistributedMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
@@ -145,7 +133,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testDistributedFieldsMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
@@ -178,7 +166,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testDetailedFieldStatsPerShard() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("fl", "name");
     params.set("numTerms", "5");
 
@@ -226,7 +214,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @Test
   public void testExplicitDistribFalse() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "false");
+    params.set(DISTRIB, "false");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
@@ -258,7 +246,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       cluster.getSolrClient().commit(collection);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("distrib", "true");
+      params.set(DISTRIB, "true");
 
       LukeResponse rsp = requestLuke(collection, params);
 
@@ -327,7 +315,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testDistribShowSchema() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("show", "schema");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
@@ -407,7 +395,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
         Replica leader = slice.getLeader();
         try (SolrClient client = getHttpSolrClient(leader)) {
           SolrQuery q = new SolrQuery("id:target");
-          q.set("distrib", "false");
+          q.set(DISTRIB, "false");
           QueryResponse qr = client.query(q);
           if (qr.getResults().getNumFound() > 0) {
             targetSliceName = slice.getName();
@@ -424,7 +412,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
           try (SolrClient client = getHttpSolrClient(leader)) {
             SolrQuery q = new SolrQuery("*:*");
             q.setRows(1);
-            q.set("distrib", "false");
+            q.set(DISTRIB, "false");
             QueryResponse qr = client.query(q);
             assertTrue("other shard should have seed docs", qr.getResults().getNumFound() > 0);
             otherDocId = (String) qr.getResults().get(0).getFieldValue("id");
@@ -451,13 +439,13 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       // Distributed Luke should detect inconsistent index flags between the two shards.
       // One shard has stored=true segments, the other has stored=false segments for test_flag_s.
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("distrib", "true");
+      params.set(DISTRIB, "true");
       params.set("fl", "test_flag_s");
 
       Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
-      // The server throws SolrException, but CloudSolrClient may wrap it in
-      // SolrServerException after retry exhaustion. Check the full exception chain.
-      String fullMessage = getExceptionChainMessage(ex);
+      // The server throws SolrException, but CloudSolrClient may wrap it.
+      // Check the root cause message.
+      String fullMessage = SolrException.getRootCause(ex).getMessage();
       assertTrue(
           "exception chain should mention inconsistent index flags: " + fullMessage,
           fullMessage.contains("inconsistent"));
@@ -519,7 +507,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       // Verify: distributed Luke should have index flags for flag_target_s in the merged response,
       // whether they came from the first shard (constructor path) or a later shard (deferred path).
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("distrib", "true");
+      params.set(DISTRIB, "true");
       params.set("fl", "flag_target_s");
 
       LukeResponse rsp = requestLuke(collection, params);
@@ -552,12 +540,12 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @Test
   public void testDistributedShardError() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("id", "0");
     params.set("show", "schema");
 
     Exception ex = expectThrows(Exception.class, () -> requestLuke(COLLECTION, params));
-    String fullMessage = getExceptionChainMessage(ex);
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
     assertTrue(
         "exception should mention doc style mismatch: " + fullMessage,
         fullMessage.contains("missing doc param for doc style"));
@@ -567,11 +555,11 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @Test
   public void testDistributedDocIdRejected() {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("docId", "0");
 
     Exception ex = expectThrows(Exception.class, () -> requestLuke(COLLECTION, params));
-    String fullMessage = getExceptionChainMessage(ex);
+    String fullMessage = SolrException.getRootCause(ex).getMessage();
     assertTrue(
         "exception should mention docId not supported: " + fullMessage,
         fullMessage.contains("docId parameter is not supported in distributed mode"));
@@ -579,24 +567,34 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
   /** Verifies distributed doc lookup returns the document when it exists. */
   @Test
+  @SuppressWarnings("unchecked")
   public void testDistributedDocLookupFound() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("id", "0");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
     NamedList<Object> raw = rsp.getResponse();
-    assertNotNull("doc section should be present", raw.get("doc"));
     assertNotNull("index section should be present", raw.get("index"));
     assertNotNull("info section should be present", raw.get("info"));
+
+    // Verify doc structure: docId (Lucene int), lucene (per-field analysis), solr (stored fields)
+    NamedList<Object> doc = (NamedList<Object>) raw.get("doc");
+    assertNotNull("doc section should be present", doc);
+    assertNotNull("docId should be present", doc.get("docId"));
+    assertNotNull("lucene section should be present", doc.get("lucene"));
+
+    // The solr section is the stored Lucene Document; verify the fields we indexed
+    Object solrDoc = doc.get("solr");
+    assertNotNull("solr section should be present", solrDoc);
   }
 
   /** Verifies distributed doc lookup returns an empty response for a non-existent ID. */
   @Test
   public void testDistributedDocLookupNotFound() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set("distrib", "true");
+    params.set(DISTRIB, "true");
     params.set("id", "this_id_does_not_exist_anywhere");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
@@ -670,11 +668,11 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
       // Distributed Luke doc lookup should detect the corruption
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("distrib", "true");
+      params.set(DISTRIB, "true");
       params.set("id", dupId);
 
       Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
-      String fullMessage = getExceptionChainMessage(ex);
+      String fullMessage = SolrException.getRootCause(ex).getMessage();
       assertTrue(
           "exception should mention duplicate/corrupt index: " + fullMessage,
           fullMessage.contains("found on multiple shards"));
@@ -699,7 +697,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       cluster.getSolrClient().commit(singleShardCollection);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
-      params.set("distrib", "true");
+      params.set(DISTRIB, "true");
 
       LukeResponse rsp = requestLuke(singleShardCollection, params);
 

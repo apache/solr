@@ -126,6 +126,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   private static final String RSP_FIELDS = "fields";
   private static final String RSP_SCHEMA = "schema";
   private static final String RSP_INFO = "info";
+  private static final String RSP_DOC = "doc";
   private static final String RSP_SHARDS = "shards";
 
   // Field-level keys
@@ -165,7 +166,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       if (v == null) return null;
       if ("schema".equalsIgnoreCase(v)) return SCHEMA;
       if ("index".equalsIgnoreCase(v)) return INDEX;
-      if ("doc".equalsIgnoreCase(v)) return DOC;
+      if (RSP_DOC.equalsIgnoreCase(v)) return DOC;
       if ("all".equalsIgnoreCase(v)) return ALL;
       throw new SolrException(ErrorCode.BAD_REQUEST, "Unknown Show Style: " + v);
     }
@@ -224,7 +225,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       docinfo.add("docId", docId);
       docinfo.add("lucene", info);
       docinfo.add("solr", doc);
-      rsp.add("doc", docinfo);
+      rsp.add(RSP_DOC, docinfo);
     } else if (ShowStyle.SCHEMA == style) {
       rsp.add(RSP_SCHEMA, getSchemaInfo(req.getSchema()));
     } else {
@@ -408,7 +409,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
       processShardFields(shardData, mergedFields);
-      Object doc = shardRsp.get("doc");
+      Object doc = shardRsp.get(RSP_DOC);
       if (doc != null) {
         if (firstDoc != null) {
           throw new SolrException(
@@ -443,7 +444,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.add(RSP_INDEX, mergedIndex);
 
     if (firstDoc != null) {
-      rsp.add("doc", firstDoc);
+      rsp.add(RSP_DOC, firstDoc);
     }
     if (!mergedFields.isEmpty()) {
       SimpleOrderedMap<Object> mergedFieldsNL = new SimpleOrderedMap<>();
@@ -468,19 +469,11 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
       // Detailed stats — kept per-shard, not merged
       NamedList<Integer> topTerms = fi.getTopTerms();
-      Object histogram = fi.getExtras().get(KEY_HISTOGRAM);
-
-      if (topTerms != null || fi.getDistinct() > 0 || histogram != null) {
+      if (topTerms != null) {
         SimpleOrderedMap<Object> detailedFieldInfo = new SimpleOrderedMap<>();
-        if (topTerms != null) {
-          detailedFieldInfo.add(KEY_TOP_TERMS, topTerms);
-        }
-        if (fi.getDistinct() > 0) {
-          detailedFieldInfo.add(KEY_DISTINCT, fi.getDistinct());
-        }
-        if (histogram != null) {
-          detailedFieldInfo.add(KEY_HISTOGRAM, histogram);
-        }
+        detailedFieldInfo.add(KEY_TOP_TERMS, topTerms);
+        detailedFieldInfo.add(KEY_HISTOGRAM, fi.getExtras().get(KEY_HISTOGRAM));
+        detailedFieldInfo.add(KEY_DISTINCT, fi.getDistinct());
         shardData.addDetailedFieldInfo(fieldName, detailedFieldInfo);
       }
     }
@@ -549,7 +542,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
 
     Long docsAsLong = fi.getDocsAsLong();
-    if (docsAsLong != null && docsAsLong > 0) {
+    if (docsAsLong != null) {
       fieldData.merged.compute(
           KEY_DOCS_AS_LONG, (key, val) -> val == null ? docsAsLong : (Long) val + docsAsLong);
     }
