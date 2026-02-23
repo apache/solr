@@ -77,6 +77,7 @@ import org.apache.solr.search.SyntaxError;
  *
  * @see IntRangeField
  * @see IntRange
+ * @lucene.experimental
  */
 public class IntRangeQParserPlugin extends QParserPlugin {
 

@@ -1004,14 +1004,10 @@ For more information about the possibilities of nested queries, see Yonik Seeley
 
 == Numeric Range Query Parser
 
-Allows users to search range fields (e.g. `IntRangeField`) using a specified query-range.
-A "criteria" parameter indicates what match-semantics should be used.
-Accepts a "criteria" local-param that indicates how matched documents should relate to the query-range:
+NOTE: Syntax specifics of the `{!numericRange}` query parser are considered experimental and may change in the future.
 
-* `contains` if matching documents should entirely contain or enclose the query-range (i.e. doc-ranges that are a superset of query-range),
-* `within` if matching documents should be entirely within the query-range (i.e. doc-ranges that are sub-set of query-range)
-* `crosses` if matching documents should be partially **but not fully** contained within the query-range
-* `intersects` treats a document as a match if it meets any of the criteria above (i.e. `contains || within || crosses`)
+Allows users to search range fields (e.g. `IntRangeField`) using a specified query-range.
+Multiple match semantics supported, see the `criteria` parameter below for more details.
 
 === Numeric Range Parameters
 
@@ -1033,6 +1029,11 @@ Must be a "range" field (e.g. `IntRangeField`)
 +
 The criteria or semantics used to determine where a document matches the query-range.
 One of: `contains`, `within`, `crosses` or `intersects`.
+
+* `contains` if matching documents should entirely contain or enclose the query-range (i.e. doc-ranges that are a superset of query-range),
+* `within` if matching documents should be entirely within the query-range (i.e. doc-ranges that are sub-set of query-range)
+* `crosses` if matching documents should be partially **but not fully** contained within the query-range
+* `intersects` treats a document as a match if it meets any of the criteria above (i.e. `contains || within || crosses`)
 `v`::
 +
 [%autowidth,frame=none]
@@ -1044,7 +1045,7 @@ The query-range to be compared against field values.
 The specified range must have the same number of dimensions as the targeted field.
 Usually provided implicitly by specifying a range after the local-params block (see examples below).
 
-=== Numeric Range Example
+=== Numeric Range Examples
 
 Find products whose `price_range` is fully bounded between 100 and 120.
 
