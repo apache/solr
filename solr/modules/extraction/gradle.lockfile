@@ -3,13 +3,13 @@
 # This file is expected to be part of source control.
 com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.8.3=jarValidation,testCompileClasspath,testRuntimeClasspath
 com.carrotsearch:hppc:0.10.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-annotations:2.20=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-core:2.20.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.core:jackson-databind:2.20.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.20.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.20.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.20.1=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
-com.fasterxml.jackson:jackson-bom:2.20.1=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-annotations:2.21=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-core:2.21.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson.core:jackson-databind:2.21.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.21.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson.dataformat:jackson-dataformat-smile:2.21.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson.module:jackson-module-jakarta-xmlbind-annotations:2.21.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
+com.fasterxml.jackson:jackson-bom:2.21.0=compileClasspath,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testCompileClasspath,testRuntimeClasspath
 com.fasterxml.woodstox:woodstox-core:7.0.0=jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testRuntimeClasspath
 com.github.ben-manes.caffeine:caffeine:3.2.2=annotationProcessor,errorprone,jarValidation,runtimeClasspath,runtimeLibs,solrPlatformLibs,testAnnotationProcessor,testRuntimeClasspath
 com.github.docker-java:docker-java-api:3.7.0=jarValidation,testCompileClasspath,testRuntimeClasspath
