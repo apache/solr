@@ -1,0 +1,7 @@
+title: Update no.nav.security:mock-oauth2-server to v3
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3133
+  url: https://github.com/apache/solr/pull/3133
