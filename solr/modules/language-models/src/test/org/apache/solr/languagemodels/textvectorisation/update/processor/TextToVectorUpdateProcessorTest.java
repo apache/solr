@@ -51,7 +51,16 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
 
   @Test
   public void processAdd_inputField_shouldVectoriseInputField() throws Exception {
-    loadModel("dummy-model.json"); // preparation
+    assertVectorisationWithModel("dummy-model.json");
+  }
+
+  @Test
+  public void processAdd_customModel_shouldVectoriseInputField() throws Exception {
+    assertVectorisationWithModel("dummy-custom-model.json");
+  }
+
+  private void assertVectorisationWithModel(String modelJsonFile) throws Exception {
+    loadModel(modelJsonFile);
 
     addWithChain(sdoc("id", "99", "_text_", "Vegeta is the saiyan prince."), "textToVector");
     addWithChain(
@@ -68,8 +77,6 @@ public class TextToVectorUpdateProcessorTest extends TestLanguageModelBase {
         "/response/docs/[0]/vector==[1.0, 2.0, 3.0, 4.0]",
         "/response/docs/[1]/id=='98'",
         "/response/docs/[1]/vector==[1.0, 2.0, 3.0, 4.0]");
-
-    restTestHarness.delete(ManagedTextToVectorModelStore.REST_END_POINT + "/dummy-1"); // clean up
   }
 
   private SolrQuery getSolrQuery() {

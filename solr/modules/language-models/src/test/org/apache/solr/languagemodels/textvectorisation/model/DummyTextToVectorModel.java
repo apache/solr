@@ -16,15 +16,28 @@
  */
 package org.apache.solr.languagemodels.textvectorisation.model;
 
-public class DummyTextToVectorModel implements TextToVectorModel {
-  private final float[] vector;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
-  public DummyTextToVectorModel(float[] vector) {
-    this.vector = vector;
+public class DummyTextToVectorModel implements TextToVectorModel {
+  private float[] vector;
+
+  public DummyTextToVectorModel() {
   }
 
   @Override
   public float[] vectorise(String text) {
     return vector;
+  }
+
+  @Override
+  public void init(Map<String, Object> params) {
+    List<?> embeddings = (List<?>) params.get("embedding");
+    float[] floatArray = new float[embeddings.size()];
+    for (int i = 0; i < embeddings.size(); i++) {
+      floatArray[i] = ((Number) embeddings.get(i)).floatValue();
+    }
+    this.vector = floatArray;
   }
 }

@@ -17,13 +17,15 @@
 package org.apache.solr.languagemodels.textvectorisation.model;
 
 import java.util.Arrays;
+import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
 public class DummyTextToVectorModelTest extends SolrTestCase {
   @Test
   public void testVectorise() {
-    DummyTextToVectorModel model = new DummyTextToVectorModel(new float[] {1, 2, 3});
+    DummyTextToVectorModel model = new DummyTextToVectorModel();
+    model.init(Map.of("embedding", new float[] {1, 2, 3}));
     float[] vector = model.vectorise("test");
     assertEquals("[1.0, 2.0, 3.0]", Arrays.toString(vector));
   }
