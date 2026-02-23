@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.apache;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -65,8 +67,10 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.ServletFixtures.RedirectServlet;
 import org.apache.solr.util.ServletFixtures.SlowServlet;
@@ -95,7 +99,13 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
             .withServlet(new ServletHolder(DebugServlet.class), "/debug/*")
             .withServlet(new ServletHolder(SlowStreamServlet.class), "/slowStream/*")
             .build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Test
