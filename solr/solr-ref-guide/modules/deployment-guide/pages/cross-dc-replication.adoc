@@ -130,7 +130,7 @@ Optional configuration properties:
 `solr.crossdc.retryBackoffMs` _<integer>_:: The amount of time to wait before attempting to retry a failed request to a given topic partition.
 `solr.crossdc.deliveryTimeoutMS` _<integer>_:: Updates sent to the Kafka queue will be failed before the number of retries has been exhausted if the timeout configured by delivery.timeout.ms expires first
 `solr.crossdc.maxRequestSizeBytes` _<integer>_:: The maximum size of a Kafka queue request in bytes - limits the number of requests that will be sent over the queue in a single batch.
-`solr.crossdc.dlqTopicName` _<string>_: If not empty then requests that failed processing `maxAttempts` times will be sent to a "dead letter queue" topic in Kafka (must exist if configured).
+`solr.crossdc.dlqTopicName` _<string>_:: If not empty then requests that failed processing `maxAttempts` times will be sent to a "dead letter queue" topic in Kafka (must exist if configured).
 `solr.crossdc.mirrorCommits` _<boolean>_:: If `true` then standalone commit requests will be mirrored, otherwise they will be processed only locally.
 `solr.crossdc.expandDbq` _<enum>_ :: If set to `expand` (default) then Delete-By-Query will be expanded before mirroring into series of Delete-By-Id, which may help with correct processing of out-of-order requests on the consumer side.
 If set to `none` then Delete-By-Query requests will be mirrored as-is.
@@ -151,8 +151,9 @@ system property.
 
 Currently the following endpoints are exposed (on local port configured using `port` property, default is 8090):
 
-`/metrics` - (GET):: This endpoint returns JSON-formatted metrics describing various aspects of document processing in Consumer.
+`/metrics` - (GET):: This endpoint returns metrics in Prometheus text format, describing various aspects of document processing in Consumer.
 `/threads` - (GET):: Returns a plain-text thread dump of the JVM running the Consumer application.
+`/health` - (GET):: Returns an `HTTP 200 OK` code if the service is in a healthy state, or `HTTP 503 Service Unavailable` if one or more healthcheck probes failed. The JSON response body provides more details.
 
 ==== Configuration Properties for the CrossDC Manager:
 
@@ -212,3 +213,7 @@ Setting the `solr.crossdc.enabled` system property or xref:collection-management
 Setting this property to `none` results in forwarding a real Delete-By-Query - this reduces the amount of data to mirror but may cause different results due to the potential re-ordering of failed & re-submitted requests between Consumer and the target Solr.
 - When `solr.crossdc.collapseUpdates` is set to `all` then multiple requests containing a mix of add and delete ops will be collapsed into a single outgoing request.
 This will cause the original ordering of add / delete ops to be lost (because Solr processing of an update request always processes all add ops first, and only then the delete ops), which may affect the final outcome when some of the ops refer to the same document ids.
+- When the Kafka topic used for mirroring has multiple partitions the CrossDC Producer and Consumer guarantee strict ordering of updates ONLY within the same collection.
+In other words, when a multi-partition topic is used for mirroring there's no guarantee of a strict global request ordering across
+collections, which normally should not be an issue. However, if a strict global ordering across collections is required then
+the mirroring topic must use a single partition.

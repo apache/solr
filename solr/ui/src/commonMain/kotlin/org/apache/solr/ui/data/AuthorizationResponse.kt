@@ -14,20 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.SolrExampleTests;
-import org.junit.BeforeClass;
+package org.apache.solr.ui.data
 
-/**
- * This runs SolrServer test using
- *
- * @since solr 1.3
- */
-public class SolrExampleEmbeddedTest extends SolrExampleTests {
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-}
+@Serializable
+data class AuthorizationResponse(
+    @SerialName("access_token")
+    val accessToken: String = "",
+    @SerialName("expires_in")
+    val expiresIn: Long = 0,
+    @SerialName("refresh_expires_in")
+    val refreshExpiresIn: Long = 0,
+    @SerialName("refresh_token")
+    val refreshToken: String = "",
+    @SerialName("token_type")
+    val tokenType: String = "",
+    @SerialName("id_token")
+    val idToken: String? = null,
+    @SerialName("not-before-policy")
+    val notBeforePolicy: Int = -1,
+    @SerialName("session_state")
+    val sessionState: String = "",
+    val scope: String = "",
+)

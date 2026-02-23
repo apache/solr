@@ -78,25 +78,11 @@ user.githubid=johngithub
 user.asfid=johnapache
 ----
 
-TIP: Aliases for `writeChangelog` task are `changelog` and `newChangelog`.
+The changelog has comments to help you fill it out.  Remove them after filling out the form.
 
-== 4. Writing Good Entries
+TIP: Aliases for the `writeChangelog` task are `changelog` and `newChangelog`.
 
-* **Audience** is end-users and administrators, not committers.
-* If the change is super minor, like a typo, don't bother adding a yaml file
-* Keep the entry short and focused on the user impact.
-* Choose the correct *type*:
-** `added` for new features
-** `changed` for improvements to existing code
-** `fixed` for bug fixes
-** `deprecated` for deprecated features
-** `removed` for code removed in major releases
-** `dependency_update` for updates to dependencies
-** `security` for security-related changes
-** `other` for anything else, like the build or documentation
-* Reference issues as `SOLR-12345` or GitHub `PR#123`.
-
-== 5. Changelog Validation in Pull Requests
+== 4. Changelog Validation in Pull Requests
 
 The `validate-changelog` GitHub workflow automatically checks that:
 
@@ -105,9 +91,9 @@ The `validate-changelog` GitHub workflow automatically checks that:
 
 If your change does not require a changelog entry, it is still possible to merge the PR.
 
-== 6. For release managers
+== 5. For release managers
 
-=== 6.1 Gradle tasks for logchange
+=== 5.1 Gradle tasks for logchange
 
 The logchange gradle plugin offers some tasks, here are the two most important:
 
@@ -129,7 +115,7 @@ The `logchangeRelease` and `logchangeGenerate` tasks are used by ReleaseWizard. 
 
 These are integrated in the Release Wizard.
 
-=== 6.2 Migration tool
+=== 5.2 Migration tool
 
 There is a migration tool in `dev-tools/scripts/changes2logchange.py` for one-time use during the transition.
 It will bulk convert the entire `solr/CHANGES.txt` file to files in the `changelog/` folder and versioned sub folders.
@@ -160,7 +146,7 @@ links:
   url: https://issues.apache.org/jira/browse/SOLR-17960
 ----
 
-=== 6.3 Changelog validation tool
+=== 5.3 Changelog validation tool
 
 There is a tool `dev-tools/scripts/validateChangelogs.py` that will do a
 cross-branch validation of changelog folders. It takes no arguments and
@@ -245,7 +231,7 @@ Example report output (Json or Markdown):
 }
 ----
 
-== 7. Further Reading
+== 6. Further Reading
 
 * https://github.com/logchange/logchange[Logchange web page]
 * https://keepachangelog.com/en/1.1.0/[keepachangelog.com website]
