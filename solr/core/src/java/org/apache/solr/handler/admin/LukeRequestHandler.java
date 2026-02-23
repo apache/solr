@@ -202,14 +202,10 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       String v = uniqueKey.getType().toInternal(params.get(ID));
       Term t = new Term(uniqueKey.getName(), v);
       docId = searcher.getFirstMatch(t);
-      if (docId < 0) {
-        throw new SolrException(
-            SolrException.ErrorCode.NOT_FOUND, "Can't find document: " + params.get(ID));
-      }
     }
 
     // Read the document from the index
-    if (docId != null) {
+    if (docId != null && docId > -1) {
       if (style != null && style != ShowStyle.DOC) {
         throw new SolrException(ErrorCode.BAD_REQUEST, "missing doc param for doc style");
       }
@@ -304,6 +300,16 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
    *     logic.
    */
   private boolean handleDistributed(SolrQueryRequest req, SolrQueryResponse rsp) {
+    SolrParams reqParams = req.getParams();
+
+    // docId is a Lucene-internal integer, not meaningful across shards
+    if (reqParams.getInt(DOC_ID) != null) {
+      throw new SolrException(
+          ErrorCode.BAD_REQUEST,
+          "docId parameter is not supported in distributed mode."
+              + " Use the id parameter to look up documents by their Solr unique key.");
+    }
+
     ShardHandler shardHandler = shardHandlerFactory.getShardHandler();
     ResponseBuilder rb = new ResponseBuilder(req, rsp, Collections.emptyList());
     shardHandler.prepDistributed(rb);
@@ -321,7 +327,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     String reqPath = (String) req.getContext().get(PATH);
 
     for (String shard : shards) {
-      ModifiableSolrParams params = new ModifiableSolrParams(req.getParams());
+      ModifiableSolrParams params = new ModifiableSolrParams(reqParams);
       params.set(CommonParams.QT, reqPath);
       ShardHandler.setShardAttributesToParams(params, sreq.purpose);
       shardHandler.submit(sreq, shard, params);
@@ -331,7 +337,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     if (lastSrsp == null) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "No responses received from shards");
     }
-
     List<ShardResponse> responses = sreq.responses;
     for (ShardResponse srsp : responses) {
       if (srsp.getException() != null) {
@@ -353,12 +358,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   private void mergeDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
-    long totalNumDocs = 0;
-    int totalMaxDoc = 0;
-    long totalDeletedDocs = 0;
-    int totalSegmentCount = 0;
-
-    Map<String, MergedFieldData> mergedFields = new HashMap<>();
 
     if (!responses.isEmpty()) {
       ShardResponse firstRsp = responses.getFirst();
@@ -378,6 +377,13 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
+    long totalNumDocs = 0;
+    int totalMaxDoc = 0;
+    long totalDeletedDocs = 0;
+    int totalSegmentCount = 0;
+    Map<String, MergedFieldData> mergedFields = new HashMap<>();
+    String firstDocShard = null;
+    Object firstDoc = null;
     List<ShardData> shardDataList = new ArrayList<>();
 
     for (ShardResponse srsp : responses) {
@@ -402,6 +408,22 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
 
       processShardFields(shardData, mergedFields);
+      Object doc = shardRsp.get("doc");
+      if (doc != null) {
+        if (firstDoc != null) {
+          throw new SolrException(
+              ErrorCode.SERVER_ERROR,
+              "Solr Id of document "
+                  + firstDoc
+                  + " found on multiple shards ("
+                  + firstDocShard
+                  + " and "
+                  + shardAddress(srsp)
+                  + "). The index is corrupt: unique key constraint violated.");
+        }
+        firstDoc = doc;
+        firstDocShard = shardAddress(srsp);
+      }
       shardDataList.add(shardData);
     }
 
@@ -420,6 +442,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     mergedIndex.add(KEY_SEGMENT_COUNT, totalSegmentCount);
     rsp.add(RSP_INDEX, mergedIndex);
 
+    if (firstDoc != null) {
+      rsp.add("doc", firstDoc);
+    }
     if (!mergedFields.isEmpty()) {
       SimpleOrderedMap<Object> mergedFieldsNL = new SimpleOrderedMap<>();
       for (Map.Entry<String, MergedFieldData> entry : mergedFields.entrySet()) {

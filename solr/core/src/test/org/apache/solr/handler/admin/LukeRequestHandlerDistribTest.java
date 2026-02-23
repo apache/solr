@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -35,6 +37,11 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.embedded.JettySolrRunner;
+import org.apache.solr.request.SolrQueryRequestBase;
+import org.apache.solr.update.AddUpdateCommand;
+import org.apache.solr.update.CommitUpdateCommand;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -462,9 +469,9 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
   /**
    * Exercises the deferred index flags path (lines 510-513 of LukeRequestHandler): when the first
-   * shard to report a field has null index flags (all its live docs for that field were deleted, but
-   * the field persists in FieldInfos from unmerged segments), the merge should still populate index
-   * flags from a later shard that has live docs.
+   * shard to report a field has null index flags (all its live docs for that field were deleted,
+   * but the field persists in FieldInfos from unmerged segments), the merge should still populate
+   * index flags from a later shard that has live docs.
    *
    * <p>Setup: 8-shard collection. Each shard gets one doc with field "flag_target_s" (which is then
    * deleted) plus an anchor doc without it (to keep the shard non-empty). Only one shard retains a
@@ -476,7 +483,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   public void testDeferredIndexFlags() throws Exception {
     String collection = "lukeDeferredFlags";
-    int numShards = 8;
+    int numShards = 16;
     CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.waitForActiveCollection(collection, numShards, numShards);
@@ -536,16 +543,17 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   /**
-   * Exercises the shard error handling path in handleDistributed (lines 336-343). Passing
-   * docId=0 with show=schema triggers a BAD_REQUEST on each shard (the local handler rejects
-   * a docId combined with a non-DOC show style). The distributed handler should propagate
-   * this as a SolrException.
+   * Exercises shard error propagation through the distributed doc lookup path. Passing id=0 with
+   * show=schema triggers a BAD_REQUEST on the shard that has doc 0 (the local handler rejects an id
+   * combined with a non-DOC show style). The distributed handler should propagate this as a
+   * SolrException, even though other shards respond with NOT_FOUND (which is handled gracefully in
+   * the doc lookup path).
    */
   @Test
   public void testDistributedShardError() {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("distrib", "true");
-    params.set("docId", "0");
+    params.set("id", "0");
     params.set("show", "schema");
 
     Exception ex = expectThrows(Exception.class, () -> requestLuke(COLLECTION, params));
@@ -553,6 +561,127 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertTrue(
         "exception should mention doc style mismatch: " + fullMessage,
         fullMessage.contains("missing doc param for doc style"));
+  }
+
+  /** Verifies that the docId parameter is rejected in distributed mode. */
+  @Test
+  public void testDistributedDocIdRejected() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("distrib", "true");
+    params.set("docId", "0");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(COLLECTION, params));
+    String fullMessage = getExceptionChainMessage(ex);
+    assertTrue(
+        "exception should mention docId not supported: " + fullMessage,
+        fullMessage.contains("docId parameter is not supported in distributed mode"));
+  }
+
+  /** Verifies distributed doc lookup returns the document when it exists. */
+  @Test
+  public void testDistributedDocLookupFound() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("distrib", "true");
+    params.set("id", "0");
+
+    LukeResponse rsp = requestLuke(COLLECTION, params);
+
+    NamedList<Object> raw = rsp.getResponse();
+    assertNotNull("doc section should be present", raw.get("doc"));
+    assertNotNull("index section should be present", raw.get("index"));
+    assertNotNull("info section should be present", raw.get("info"));
+  }
+
+  /** Verifies distributed doc lookup returns an empty response for a non-existent ID. */
+  @Test
+  public void testDistributedDocLookupNotFound() throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("distrib", "true");
+    params.set("id", "this_id_does_not_exist_anywhere");
+
+    LukeResponse rsp = requestLuke(COLLECTION, params);
+
+    NamedList<Object> raw = rsp.getResponse();
+    assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
+  }
+
+  /**
+   * Verifies that distributed doc lookup detects a corrupt index where the same unique key exists
+   * on multiple shards.
+   */
+  @Test
+  public void testDistributedDocLookupDuplicateId() throws Exception {
+    String collection = "lukeDupId";
+    int numShards = 2;
+    CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.waitForActiveCollection(collection, numShards, numShards);
+
+    try {
+      String dupId = "duplicate_doc";
+
+      // Write the same document directly to two shard cores via UpdateHandler,
+      // completely bypassing the distributed update processor chain.
+      DocCollection docColl = cluster.getSolrClient().getClusterState().getCollection(collection);
+      List<Slice> slices = new ArrayList<>(docColl.getActiveSlices());
+      assertTrue("need at least 2 shards", slices.size() >= 2);
+
+      for (int i = 0; i < 2; i++) {
+        Replica leader = slices.get(i).getLeader();
+        JettySolrRunner jetty =
+            cluster.getJettySolrRunners().stream()
+                .filter(j -> j.getNodeName().equals(leader.getNodeName()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull("should find jetty for replica", jetty);
+
+        try (SolrCore core = jetty.getCoreContainer().getCore(leader.getCoreName())) {
+          SolrInputDocument solrDoc = new SolrInputDocument();
+          solrDoc.addField("id", dupId);
+          solrDoc.addField("name", "dup_copy_" + i);
+
+          AddUpdateCommand addCmd =
+              new AddUpdateCommand(new SolrQueryRequestBase(core, new ModifiableSolrParams()) {});
+          addCmd.solrDoc = solrDoc;
+          core.getUpdateHandler().addDoc(addCmd);
+
+          CommitUpdateCommand commitCmd =
+              new CommitUpdateCommand(
+                  new SolrQueryRequestBase(core, new ModifiableSolrParams()) {}, false);
+          commitCmd.waitSearcher = true;
+          core.getUpdateHandler().commit(commitCmd);
+        }
+      }
+
+      // Verify the duplicate actually exists on both shards
+      int shardsWithDoc = 0;
+      for (Slice slice : docColl.getActiveSlices()) {
+        Replica leader = slice.getLeader();
+        try (SolrClient client = getHttpSolrClient(leader)) {
+          SolrQuery q = new SolrQuery("id:" + dupId);
+          q.set(DISTRIB, "false");
+          QueryResponse qr = client.query(q);
+          if (qr.getResults().getNumFound() > 0) {
+            shardsWithDoc++;
+          }
+        }
+      }
+      assertEquals("duplicate doc should exist on exactly 2 shards", 2, shardsWithDoc);
+
+      // Distributed Luke doc lookup should detect the corruption
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("distrib", "true");
+      params.set("id", dupId);
+
+      Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
+      String fullMessage = getExceptionChainMessage(ex);
+      assertTrue(
+          "exception should mention duplicate/corrupt index: " + fullMessage,
+          fullMessage.contains("found on multiple shards"));
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
   }
 
   @Test
