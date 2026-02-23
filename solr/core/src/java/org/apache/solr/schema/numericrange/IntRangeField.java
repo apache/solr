@@ -87,8 +87,12 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  */
 public class IntRangeField extends PrimitiveFieldType {
 
-  private static final Pattern RANGE_PATTERN =
-      Pattern.compile("\\[\\s*([^\\]]+?)\\s+TO\\s+([^\\]]+?)\\s*\\]");
+  private static final String COMMA_DELIMITED_INTS = "-?\\d+(?:\\s*,\\s*-?\\d+)*";
+  private static final String RANGE_PATTERN =
+      "\\[\\s*(" + COMMA_DELIMITED_INTS + ")\\s+TO\\s+(" + COMMA_DELIMITED_INTS + ")\\s*\\]";
+  private static final Pattern RANGE_PATTERN_REGEX = Pattern.compile(RANGE_PATTERN);
+  private static final Pattern SINGLE_BOUND_PATTERN =
+      Pattern.compile("^" + COMMA_DELIMITED_INTS + "$");
 
   private int numDimensions = 1;
 
@@ -199,7 +203,7 @@ public class IntRangeField extends PrimitiveFieldType {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Range value cannot be null or empty");
     }
 
-    Matcher matcher = RANGE_PATTERN.matcher(value.trim());
+    Matcher matcher = RANGE_PATTERN_REGEX.matcher(value.trim());
     if (!matcher.matches()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
@@ -277,7 +281,57 @@ public class IntRangeField extends PrimitiveFieldType {
     return new StoredField(sf.getName(), value.toString());
   }
 
-  // TODO - how would this be invoked?  Should we force all queries to come through {!numericRange}
+  /**
+   * Creates a query for this field that matches docs where the query-range is fully contained by
+   * the field value.
+   *
+   * <p>Queries requiring other match semantics can use {@link
+   * org.apache.solr.search.numericrange.IntRangeQParserPlugin}
+   *
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the value to search. Supports both a
+   *     (multi-)dimensional range of the form [1,2 TO 3,4], or a single (multi-)dimensional bound
+   *     (e.g. 1,2). In the latter case, the single bound will be used as both the min and max. Both
+   *     formats use "contains" query semantics to find indexed ranges that contain the query range.
+   * @return Query for this field using contains semantics
+   */
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    if (externalVal == null || externalVal.trim().isEmpty()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Query value cannot be null or empty");
+    }
+
+    String trimmed = externalVal.trim();
+
+    // Check if it's the full range syntax: [min1,min2 TO max1,max2]
+    if (RANGE_PATTERN_REGEX.matcher(trimmed).matches()) {
+      RangeValue rangeValue = parseRangeValue(trimmed);
+      return IntRange.newContainsQuery(field.getName(), rangeValue.mins, rangeValue.maxs);
+    }
+
+    // Syntax sugar: also accept a single-bound (i.e pX,pY,pZ)
+    if (SINGLE_BOUND_PATTERN.matcher(trimmed).matches()) {
+      int[] bound = parseIntArray(trimmed, "single bound values");
+
+      if (bound.length != numDimensions) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Single bound dimensions ("
+                + bound.length
+                + ") do not match field type numDimensions ("
+                + numDimensions
+                + ")");
+      }
+
+      return IntRange.newContainsQuery(field.getName(), bound, bound);
+    }
+
+    throw new SolrException(
+        ErrorCode.BAD_REQUEST,
+        "Invalid query format. Expected either a range [min TO max] or a single bound to search for, got: "
+            + externalVal);
+  }
+
   @Override
   protected Query getSpecializedRangeQuery(
       QParser parser,
