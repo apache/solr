@@ -82,7 +82,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     shutdownCluster();
   }
 
-  /** Sends a luke request and wraps the raw response in a typed {@link LukeResponse}. */
   private LukeResponse requestLuke(String collection, ModifiableSolrParams extra) throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("qt", "/admin/luke");
@@ -154,8 +153,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertEquals("id field type should be string", "string", idField.getType());
 
     // Index flags should be consistent across shards (both shards have data for "name").
-    // The merge validates non-null index flags for consistency; if they were inconsistent,
-    // the request would have thrown an error. Verify the merged result has index flags.
     NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
     NamedList<Object> rawNameField = (NamedList<Object>) mergedFieldsNL.get("name");
     assertNotNull(
@@ -303,7 +300,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       // and stored — but if present, it should be a non-empty string
       Object indexFlags = rawNameField.get("index");
       if (indexFlags != null) {
-        assertTrue("index flags should be a non-empty string", indexFlags.toString().length() > 0);
+        assertFalse("index flags should be a non-empty string", indexFlags.toString().isEmpty());
       }
     } finally {
       CollectionAdminRequest.deleteCollection(collection)
@@ -443,8 +440,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       params.set("fl", "test_flag_s");
 
       Exception ex = expectThrows(Exception.class, () -> requestLuke(collection, params));
-      // The server throws SolrException, but CloudSolrClient may wrap it.
-      // Check the root cause message.
       String fullMessage = SolrException.getRootCause(ex).getMessage();
       assertTrue(
           "exception chain should mention inconsistent index flags: " + fullMessage,
@@ -456,16 +451,16 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   /**
-   * Exercises the deferred index flags path (lines 510-513 of LukeRequestHandler): when the first
-   * shard to report a field has null index flags (all its live docs for that field were deleted,
-   * but the field persists in FieldInfos from unmerged segments), the merge should still populate
-   * index flags from a later shard that has live docs.
+   * Exercises the deferred index flags path: when the first shard to report a field has null index
+   * flags (all its live docs for that field were deleted, but the field persists in FieldInfos from
+   * unmerged segments), the merge should still populate index flags from a later shard that has
+   * live docs.
    *
-   * <p>Setup: 8-shard collection. Each shard gets one doc with field "flag_target_s" (which is then
-   * deleted) plus an anchor doc without it (to keep the shard non-empty). Only one shard retains a
-   * live doc with "flag_target_s". With 8 shards, the probability that the one live shard is
-   * processed first is 1/8 = 12.5%, so we exercise the deferred path ~87.5% of the time. Either
-   * way, the merged response should have index flags for the field.
+   * <p>Setup: 16-shard collection. Each shard gets one doc with field "flag_target_s" (which is
+   * then deleted) plus an anchor doc without it (to keep the shard non-empty). Only one shard
+   * retains a live doc with "flag_target_s". With 16 shards, the probability that the one live
+   * shard is processed first is low enough. Either way, the merged response should have index flags
+   * for the field.
    */
   @Test
   @SuppressWarnings("unchecked")
@@ -479,7 +474,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     try {
       // Index one doc with the target field per shard, plus an anchor doc without it.
       // The anchor doc keeps the shard non-empty after we delete the target doc.
-      // We use enough docs to spread across shards via hash routing.
+      // We use enough docs to spread across (hopefully) all shards.
       List<SolrInputDocument> docs = new ArrayList<>();
       for (int i = 0; i < numShards * 4; i++) {
         SolrInputDocument doc = new SolrInputDocument();
@@ -500,8 +495,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       for (int i = 1; i < numShards * 4; i++) {
         cluster.getSolrClient().deleteById(collection, "target_" + i);
       }
-      // Do NOT force merge — we need the deleted docs' field to persist in FieldInfos
-      // so that getFirstLiveDoc returns null, producing null index flags.
       cluster.getSolrClient().commit(collection);
 
       // Verify: distributed Luke should have index flags for flag_target_s in the merged response,
@@ -534,8 +527,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
    * Exercises shard error propagation through the distributed doc lookup path. Passing id=0 with
    * show=schema triggers a BAD_REQUEST on the shard that has doc 0 (the local handler rejects an id
    * combined with a non-DOC show style). The distributed handler should propagate this as a
-   * SolrException, even though other shards respond with NOT_FOUND (which is handled gracefully in
-   * the doc lookup path).
+   * SolrException.
    */
   @Test
   public void testDistributedShardError() {
