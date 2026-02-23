@@ -1452,7 +1452,7 @@ public abstract class CloudSolrClient extends SolrClient {
         requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final ClusterStateProvider provider = getClusterStateProvider();
-    final String urlScheme = provider.getClusterProperty(ClusterState.URL_SCHEME, "http");
+    final String urlScheme = provider.getUrlScheme();
     final Set<String> liveNodes = provider.getLiveNodes();
 
     final List<LBSolrClient.Endpoint> requestEndpoints =

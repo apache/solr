@@ -127,4 +127,7 @@ public interface ClusterStateProvider extends SolrCloseable {
   void connect();
 
   String getQuorumHosts();
+
+  /** Get url scheme. */
+  String getUrlScheme();
 }
