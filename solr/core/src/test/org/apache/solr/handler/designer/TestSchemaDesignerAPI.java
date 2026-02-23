@@ -37,7 +37,6 @@ import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
@@ -219,8 +218,15 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // GET /schema-designer/query
     response = schemaDesignerAPI.query(configSet);
     assertNotNull(response.unknownProperties().get("responseHeader"));
-    SolrDocumentList results = (SolrDocumentList) response.unknownProperties().get("response");
-    assertEquals(47, results.getNumFound());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> queryResponse =
+        (Map<String, Object>) response.unknownProperties().get("response");
+    assertNotNull("response object must be a map with numFound/docs", queryResponse);
+    assertEquals(47L, queryResponse.get("numFound"));
+    @SuppressWarnings("unchecked")
+    List<Object> queryDocs = (List<Object>) queryResponse.get("docs");
+    assertNotNull("response.docs must be a list", queryDocs);
+    assertTrue("response.docs must be non-empty", queryDocs.size() > 0);
 
     // publish schema to a config set that can be used by real collections
     String collection = "techproducts";
@@ -492,8 +498,13 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // GET /schema-designer/query
     response = schemaDesignerAPI.query(configSet);
     assertNotNull(response.unknownProperties().get("responseHeader"));
-    SolrDocumentList results = (SolrDocumentList) response.unknownProperties().get("response");
-    assertEquals(4, results.size());
+    @SuppressWarnings("unchecked")
+    Map<String, Object> queryResponse2 =
+        (Map<String, Object>) response.unknownProperties().get("response");
+    assertNotNull("response object must be a map with numFound/docs", queryResponse2);
+    @SuppressWarnings("unchecked")
+    List<Object> queryDocs2 = (List<Object>) queryResponse2.get("docs");
+    assertEquals(4, queryDocs2.size());
 
     // Download ZIP
     when(mockReq.getContentStreams()).thenReturn(null);

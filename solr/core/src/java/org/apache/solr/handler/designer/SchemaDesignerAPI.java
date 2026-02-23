@@ -60,6 +60,7 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -826,9 +827,24 @@ public class SchemaDesignerAPI extends JerseyResource
 
     // execute the user's query against the temp collection
     QueryResponse qr = cloudClient().query(mutableId, solrQueryRequest.getParams());
-    Map<String, Object> response = new HashMap<>();
-    qr.getResponse().forEach((name, val) -> response.put(name, val));
-    return buildFlexibleResponse(response);
+    Map<String, Object> responseMap = new HashMap<>();
+    qr.getResponse()
+        .forEach(
+            (name, val) -> {
+              if ("response".equals(name) && val instanceof SolrDocumentList) {
+                // SolrDocumentList extends ArrayList, so Jackson would serialize it as a plain
+                // array, losing numFound/start metadata that the UI expects at data.response.docs
+                SolrDocumentList docList = (SolrDocumentList) val;
+                Map<String, Object> responseObj = new HashMap<>();
+                responseObj.put("numFound", docList.getNumFound());
+                responseObj.put("start", docList.getStart());
+                responseObj.put("docs", new ArrayList<>(docList));
+                responseMap.put(name, responseObj);
+              } else {
+                responseMap.put(name, val);
+              }
+            });
+    return buildFlexibleResponse(responseMap);
   }
 
   /**
