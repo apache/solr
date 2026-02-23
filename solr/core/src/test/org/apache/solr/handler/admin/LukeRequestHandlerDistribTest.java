@@ -460,6 +460,101 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     }
   }
 
+  /**
+   * Exercises the deferred index flags path (lines 510-513 of LukeRequestHandler): when the first
+   * shard to report a field has null index flags (all its live docs for that field were deleted, but
+   * the field persists in FieldInfos from unmerged segments), the merge should still populate index
+   * flags from a later shard that has live docs.
+   *
+   * <p>Setup: 8-shard collection. Each shard gets one doc with field "flag_target_s" (which is then
+   * deleted) plus an anchor doc without it (to keep the shard non-empty). Only one shard retains a
+   * live doc with "flag_target_s". With 8 shards, the probability that the one live shard is
+   * processed first is 1/8 = 12.5%, so we exercise the deferred path ~87.5% of the time. Either
+   * way, the merged response should have index flags for the field.
+   */
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testDeferredIndexFlags() throws Exception {
+    String collection = "lukeDeferredFlags";
+    int numShards = 8;
+    CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    cluster.waitForActiveCollection(collection, numShards, numShards);
+
+    try {
+      // Index one doc with the target field per shard, plus an anchor doc without it.
+      // The anchor doc keeps the shard non-empty after we delete the target doc.
+      // We use enough docs to spread across shards via hash routing.
+      List<SolrInputDocument> docs = new ArrayList<>();
+      for (int i = 0; i < numShards * 4; i++) {
+        SolrInputDocument doc = new SolrInputDocument();
+        doc.addField("id", "target_" + i);
+        doc.addField("flag_target_s", "value_" + i);
+        docs.add(doc);
+
+        SolrInputDocument anchor = new SolrInputDocument();
+        anchor.addField("id", "anchor_" + i);
+        anchor.addField("name", "anchor");
+        docs.add(anchor);
+      }
+      cluster.getSolrClient().add(collection, docs);
+      cluster.getSolrClient().commit(collection);
+
+      // Delete all target docs, leaving only anchors (which don't have flag_target_s)
+      // on most shards. Keep exactly one target doc alive.
+      for (int i = 1; i < numShards * 4; i++) {
+        cluster.getSolrClient().deleteById(collection, "target_" + i);
+      }
+      // Do NOT force merge — we need the deleted docs' field to persist in FieldInfos
+      // so that getFirstLiveDoc returns null, producing null index flags.
+      cluster.getSolrClient().commit(collection);
+
+      // Verify: distributed Luke should have index flags for flag_target_s in the merged response,
+      // whether they came from the first shard (constructor path) or a later shard (deferred path).
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("distrib", "true");
+      params.set("fl", "flag_target_s");
+
+      LukeResponse rsp = requestLuke(collection, params);
+
+      Map<String, LukeResponse.FieldInfo> fields = rsp.getFieldInfo();
+      assertNotNull("fields should be present", fields);
+      LukeResponse.FieldInfo targetField = fields.get("flag_target_s");
+      assertNotNull("'flag_target_s' field should be present", targetField);
+
+      // The merged response should have index flags from whichever shard had live docs
+      NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
+      NamedList<Object> rawTargetField = (NamedList<Object>) mergedFieldsNL.get("flag_target_s");
+      assertNotNull("raw 'flag_target_s' should be in merged fields", rawTargetField);
+      assertNotNull(
+          "index flags should be present (populated from shard with live docs)",
+          rawTargetField.get("index"));
+    } finally {
+      CollectionAdminRequest.deleteCollection(collection)
+          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    }
+  }
+
+  /**
+   * Exercises the shard error handling path in handleDistributed (lines 336-343). Passing
+   * docId=0 with show=schema triggers a BAD_REQUEST on each shard (the local handler rejects
+   * a docId combined with a non-DOC show style). The distributed handler should propagate
+   * this as a SolrException.
+   */
+  @Test
+  public void testDistributedShardError() {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("distrib", "true");
+    params.set("docId", "0");
+    params.set("show", "schema");
+
+    Exception ex = expectThrows(Exception.class, () -> requestLuke(COLLECTION, params));
+    String fullMessage = getExceptionChainMessage(ex);
+    assertTrue(
+        "exception should mention doc style mismatch: " + fullMessage,
+        fullMessage.contains("missing doc param for doc style"));
+  }
+
   @Test
   public void testDistribTrueOnSingleShardFallsBackToLocal() throws Exception {
     String singleShardCollection = "lukeSingleShard";

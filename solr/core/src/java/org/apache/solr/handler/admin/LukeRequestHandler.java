@@ -538,9 +538,6 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       Object expectedVal,
       String currentShardAddr,
       String expectedShardAddr) {
-    if (currentVal == null && expectedVal == null) {
-      return;
-    }
     String currentStr = currentVal != null ? currentVal.toString() : null;
     String expectedStr = expectedVal != null ? expectedVal.toString() : null;
     if (!Objects.equals(currentStr, expectedStr)) {
@@ -837,7 +834,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     StoredFields storedFields = reader.storedFields();
     // Deal with the chance that the first bunch of terms are in deleted documents. Is there a
     // better way?
-    for (int idx = 0; idx < 1000 && postingsEnum == null; ++idx) {
+    for (int idx = 0; idx < 1000; ++idx) {
       text = termsEnum.next();
       // Ran off the end of the terms enum without finding any live docs with that field in them.
       if (text == null) {
@@ -846,7 +843,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       postingsEnum = termsEnum.postings(postingsEnum, PostingsEnum.NONE);
       final Bits liveDocs = reader.getLiveDocs();
       if (postingsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
-        if (liveDocs != null && liveDocs.get(postingsEnum.docID())) {
+        if (liveDocs != null && !liveDocs.get(postingsEnum.docID())) {
           continue;
         }
         return storedFields.document(postingsEnum.docID());
