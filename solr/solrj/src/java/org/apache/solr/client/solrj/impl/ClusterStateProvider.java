@@ -128,6 +128,6 @@ public interface ClusterStateProvider extends SolrCloseable {
 
   String getQuorumHosts();
 
-  /** Get url scheme. */
+  /** Get url scheme like http or https but never null. */
   String getUrlScheme();
 }

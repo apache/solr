@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
@@ -345,10 +346,14 @@ public class ZkClientClusterStateProvider
    */
   @Override
   public String getUrlScheme() {
-    Object urlSchemeClusterProperty = getClusterProperty(ClusterState.URL_SCHEME);
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    final Object urlSchemeClusterProperty = getClusterProperty(ClusterState.URL_SCHEME);
     if (urlSchemeClusterProperty != null) {
       return urlSchemeClusterProperty.toString();
     }
-    return Boolean.parseBoolean(System.getProperty(SOLR_SSL_ENABLED, "false")) ? "https" : "http";
+    return "http";
   }
 }

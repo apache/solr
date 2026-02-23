@@ -78,10 +78,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         solrUrls.stream()
             .map(BaseHttpClusterStateProvider::stringToUrl)
             .collect(Collectors.toList());
-    if (this.configuredNodes.stream().map(URL::getProtocol).collect(Collectors.toSet()).size()
-        != 1) {
-      throw new IllegalArgumentException("All nodes must have same url scheme");
-    }
     this.urlScheme = this.configuredNodes.get(0).getProtocol();
   }
 
