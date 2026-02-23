@@ -370,8 +370,79 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
         "//result/doc/str[@name='id'][.='1']");
   }
 
+  // ------------------------------------------
+  // These tests don't use the IntRangeQParser, but rather the use of IntRangeField through the more
+  // standard query parser(s).  Not really the best place, but it didn't seem worth creating a whole
+  // new test class for this.  Maybe worth a refactor later. When used with parsers other than
+  // {!numericRange} we default to "contains" semantics.  In other words: "match only those
+  // documents with a field-val that fully contains the query value.
+
   @Test
-  public void testFieldFormatting() {
+  public void testGetFieldQueryFullRange() {
+    // doc 1: narrow range, fully inside the query range  → should NOT match (doc contains query)
+    // doc 2: wide range that fully contains the query range → should match
+    // doc 3: range that only partially overlaps            → should NOT match
+    assertU(adoc("id", "1", "price_range", "[130 TO 160]")); // No match
+    assertU(adoc("id", "2", "price_range", "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", "price_range", "[150 TO 250]")); // No match
+    assertU(commit());
+
+    // Contains semantics: find indexed ranges that fully contain [120 TO 180]
+    assertQ(
+        req("q", "price_range:[120 TO 180]"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='id'][.='2']");
+  }
+
+  @Test
+  public void testGetFieldQueryFullRangeMultipleMatches() {
+    assertU(adoc("id", "1", "price_range", "[0 TO 1000]")); // Match!
+    assertU(adoc("id", "2", "price_range", "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", "price_range", "[100 TO 199]")); // No match - max too low
+    assertU(adoc("id", "4", "price_range", "[101 TO 200]")); // No match - min too high
+    assertU(commit());
+
+    assertQ(
+        req("q", "price_range:[100 TO 200]"),
+        "//result[@numFound='2']",
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/str[@name='id'][.='2']");
+  }
+
+  @Test
+  public void testGetFieldQuerySingleBound() {
+    // Single-bound syntax: price_range:150 is sugar for contains([150 TO 150])
+    assertU(adoc("id", "1", "price_range", "[100 TO 200]")); // Match!
+    assertU(adoc("id", "2", "price_range", "[150 TO 150]")); // Match!
+    assertU(adoc("id", "3", "price_range", "[100 TO 149]")); // No match - max below 150
+    assertU(adoc("id", "4", "price_range", "[151 TO 300]")); // No match - min above 150
+    assertU(commit());
+
+    assertQ(
+        req("q", "price_range:150"),
+        "//result[@numFound='2']",
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/str[@name='id'][.='2']");
+  }
+
+  @Test
+  public void testGetFieldQuerySingleBound2D() {
+    // 2D single-bound: bbox:5,5 is sugar for contains([5,5 TO 5,5])
+    assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]")); // Match!
+    assertU(adoc("id", "2", "bbox", "[5,5 TO 5,5]")); // Match!
+    assertU(adoc("id", "3", "bbox", "[0,0 TO 4,10]")); // No match - X dimension ends too low
+    assertU(adoc("id", "4", "bbox", "[6,0 TO 10,10]")); // No match - X dimension starts too high
+    assertU(commit());
+
+    assertQ(
+        req("q", "bbox:5,5"),
+        "//result[@numFound='2']",
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/str[@name='id'][.='2']");
+  }
+
+  @Test
+  public void testGetFieldQueryFieldFormatting() {
     // Test 1D field formatting
     assertU(adoc("id", "1", "price_range", "[100 TO 200]"));
     // Test 2D field formatting

@@ -207,7 +207,8 @@ public class IntRangeField extends PrimitiveFieldType {
     if (!matcher.matches()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
-          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...], got: " + value);
+          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...] where min and max values are ints, but got: "
+              + value);
     }
 
     String minPart = matcher.group(1).trim();
