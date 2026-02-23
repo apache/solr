@@ -28,6 +28,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -43,6 +44,7 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
+import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -98,6 +100,25 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     return rsp;
   }
 
+  private void assertLukeXPath(String collection, ModifiableSolrParams extra, String... xpaths)
+      throws Exception {
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.set("qt", "/admin/luke");
+    params.set("numTerms", "0");
+    params.set("wt", "xml");
+    if (extra != null) {
+      for (Map.Entry<String, String[]> entry : extra.getMap().entrySet()) {
+        params.set(entry.getKey(), entry.getValue());
+      }
+    }
+    QueryRequest req = new QueryRequest(params);
+    req.setResponseParser(new InputStreamResponseParser("xml"));
+    NamedList<Object> raw = cluster.getSolrClient().request(req, collection);
+    String xml = InputStreamResponseParser.consumeResponseToString(raw);
+    String failedXpath = BaseTestHarness.validateXPath(xml, xpaths);
+    assertNull("XPath validation failed: " + failedXpath + "\nResponse:\n" + xml, failedXpath);
+  }
+
   @Test
   public void testDistributedMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -129,7 +150,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDistributedFieldsMerge() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
@@ -152,15 +172,21 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertNotNull("'id' field should be present", idField);
     assertEquals("id field type should be string", "string", idField.getType());
 
-    // Index flags should be consistent across shards (both shards have data for "name").
-    NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
-    NamedList<Object> rawNameField = (NamedList<Object>) mergedFieldsNL.get("name");
-    assertNotNull(
-        "index flags should be present when both shards have data", rawNameField.get("index"));
+    // Validate merged field metadata matches schema and test data
+    assertLukeXPath(
+        COLLECTION,
+        params,
+        "//lst[@name='index']/long[@name='numDocs'][.='20']",
+        "count(//lst[@name='shards']/lst)=2",
+        "//lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='fields']/lst[@name='name']/str[@name='schema'][.='ITS---------------']",
+        "//lst[@name='fields']/lst[@name='name']/str[@name='index']",
+        "//lst[@name='fields']/lst[@name='name']/long[@name='docsAsLong'][.='20']",
+        "//lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='fields']/lst[@name='id']/long[@name='docsAsLong'][.='20']");
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDetailedFieldStatsPerShard() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
@@ -179,25 +205,23 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     Map<String, LukeResponse> shards = rsp.getShardResponses();
     assertNotNull("shards section should be present", shards);
 
-    boolean foundDetailedStats = false;
-    for (Map.Entry<String, LukeResponse> entry : shards.entrySet()) {
-      LukeResponse shardLuke = entry.getValue();
-      // Access the raw shard entry for per-shard fields
-      NamedList<Object> shardRaw = shardLuke.getResponse();
-      NamedList<Object> shardFields = (NamedList<Object>) shardRaw.get("fields");
-      if (shardFields != null) {
-        NamedList<Object> shardNameField = (NamedList<Object>) shardFields.get("name");
-        if (shardNameField != null) {
-          foundDetailedStats = true;
-          assertTrue(
-              "per-shard field should have topTerms, distinct, or histogram",
-              shardNameField.get("topTerms") != null
-                  || shardNameField.get("distinct") != null
-                  || shardNameField.get("histogram") != null);
-        }
-      }
-    }
-    assertTrue("at least one shard should have detailed field stats", foundDetailedStats);
+    ModifiableSolrParams detailedParams = new ModifiableSolrParams();
+    detailedParams.set(DISTRIB, "true");
+    detailedParams.set("fl", "name");
+    detailedParams.set("numTerms", "5");
+    assertLukeXPath(
+        COLLECTION,
+        detailedParams,
+        // Top-level merged field should have type and merged doc count but no detailed stats
+        "/response/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "/response/lst[@name='fields']/lst[@name='name']/long[@name='docsAsLong'][.='20']",
+        "not(/response/lst[@name='fields']/lst[@name='name']/lst[@name='topTerms'])",
+        "not(/response/lst[@name='fields']/lst[@name='name']/lst[@name='histogram'])",
+        "not(/response/lst[@name='fields']/lst[@name='name']/int[@name='distinct'])",
+        // Per-shard entries should have detailed stats; each name is unique so docFreq=1
+        "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/lst[@name='topTerms']",
+        "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/lst[@name='histogram']/int[@name='1']",
+        "//lst[@name='shards']/lst/lst[@name='fields']/lst[@name='name']/int[@name='distinct']");
   }
 
   @Test
@@ -222,11 +246,9 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   /**
    * 12 shards, 1 document: only one shard has data, the other 11 are empty. Verifies that
    * schema-derived attributes (type, schema flags, dynamicBase) merge correctly when most shards
-   * have no documents, and that index-derived attributes (index flags, docs count) degrade
-   * gracefully.
+   * have no documents.
    */
   @Test
-  @SuppressWarnings("unchecked")
   public void testSparseShards() throws Exception {
     String collection = "lukeSparse12";
     CollectionAdminRequest.createCollection(collection, "conf", 12, 1)
@@ -287,21 +309,22 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull("cat_s type", catField.getType());
       assertNotNull("cat_s dynamicBase", catField.getExtras().get("dynamicBase"));
 
-      // Verify index flags in the merged response for the static "name" field.
-      // Luke only reports fields present in the Lucene index (via reader.getFieldInfos()),
-      // so only the shard with the document contributes "name" to the merge. The merge
-      // validates consistency of index flags across shards (null is always consistent),
-      // but with 11 empty shards, only one shard contributes index flags here.
-      NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
-      assertNotNull("merged fields NamedList should be present", mergedFieldsNL);
-      NamedList<Object> rawNameField = (NamedList<Object>) mergedFieldsNL.get("name");
-      assertNotNull("raw 'name' field should be in merged fields", rawNameField);
-      // The index flags key may or may not be present depending on whether the field is indexed
-      // and stored — but if present, it should be a non-empty string
-      Object indexFlags = rawNameField.get("index");
-      if (indexFlags != null) {
-        assertFalse("index flags should be a non-empty string", indexFlags.toString().isEmpty());
-      }
+      // Verify structural correctness of the merged response via XPath
+      ModifiableSolrParams xpathParams = new ModifiableSolrParams();
+      xpathParams.set(DISTRIB, "true");
+      assertLukeXPath(
+          collection,
+          xpathParams,
+          "//lst[@name='index']/long[@name='numDocs'][.='1']",
+          "//lst[@name='index']/long[@name='deletedDocs'][.='0']",
+          "count(//lst[@name='shards']/lst)=12",
+          "//lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
+          "//lst[@name='fields']/lst[@name='name']/str[@name='schema'][.='ITS---------------']",
+          "//lst[@name='fields']/lst[@name='name']/str[@name='index']",
+          "//lst[@name='fields']/lst[@name='name']/long[@name='docsAsLong'][.='1']",
+          "//lst[@name='fields']/lst[@name='cat_s']/str[@name='type'][.='string']",
+          "//lst[@name='fields']/lst[@name='cat_s']/str[@name='dynamicBase'][.='*_s']",
+          "//lst[@name='fields']/lst[@name='cat_s']/long[@name='docsAsLong'][.='1']");
     } finally {
       CollectionAdminRequest.deleteCollection(collection)
           .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -309,35 +332,23 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testDistribShowSchema() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
     params.set("show", "schema");
 
-    LukeResponse rsp = requestLuke(COLLECTION, params);
-
-    NamedList<Object> raw = rsp.getResponse();
-    NamedList<Object> schema = (NamedList<Object>) raw.get("schema");
-    assertNotNull("schema section should be present", schema);
-
-    NamedList<Object> fields = (NamedList<Object>) schema.get("fields");
-    assertNotNull("schema fields should be present", fields);
-    assertNotNull("'id' should be in schema fields", fields.get("id"));
-    assertNotNull("'name' should be in schema fields", fields.get("name"));
-
-    assertNotNull("dynamicFields should be present", schema.get("dynamicFields"));
-    assertNotNull("uniqueKeyField should be present", schema.get("uniqueKeyField"));
-    assertEquals("uniqueKeyField should be 'id'", "id", schema.get("uniqueKeyField"));
-    assertNotNull("types should be present", schema.get("types"));
-    assertNotNull("similarity should be present", schema.get("similarity"));
-
-    // show=schema should not produce merged top-level fields (matches local mode behavior)
-    assertNull("top-level fields should not be present with show=schema", raw.get("fields"));
-
-    // Shards are present for consistency: each shard entry mirrors the per-shard index info,
-    // just as the top-level index section is present in local mode with show=schema
-    assertNotNull("shards should still be present with show=schema", raw.get("shards"));
+    assertLukeXPath(
+        COLLECTION,
+        params,
+        "//lst[@name='schema']/lst[@name='fields']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='schema']/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='schema']/lst[@name='dynamicFields']/lst[@name='*_s']",
+        "//lst[@name='schema']/str[@name='uniqueKeyField'][.='id']",
+        "//lst[@name='schema']/lst[@name='types']/lst[@name='string']",
+        "//lst[@name='schema']/lst[@name='types']/lst[@name='nametext']",
+        "//lst[@name='schema']/lst[@name='similarity']",
+        "not(/response/lst[@name='fields'])",
+        "count(//lst[@name='shards']/lst)=2");
   }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -386,7 +397,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
       // Find which shard has the target doc by querying each replica directly.
       // Must use distrib=false — SolrCloud defaults distrib to true even on direct replica queries.
-      DocCollection docColl = cluster.getSolrClient().getClusterState().getCollection(collection);
+      DocCollection docColl = getCollectionState(collection);
       String targetSliceName = null;
       for (Slice slice : docColl.getSlices()) {
         Replica leader = slice.getLeader();
@@ -412,7 +423,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
             q.set(DISTRIB, "false");
             QueryResponse qr = client.query(q);
             assertTrue("other shard should have seed docs", qr.getResults().getNumFound() > 0);
-            otherDocId = (String) qr.getResults().get(0).getFieldValue("id");
+            otherDocId = (String) qr.getResults().getFirst().getFieldValue("id");
           }
           break;
         }
@@ -463,7 +474,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
    * for the field.
    */
   @Test
-  @SuppressWarnings("unchecked")
   public void testDeferredIndexFlags() throws Exception {
     String collection = "lukeDeferredFlags";
     int numShards = 16;
@@ -511,12 +521,16 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull("'flag_target_s' field should be present", targetField);
 
       // The merged response should have index flags from whichever shard had live docs
-      NamedList<Object> mergedFieldsNL = (NamedList<Object>) rsp.getResponse().get("fields");
-      NamedList<Object> rawTargetField = (NamedList<Object>) mergedFieldsNL.get("flag_target_s");
-      assertNotNull("raw 'flag_target_s' should be in merged fields", rawTargetField);
-      assertNotNull(
-          "index flags should be present (populated from shard with live docs)",
-          rawTargetField.get("index"));
+      ModifiableSolrParams xpathParams = new ModifiableSolrParams();
+      xpathParams.set(DISTRIB, "true");
+      xpathParams.set("fl", "flag_target_s");
+      assertLukeXPath(
+          collection,
+          xpathParams,
+          "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='type'][.='string']",
+          "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='dynamicBase'][.='*_s']",
+          "//lst[@name='fields']/lst[@name='flag_target_s']/str[@name='index']",
+          "//lst[@name='fields']/lst[@name='flag_target_s']/long[@name='docsAsLong'][.='1']");
     } finally {
       CollectionAdminRequest.deleteCollection(collection)
           .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
@@ -559,27 +573,23 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
   /** Verifies distributed doc lookup returns the document when it exists. */
   @Test
-  @SuppressWarnings("unchecked")
   public void testDistributedDocLookupFound() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
     params.set("id", "0");
 
-    LukeResponse rsp = requestLuke(COLLECTION, params);
-
-    NamedList<Object> raw = rsp.getResponse();
-    assertNotNull("index section should be present", raw.get("index"));
-    assertNotNull("info section should be present", raw.get("info"));
-
-    // Verify doc structure: docId (Lucene int), lucene (per-field analysis), solr (stored fields)
-    NamedList<Object> doc = (NamedList<Object>) raw.get("doc");
-    assertNotNull("doc section should be present", doc);
-    assertNotNull("docId should be present", doc.get("docId"));
-    assertNotNull("lucene section should be present", doc.get("lucene"));
-
-    // The solr section is the stored Lucene Document; verify the fields we indexed
-    Object solrDoc = doc.get("solr");
-    assertNotNull("solr section should be present", solrDoc);
+    assertLukeXPath(
+        COLLECTION,
+        params,
+        "//lst[@name='doc']/int[@name='docId']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='type'][.='string']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='id']/str[@name='value'][.='0']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='type'][.='nametext']",
+        "//lst[@name='doc']/lst[@name='lucene']/lst[@name='name']/str[@name='value'][.='name_0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='0']",
+        "//lst[@name='doc']/arr[@name='solr']/str[.='name_0']",
+        "//lst[@name='index']",
+        "//lst[@name='info']");
   }
 
   /** Verifies distributed doc lookup returns an empty response for a non-existent ID. */
@@ -593,6 +603,8 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
     NamedList<Object> raw = rsp.getResponse();
     assertNull("doc section should NOT be present for missing ID", raw.get("doc"));
+
+    assertLukeXPath(COLLECTION, params, "not(//lst[@name='doc'])");
   }
 
   /**
@@ -612,7 +624,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
       // Write the same document directly to two shard cores via UpdateHandler,
       // completely bypassing the distributed update processor chain.
-      DocCollection docColl = cluster.getSolrClient().getClusterState().getCollection(collection);
+      DocCollection docColl = getCollectionState(collection);
       List<Slice> slices = new ArrayList<>(docColl.getActiveSlices());
       assertTrue("need at least 2 shards", slices.size() >= 2);
 
