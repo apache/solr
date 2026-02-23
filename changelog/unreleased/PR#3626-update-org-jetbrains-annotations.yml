@@ -1,0 +1,7 @@
+title: Update org.jetbrains:annotations to v26.0.2-1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3626
+  url: https://github.com/apache/solr/pull/3626
