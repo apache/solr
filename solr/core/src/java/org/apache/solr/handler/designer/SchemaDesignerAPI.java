@@ -23,6 +23,7 @@ import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_EDIT_P
 import static org.apache.solr.security.PermissionNameProvider.Name.CONFIG_READ_PERM;
 
 import jakarta.inject.Inject;
+import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.StreamingOutput;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -403,7 +404,7 @@ public class SchemaDesignerAPI extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public StreamingOutput downloadConfig(String configSet) throws Exception {
+  public Response downloadConfig(String configSet) throws Exception {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     String mutableId = getMutableId(configSet);
 
@@ -424,7 +425,13 @@ public class SchemaDesignerAPI extends JerseyResource
     }
 
     final byte[] zipBytes = configSetHelper.downloadAndZipConfigSet(configId);
-    return outputStream -> outputStream.write(zipBytes);
+    // Sanitize configSet to safe filename characters to prevent header injection
+    final String safeConfigSet = configSet.replaceAll("[^a-zA-Z0-9_\\-.]", "_");
+    final String fileName = safeConfigSet + "_configset.zip";
+    return Response.ok((StreamingOutput) outputStream -> outputStream.write(zipBytes))
+        .type("application/zip")
+        .header("Content-Disposition", "attachment; filename=\"" + fileName + "\"")
+        .build();
   }
 
   @Override

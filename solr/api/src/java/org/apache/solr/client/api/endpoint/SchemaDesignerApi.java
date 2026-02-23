@@ -28,7 +28,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
-import jakarta.ws.rs.core.StreamingOutput;
+import jakarta.ws.rs.core.Response;
 import java.util.List;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
@@ -112,7 +112,7 @@ public interface SchemaDesignerApi {
         @Extension(properties = {@ExtensionProperty(name = RAW_OUTPUT_PROPERTY, value = "true")})
       })
   @Produces("application/zip")
-  StreamingOutput downloadConfig(@QueryParam("configSet") String configSet) throws Exception;
+  Response downloadConfig(@QueryParam("configSet") String configSet) throws Exception;
 
   @POST
   @Path("/add")

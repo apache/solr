@@ -497,7 +497,12 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // Download ZIP
     when(mockReq.getContentStreams()).thenReturn(null);
-    assertNotNull(schemaDesignerAPI.downloadConfig(configSet));
+    jakarta.ws.rs.core.Response downloadResponse = schemaDesignerAPI.downloadConfig(configSet);
+    assertNotNull(downloadResponse);
+    assertEquals(200, downloadResponse.getStatus());
+    assertTrue(
+        String.valueOf(downloadResponse.getHeaderString("Content-Disposition"))
+            .contains("_configset.zip"));
 
     // publish schema to a config set that can be used by real collections
     String collection = "test123";
