@@ -297,6 +297,7 @@ public class IntRangeField extends PrimitiveFieldType {
    *     formats use "contains" query semantics to find indexed ranges that contain the query range.
    * @return Query for this field using contains semantics
    */
+  @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     if (externalVal == null || externalVal.trim().isEmpty()) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Query value cannot be null or empty");
