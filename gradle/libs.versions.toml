@@ -146,7 +146,7 @@ jna = "5.18.1"
 joda-time = "2.14.0"
 junit = "4.13.2"
 junit-jupiter = "5.13.4"
-kotlin = "2.2.0"
+kotlin = "2.3.10"
 # @keep for version alignment
 kotlinx-atomicfu = "0.29.0"
 # @keep for version alignment
