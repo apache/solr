@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -33,6 +34,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.IntStream;
 import org.apache.commons.io.IOUtils;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.Producer;
@@ -68,6 +70,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,8 +124,10 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
         };
     kafkaCluster.start();
 
-    kafkaCluster.createTopic(TOPIC, 1, 1);
+    kafkaCluster.createTopic(TOPIC, 10, 1);
 
+    // ensure small batches to test multi-partition ordering
+    System.setProperty("batchSizeBytes", "128");
     System.setProperty("solr.crossdc.topicName", TOPIC);
     System.setProperty("solr.crossdc.bootstrapServers", kafkaCluster.bootstrapServers());
     System.setProperty(INDEX_UNMIRRORABLE_DOCS, "false");
@@ -182,6 +187,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     Thread.setDefaultUncaughtExceptionHandler(uceh);
   }
 
+  @Test
   public void testFullCloudToCloud() throws Exception {
     CloudSolrClient client = solrCluster1.getSolrClient(COLLECTION);
     SolrInputDocument doc = new SolrInputDocument();
@@ -197,6 +203,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 1);
   }
 
+  @Test
   public void testProducerToCloud() throws Exception {
     Properties properties = new Properties();
     properties.put("bootstrap.servers", kafkaCluster.bootstrapServers());
@@ -225,6 +232,39 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 2);
 
     producer.close();
+  }
+
+  private static final String LOREM_IPSUM =
+      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+  @Test
+  public void testStrictOrdering() throws Exception {
+    CloudSolrClient client = solrCluster1.getSolrClient();
+    int NUM_DOCS = 5000;
+    // delay deletes by this many docs
+    int DELTA = 100;
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument();
+      doc.addField("id", "id-" + i);
+      doc.addField("text", "some test with a relatively long field. " + LOREM_IPSUM);
+
+      client.add(COLLECTION, doc);
+      if (i >= DELTA) {
+        client.deleteById(COLLECTION, "id-" + (i - DELTA));
+      }
+    }
+
+    // send the remaining deletes in random order
+    ArrayList<Integer> ids = new ArrayList<>(DELTA);
+    IntStream.range(0, DELTA).forEach(i -> ids.add(i));
+    Collections.shuffle(ids, random());
+    for (Integer id : ids) {
+      client.deleteById(COLLECTION, "id-" + (NUM_DOCS - DELTA + id));
+    }
+
+    client.commit(COLLECTION);
+
+    assertCluster2EventuallyHasDocs(COLLECTION, "*:*", 0);
   }
 
   @Test
@@ -341,7 +381,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
 
   @Test
   @SuppressWarnings({"unchecked"})
-  public void testMetrics() throws Exception {
+  public void testMetricsAndHealthcheck() throws Exception {
     CloudSolrClient client = solrCluster1.getSolrClient();
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField("id", String.valueOf(new Date().getTime()));
@@ -359,6 +399,7 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
     HttpJettySolrClient httpJettySolrClient =
         new HttpJettySolrClient.Builder(baseUrl).useHttp1_1(true).build();
     try {
+      // test the metrics endpoint
       GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/metrics");
       req.setResponseParser(new InputStreamResponseParser(null));
       NamedList<Object> rsp = httpJettySolrClient.request(req);
@@ -366,6 +407,34 @@ public class SolrAndKafkaIntegrationTest extends SolrCloudTestCase {
           IOUtils.toString(
               (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
       assertTrue(content, content.contains("crossdc_consumer_output_total"));
+
+      // test the healtcheck endpoint
+      req = new GenericSolrRequest(SolrRequest.METHOD.GET, "/health");
+      req.setResponseParser(new InputStreamResponseParser(null));
+      rsp = httpJettySolrClient.request(req);
+      content =
+          IOUtils.toString(
+              (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
+      assertEquals(Integer.valueOf(200), rsp.get("responseStatus"));
+      Map<String, Object> map = (Map<String, Object>) ObjectBuilder.fromJSON(content);
+      assertEquals(Boolean.TRUE, map.get("kafka"));
+      assertEquals(Boolean.TRUE, map.get("solr"));
+      assertEquals(Boolean.TRUE, map.get("running"));
+
+      // kill Solr to trigger unhealthy state
+      solrCluster2.shutdown();
+      solrCluster2 = null;
+      Thread.sleep(5000);
+      rsp = httpJettySolrClient.request(req);
+      content =
+          IOUtils.toString(
+              (InputStream) rsp.get(InputStreamResponseParser.STREAM_KEY), StandardCharsets.UTF_8);
+      assertEquals(Integer.valueOf(503), rsp.get("responseStatus"));
+      map = (Map<String, Object>) ObjectBuilder.fromJSON(content);
+      assertEquals(Boolean.TRUE, map.get("kafka"));
+      assertEquals(Boolean.FALSE, map.get("solr"));
+      assertEquals(Boolean.TRUE, map.get("running"));
+
     } finally {
       httpJettySolrClient.close();
       client.close();
