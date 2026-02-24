@@ -31,10 +31,9 @@ This feature works in both Standalone and SolrCloud modes and always performs di
 In Standalone (user-managed) mode, shard URLs must be explicitly allow-listed using the *allowUrls* parameter, otherwise Solr returns HTTP 403. For example:
 
 ```
---jvm-opts "-Dsolr.security.allow.urls=http://localhost:8983/solr/"
+"-Dsolr.security.allow.urls=http://localhost:8983/solr/"
 ```
 
-In SolrCloud mode, this is managed automatically via ZooKeeper.
 ====
 
 == Configuration Requirements
@@ -58,7 +57,7 @@ In addition, the `QueryComponent` has been extended to create a new `CombinedQue
 The Search Component also accepts parameters as below:
 
 `maxCombinerQueries`::
-This parameter can be set to put upper limit check on the maximum number of queries can be executed defined in `combiner.query`.
+This parameter can be set to enforce an upper limit on the number of queries defined in `combiner.query`.
 It defaults to `5` if not set.
 
 
@@ -112,9 +111,7 @@ Below is a sample JSON query payload:
 
 As mentioned xref:json-combined-query-dsl.adoc#query-dsl-structure[above], custom algorithms can be configured to combine the results across multiple queries using a https://solr.apache.org/guide/solr/latest/configuration-guide/solr-plugins.html[Solr plugin].
 
-The class to implement the custom logic has to extend `QueryAndResponseCombiner`, which is an abstract base class that provides a framework for implementing various algorithms used to merge ranked lists and shard documents.
-
-The custom class must be implemented in a Java project built against the Solr version that includes this feature (declared as a dependency in the build configuration), and the compiled JAR must then be deployed to the Solr libraries directory `../server/solr-webapp/webapp/WEB-INF/lib`.
+The class to implement the custom logic has to extend `org.apache.solr.handler.component.combine.QueryAndResponseCombiner`, which is an abstract base class that provides a framework for implementing various algorithms used to merge ranked lists and shard documents.
 
 The Combined Query Component definition takes the `combiners` parameter, where the custom class can be declared by specifying a name and the custom parameters required by the custom algorithm.
 
@@ -146,3 +143,9 @@ Then, when executing the combined query, the only thing that changes in the JSON
 
 In this case, `customAlgorithm` is specified which is the name defined in the configuration; the RRF-specific parameters do not need to be provided.
 
+== Additional Resources
+
+Blog posts:
+
+* https://sease.io/2026/03/hybrid-search-with-reciprocal-rank-fusion-in-apache-solr.html[Hybrid Search with Reciprocal Rank Fusion in Apache Solr]
+* https://sease.io/2026/03/hybrid-search-using-a-custom-algorithm-in-apache-solr.html[Hybrid Search using a Custom Algorithm in Apache Solr]
