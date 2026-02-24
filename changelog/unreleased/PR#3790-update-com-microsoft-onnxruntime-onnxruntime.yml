@@ -1,4 +1,4 @@
-title: Update com.microsoft.onnxruntime:onnxruntime to v1.24.1
+title: Update com.microsoft.onnxruntime:onnxruntime to v1.24.2
 type: dependency_update
 authors:
 - name: solrbot
