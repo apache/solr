@@ -49,16 +49,10 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: This test would be a lot faster if it used a solrhome with fewer config
-// files - there are a lot of them to upload
 public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkTestServer zkServer;
-
-  protected Path zkDir;
-
-  private String solrHome;
 
   private SolrZkClient zkClient;
 
@@ -78,14 +72,12 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
       log.info("####SETUP_START {}", getTestName());
     }
 
-    Path exampleHome = legacyExampleCollection1SolrHome();
-
-    Path tmpDir = createTempDir();
-    solrHome = exampleHome.toString();
+    String solrHome = createTempDir().toString();
+    System.setProperty("solr.home", solrHome);
 
     originalSystemOut = System.out;
 
-    zkDir = tmpDir.resolve("zookeeper/server1/data");
+    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -138,7 +130,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testPutCompressed() throws Exception {
     // test put compressed
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String data = "my data";
@@ -240,7 +231,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testPutFileCompressed() throws Exception {
     // test put file compressed
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String[] args =
@@ -459,7 +449,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetCompressed() throws Exception {
-    System.setProperty("solr.home", solrHome);
     System.setProperty("minStateByteLenForCompression", "0");
 
     String getNode = "/getNode";

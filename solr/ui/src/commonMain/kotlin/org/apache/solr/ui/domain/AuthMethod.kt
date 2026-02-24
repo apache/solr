@@ -37,5 +37,8 @@ sealed interface AuthMethod {
     @Serializable
     data class BasicAuthMethod(val realm: String? = null) : AuthMethod
 
+    @Serializable
+    data class OAuthMethod(val data: OAuthData, val realm: String? = null) : AuthMethod
+
     data object Unknown : AuthMethod
 }

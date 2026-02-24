@@ -54,7 +54,7 @@ class AuthenticationStoreProvider(
     fun provide(): AuthenticationStore = object :
         AuthenticationStore,
         Store<Intent, State, Label> by storeFactory.create(
-            name = "BasicAuthStore",
+            name = "AuthStore",
             initialState = State(url = url, methods = methods),
             bootstrapper = SimpleBootstrapper(),
             executorFactory = ::ExecutorImpl,
@@ -93,7 +93,7 @@ class AuthenticationStoreProvider(
         override fun State.reduce(msg: Message): State = when (msg) {
             is Message.AuthenticationStarted -> copy(isAuthenticating = true)
             is Message.AuthenticationFailed -> copy(error = msg.error, isAuthenticating = false)
-            Message.ErrorReset -> copy(error = null)
+            is Message.ErrorReset -> copy(error = null)
         }
     }
 }
