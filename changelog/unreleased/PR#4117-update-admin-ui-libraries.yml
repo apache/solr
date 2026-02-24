@@ -1,0 +1,7 @@
+title: Update Admin UI libraries
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4117
+  url: https://github.com/apache/solr/pull/4117
