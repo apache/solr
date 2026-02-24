@@ -41,6 +41,21 @@ allprojects {
     ignoredDependencies.add("org.jetbrains.skiko:skiko-awt-runtime-*")
   }
 
+  // Configure consistent dependency resolution across configurations
+  plugins.withType(JavaPlugin) {
+    project.java {
+      consistentResolution {
+        useCompileClasspathVersions()
+      }
+    }
+  }
+
+  // Helper to align a configuration to use the same dependency versions as runtimeClasspath.
+  // This ensures that packaging/distribution and validation use the same versions that were tested.
+  ext.alignWithRuntimeClasspath = { Configuration conf ->
+    conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
+  }
+
   dependencies {
     modules {
       module("org.hamcrest:hamcrest-core") {

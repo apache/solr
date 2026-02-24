@@ -158,7 +158,7 @@
       ]
     }
   },
-  "queryResponseWriter": {
+  "queryResponseWriter": {  
     "geojson": {
       "class": "solr.GeoJSONResponseWriter"
     },
