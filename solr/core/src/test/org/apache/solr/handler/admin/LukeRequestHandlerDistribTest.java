@@ -120,15 +120,15 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testDistributedMerge() throws Exception {
+  public void testDistributedAggregate() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
 
     LukeResponse rsp = requestLuke(COLLECTION, params);
 
     assertEquals(
-        "merged numDocs should equal total docs", NUM_DOCS, rsp.getNumDocsAsLong().longValue());
-    assertTrue("merged maxDoc should be > 0", rsp.getMaxDoc() > 0);
+        "aggregated numDocs should equal total docs", NUM_DOCS, rsp.getNumDocsAsLong().longValue());
+    assertTrue("aggregated maxDoc should be > 0", rsp.getMaxDoc() > 0);
     assertNotNull("deletedDocs should be present", rsp.getDeletedDocsAsLong());
 
     Map<String, LukeResponse> shards = rsp.getShardResponses();
@@ -144,13 +144,13 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       sumShardDocs += shardLuke.getNumDocsAsLong();
     }
     assertEquals(
-        "sum of per-shard numDocs should equal merged numDocs",
+        "sum of per-shard numDocs should equal aggregated numDocs",
         rsp.getNumDocsAsLong().longValue(),
         sumShardDocs);
   }
 
   @Test
-  public void testDistributedFieldsMerge() throws Exception {
+  public void testDistributedFieldsAggregate() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(DISTRIB, "true");
 
@@ -164,7 +164,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertNotNull("field type should be present", nameField.getType());
     assertNotNull("schema flags should be present", nameField.getSchema());
     assertEquals(
-        "merged docs count for 'name' should equal total docs",
+        "aggregated docs count for 'name' should equal total docs",
         NUM_DOCS,
         nameField.getDocsAsLong().longValue());
 
@@ -172,7 +172,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertNotNull("'id' field should be present", idField);
     assertEquals("id field type should be string", "string", idField.getType());
 
-    // Validate merged field metadata matches schema and test data
+    // Validate aggregated field metadata matches schema and test data
     assertLukeXPath(
         COLLECTION,
         params,
@@ -212,7 +212,8 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
     assertLukeXPath(
         COLLECTION,
         detailedParams,
-        // Top-level merged field should have type and merged doc count but no detailed stats
+        // Top-level aggregated field should have type and aggregated doc count but no detailed
+        // stats
         "/response/lst[@name='fields']/lst[@name='name']/str[@name='type'][.='nametext']",
         "/response/lst[@name='fields']/lst[@name='name']/long[@name='docsAsLong'][.='20']",
         "not(/response/lst[@name='fields']/lst[@name='name']/lst[@name='topTerms'])",
@@ -245,8 +246,8 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
   /**
    * 12 shards, 1 document: only one shard has data, the other 11 are empty. Verifies that
-   * schema-derived attributes (type, schema flags, dynamicBase) merge correctly when most shards
-   * have no documents.
+   * schema-derived attributes (type, schema flags, dynamicBase) aggregate correctly when most
+   * shards have no documents.
    */
   @Test
   public void testSparseShards() throws Exception {
@@ -309,7 +310,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       assertNotNull("cat_s type", catField.getType());
       assertNotNull("cat_s dynamicBase", catField.getExtras().get("dynamicBase"));
 
-      // Verify structural correctness of the merged response via XPath
+      // Verify structural correctness of the aggregated response via XPath
       ModifiableSolrParams xpathParams = new ModifiableSolrParams();
       xpathParams.set(DISTRIB, "true");
       assertLukeXPath(
@@ -464,14 +465,14 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   /**
    * Exercises the deferred index flags path: when the first shard to report a field has null index
    * flags (all its live docs for that field were deleted, but the field persists in FieldInfos from
-   * unmerged segments), the merge should still populate index flags from a later shard that has
-   * live docs.
+   * unmerged segments), the aggregation should still populate index flags from a later shard that
+   * has live docs.
    *
    * <p>Setup: 16-shard collection. Each shard gets one doc with field "flag_target_s" (which is
    * then deleted) plus an anchor doc without it (to keep the shard non-empty). Only one shard
    * retains a live doc with "flag_target_s". With 16 shards, the probability that the one live
-   * shard is processed first is low enough. Either way, the merged response should have index flags
-   * for the field.
+   * shard is processed first is low enough. Either way, the aggregated response should have index
+   * flags for the field.
    */
   @Test
   public void testDeferredIndexFlags() throws Exception {
@@ -507,7 +508,8 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       }
       cluster.getSolrClient().commit(collection);
 
-      // Verify: distributed Luke should have index flags for flag_target_s in the merged response,
+      // Verify: distributed Luke should have index flags for flag_target_s in the aggregated
+      // response,
       // whether they came from the first shard (constructor path) or a later shard (deferred path).
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(DISTRIB, "true");
@@ -520,7 +522,7 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
       LukeResponse.FieldInfo targetField = fields.get("flag_target_s");
       assertNotNull("'flag_target_s' field should be present", targetField);
 
-      // The merged response should have index flags from whichever shard had live docs
+      // The aggregated response should have index flags from whichever shard had live docs
       ModifiableSolrParams xpathParams = new ModifiableSolrParams();
       xpathParams.set(DISTRIB, "true");
       xpathParams.set("fl", "flag_target_s");

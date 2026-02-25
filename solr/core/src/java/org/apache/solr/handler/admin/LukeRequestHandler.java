@@ -242,15 +242,15 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     rsp.setHttpCaching(false);
   }
 
-  /** Per-field accumulation state across shards: merged response data and field validation. */
-  private static class MergedFieldData {
-    final SimpleOrderedMap<Object> merged = new SimpleOrderedMap<>();
+  /** Per-field accumulation state across shards: aggregated response data and field validation. */
+  private static class AggregatedFieldData {
+    final SimpleOrderedMap<Object> aggregated = new SimpleOrderedMap<>();
     final String originalShardAddr;
     final LukeResponse.FieldInfo originalFieldInfo;
     private Object indexFlags;
     private String indexFlagsShardAddr;
 
-    MergedFieldData(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
+    AggregatedFieldData(String shardAddr, LukeResponse.FieldInfo fieldInfo) {
       this.originalShardAddr = shardAddr;
       this.originalFieldInfo = fieldInfo;
       Object flags = fieldInfo.getExtras().get(KEY_INDEX_FLAGS);
@@ -349,7 +349,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    mergeDistributedResponses(rsp, responses);
+    aggregateDistributedResponses(rsp, responses);
     rsp.setHttpCaching(false);
     return true;
   }
@@ -358,7 +358,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     return srsp.getShardAddress() != null ? srsp.getShardAddress() : srsp.getShard();
   }
 
-  private void mergeDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
+  private void aggregateDistributedResponses(SolrQueryResponse rsp, List<ShardResponse> responses) {
 
     if (!responses.isEmpty()) {
       ShardResponse firstRsp = responses.getFirst();
@@ -382,7 +382,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     int totalMaxDoc = 0;
     long totalDeletedDocs = 0;
     int totalSegmentCount = 0;
-    Map<String, MergedFieldData> mergedFields = new HashMap<>();
+    Map<String, AggregatedFieldData> aggregatedFields = new HashMap<>();
     String firstDocShard = null;
     Object firstDoc = null;
     List<ShardData> shardDataList = new ArrayList<>();
@@ -408,7 +408,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         shardData.setIndexInfo(shardIndex);
       }
 
-      processShardFields(shardData, mergedFields);
+      processShardFields(shardData, aggregatedFields);
       Object doc = shardRsp.get(RSP_DOC);
       if (doc != null) {
         if (firstDoc != null) {
@@ -436,28 +436,29 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       }
     }
 
-    SimpleOrderedMap<Object> mergedIndex = new SimpleOrderedMap<>();
-    mergedIndex.add(KEY_NUM_DOCS, totalNumDocs);
-    mergedIndex.add(KEY_MAX_DOC, totalMaxDoc);
-    mergedIndex.add(KEY_DELETED_DOCS, totalDeletedDocs);
-    mergedIndex.add(KEY_SEGMENT_COUNT, totalSegmentCount);
-    rsp.add(RSP_INDEX, mergedIndex);
+    SimpleOrderedMap<Object> aggregatedIndex = new SimpleOrderedMap<>();
+    aggregatedIndex.add(KEY_NUM_DOCS, totalNumDocs);
+    aggregatedIndex.add(KEY_MAX_DOC, totalMaxDoc);
+    aggregatedIndex.add(KEY_DELETED_DOCS, totalDeletedDocs);
+    aggregatedIndex.add(KEY_SEGMENT_COUNT, totalSegmentCount);
+    rsp.add(RSP_INDEX, aggregatedIndex);
 
     if (firstDoc != null) {
       rsp.add(RSP_DOC, firstDoc);
     }
-    if (!mergedFields.isEmpty()) {
-      SimpleOrderedMap<Object> mergedFieldsNL = new SimpleOrderedMap<>();
-      for (Map.Entry<String, MergedFieldData> entry : mergedFields.entrySet()) {
-        mergedFieldsNL.add(entry.getKey(), entry.getValue().merged);
+    if (!aggregatedFields.isEmpty()) {
+      SimpleOrderedMap<Object> aggregatedFieldsNL = new SimpleOrderedMap<>();
+      for (Map.Entry<String, AggregatedFieldData> entry : aggregatedFields.entrySet()) {
+        aggregatedFieldsNL.add(entry.getKey(), entry.getValue().aggregated);
       }
-      rsp.add(RSP_FIELDS, mergedFieldsNL);
+      rsp.add(RSP_FIELDS, aggregatedFieldsNL);
     }
 
     rsp.add(RSP_SHARDS, shardsInfo);
   }
 
-  private void processShardFields(ShardData shardData, Map<String, MergedFieldData> mergedFields) {
+  private void processShardFields(
+      ShardData shardData, Map<String, AggregatedFieldData> aggregatedFields) {
     if (shardData.shardFieldInfo == null) {
       return;
     }
@@ -465,9 +466,9 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
       String fieldName = entry.getKey();
       LukeResponse.FieldInfo fi = entry.getValue();
 
-      mergeShardField(shardData.shardAddr, fi, mergedFields);
+      aggregateShardField(shardData.shardAddr, fi, aggregatedFields);
 
-      // Detailed stats — kept per-shard, not merged
+      // Detailed stats — kept per-shard, not aggregated
       NamedList<Integer> topTerms = fi.getTopTerms();
       if (topTerms != null) {
         SimpleOrderedMap<Object> detailedFieldInfo = new SimpleOrderedMap<>();
@@ -479,25 +480,27 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
     }
   }
 
-  private void mergeShardField(
-      String shardAddr, LukeResponse.FieldInfo fi, Map<String, MergedFieldData> mergedFields) {
+  private void aggregateShardField(
+      String shardAddr,
+      LukeResponse.FieldInfo fi,
+      Map<String, AggregatedFieldData> aggregatedFields) {
 
     String fieldName = fi.getName();
 
-    MergedFieldData fieldData = mergedFields.get(fieldName);
+    AggregatedFieldData fieldData = aggregatedFields.get(fieldName);
     if (fieldData == null) {
-      fieldData = new MergedFieldData(shardAddr, fi);
-      mergedFields.put(fieldName, fieldData);
+      fieldData = new AggregatedFieldData(shardAddr, fi);
+      aggregatedFields.put(fieldName, fieldData);
 
-      // First shard to report this field: populate merged with schema-derived attrs
-      fieldData.merged.add(KEY_TYPE, fi.getType());
-      fieldData.merged.add(KEY_SCHEMA_FLAGS, fi.getSchema());
+      // First shard to report this field: populate aggregated with schema-derived attrs
+      fieldData.aggregated.add(KEY_TYPE, fi.getType());
+      fieldData.aggregated.add(KEY_SCHEMA_FLAGS, fi.getSchema());
       Object dynBase = fi.getExtras().get(KEY_DYNAMIC_BASE);
       if (dynBase != null) {
-        fieldData.merged.add(KEY_DYNAMIC_BASE, dynBase);
+        fieldData.aggregated.add(KEY_DYNAMIC_BASE, dynBase);
       }
       if (fieldData.indexFlags != null) {
-        fieldData.merged.add(KEY_INDEX_FLAGS, fieldData.indexFlags);
+        fieldData.aggregated.add(KEY_INDEX_FLAGS, fieldData.indexFlags);
       }
     } else {
       // Subsequent shards: validate consistency
@@ -528,7 +531,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
         if (fieldData.indexFlags == null) {
           fieldData.indexFlags = indexFlags;
           fieldData.indexFlagsShardAddr = shardAddr;
-          fieldData.merged.add(KEY_INDEX_FLAGS, indexFlags);
+          fieldData.aggregated.add(KEY_INDEX_FLAGS, indexFlags);
         } else {
           validateFieldAttr(
               fieldName,
@@ -543,7 +546,7 @@ public class LukeRequestHandler extends RequestHandlerBase implements SolrCoreAw
 
     Long docsAsLong = fi.getDocsAsLong();
     if (docsAsLong != null) {
-      fieldData.merged.compute(
+      fieldData.aggregated.compute(
           KEY_DOCS_AS_LONG, (key, val) -> val == null ? docsAsLong : (Long) val + docsAsLong);
     }
   }
