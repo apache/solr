@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.ConstantScoreWeight;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -38,9 +40,13 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.ExtendedQueryBase;
 import org.apache.solr.search.QParser;
+
+
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
+
+import static org.apache.solr.search.QueryUtils.makeQueryable;
 
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
@@ -68,10 +74,22 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   @Override
-  protected Query wrapSubordinateClause(Query subordinate) throws SyntaxError {
+  protected Query wrapSubordinateClause(Query childrenQuery) throws SyntaxError {
     String scoreMode = localParams.get("score", ScoreMode.None.name());
     Query parentQ = parseParentFilter();
-    return createQuery(parentQ, subordinate, scoreMode);
+
+    if (childrenQuery instanceof BooleanQuery bq) {
+
+      if (bq.clauses().size() == 1) {
+        BooleanClause bqToFix = bq.clauses().get(0);
+        Query fixChildQuery = makeQueryable(bqToFix.query());
+        BooleanQuery.Builder filterFixedChildrenQuery = new BooleanQuery.Builder();
+        filterFixedChildrenQuery.add(fixChildQuery, BooleanClause.Occur.FILTER);
+        return createQuery(parentQ, filterFixedChildrenQuery.build(), scoreMode);
+      }
+    }
+
+    return createQuery(parentQ, childrenQuery, scoreMode);
   }
 
   @Override
