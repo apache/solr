@@ -41,6 +41,7 @@ import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
 import org.apache.solr.util.RevertDefaultThreadHandlerRule;
 import org.apache.solr.util.StartupLoggingUtils;
+import org.apache.solr.util.ThreadDumpOnFailureRule;
 import org.hamcrest.Matcher;
 import org.hamcrest.MatcherAssert;
 import org.junit.AfterClass;
@@ -107,7 +108,8 @@ public class SolrTestCase extends LuceneTestCase {
                     ObjectReleaseTracker.tryClose();
                   }
                 }
-              });
+              })
+          .around(new ThreadDumpOnFailureRule());
 
   /**
    * Sets the <code>solr.configset.default.confdir</code> system property to the value of {@link
