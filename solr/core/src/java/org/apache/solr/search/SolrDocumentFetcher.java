@@ -661,10 +661,7 @@ public class SolrDocumentFetcher {
             // return immediately if the number is not decodable, hence won't return an empty list.
             if (value == null) {
               return null;
-            }
-            // normally never true but LatLonPointSpatialField uses SORTED_NUMERIC even when single
-            // valued
-            else if (e.schemaField.multiValued() == false) {
+            } else if (e.schemaField.multiValued() == false) {
               return value;
             } else {
               outValues.add(value);

@@ -24,7 +24,6 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.search.ScoreMode;
@@ -344,7 +343,7 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
     if (calc instanceof TermOrdCalc) { // Strings
 
       // TODO support SortedSetDocValues
-      SortedDocValues globalDocValues = FieldUtil.getSortedDocValues(fcontext.qcontext, sf, null);
+      SortedDocValues globalDocValues = FieldUtil.getSortedDocValues(fcontext.qcontext, sf);
       ((TermOrdCalc) calc).lookupOrdFunction =
           ord -> {
             try {
@@ -385,68 +384,40 @@ class FacetFieldProcessorByHashDV extends FacetFieldProcessor {
           });
 
     } else { // Numeric:
+      DocSetUtil.collectSortedDocSet(
+          fcontext.base,
+          fcontext.searcher.getIndexReader(),
+          new SimpleCollector() {
+            SortedNumericDocValues values = null; // NN
 
-      if (sf.multiValued()) {
-        DocSetUtil.collectSortedDocSet(
-            fcontext.base,
-            fcontext.searcher.getIndexReader(),
-            new SimpleCollector() {
-              SortedNumericDocValues values = null; // NN
+            @Override
+            public ScoreMode scoreMode() {
+              return ScoreMode.COMPLETE_NO_SCORES;
+            }
 
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
+            @Override
+            protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
+              setNextReaderFirstPhase(ctx);
+              values = DocValues.getSortedNumeric(ctx.reader(), sf.getName());
+            }
 
-              @Override
-              protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
-                setNextReaderFirstPhase(ctx);
-                values = DocValues.getSortedNumeric(ctx.reader(), sf.getName());
-              }
-
-              @Override
-              public void collect(int segDoc) throws IOException {
-                if (values.advanceExact(segDoc)) {
-                  long l = values.nextValue(); // This document must have at least one value
-                  collectValFirstPhase(segDoc, l);
-                  for (int i = 1, count = values.docValueCount(); i < count; i++) {
-                    long lnew = values.nextValue();
-                    // Skip the value if it's equal to the last one, we don't want to double-count
-                    // it
-                    if (lnew != l) {
-                      collectValFirstPhase(segDoc, lnew);
-                    }
-                    l = lnew;
+            @Override
+            public void collect(int segDoc) throws IOException {
+              if (values.advanceExact(segDoc)) {
+                long l = values.nextValue(); // This document must have at least one value
+                collectValFirstPhase(segDoc, l);
+                for (int i = 1, count = values.docValueCount(); i < count; i++) {
+                  long lnew = values.nextValue();
+                  // Skip the value if it's equal to the last one, we don't want to double-count
+                  // it
+                  if (lnew != l) {
+                    collectValFirstPhase(segDoc, lnew);
                   }
+                  l = lnew;
                 }
               }
-            });
-      } else {
-        DocSetUtil.collectSortedDocSet(
-            fcontext.base,
-            fcontext.searcher.getIndexReader(),
-            new SimpleCollector() {
-              NumericDocValues values = null; // NN
-
-              @Override
-              public ScoreMode scoreMode() {
-                return ScoreMode.COMPLETE_NO_SCORES;
-              }
-
-              @Override
-              protected void doSetNextReader(LeafReaderContext ctx) throws IOException {
-                setNextReaderFirstPhase(ctx);
-                values = DocValues.getNumeric(ctx.reader(), sf.getName());
-              }
-
-              @Override
-              public void collect(int segDoc) throws IOException {
-                if (values.advanceExact(segDoc)) {
-                  collectValFirstPhase(segDoc, values.longValue());
-                }
-              }
-            });
-      }
+            }
+          });
     }
   }
 

@@ -53,6 +53,8 @@ public abstract class FieldProperties {
   protected static final int LARGE_FIELD = 0b1000000000000000000;
   protected static final int UNINVERTIBLE = 0b10000000000000000000;
 
+  protected static final int ENHANCED_INDEX = 0b100000000000000000000;
+
   static final String[] propertyNames = {
     "indexed",
     "tokenized",
@@ -73,7 +75,8 @@ public abstract class FieldProperties {
     "termPayloads",
     "useDocValuesAsStored",
     "large",
-    "uninvertible"
+    "uninvertible",
+    "enhancedIndex"
   };
 
   static final Map<String, Integer> propertyMap = new HashMap<>();

@@ -23,6 +23,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.util.SolrResponseUtil;
 
@@ -45,9 +46,15 @@ public class StatsComponent extends SearchComponent {
         if (statsField.getSchemaField() != null
             && statsField.getSchemaField().getType().isPointField()
             && !statsField.getSchemaField().hasDocValues()) {
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Can't calculate stats on a PointField without docValues");
+          if (statsField.getSchemaField().getType() instanceof PointField) {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Can't calculate stats on a PointField without docValues");
+          } else {
+            throw new SolrException(
+                SolrException.ErrorCode.BAD_REQUEST,
+                "Can't calculate stats on a NumericField without docValues");
+          }
         }
       }
     }

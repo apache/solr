@@ -38,6 +38,7 @@ import org.apache.solr.schema.EnumFieldType;
 import org.apache.solr.schema.EnumFieldType.EnumMapping;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.NumericField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
@@ -740,7 +741,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @SuppressWarnings("rawtypes")
     @Override
     public Comparable bitsToValue(long bits) {
-      if (field.getType().isPointField() && field.multiValued()) {
+      if ((field.getType().isPointField() && field.multiValued())
+          || field.getType() instanceof NumericField) {
         return NumericUtils.sortableIntToFloat((int) bits);
       } else {
         return Float.intBitsToFloat((int) bits);
@@ -771,7 +773,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     @Override
     @SuppressWarnings({"rawtypes"})
     public Comparable bitsToValue(long bits) {
-      if (field.getType().isPointField() && field.multiValued()) {
+      if ((field.getType().isPointField() && field.multiValued())
+          || field.getType() instanceof NumericField) {
         return NumericUtils.sortableLongToDouble(bits);
       } else {
         return Double.longBitsToDouble(bits);
