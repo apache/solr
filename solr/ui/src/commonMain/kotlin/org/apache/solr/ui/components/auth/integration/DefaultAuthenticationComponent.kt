@@ -22,7 +22,6 @@ import com.arkivanov.decompose.router.slot.SlotNavigation
 import com.arkivanov.decompose.router.slot.activate
 import com.arkivanov.decompose.router.slot.childSlot
 import com.arkivanov.decompose.value.Value
-import com.arkivanov.essenty.lifecycle.doOnCreate
 import com.arkivanov.mvikotlin.core.instancekeeper.getStore
 import com.arkivanov.mvikotlin.core.store.StoreFactory
 import com.arkivanov.mvikotlin.extensions.coroutines.stateFlow
@@ -32,12 +31,12 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
+import org.apache.solr.ui.components.auth.AuthenticationComponent.OAuthConfiguration
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Output
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Output.OnAuthenticated
 import org.apache.solr.ui.components.auth.BasicAuthComponent
+import org.apache.solr.ui.components.auth.OAuthComponent
 import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent
-import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent.FailAuthentication
-import org.apache.solr.ui.components.auth.store.AuthenticationStore.Intent.ResetError
 import org.apache.solr.ui.components.auth.store.AuthenticationStoreProvider
 import org.apache.solr.ui.domain.AuthMethod
 import org.apache.solr.ui.domain.AuthOption
@@ -80,6 +79,7 @@ class DefaultAuthenticationComponent(
     }
 
     private val basicAuthNavigation = SlotNavigation<BasicAuthConfiguration>()
+    private val oauthNavigation = SlotNavigation<OAuthConfiguration>()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override val model = store.stateFlow.map(mainScope, authStateToModel)
@@ -87,6 +87,7 @@ class DefaultAuthenticationComponent(
     override val basicAuthSlot: Value<ChildSlot<BasicAuthConfiguration, BasicAuthComponent>> =
         childSlot(
             source = basicAuthNavigation,
+            key = "BasicAuthSlot",
             serializer = BasicAuthConfiguration.serializer(),
             handleBackButton = true,
         ) { config, childComponentContext ->
@@ -99,11 +100,32 @@ class DefaultAuthenticationComponent(
             )
         }
 
+    override val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>> =
+        childSlot(
+            source = oauthNavigation,
+            key = "OAuthChildSlot",
+            serializer = OAuthConfiguration.serializer(),
+            handleBackButton = true,
+        ) { config, childComponentContext ->
+            DefaultOAuthComponent(
+                componentContext = childComponentContext,
+                storeFactory = storeFactory,
+                httpClient = httpClient,
+                method = config.method,
+                output = ::oAuthOutput,
+            )
+        }
+
     init {
         methods.forEach { method ->
             when (method) {
                 is AuthMethod.BasicAuthMethod ->
                     basicAuthNavigation.activate(configuration = BasicAuthConfiguration(method))
+
+                is AuthMethod.OAuthMethod -> oauthNavigation.activate(
+                    configuration = OAuthConfiguration(method),
+                )
+
                 is AuthMethod.Unknown -> {} // TODO Handle unknown auth methods
             }
         }
@@ -127,11 +149,31 @@ class DefaultAuthenticationComponent(
         )
 
         is BasicAuthComponent.Output.Authenticating -> store.accept(Intent.StartAuthenticating)
-        is BasicAuthComponent.Output.AuthenticationFailed ->
-            store.accept(FailAuthentication(output.error))
+        is BasicAuthComponent.Output.AuthenticationFailed -> store.accept(
+            intent = Intent.FailAuthentication(output.error),
+        )
 
-        BasicAuthComponent.Output.ErrorReset ->
-            store.accept(ResetError)
+        is BasicAuthComponent.Output.ErrorReset -> store.accept(intent = Intent.ResetError)
+    }
+
+    private fun oAuthOutput(output: OAuthComponent.Output): Unit = when (output) {
+        is OAuthComponent.Output.Authenticating -> store.accept(Intent.StartAuthenticating)
+        is OAuthComponent.Output.Authenticated -> output(
+            OnAuthenticated(
+                option = AuthOption.OAuthOption(
+                    url = url,
+                    accessToken = output.accessToken,
+                    refreshToken = output.refreshToken,
+                    realm = output.method.realm,
+                ),
+            ),
+        )
+
+        is OAuthComponent.Output.AuthenticationFailed -> store.accept(
+            intent = Intent.FailAuthentication(output.error),
+        )
+
+        is OAuthComponent.Output.ErrorReset -> store.accept(intent = Intent.ResetError)
     }
 
     override fun onAbort() = output(Output.OnAbort)

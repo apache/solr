@@ -74,6 +74,16 @@ public class RunExampleTool extends ToolBase {
               "Don't prompt for input; accept all defaults when running examples that accept user input.")
           .get();
 
+  private static final Option PROMPT_INPUTS_OPTION =
+      Option.builder()
+          .longOpt("prompt-inputs")
+          .hasArg()
+          .argName("VALUES")
+          .desc(
+              "Provide comma-separated values for prompts. Same as --no-prompt but uses provided values instead of defaults. "
+                  + "Example: --prompt-inputs 3,8983,8984,8985,\"gettingstarted\",2,2,_default")
+          .build();
+
   private static final Option EXAMPLE_OPTION =
       Option.builder("e")
           .longOpt("example")
@@ -177,6 +187,7 @@ public class RunExampleTool extends ToolBase {
   protected Path exampleDir;
   protected Path solrHomeDir;
   protected String urlScheme;
+  private boolean usingPromptInputs = false;
 
   /** Default constructor used by the framework when running as a command-line application. */
   public RunExampleTool(ToolRuntime runtime) {
@@ -198,6 +209,7 @@ public class RunExampleTool extends ToolBase {
   public Options getOptions() {
     return super.getOptions()
         .addOption(NO_PROMPT_OPTION)
+        .addOption(PROMPT_INPUTS_OPTION)
         .addOption(EXAMPLE_OPTION)
         .addOption(SCRIPT_OPTION)
         .addOption(SERVER_DIR_OPTION)
@@ -215,6 +227,12 @@ public class RunExampleTool extends ToolBase {
 
   @Override
   public void runImpl(CommandLine cli) throws Exception {
+    if (cli.hasOption(NO_PROMPT_OPTION) && cli.hasOption(PROMPT_INPUTS_OPTION)) {
+      throw new IllegalArgumentException(
+          "Cannot use both --no-prompt and --prompt-inputs options together. "
+              + "Use --no-prompt to accept defaults, or --prompt-inputs to provide specific values.");
+    }
+
     this.urlScheme = cli.getOptionValue(URL_SCHEME_OPTION, "http");
     String exampleType = cli.getOptionValue(EXAMPLE_OPTION);
 
@@ -521,6 +539,7 @@ public class RunExampleTool extends ToolBase {
 
   protected void runCloudExample(CommandLine cli) throws Exception {
 
+    usingPromptInputs = cli.hasOption(PROMPT_INPUTS_OPTION);
     boolean prompt = !cli.hasOption(NO_PROMPT_OPTION);
     int numNodes = 2;
     int[] cloudPorts = new int[] {8983, 7574, 8984, 7575};
@@ -536,10 +555,24 @@ public class RunExampleTool extends ToolBase {
 
     echo("\nWelcome to the SolrCloud example!\n");
 
-    Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8) : null;
+    Scanner readInput = null;
+    if (usingPromptInputs) {
+      // Create a scanner from the provided prompts
+      String promptsValue = cli.getOptionValue(PROMPT_INPUTS_OPTION);
+      InputStream promptsStream =
+          new java.io.ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
+      readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
+      readInput.useDelimiter(",");
+      prompt = true; // Enable prompting code path, but reading from prompts instead of user
+    } else if (prompt) {
+      readInput = new Scanner(userInput, StandardCharsets.UTF_8);
+    }
+
     if (prompt) {
-      echo(
-          "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
+      if (!usingPromptInputs) {
+        echo(
+            "This interactive session will help you launch a SolrCloud cluster on your local workstation.");
+      }
 
       // get the number of nodes to start
       numNodes =
@@ -1131,9 +1164,24 @@ public class RunExampleTool extends ToolBase {
 
   protected String prompt(Scanner s, String prompt, String defaultValue) {
     echo(prompt);
-    String nextInput = s.nextLine();
+    String nextInput;
+    if (usingPromptInputs) {
+      // Reading from prompts option - use next() instead of nextLine()
+      nextInput = s.hasNext() ? s.next() : null;
+      // Echo the value being used from prompts
+      if (nextInput != null) {
+        echo(nextInput);
+      }
+    } else {
+      // Reading from user input - use nextLine()
+      nextInput = s.nextLine();
+    }
     if (nextInput != null) {
       nextInput = nextInput.trim();
+      // Remove quotes if present (for values like "gettingstarted")
+      if (nextInput.startsWith("\"") && nextInput.endsWith("\"")) {
+        nextInput = nextInput.substring(1, nextInput.length() - 1);
+      }
       if (nextInput.isEmpty()) nextInput = null;
     }
     return (nextInput != null) ? nextInput : defaultValue;

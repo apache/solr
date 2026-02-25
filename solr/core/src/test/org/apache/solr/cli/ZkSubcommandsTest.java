@@ -52,6 +52,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected ZkTestServer zkServer;
+
   private SolrZkClient zkClient;
 
   protected static final Path SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
@@ -74,6 +75,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
     Path zkDir = createTempDir().resolve("zookeeper/server1/data");
 
+    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -125,7 +127,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   @Test
   public void testPutCompressed() throws Exception {
     // test put compressed
-
     System.setProperty("minStateByteLenForCompression", "0");
 
     String data = "my data";
