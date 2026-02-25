@@ -22,8 +22,8 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
-import org.apache.lucene.document.LongField;
 import org.apache.lucene.document.LongPoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
@@ -33,6 +33,7 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -158,27 +159,40 @@ public class DatePointField extends PointField implements DateValueFieldType {
   }
 
   @Override
-  protected Query getExactQuery(SchemaField field, String externalVal) {
-    return LongPoint.newExactQuery(
-        field.getName(), DateMathParser.parseMath(null, externalVal).getTime());
-  }
-
-  @Override
   public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
     assert externalVals.size() > 0;
-    if (!field.indexed()) {
-      return super.getSetQuery(parser, field, externalVals);
-    }
-    long[] values = new long[externalVals.size()];
-    int i = 0;
-    for (String val : externalVals) {
-      values[i] = DateMathParser.parseMath(null, val).getTime();
-      i++;
+    Query indexQuery = null;
+    long[] values = null;
+    if (hasIndexedTerms(field)) {
+      indexQuery = super.getSetQuery(parser, field, externalVals);
+    } else if (field.indexed()) {
+      values = new long[externalVals.size()];
+      int i = 0;
+      for (String val : externalVals) {
+        values[i++] = DateMathParser.parseMath(null, val).getTime();
+      }
+      indexQuery = LongPoint.newSetQuery(field.getName(), values);
     }
     if (field.hasDocValues()) {
-      return LongField.newSetQuery(field.getName(), values);
+      long[] points = new long[externalVals.size()];
+      if (values != null) {
+        points = values.clone();
+      } else {
+        int i = 0;
+        for (String val : externalVals) {
+          points[i++] = DateMathParser.parseMath(null, val).getTime();
+        }
+      }
+      Query docValuesQuery = SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
+      if (indexQuery != null) {
+        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
+      } else {
+        return docValuesQuery;
+      }
+    } else if (indexQuery != null) {
+      return indexQuery;
     } else {
-      return LongPoint.newSetQuery(field.getName(), values);
+      return super.getSetQuery(parser, field, externalVals);
     }
   }
 
