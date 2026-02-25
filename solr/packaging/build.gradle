@@ -235,7 +235,7 @@ tasks.register('runDev', JavaExec) {
   jvmArgs = [] // don't use defaults from our build that assume this is a typical build task
   jvmArgs((project.findProperty('jvmArgs') ?: '').split())
 
-  systemProperty 'solr.host', '127.0.0.1'
+  systemProperty 'solr.host.advertise', '127.0.0.1'
   systemProperty 'solr.port.listen', '8983'
   systemProperty 'solr.install.dir', file("$workingDir/..")
   systemProperty 'solr.logs.dir', file("$workingDir/logs")
