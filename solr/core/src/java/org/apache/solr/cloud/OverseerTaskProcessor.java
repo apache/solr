@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.params.CollectionAdminParams.CALLING_LOCK_IDS_HEADER;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.ID;
 
@@ -37,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
+import org.apache.solr.cloud.api.collections.AdminCmdContext;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -326,8 +328,16 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
               workQueue.remove(head, asyncId == null);
               continue;
             }
+            if (operation == null) {
+              log.error("Msg does not have required {} : {}", Overseer.QUEUE_OPERATION, message);
+              workQueue.remove(head, asyncId == null);
+              continue;
+            }
+            List<String> callingLockIds =
+                AdminCmdContext.parseCallingLockIds(message.getStr(CALLING_LOCK_IDS_HEADER));
             OverseerMessageHandler messageHandler = selector.selectOverseerMessageHandler(message);
-            OverseerMessageHandler.Lock lock = messageHandler.lockTask(message, batchSessionId);
+            OverseerMessageHandler.Lock lock =
+                messageHandler.lockTask(message, batchSessionId, callingLockIds);
             if (lock == null) {
               if (log.isDebugEnabled()) {
                 log.debug("Exclusivity check failed for [{}]", message);
@@ -562,7 +572,7 @@ public class OverseerTaskProcessor implements SolrInfoBean, Runnable, Closeable 
           if (log.isDebugEnabled()) {
             log.debug("Runner processing {}", head.getId());
           }
-          response = messageHandler.processMessage(message, operation);
+          response = messageHandler.processMessage(message, operation, lock);
         } finally {
           timerContext.stop();
           updateStats(statsName);

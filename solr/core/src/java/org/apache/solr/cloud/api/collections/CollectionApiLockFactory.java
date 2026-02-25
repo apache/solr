@@ -107,6 +107,8 @@ public class CollectionApiLockFactory {
       // CollectionParams.LockLevel.COLLECTION;
     }
 
+    List<String> callingLockIdList = adminCmdContext.getCallingLockIdList();
+
     // The first requested lock is a write one (on the target object for the action, depending on
     // lock level), then requesting read locks on "higher" levels (collection > shard > replica here
     // for the level. Note LockLevel "height" is other way around).
@@ -121,7 +123,10 @@ public class CollectionApiLockFactory {
       // This comparison is based on the LockLevel height value that classifies replica > shard >
       // collection.
       if (lockLevel.isHigherOrEqual(level)) {
-        locks.add(lockFactory.createLock(requestWriteLock, level, collName, shardId, replicaName));
+        DistributedLock lock =
+            lockFactory.createLock(
+                requestWriteLock, level, collName, shardId, replicaName, callingLockIdList);
+        locks.add(lock);
         requestWriteLock = false;
       }
     }
