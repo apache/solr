@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.apache;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,8 +34,10 @@ import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -46,11 +50,23 @@ public class HttpSolrClientConPoolTest extends SolrTestCaseJ4 {
   private static String barUrl; // second Jetty URL
 
   @BeforeClass
-  public static void beforeTest() {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+  public static void beforeTest() throws SolrServerException, IOException {
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
+
     fooUrl = solrTestRule.getBaseUrl();
 
-    secondJetty.startSolr(legacyExampleCollection1SolrHome());
+    secondJetty.startSolr(createTempDir());
+    secondJetty
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
+
     barUrl = secondJetty.getBaseUrl();
   }
 
