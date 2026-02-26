@@ -103,19 +103,19 @@ public class PostTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option SKIP_COMMIT_OPTION =
       Option.builder()
           .longOpt("skip-commit")
           .desc("Do not 'commit', and thus changes won't be visible till a commit occurs.")
-          .build();
+          .get();
 
   private static final Option OPTIMIZE_OPTION =
       Option.builder("o")
           .longOpt("optimize")
           .desc("Issue an optimize at end of posting documents.")
-          .build();
+          .get();
 
   private static final Option MODE_OPTION =
       Option.builder()
@@ -124,7 +124,7 @@ public class PostTool extends ToolBase {
           .argName("mode")
           .desc(
               "Which mode the Post tool is running in, 'files' crawls local directory, 'web' crawls website, 'args' processes input args, and 'stdin' reads a command from standard in. default: files.")
-          .build();
+          .get();
 
   private static final Option RECURSIVE_OPTION =
       Option.builder("r")
@@ -133,7 +133,7 @@ public class PostTool extends ToolBase {
           .argName("recursive")
           .type(Integer.class)
           .desc("For web crawl, how deep to go. default: 1")
-          .build();
+          .get();
 
   private static final Option DELAY_OPTION =
       Option.builder("d")
@@ -143,7 +143,7 @@ public class PostTool extends ToolBase {
           .type(Integer.class)
           .desc(
               "If recursive then delay will be the wait time between posts.  default: 10 for web, 0 for files")
-          .build();
+          .get();
 
   private static final Option TYPE_OPTION =
       Option.builder("t")
@@ -151,7 +151,7 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("content-type")
           .desc("Specify a specific mimetype to use, such as application/json.")
-          .build();
+          .get();
 
   private static final Option FILE_TYPES_OPTION =
       Option.builder("ft")
@@ -159,7 +159,7 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("<type>[,<type>,...]")
           .desc("default: " + DEFAULT_FILE_TYPES)
-          .build();
+          .get();
 
   private static final Option PARAMS_OPTION =
       Option.builder()
@@ -167,21 +167,21 @@ public class PostTool extends ToolBase {
           .hasArg()
           .argName("<key>=<value>[&<key>=<value>...]")
           .desc("Values must be URL-encoded; these pass through to Solr update request.")
-          .build();
+          .get();
 
   private static final Option FORMAT_OPTION =
       Option.builder()
           .longOpt("format")
           .desc(
               "sends application/json content as Solr commands to /update instead of /update/json/docs.")
-          .build();
+          .get();
 
   private static final Option DRY_RUN_OPTION =
       Option.builder()
           .longOpt("dry-run")
           .desc(
               "Performs a dry run of the posting process without actually sending documents to Solr.  Only works with files mode.")
-          .build();
+          .get();
 
   // Input args
   int recursive = 0;
@@ -326,16 +326,17 @@ public class PostTool extends ToolBase {
    */
   public void execute(String mode) throws SolrServerException, IOException {
     final RTimer timer = new RTimer();
-    if (PostTool.DATA_MODE_FILES.equals(mode)) {
-      doFilesMode();
-    } else if (DATA_MODE_ARGS.equals(mode)) {
-      doArgsMode(args);
-    } else if (PostTool.DATA_MODE_WEB.equals(mode)) {
-      doWebMode();
-    } else if (DATA_MODE_STDIN.equals(mode)) {
-      doStdinMode();
-    } else {
-      return;
+    switch (mode) {
+      case PostTool.DATA_MODE_FILES -> doFilesMode();
+      case DATA_MODE_ARGS -> doArgsMode(args);
+      case PostTool.DATA_MODE_WEB -> doWebMode();
+      case DATA_MODE_STDIN -> doStdinMode();
+      case null -> {
+        return;
+      }
+      default -> {
+        return;
+      }
     }
 
     if (optimize) {
@@ -710,7 +711,7 @@ public class PostTool extends ToolBase {
    */
   protected static String computeFullUrl(URL baseUrl, String link)
       throws MalformedURLException, URISyntaxException {
-    if (link == null || link.length() == 0) {
+    if (link == null || link.isEmpty()) {
       return null;
     }
     if (!link.startsWith("http")) {
@@ -799,7 +800,7 @@ public class PostTool extends ToolBase {
     String[] pa = param.split("&");
     StringBuilder urlBuilder = new StringBuilder(url);
     for (String p : pa) {
-      if (p.trim().length() == 0) {
+      if (p.trim().isEmpty()) {
         continue;
       }
       String[] kv = p.split("=");
@@ -1285,7 +1286,9 @@ public class PostTool extends ToolBase {
         l = arr[0].trim();
         if (l.startsWith(DISALLOW)) {
           l = l.substring(DISALLOW.length()).trim();
-          if (l.length() == 0) continue;
+          if (l.isEmpty()) {
+            continue;
+          }
           disallows.add(l);
         }
       }

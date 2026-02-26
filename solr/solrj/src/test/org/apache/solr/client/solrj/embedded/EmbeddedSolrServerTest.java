@@ -21,12 +21,18 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import java.io.IOException;
-import org.apache.solr.SolrTestCase;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.core.CoreContainer;
 import org.junit.BeforeClass;
 
-public class TestEmbeddedSolrServer extends SolrTestCase {
+/**
+ * Tests {@link EmbeddedSolrServer}. Use of {@link SolrExampleTests} is rather thorough.
+ *
+ * @since solr 1.3
+ */
+public class EmbeddedSolrServerTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeClass() {
@@ -44,5 +50,10 @@ public class TestEmbeddedSolrServer extends SolrTestCase {
     // We could test the reverse, that if EmbeddedSolrServer is created without a
     // CoreContainer passed in that it propagates the shutdown, but honestly tons of
     // tests would fail, so we're covered.
+  }
+
+  @Override
+  public SolrClient createNewSolrClient() {
+    return new EmbeddedSolrServer(solrTestRule.getCoreContainer(), DEFAULT_TEST_CORENAME);
   }
 }

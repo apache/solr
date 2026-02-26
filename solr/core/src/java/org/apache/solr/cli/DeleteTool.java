@@ -47,21 +47,21 @@ public class DeleteTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the core / collection to delete.")
-          .build();
+          .get();
 
   private static final Option DELETE_CONFIG_OPTION =
       Option.builder()
           .longOpt("delete-config")
           .desc(
               "Flag to indicate if the underlying configuration directory for a collection should also be deleted; default is true.")
-          .build();
+          .get();
 
   private static final Option FORCE_OPTION =
       Option.builder("f")
           .longOpt("force")
           .desc(
               "Skip safety checks when deleting the configuration directory used by a collection.")
-          .build();
+          .get();
 
   public DeleteTool(ToolRuntime runtime) {
     super(runtime);
@@ -74,10 +74,11 @@ public class DeleteTool extends ToolBase {
 
   @Override
   public String getHeader() {
-    return "Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode. "
-        + "Deleting a collection does not delete it's configuration unless you pass in the --delete-config flag.\n"
-        + "\n"
-        + "List of options:";
+    return """
+        Deletes a collection or core depending on whether Solr is running in SolrCloud or standalone mode. \
+        Deleting a collection does not delete it's configuration unless you pass in the --delete-config flag.
+
+        List of options:""";
   }
 
   @Override
@@ -113,7 +114,6 @@ public class DeleteTool extends ToolBase {
     String zkHost = CLIUtils.getZkHost(cli);
     try (CloudSolrClient cloudSolrClient = CLIUtils.getCloudSolrClient(zkHost, builder)) {
       echoIfVerbose("Connecting to ZooKeeper at " + zkHost);
-      cloudSolrClient.connect();
       deleteCollection(cloudSolrClient, cli);
     }
   }

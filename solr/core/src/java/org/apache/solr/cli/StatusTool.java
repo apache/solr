@@ -53,7 +53,7 @@ public class StatusTool extends ToolBase {
           .type(Integer.class)
           .deprecated() // Will make it a stealth option, not printed or complained about
           .desc("Wait up to the specified number of seconds to see Solr running.")
-          .build();
+          .get();
 
   public static final Option PORT_OPTION =
       Option.builder("p")
@@ -62,14 +62,14 @@ public class StatusTool extends ToolBase {
           .argName("PORT")
           .type(Integer.class)
           .desc("Port on localhost to check status for")
-          .build();
+          .get();
 
   public static final Option SHORT_OPTION =
       Option.builder()
           .longOpt("short")
           .argName("SHORT")
           .desc("Short format. Prints one URL per line for running instances")
-          .build();
+          .get();
 
   private final SolrProcessManager processMgr;
 
@@ -171,8 +171,8 @@ public class StatusTool extends ToolBase {
             String.format(
                 Locale.ROOT,
                 "\nSolr process %s running on port %s",
-                process.getPid(),
-                process.getPort()));
+                process.pid(),
+                process.port()));
         printStatusFromRunningSolr(pidUrl, cli);
       }
     }
@@ -290,8 +290,7 @@ public class StatusTool extends ToolBase {
 
   public Map<String, Object> getStatus(String solrUrl, String credentials) throws Exception {
     try (var solrClient = CLIUtils.getSolrClient(solrUrl, credentials)) {
-      Map<String, Object> status = reportStatus(solrClient);
-      return status;
+      return reportStatus(solrClient);
     }
   }
 
