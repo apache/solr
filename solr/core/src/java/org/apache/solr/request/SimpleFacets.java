@@ -80,7 +80,6 @@ import org.apache.solr.schema.BoolField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.Grouping;
@@ -521,7 +520,6 @@ public class SimpleFacets {
       assert appliedFacetMethod != null;
       switch (appliedFacetMethod) {
         case ENUM:
-          assert TrieField.getMainValuePrefix(ft) == null;
           counts =
               getFacetTermEnumCounts(
                   searcher,
@@ -759,9 +757,10 @@ public class SimpleFacets {
     }
 
     /* ENUM can't deal with trie fields that index several terms per value */
-    if (method == FacetMethod.ENUM && TrieField.getMainValuePrefix(type) != null) {
-      method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
-    }
+    // What to do here?
+    // if (method == FacetMethod.ENUM /* && TrieField.getMainValuePrefix(type) != null */) {
+    //   method = field.multiValued() ? FacetMethod.FC : FacetMethod.FCS;
+    // }
 
     /* FCS can't deal with multi token fields */
     final boolean multiToken = field.multiValued() || type.multiValuedFieldCache();

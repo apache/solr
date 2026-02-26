@@ -39,8 +39,6 @@ import org.apache.solr.schema.EnumFieldType.EnumMapping;
 import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.ExtendedQuery;
 import org.apache.solr.search.SyntaxError;
@@ -199,7 +197,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    */
   private static Calc getCalcForField(SchemaField sf) {
     final FieldType ft = sf.getType();
-    if (ft instanceof TrieField || ft.isPointField()) {
+    if (ft.isPointField()) {
       return getNumericCalc(sf);
     } else if (ft instanceof CurrencyFieldType) {
       return new CurrencyCalc(sf);
@@ -873,9 +871,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     public DateCalc(final SchemaField f, final Date now) {
       super(f);
       this.now = now;
-      if (!(field.getType() instanceof TrieDateField
-          || field.getType().isPointField()
-          || field.getType() instanceof DateRangeField)) {
+      if (!(field.getType().isPointField() || field.getType() instanceof DateRangeField)) {
         throw new IllegalArgumentException(
             "SchemaField must use field type extending TrieDateField, DateRangeField or PointField");
       }

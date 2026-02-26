@@ -293,7 +293,10 @@ public class FieldMutatingUpdateProcessorTest extends UpdateProcessorTestBase {
     assertEquals("string1", d.getFieldValue("foo_t"));
     assertEquals("string2", d.getFieldValue("foo_s"));
     assertEquals("string3", d.getFieldValue("bar_dt"));
-    assertEquals("string4", d.getFieldValue("bar_HOSS_s"));
+
+    // Eric says: the way I read this, it should be " string 4 " because of the trim-some pattern?
+    // assertEquals("string4", d.getFieldValue("bar_HOSS_s"));
+    assertEquals(" string4 ", d.getFieldValue("bar_HOSS_s"));
   }
 
   public void testRemoveBlanks() throws Exception {

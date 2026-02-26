@@ -34,7 +34,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SyntaxError;
 
@@ -90,7 +89,7 @@ public class RangeFacetProcessor extends SimpleFacets {
     final FieldType ft = sf.getType();
 
     if (method.equals(FacetRangeMethod.DV)) {
-      assert ft instanceof TrieField || ft.isPointField();
+      assert ft.isPointField();
       resOuter.add(key, getFacetRangeCountsDocValues(rangeFacetRequest));
     } else {
       resOuter.add(key, getFacetRangeCounts(rangeFacetRequest));

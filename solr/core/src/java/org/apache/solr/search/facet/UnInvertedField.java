@@ -36,7 +36,6 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.BitDocSet;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
@@ -196,7 +195,8 @@ public class UnInvertedField extends DocTermOrds {
 
     assert TestInjection.injectUIFOutOfMemoryError();
 
-    final String prefix = TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
+    final String prefix =
+        null; // TrieField.getMainValuePrefix(searcher.getSchema().getFieldType(field));
     this.searcher = searcher;
     try {
       // TODO: it's wasteful to create one of these each time

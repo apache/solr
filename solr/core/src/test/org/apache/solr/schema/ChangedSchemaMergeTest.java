@@ -174,7 +174,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
           + "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n"
           + "    <fieldType name=\"int\" class=\""
           + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
-          + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
+          + "\" positionIncrementGap=\"0\"/>"
           + "  <similarity class=\"${solr.test.simfac1}\"/> "
           + "</schema>";
 
@@ -193,7 +193,7 @@ public class ChangedSchemaMergeTest extends SolrTestCaseJ4 {
           + "    <fieldType name=\"string\" class=\"solr.StrField\"/>\n"
           + "    <fieldType name=\"int\" class=\""
           + RANDOMIZED_NUMERIC_FIELDTYPES.get(Integer.class)
-          + "\" precisionStep=\"0\" positionIncrementGap=\"0\"/>"
+          + "\" positionIncrementGap=\"0\"/>"
           + "  <similarity class=\"${solr.test.simfac2}\"/> "
           + "</schema>";
 }

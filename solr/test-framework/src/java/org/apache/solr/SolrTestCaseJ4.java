@@ -319,8 +319,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       HttpClientUtil.resetHttpClientBuilder();
       HttpJettySolrClient.resetSslContextFactory();
 
-      clearNumericTypesProperties();
-
       // clean up static
       sslConfig = null;
       testSolrHome = null;
@@ -2778,8 +2776,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * numerics that should be used in tests.
    *
    * @see #NUMERIC_DOCVALUES_SYSPROP
-   * @see #NUMERIC_POINTS_SYSPROP
-   * @see #clearNumericTypesProperties
    * @lucene.experimental
    * @lucene.internal
    */
@@ -2788,33 +2784,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     final boolean useDV = random().nextBoolean();
     System.setProperty(NUMERIC_DOCVALUES_SYSPROP, "" + useDV);
 
-    // consume a consistent amount of random data even if system property/annotation is set
-    final boolean randUsePoints = 0 != random().nextInt(5); // 80% likelihood
-
-    final String usePointsStr = System.getProperty(USE_NUMERIC_POINTS_SYSPROP);
-    final boolean usePoints =
-        (null == usePointsStr) ? randUsePoints : Boolean.parseBoolean(usePointsStr);
-
-    if (RandomizedContext.current()
-            .getTargetClass()
-            .isAnnotationPresent(SolrTestCaseJ4.SuppressPointFields.class)
-        || (!usePoints)) {
-      log.info(
-          "Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
-
-      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.TrieIntField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.TrieFloatField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Double.class, "solr.TrieDoubleField");
-      private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Date.class, "solr.TrieDateField");
-
-      System.setProperty(NUMERIC_POINTS_SYSPROP, "false");
-    } else {
+    {
       log.info(
           "Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
-      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.IntPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.FloatPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
@@ -2835,19 +2808,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       return new DistributedZkUpdateProcessor(req, rsp, next);
     }
     return new DistributedUpdateProcessor(req, rsp, next);
-  }
-
-  /**
-   * Cleans up the randomized system properties and variables set by {@link
-   * #randomizeNumericTypesProperties}
-   *
-   * @see #randomizeNumericTypesProperties
-   * @lucene.experimental
-   * @lucene.internal
-   */
-  private static void clearNumericTypesProperties() {
-    org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
-    private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
   }
 
   private static SolrDocument toSolrDoc(SolrInputDocument sid) {

@@ -36,7 +36,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
         new SolrConfig(testInstanceDir, testConfHome.resolve("solrconfig.xml").toString());
     IndexSchema schema =
         IndexSchemaFactory.buildIndexSchema(testConfHome.resolve("schema.xml").toString(), config);
-    f = Boolean.getBoolean(NUMERIC_POINTS_SYSPROP) ? new DatePointField() : new TrieDateField();
+    f = new DatePointField();
     f.init(schema, Collections.<String, String>emptyMap());
   }
 
@@ -57,7 +57,7 @@ public class DateFieldTest extends SolrTestCaseJ4 {
   }
 
   public void testToNativeType() {
-    FieldType ft = new TrieDateField();
+    FieldType ft = new DatePointField();
     ByteArrayUtf8CharSequence charSequence = new ByteArrayUtf8CharSequence("1995-12-31T23:59:59Z");
 
     Date val = (Date) ft.toNativeType(charSequence);

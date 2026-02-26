@@ -43,8 +43,6 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.StrField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.hll.HLL;
 import org.apache.solr.util.hll.HLLType;
 
@@ -70,13 +68,13 @@ public class StatsValuesFactory {
 
     final FieldType fieldType = sf.getType(); // TODO: allow FieldType to provide impl.
 
-    if (TrieDateField.class.isInstance(fieldType) || DatePointField.class.isInstance(fieldType)) {
+    if (DatePointField.class.isInstance(fieldType)) {
       DateStatsValues statsValues = new DateStatsValues(statsField);
       if (sf.multiValued()) {
         return new SortedDateStatsValues(statsValues, statsField);
       }
       return statsValues;
-    } else if (TrieField.class.isInstance(fieldType) || PointField.class.isInstance(fieldType)) {
+    } else if (PointField.class.isInstance(fieldType)) {
 
       NumericStatsValues statsValue = new NumericStatsValues(statsField);
       if (sf.multiValued()) {

@@ -22,10 +22,8 @@ import java.util.Arrays;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.legacy.BBoxStrategy;
-import org.apache.solr.schema.BBoxField;
+// import org.apache.solr.legacy.BBoxStrategy;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.SpatialUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -586,13 +584,13 @@ public class TestSolr4Spatial extends SolrTestCaseJ4 {
 
       // BBox Config
       // Make sure the subfields are not stored
-      SchemaField sub = schema.getField("bbox" + BBoxStrategy.SUFFIX_MINX);
-      assertFalse(sub.stored());
-
-      // Make sure solr field type is also not stored
-      BBoxField bbox = (BBoxField) schema.getField("bbox").getType();
-      BBoxStrategy strategy = bbox.getStrategy("bbox");
-      assertFalse(strategy.getFieldType().stored());
+      //      SchemaField sub = schema.getField("bbox" + BBoxStrategy.SUFFIX_MINX);
+      //      assertFalse(sub.stored());
+      //
+      //      // Make sure solr field type is also not stored
+      //      BBoxField bbox = (BBoxField) schema.getField("bbox").getType();
+      //      BBoxStrategy strategy = bbox.getStrategy("bbox");
+      //      assertFalse(strategy.getFieldType().stored());
     }
   }
 

@@ -66,17 +66,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
             "10",
             "solr_d",
             "10",
-            "solr_ti",
-            "10",
-            "solr_tl",
-            "10",
-            "solr_tf",
-            "10",
-            "solr_td",
-            "10",
             "solr_dt",
-            "2000-01-01T01:01:01Z",
-            "solr_tdt",
             "2000-01-01T01:01:01Z",
             "solr_bin",
             "PS9cPQ=="));
@@ -121,9 +111,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
         numFlags + "=count(//lst[@name='info']/lst[@name='key']/str)");
 
     // code should be the same for all fields, but just in case do several
-    for (String f :
-        Arrays.asList(
-            "solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b", "solr_sS", "solr_sI")) {
+    for (String f : Arrays.asList("solr_t", "solr_s", "solr_dt", "solr_b", "solr_sS", "solr_sI")) {
 
       final String xp = getFieldXPathPrefix(f);
       assertQ(
@@ -134,7 +122,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
 
     // diff loop for checking 'index' flags,
     // only valid for fields that are indexed & stored
-    for (String f : Arrays.asList("solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b")) {
+    for (String f : Arrays.asList("solr_t", "solr_s", "solr_dt", "solr_b")) {
       if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
       final String xp = getFieldXPathPrefix(f);
       assertQ(
@@ -179,7 +167,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
               getFieldXPathPrefix("solr_s") + "[@name='index']"));
 
       // Now test that the other fields are NOT there
-      for (String f : Arrays.asList("solr_ti", "solr_td", "solr_dt", "solr_b")) {
+      for (String f : Arrays.asList("solr_dt", "solr_b")) {
 
         assertNotNull(
             TestHarness.validateXPath(response, getFieldXPathPrefix(f) + "[@name='index']"));
@@ -187,8 +175,7 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
       // Insure * works
       req = req("qt", "/admin/luke", "fl", "*");
       response = h.query(req);
-      for (String f :
-          Arrays.asList("solr_t", "solr_s", "solr_ti", "solr_td", "solr_dt", "solr_b")) {
+      for (String f : Arrays.asList("solr_t", "solr_s", "solr_b")) {
         if (h.getCore().getLatestSchema().getField(f).getType().isPointField()) continue;
         assertNull(TestHarness.validateXPath(response, getFieldXPathPrefix(f) + "[@name='index']"));
       }

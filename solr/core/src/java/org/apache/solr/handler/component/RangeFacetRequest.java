@@ -38,8 +38,6 @@ import org.apache.solr.schema.ExchangeRateProvider;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.util.DateMathParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,29 +154,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     RangeEndpointCalculator<?> calc;
     FieldType ft = schemaField.getType();
 
-    if (ft instanceof TrieField) {
-      switch (ft.getNumberType()) {
-        case FLOAT:
-          calc = new FloatRangeEndpointCalculator(this);
-          break;
-        case DOUBLE:
-          calc = new DoubleRangeEndpointCalculator(this);
-          break;
-        case INTEGER:
-          calc = new IntegerRangeEndpointCalculator(this);
-          break;
-        case LONG:
-          calc = new LongRangeEndpointCalculator(this);
-          break;
-        case DATE:
-          calc = new DateRangeEndpointCalculator(this, null);
-          break;
-        default:
-          throw new SolrException(
-              SolrException.ErrorCode.BAD_REQUEST,
-              "Unable to range facet on Trie field of unexpected type:" + this.facetOn);
-      }
-    } else if (ft instanceof DateRangeField) {
+    if (ft instanceof DateRangeField) {
       calc = new DateRangeEndpointCalculator(this, null);
     } else if (ft.isPointField()) {
       switch (ft.getNumberType()) {
@@ -766,8 +742,7 @@ public class RangeFacetRequest extends FacetComponent.FacetBase {
     public DateRangeEndpointCalculator(final RangeFacetRequest rangeFacetRequest, final Date now) {
       super(rangeFacetRequest);
       this.now = now;
-      if (!(field.getType() instanceof TrieDateField)
-          && !(field.getType() instanceof DateRangeField)
+      if (!(field.getType() instanceof DateRangeField)
           && !(field.getType() instanceof DatePointField)) {
         throw new IllegalArgumentException(TYPE_ERR_MSG);
       }

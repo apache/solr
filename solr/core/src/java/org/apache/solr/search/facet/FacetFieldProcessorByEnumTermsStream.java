@@ -37,7 +37,6 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
@@ -188,7 +187,7 @@ class FacetFieldProcessorByEnumTermsStream extends FacetFieldProcessor implement
       String indexedPrefix = sf.getType().toInternal(freq.prefix);
       startTermBytes = new BytesRef(indexedPrefix);
     } else if (sf.getType().getNumberType() != null) {
-      String triePrefix = TrieField.getMainValuePrefix(sf.getType());
+      String triePrefix = null; // TrieField.getMainValuePrefix(sf.getType());
       if (triePrefix != null) {
         startTermBytes = new BytesRef(triePrefix);
       }

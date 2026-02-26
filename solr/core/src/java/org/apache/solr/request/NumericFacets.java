@@ -47,7 +47,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -346,7 +345,7 @@ final class NumericFacets {
 
         final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
         if (terms != null) {
-          final String prefixStr = TrieField.getMainValuePrefix(ft);
+          final String prefixStr = null; // TrieField.getMainValuePrefix(ft);
           final BytesRef prefix;
           if (prefixStr != null) {
             prefix = new BytesRef(prefixStr);
@@ -409,7 +408,7 @@ final class NumericFacets {
       }
       final Terms terms = searcher.getSlowAtomicReader().terms(fieldName);
       if (terms != null) {
-        final String prefixStr = TrieField.getMainValuePrefix(ft);
+        final String prefixStr = null; // TrieField.getMainValuePrefix(ft);
         final BytesRef prefix;
         if (prefixStr != null) {
           prefix = new BytesRef(prefixStr);

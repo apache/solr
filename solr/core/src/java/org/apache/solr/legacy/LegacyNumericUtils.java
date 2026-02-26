@@ -39,9 +39,9 @@ import org.apache.lucene.util.BytesRefBuilder;
  * integer value (even using UTF-8 sort order). Each value is also prefixed (in the first char) by
  * the <code>shift</code> value (number of bits removed) used during encoding.
  *
- * <p>For easy usage, the trie algorithm is implemented for indexing inside {@link
+ * <p>For easy usage, the trie algorithm is implemented for indexing inside {link
  * org.apache.solr.legacy.LegacyNumericTokenStream} that can index <code>int</code>, <code>long
- * </code>, <code>float</code>, and <code>double</code>. For querying, {@link
+ * </code>, <code>float</code>, and <code>double</code>. For querying, {link
  * org.apache.solr.legacy.LegacyNumericRangeQuery} implements the query part for the same data
  * types.
  *
@@ -53,20 +53,6 @@ import org.apache.lucene.util.BytesRefBuilder;
 public final class LegacyNumericUtils {
 
   private LegacyNumericUtils() {} // no instance!
-
-  /**
-   * The default precision step used by {@link org.apache.solr.legacy.LegacyLongField}, {@link
-   * org.apache.solr.legacy.LegacyDoubleField}, {@link
-   * org.apache.solr.legacy.LegacyNumericTokenStream}, {@link
-   * org.apache.solr.legacy.LegacyNumericRangeQuery}.
-   */
-  public static final int PRECISION_STEP_DEFAULT = 16;
-
-  /**
-   * The default precision step used by {@link org.apache.solr.legacy.LegacyIntField} and {@link
-   * org.apache.solr.legacy.LegacyFloatField}.
-   */
-  public static final int PRECISION_STEP_DEFAULT_32 = 8;
 
   /**
    * Longs are stored at lower precision by shifting off lower bits. The shift count is stored as
@@ -98,7 +84,7 @@ public final class LegacyNumericUtils {
 
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits. This is
-   * method is used by {@link org.apache.solr.legacy.LegacyNumericTokenStream}. After encoding,
+   * method is used by {link org.apache.solr.legacy.LegacyNumericTokenStream}. After encoding,
    * {@code bytes.offset} will always be 0.
    *
    * @param val the numeric value
@@ -127,7 +113,7 @@ public final class LegacyNumericUtils {
 
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits. This is
-   * method is used by {@link org.apache.solr.legacy.LegacyNumericTokenStream}. After encoding,
+   * method is used by {link org.apache.solr.legacy.LegacyNumericTokenStream}. After encoding,
    * {@code bytes.offset} will always be 0.
    *
    * @param val the numeric value
@@ -236,7 +222,7 @@ public final class LegacyNumericUtils {
    * org.apache.lucene.search.BooleanQuery} for each call to its {@link
    * LongRangeBuilder#addRange(BytesRef,BytesRef)} method.
    *
-   * <p>This method is used by {@link org.apache.solr.legacy.LegacyNumericRangeQuery}.
+   * <p>This method is used by {link org.apache.solr.legacy.LegacyNumericRangeQuery}.
    */
   public static void splitLongRange(
       final LongRangeBuilder builder,
@@ -251,7 +237,7 @@ public final class LegacyNumericUtils {
    * org.apache.lucene.search.BooleanQuery} for each call to its {@link
    * IntRangeBuilder#addRange(BytesRef,BytesRef)} method.
    *
-   * <p>This method is used by {@link org.apache.solr.legacy.LegacyNumericRangeQuery}.
+   * <p>This method is used by {link org.apache.solr.legacy.LegacyNumericRangeQuery}.
    */
   public static void splitIntRange(
       final IntRangeBuilder builder,
