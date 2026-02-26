@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCase;
 import org.junit.Test;
 
@@ -41,6 +42,29 @@ public class ShardTermsTest extends SolrTestCase {
     terms = terms.increaseTerms("leader", Collections.singleton("leader"));
     assertEquals(3L, terms.getTerm("live-replica").longValue());
     assertEquals(2L, terms.getTerm("leader").longValue());
+    assertEquals(1L, terms.getTerm("dead-replica").longValue());
+  }
+
+  @Test
+  public void testSetHighestTerms() {
+    Map<String, Long> map = new HashMap<>();
+    map.put("leader", 0L);
+    ShardTerms terms = new ShardTerms(map, 0);
+    terms = terms.setHighestTerms(Set.of("leader"));
+    assertNull(terms);
+
+    map.put("leader", 2L);
+    map.put("live-replica", 2L);
+    map.put("another-replica", 2L);
+    map.put("bad-replica", 2L);
+    map.put("dead-replica", 1L);
+    terms = new ShardTerms(map, 0);
+
+    terms = terms.setHighestTerms(Set.of("live-replica", "another-replica"));
+    assertEquals(3L, terms.getTerm("live-replica").longValue());
+    assertEquals(3L, terms.getTerm("another-replica").longValue());
+    assertEquals(2L, terms.getTerm("leader").longValue());
+    assertEquals(2L, terms.getTerm("bad-replica").longValue());
     assertEquals(1L, terms.getTerm("dead-replica").longValue());
   }
 }

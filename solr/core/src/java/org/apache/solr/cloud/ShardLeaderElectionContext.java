@@ -205,41 +205,13 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
           }
         }
 
-        PeerSync.PeerSyncResult result = null;
         boolean success = false;
         try {
-          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+          PeerSync.PeerSyncResult result =
+              syncStrategy.sync(zkController, core, leaderProps, weAreReplacement, true);
           success = result.isSuccess();
         } catch (Exception e) {
           log.error("Exception while trying to sync", e);
-          result = PeerSync.PeerSyncResult.failure();
-        }
-
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-
-        if (!success) {
-          boolean hasRecentUpdates = false;
-          if (ulog != null) {
-            // TODO: we could optimize this if necessary
-            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
-            }
-          }
-
-          if (!hasRecentUpdates) {
-            // we failed sync, but we have no versions - we can't sync in that case
-            // - we were active
-            // before, so become leader anyway if no one else has any versions either
-            if (result.getOtherHasVersions().orElse(false)) {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
-              success = false;
-            } else {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-              success = true;
-            }
-          }
         }
 
         // solrcloud_debug
@@ -250,7 +222,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
             try {
               if (log.isDebugEnabled()) {
                 log.debug(
-                    "{} synched {}",
+                    "{} synced {}",
                     core.getCoreContainer().getZkController().getNodeName(),
                     searcher.count(new MatchAllDocsQuery()));
               }
@@ -507,11 +479,9 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
       return;
     }
 
-    log.info("There may be a better leader candidate than us - going back into recovery");
+    log.info("There may be a better leader candidate than us - rejoining the election");
 
     cancelElection();
-
-    core.getUpdateHandler().getSolrCoreState().doRecovery(cc, core.getCoreDescriptor());
 
     leaderElector.joinElection(this, true);
   }
