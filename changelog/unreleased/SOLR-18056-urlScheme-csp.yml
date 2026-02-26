@@ -1,6 +1,6 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
 title: Improved CloudSolrClient's urlScheme detection by using the scheme of provided Solr URLs, or looking at "solr.ssl.enabled".
-type: added
+type: changed
 authors:
   - name: Vishnu Priya Chandra Sekar
 links:
