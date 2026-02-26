@@ -597,3 +597,12 @@ configure(project(":solr:solrj")) {
     }
   }
 }
+
+// Exclude JavaCC-generated parser sources in solr:core from Error Prone checks.
+configure(project(":solr:core")) {
+  plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+    tasks.withType(JavaCompile) {
+      options.errorprone.excludedPaths = ".*/org/apache/solr/parser/.*"
+    }
+  }
+}
