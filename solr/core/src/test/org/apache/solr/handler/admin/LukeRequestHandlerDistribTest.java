@@ -18,7 +18,6 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -48,8 +47,6 @@ import org.apache.solr.util.BaseTestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
 
@@ -352,8 +349,6 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
         "count(//lst[@name='shards']/lst)=2");
   }
 
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   /**
    * Verifies that distributed Luke detects inconsistent index flags across shards. Uses Schema API
    * to change a field's {@code stored} property between indexing on different shards, producing
@@ -362,13 +357,9 @@ public class LukeRequestHandlerDistribTest extends SolrCloudTestCase {
   @Test
   public void testInconsistentIndexFlagsAcrossShards() throws Exception {
     String collection = "lukeInconsistentFlags";
-    try {
-      System.setProperty("managed.schema.mutable", "true");
-      CollectionAdminRequest.createCollection(collection, "managed", 2, 1)
-          .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
-    } catch (Exception e) {
-      log.error("yooo", e);
-    }
+    System.setProperty("managed.schema.mutable", "true");
+    CollectionAdminRequest.createCollection(collection, "managed", 2, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster.waitForActiveCollection(collection, 2, 2);
 
