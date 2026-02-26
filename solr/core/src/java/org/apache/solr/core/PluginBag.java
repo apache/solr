@@ -349,9 +349,27 @@ public class PluginBag<T> implements AutoCloseable {
             infos.stream().map(i -> i.name).collect(Collectors.toList()));
       }
     }
+
+    // Get the ConfigOverlay to check for deleted plugins
+    ConfigOverlay overlay = solrCore.getSolrConfig().getOverlay();
+
+    // Register default plugins, but skip those marked as deleted in the overlay
     for (Map.Entry<String, T> e : defaults.entrySet()) {
-      if (!contains(e.getKey())) {
-        put(e.getKey(), new PluginHolder<>(null, e.getValue()));
+      String pluginName = e.getKey();
+
+      // Check if this default plugin has been marked as deleted
+      if (overlay.isPluginDeleted(meta.getCleanTag(), pluginName)) {
+        if (log.isDebugEnabled()) {
+          log.debug(
+              "Skipping default {} '{}' because it is marked as deleted in ConfigOverlay",
+              meta.getCleanTag(),
+              pluginName);
+        }
+        continue;
+      }
+
+      if (!contains(pluginName)) {
+        put(pluginName, new PluginHolder<>(null, e.getValue()));
       }
     }
   }

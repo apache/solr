@@ -104,10 +104,17 @@ public final class RequestHandlers {
    */
   void initHandlersFromConfig(SolrConfig config) {
     List<PluginInfo> implicits = core.getImplicitHandlers();
+    ConfigOverlay overlay = config.getOverlay();
+
     // use link map so we iterate in the same order
     Map<String, PluginInfo> infoMap = new LinkedHashMap<>();
-    // deduping implicit and explicit requesthandlers
-    for (PluginInfo info : implicits) infoMap.put(info.name, info);
+    // deduping implicit and explicit requesthandlers, and filtering out deleted ones
+    for (PluginInfo info : implicits) {
+      // Skip implicit handlers that have been marked as deleted in the overlay
+      if (!overlay.isPluginDeleted(SolrRequestHandler.TYPE, info.name)) {
+        infoMap.put(info.name, info);
+      }
+    }
     for (PluginInfo info : config.getPluginInfos(SolrRequestHandler.class.getName()))
       infoMap.put(info.name, info);
     ArrayList<PluginInfo> infos = new ArrayList<>(infoMap.values());

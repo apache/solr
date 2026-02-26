@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -38,6 +39,7 @@ public class ConfigOverlay implements MapSerializable {
   private final Map<String, Object> data;
   private Map<String, Object> props;
   private Map<String, Object> userProps;
+  private final Set<String> deletedPlugins;
 
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay(Map<String, Object> jsonObj, int version) {
@@ -48,6 +50,13 @@ public class ConfigOverlay implements MapSerializable {
     if (props == null) props = Collections.emptyMap();
     userProps = (Map<String, Object>) data.get("userProps");
     if (userProps == null) userProps = Collections.emptyMap();
+
+    List<String> deleted = (List<String>) data.get("deleted");
+    if (deleted == null) {
+      deletedPlugins = Collections.emptySet();
+    } else {
+      deletedPlugins = Set.copyOf(deleted);
+    }
   }
 
   public Object getXPathProperty(String xpath) {
@@ -262,10 +271,51 @@ public class ConfigOverlay implements MapSerializable {
   @SuppressWarnings({"unchecked"})
   public ConfigOverlay deleteNamedPlugin(String name, String typ) {
     Map<String, Object> dataCopy = Utils.getDeepCopy(data, 4);
+
+    // Remove from overlay if present
     Map<?, ?> reqHandler = (Map<?, ?>) dataCopy.get(typ);
-    if (reqHandler == null) return this;
-    reqHandler.remove(name);
+    if (reqHandler != null) {
+      reqHandler.remove(name);
+    }
+
+    // Add to deleted set (tombstone marker)
+    List<String> deleted = (List<String>) dataCopy.get("deleted");
+    if (deleted == null) {
+      deleted = new ArrayList<>();
+      dataCopy.put("deleted", deleted);
+    } else {
+      // Make a copy since the list might be immutable
+      deleted = new ArrayList<>(deleted);
+      dataCopy.put("deleted", deleted);
+    }
+
+    String deletionKey = typ + ":" + name;
+    if (!deleted.contains(deletionKey)) {
+      deleted.add(deletionKey);
+    }
+
     return new ConfigOverlay(dataCopy, this.version);
+  }
+
+  /**
+   * Checks if a plugin has been marked as deleted in the overlay.
+   *
+   * @param typ the plugin type (e.g., "requestHandler")
+   * @param name the plugin name (e.g., "/update/json")
+   * @return true if the plugin is marked as deleted
+   */
+  public boolean isPluginDeleted(String typ, String name) {
+    String deletionKey = typ + ":" + name;
+    return deletedPlugins.contains(deletionKey);
+  }
+
+  /**
+   * Gets the set of all deleted plugin keys in the format "type:name".
+   *
+   * @return an unmodifiable set of deleted plugin keys
+   */
+  public Set<String> getDeletedPlugins() {
+    return deletedPlugins;
   }
 
   public static final String ZNODEVER = "znodeVersion";

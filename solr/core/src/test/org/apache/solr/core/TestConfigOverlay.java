@@ -19,8 +19,12 @@ package org.apache.solr.core;
 import static org.apache.solr.core.ConfigOverlay.isEditableProp;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.params.CoreAdminParams;
 
 public class TestConfigOverlay extends SolrTestCase {
 
@@ -63,5 +67,130 @@ public class TestConfigOverlay extends SolrTestCase {
     assertNotNull(map);
     assertEquals(1, map.size());
     assertEquals(100, map.get("initialSize"));
+  }
+
+  public void testDeletedPluginTombstone() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+
+    // Initially, no plugins should be deleted
+    assertFalse(overlay.isPluginDeleted("requestHandler", "/update/json"));
+    assertEquals(0, overlay.getDeletedPlugins().size());
+
+    // Delete a plugin
+    overlay = overlay.deleteNamedPlugin("/update/json", "requestHandler");
+
+    // Verify the plugin is marked as deleted
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
+    Set<String> deleted = overlay.getDeletedPlugins();
+    assertEquals(1, deleted.size());
+    assertTrue(deleted.contains("requestHandler:/update/json"));
+
+    // Delete another plugin
+    overlay = overlay.deleteNamedPlugin("/sql", "requestHandler");
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/sql"));
+    assertEquals(2, overlay.getDeletedPlugins().size());
+
+    // Verify the first one is still deleted
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
+  }
+
+  public void testDeletedPluginFromOverlay() {
+    // Create an overlay with a custom request handler
+    Map<String, Object> data = new HashMap<>();
+    Map<String, Object> requestHandlers = new HashMap<>();
+    Map<String, Object> handlerConfig = new HashMap<>();
+    handlerConfig.put(CoreAdminParams.NAME, "/custom");
+    handlerConfig.put("class", "solr.DumpRequestHandler");
+    requestHandlers.put("/custom", handlerConfig);
+    data.put("requestHandler", requestHandlers);
+
+    ConfigOverlay overlay = new ConfigOverlay(data, 0);
+
+    // Verify the handler exists in overlay
+    assertEquals(1, overlay.getNamedPlugins("requestHandler").size());
+
+    // Delete it
+    overlay = overlay.deleteNamedPlugin("/custom", "requestHandler");
+
+    // Verify it's removed from overlay and added to deleted list
+    assertEquals(0, overlay.getNamedPlugins("requestHandler").size());
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/custom"));
+  }
+
+  public void testDeletedPluginPersistence() {
+    // Create an overlay with deleted plugins in the data
+    Map<String, Object> data = new HashMap<>();
+    List<String> deleted = List.of("requestHandler:/update/json", "requestHandler:/sql");
+    data.put("deleted", deleted);
+
+    ConfigOverlay overlay = new ConfigOverlay(data, 0);
+
+    // Verify deleted plugins are loaded correctly
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/sql"));
+    assertEquals(2, overlay.getDeletedPlugins().size());
+  }
+
+  public void testDeleteSamePluginTwice() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+
+    // Delete a plugin
+    overlay = overlay.deleteNamedPlugin("/update/json", "requestHandler");
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
+    assertEquals(1, overlay.getDeletedPlugins().size());
+
+    // Delete the same plugin again
+    overlay = overlay.deleteNamedPlugin("/update/json", "requestHandler");
+
+    // Should still only have one entry
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update/json"));
+    assertEquals(1, overlay.getDeletedPlugins().size());
+  }
+
+  public void testDeleteResponseWriter() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+
+    // Initially, no writers should be deleted
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "json"));
+
+    // Delete a response writer
+    overlay = overlay.deleteNamedPlugin("xml", "queryResponseWriter");
+
+    // Verify the writer is marked as deleted
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    Set<String> deleted = overlay.getDeletedPlugins();
+    assertEquals(1, deleted.size());
+    assertTrue(deleted.contains("queryResponseWriter:xml"));
+
+    // Delete another writer
+    overlay = overlay.deleteNamedPlugin("csv", "queryResponseWriter");
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "csv"));
+    assertEquals(2, overlay.getDeletedPlugins().size());
+
+    // Verify both are still deleted
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "xml"));
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "csv"));
+  }
+
+  public void testDeleteMixedPluginTypes() {
+    ConfigOverlay overlay = new ConfigOverlay(Collections.emptyMap(), 0);
+
+    // Delete different plugin types
+    overlay = overlay.deleteNamedPlugin("/update", "requestHandler");
+    overlay = overlay.deleteNamedPlugin("json", "queryResponseWriter");
+    overlay = overlay.deleteNamedPlugin("mycomponent", "searchComponent");
+
+    // Verify all are marked as deleted
+    assertTrue(overlay.isPluginDeleted("requestHandler", "/update"));
+    assertTrue(overlay.isPluginDeleted("queryResponseWriter", "json"));
+    assertTrue(overlay.isPluginDeleted("searchComponent", "mycomponent"));
+
+    // Verify the count
+    assertEquals(3, overlay.getDeletedPlugins().size());
+
+    // Verify they don't interfere with each other
+    assertFalse(overlay.isPluginDeleted("requestHandler", "json"));
+    assertFalse(overlay.isPluginDeleted("queryResponseWriter", "/update"));
   }
 }
