@@ -290,7 +290,7 @@ public class CoreContainer {
 
   private final ObjectCache objectCache = new ObjectCache();
 
-  public final NodeRoles nodeRoles = new NodeRoles(System.getProperty(NodeRoles.NODE_ROLES_PROP));
+  public final NodeRoles nodeRoles = new NodeRoles(EnvUtils.getProperty(NodeRoles.NODE_ROLES_PROP));
 
   private final ExecutorService indexSearcherExecutor;
 
