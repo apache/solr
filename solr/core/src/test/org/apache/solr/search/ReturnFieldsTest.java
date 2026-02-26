@@ -396,6 +396,16 @@ public class ReturnFieldsTest extends SolrTestCaseJ4 {
         "//arr[@name='#foo_s']/str[.='how now brown cow']");
   }
 
+  @Test
+  public void testRowsZeroNoScore() {
+    ReturnFields rf = new SolrReturnFields(req("fl", "id,score", "rows", "0"));
+    assertTrue(rf.wantsScore());
+    assertTrue(rf.wantsField("score"));
+    assertTrue(rf.wantsField("id"));
+    assertFalse(rf.wantsField("xxx"));
+    assertFalse(rf.wantsAllFields());
+  }
+
   /**
    * Whitebox verification that the conversion from lucene {@link Document} to {@link SolrDocument}
    * respects the {@link ReturnFields} and doesn't unnecessarily convert Fields that aren't needed.

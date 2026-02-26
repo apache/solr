@@ -156,6 +156,9 @@ public class MiniClusterState {
 
       IOUtils.closeQuietly(client);
       cluster.shutdown();
+      if (useHttp1) {
+        System.clearProperty("solr.http1");
+      }
       logClusterDirectorySize();
     }
 
@@ -268,6 +271,9 @@ public class MiniClusterState {
       }
 
       try {
+        if (useHttp1) {
+          System.setProperty("solr.http1", "true");
+        }
         cluster =
             new MiniSolrCloudCluster.Builder(nodeCount, miniClusterBaseDir)
                 .formatZkServer(false)
