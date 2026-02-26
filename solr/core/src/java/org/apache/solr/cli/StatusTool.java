@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -334,7 +335,7 @@ public class StatusTool extends ToolBase {
     var collections =
         collectionsResponse != null && collectionsResponse.collections != null
             ? collectionsResponse.collections
-            : java.util.Collections.emptyList();
+            : List.of();
     cloudStatus.put("collections", String.valueOf(collections.size()));
 
     return cloudStatus;
