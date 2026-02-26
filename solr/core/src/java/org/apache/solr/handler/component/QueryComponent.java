@@ -182,7 +182,7 @@ public class QueryComponent extends SearchComponent {
     String queryString = rb.getQueryString();
     if (queryString == null) {
       // this is the normal way it's set.
-      queryString = params.get(CommonParams.Q);
+      queryString = params.get(rb.getParameterPrefix() + CommonParams.Q);
       rb.setQueryString(queryString);
     }
 
@@ -598,7 +598,7 @@ public class QueryComponent extends SearchComponent {
   }
 
   protected int groupedDistributedProcess(ResponseBuilder rb) {
-    int nextStage = ResponseBuilder.STAGE_DONE;
+    int nextStage = rb.getDoneStage();
     ShardRequestFactory shardRequestFactory = null;
 
     if (rb.getStage() < ResponseBuilder.STAGE_PARSE_QUERY) {
@@ -620,7 +620,7 @@ public class QueryComponent extends SearchComponent {
       nextStage = ResponseBuilder.STAGE_GET_FIELDS;
     } else if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS) {
       shardRequestFactory = new StoredFieldsShardRequestFactory();
-      nextStage = ResponseBuilder.STAGE_DONE;
+      nextStage = rb.getDoneStage();
     }
 
     if (shardRequestFactory != null) {
@@ -651,9 +651,9 @@ public class QueryComponent extends SearchComponent {
     }
     if (rb.getStage() == ResponseBuilder.STAGE_GET_FIELDS && !rb.onePassDistributedQuery) {
       createRetrieveDocs(rb);
-      return ResponseBuilder.STAGE_DONE;
+      return rb.getDoneStage();
     }
-    return ResponseBuilder.STAGE_DONE;
+    return rb.getDoneStage();
   }
 
   @Override

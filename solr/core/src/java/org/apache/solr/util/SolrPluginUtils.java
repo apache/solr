@@ -807,14 +807,14 @@ public class SolrPluginUtils {
       NamedList<Object> namedList,
       Map<Object, ShardDoc> resultIds,
       Map.Entry<String, Object>[] destArr) {
-    assert resultIds.size() == destArr.length;
+    assert resultIds.size() <= destArr.length;
     namedList.forEach(
         (id, val) -> {
           // TODO: lookup won't work for non-string ids... String vs Float
           ShardDoc sdoc = resultIds.get(id);
           if (sdoc != null) { // maybe null when rb.onePassDistributedQuery
             int idx = sdoc.positionInResponse;
-            destArr[idx] = new NamedList.NamedListEntry<>(id, val);
+            if (0 <= idx) destArr[idx] = new NamedList.NamedListEntry<>(id, val);
           }
         });
   }
