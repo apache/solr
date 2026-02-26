@@ -19,6 +19,7 @@ package org.apache.solr.cli;
 
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.PrintWriter;
 import java.io.StringReader;
@@ -69,7 +70,7 @@ public class StreamToolTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testGetOutputFields() {
+  public void testGetOutputFields() throws IOException {
     String[] args =
         new String[] {
           "--fields", "field9, field2, field3, field4",
