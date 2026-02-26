@@ -68,14 +68,12 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (log.isInfoEnabled()) {
       log.info("####SETUP_START {}", getTestName());
     }
-    // originalSystemOut = System.out;
 
     String solrHome = createTempDir().toString();
     System.setProperty("solr.home", solrHome);
 
     Path zkDir = createTempDir().resolve("zookeeper/server1/data");
 
-    Path zkDir = createTempDir().resolve("zookeeper/server1/data");
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
@@ -587,7 +585,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (zkServer != null) {
       zkServer.shutdown();
     }
-    // System.setOut(originalSystemOut);
     super.tearDown();
   }
 }
