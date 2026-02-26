@@ -49,6 +49,7 @@ import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
@@ -348,7 +349,7 @@ public class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public IndexableField getUniqueKeyField(org.apache.lucene.document.Document doc) {
+  public IndexableField getUniqueKeyField(Document doc) {
     return doc.getField(uniqueKeyFieldName); // this should return null if name is null
   }
 
@@ -357,7 +358,7 @@ public class IndexSchema {
    *
    * @return null if this schema has no unique key field
    */
-  public String printableUniqueKey(org.apache.lucene.document.Document doc) {
+  public String printableUniqueKey(Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
     return f == null ? null : uniqueKeyFieldType.toExternal(f);
   }

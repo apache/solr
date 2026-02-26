@@ -639,7 +639,7 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
       // Assert cookies from UseContextCallback
       assertNotNull(DebugServlet.cookies);
       boolean foundCookie = false;
-      for (jakarta.servlet.http.Cookie cookie : DebugServlet.cookies) {
+      for (Cookie cookie : DebugServlet.cookies) {
         if (cookieName.equals(cookie.getName()) && cookieValue.equals(cookie.getValue())) {
           foundCookie = true;
           break;
