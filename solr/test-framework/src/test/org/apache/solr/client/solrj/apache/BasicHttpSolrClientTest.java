@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.apache;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
