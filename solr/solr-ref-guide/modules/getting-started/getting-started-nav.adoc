@@ -35,6 +35,7 @@
 ** xref:tutorial-solrcloud.adoc[]
 ** xref:tutorial-opennlp.adoc[]
 ** xref:tutorial-aws.adoc[]
+** xref:tutorial-solr-mcp.adoc[]
 
 * xref:solr-admin-ui.adoc[]
 * xref:about-this-guide.adoc[]
