@@ -79,7 +79,7 @@ fun main() {
         ) {
             window.minimumSize = Dimension(720, 560)
 
-            SolrTheme(useDarkTheme = isSystemInDarkTheme()) {
+            SolrTheme(useDarkTheme = false) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     RootContent(root)
                 }

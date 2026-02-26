@@ -18,7 +18,12 @@
 package org.apache.solr.ui.components.configsets.integration
 
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.CreateConfigsetComponent
+import org.apache.solr.ui.components.configsets.ImportConfigsetComponent
 import org.apache.solr.ui.components.configsets.store.ConfigsetsStore
+import org.apache.solr.ui.components.configsets.store.CreateConfigsetStore
+import org.apache.solr.ui.components.configsets.store.ImportConfigsetStore
+import org.apache.solr.ui.components.files.store.FilePickerStore
 import org.apache.solr.ui.domain.Configset
 
 internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsComponent.Model = {
@@ -26,5 +31,21 @@ internal val configsetsStateToModel: (ConfigsetsStore.State) -> ConfigsetsCompon
         configsets = it.configSets.configSets.sorted()
             .map { s -> Configset(s) },
         selectedConfigset = it.selectedConfigset ?: "",
+    )
+}
+
+internal val createConfigsetStateToModel: (CreateConfigsetStore.State) -> CreateConfigsetComponent.Model = {
+    CreateConfigsetComponent.Model(
+        configsetName = it.configsetName,
+        configsets = it.configsets,
+        selectedBaseConfigset = it.baseConfigset ?: "",
+        isLoading = it.isLoading,
+    )
+}
+
+internal val importConfigsetStateToModel: (ImportConfigsetStore.State) -> ImportConfigsetComponent.Model = {
+    ImportConfigsetComponent.Model(
+        configsetName = it.name,
+        isLoading = it.isLoading,
     )
 }

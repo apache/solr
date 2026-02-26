@@ -14,6 +14,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.components.configsets.overview
 
-interface ConfigsetsOverviewComponent
+package org.apache.solr.ui.components.configsets
+
+import kotlinx.coroutines.flow.StateFlow
+import org.apache.solr.ui.domain.Configset
+
+/**
+ * Component that holds the state and behavior for creating a new configset.
+ */
+interface CreateConfigsetComponent {
+
+    val model: StateFlow<Model>
+
+    fun onConfigsetNameChange(configsetName: String)
+
+    fun onBaseConfigsetChange(baseConfigset: String)
+
+    fun onCreateConfigset()
+
+    fun onClearBaseConfigset()
+
+    data class Model(
+        val configsetName: String = "",
+        val configsets: List<Configset> = emptyList(),
+        val selectedBaseConfigset: String = "",
+        val isLoading: Boolean = false,
+    )
+
+    sealed interface Output {
+        data class ConfigsetCreated(val configset: Configset) : Output
+    }
+}

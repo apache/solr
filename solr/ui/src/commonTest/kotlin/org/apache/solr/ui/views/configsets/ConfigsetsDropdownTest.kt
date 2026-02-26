@@ -24,11 +24,10 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.runComposeUiTest
 import kotlin.test.Test
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
 import org.apache.solr.ui.domain.Configset
 
 @OptIn(ExperimentalTestApi::class)
-class ConfigsetsDropdownMenuTest {
+class ConfigsetsDropdownTest {
 
     @Test
     fun `GIVEN empty availableConfigsets WHEN dropdown clicked THEN not expanded`() = runComposeUiTest {
@@ -62,15 +61,15 @@ class ConfigsetsDropdownMenuTest {
     @Test
     fun `GIVEN configsets WHEN clicking dropdown THEN dropdown expands`() = runComposeUiTest {
         val selectedConfigset = "gettingstarted"
-        val component = TestConfigsetsComponent(
-            model = Model(
-                configsets = listOf(selectedConfigset, "techproducts")
-                    .map { Configset(it) },
-                selectedConfigset = selectedConfigset,
-            ),
-        )
 
-        setContent { ConfigsetsContent(component = component) }
+        setContent {
+            ConfigsetsDropdown(
+                selectConfigset = {},
+                availableConfigsets = listOf(selectedConfigset, "techproducts")
+                    .map { Configset(it) },
+                selectedConfigSet = selectedConfigset,
+            )
+        }
 
         onNodeWithTag(testTag = "configsets_dropdown").performClick()
         onNodeWithTag(testTag = "configsets_exposed_dropdown_menu").isDisplayed()

@@ -21,12 +21,9 @@ import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.Value
 import kotlinx.serialization.Serializable
 
-interface TabNavigationComponent<T : Enum<T>, C : Any> {
+interface TabNavigationComponent<T : Any, C : Any> {
 
-    val tabSlot: Value<ChildSlot<Configuration<T>, C>>
+    val tabSlot: Value<ChildSlot<T, C>>
 
     fun onNavigate(tab: T)
-
-    @Serializable
-    data class Configuration<T : Enum<T>>(val tab: T)
 }

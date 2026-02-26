@@ -71,12 +71,13 @@ codehaus-woodstox = "4.2.2"
 commons-cli = "1.10.0"
 commons-codec = "1.19.0"
 commons-io = "2.20.0"
-compose = "1.8.2"
+compose = "1.10.1"
+composeHotReload = "1.0.0"
 cutterslade-analyze = "1.10.0"
 cuvs-java = "25.10.0"
 cuvs-lucene = "25.10.0"
 cybozulabs-langdetect = "1.1-20120112"
-decompose = "3.3.0"
+decompose = "3.4.0"
 diffplug-spotless = "7.2.1"
 # @keep Use for dockerfile JRE version
 dockerfile-baseimage-java = "25"
@@ -146,17 +147,17 @@ jna = "5.18.1"
 joda-time = "2.14.0"
 junit = "4.13.2"
 junit-jupiter = "5.13.4"
-kotlin = "2.2.0"
+kotlin = "2.3.10"
 # @keep for version alignment
-kotlinx-atomicfu = "0.29.0"
+kotlinx-atomicfu = "0.31.0"
 # @keep for version alignment
-kotlinx-browser = "0.3"
-kotlinx-coroutines = "1.10.1"
+kotlinx-browser = "0.5.0"
+kotlinx-coroutines = "1.10.2"
 kotlinx-datetime = "0.7.1"
-kotlinx-serialization = "1.9.0"
+kotlinx-serialization = "1.10.0"
 # @keep used by spotless
 ktlint = "1.7.1"
-ktor = "3.2.2"
+ktor = "3.4.0"
 langchain4j-bom = "1.9.1"
 # @keep Link checker version used in ref-guide
 link-checker = "1.4.2"
@@ -164,6 +165,8 @@ littlerobots-versioncatalogupdate = "0.8.5"
 lmax-disruptor = "4.0.0"
 logchange = "1.19.13"
 ltgt-errorprone = "3.1.0"
+material-icons-extended = "1.7.8"
+material3 = "1.10.0-alpha05"
 mockito = "5.19.0"
 morethan-jmhreport = "0.9.6"
 mvikotlin = "4.3.0"
@@ -213,6 +216,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 cutterslade-analyze = { id = "ca.cutterslade.analyze", version.ref = "cutterslade-analyze" }
 diffplug-spotless = { id = "com.diffplug.spotless", version.ref = "diffplug-spotless" }
 jetbrains-compose = { id = "org.jetbrains.compose", version.ref = "compose" }
+jetbrains-compose-hotreload = { id = "org.jetbrains.compose.hot-reload", version.ref = "composeHotReload" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 littlerobots-versioncatalogupdate = { id = "nl.littlerobots.version-catalog-update", version.ref = "littlerobots-versioncatalogupdate" }
@@ -317,6 +321,14 @@ codehaus-woodstox-stax2api = { module = "org.codehaus.woodstox:stax2-api", versi
 commonscli-commonscli = { module = "commons-cli:commons-cli", version.ref = "commons-cli" }
 commonscodec-commonscodec = { module = "commons-codec:commons-codec", version.ref = "commons-codec" }
 commonsio-commonsio = { module = "commons-io:commons-io", version.ref = "commons-io" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-materialIconsExtended = { module = "org.jetbrains.compose.material3:material3", version.ref = "material-icons-extended" }
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-uiTest = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "compose" }
+compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "compose" }
 cuvs-java = { module = "com.nvidia.cuvs:cuvs-java", version.ref = "cuvs-java" }
 cuvs-lucene = { module = "com.nvidia.cuvs.lucene:cuvs-lucene", version.ref = "cuvs-lucene" }
 cybozulabs-langdetect = { module = "com.cybozu.labs:langdetect", version.ref = "cybozulabs-langdetect" }
@@ -441,15 +453,16 @@ kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-t
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlinx-serialization-core = { module = "org.jetbrains.kotlinx:kotlinx-serialization-core", version.ref = "kotlinx-serialization" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
-ktor-client-auth = { module = "io.ktor:ktor-client-auth", version.ref = "ktor" }
-ktor-client-cio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
-ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
-ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
-ktor-client-mock = { module = "io.ktor:ktor-client-mock", version.ref = "ktor" }
-ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
-ktor-server-cio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
-ktor-server-core = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
-ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder", version.ref = "ktor" }
+ktor-bom = { module = "io.ktor:ktor-bom", version.ref = "ktor" }
+ktor-client-auth = { module = "io.ktor:ktor-client-auth" }
+ktor-client-cio = { module = "io.ktor:ktor-client-cio" }
+ktor-client-contentNegotiation = { module = "io.ktor:ktor-client-content-negotiation" }
+ktor-client-core = { module = "io.ktor:ktor-client-core" }
+ktor-client-mock = { module = "io.ktor:ktor-client-mock" }
+ktor-client-serialization-json = { module = "io.ktor:ktor-serialization-kotlinx-json" }
+ktor-server-cio = { module = "io.ktor:ktor-server-cio" }
+ktor-server-core = { module = "io.ktor:ktor-server-core" }
+ktor-server-htmlBuilder = { module = "io.ktor:ktor-server-html-builder" }
 langchain4j-bom = { module = "dev.langchain4j:langchain4j-bom", version.ref = "langchain4j-bom" }
 langchain4j-cohere = { module = "dev.langchain4j:langchain4j-cohere" }
 langchain4j-core = { module = "dev.langchain4j:langchain4j-core" }

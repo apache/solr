@@ -18,6 +18,7 @@
 package org.apache.solr.ui.preview.configsets
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.tooling.preview.Preview
 import com.arkivanov.decompose.Child
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.MutableValue
@@ -26,18 +27,19 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Model
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
-import org.apache.solr.ui.components.navigation.TabNavigationComponent.Configuration
+import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent.CreateConfigsetDialogConfig
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
+import org.apache.solr.ui.components.configsets.CreateConfigsetComponent
 import org.apache.solr.ui.domain.Configset
 import org.apache.solr.ui.preview.PreviewContainer
 import org.apache.solr.ui.views.configsets.ConfigsetsContent
 import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
-import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Preview
 @Composable
 private fun PreviewConfigsetsContentEmptyConfigsets() = PreviewContainer {
-    ConfigsetsContent(component = SimplePreviewConfigsetsComponent())
+    ConfigsetsContent(component = SimplePreviewConfigsetsRouteComponent())
 }
 
 @Preview
@@ -45,26 +47,26 @@ private fun PreviewConfigsetsContentEmptyConfigsets() = PreviewContainer {
 private fun PreviewConfigsetsContentWithConfigsetSelected() = PreviewContainer {
     val configset = "techproducts"
     ConfigsetsContent(
-        component = SimplePreviewConfigsetsComponent(
-            model = Model(
-                configsets = listOf(configset, "getting_started").map { Configset(name = it) },
-                selectedConfigset = configset,
+        component = SimplePreviewConfigsetsRouteComponent(
+            configsetsComponent = SimplePreviewConfigsetsComponent(
+                model = Model(
+                    configsets = listOf(configset, "getting_started").map { Configset(name = it) },
+                    selectedConfigset = configset,
+                ),
             ),
         ),
     )
 }
 
-private class SimplePreviewConfigsetsComponent(model: Model = Model()) : ConfigsetsComponent {
-    override val model: StateFlow<Model> = MutableStateFlow(model)
-
-    override fun onSelectConfigset(name: String) = Unit
-
-    override val tabSlot: Value<ChildSlot<Configuration<ConfigsetsTab>, ConfigsetsComponent.Child>>
+private class SimplePreviewConfigsetsRouteComponent(
+    override val configsetsComponent: ConfigsetsComponent = SimplePreviewConfigsetsComponent(),
+) : ConfigsetsRouteComponent {
+    override val tabSlot: Value<ChildSlot<ConfigsetsTab, ConfigsetsRouteComponent.Child>>
         get() = MutableValue(
             initialValue = ChildSlot(
                 Child.Created(
-                    configuration = Configuration(tab = ConfigsetsTab.Overview),
-                    instance = ConfigsetsComponent.Child.Overview(PreviewConfigsetsOverviewComponent),
+                    configuration = ConfigsetsTab.Overview,
+                    instance = ConfigsetsRouteComponent.Child.Overview(PreviewConfigsetsOverviewComponent),
                 ),
             ),
         )
@@ -72,4 +74,17 @@ private class SimplePreviewConfigsetsComponent(model: Model = Model()) : Configs
     override fun onNavigate(tab: ConfigsetsTab) = Unit
 }
 
-private object PreviewConfigsetsOverviewComponent : ConfigsetsOverviewComponent
+private class SimplePreviewConfigsetsComponent(model: Model = Model()) : ConfigsetsComponent {
+    override val model: StateFlow<Model> = MutableStateFlow(model)
+    override fun onSelectConfigset(name: String, reload: Boolean) = Unit
+}
+
+private object PreviewConfigsetsOverviewComponent : ConfigsetsOverviewComponent {
+    override val dialog: Value<ChildSlot<CreateConfigsetDialogConfig, CreateConfigsetComponent>> =
+        MutableValue(ChildSlot())
+
+    override fun createConfigset() = Unit
+    override fun importConfigset() = Unit
+    override fun closeDialog() = Unit
+    override fun editSolrConfig(name: String) = Unit
+}

@@ -21,6 +21,7 @@ import com.arkivanov.decompose.router.stack.ChildStack
 import com.arkivanov.decompose.value.Value
 import org.apache.solr.ui.components.cluster.ClusterComponent
 import org.apache.solr.ui.components.configsets.ConfigsetsComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
 import org.apache.solr.ui.components.environment.EnvironmentComponent
 import org.apache.solr.ui.components.logging.LoggingComponent
 import org.apache.solr.ui.components.navigation.NavigationComponent
@@ -69,7 +70,7 @@ interface MainComponent : NavigationComponent {
         // TODO Uncomment once SecurityComponent available
         // data class Security(val component: SecurityComponent): Child
 
-        data class Configsets(val component: ConfigsetsComponent) : Child
+        data class Configsets(val component: ConfigsetsRouteComponent) : Child
 
         // TODO Uncomment once MetricsComponent available
         // data class Collections(val component: CollectionsComponent): Child
