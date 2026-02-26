@@ -1,0 +1,7 @@
+title: Update org.glassfish.hk2:osgi-resource-locator to v3
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#4032
+  url: https://github.com/apache/solr/pull/4032
