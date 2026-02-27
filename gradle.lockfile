@@ -12,5 +12,5 @@ org.apache.rat:apache-rat-api:0.15=ratDeps
 org.apache.rat:apache-rat-core:0.15=ratDeps
 org.apache.rat:apache-rat-tasks:0.15=ratDeps
 org.apache.rat:apache-rat:0.15=ratDeps
-org.eclipse.jdt:ecj:3.39.0=ecjDeps
+org.eclipse.jdt:ecj:3.44.0=ecjDeps
 empty=
