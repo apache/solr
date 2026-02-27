@@ -63,9 +63,9 @@ public class CoreSorter {
           }
         }
 
-        // Prioritize replicas where the greatest number of other nodes waiting.
-        // For example if 1 other replicas are waiting for this replica, then
-        // prioritize that over the replica were zero other nodes are waiting
+        // Prioritize replicas where the greatest number of other nodes are waiting.
+        // For example, if one other replica is waiting for this replica, then
+        // prioritize that over a replica where zero other nodes are waiting
         if (c1.totalReplicasInLiveNodes > c2.totalReplicasInLiveNodes) return -1;
         if (c2.totalReplicasInLiveNodes > c1.totalReplicasInLiveNodes) return 1;
 
