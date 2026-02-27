@@ -122,7 +122,7 @@ ibm-icu = "77.1"
 immutables-valueannotations = "2.10.1"
 j256-simplemagic = "1.17"
 # Keep these Jakarta versions aligned with EE 10
-jakarta-annotation = "2.1.1"
+jakarta-annotation = "3.0.0"
 jakarta-inject = "2.0.1"
 jakarta-servlet = "6.1.0"
 jakarta-ws = "3.1.0"
