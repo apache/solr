@@ -20,7 +20,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Set;
 
-/** Response for the v2 "list cluster nodes" API */
+/** Response for the v2 "list cluster nodes" API.
+ * This is a bit unusual that it's wrapping a non JAX-RS V2 API defined in org.apache.solr.handler.ClusterAPI.getNodes()
+ * The calls are made using just the defaults.
+ */
 public class ListClusterNodesResponse extends SolrJerseyResponse {
 
   @Schema(description = "The live nodes in the cluster.")
