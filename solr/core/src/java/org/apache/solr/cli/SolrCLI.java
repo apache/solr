@@ -342,7 +342,10 @@ public class SolrCLI implements CLIO {
     helpAppendable.setMaxWidth(120);
     helpAppendable.setIndent(0);
     helpAppendable.setLeftPad(0);
-    return HelpFormatter.builder().setHelpAppendable(helpAppendable).setShowSince(false).get();
+    HelpFormatter formatter =
+        HelpFormatter.builder().setHelpAppendable(helpAppendable).setShowSince(false).get();
+    formatter.setSyntaxPrefix("usage:");
+    return formatter;
   }
 
   /** Scans Jar files on the classpath for Tool implementations to activate. */
