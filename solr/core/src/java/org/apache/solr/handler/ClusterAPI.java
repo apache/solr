@@ -241,6 +241,7 @@ public class ClusterAPI {
 
   @EndPoint(method = GET, path = "/cluster/nodes", permission = COLL_READ_PERM)
   public void getNodes(SolrQueryRequest req, SolrQueryResponse rsp) {
+    System.out.println("\n\nHI THERE I AM IN CLUSTERAPI\n\n");
     rsp.add("nodes", getCoreContainer().getZkController().getClusterState().getLiveNodes());
   }
 
