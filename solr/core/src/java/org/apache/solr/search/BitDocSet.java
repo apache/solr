@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
+import java.util.List;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;

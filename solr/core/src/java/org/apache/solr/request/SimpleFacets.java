@@ -203,7 +203,7 @@ public class SimpleFacets {
     key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
     String tagStr = localParams.get(CommonParams.TAG);
-    tags = tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+    tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
     String threadStr = localParams.get(CommonParams.THREADS);
     if (threadStr != null) {

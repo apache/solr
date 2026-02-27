@@ -20,6 +20,7 @@ package org.apache.solr.handler.designer;
 import static org.apache.solr.handler.admin.ConfigSetsHandler.DEFAULT_CONFIGSET_NAME;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;

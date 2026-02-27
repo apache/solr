@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;

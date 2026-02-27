@@ -18,7 +18,6 @@ package org.apache.solr.spelling;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -322,7 +321,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
       String suggestion,
       int suggestionFrequency) {
     if (suggestion == null) {
-      result.add(token, Collections.<String>emptyList());
+      result.add(token, List.of());
       result.addFrequency(token, tokenFrequency);
     } else {
       result.add(token, suggestion, suggestionFrequency);

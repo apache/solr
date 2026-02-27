@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -1189,7 +1188,7 @@ public class FacetComponent extends SearchComponent {
       PivotFacet pivot = entry.getValue();
       List<NamedList<Object>> trimmedPivots = pivot.getTrimmedPivotsAsListOfNamedLists();
       if (null == trimmedPivots) {
-        trimmedPivots = Collections.<NamedList<Object>>emptyList();
+        trimmedPivots = List.of();
       }
 
       combinedPivotFacets.add(key, trimmedPivots);
@@ -1335,8 +1334,7 @@ public class FacetComponent extends SearchComponent {
         key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
         String tagStr = localParams.get(CommonParams.TAG);
-        this.tags =
-            tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+        this.tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
         String threadStr = localParams.get(CommonParams.THREADS);
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;

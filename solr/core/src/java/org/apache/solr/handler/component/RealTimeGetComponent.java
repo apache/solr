@@ -1457,7 +1457,7 @@ public class RealTimeGetComponent extends SearchComponent {
       final String ids[] = params.getParams("ids");
 
       if (id == null && ids == null) {
-        IdsRequested result = new IdsRequested(Collections.<String>emptyList(), true);
+        IdsRequested result = new IdsRequested(List.of(), true);
         req.getContext().put(contextKey, result);
         return result;
       }

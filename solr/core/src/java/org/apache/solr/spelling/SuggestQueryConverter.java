@@ -19,6 +19,7 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 /** Passes the entire query string to the configured analyzer as-is. */
 public class SuggestQueryConverter extends SpellingQueryConverter {

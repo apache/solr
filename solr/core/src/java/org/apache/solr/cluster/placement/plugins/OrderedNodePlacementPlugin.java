@@ -899,7 +899,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           .map(Map::keySet)
           // Use a sorted TreeSet to make sure that tests are repeatable
           .<Collection<Replica.ReplicaType>>map(TreeSet::new)
-          .orElseGet(Collections::emptyList);
+          .orElseGet(List::of);
     }
 
     /**
