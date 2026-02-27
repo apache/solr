@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.TokenStream;
@@ -103,7 +102,7 @@ public class SpellingQueryConverter extends QueryConverter {
   @Override
   public Collection<Token> convert(String original) {
     if (original == null) { // this can happen with q.alt = and no query
-      return Collections.emptyList();
+      return List.of();
     }
     boolean mightContainRangeQuery =
         (original.indexOf('[') != -1 || original.indexOf('{') != -1)

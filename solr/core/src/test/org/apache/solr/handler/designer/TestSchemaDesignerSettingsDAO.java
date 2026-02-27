@@ -84,7 +84,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
             DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
             false,
             DESIGNER_KEY + LANGUAGES_PARAM,
-            Collections.emptyList());
+            List.of());
 
     assertDesignerSettings(expSettings, settings);
     settings.setDisabled(false);
@@ -109,7 +109,7 @@ public class TestSchemaDesignerSettingsDAO extends SolrCloudTestCase
             DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM,
             false,
             DESIGNER_KEY + LANGUAGES_PARAM,
-            Collections.emptyList());
+            List.of());
     assertDesignerSettings(expSettings, settings);
     assertFalse("should not be disabled", dao.isDesignerDisabled(configSet));
 

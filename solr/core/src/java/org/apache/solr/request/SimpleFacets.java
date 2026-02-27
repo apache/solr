@@ -179,7 +179,7 @@ public class SimpleFacets {
     DocSet docs = docsOrig;
     String facetValue = param;
     String key = param;
-    List<String> tags = Collections.emptyList();
+    List<String> tags = List.of();
     int threads = -1;
 
     if (localParams == null) {

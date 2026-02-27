@@ -219,7 +219,7 @@ public class WordBreakSolrSpellChecker extends SolrSpellChecker {
     }
     breakSuggestionList.addAll(noBreakSuggestionList);
 
-    List<ResultEntry> combineSuggestionList = Collections.emptyList();
+    List<ResultEntry> combineSuggestionList = List.of();
     CombineSuggestion[] combineSuggestions =
         wbsp.suggestWordCombinations(
             termArr.toArray(new Term[0]), numSuggestions, ir, options.suggestMode);

@@ -131,7 +131,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
   private static final String MAX_CHARS_PARAM = "maxChars";
   private static final String IS_DEFAULT_PARAM = "default";
 
-  private List<TypeMapping> typeMappings = Collections.emptyList();
+  private List<TypeMapping> typeMappings = List.of();
   private SelectorParams inclusions = new SelectorParams();
   private Collection<SelectorParams> exclusions = new ArrayList<>();
   private SolrResourceLoader solrResourceLoader = null;

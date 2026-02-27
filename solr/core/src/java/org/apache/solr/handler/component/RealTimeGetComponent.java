@@ -1374,7 +1374,7 @@ public class RealTimeGetComponent extends SearchComponent {
 
   private List<Long> resolveVersionRanges(String versionsStr, UpdateLog ulog) {
     if (StrUtils.isNullOrEmpty(versionsStr)) {
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<String> ranges = StrUtils.splitSmart(versionsStr, ",", true);

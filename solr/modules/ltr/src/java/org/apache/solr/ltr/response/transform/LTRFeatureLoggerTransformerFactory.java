@@ -462,13 +462,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private static class LoggingModel extends LTRScoringModel {
 
     public LoggingModel(String name, String featureStoreName, List<Feature> allFeatures) {
-      this(
-          name,
-          Collections.emptyList(),
-          Collections.emptyList(),
-          featureStoreName,
-          allFeatures,
-          Collections.emptyMap());
+      this(name, List.of(), List.of(), featureStoreName, allFeatures, Collections.emptyMap());
     }
 
     protected LoggingModel(

@@ -181,7 +181,7 @@ public class ZookeeperStatusHandlerTest extends SolrCloudTestCase {
   @Test(expected = SolrException.class)
   public void validateEmptyResponse() {
     try (ZookeeperStatusHandler zsh = new ZookeeperStatusHandler(null)) {
-      zsh.validateZkRawResponse(Collections.emptyList(), "zoo1:2181", "mntr");
+      zsh.validateZkRawResponse(List.of(), "zoo1:2181", "mntr");
     } catch (IOException e) {
       fail("Error closing ZookeeperStatusHandler");
     }

@@ -18,7 +18,6 @@ package org.apache.solr.search.vector;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -192,7 +191,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
   private List<String> getLocalParamTags(final String param) {
     final String[] strVals = localParams.getParams(param);
     if (null == strVals) {
-      return Collections.emptyList();
+      return List.of();
     }
     final List<String> tags = new ArrayList<>(strVals.length * 2);
     for (String val : strVals) {

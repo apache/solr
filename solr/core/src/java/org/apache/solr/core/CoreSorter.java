@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Collection;

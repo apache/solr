@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
@@ -103,7 +102,7 @@ public class UnloadDistributedZkTest extends AbstractFullDistribZkTestBase {
           45,
           TimeUnit.SECONDS,
           c -> {
-            final Collection<Slice> slices = (c != null) ? c.getSlices() : Collections.emptyList();
+            final Collection<Slice> slices = (c != null) ? c.getSlices() : List.of();
             if (expectedSliceCount == slices.size()) {
               for (Slice slice : slices) {
                 for (Replica replica : slice.getReplicas()) {

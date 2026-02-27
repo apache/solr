@@ -190,7 +190,7 @@ public class ClusterAPI {
     try {
       return zk.listData(ZkStateReader.NODE_ROLES + "/" + role + "/" + mode);
     } catch (NoSuchElementException e) {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

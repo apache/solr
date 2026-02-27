@@ -600,7 +600,7 @@ public class NodeConfig {
     private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
     private Set<Path> allowPaths = Collections.emptySet();
-    private List<String> allowUrls = Collections.emptyList();
+    private List<String> allowUrls = List.of();
     private boolean hideStackTrace =
         !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
 

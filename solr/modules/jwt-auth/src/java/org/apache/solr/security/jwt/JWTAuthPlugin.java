@@ -257,7 +257,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
       }
 
       Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-      redirectUris = Collections.emptyList();
+      redirectUris = List.of();
       if (redirectUrisObj != null) {
         if (redirectUrisObj instanceof String) {
           redirectUris = Collections.singletonList((String) redirectUrisObj);

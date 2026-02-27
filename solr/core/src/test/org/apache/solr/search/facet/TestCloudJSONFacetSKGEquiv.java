@@ -363,8 +363,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
       { // if we override 'dv' with 'hashdv' which doesn't sweep, our sweep debug should be empty,
         // even if the skg stat does ask for sweeping explicitly...
@@ -419,8 +419,8 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
             (NamedList<Object>) debug.get(SWEEP_COLLECTION_DEBUG_KEY);
         assertNotNull(sweep_debug);
         assertEquals("count", sweep_debug.get("base"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("accs"));
-        assertEquals(Collections.emptyList(), sweep_debug.get("mapped"));
+        assertEquals(List.of(), sweep_debug.get("accs"));
+        assertEquals(List.of(), sweep_debug.get("mapped"));
       }
     }
 

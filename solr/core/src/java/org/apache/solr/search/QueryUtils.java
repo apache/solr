@@ -290,7 +290,7 @@ public class QueryUtils {
       return filters;
     }
 
-    return Collections.emptyList();
+    return List.of();
   }
 
   /**

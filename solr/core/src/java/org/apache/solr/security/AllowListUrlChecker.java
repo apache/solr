@@ -56,7 +56,7 @@ public class AllowListUrlChecker {
   static {
     try {
       ALLOW_ALL =
-          new AllowListUrlChecker(Collections.emptyList()) {
+          new AllowListUrlChecker(List.of()) {
             @Override
             public void checkAllowList(List<String> urls, ClusterState clusterState) {
               // Allow.

@@ -105,8 +105,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
       String path = nodenamePaths[i + 1];
       assertTrue(
           "Didn't find " + nodename + " at " + path + ". Full response: " + rsp.jsonStr(),
-          ((Collection) Objects.requireNonNullElse(rsp._get(path), Collections.emptyList()))
-              .contains(nodename));
+          ((Collection) Objects.requireNonNullElse(rsp._get(path), List.of())).contains(nodename));
     }
   }
 

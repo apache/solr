@@ -307,7 +307,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, SolrParams.of()) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            return Collections.emptyList();
+            return List.of();
           }
         };
 

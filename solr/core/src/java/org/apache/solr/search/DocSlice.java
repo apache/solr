@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.util.Collection;
-import java.util.Collections;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -164,7 +163,7 @@ public class DocSlice implements DocList, Accountable {
 
   @Override
   public Collection<Accountable> getChildResources() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

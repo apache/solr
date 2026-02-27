@@ -227,7 +227,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
             List.of(SANType.EMAIL.getValue(), "user1@example.com"),
             List.of(SANType.EMAIL.getValue(), "user2@example.com")),
         "san.email",
-        Collections.emptyList(),
+        List.of(),
         "*",
         "user1@example.com");
   }
@@ -322,7 +322,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         sanData,
         null,
         path,
-        Collections.emptyList(),
+        List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
         Collections.emptyMap(),
         expectedValue);
@@ -345,7 +345,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         null,
         dn,
         path,
-        Collections.emptyList(),
+        List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
         Collections.emptyMap(),
         expectedValue);

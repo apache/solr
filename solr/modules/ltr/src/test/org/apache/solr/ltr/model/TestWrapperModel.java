@@ -37,7 +37,7 @@ public class TestWrapperModel extends TestRerankBase {
   private static class StubWrapperModel extends WrapperModel {
 
     private StubWrapperModel(String name) {
-      this(name, Collections.emptyList(), Collections.emptyList());
+      this(name, List.of(), List.of());
     }
 
     private StubWrapperModel(String name, List<Feature> features, List<Normalizer> norms) {
@@ -75,16 +75,14 @@ public class TestWrapperModel extends TestRerankBase {
         new StubWrapperModel(
             "testModel",
             Collections.singletonList(new ValueFeature("val", Collections.emptyMap())),
-            Collections.emptyList());
+            List.of());
     ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
     // wrapper model with norms
     WrapperModel wrapperModelWithNorms =
         new StubWrapperModel(
-            "testModel",
-            Collections.emptyList(),
-            Collections.singletonList(IdentityNormalizer.INSTANCE));
+            "testModel", List.of(), Collections.singletonList(IdentityNormalizer.INSTANCE));
     e = expectThrows(ModelException.class, wrapperModelWithNorms::validate);
     assertEquals("norms must be empty for the wrapper model testModel", e.getMessage());
 
@@ -122,7 +120,7 @@ public class TestWrapperModel extends TestRerankBase {
       LTRScoringModel wrappedModel =
           createMockWrappedModel(
               FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-              Collections.emptyList(),
+              List.of(),
               Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("no features declared for model testModel", e.getMessage());
@@ -136,7 +134,7 @@ public class TestWrapperModel extends TestRerankBase {
               Arrays.asList(
                   new ValueFeature("v1", Collections.emptyMap()),
                   new ValueFeature("v2", Collections.emptyMap())),
-              Collections.emptyList());
+              List.of());
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());
     }

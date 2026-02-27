@@ -106,7 +106,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -1410,7 +1409,6 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
   /** Copy all params to the given map or if the given map is null create a new one */
   static Map<String, Object> copy(
       SolrParams source, Map<String, Object> sink, String... paramNames) {
-    return copy(
-        source, sink, paramNames == null ? Collections.emptyList() : Arrays.asList(paramNames));
+    return copy(source, sink, paramNames == null ? List.of() : Arrays.asList(paramNames));
   }
 }

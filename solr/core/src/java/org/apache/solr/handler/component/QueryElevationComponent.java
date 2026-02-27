@@ -518,13 +518,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     String paramExcludedIds = params.get(QueryElevationParams.EXCLUDE);
     if (paramElevatedIds != null || paramExcludedIds != null) {
       List<String> elevatedIds =
-          paramElevatedIds != null
-              ? StrUtils.splitSmart(paramElevatedIds, ",", true)
-              : Collections.emptyList();
+          paramElevatedIds != null ? StrUtils.splitSmart(paramElevatedIds, ",", true) : List.of();
       List<String> excludedIds =
-          paramExcludedIds != null
-              ? StrUtils.splitSmart(paramExcludedIds, ",", true)
-              : Collections.emptyList();
+          paramExcludedIds != null ? StrUtils.splitSmart(paramExcludedIds, ",", true) : List.of();
       return new ElevationBuilder().addElevatedIds(elevatedIds).addExcludedIds(excludedIds).build();
     } else {
       IndexReader reader = rb.req.getSearcher().getIndexReader();
@@ -916,10 +912,8 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     clearElevationProviderCache();
     ElevatingQuery elevatingQuery = new ElevatingQuery(queryString, subsetMatch);
     ElevationBuilder elevationBuilder = new ElevationBuilder();
-    elevationBuilder.addElevatedIds(
-        elevatedIds == null ? Collections.emptyList() : Arrays.asList(elevatedIds));
-    elevationBuilder.addExcludedIds(
-        excludedIds == null ? Collections.emptyList() : Arrays.asList(excludedIds));
+    elevationBuilder.addElevatedIds(elevatedIds == null ? List.of() : Arrays.asList(elevatedIds));
+    elevationBuilder.addExcludedIds(excludedIds == null ? List.of() : Arrays.asList(excludedIds));
     Map<ElevatingQuery, ElevationBuilder> elevationBuilderMap =
         Map.of(elevatingQuery, elevationBuilder);
     synchronized (LOCK) {
@@ -1647,7 +1641,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 
       /** Gets the match values decorating this node. */
       List<M> getMatchValues() {
-        return (matchValues == null ? Collections.emptyList() : matchValues);
+        return (matchValues == null ? List.of() : matchValues);
       }
 
       /**

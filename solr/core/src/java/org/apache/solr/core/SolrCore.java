@@ -3231,7 +3231,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
    * @return The instances initialized
    */
   public <T> List<T> initPlugins(List<PluginInfo> pluginInfos, Class<T> type, String defClassName) {
-    if (pluginInfos.isEmpty()) return Collections.emptyList();
+    if (pluginInfos.isEmpty()) return List.of();
     List<T> result = new ArrayList<>(pluginInfos.size());
     for (PluginInfo info : pluginInfos)
       result.add(createInitInstance(info, type, type.getSimpleName(), defClassName));
@@ -3623,7 +3623,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     }
 
     public static List<PluginInfo> getImplicitPlugins(String type) {
-      return ALL_IMPLICIT_PLUGINS.getOrDefault(type, Collections.emptyList());
+      return ALL_IMPLICIT_PLUGINS.getOrDefault(type, List.of());
     }
   }
 

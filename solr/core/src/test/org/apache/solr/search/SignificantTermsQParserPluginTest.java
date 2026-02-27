@@ -20,7 +20,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -76,8 +75,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     RefCounted<SolrIndexSearcher> searcher = emptyCore.getSearcher();
     try {
       DelegatingCollector analyticsCollector =
-          query.getAnalyticsCollector(
-              new ResponseBuilder(null, resp, Collections.emptyList()), searcher.get());
+          query.getAnalyticsCollector(new ResponseBuilder(null, resp, List.of()), searcher.get());
       assertNotNull(analyticsCollector);
       analyticsCollector.complete();
       LinkedHashMap<String, Object> expectedValues = new LinkedHashMap<>();
@@ -106,7 +104,7 @@ public class SignificantTermsQParserPluginTest extends SolrTestCaseJ4 {
     AnalyticsQuery query = (AnalyticsQuery) parser.parse();
     SolrQueryResponse resp = new SolrQueryResponse();
 
-    ResponseBuilder responseBuilder = new ResponseBuilder(null, resp, Collections.emptyList());
+    ResponseBuilder responseBuilder = new ResponseBuilder(null, resp, List.of());
     RefCounted<SolrIndexSearcher> searcher = dataCore.getSearcher();
     try {
 

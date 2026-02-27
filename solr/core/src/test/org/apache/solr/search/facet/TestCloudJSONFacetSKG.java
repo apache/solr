@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -442,7 +441,7 @@ public class TestCloudJSONFacetSKG extends SolrCloudTestCase {
         // 'skg' key must not exist in th allBuckets bucket
         assertEquals(
             facetKey + " has skg in allBuckets: " + results.get("allBuckets"),
-            Collections.emptyList(),
+            List.of(),
             ((NamedList<Object>) results.get("allBuckets")).getAll("skg"));
       }
       final List<NamedList<Object>> buckets = (List<NamedList<Object>>) results.get("buckets");

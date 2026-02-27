@@ -59,7 +59,7 @@ public class PluginInfo implements MapSerializable {
       }
     }
     attributes = unmodifiableMap(attrs);
-    this.children = children == null ? Collections.emptyList() : unmodifiableList(children);
+    this.children = children == null ? List.of() : unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
@@ -148,7 +148,7 @@ public class PluginInfo implements MapSerializable {
     // TODO This is not type-safe and needs to be fixed -
     // https://issues.apache.org/jira/browse/SOLR-14696
     attributes = unmodifiableMap(m);
-    this.children = Collections.emptyList();
+    this.children = List.of();
     isFromSolrConfig = true;
   }
 
@@ -162,7 +162,7 @@ public class PluginInfo implements MapSerializable {
           if (pluginInfo.isEnabled()) children.add(pluginInfo);
           return null;
         });
-    return children.isEmpty() ? Collections.emptyList() : unmodifiableList(children);
+    return children.isEmpty() ? List.of() : unmodifiableList(children);
   }
 
   @Override
@@ -230,7 +230,7 @@ public class PluginInfo implements MapSerializable {
   }
 
   public static final PluginInfo EMPTY_INFO =
-      new PluginInfo("", Collections.emptyMap(), new NamedList<>(), Collections.emptyList());
+      new PluginInfo("", Collections.emptyMap(), new NamedList<>(), List.of());
 
   private static final HashSet<String> NL_TAGS =
       new HashSet<>(asList("lst", "arr", "bool", "str", "int", "long", "float", "double"));
