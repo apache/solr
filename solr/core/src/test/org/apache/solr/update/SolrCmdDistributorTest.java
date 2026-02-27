@@ -63,10 +63,10 @@ import org.junit.Test;
 // machines occasionally
 public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
-  private static enum NodeType {
+  private enum NodeType {
     FORWARD,
     STANDARD
-  };
+  }
 
   private final AtomicInteger uniqueId = new AtomicInteger();
 
@@ -370,9 +370,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
   }
 
   private void testDeletes(boolean dbq, boolean withFailures) throws Exception {
-    final HttpSolrClient solrclient = (HttpSolrClient) clients.get(0);
-    solrclient.commit(true, true);
-    long numFoundBefore = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
+    final HttpSolrClient solrClient = (HttpSolrClient) clients.get(0);
+    solrClient.commit();
+    long numFoundBefore = solrClient.query(new SolrQuery("*:*")).getResults().getNumFound();
     final MockStreamingSolrClients streamingClients =
         new MockStreamingSolrClients(updateShardHandler);
     try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(streamingClients, 0)) {
@@ -385,9 +385,9 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       ZkNodeProps nodeProps =
           new ZkNodeProps(
               ZkStateReader.BASE_URL_PROP,
-              solrclient.getBaseURL(),
+              solrClient.getBaseURL(),
               ZkStateReader.CORE_NAME_PROP,
-              solrclient.getDefaultCollection());
+              solrClient.getDefaultCollection());
       Node retryNode =
           new StdNode(new ZkCoreNodeProps(nodeProps), "collection1", "shard1", 5) {
             @Override
@@ -429,7 +429,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       }
       assertEquals(expectedRetryCount, retries.get());
 
-      long numFoundAfter = solrclient.query(new SolrQuery("*:*")).getResults().getNumFound();
+      long numFoundAfter = solrClient.query(new SolrQuery("*:*")).getResults().getNumFound();
 
       // we will get java.net.ConnectException which we retry on
       assertEquals(numFoundBefore, numFoundAfter);

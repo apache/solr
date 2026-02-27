@@ -149,7 +149,7 @@ public class ShardsAllowListTest extends MultiSolrCloudTestCase {
       }
       MiniSolrCloudCluster cluster = entry.getValue();
       cluster.getSolrClient().add(COLLECTION_NAME, docs);
-      cluster.getSolrClient().commit(COLLECTION_NAME, true, true);
+      cluster.getSolrClient().commit(COLLECTION_NAME);
 
       // test using ClusterState elements
       assertThat(

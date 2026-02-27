@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
@@ -88,7 +89,10 @@ public class RecoveryAfterSoftCommitTest extends AbstractFullDistribZkTestBase {
 
     // soft-commit so searchers are open on un-committed but flushed segment files
     AbstractUpdateRequest request =
-        new UpdateRequest().setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true, true);
+        new UpdateRequest()
+            .setAction(
+                AbstractUpdateRequest.ACTION.COMMIT,
+                CommitOptions.forSoftCommit().waitSearcher(true));
     cloudClient.request(request);
 
     Replica notLeader = ensureAllReplicasAreActive(DEFAULT_COLLECTION, "shard1", 1, 2, 30).get(0);

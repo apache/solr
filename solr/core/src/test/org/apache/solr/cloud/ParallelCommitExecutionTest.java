@@ -93,7 +93,7 @@ public class ParallelCommitExecutionTest extends SolrCloudTestCase {
   @Test
   public void testParallelOk() throws Exception {
     initSyncVars();
-    COLLECTION_CLIENT.commit(true, true);
+    COLLECTION_CLIENT.commit();
     assertEquals(0, countdown.getCount());
     assertEquals(expectCount, countup.get());
   }

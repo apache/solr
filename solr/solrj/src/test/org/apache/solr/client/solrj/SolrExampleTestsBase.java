@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -256,7 +257,7 @@ public abstract class SolrExampleTestsBase extends SolrTestCaseJ4 {
       doc.addField("cat", "foocat");
       req.add(doc);
     }
-    req.setAction(ACTION.COMMIT, true, true);
+    req.setAction(ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
     req.process(client);
 
     // Make sure it ran OK

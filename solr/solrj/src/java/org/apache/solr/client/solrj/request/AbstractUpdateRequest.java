@@ -35,21 +35,64 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     super(m, path, SolrRequestType.UPDATE);
   }
 
-  /** Sets appropriate parameters for the given ACTION */
+  /**
+   * Sets appropriate parameters for the given ACTION using CommitOptions. This is the preferred
+   * method for setting commit/optimize actions.
+   *
+   * @param action the action to perform (COMMIT or OPTIMIZE)
+   * @param options the commit options specifying behavior
+   * @return this request for method chaining
+   */
+  public AbstractUpdateRequest setAction(ACTION action, CommitOptions options) {
+    if (action == ACTION.OPTIMIZE) {
+      params.set(UpdateParams.OPTIMIZE, "true");
+      params.set(UpdateParams.MAX_OPTIMIZE_SEGMENTS, options.maxOptimizeSegments());
+    } else if (action == ACTION.COMMIT) {
+      params.set(UpdateParams.COMMIT, "true");
+      params.set(UpdateParams.SOFT_COMMIT, String.valueOf(options.softCommit()));
+    }
+    params.set(UpdateParams.WAIT_SEARCHER, String.valueOf(options.waitSearcher()));
+    params.set(UpdateParams.OPEN_SEARCHER, String.valueOf(options.openSearcher()));
+    params.set(UpdateParams.EXPUNGE_DELETES, String.valueOf(options.expungeDeletes()));
+    return this;
+  }
+
+  /**
+   * Sets appropriate parameters for the given ACTION
+   *
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(ACTION action, boolean waitFlush, boolean waitSearcher) {
     return setAction(action, waitFlush, waitSearcher, 1);
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action, boolean waitFlush, boolean waitSearcher, boolean softCommit) {
     return setAction(action, waitFlush, waitSearcher, softCommit, 1);
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action, boolean waitFlush, boolean waitSearcher, int maxSegments) {
     return setAction(action, waitFlush, waitSearcher, false, maxSegments);
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action, boolean waitFlush, boolean waitSearcher, boolean softCommit, int maxSegments) {
     if (action == ACTION.OPTIMIZE) {
@@ -63,6 +106,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     return this;
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action,
       boolean waitFlush,
@@ -75,6 +123,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     return this;
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action,
       boolean waitFlush,
@@ -84,6 +137,11 @@ public abstract class AbstractUpdateRequest extends CollectionRequiringSolrReque
     return setAction(action, waitFlush, waitSearcher, maxSegments, false, expungeDeletes);
   }
 
+  /**
+   * @deprecated Use {@link #setAction(ACTION, CommitOptions)} instead. The waitFlush parameter is
+   *     ignored.
+   */
+  @Deprecated(since = "10.1")
   public AbstractUpdateRequest setAction(
       ACTION action,
       boolean waitFlush,
