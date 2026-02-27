@@ -163,7 +163,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
     try {
       // Start by assuming we wrap all global filters,
       // then adjust our list based on include/exclude tag params
-      List<Query> globalFQs = QueryUtils.parseFilterQueries(req);
+      List<Query> globalFQs = new ArrayList<>(QueryUtils.parseFilterQueries(req));
 
       // Adjust our globalFQs based on any include/exclude we may have
       if (!includedGlobalFQTags.isEmpty()) {
@@ -171,7 +171,7 @@ public abstract class AbstractVectorQParserBase extends QParser {
         // means we should replace globalFQs (even with a possibly empty list)
         globalFQs = new ArrayList<>(QueryUtils.getTaggedQueries(req, includedGlobalFQTags));
       }
-      if (null != excludedGlobalFQTags) {
+      if (!excludedGlobalFQTags.isEmpty()) {
         globalFQs.removeAll(QueryUtils.getTaggedQueries(req, excludedGlobalFQTags));
       }
 
