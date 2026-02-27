@@ -667,7 +667,7 @@ Examining the clusterstate after issuing this call should show exactly one repli
 == Migrate Replicas
 
 Migrate all replicas off of a given set of source nodes.
-+
+
 If more than one node is used as a targetNode (either explicitly, or by default), then the configured
 xref:configuration-guide:replica-placement-plugins.adoc[Replica Placement Plugin] will be used to determine
 which targetNode should be used for each migrated replica.
@@ -862,7 +862,12 @@ So don't perform other collection operations in this period.
 == DELETENODE: Delete Replicas in a Node
 
 Deletes all replicas of all collections in that node.
-Please note that the node itself will remain as a live node after this operation.
+Please note that the node itself will remain as a live node after this operation if it is currently functioning.
+
+[TIP]
+====
+If the node is currently down and you aren't bringing it back, then this command removes the node from the cluster.
+====
 
 [tabs#deletenode-request]
 ======
