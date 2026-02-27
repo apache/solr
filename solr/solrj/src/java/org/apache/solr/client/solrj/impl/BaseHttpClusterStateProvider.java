@@ -74,11 +74,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
       Executors.newSingleThreadScheduledExecutor(
           new SolrNamedThreadFactory("liveNodeReloadingExecutor"));
 
-  protected void initConfiguredNodes(List<String> solrUrls) throws Exception {
+  protected void initConfiguredNodes(List<String> solrUrls) {
     this.configuredNodes =
         solrUrls.stream()
             .map(BaseHttpClusterStateProvider::stringToUrl)
             .collect(Collectors.toList());
+    this.urlScheme = this.configuredNodes.get(0).getProtocol();
   }
 
   private static URL stringToUrl(String solrUrl) {
@@ -452,6 +453,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   @Override
   public void close() throws IOException {
     liveNodeReloadingService.shutdown();
+  }
+
+  @Override
+  public String getUrlScheme() {
+    return this.urlScheme;
   }
 
   private enum ClusterStateRequestType {
