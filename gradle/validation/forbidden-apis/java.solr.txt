@@ -26,6 +26,3 @@ java.util.LinkedHashMap#<init>(int)
 
 @defaultMessage Use CollectionUtil.newHashSet(int)
 java.util.HashSet#<init>(int)
-
-@defaultMessage Use List.of()
-java.util.Collections#emptyList()
