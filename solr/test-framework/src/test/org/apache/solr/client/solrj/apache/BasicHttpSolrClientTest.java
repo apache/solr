@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj.apache;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import jakarta.servlet.http.Cookie;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -639,7 +640,7 @@ public class BasicHttpSolrClientTest extends SolrTestCaseJ4 {
       // Assert cookies from UseContextCallback
       assertNotNull(DebugServlet.cookies);
       boolean foundCookie = false;
-      for (jakarta.servlet.http.Cookie cookie : DebugServlet.cookies) {
+      for (Cookie cookie : DebugServlet.cookies) {
         if (cookieName.equals(cookie.getName()) && cookieValue.equals(cookie.getValue())) {
           foundCookie = true;
           break;

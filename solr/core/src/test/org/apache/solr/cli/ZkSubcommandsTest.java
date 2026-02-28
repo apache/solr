@@ -18,7 +18,6 @@ package org.apache.solr.cli;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,8 +33,8 @@ import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.DigestZkACLProvider;
+import org.apache.solr.common.cloud.DigestZkCredentialsProvider;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider;
 import org.apache.solr.common.cloud.VMParamsZkCredentialsInjector;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -56,8 +55,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
 
   private SolrZkClient zkClient;
 
-  private PrintStream originalSystemOut;
-
   protected static final Path SOLR_HOME = SolrTestCaseJ4.TEST_HOME();
 
   @BeforeClass
@@ -75,14 +72,12 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     String solrHome = createTempDir().toString();
     System.setProperty("solr.home", solrHome);
 
-    originalSystemOut = System.out;
-
     Path zkDir = createTempDir().resolve("zookeeper/server1/data");
+
     log.info("ZooKeeper dataDir:{}", zkDir);
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     System.setProperty("zkHost", zkServer.getZkAddress());
-    // zkClient.close();
 
     zkClient =
         new SolrZkClient.Builder()
@@ -162,8 +157,8 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     dataBytes = data.getBytes(StandardCharsets.UTF_8);
     expected = zLibCompressor.compressBytes(dataBytes);
 
-    byte[] fromLoca = new ZLibCompressor().compressBytes(Files.readAllBytes(localFile));
-    assertArrayEquals("Should get back what we put in ZK", fromLoca, expected);
+    byte[] fromLocal = new ZLibCompressor().compressBytes(Files.readAllBytes(localFile));
+    assertArrayEquals("Should get back what we put in ZK", fromLocal, expected);
 
     args =
         new String[] {"cp", "-z", zkServer.getZkAddress(), localFile.toString(), "zk:/state.json"};
@@ -258,7 +253,7 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     assertArrayEquals(
         "Should get back an uncompressed version what we put in ZK", fileBytes, fromZk);
 
-    // Lets do it again
+    // Let's do it again
     assertEquals(0, CLITestHelper.runTool(args, ZkCpTool.class));
 
     locFile = SOLR_HOME.resolve("solr-stress-new.xml");
@@ -553,20 +548,17 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
   public void testUpdateAcls() throws Exception {
 
     System.setProperty(
+        SolrZkClient.ZK_CRED_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
+        DigestZkCredentialsProvider.class.getName());
+    System.setProperty(
         SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME, DigestZkACLProvider.class.getName());
+    System.setProperty(
+        SolrZkClient.ZK_CREDENTIALS_INJECTOR_CLASS_NAME_VM_PARAM_NAME,
+        VMParamsZkCredentialsInjector.class.getName());
     System.setProperty(
         VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME, "user");
     System.setProperty(
         VMParamsZkCredentialsInjector.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME, "pass");
-    System.setProperty(
-        SolrZkClient.ZK_ACL_PROVIDER_CLASS_NAME_VM_PARAM_NAME,
-        VMParamsAllAndReadonlyDigestZkACLProvider.class.getName());
-    System.setProperty(
-        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_USERNAME_VM_PARAM_NAME,
-        "user");
-    System.setProperty(
-        VMParamsAllAndReadonlyDigestZkACLProvider.DEFAULT_DIGEST_READONLY_PASSWORD_VM_PARAM_NAME,
-        "pass");
 
     String[] args = new String[] {"updateacls", "/", "-z", zkServer.getZkAddress()};
     assertEquals(0, CLITestHelper.runTool(args, UpdateACLTool.class));
@@ -593,7 +585,6 @@ public class ZkSubcommandsTest extends SolrTestCaseJ4 {
     if (zkServer != null) {
       zkServer.shutdown();
     }
-    System.setOut(originalSystemOut);
     super.tearDown();
   }
 }

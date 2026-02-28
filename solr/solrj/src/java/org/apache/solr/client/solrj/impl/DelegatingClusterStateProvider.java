@@ -140,4 +140,12 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     }
     return null;
   }
+
+  @Override
+  public String getUrlScheme() {
+    if (delegate != null) {
+      return delegate.getUrlScheme();
+    }
+    return null;
+  }
 }

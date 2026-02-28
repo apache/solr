@@ -24,6 +24,7 @@ import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedHashMap;
@@ -648,7 +649,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
         try {
           List<String> children = zkClient.getChildren(path, null);
-          java.util.Collections.sort(children);
+          Collections.sort(children);
 
           for (String child : children) {
             String childPath = path + (path.endsWith("/") ? "" : "/") + child;

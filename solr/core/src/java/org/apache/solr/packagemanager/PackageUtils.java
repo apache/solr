@@ -20,6 +20,7 @@ import static org.apache.solr.client.solrj.util.SolrIdentifierValidator.validate
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
@@ -72,7 +73,7 @@ public class PackageUtils {
         Configuration.builder()
             .jsonProvider(jsonProvider)
             .mappingProvider(provider)
-            .options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES)
+            .options(Option.REQUIRE_PROPERTIES)
             .build();
     return c;
   }

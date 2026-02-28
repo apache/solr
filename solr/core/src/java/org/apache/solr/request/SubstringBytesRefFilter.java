@@ -17,6 +17,7 @@
 package org.apache.solr.request;
 
 import java.util.function.Predicate;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.SuppressForbidden;
 
@@ -52,6 +53,6 @@ public class SubstringBytesRefFilter implements Predicate<BytesRef> {
 
   @SuppressForbidden(reason = "Uses Stringutils.containsIgnoreCase")
   private boolean containsIgnoreCase(final CharSequence str, final CharSequence searchStr) {
-    return org.apache.commons.lang3.StringUtils.containsIgnoreCase(str, searchStr);
+    return StringUtils.containsIgnoreCase(str, searchStr);
   }
 }
