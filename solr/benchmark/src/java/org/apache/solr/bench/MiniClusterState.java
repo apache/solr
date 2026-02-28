@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -79,7 +80,7 @@ public class MiniClusterState {
     public String zkHost;
 
     /** The Cluster. */
-    MiniSolrCloudCluster cluster;
+    public MiniSolrCloudCluster cluster;
 
     /** The Client. */
     public HttpJettySolrClient client;
@@ -393,6 +394,7 @@ public class MiniClusterState {
     private void indexParallel(String collection, Docs docs, int docCount)
         throws InterruptedException {
       Meter meter = new Meter();
+      AtomicReference<Exception> indexingException = new AtomicReference<>();
       ExecutorService executorService =
           Executors.newFixedThreadPool(
               Runtime.getRuntime().availableProcessors(),
@@ -429,6 +431,7 @@ public class MiniClusterState {
                 try {
                   client.requestWithBaseUrl(url, updateRequest, collection);
                 } catch (Exception e) {
+                  indexingException.compareAndSet(null, e);
                   throw new RuntimeException(e);
                 }
               }
@@ -444,6 +447,11 @@ public class MiniClusterState {
       }
 
       scheduledExecutor.shutdown();
+
+      Exception ex = indexingException.get();
+      if (ex != null) {
+        throw new RuntimeException("Indexing failed", ex);
+      }
     }
 
     private void indexBatch(String collection, Docs docs, int docCount, int batchSize)
@@ -469,6 +477,106 @@ public class MiniClusterState {
         batch = null;
       }
       log(meter.getCount() + " docs at " + (long) meter.getMeanRate() + " doc/s");
+    }
+
+    /**
+     * Index documents using multiple threads, each sending batches.
+     *
+     * @param collection the collection
+     * @param docs the docs generator
+     * @param docCount total number of docs to index
+     * @param numThreads number of parallel threads
+     * @param batchSize docs per batch/request
+     */
+    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    public void indexParallelBatched(
+        String collection, Docs docs, int docCount, int numThreads, int batchSize)
+        throws InterruptedException {
+      Meter meter = new Meter();
+      AtomicReference<Exception> indexingException = new AtomicReference<>();
+
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(numThreads, new SolrNamedThreadFactory("SolrJMH Indexer"));
+
+      // Progress logging
+      ScheduledExecutorService scheduledExecutor =
+          Executors.newSingleThreadScheduledExecutor(
+              new SolrNamedThreadFactory("SolrJMH Indexer Progress"));
+      scheduledExecutor.scheduleAtFixedRate(
+          () -> {
+            if (meter.getCount() >= docCount) {
+              scheduledExecutor.shutdown();
+            } else {
+              log(
+                  meter.getCount()
+                      + "/"
+                      + docCount
+                      + " docs at "
+                      + (long) meter.getMeanRate()
+                      + " doc/s");
+            }
+          },
+          5,
+          5,
+          TimeUnit.SECONDS);
+
+      // Split work across threads
+      int docsPerThread = docCount / numThreads;
+      int remainder = docCount % numThreads;
+
+      for (int t = 0; t < numThreads; t++) {
+        final int threadDocsCount = docsPerThread + (t < remainder ? 1 : 0);
+
+        executorService.execute(
+            () -> {
+              List<SolrInputDocument> batch = new ArrayList<>(batchSize);
+
+              for (int i = 0; i < threadDocsCount; i++) {
+                batch.add(docs.inputDocument());
+
+                if (batch.size() >= batchSize) {
+                  sendBatch(collection, batch, indexingException);
+                  meter.mark(batch.size());
+                  batch.clear();
+                }
+              }
+
+              // Send remaining docs
+              if (!batch.isEmpty()) {
+                sendBatch(collection, batch, indexingException);
+                meter.mark(batch.size());
+              }
+            });
+      }
+
+      executorService.shutdown();
+      boolean terminated = false;
+      while (!terminated) {
+        terminated = executorService.awaitTermination(10, TimeUnit.MINUTES);
+      }
+      scheduledExecutor.shutdown();
+
+      Exception ex = indexingException.get();
+      if (ex != null) {
+        throw new RuntimeException("Indexing failed", ex);
+      }
+
+      log(meter.getCount() + " docs indexed at " + (long) meter.getMeanRate() + " doc/s");
+    }
+
+    private void sendBatch(
+        String collection,
+        List<SolrInputDocument> batch,
+        AtomicReference<Exception> indexingException) {
+      try {
+        UpdateRequest updateRequest = new UpdateRequest();
+        updateRequest.add(batch);
+        // Use first node - simpler and avoids thread-safety issues with random node selection
+        client.requestWithBaseUrl(nodes.get(0), updateRequest, collection);
+      } catch (Exception e) {
+        indexingException.compareAndSet(null, e);
+        throw new RuntimeException(e);
+      }
     }
 
     /**

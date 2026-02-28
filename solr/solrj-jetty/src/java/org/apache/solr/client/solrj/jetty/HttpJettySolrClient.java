@@ -81,6 +81,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.MultiPart;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.eclipse.jetty.io.ClientConnector;
@@ -109,6 +110,27 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
    * this client.
    */
   public static final String CLIENT_CUSTOMIZER_SYSPROP = "solr.solrj.http.jetty.customizer";
+
+  /**
+   * A Java system property to set the initial HTTP/2 session receive window size (in bytes). Only
+   * applies when using HTTP/2 transport.
+   */
+  public static final String HTTP2_SESSION_RECV_WINDOW_SYSPROP =
+      "solr.http2.initialSessionRecvWindow";
+
+  /**
+   * A Java system property to set the initial HTTP/2 stream receive window size (in bytes). Only
+   * applies when using HTTP/2 transport.
+   */
+  public static final String HTTP2_STREAM_RECV_WINDOW_SYSPROP =
+      "solr.http2.initialStreamRecvWindow";
+
+  /**
+   * A Java system property to enable the simple flow control strategy for HTTP/2. When set to
+   * "true", uses {@link SimpleFlowControlStrategy} instead of the default buffering strategy. Only
+   * applies when using HTTP/2 transport.
+   */
+  public static final String HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP = "solr.http2.useSimpleFlowControl";
 
   public static final String REQ_PRINCIPAL_KEY = "solr-req-principal";
   private static final String USER_AGENT =
@@ -275,9 +297,9 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     HttpClient httpClient;
     HttpClientTransport transport;
     if (builder.shouldUseHttp1_1()) {
-      if (log.isDebugEnabled()) {
-        log.debug("Create HttpJettySolrClient with HTTP/1.1 transport");
-      }
+      log.info(
+          "Create HttpJettySolrClient with HTTP/1.1 transport (solr.http1={})",
+          System.getProperty("solr.http1"));
 
       transport = new HttpClientTransportOverHTTP(clientConnector);
       httpClient = new HttpClient(transport);
@@ -285,11 +307,12 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
         httpClient.setMaxConnectionsPerDestination(builder.getMaxConnectionsPerHost());
       }
     } else {
-      if (log.isDebugEnabled()) {
-        log.debug("Create HttpJettySolrClient with HTTP/2 transport");
-      }
+      log.info(
+          "Create HttpJettySolrClient with HTTP/2 transport (solr.http1={})",
+          System.getProperty("solr.http1"));
 
       HTTP2Client http2client = new HTTP2Client(clientConnector);
+      configureHttp2FlowControl(http2client);
       transport = new HttpClientTransportOverHTTP2(http2client);
       httpClient = new HttpClient(transport);
       httpClient.setMaxConnectionsPerDestination(4);
@@ -324,6 +347,31 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
     }
 
     return httpClient;
+  }
+
+  /**
+   * Configures HTTP/2 flow control settings on the HTTP2Client based on system properties. Only
+   * applies settings when the corresponding system property is explicitly set.
+   */
+  private void configureHttp2FlowControl(HTTP2Client http2client) {
+    Integer sessionRecvWindow =
+        EnvUtils.getPropertyAsInteger(HTTP2_SESSION_RECV_WINDOW_SYSPROP, null);
+    if (sessionRecvWindow != null) {
+      http2client.setInitialSessionRecvWindow(sessionRecvWindow);
+      log.info("LKZ Set HTTP/2 initial session recv window to {} bytes", sessionRecvWindow);
+    }
+
+    Integer streamRecvWindow =
+        EnvUtils.getPropertyAsInteger(HTTP2_STREAM_RECV_WINDOW_SYSPROP, null);
+    if (streamRecvWindow != null) {
+      http2client.setInitialStreamRecvWindow(streamRecvWindow);
+      log.info("Set HTTP/2 initial stream recv window to {} bytes", streamRecvWindow);
+    }
+
+    if (EnvUtils.getPropertyAsBool(HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP, false)) {
+      http2client.setFlowControlStrategyFactory(SimpleFlowControlStrategy::new);
+      log.error("Using simple HTTP/2 flow control strategy");
+    }
   }
 
   private void setupProxy(Builder builder, HttpClient httpClient) {

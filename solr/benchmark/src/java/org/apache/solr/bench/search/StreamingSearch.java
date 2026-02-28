@@ -64,7 +64,30 @@ public class StreamingSearch {
     @Param({"false", "true"})
     boolean useHttp1;
 
-    private int docs = 1000;
+    @Param("3")
+    int nodeCount;
+
+    @Param("3")
+    int numShards;
+
+    @Param("1")
+    int numReplicas;
+
+    @Param("1000")
+    int docCount;
+
+    @Param("4")
+    int indexThreads; // 0 = sequential indexing
+
+    @Param("500")
+    int batchSize;
+
+    @Param("1024")
+    int docSizeBytes; // Target document size in bytes (approximate)
+
+    @Param("3")
+    int numTextFields; // Number of textN_ts fields to generate
+
     private String zkHost;
     private ModifiableSolrParams params;
     private StreamContext streamContext;
@@ -73,24 +96,70 @@ public class StreamingSearch {
     @Setup(Level.Trial)
     public void setup(MiniClusterBenchState miniClusterState) throws Exception {
 
-      miniClusterState.startMiniCluster(3);
-      miniClusterState.createCollection(collection, 3, 1);
-      Docs docGen =
-          docs()
-              .field("id", integers().incrementing())
-              .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-              .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
-              .field("int1_i_dv", integers().all());
-      miniClusterState.index(collection, docGen, docs);
+      miniClusterState.startMiniCluster(nodeCount);
+      miniClusterState.createCollection(collection, numShards, numReplicas);
+
+      Docs docGen = createDocsWithTargetSize(docSizeBytes, numTextFields);
+
+      if (indexThreads > 0) {
+        miniClusterState.indexParallelBatched(
+            collection, docGen, docCount, indexThreads, batchSize);
+      } else {
+        miniClusterState.index(collection, docGen, docCount, false);
+      }
       miniClusterState.waitForMerges(collection);
 
       zkHost = miniClusterState.zkHost;
 
+      // Build field list dynamically based on numTextFields
+      StringBuilder flBuilder = new StringBuilder("id");
+      for (int i = 1; i <= numTextFields; i++) {
+        flBuilder.append(",text").append(i).append("_ts");
+      }
+      flBuilder.append(",int1_i_dv");
+
       params = new ModifiableSolrParams();
       params.set(CommonParams.Q, "*:*");
-      params.set(CommonParams.FL, "id,text2_ts,text3_ts,int1_i_dv");
+      params.set(CommonParams.FL, flBuilder.toString());
       params.set(CommonParams.SORT, "id asc,int1_i_dv asc");
-      params.set(CommonParams.ROWS, docs);
+      params.set(CommonParams.ROWS, docCount);
+    }
+
+    /**
+     * Creates a Docs generator that produces documents with approximately the target size.
+     *
+     * @param targetSizeBytes target document size in bytes (approximate)
+     * @param numFields number of textN_ts fields to generate
+     * @return Docs generator configured for the target size
+     */
+    private Docs createDocsWithTargetSize(int targetSizeBytes, int numFields) {
+      // Calculate how many characters per field to approximate target size
+      // Each character is ~1 byte in basic Latin alphabet
+      // Account for field overhead, id field, and int field
+      int baseOverhead = 100; // Approximate overhead for id, int field, and field names
+      int availableBytes = Math.max(100, targetSizeBytes - baseOverhead);
+      int bytesPerField = availableBytes / Math.max(1, numFields);
+
+      // Use multi-value strings: multi(N) creates N strings joined by spaces
+      // Calculate words and word length to hit target
+      int wordsPerField = Math.max(1, bytesPerField / 50); // ~50 chars per word avg
+      int wordLength = Math.min(64, Math.max(10, bytesPerField / Math.max(1, wordsPerField)));
+      int minWordLength = Math.max(5, wordLength - 10);
+      int maxWordLength = wordLength + 10;
+
+      Docs docGen = docs().field("id", integers().incrementing());
+
+      for (int i = 1; i <= numFields; i++) {
+        docGen.field(
+            "text" + i + "_ts",
+            strings()
+                .basicLatinAlphabet()
+                .multi(wordsPerField)
+                .ofLengthBetween(minWordLength, maxWordLength));
+      }
+
+      docGen.field("int1_i_dv", integers().all());
+      return docGen;
     }
 
     @Setup(Level.Iteration)
