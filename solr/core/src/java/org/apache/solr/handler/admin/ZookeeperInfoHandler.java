@@ -18,13 +18,8 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.OMIT_HEADER;
 import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.params.CommonParams.WT;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStreamWriter;
-import java.io.Reader;
-import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -55,23 +50,17 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.SuppressForbidden;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.JSONResponseWriter;
-import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.data.Stat;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -117,7 +106,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   }
 
   /** Enumeration of ways to filter collections on the graph panel. */
-  static enum FilterType {
+  enum FilterType {
     none,
     name,
     status
@@ -127,8 +116,8 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   static final class PageOfCollections {
     List<String> selected;
     int numFound = 0; // total number of matches (across all pages)
-    int start = 0;
-    int rows = -1;
+    int start;
+    int rows;
     FilterType filterType;
     String filter;
 
@@ -169,7 +158,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       if (!regexFilter.startsWith("(?i)")) regexFilter = "(?i)" + regexFilter;
 
       Pattern filterRegex = Pattern.compile(regexFilter);
-      List<String> filtered = new ArrayList<String>();
+      List<String> filtered = new ArrayList<>();
       for (String next : collections) {
         if (matches(filterRegex, next)) filtered.add(next);
       }
@@ -182,9 +171,9 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
      * user is filtering by.
      */
     @SuppressWarnings("unchecked")
-    final boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
+    boolean matchesStatusFilter(Map<String, Object> collectionState, Set<String> liveNodes) {
 
-      if (filterType != FilterType.status || filter == null || filter.length() == 0)
+      if (filterType != FilterType.status || filter == null || filter.isEmpty())
         return true; // no status filter, so all match
 
       boolean isHealthy = true; // means all replicas for all shards active
@@ -233,7 +222,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       return true;
     }
 
-    final boolean matches(final Pattern filter, final String collName) {
+    boolean matches(final Pattern filter, final String collName) {
       return filter.matcher(collName).matches();
     }
 
@@ -282,7 +271,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         throws KeeperException, InterruptedException {
       if (cachedCollections == null) {
         // cache is stale, rebuild the full list ...
-        cachedCollections = new ArrayList<String>();
+        cachedCollections = new ArrayList<>();
 
         List<String> fromZk = zkClient.getChildren("/collections", this);
         if (fromZk != null) cachedCollections.addAll(fromZk);
@@ -304,7 +293,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       // activate paging (if disabled) for large collection sets
       if (page.start == 0 && page.rows == -1 && page.filter == null && children.size() > 10) {
         page.rows = 20;
-        page.start = 0;
       }
 
       // apply the name filter if supplied (we don't need to pull state
@@ -337,7 +325,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
             // using longs here as we don't know how long the 2nd group is
             int leftGroup2 = Integer.parseInt(leftMatcher.group(2));
             int rightGroup2 = Integer.parseInt(rightMatcher.group(2));
-            return (leftGroup2 > rightGroup2) ? 1 : ((leftGroup2 == rightGroup2) ? 0 : -1);
+            return Integer.compare(leftGroup2, rightGroup2);
           }
         }
       }
@@ -357,74 +345,160 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   private PagedCollectionSupport pagingSupport;
 
   @Override
-  @SuppressWarnings({"unchecked"})
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     final SolrParams params = req.getParams();
-    Map<String, String> map = Map.of(WT, "raw", OMIT_HEADER, "true");
+
+    // Force JSON response and omit header for cleaner output
+    // Map<String, String> map = Map.of(WT, "json", OMIT_HEADER, "true");
+    Map<String, String> map = Map.of(OMIT_HEADER, "true");
     req.setParams(SolrParams.wrapDefaults(new MapSolrParams(map), params));
+
+    // Ensure paging support is initialized
+    ensurePagingSupportInitialized();
+
+    // Validate parameters
+    validateParameters(params);
+
+    // Determine request type and handle accordingly
+    boolean isGraphView = "graph".equals(params.get("view"));
+    ZkBaseResponseBuilder builder =
+        isGraphView ? handleGraphViewRequest(params) : handlePathViewRequest(params);
+
+    builder.build();
+
+    addMapToResponse(builder.getDataMap(), rsp);
+  }
+
+  /** Ensures the paging support is initialized (thread-safe lazy initialization). */
+  private void ensurePagingSupportInitialized() {
     synchronized (this) {
       if (pagingSupport == null) {
         pagingSupport = new PagedCollectionSupport();
         ZkController zkController = cores.getZkController();
         if (zkController != null) {
-          // get notified when the ZK session expires (so we can clear the cached collections and
-          // rebuild)
+          // Get notified when the ZK session expires (so we can clear cached collections)
           zkController.addOnReconnectListener(pagingSupport);
         }
       }
     }
+  }
 
-    String path = params.get(PATH);
-
+  /**
+   * Validates request parameters to prevent illegal operations.
+   *
+   * @param params Request parameters to validate
+   */
+  private void validateParameters(SolrParams params) {
     if (params.get("addr") != null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Illegal parameter \"addr\"");
     }
+  }
 
-    String detailS = params.get(PARAM_DETAIL);
-    boolean detail = detailS != null && detailS.equals("true");
-
-    String dumpS = params.get("dump");
-    boolean dump = dumpS != null && dumpS.equals("true");
-
-    int start = params.getInt("start", 0); // Note start ignored if rows not specified
+  /**
+   * Handles the graph view request with paginated collections.
+   *
+   * @param params Request parameters including pagination settings
+   * @return JSON string representing paginated collection data
+   */
+  private ZkBaseResponseBuilder handleGraphViewRequest(SolrParams params) {
+    // Extract pagination parameters
+    int start = params.getInt("start", 0);
     int rows = params.getInt("rows", -1);
 
+    // Extract filter parameters
+    FilterType filterType = extractFilterType(params);
+    String filter = extractFilter(params, filterType);
+
+    // Extract display options (applicable to graph view)
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
+
+    // Create response builder for paginated collections
+    return new ZkGraphResponseBuilder(
+        cores.getZkController(),
+        new PageOfCollections(start, rows, filterType, filter),
+        pagingSupport,
+        detail,
+        dump);
+  }
+
+  /**
+   * Handles the path view request for a specific ZooKeeper path.
+   *
+   * @param params Request parameters including the path to display
+   * @return JSON string representing the ZooKeeper path data
+   */
+  private ZkBaseResponseBuilder handlePathViewRequest(SolrParams params) {
+    // Extract path parameter
+    String path = params.get(PATH);
+
+    // Extract display options
+    boolean detail = params.getBool(PARAM_DETAIL, false);
+    boolean dump = params.getBool("dump", false);
+
+    // Create response builder for specific path
+    return new ZkPathResponseBuilder(cores.getZkController(), path, detail, dump);
+  }
+
+  /**
+   * Extracts and normalizes the filter type from request parameters.
+   *
+   * @param params Request parameters
+   * @return The filter type (defaults to FilterType.none if not specified)
+   */
+  private FilterType extractFilterType(SolrParams params) {
     String filterType = params.get("filterType");
     if (filterType != null) {
       filterType = filterType.trim().toLowerCase(Locale.ROOT);
-      if (filterType.length() == 0) filterType = null;
+      if (filterType.isEmpty()) {
+        return FilterType.none;
+      }
+      return switch (filterType) {
+        case "none" -> FilterType.none;
+        case "name" -> FilterType.name;
+        case "status" -> FilterType.status;
+        default -> throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Invalid filterType '" + filterType + "'. Allowed values are: none, name, status");
+      };
     }
-    FilterType type = (filterType != null) ? FilterType.valueOf(filterType) : FilterType.none;
+    return FilterType.none;
+  }
 
-    String filter = (type != FilterType.none) ? params.get("filter") : null;
+  /**
+   * Extracts and normalizes the filter value from request parameters.
+   *
+   * @param params Request parameters
+   * @param filterType The filter type being used
+   * @return The filter string, or null if not applicable
+   */
+  private String extractFilter(SolrParams params, FilterType filterType) {
+    if (filterType == FilterType.none) {
+      return null;
+    }
+
+    String filter = params.get("filter");
     if (filter != null) {
       filter = filter.trim();
-      if (filter.length() == 0) filter = null;
-    }
-
-    ZKPrinter printer = new ZKPrinter(cores.getZkController());
-    printer.detail = detail;
-    printer.dump = dump;
-    boolean isGraphView = "graph".equals(params.get("view"));
-    // There is no znode /clusterstate.json (removed in Solr 9), but we do as if there's one and
-    // return collection listing. Need to change services.js if cleaning up here, collection list is
-    // used from Admin UI Cloud - Graph
-    boolean paginateCollections = (isGraphView && "/clusterstate.json".equals(path));
-    printer.page = paginateCollections ? new PageOfCollections(start, rows, type, filter) : null;
-    printer.pagingSupport = pagingSupport;
-
-    try {
-      if (paginateCollections) {
-        // List collections and allow pagination, but no specific znode info like when looking at a
-        // normal ZK path
-        printer.printPaginatedCollections();
-      } else {
-        printer.print(path);
+      if (!filter.isEmpty()) {
+        return filter;
       }
-    } finally {
-      printer.close();
     }
-    rsp.getValues().add(RawResponseWriter.CONTENT, printer);
+    return null;
+  }
+
+  /**
+   * Adds Map data to SolrQueryResponse.
+   *
+   * @param dataMap The data map to add
+   * @param rsp The response object to populate
+   */
+  private void addMapToResponse(Map<String, Object> dataMap, SolrQueryResponse rsp) {
+    // Add the structured data directly to the response
+    // This allows any response writer (json, xml, etc.) to serialize it properly
+    for (Map.Entry<String, Object> entry : dataMap.entrySet()) {
+      rsp.add(entry.getKey(), entry.getValue());
+    }
   }
 
   @SuppressForbidden(reason = "JDK String class doesn't offer a stripEnd equivalent")
@@ -436,40 +510,59 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
   //
   // --------------------------------------------------------------------------------------
 
-  static class ZKPrinter implements ContentStream {
-    static boolean FULLPATH_DEFAULT = false;
+  /**
+   * Base class for ZooKeeper response builders. Provides common functionality for building
+   * structured response data from ZooKeeper.
+   */
+  abstract static class ZkBaseResponseBuilder {
+    protected boolean detail;
+    protected boolean dump;
 
-    boolean indent = true;
-    boolean fullpath = FULLPATH_DEFAULT;
-    boolean detail = false;
-    boolean dump = false;
+    protected final Map<String, Object> dataMap = new LinkedHashMap<>();
+    protected final SolrZkClient zkClient;
+    protected final ZkController zkController;
+    protected final String keeperAddr;
 
-    String keeperAddr; // the address we're connected to
-
-    final Utils.BAOS baos = new Utils.BAOS();
-    final Writer out = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
-    SolrZkClient zkClient;
-
-    PageOfCollections page;
-    PagedCollectionSupport pagingSupport;
-    ZkController zkController;
-
-    public ZKPrinter(ZkController controller) throws IOException {
+    public ZkBaseResponseBuilder(ZkController controller, boolean detail, boolean dump) {
       this.zkController = controller;
-      keeperAddr = controller.getZkServerAddress();
-      zkClient = controller.getZkClient();
+      this.detail = detail;
+      this.dump = dump;
+      this.keeperAddr = controller.getZkServerAddress();
+      this.zkClient = controller.getZkClient();
     }
 
-    public void close() {
-      try {
-        out.flush();
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
+    public abstract void build() throws IOException;
+
+    /** Returns the data as a Map for proper serialization by response writers. */
+    public Map<String, Object> getDataMap() {
+      return dataMap;
     }
 
-    // main entry point for printing from path
-    void print(String path) throws IOException {
+    protected void writeError(int code, String msg) {
+      throw new SolrException(ErrorCode.getErrorCode(code), msg);
+    }
+
+    protected String time(long ms) {
+      return (new Date(ms)) + " (" + ms + ")";
+    }
+  }
+
+  /**
+   * Response builder implementation for a specific ZooKeeper path and its data. Used by Solr Admin
+   * UI.
+   */
+  static class ZkPathResponseBuilder extends ZkBaseResponseBuilder {
+
+    private String path;
+
+    public ZkPathResponseBuilder(
+        ZkController controller, String path, boolean detail, boolean dump) {
+      super(controller, detail, dump);
+      this.path = path;
+    }
+
+    @Override
+    public void build() throws IOException {
       if (zkClient == null) {
         return;
       }
@@ -479,7 +572,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         path = "/";
       } else {
         path = path.trim();
-        if (path.length() == 0) {
+        if (path.isEmpty()) {
           path = "/";
         }
       }
@@ -490,35 +583,165 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
 
       int idx = path.lastIndexOf('/');
       String parent = idx >= 0 ? path.substring(0, idx) : path;
-      if (parent.length() == 0) {
+      if (parent.isEmpty()) {
         parent = "/";
       }
 
-      CharArr chars = new CharArr();
-      JSONWriter json = new JSONWriter(chars, 2);
-      json.startObject();
-
       if (detail) {
-        if (!printZnode(json, path)) {
+        Map<String, Object> znodeData = buildZnodeData(path);
+        if (znodeData == null) {
           return;
         }
-        json.writeValueSeparator();
+        dataMap.putAll(znodeData);
       }
 
-      json.writeString("tree");
-      json.writeNameSeparator();
-      json.startArray();
-      if (!printTree(json, path)) {
+      List<Object> treeList = new ArrayList<>();
+      if (!buildTree(treeList, path)) {
         return; // there was an error
       }
-      json.endArray();
-      json.endObject();
-      out.write(chars.toString());
+      dataMap.put("tree", treeList);
     }
 
-    // main entry point for printing collections
-    @SuppressWarnings("unchecked")
-    void printPaginatedCollections() throws IOException {
+    private boolean buildTree(List<Object> treeList, String path) {
+      int idx = path.lastIndexOf('/');
+      String label = idx > 0 ? path.substring(idx + 1) : path;
+
+      Map<String, Object> node = new LinkedHashMap<>();
+      node.put("text", label);
+
+      Map<String, Object> aAttr = new LinkedHashMap<>();
+      String href =
+          "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
+      aAttr.put("href", href);
+      node.put("a_attr", aAttr);
+
+      Stat stat = new Stat();
+      try {
+        // Trickily, the call to zkClient.getData fills in the stat variable
+        byte[] data = zkClient.getData(path, null, stat);
+
+        if (stat.getEphemeralOwner() != 0) {
+          node.put("ephemeral", true);
+          node.put("version", stat.getVersion());
+        }
+
+        if (dump) {
+          Map<String, Object> znodeData = buildZnodeData(path);
+          if (znodeData != null) {
+            node.putAll(znodeData);
+          }
+        }
+
+      } catch (IllegalArgumentException e) {
+        // path doesn't exist (must have been removed)
+        node.put("warning", "(path gone)");
+      } catch (KeeperException e) {
+        node.put("warning", e.toString());
+        log.warn("Keeper Exception", e);
+      } catch (InterruptedException e) {
+        node.put("warning", e.toString());
+        log.warn("InterruptedException", e);
+      }
+
+      if (stat.getNumChildren() > 0) {
+        List<Object> childrenList = new ArrayList<>();
+
+        try {
+          List<String> children = zkClient.getChildren(path, null);
+          java.util.Collections.sort(children);
+
+          for (String child : children) {
+            String childPath = path + (path.endsWith("/") ? "" : "/") + child;
+            if (!buildTree(childrenList, childPath)) {
+              return false;
+            }
+          }
+        } catch (KeeperException | InterruptedException e) {
+          writeError(500, e.toString());
+          return false;
+        } catch (IllegalArgumentException e) {
+          // path doesn't exist (must have been removed)
+          childrenList.add("(children gone)");
+        }
+
+        node.put("children", childrenList);
+      }
+
+      treeList.add(node);
+      return true;
+    }
+
+    private Map<String, Object> buildZnodeData(String path) {
+      try {
+        String dataStr = null;
+        String dataStrErr = null;
+        Stat stat = new Stat();
+        // Trickily, the call to zkClient.getData fills in the stat variable
+        byte[] data = zkClient.getData(path, null, stat);
+        if (null != data) {
+          try {
+            dataStr = (new BytesRef(data)).utf8ToString();
+          } catch (Exception e) {
+            dataStrErr = "data is not parsable as a utf8 String: " + e;
+          }
+        }
+
+        SimpleOrderedMap<Object> znodeMap = new SimpleOrderedMap<>();
+        SimpleOrderedMap<Object> znodeContent = new SimpleOrderedMap<>();
+
+        znodeContent.add(PATH, path);
+
+        SimpleOrderedMap<Object> prop = new SimpleOrderedMap<>();
+        prop.add("version", stat.getVersion());
+        prop.add("aversion", stat.getAversion());
+        prop.add("children_count", stat.getNumChildren());
+        prop.add("ctime", time(stat.getCtime()));
+        prop.add("cversion", stat.getCversion());
+        prop.add("czxid", stat.getCzxid());
+        prop.add("ephemeralOwner", stat.getEphemeralOwner());
+        prop.add("mtime", time(stat.getMtime()));
+        prop.add("mzxid", stat.getMzxid());
+        prop.add("pzxid", stat.getPzxid());
+        prop.add("dataLength", stat.getDataLength());
+        if (null != dataStrErr) {
+          prop.add("dataNote", dataStrErr);
+        }
+        znodeContent.add("prop", prop);
+
+        if (null != dataStr) {
+          znodeContent.add("data", dataStr);
+        }
+
+        znodeMap.add("znode", znodeContent);
+        return znodeMap;
+      } catch (KeeperException | InterruptedException e) {
+        writeError(500, e.toString());
+        return null;
+      }
+    }
+  }
+
+  /**
+   * Response builder implementation for a paginated, filtered view of collections. Supports
+   * pagination, and collection state retrieval.
+   */
+  static class ZkGraphResponseBuilder extends ZkBaseResponseBuilder {
+    private final PageOfCollections page;
+    private final PagedCollectionSupport pagingSupport;
+
+    public ZkGraphResponseBuilder(
+        ZkController controller,
+        PageOfCollections page,
+        PagedCollectionSupport pagingSupport,
+        boolean detail,
+        boolean dump) {
+      super(controller, detail, dump);
+      this.page = page;
+      this.pagingSupport = pagingSupport;
+    }
+
+    @Override
+    public void build() throws IOException {
       SortedMap<String, Object> collectionStates;
       try {
         // support paging of the collections graph view (in case there are many collections)
@@ -534,8 +757,6 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         for (String collection : page.selected) {
           DocCollection dc = cs.getCollectionOrNull(collection);
           if (dc != null) {
-            // TODO: for collections with perReplicaState, a ser/deser to JSON was needed to get the
-            // state to render correctly for the UI?
             Map<String, Object> collectionState = dc.toMap(new LinkedHashMap<>());
             if (applyStatusFilter) {
               // verify this collection matches the filtered state
@@ -556,7 +777,7 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
           page.selectPage(matchesStatusFilter);
 
           // rebuild the Map of state data
-          SortedMap<String, Object> map = new TreeMap<String, Object>(pagingSupport);
+          SortedMap<String, Object> map = new TreeMap<>(pagingSupport);
           for (String next : page.selected) map.put(next, collectionStates.get(next));
           collectionStates = map;
         }
@@ -565,247 +786,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
         return;
       }
 
-      CharArr chars = new CharArr();
-      JSONWriter json = new JSONWriter(chars, 2);
-      json.startObject();
+      Map<String, Object> znodeContent = new LinkedHashMap<>();
+      znodeContent.put(PATH, ZkStateReader.COLLECTIONS_ZKNODE);
+      znodeContent.put("data", collectionStates);
+      znodeContent.put("paging", page.getPagingHeader());
 
-      json.writeString("znode");
-      json.writeNameSeparator();
-      json.startObject();
-
-      // For some reason, without this the Json is badly formed
-      writeKeyValue(json, PATH, "Undefined", true);
-
-      if (collectionStates != null) {
-        CharArr collectionOut = new CharArr();
-        new JSONWriter(collectionOut, 2).write(collectionStates);
-        writeKeyValue(json, "data", collectionOut.toString(), false);
-      }
-
-      writeKeyValue(json, "paging", page.getPagingHeader(), false);
-
-      json.endObject();
-      json.endObject();
-      out.write(chars.toString());
-    }
-
-    void writeError(int code, String msg) throws IOException {
-      throw new SolrException(ErrorCode.getErrorCode(code), msg);
-      /*response.setStatus(code);
-
-      CharArr chars = new CharArr();
-      JSONWriter w = new JSONWriter(chars, 2);
-      w.startObject();
-      w.indent();
-      w.writeString("status");
-      w.writeNameSeparator();
-      w.write(code);
-      w.writeValueSeparator();
-      w.indent();
-      w.writeString("error");
-      w.writeNameSeparator();
-      w.writeString(msg);
-      w.endObject();
-
-      out.write(chars.toString());*/
-    }
-
-    boolean printTree(JSONWriter json, String path) throws IOException {
-      String label = path;
-      if (!fullpath) {
-        int idx = path.lastIndexOf('/');
-        label = idx > 0 ? path.substring(idx + 1) : path;
-      }
-      json.startObject();
-      writeKeyValue(json, "text", label, true);
-      json.writeValueSeparator();
-      json.writeString("a_attr");
-      json.writeNameSeparator();
-      json.startObject();
-      String href =
-          "admin/zookeeper?detail=true&path=" + URLEncoder.encode(path, StandardCharsets.UTF_8);
-      writeKeyValue(json, "href", href, true);
-      json.endObject();
-
-      Stat stat = new Stat();
-      try {
-        // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat);
-
-        if (stat.getEphemeralOwner() != 0) {
-          writeKeyValue(json, "ephemeral", true, false);
-          writeKeyValue(json, "version", stat.getVersion(), false);
-        }
-
-        if (dump) {
-          json.writeValueSeparator();
-          printZnode(json, path);
-        }
-
-      } catch (IllegalArgumentException e) {
-        // path doesn't exist (must have been removed)
-        writeKeyValue(json, "warning", "(path gone)", false);
-      } catch (KeeperException e) {
-        writeKeyValue(json, "warning", e.toString(), false);
-        log.warn("Keeper Exception", e);
-      } catch (InterruptedException e) {
-        writeKeyValue(json, "warning", e.toString(), false);
-        log.warn("InterruptedException", e);
-      }
-
-      if (stat.getNumChildren() > 0) {
-        json.writeValueSeparator();
-        if (indent) {
-          json.indent();
-        }
-        json.writeString("children");
-        json.writeNameSeparator();
-        json.startArray();
-
-        try {
-          List<String> children = zkClient.getChildren(path, null);
-          java.util.Collections.sort(children);
-
-          boolean first = true;
-          for (String child : children) {
-            if (!first) {
-              json.writeValueSeparator();
-            }
-
-            String childPath = path + (path.endsWith("/") ? "" : "/") + child;
-            if (!printTree(json, childPath)) {
-              return false;
-            }
-            first = false;
-          }
-        } catch (KeeperException e) {
-          writeError(500, e.toString());
-          return false;
-        } catch (InterruptedException e) {
-          writeError(500, e.toString());
-          return false;
-        } catch (IllegalArgumentException e) {
-          // path doesn't exist (must have been removed)
-          json.writeString("(children gone)");
-        }
-
-        json.endArray();
-      }
-
-      json.endObject();
-      return true;
-    }
-
-    String time(long ms) {
-      return (new Date(ms)).toString() + " (" + ms + ")";
-    }
-
-    public void writeKeyValue(JSONWriter json, String k, Object v, boolean isFirst) {
-      if (!isFirst) {
-        json.writeValueSeparator();
-      }
-      if (indent) {
-        json.indent();
-      }
-      json.writeString(k);
-      json.writeNameSeparator();
-      json.write(v);
-    }
-
-    boolean printZnode(JSONWriter json, String path) throws IOException {
-      try {
-        String dataStr = null;
-        String dataStrErr = null;
-        Stat stat = new Stat();
-        // Trickily, the call to zkClient.getData fills in the stat variable
-        byte[] data = zkClient.getData(path, null, stat);
-        if (null != data) {
-          try {
-            dataStr = (new BytesRef(data)).utf8ToString();
-          } catch (Exception e) {
-            dataStrErr = "data is not parsable as a utf8 String: " + e.toString();
-          }
-        }
-
-        json.writeString("znode");
-        json.writeNameSeparator();
-        json.startObject();
-
-        writeKeyValue(json, PATH, path, true);
-
-        json.writeValueSeparator();
-        json.writeString("prop");
-        json.writeNameSeparator();
-        json.startObject();
-        writeKeyValue(json, "version", stat.getVersion(), true);
-        writeKeyValue(json, "aversion", stat.getAversion(), false);
-        writeKeyValue(json, "children_count", stat.getNumChildren(), false);
-        writeKeyValue(json, "ctime", time(stat.getCtime()), false);
-        writeKeyValue(json, "cversion", stat.getCversion(), false);
-        writeKeyValue(json, "czxid", stat.getCzxid(), false);
-        writeKeyValue(json, "ephemeralOwner", stat.getEphemeralOwner(), false);
-        writeKeyValue(json, "mtime", time(stat.getMtime()), false);
-        writeKeyValue(json, "mzxid", stat.getMzxid(), false);
-        writeKeyValue(json, "pzxid", stat.getPzxid(), false);
-        writeKeyValue(json, "dataLength", stat.getDataLength(), false);
-        if (null != dataStrErr) {
-          writeKeyValue(json, "dataNote", dataStrErr, false);
-        }
-        json.endObject();
-
-        if (null != dataStr) {
-          writeKeyValue(json, "data", dataStr, false);
-        }
-
-        if (page != null) {
-          writeKeyValue(json, "paging", page.getPagingHeader(), false);
-        }
-
-        json.endObject();
-      } catch (KeeperException e) {
-        writeError(500, e.toString());
-        return false;
-      } catch (InterruptedException e) {
-        writeError(500, e.toString());
-        return false;
-      }
-      return true;
-    }
-
-    /* @Override
-        public void write(OutputStream os) throws IOException {
-          ByteBuffer bytes = baos.getByteBuffer();
-          os.write(bytes.array(),0,bytes.limit());
-        }
-    */
-    @Override
-    public String getName() {
-      return null;
-    }
-
-    @Override
-    public String getSourceInfo() {
-      return null;
-    }
-
-    @Override
-    public String getContentType() {
-      return JSONResponseWriter.CONTENT_TYPE_JSON_UTF8;
-    }
-
-    @Override
-    public Long getSize() {
-      return null;
-    }
-
-    @Override
-    public InputStream getStream() throws IOException {
-      return new ByteBufferInputStream(baos.getByteBuffer());
-    }
-
-    @Override
-    public Reader getReader() throws IOException {
-      return null;
+      dataMap.put("znode", znodeContent);
     }
   }
 }

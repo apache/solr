@@ -43,11 +43,17 @@ allprojects {
 
   // Configure consistent dependency resolution across configurations
   plugins.withType(JavaPlugin) {
-    java {
+    project.java {
       consistentResolution {
         useCompileClasspathVersions()
       }
     }
+  }
+
+  // Helper to align a configuration to use the same dependency versions as runtimeClasspath.
+  // This ensures that packaging/distribution and validation use the same versions that were tested.
+  ext.alignWithRuntimeClasspath = { Configuration conf ->
+    conf.shouldResolveConsistentlyWith(project.configurations.runtimeClasspath)
   }
 
   dependencies {

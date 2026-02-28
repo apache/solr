@@ -407,12 +407,6 @@ function print_usage() {
     echo "  --data-home <dir>     Sets the solr.data.home system property, where Solr will store index data in <instance_dir>/data subdirectories."
     echo "                          If not set, Solr uses solr.solr.home for config and data."
     echo ""
-    echo "  -e/--example <name>   Name of the example to run; available examples:"
-    echo "      cloud:              SolrCloud example"
-    echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
-    echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
-    echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
-    echo ""
     echo "  --jvm-opts <jvmParams> Additional parameters to pass to the JVM when starting Solr, such as to setup"
     echo "                          Java debug options. For example, to enable a Java debugger to attach to the Solr JVM"
     echo "                          you could pass: --jvm-opts \"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=18983\""
@@ -423,7 +417,15 @@ function print_usage() {
     echo "                          you could pass: -j \"--include-jetty-dir=/etc/jetty/custom/server/\""
     echo "                          In most cases, you should wrap the additional parameters in double quotes."
     echo ""
-    echo "  -y/--no-prompt        Don't prompt for input; accept all defaults when running examples that accept user input"
+    echo "  -e/--example <name>   Name of the example to run; available examples:"
+    echo "      cloud:              SolrCloud example"
+    echo "      techproducts:       Comprehensive example illustrating many of Solr's core capabilities"
+    echo "      schemaless:         Schema-less example (schema is inferred from data during indexing)"
+    echo "      films:              Example of starting with _default configset and adding explicit fields dynamically"
+    echo ""
+    echo "  -y/--no-prompt        Don't prompt for input; accept all defaults when running examples that accept user input."
+    echo ""
+    echo "  --prompt-inputs <values> Don't prompt for input; comma delimited list of inputs read when running examples that accept user input."
     echo ""
     echo "  --force               If attempting to start Solr as the root user, the script will exit with a warning that running Solr as \"root\" can cause problems."
     echo "                          It is possible to override this warning with the '--force' parameter."
@@ -817,6 +819,14 @@ if [ $# -gt 0 ]; then
             PASS_TO_RUN_EXAMPLE+=("--no-prompt")
             shift
         ;;
+        --prompt-inputs)
+        if [[ -z "$2" || "${2:0:1}" == "-" ]]; then
+          print_usage "$SCRIPT_CMD" "Prompt values are required when using the $1 option!"
+          exit 1
+        fi
+        PASS_TO_RUN_EXAMPLE+=("--prompt-inputs" "$2")
+        shift 2
+        ;;        
         --verbose)
             verbose=true
             SOLR_LOG_LEVEL=DEBUG

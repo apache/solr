@@ -92,12 +92,15 @@ public class KafkaMirroringSink implements RequestMirroringSink, Closeable {
     }
 
     final long enqueueStartNanos = System.nanoTime();
+    // required for multi-partition topics to preserve ordering of requests for a collection
+    final String recordKey =
+        request.getSolrRequest() != null ? request.getSolrRequest().getCollection() : null;
 
     // Create Producer record
     try {
 
       producer.send(
-          new ProducerRecord<>(topicName, request),
+          new ProducerRecord<>(topicName, recordKey, request),
           (metadata, exception) -> {
             if (exception != null) {
               log.error(

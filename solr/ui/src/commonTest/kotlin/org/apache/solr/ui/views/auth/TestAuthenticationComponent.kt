@@ -21,17 +21,27 @@ import com.arkivanov.decompose.Child.Created
 import com.arkivanov.decompose.router.slot.ChildSlot
 import com.arkivanov.decompose.value.MutableValue
 import com.arkivanov.decompose.value.Value
+import io.ktor.http.Url
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.apache.solr.ui.components.auth.AuthenticationComponent
 import org.apache.solr.ui.components.auth.AuthenticationComponent.BasicAuthConfiguration
 import org.apache.solr.ui.components.auth.AuthenticationComponent.Model
+import org.apache.solr.ui.components.auth.AuthenticationComponent.OAuthConfiguration
 import org.apache.solr.ui.components.auth.BasicAuthComponent
+import org.apache.solr.ui.components.auth.OAuthComponent
+import org.apache.solr.ui.domain.AuthMethod
+import org.apache.solr.ui.domain.AuthorizationFlow
+import org.apache.solr.ui.domain.OAuthData
 
 internal class TestAuthenticationComponent(
     model: Model = Model(),
     basicAuthConfig: BasicAuthConfiguration = BasicAuthConfiguration(),
     basicAuthComponent: BasicAuthComponent = TestBasicAuthComponent(),
+    oAuthConfig: OAuthConfiguration = OAuthConfiguration(
+        method = AuthMethod.OAuthMethod(data = TestOAuthData),
+    ),
+    oAuthComponent: OAuthComponent = TestOAuthComponent(),
 ) : AuthenticationComponent {
     var onAbortClicked = false
     override val model: StateFlow<Model> = MutableStateFlow(model)
@@ -41,6 +51,15 @@ internal class TestAuthenticationComponent(
                 child = Created(
                     configuration = basicAuthConfig,
                     instance = basicAuthComponent,
+                ),
+            ),
+        )
+    override val oAuthSlot: Value<ChildSlot<OAuthConfiguration, OAuthComponent>> =
+        MutableValue(
+            ChildSlot(
+                child = Created(
+                    configuration = oAuthConfig,
+                    instance = oAuthComponent,
                 ),
             ),
         )

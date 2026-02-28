@@ -22,7 +22,6 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.JavaBinRequestWriter;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
-import org.junit.BeforeClass;
 
 /**
  * A subclass of SolrExampleTests that explicitly uses the HTTP2 client and the binary codec for
@@ -31,15 +30,10 @@ import org.junit.BeforeClass;
 @SolrTestCaseJ4.SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class SolrExampleBinaryHttp2Test extends SolrExampleTests {
 
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpJettySolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    return new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConnectionTimeout(DEFAULT_CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)
         .withRequestWriter(new JavaBinRequestWriter())
         // where the magic happens

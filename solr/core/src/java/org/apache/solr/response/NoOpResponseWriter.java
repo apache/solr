@@ -14,30 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
+package org.apache.solr.response;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-
-import org.apache.solr.common.SolrException;
+import java.io.IOException;
+import java.io.Writer;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.security.AuthorizationContext;
 
-/** Does nothing other than showing a 404 message */
-public class NotFoundRequestHandler extends RequestHandlerBase {
+public class NoOpResponseWriter implements TextQueryResponseWriter {
+  static String MESSAGE = "noop response writer";
+
   @Override
-  public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    throw new SolrException(
-        SolrException.ErrorCode.NOT_FOUND, "" + req.getContext().get(PATH) + " is not found");
+  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    writer.write(MESSAGE);
   }
 
   @Override
-  public String getDescription() {
-    return "No Operation";
-  }
-
-  @Override
-  public Name getPermissionName(AuthorizationContext request) {
-    return Name.ALL;
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    return QueryResponseWriter.CONTENT_TYPE_TEXT_UTF8;
   }
 }

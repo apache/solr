@@ -363,3 +363,15 @@ The response will look similar to:
 Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the paramset listed in the above table.
 However, other parameters, including SearchHandler components, may not be modified.
 The invariants and appends specified in the implicit configuration cannot be overridden.
+
+== How to Disable an Implicit Handler
+
+You may want to disable the loading of an implicit handler.
+This is supported by remapping the name of the handler to the `NoOpRequestHandler` in `solrconfig.xml`, which will return a 403 FORBIDDEN status code.
+
+For example, to disable the `/update/csv` handler you would re-define it in `solrconfig.xml` as:
+
+[source,xml]
+----
+<requestHandler name="/update/csv" class="solr.NoOpRequestHandler"></requestHandler>
+----

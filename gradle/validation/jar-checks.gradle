@@ -91,6 +91,10 @@ subprojects {
         extendsFrom testCompileClasspath
       }
     }
+
+    // Align jarValidation with tested runtimeClasspath versions
+    // This ensures validation uses the same versions that were tested
+    alignWithRuntimeClasspath(configurations.jarValidation)
   }
 
   // Collects dependency JAR information for a project and saves it in

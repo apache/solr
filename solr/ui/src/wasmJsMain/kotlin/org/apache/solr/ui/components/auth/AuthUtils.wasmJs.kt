@@ -14,16 +14,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
 
-import org.apache.solr.handler.component.SearchHandler;
+package org.apache.solr.ui.components.auth
 
-@Deprecated
-public class StandardRequestHandler extends SearchHandler {
-  //////////////////////// SolrInfoMBeans methods //////////////////////
+import io.ktor.http.URLBuilder
+import io.ktor.http.appendPathSegments
+import kotlinx.browser.window
 
-  @Override
-  public String getDescription() {
-    return "The standard Solr request handler";
-  }
+internal actual fun getRedirectUri(): String {
+    // For wasmJs we return the current origin with the full path
+    // TODO window.location.href may not be reliable, update if necessary
+    return URLBuilder(window.location.href).apply {
+        appendPathSegments("callback")
+    }.buildString()
 }

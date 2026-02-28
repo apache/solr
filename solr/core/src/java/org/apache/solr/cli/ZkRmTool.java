@@ -67,7 +67,7 @@ public class ZkRmTool extends ToolBase {
     }
     echoIfVerbose("\nConnecting to ZooKeeper at " + zkHost + " ...");
     try (SolrZkClient zkClient = CLIUtils.getSolrZkClient(cli, zkHost)) {
-      if (!recursive && zkClient.getChildren(znode, null).size() != 0) {
+      if (!recursive && !zkClient.getChildren(znode, null).isEmpty()) {
         throw new SolrServerException(
             "ZooKeeper node " + znode + " has children and recursive has NOT been specified.");
       }

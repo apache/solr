@@ -790,9 +790,8 @@ var graphSubController = function ($scope, Zookeeper) {
                 params.filter = filter;
             }
 
-            Zookeeper.clusterState(params, function (data) {
-                    var state = $.parseJSON(data.znode.data);
-
+          Zookeeper.clusterState(params, function (data) { 
+                    var state = data.znode.data;
                     var leaf_count = 0;
                     var graph_data = {
                         name: null,

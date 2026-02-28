@@ -106,27 +106,6 @@ When running multiple instances of Solr on the same host, it is more common to u
 +
 *Example*: `bin/solr start --server-dir newServerDir`
 
-`-e <name>`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Start Solr with an example configuration.
-These examples are provided to help you get started faster with Solr generally, or just try a specific feature.
-+
-The available options are:
-
-* `cloud`: SolrCloud example
-* `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
-* `schemaless`: Schema-less example (schema is inferred from data during indexing)
-* `films`: Example of starting with _default configset and adding explicit fields dynamically
-+
-See the section <<Running with Example Configurations>> below for more details on the example configurations.
-+
-*Example*: `bin/solr start -e schemaless`
-
 `-f`::
 +
 [%autowidth,frame=none]
@@ -161,20 +140,6 @@ If this is not specified, `localhost` is assumed.
 Sets the min (`-Xms`) and max (`-Xmx`) heap size for the JVM running Solr.
 +
 *Example*: `bin/solr start -m 4g` results in `-Xms4g -Xmx4g` settings.
-
-`--no-prompt`::
-+
-[%autowidth,frame=none]
-|===
-|Optional |Default: none
-|===
-+
-Don't prompt for input; accept all defaults when running examples that accept user input.
-+
-For example, when using the "cloud" example, an interactive session guides you through several options for your SolrCloud cluster.
-If you want to accept all of the defaults, you can simply add the `--no-prompt` option to your request.
-+
-*Example*: `bin/solr start -e cloud --no-prompt`
 
 `-p <port>`::
 +
@@ -276,6 +241,56 @@ To emphasize how the default settings work take a moment to understand that the 
 `bin/solr start`
 
 `bin/solr start --host localhost -p 8983 --server-dir server --solr-home solr -m 512m`
+
+`-e <name>` or `--example <name>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Start Solr with an example configuration.
+These examples are provided to help you get started faster with Solr generally, or just try a specific feature.
++
+The available options are:
+
+* `cloud`: SolrCloud example
+* `techproducts`: Comprehensive example illustrating many of Solr's core capabilities
+* `schemaless`: Schema-less example (schema is inferred from data during indexing)
+* `films`: Example of starting with _default configset and adding explicit fields dynamically
++
+See the section <<Running with Example Configurations>> below for more details on the example configurations.
++
+*Example*: `bin/solr start -e schemaless`
+
+`--no-prompt`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Don't prompt for input; accept all defaults when running examples that accept input.
++
+For example, when using the "cloud" example, an interactive session guides you through several options for your SolrCloud cluster.
+If you want to accept all of the defaults, you can simply add the `--no-prompt` option to your request.
++
+*Example*: `bin/solr start -e cloud --no-prompt`
+
+`--prompt-inputs <values>`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: none
+|===
++
+Don't prompt for input; instead supply ordered answers in comma delimited format when running examples that accept input.
++
+For example, when using the "cloud" example, you can answer the prompts non-interactively to start a three node cluster on specific ports:
++
+*Example*: `bin/solr start -e cloud --prompt-inputs 3,9000,9001,9002,"mycollection",2,2,_default`
+
+On Windows please wrap the prompts value in double quotes to preserve the comma delimited format.
 
 It is not necessary to define all of the options when starting if the defaults are fine for your needs.
 
@@ -676,7 +691,7 @@ This defaults to the same name as the collection or core.
 +
 *Example*: `bin/solr create -n basic`
 
-`-sh <shards>` or `-shards <shards>`::
+`-sh <shards>` or `--shards <shards>`::
 +
 [%autowidth,frame=none]
 |===
@@ -937,7 +952,7 @@ Either `--credentials` or `--prompt` *must* be specified.
 When `true`, this blocks out access to unauthenticated users from accessing Solr.
 When `false`, unauthenticated users will still be able to access Solr, but only for operations not explicitly requiring a user role in the Authorization plugin configuration.
 
-`--solrIncludeFile <includeFilePath>`::
+`--solr-include-file <includeFilePath>`::
 +
 [%autowidth,frame=none]
 |===

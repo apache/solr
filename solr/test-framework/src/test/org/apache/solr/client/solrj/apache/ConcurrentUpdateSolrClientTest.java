@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.apache;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,9 +41,11 @@ import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.embedded.JettyConfig;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
 import org.junit.BeforeClass;
@@ -135,7 +139,14 @@ public class ConcurrentUpdateSolrClientTest extends SolrTestCaseJ4 {
   public static void beforeTest() throws Exception {
     JettyConfig jettyConfig =
         JettyConfig.builder().withServlet(new ServletHolder(TestServlet.class), "/cuss/*").build();
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome(), new Properties(), jettyConfig);
+
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
+    solrTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   @Test
