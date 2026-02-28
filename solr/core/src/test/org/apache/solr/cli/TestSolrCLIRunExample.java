@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.exec.ExecuteResultHandler;
@@ -71,6 +72,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
    * Overrides the call to exec bin/solr to start Solr nodes to start them using the Solr
    * test-framework instead of the script, since the script depends on a full build.
    */
+  @SuppressWarnings("deprecation") // Using DefaultExecutor for test mocking purposes
   private static class RunExampleExecutor extends DefaultExecutor implements Closeable {
 
     private final List<CommandLine> commandsExecuted = new ArrayList<>();
@@ -82,8 +84,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
      * test.
      */
     @Override
-    public void execute(
-        org.apache.commons.exec.CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
+    public void execute(CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
         throws IOException {
       int code = execute(cmd);
       if (code != 0)
@@ -91,7 +92,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     @Override
-    public int execute(org.apache.commons.exec.CommandLine cmd) throws IOException {
+    public int execute(CommandLine cmd) throws IOException {
       String exe = cmd.getExecutable();
       assert (exe.endsWith("solr") || exe.endsWith("solr.cmd"));
 
@@ -212,20 +213,18 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
       standaloneSolr = new JettySolrRunner(solrHomeDir.toString(), port);
       Thread bg =
-          new Thread() {
-            @Override
-            public void run() {
-              try {
-                standaloneSolr.start();
-              } catch (Exception e) {
-                if (e instanceof RuntimeException) {
-                  throw (RuntimeException) e;
-                } else {
-                  throw new RuntimeException(e);
+          new Thread(
+              () -> {
+                try {
+                  standaloneSolr.start();
+                } catch (Exception e) {
+                  if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                  } else {
+                    throw new RuntimeException(e);
+                  }
                 }
-              }
-            }
-          };
+              });
       bg.start();
 
       return 0;
@@ -245,7 +244,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "Missing required arg "
               + arg
               + " needed to execute command: "
-              + commandsExecuted.get(commandsExecuted.size() - 1));
+              + commandsExecuted.getLast());
     }
 
     protected boolean hasFlag(String flag, String[] args) {
@@ -323,7 +322,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     for (int pass = 0; pass < 2; pass++) {
       // need a port to start the example server on
-      int bindPort = -1;
+      int bindPort;
       try (ServerSocket socket = new ServerSocket(0)) {
         bindPort = socket.getLocalPort();
       }
@@ -386,11 +385,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
             // brief wait in case of timing issue in getting the new docs committed
             log.warn(
                 "Going to wait for 1 second before re-trying query for techproduct example docs ...");
-            try {
-              Thread.sleep(1000);
-            } catch (InterruptedException ignore) {
-              Thread.interrupted();
-            }
+            TimeUnit.MILLISECONDS.sleep(1000);
             numFound = solrClient.query(query).getResults().getNumFound();
           }
           assertEquals(
@@ -406,7 +401,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       }
 
       // stop the test instance
-      executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+      executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
     }
   }
 
@@ -433,7 +428,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
           "--example-dir", solrExampleDir.toString()
         };
 
-    int bindPort = -1;
+    int bindPort;
     try (ServerSocket socket = new ServerSocket(0)) {
       bindPort = socket.getLocalPort();
     }
@@ -481,7 +476,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
 
     // index some docs - to verify all is good for both shards
     try (CloudSolrClient cloudClient =
-        new RandomizingCloudSolrClientBuilder(
+        new RandomizingCloudHttp2SolrClientBuilder(
                 Collections.singletonList(executor.solrCloudCluster.getZkServer().getZkAddress()),
                 Optional.empty())
             .withDefaultCollection(collectionName)
@@ -522,7 +517,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // System.out.println(toolOutput);
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   /**
@@ -632,7 +627,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     deleteTool.runTool(SolrCLI.processCommandLineArgs(deleteTool, deleteArgs));
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   @Test
@@ -645,7 +640,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     Path solrServerDir = solrHomeDir.getParent();
 
     // need a port to start the example server on
-    int bindPort = -1;
+    int bindPort;
     try (ServerSocket socket = new ServerSocket(0)) {
       bindPort = socket.getLocalPort();
     }

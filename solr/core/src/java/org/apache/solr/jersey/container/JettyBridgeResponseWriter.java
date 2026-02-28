@@ -18,6 +18,7 @@
 package org.apache.solr.jersey.container;
 
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.ws.rs.core.Response.StatusType;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
@@ -54,7 +55,7 @@ public class JettyBridgeResponseWriter implements ContainerResponseWriter {
   @Override
   public OutputStream writeResponseStatusAndHeaders(
       final long contentLength, final ContainerResponse context) throws ContainerException {
-    final jakarta.ws.rs.core.Response.StatusType statusInfo = context.getStatusInfo();
+    final StatusType statusInfo = context.getStatusInfo();
     httpServletResponse.setStatus(statusInfo.getStatusCode());
 
     if (contentLength != -1 && contentLength < Integer.MAX_VALUE) {

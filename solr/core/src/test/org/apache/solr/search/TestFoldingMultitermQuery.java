@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -327,7 +328,7 @@ public class TestFoldingMultitermQuery extends SolrTestCaseJ4 {
               Exception.class,
               "Should throw exception when token evaluates to more than one term",
               () -> assertQ(req("q", "content_multi_bad:" + "abCD*")));
-      assertTrue(expected.getCause() instanceof org.apache.solr.common.SolrException);
+      assertTrue(expected.getCause() instanceof SolrException);
     } finally {
       resetExceptionIgnores();
     }

@@ -65,6 +65,7 @@ import org.apache.solr.client.solrj.impl.SolrHttpConstants;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
@@ -452,7 +453,7 @@ public class HttpClientUtil implements SolrHttpConstants {
 
   public static void close(HttpClient httpClient) {
 
-    org.apache.solr.common.util.IOUtils.closeQuietly((CloseableHttpClient) httpClient);
+    IOUtils.closeQuietly((CloseableHttpClient) httpClient);
 
     assert ObjectReleaseTracker.release(httpClient);
   }

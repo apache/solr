@@ -293,7 +293,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
       }
 
       @Override
-      public Set<java.util.Map.Entry<String, Collection<Object>>> entrySet() {
+      public Set<Entry<String, Collection<Object>>> entrySet() {
         throw new UnsupportedOperationException();
       }
 
@@ -366,7 +366,7 @@ public class SolrDocument extends SolrDocumentBase<Object, SolrDocument>
       }
 
       @Override
-      public Set<java.util.Map.Entry<String, Object>> entrySet() {
+      public Set<Entry<String, Object>> entrySet() {
         throw new UnsupportedOperationException();
       }
 
