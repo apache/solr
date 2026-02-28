@@ -33,6 +33,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -121,7 +122,7 @@ public class TestRawTransformer extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     if (CLIENT != null) {
-      org.apache.solr.common.util.IOUtils.closeQuietly(CLIENT);
+      IOUtils.closeQuietly(CLIENT);
       CLIENT = null;
     }
     if (JSR != null) {

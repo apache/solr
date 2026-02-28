@@ -19,7 +19,10 @@ package org.apache.solr.handler.extraction;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.ClosedChannelException;
 import java.time.Duration;
 import java.util.HashMap;
@@ -82,7 +85,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
     }
     // Validate URL format and scheme
     try {
-      java.net.URI uri = new java.net.URI(baseUrl);
+      URI uri = new URI(baseUrl);
       String scheme = uri.getScheme();
       if (scheme == null
           || (!scheme.equalsIgnoreCase("http") && !scheme.equalsIgnoreCase("https"))) {
@@ -90,7 +93,7 @@ public class TikaServerExtractionBackend implements ExtractionBackend {
             "baseUrl must use http or https scheme, got: " + baseUrl);
       }
       uri.toURL(); // Additional validation that it's a valid URL
-    } catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
+    } catch (URISyntaxException | MalformedURLException e) {
       throw new IllegalArgumentException("Invalid baseUrl: " + baseUrl, e);
     }
 

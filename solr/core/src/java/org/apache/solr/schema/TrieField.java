@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.DocValuesType;
@@ -617,7 +618,7 @@ public class TrieField extends NumericFieldType {
     }
     ft.setNumericPrecisionStep(precisionStep);
 
-    final org.apache.lucene.document.Field f;
+    final Field f;
 
     switch (type) {
       case INTEGER:
@@ -700,7 +701,7 @@ public class TrieField extends NumericFieldType {
    * expert internal use, subject to change. Returns null if no prefix or prefix not needed, or the
    * prefix of the main value of a trie field that indexes multiple precisions per value.
    */
-  public static String getMainValuePrefix(org.apache.solr.schema.FieldType ft) {
+  public static String getMainValuePrefix(FieldType ft) {
     if (ft instanceof TrieField trie) {
       if (trie.precisionStep == Integer.MAX_VALUE) return null;
       switch (trie.type) {

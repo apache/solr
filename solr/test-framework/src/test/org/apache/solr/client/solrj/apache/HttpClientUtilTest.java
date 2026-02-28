@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPOutputStream;
 import java.util.zip.ZipException;
 import javax.net.ssl.HostnameVerifier;
+import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.conn.socket.ConnectionSocketFactory;
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
@@ -99,8 +100,7 @@ public class HttpClientUtilTest extends SolrTestCase {
   @SuppressForbidden(reason = "Uses commons-lang3 FieldUtils.readField to get hostnameVerifier")
   private Object getHostnameVerifier(SSLConnectionSocketFactory sslSocketFactory) {
     try {
-      return org.apache.commons.lang3.reflect.FieldUtils.readField(
-          sslSocketFactory, "hostnameVerifier", true);
+      return FieldUtils.readField(sslSocketFactory, "hostnameVerifier", true);
     } catch (IllegalAccessException e) {
       throw new AssertionError("Unexpected access error reading hostnameVerifier field", e);
     }

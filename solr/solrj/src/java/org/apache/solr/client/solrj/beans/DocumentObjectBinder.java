@@ -35,6 +35,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -197,7 +198,7 @@ public class DocumentObjectBinder {
      * is set to <code>TRUE</code> as well as <code>isList</code> is set to <code>TRUE</code>
      */
     private boolean isContainedInMap;
-    private java.util.function.Predicate<String> dynamicFieldNamePatternMatcher;
+    private Predicate<String> dynamicFieldNamePatternMatcher;
 
     public DocField(AccessibleObject member) {
       if (member instanceof java.lang.reflect.Field) {

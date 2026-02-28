@@ -16,6 +16,7 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -1280,7 +1281,7 @@ public class SolrQuery extends ModifiableSolrParams {
    * SortClause.desc("product");
    * </code></PRE>
    */
-  public static class SortClause implements java.io.Serializable {
+  public static class SortClause implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

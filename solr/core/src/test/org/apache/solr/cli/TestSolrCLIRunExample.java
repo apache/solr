@@ -84,8 +84,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
      * test.
      */
     @Override
-    public void execute(
-        org.apache.commons.exec.CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
+    public void execute(CommandLine cmd, Map<String, String> env, ExecuteResultHandler erh)
         throws IOException {
       int code = execute(cmd);
       if (code != 0)
@@ -93,7 +92,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     }
 
     @Override
-    public int execute(org.apache.commons.exec.CommandLine cmd) throws IOException {
+    public int execute(CommandLine cmd) throws IOException {
       String exe = cmd.getExecutable();
       assert (exe.endsWith("solr") || exe.endsWith("solr.cmd"));
 
@@ -402,7 +401,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
       }
 
       // stop the test instance
-      executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+      executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
     }
   }
 
@@ -518,7 +517,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     // System.out.println(toolOutput);
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   /**
@@ -628,7 +627,7 @@ public class TestSolrCLIRunExample extends SolrTestCaseJ4 {
     deleteTool.runTool(SolrCLI.processCommandLineArgs(deleteTool, deleteArgs));
 
     // stop the test instance
-    executor.execute(org.apache.commons.exec.CommandLine.parse("bin/solr stop -p " + bindPort));
+    executor.execute(CommandLine.parse("bin/solr stop -p " + bindPort));
   }
 
   @Test
