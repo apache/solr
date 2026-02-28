@@ -352,7 +352,7 @@ public abstract class AbstractInstallShardTest extends SolrCloudTestCase {
     List<SolrInputDocument> docs = new ArrayList<>(numDocs);
     for (int i = 0; i < numDocs; i++) {
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("id", (useUUID ? java.util.UUID.randomUUID().toString() : i));
+      doc.addField("id", (useUUID ? UUID.randomUUID().toString() : i));
       doc.addField("val_s", "some value");
       docs.add(doc);
     }

@@ -24,6 +24,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
 import org.apache.http.client.utils.DateUtils;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.embedded.JettyConfig;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -51,8 +52,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     nodeProps.setProperty("coreRootDirectory", coresDir.toString());
     nodeProps.setProperty("configSetBaseDir", solrHomeDirectory.toString());
 
-    solrTestRule.startSolr(
-        solrHomeDirectory, nodeProps, org.apache.solr.embedded.JettyConfig.builder().build());
+    solrTestRule.startSolr(solrHomeDirectory, nodeProps, JettyConfig.builder().build());
   }
 
   @Test

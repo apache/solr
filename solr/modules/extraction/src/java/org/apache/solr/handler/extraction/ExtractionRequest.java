@@ -31,7 +31,7 @@ public class ExtractionRequest {
   public final String streamSourceInfo;
   public final Long streamSize;
   public final String resourcePassword;
-  public final java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap;
+  public final LinkedHashMap<Pattern, String> passwordsMap;
   public final String extractFormat;
 
   // Below variables are only used by TikaServerExtractionBackend
@@ -69,7 +69,7 @@ public class ExtractionRequest {
       String streamSourceInfo,
       Long streamSize,
       String resourcePassword,
-      java.util.LinkedHashMap<java.util.regex.Pattern, String> passwordsMap,
+      LinkedHashMap<Pattern, String> passwordsMap,
       String extractFormat,
       boolean tikaServerRecursive,
       Integer tikaServerTimeoutSeconds,

@@ -60,7 +60,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String SCORE_COMP = "score";
   public static final String FREQ_COMP = "freq";
 
-  protected org.apache.lucene.search.spell.SpellChecker spellChecker;
+  protected SpellChecker spellChecker;
 
   protected String sourceLocation;
   /*

@@ -17,6 +17,7 @@
 
 package org.apache.solr.cli;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -560,7 +561,7 @@ public class RunExampleTool extends ToolBase {
       // Create a scanner from the provided prompts
       String promptsValue = cli.getOptionValue(PROMPT_INPUTS_OPTION);
       InputStream promptsStream =
-          new java.io.ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
+          new ByteArrayInputStream(promptsValue.getBytes(StandardCharsets.UTF_8));
       readInput = new Scanner(promptsStream, StandardCharsets.UTF_8);
       readInput.useDelimiter(",");
       prompt = true; // Enable prompting code path, but reading from prompts instead of user
