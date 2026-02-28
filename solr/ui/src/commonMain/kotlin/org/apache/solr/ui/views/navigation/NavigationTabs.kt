@@ -17,7 +17,7 @@
 
 package org.apache.solr.ui.views.navigation
 
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.PrimaryScrollableTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,10 +49,10 @@ fun <T : Enum<T>, C : Any> NavigationTabs(
 ) {
     val slot by component.tabSlot.subscribeAsState()
 
-    val currentTab = slot.child?.configuration?.tab
+    val currentTab = slot.child?.configuration
     val currentTabIndex = currentTab?.ordinal ?: 0
 
-    ScrollableTabRow(
+    PrimaryScrollableTabRow(
         modifier = modifier,
         selectedTabIndex = currentTabIndex,
         edgePadding = 16.dp,

@@ -19,7 +19,7 @@ package org.apache.solr.ui.views.configsets
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsOverviewComponent
 
 @Composable
 fun ConfigsetsOverviewContent(component: ConfigsetsOverviewComponent, modifier: Modifier = Modifier) {

@@ -14,16 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.ui.components.configsets.overview.integration
 
-import com.arkivanov.mvikotlin.core.store.StoreFactory
-import io.ktor.client.HttpClient
-import org.apache.solr.ui.components.configsets.overview.ConfigsetsOverviewComponent
-import org.apache.solr.ui.utils.AppComponentContext
+package org.apache.solr.ui.components.files.store
 
-class DefaultConfigsetsOverviewComponent(
-    componentContext: AppComponentContext,
-    storeFactory: StoreFactory,
-    httpClient: HttpClient,
-) : ConfigsetsOverviewComponent,
-    AppComponentContext by componentContext
+import com.arkivanov.mvikotlin.core.store.Store
+import org.apache.solr.ui.components.files.store.FilePickerStore.Intent
+import org.apache.solr.ui.components.files.store.FilePickerStore.Label
+import org.apache.solr.ui.components.files.store.FilePickerStore.State
+import org.apache.solr.ui.domain.PickedFile
+
+internal interface FilePickerStore : Store<Intent, State, Label> {
+
+    sealed interface Intent {
+        data object OpenFilePicker : Intent
+
+        data object ClearSelection : Intent
+    }
+
+    data class State(
+        val selectedFile: PickedFile? = null,
+        val isFileSelectionEnabled: Boolean = true,
+    )
+
+    sealed interface Label {
+        data class FilePicked(val file: PickedFile) : Label
+    }
+}

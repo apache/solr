@@ -30,8 +30,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.arkivanov.decompose.extensions.compose.subscribeAsState
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent
-import org.apache.solr.ui.components.configsets.ConfigsetsComponent.Child
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent
+import org.apache.solr.ui.components.configsets.ConfigsetsRouteComponent.Child
 import org.apache.solr.ui.generated.resources.Res
 import org.apache.solr.ui.generated.resources.configsets_index_query
 import org.apache.solr.ui.generated.resources.configsets_request_handlers
@@ -46,16 +46,18 @@ import org.apache.solr.ui.views.navigation.configsets.ConfigsetsTab
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ConfigsetsContent(
-    component: ConfigsetsComponent,
+    component: ConfigsetsRouteComponent,
     modifier: Modifier = Modifier,
 ) = FlowRow(
     modifier = modifier,
     horizontalArrangement = Arrangement.spacedBy(16.dp),
     verticalArrangement = Arrangement.spacedBy(16.dp),
 ) {
-    val model by component.model.collectAsState()
+    val configsetsComponent = component.configsetsComponent
+    val model by configsetsComponent.model.collectAsState()
     val slot by component.tabSlot.subscribeAsState()
     val currentChild = slot.child
+    val tab = currentChild?.configuration
 
     Column(Modifier.fillMaxSize()) {
         NavigationTabs(
@@ -64,11 +66,15 @@ fun ConfigsetsContent(
             mapper = ::tabLabelRes,
             modifier = Modifier.padding(1.dp),
         )
-        ConfigsetsDropdown(
-            selectedConfigSet = model.selectedConfigset,
-            selectConfigset = component::onSelectConfigset,
-            availableConfigsets = model.configsets,
-        )
+        tab?.let {
+            ConfigsetsActionBar(
+                variant = currentChild.instance,
+                configsets = model.configsets,
+                selectedConfigset = model.selectedConfigset,
+                onConfigsetChange = configsetsComponent::onSelectConfigset,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+        }
 
         Box(
             Modifier
