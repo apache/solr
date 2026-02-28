@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<schema name="mappings" version="1.7">
+
+  <!--  Field Types ${solr.tests.numeric.dv}-->
+  <fieldType name="int" class="${solr.tests.IntegerFieldType}" docValues="false" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="float" class="${solr.tests.FloatFieldType}" docValues="false" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="long" class="${solr.tests.LongFieldType}" docValues="false" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="double" class="${solr.tests.DoubleFieldType}" docValues="false" precisionStep="0" omitNorms="true" positionIncrementGap="0"/>
+  <fieldType name="date" class="${solr.tests.DateFieldType}" docValues="false" precisionStep="0" />
+  <fieldType name="boolean" class="solr.BoolField" sortMissingLast="true" docValues="false" />
+  <fieldType name="string" class="solr.StrField" sortMissingLast="true" docValues="false"/>
+  
+  <!-- Mappings --> 
+  <fieldType name="mappingType" class="solr.MappingType" subFieldType="string" docValues="true" />
+  <fieldType name="floatMapping" class="solr.MappingType" subFieldType="float" docValues="true" />
+  <fieldType name="dateStrMapping" class="solr.MappingType" subFieldType="string" keyFieldType="date" docValues="true" />
+  <fieldType name="multiMappingType" class="solr.MappingType" subFieldType="string" docValues="false" />
+
+  <!--  Fields -->
+  <field name="id" type="string" indexed="true" stored="true" required="true"/>
+  <field name="_version_" type="long" indexed="false" stored="false" docValues="true" multiValued="false" useDocValuesAsStored="true"/>
+
+  <field name="random_str" type="string" indexed="true" stored="true" required="false"/>
+
+  <field name="single_mapping" type="mappingType" indexed="true" stored="true" required="false" multiValued="false"/>
+  <field name="multi_mapping" type="multiMappingType" indexed="true" stored="true" required="false" multiValued="true" />
+
+  <field name="float_mapping" type="floatMapping" indexed="true" stored="true" required="false" multiValued="false"/>
+
+  <field name="date_str_mapping" type="dateStrMapping" indexed="true" stored="true" required="false" multiValued="false"/>
+   
+  <uniqueKey>id</uniqueKey>
+
+  <similarity class="${solr.similarity:solr.SchemaSimilarityFactory}"/>
+</schema>

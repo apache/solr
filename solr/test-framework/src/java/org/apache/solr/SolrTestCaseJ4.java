@@ -849,13 +849,21 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
 
-  /** Validates a query matches some XPath test expressions and closes the query */
-  public static void assertQ(SolrQueryRequest req, String... tests) {
-    assertQ(null, req, tests);
+  /**
+   * Validates a query matches some XPath test expressions and closes the query.
+   *
+   * @return the response as XML string
+   */
+  public static String assertXmlQ(SolrQueryRequest req, String... tests) {
+    return assertXmlQ(null, req, tests);
   }
 
-  /** Validates a query matches some XPath test expressions and closes the query */
-  public static void assertQ(String message, SolrQueryRequest req, String... tests) {
+  /**
+   * Validates a query matches some XPath test expressions and closes the query.
+   *
+   * @return the response as XML string
+   */
+  public static String assertXmlQ(String message, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " "; // TODO log 'm' !!!
       // since the default (standard) response format is now JSON
@@ -889,12 +897,23 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
 
         fail(msg);
       }
+      return response;
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
       log.error("REQUEST FAILED: {}", req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
+  }
+
+  /** Validates a query matches some XPath test expressions and closes the query */
+  public static void assertQ(SolrQueryRequest req, String... tests) {
+    assertQ(null, req, tests);
+  }
+
+  /** Validates a query matches some XPath test expressions and closes the query */
+  public static void assertQ(String message, SolrQueryRequest req, String... tests) {
+    assertXmlQ(message, req, tests);
   }
 
   /** Makes a query request and returns the JSON string response */
