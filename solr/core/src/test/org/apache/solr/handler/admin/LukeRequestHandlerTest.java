@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.EnumSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.luke.FieldFlag;
+import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.CustomAnalyzerStrField;
 import org.apache.solr.schema.IndexSchema;
@@ -293,5 +294,60 @@ public class LukeRequestHandlerTest extends SolrTestCaseJ4 {
     // Put back the configuration expected by the rest of the tests in this suite
     deleteCore();
     initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  /**
+   * SOLR-18125: Tests that Luke reports index flags for fields even when a document has been
+   * deleted. Uses NoMergePolicy so the deleted doc remains in the same segment, keeping liveDocs
+   * non-null and exposing the inverted liveDocs check in getFirstLiveDoc.
+   */
+  @Test
+  public void testIndexFlagsWithDeletedDocs() throws Exception {
+    deleteCore();
+    systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
+    try {
+      initCore("solrconfig.xml", "schema12.xml");
+
+      // Three docs in a single commit so they share one segment. Delete the middle term
+      // ("bbb") and keep the lexical edges ("aaa" and "ccc") live, so the first term
+      // encountered is always a live doc regardless of ascending or descending iteration.
+      // The bug's inverted liveDocs check skips live docs, so getFirstLiveDoc returns null
+      // and index flags go missing.
+      assertU(adoc("id", "1", "solr_s", "aaa"));
+      assertU(adoc("id", "2", "solr_s", "bbb"));
+      assertU(adoc("id", "3", "solr_s", "ccc"));
+      assertU(commit());
+
+      assertU(delI("2"));
+      assertU(commit());
+
+      assertQ(
+          "index flags should be present for solr_s despite deletion in segment",
+          req("qt", "/admin/luke", "fl", "solr_s"),
+          getFieldXPathPrefix("solr_s") + "[@name='index']");
+
+      // Now test the inverse: delete the edges and keep the middle. The first term
+      // encountered ("aaa" or "ccc") is deleted, so getFirstLiveDoc must skip it and
+      // continue to the live term ("bbb"). This exercises the retry loop — without it,
+      // the method gives up after the first deleted term.
+      clearIndex();
+      assertU(adoc("id", "4", "solr_s", "aaa"));
+      assertU(adoc("id", "5", "solr_s", "bbb"));
+      assertU(adoc("id", "6", "solr_s", "ccc"));
+      assertU(commit());
+
+      assertU(delI("4"));
+      assertU(delI("6"));
+      assertU(commit());
+
+      assertQ(
+          "index flags should be present for solr_s when edges are deleted",
+          req("qt", "/admin/luke", "fl", "solr_s"),
+          getFieldXPathPrefix("solr_s") + "[@name='index']");
+    } finally {
+      deleteCore();
+      System.clearProperty(SYSTEM_PROPERTY_SOLR_TESTS_MERGEPOLICYFACTORY);
+      initCore("solrconfig.xml", "schema12.xml");
+    }
   }
 }
