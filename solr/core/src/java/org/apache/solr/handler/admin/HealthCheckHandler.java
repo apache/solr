@@ -245,6 +245,11 @@ public class HealthCheckHandler extends RequestHandlerBase {
         long followerGeneration = commit.getGeneration();
         long generationDiff = leaderGeneration - followerGeneration;
 
+        // generationDiff shouldn't be negative except for some edge cases, log it. Some scenarios
+        // are
+        // 1) commit generation rolls over Long.MAX_VALUE (really unlikely)
+        // 2) Leader's index is wiped clean and the follower is still showing commit generation
+        // from the old index
         if (generationDiff < 0) {
           log.warn("core:[{}], generation lag:[{}] is negative.");
         } else if (generationDiff < maxGenerationLag) {
