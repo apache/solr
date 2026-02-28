@@ -23,11 +23,13 @@ import static org.apache.solr.common.params.CommonParams.OK;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.junit.Before;
@@ -40,7 +42,7 @@ public class NodeHealthAPITest extends SolrTestCase {
   private CoreContainer mockCoreContainer;
   private ZkController mockZkController;
   private ZkStateReader mockZkStateReader;
-  private org.apache.solr.common.cloud.SolrZkClient mockZkClient;
+  private SolrZkClient mockZkClient;
   private ClusterState mockClusterState;
 
   @BeforeClass
@@ -53,7 +55,7 @@ public class NodeHealthAPITest extends SolrTestCase {
     mockCoreContainer = mock(CoreContainer.class);
     mockZkController = mock(ZkController.class);
     mockZkStateReader = mock(ZkStateReader.class);
-    mockZkClient = mock(org.apache.solr.common.cloud.SolrZkClient.class);
+    mockZkClient = mock(SolrZkClient.class);
     mockClusterState = mock(ClusterState.class);
 
     when(mockCoreContainer.isShutDown()).thenReturn(false);
@@ -116,7 +118,7 @@ public class NodeHealthAPITest extends SolrTestCase {
   @Test
   public void testLegacyModeWithInvalidMaxGenerationLagReturnsFailure() {
     when(mockCoreContainer.isZooKeeperAware()).thenReturn(false);
-    when(mockCoreContainer.getCores()).thenReturn(java.util.Collections.emptyList());
+    when(mockCoreContainer.getCores()).thenReturn(List.of());
 
     final var response = new NodeHealthAPI(mockCoreContainer).checkNodeHealth(null, -1);
 
