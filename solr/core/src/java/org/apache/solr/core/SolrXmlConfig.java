@@ -394,7 +394,7 @@ public class SolrXmlConfig {
 
   private static List<String> separateStrings(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptyList();
+      return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }

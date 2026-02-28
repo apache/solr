@@ -154,7 +154,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, queryParams) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (payload == null) return Collections.emptyList();
+            if (payload == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(payload), api.getCommandSchema(), true);
           }

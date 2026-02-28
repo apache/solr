@@ -497,7 +497,7 @@ public class AtomicUpdateDocumentMerger {
             .orElseGet(
                 () -> {
                   final SolrInputField replacement = new SolrInputField(name);
-                  replacement.setValue(Collections.emptyList());
+                  replacement.setValue(List.of());
                   return replacement;
                 });
 

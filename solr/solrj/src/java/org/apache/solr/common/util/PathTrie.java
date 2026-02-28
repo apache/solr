@@ -17,8 +17,6 @@
 
 package org.apache.solr.common.util;
 
-import static java.util.Collections.emptyList;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
-  Node root = new Node(emptyList(), null, null);
+  Node root = new Node(List.of(), null, null);
 
   public PathTrie() {}
 
@@ -70,7 +68,7 @@ public class PathTrie<T> {
 
   // /a/b/c will be returned as ["a","b","c"]
   public static List<String> getPathSegments(String path) {
-    if (path == null || path.isEmpty()) return emptyList();
+    if (path == null || path.isEmpty()) return List.of();
     List<String> parts =
         new ArrayList<>() {
           @Override

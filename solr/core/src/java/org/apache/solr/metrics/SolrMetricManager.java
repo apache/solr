@@ -55,7 +55,6 @@ import io.opentelemetry.sdk.metrics.export.MetricExporter;
 import io.opentelemetry.sdk.metrics.export.PeriodicMetricReader;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -520,8 +519,7 @@ public class SolrMetricManager {
    *     to the name.
    */
   public static String mkName(String name, String... path) {
-    return makeName(
-        path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path), name);
+    return makeName(path == null || path.length == 0 ? List.of() : Arrays.asList(path), name);
   }
 
   public static String makeName(List<String> path, String name) {

@@ -221,8 +221,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase {
         if (mltDocs.docSet == null) {
           rsp.add("facet_counts", null);
         } else {
-          final ResponseBuilder responseBuilder =
-              new ResponseBuilder(req, rsp, Collections.emptyList());
+          final ResponseBuilder responseBuilder = new ResponseBuilder(req, rsp, List.of());
           responseBuilder.setQuery(mlt.getRealMLTQuery());
           SimpleFacets f = new SimpleFacets(req, mltDocs.docSet, params, responseBuilder);
           FacetComponent.FacetContext.initContext(responseBuilder);

@@ -261,7 +261,7 @@ public class ZkConfigSetService extends ConfigSetService {
     try {
       return zkClient.getChildren(CONFIGS_ZKNODE, null);
     } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyList();
+      return List.of();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error listing configs", SolrZkClient.checkInterrupted(e));
     }

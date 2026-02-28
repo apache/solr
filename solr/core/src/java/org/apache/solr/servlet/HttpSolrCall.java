@@ -192,7 +192,7 @@ public class HttpSolrCall {
 
   /** The collection(s) referenced in this request. Populated in {@link #init()}. Not null. */
   public List<String> getCollectionsList() {
-    return collectionsList != null ? collectionsList : Collections.emptyList();
+    return collectionsList != null ? collectionsList : List.of();
   }
 
   @SuppressForbidden(
@@ -348,7 +348,7 @@ public class HttpSolrCall {
    */
   protected List<String> resolveCollectionListOrAlias(String collectionStr) {
     if (collectionStr == null || collectionStr.trim().isEmpty()) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> result = null;
     LinkedHashSet<String> uniqueList = null;
@@ -1098,7 +1098,7 @@ public class HttpSolrCall {
   public List<CommandOperation> getCommands(boolean validateInput) {
     if (parsedCommands == null) {
       Iterable<ContentStream> contentStreams = solrReq.getContentStreams();
-      if (contentStreams == null) parsedCommands = Collections.emptyList();
+      if (contentStreams == null) parsedCommands = List.of();
       else {
         parsedCommands =
             ApiBag.getCommandOperations(

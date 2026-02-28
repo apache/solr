@@ -19,7 +19,6 @@ package org.apache.solr.core.snapshots;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -336,7 +335,7 @@ public class TestSolrCoreSnapshots extends SolrCloudTestCase {
     } catch (IndexNotFoundException ex) {
       // This can happen when the delete snapshot functionality cleans up the index files (when the
       // directory storing these files is not the *current* index directory).
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }

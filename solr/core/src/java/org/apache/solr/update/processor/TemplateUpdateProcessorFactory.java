@@ -18,7 +18,6 @@
 package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.regex.Matcher;
@@ -100,7 +99,7 @@ public class TemplateUpdateProcessorFactory extends SimpleUpdateProcessorFactory
       String template, Cache<String, Resolved> cache, Pattern pattern) {
     Resolved r = getResolved(template, cache, pattern);
     if (r == null) {
-      return Collections.emptyList();
+      return List.of();
     }
     return new ArrayList<>(r.variables);
   }

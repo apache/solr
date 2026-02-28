@@ -54,6 +54,9 @@ java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFiles
 
 java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
 
+@defaultMessage Use List.of()
+java.util.Collections#emptyList()
+
 java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
 

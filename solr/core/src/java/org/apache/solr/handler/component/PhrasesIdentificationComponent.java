@@ -278,7 +278,7 @@ public class PhrasesIdentificationComponent extends SearchComponent {
     if (0 == contextData.allPhrases.size()) {
       // w/o any phrases, the summary is just the input again...
       output.add("summary", contextData.rawInput);
-      output.add("details", Collections.<Object>emptyList());
+      output.add("details", List.of());
       return;
     }
 

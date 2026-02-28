@@ -60,7 +60,7 @@ public class PerReplicaStatesOps {
           PerReplicaStatesOps.class.getName() + "/beforePrsFetch");
       if (current != null) {
         Stat stat = zkClient.exists(current.path, null);
-        if (stat == null) return new PerReplicaStates(path, 0, Collections.emptyList());
+        if (stat == null) return new PerReplicaStates(path, 0, List.of());
         if (current.cversion == stat.getCversion()) return current; // not modifiedZkStateReaderTest
       }
       Stat stat = new Stat();
@@ -292,7 +292,7 @@ public class PerReplicaStatesOps {
             prs -> {
               List<PerReplicaStates.Operation> result;
               if (prs == null) {
-                result = Collections.emptyList();
+                result = List.of();
               } else {
                 PerReplicaStates.State state = prs.get(replica);
                 result = addDeleteStaleNodes(new ArrayList<>(), state);
@@ -356,7 +356,7 @@ public class PerReplicaStatesOps {
 
   public List<PerReplicaStates.Operation> get(PerReplicaStates rs) {
     ops = refresh(rs);
-    if (ops == null) ops = Collections.emptyList();
+    if (ops == null) ops = List.of();
     this.rs = rs;
     return ops;
   }

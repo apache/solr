@@ -1501,7 +1501,7 @@ public class IndexSchema {
   public List<String> getCopySources(String destField) {
     SchemaField f = getField(destField);
     if (!isCopyFieldTarget(f)) {
-      return Collections.emptyList();
+      return List.of();
     }
     List<String> fieldNames = new ArrayList<>();
     for (Map.Entry<String, List<CopyField>> cfs : copyFieldsMap.entrySet()) {

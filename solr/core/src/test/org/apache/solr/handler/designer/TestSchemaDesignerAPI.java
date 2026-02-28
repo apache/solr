@@ -164,7 +164,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, true,
             ENABLE_FIELD_GUESSING_PARAM, true,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList());
+            LANGUAGES_PARAM, List.of());
     assertDesignerSettings(expSettings, rsp.getValues());
     SolrParams rspData = rsp.getValues().toSolrParams();
     int schemaVersion = rspData.getInt(SCHEMA_VERSION_PARAM);
@@ -348,7 +348,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, true,
             ENABLE_FIELD_GUESSING_PARAM, true,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList(),
+            LANGUAGES_PARAM, List.of(),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 
@@ -516,7 +516,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
             ENABLE_DYNAMIC_FIELDS_PARAM, false,
             ENABLE_FIELD_GUESSING_PARAM, false,
             ENABLE_NESTED_DOCS_PARAM, false,
-            LANGUAGES_PARAM, Collections.emptyList(),
+            LANGUAGES_PARAM, List.of(),
             COPY_FROM_PARAM, "_default");
     assertDesignerSettings(expSettings, rsp.getValues());
 

@@ -901,7 +901,7 @@ public class SolrConfig implements MapSerializable {
         result = new ArrayList<>(map.values());
       }
     }
-    return result == null ? Collections.emptyList() : result;
+    return result == null ? List.of() : result;
   }
 
   public PluginInfo getPluginInfo(String type) {

@@ -21,9 +21,9 @@ import static org.apache.solr.search.facet.FacetRequest.RefineMethod.SIMPLE;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.List;
 import java.util.Map;
 
 public abstract class FacetMerger {
@@ -100,7 +100,7 @@ public abstract class FacetMerger {
         new IdentityHashMap<>(4);
 
     public Collection<String> getSubsWithRefinement(FacetRequest freq) {
-      if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
+      if (freq.getSubFacets().isEmpty()) return List.of();
       Collection<String> subs = refineSubMap.get(freq);
       if (subs != null) return subs;
 
@@ -115,7 +115,7 @@ public abstract class FacetMerger {
       }
 
       if (subs == null) {
-        subs = Collections.emptyList();
+        subs = List.of();
       }
       refineSubMap.put(freq, subs);
       return subs;
@@ -125,7 +125,7 @@ public abstract class FacetMerger {
         new IdentityHashMap<>(4);
 
     public Collection<String> getSubsWithPartial(FacetRequest freq) {
-      if (freq.getSubFacets().isEmpty()) return Collections.emptyList();
+      if (freq.getSubFacets().isEmpty()) return List.of();
       Collection<String> subs = partialSubsMap.get(freq);
       if (subs != null) return subs;
 
@@ -143,7 +143,7 @@ public abstract class FacetMerger {
       }
 
       if (subs == null) {
-        subs = Collections.emptyList();
+        subs = List.of();
       }
       partialSubsMap.put(freq, subs);
       return subs;

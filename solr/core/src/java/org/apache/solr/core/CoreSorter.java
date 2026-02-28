@@ -17,7 +17,6 @@
 
 package org.apache.solr.core;
 
-import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Collection;
@@ -47,7 +46,7 @@ public class CoreSorter {
         if (c1 == null) c1 = zero; // just to avoid  NPE
         if (c2 == null) c2 = zero;
         if (c1.totalReplicasInDownNodes < c2.totalReplicasInDownNodes) {
-          // Prioritize replicas with least no:of down nodes waiting.
+          // Prioritize replicas with the least number of down nodes waiting.
           // It's better to bring up a node that is a member of a shard
           // with 0 down nodes than 1 down node because it will make the shard
           // complete earlier and avoid waiting by the other live nodes
@@ -64,9 +63,9 @@ public class CoreSorter {
           }
         }
 
-        // Prioritize replicas where most no:of other nodes are waiting for
-        // For example if 1 other replicas are waiting for this replica, then
-        // prioritize that over the replica were zero other nodes are waiting
+        // Prioritize replicas where the greatest number of other nodes are waiting.
+        // For example, if one other replica is waiting for this replica, then
+        // prioritize that over a replica where zero other nodes are waiting
         if (c1.totalReplicasInLiveNodes > c2.totalReplicasInLiveNodes) return -1;
         if (c2.totalReplicasInLiveNodes > c1.totalReplicasInLiveNodes) return 1;
 
@@ -176,9 +175,9 @@ public class CoreSorter {
   /** Return all replicas for a given collection+slice combo */
   private Collection<Replica> getReplicas(ClusterState cs, String coll, String slice) {
     DocCollection c = cs.getCollectionOrNull(coll);
-    if (c == null) return emptyList();
+    if (c == null) return List.of();
     Slice s = c.getSlice(slice);
-    if (s == null) return emptyList();
+    if (s == null) return List.of();
     return s.getReplicas();
   }
 }

@@ -72,7 +72,7 @@ class SchemaDesignerSettingsDAO implements SchemaDesignerConstants {
     }
 
     map.putIfAbsent(AUTO_CREATE_FIELDS, isFieldGuessingEnabled);
-    map.putIfAbsent(DESIGNER_KEY + LANGUAGES_PARAM, Collections.emptyList());
+    map.putIfAbsent(DESIGNER_KEY + LANGUAGES_PARAM, List.of());
     map.putIfAbsent(DESIGNER_KEY + ENABLE_DYNAMIC_FIELDS_PARAM, true);
     map.putIfAbsent(DESIGNER_KEY + ENABLE_NESTED_DOCS_PARAM, false);
 

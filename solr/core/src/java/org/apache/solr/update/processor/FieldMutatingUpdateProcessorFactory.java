@@ -102,8 +102,8 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
   public static final class SelectorParams {
     public Set<String> fieldName = Collections.emptySet();
     public Set<String> typeName = Collections.emptySet();
-    public Collection<String> typeClass = Collections.emptyList();
-    public Collection<Pattern> fieldRegex = Collections.emptyList();
+    public Collection<String> typeClass = List.of();
+    public Collection<Pattern> fieldRegex = List.of();
     public Boolean fieldNameMatchesSchemaField = null; // null => not specified
 
     public boolean noSelectorsSpecified() {

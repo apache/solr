@@ -1124,7 +1124,7 @@ public abstract class CloudSolrClient extends SolrClient {
     }
 
     List<String> inputCollections =
-        collection == null ? Collections.emptyList() : StrUtils.splitSmart(collection, ",", true);
+        collection == null ? List.of() : StrUtils.splitSmart(collection, ",", true);
     return requestWithRetryOnStaleState(
         request,
         0,

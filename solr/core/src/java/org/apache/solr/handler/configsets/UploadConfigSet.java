@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -75,7 +75,7 @@ public class UploadConfigSet extends ConfigSetAPIBase implements ConfigsetsApi.U
     if (overwritesExisting && cleanup) {
       filesToDelete = configSetService.getAllConfigFiles(configSetName);
     } else {
-      filesToDelete = Collections.emptyList();
+      filesToDelete = new ArrayList<>();
     }
 
     try (ZipInputStream zis = new ZipInputStream(requestBody, StandardCharsets.UTF_8)) {

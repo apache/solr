@@ -159,7 +159,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * @param validateInput , If true it is validated against the json schema spec
    */
   default List<CommandOperation> getCommands(boolean validateInput) {
-    return Collections.emptyList();
+    return List.of();
   }
 
   default String getHttpMethod() {

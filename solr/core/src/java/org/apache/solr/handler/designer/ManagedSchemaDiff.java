@@ -21,7 +21,6 @@ import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -224,7 +223,7 @@ public class ManagedSchemaDiff {
     Map<String, MapDifference.ValueDifference<Object>> mapDiff =
         Maps.difference(map1, map2).entriesDiffering();
     if (mapDiff.isEmpty()) {
-      return Collections.emptyList();
+      return List.of();
     }
     Map<String, Object> leftMapDiff =
         mapDiff.entrySet().stream()

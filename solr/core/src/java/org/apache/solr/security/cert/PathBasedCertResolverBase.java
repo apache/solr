@@ -70,8 +70,7 @@ public abstract class PathBasedCertResolverBase {
         (String)
             filter.getOrDefault(
                 PARAM_FILTER_CHECK_TYPE, CertResolverPattern.CheckType.WILDCARD.toString());
-    List<String> values =
-        (List<String>) filter.getOrDefault(PARAM_FILTER_VALUES, Collections.emptyList());
+    List<String> values = (List<String>) filter.getOrDefault(PARAM_FILTER_VALUES, List.of());
     Set<String> lowerCaseValues =
         values.stream().map(value -> value.toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
     return new CertResolverPattern(name, path, checkType, lowerCaseValues);

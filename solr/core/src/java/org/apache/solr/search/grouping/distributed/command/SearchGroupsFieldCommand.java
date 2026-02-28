@@ -19,7 +19,6 @@ package org.apache.solr.search.grouping.distributed.command;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.lucene.queries.function.ValueSource;
@@ -136,7 +135,7 @@ public class SearchGroupsFieldCommand implements Command<SearchGroupsFieldComman
         topGroups = (Collection<SearchGroup<BytesRef>>) values;
       }
     } else {
-      topGroups = Collections.emptyList();
+      topGroups = List.of();
     }
     final Integer groupCount;
     if (allGroupsCollector != null) {

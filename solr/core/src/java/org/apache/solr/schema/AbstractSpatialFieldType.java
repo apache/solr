@@ -242,7 +242,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
     }
     if (shape == null) {
       log.debug("Field {}: null shape for input: {}", field, val);
-      return Collections.emptyList();
+      return List.of();
     }
 
     List<IndexableField> result = new ArrayList<>();
