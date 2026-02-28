@@ -83,6 +83,18 @@ The number of top terms for each field.
 Choose whether `/luke` should return the index-flags for each field.
 Fetching and returning the index-flags for each field in the index has non-zero cost, and can slow down requests to `/luke`.
 
+`distrib`::
++
+[%autowidth,frame=none]
+|===
+|Optional |Default: `false`
+|===
++
+When set to `true` in SolrCloud mode, the handler aggregates results from all shards in the collection.
+Additive index metrics (`numDocs`, `deletedDocs`, `segmentCount`) are summed across shards; `maxDoc` is the maximum across shards.
+Field types and schema flags are validated for consistency across shards.
+Per-shard index details and per-field detailed statistics are returned under a `shards` key.
+
 == LukeRequestHandler Examples
 
 All of the examples in this section assume you are running the "techproducts" Solr example:
@@ -118,3 +130,43 @@ Alternatively, to work through the Lucene native id:
 http://localhost:8983/solr/techproducts/admin/luke?fl=manu&docId=0
 
 From SolrJ, you can access /luke using the {solr-javadocs}/solrj/org/apache/solr/client/solrj/request/LukeRequest.html[`LukeRequest`] object.
+
+== Distributed Mode (SolrCloud)
+
+When running in SolrCloud, the Luke handler can aggregate results from all shards in a collection by setting `distrib=true`.
+By default, `distrib` is `false` and the handler inspects only the local shard's index.
+
+To get a collection-wide view:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?distrib=true
+
+To get detailed field statistics across all shards for a specific field:
+
+[source,text]
+http://localhost:8983/solr/techproducts/admin/luke?distrib=true&fl=manu
+
+=== Response Structure
+
+In distributed mode, the response contains:
+
+* `index` -- Aggregated metrics across all shards: `numDocs`, `deletedDocs`, `segmentCount` are summed; `maxDoc` is the maximum across shards.
+* `fields` -- Aggregated field metadata. For each field: `type`, `schema` flags, and `dynamicBase` are validated to be consistent across shards; `index` flags use the first non-null value. The `docs` count is summed. Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are _not_ included at this level.
+* `doc` -- Present when `id` is specified. Contains the document from whichever shard owns it, including a `lucene` section (per-field analysis with shard-local `docFreq` values) and a `solr` section (stored fields). Only `id` is supported for distributed doc lookup; `docId` is rejected because Lucene document IDs are shard-local.
+* `schema` -- Schema information from the first responding shard (identical across shards sharing the same configset).
+* `info` -- Static info from the first responding shard.
+* `shards` -- Per-shard details in response-completion order. Each entry contains:
+** `index` -- Full index info for that shard (including `directory`, `segmentsFile`, `version`, `current`, `hasDeletions`, `lastModified`, `userData`).
+** `fields` -- Only present when `fl` triggers detailed statistics. Contains per-field `topTerms`, `distinct`, and `histogram` from that shard.
+
+=== Aggregation Semantics
+
+Field `type`, `schema` flags, and `dynamicBase` are validated for consistency across shards.
+If a mismatch is detected, the handler returns an error identifying the field, the conflicting values, and the shard addresses involved.
+The `index` flags are index-derived (not schema-derived) and may legitimately differ across shards; the first non-null value is used.
+If the same document `id` is found on multiple shards (indicating index corruption), the handler returns an error.
+
+Per-field detailed statistics (`topTerms`, `distinct`, `histogram`) are not aggregated across shards.
+These statistics are shard-local and appear in each shard's entry under the `shards` key.
+For cross-shard term-level aggregation, Solr's xref:query-guide:faceting.adoc[faceting API] provides refinement and distributed aggregation, though it differs from Luke's term statistics: faceting ignores deleted documents, is more flexible, and is generally more expensive.
+A case could be made for adding aggregation strategies for Luke-powered term statistics (which offer better performance at the cost of flexibility), however this would require community interest to motivate.

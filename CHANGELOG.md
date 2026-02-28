@@ -13,7 +13,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 [unreleased]
 ------------
 
-### Added (12 changes)
+### Added (13 changes)
 
 - Create new v2 APIs for listing and reading collection properties ("collprops") [SOLR-12224](https://issues.apache.org/jira/browse/SOLR-12224) (Jason Gerlowski)
 - Introduce new SolrJ SolrRequest classes for metrics and "system info" requests. [SOLR-17136](https://issues.apache.org/jira/browse/SOLR-17136) (Isabelle Giguère) (Pierre Salagnac)
@@ -27,6 +27,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - CoreAdmin API (/admin/cores?action=UPGRADECOREINDEX) to upgrade an index in-place [SOLR-18096](https://issues.apache.org/jira/browse/SOLR-18096) (Rahul Goswami)
 - CrossDC Consumer - add Prometheus metrics [SOLR-18060](https://issues.apache.org/jira/browse/SOLR-18060) (Andrzej Bialecki @ab)
 - CrossDC - support arbitrary Kafka properties [SOLR-18062](https://issues.apache.org/jira/browse/SOLR-18062) (Andrzej Bialecki @ab)
+- Distributed/Cloud support for admin/luke [SOLR-8127](https://issues.apache.org/jira/browse/SOLR-8127) (Luke Kot-Zaniewski)
 
 ### Changed (2 changes)
 
