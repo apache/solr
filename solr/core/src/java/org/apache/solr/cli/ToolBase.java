@@ -17,9 +17,11 @@
 
 package org.apache.solr.cli;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.OptionGroup;
 import org.apache.commons.cli.Options;
+import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.util.StartupLoggingUtils;
 
 public abstract class ToolBase implements Tool {
@@ -40,6 +42,15 @@ public abstract class ToolBase implements Tool {
   protected void echoIfVerbose(final String msg) {
     if (verbose) {
       echo(msg);
+    }
+  }
+
+  protected void echoIfVerbose(Object response) throws JsonProcessingException {
+    if (verbose && response != null) {
+      echo(
+          JacksonContentWriter.DEFAULT_MAPPER
+              .writerWithDefaultPrettyPrinter()
+              .writeValueAsString(response));
     }
   }
 
