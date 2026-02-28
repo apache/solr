@@ -37,8 +37,6 @@ import org.junit.Test;
 
 public class RenameCoreAPITest extends SolrTestCaseJ4 {
 
-  private static final String CORE_NAME = DEFAULT_TEST_COLLECTION_NAME;
-
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
   private RenameCore api;
@@ -48,7 +46,7 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir());
-    solrTestRule.newCollection(CORE_NAME).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
+    solrTestRule.newCollection(DEFAULT_TEST_CORENAME).withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
   }
 
   @Before
@@ -69,15 +67,15 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
   @Test
   public void testRenameCoreToSameNameSucceeds() throws Exception {
     RenameCoreRequestBody requestBody = new RenameCoreRequestBody();
-    requestBody.to = CORE_NAME;
-    SolrJerseyResponse response = api.renameCore(CORE_NAME, requestBody);
+    requestBody.to = DEFAULT_TEST_CORENAME;
+    SolrJerseyResponse response = api.renameCore(DEFAULT_TEST_CORENAME, requestBody);
     assertEquals(0, response.responseHeader.status);
   }
 
   @Test
   public void testMissingRequestBodyThrowsError() {
     final SolrException solrException =
-        expectThrows(SolrException.class, () -> api.renameCore(CORE_NAME, null));
+        expectThrows(SolrException.class, () -> api.renameCore(DEFAULT_TEST_CORENAME, null));
     assertEquals(400, solrException.code());
     assertTrue(solrException.getMessage().contains("Required request-body is missing"));
   }
@@ -86,7 +84,7 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
   public void testMissingToParameterThrowsError() {
     RenameCoreRequestBody requestBody = new RenameCoreRequestBody();
     final SolrException solrException =
-        expectThrows(SolrException.class, () -> api.renameCore(CORE_NAME, requestBody));
+        expectThrows(SolrException.class, () -> api.renameCore(DEFAULT_TEST_CORENAME, requestBody));
     assertEquals(400, solrException.code());
     assertTrue(solrException.getMessage().contains("Missing required parameter: to"));
   }
