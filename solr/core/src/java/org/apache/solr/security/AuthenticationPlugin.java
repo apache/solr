@@ -69,8 +69,8 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
    * @param request the http request
    * @param response the http response
    * @param filterChain the servlet filter chain
-   * @return false if the request not be processed by Solr (not continue), i.e. the response and
-   *     status code have already been sent.
+   * @return false if the request should not be processed by Solr (not continue), i.e. the response
+   *     and status code have already been sent.
    * @throws Exception any exception thrown during the authentication, e.g.
    *     PrivilegedActionException
    */
@@ -79,7 +79,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
       throws Exception;
 
   /**
-   * This method is called by SolrDispatchFilter in order to initiate authentication. It does some
+   * This method is called by AuthenticationFilter in order to initiate authentication. It does some
    * standard metrics counting.
    */
   public final boolean authenticate(
