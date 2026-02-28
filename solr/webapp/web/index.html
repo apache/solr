@@ -206,6 +206,7 @@ limitations under the License.
                 <select placeholder-text-single="'Collection Selector'"
                         ng-model="currentCollection"
                         chosen
+                        search-contains="true"
                         ng-change="showCollection(currentCollection)"
                         ng-options="collection.name for collection in aliases_and_collections"></select>
               </div>
@@ -233,6 +234,7 @@ limitations under the License.
                 <select placeholder-text-single="'Core Selector'"
                         ng-model="currentCore"
                         chosen
+                        search-contains="true"
                         ng-change="showCore(currentCore)"
                         ng-options="core.name for core in cores"></select>
               </div>
