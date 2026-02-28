@@ -188,7 +188,7 @@ public class TextToVectorUpdateProcessorFactoryTest extends TestLanguageModelBas
     NamedList<String> args = new NamedList<>();
 
     ManagedTextToVectorModelStore.getManagedModelStore(collection1)
-        .addModel(new SolrTextToVectorModel(modelName, null, null));
+        .addModel(new SolrTextToVectorModel(modelName, null, null, null));
     args.add("inputField", inputFieldName);
     args.add("outputField", outputFieldName);
     args.add("model", modelName);
