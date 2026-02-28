@@ -18,7 +18,7 @@
 
 The following table lists the field types that are available in Solr and are recommended.
 The page further down, lists all the deprecated types for those migrating from older version of Solr.
-The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table.
+The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache.solr.schema`] package includes all the classes listed in this table, unless otherwise specified.
 
 == Recommended Field Types
 
@@ -50,6 +50,8 @@ The {solr-javadocs}/core/org/apache/solr/schema/package-summary.html[`org.apache
 |ICUCollationField |Supports Unicode collation for sorting and range queries. See the section xref:language-analysis.adoc#unicode-collation[Unicode Collation] for more information.
 
 |IntPointField |Integer field (32-bit signed integer). This class encodes int values using a "Dimensional Points" based data structure that allows for very efficient searches for specific values, or ranges of values. For single valued fields, `docValues="true"` must be used to enable sorting.
+
+|IntRangeField |Stores single or multi-dimensional ranges, using syntax like `[1 TO 4]` or `[1,2 TO 3,4]`.  Up to 4 dimensions are supported.  Dimensionality is specified on new field-types using a `numDimensions` property, and all values for a particular field must have exactly this number of dimensions. Field type is defined in the `org.apache.solr.schema.numericrange` package; fieldType definitions typically reference this as: `<fieldType name="intrange1D" class="solr.numericrange.IntRangeField" numDimensions="1"/>`.  Field type does not support docValues. Typically queried using the xref:query-guide:other-parsers.adoc#numeric-range-query-parser[Numeric Range Query Parser], though the Lucene and other query parsers also support this field by assuming "contains" semantics for searches.
 
 |LatLonPointSpatialField |A latitude/longitude coordinate pair; possibly multi-valued for multiple points. Usually it's specified as "lat,lon" order with a comma. See the section xref:query-guide:spatial-search.adoc[] for more information.
 
