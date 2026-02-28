@@ -25,12 +25,18 @@ import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 
-/** This class holds the response from V1 "/admin/info/system" or V2 "/node/system" */
+/** This class holds the response from V1 "/admin/info/system" */
 public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
-  private final Map<String, NodeSystemResponse> nodesInfo = new HashMap<>();
+  // AdminHandlersProxy wraps nodes responses in a map.
+  // Mimic that here, even if the response might be just a single node.
+  protected final Map<String, NodeSystemResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
+
+  protected SystemInfoResponse() {
+    // required constructor for the V2 extension
+  }
 
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
@@ -41,19 +47,25 @@ public class SystemInfoResponse extends SolrResponseBase {
   public void setResponse(NamedList<Object> response) {
     if (getResponse() == null) {
       super.setResponse(response);
+      parseResponse(response);
     } else {
       assert response.equals(getResponse());
       return;
     }
+  }
 
-    if (getResponse().get("node") == null) {
-      // multi-nodes response, NamedList of "host:port_solr"->NodeSystemResponse
+  /** Parse the V1 response */
+  @SuppressWarnings("unchecked")
+  protected void parseResponse(NamedList<Object> response) {
+    if (response.get("node") == null) {
+      // multi-nodes response, NamedList of "host:port_solr"-> NodeSystemResponse
       for (Entry<String, Object> node : response) {
         if (node.getKey().endsWith("_solr")) {
           nodesInfo.put(
               node.getKey(),
               JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                  node.getValue(), NodeSystemResponse.class));
+                  removeHeader((NamedList<Object>) node.getValue()),
+                  NodeSystemResponse.NodeSystemInfo.class));
         }
       }
 
@@ -62,7 +74,8 @@ public class SystemInfoResponse extends SolrResponseBase {
       if (nodesInfo.isEmpty()) {
         nodesInfo.put(
             null,
-            JacksonContentWriter.DEFAULT_MAPPER.convertValue(response, NodeSystemResponse.class));
+            JacksonContentWriter.DEFAULT_MAPPER.convertValue(
+                removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
       }
 
     } else {
@@ -70,8 +83,13 @@ public class SystemInfoResponse extends SolrResponseBase {
       nodesInfo.put(
           response.get("node").toString(),
           JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              getResponse(), NodeSystemResponse.class));
+              removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
     }
+  }
+
+  private NamedList<Object> removeHeader(NamedList<Object> value) {
+    value.remove("responseHeader");
+    return value;
   }
 
   /** Get the mode from a single node system info */
@@ -217,8 +235,8 @@ public class SystemInfoResponse extends SolrResponseBase {
         .get();
   }
 
-  /** Get the {@code NodeSystemResponse} for a single node */
-  public NodeSystemResponse getNodeResponse() {
+  /** Get the {@code NodeSystemResponse.NodeSystemInfo} for a single node */
+  public NodeSystemResponse.NodeSystemInfo getNodeResponse() {
     if (nodesInfo.size() == 1) {
       return nodesInfo.values().stream().findFirst().get();
     } else {
@@ -228,12 +246,12 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get all {@code NodeSystemResponse}s */
-  public Map<String, NodeSystemResponse> getAllNodeResponses() {
+  public Map<String, NodeSystemResponse.NodeSystemInfo> getAllNodeResponses() {
     return nodesInfo;
   }
 
-  /** Get the {@code NodeSystemResponse} for the given node name */
-  public NodeSystemResponse getNodeResponseForNode(String node) {
+  /** Get the {@code NodeSystemResponse.NodeSystemInfo} for the given node name */
+  public NodeSystemResponse.NodeSystemInfo getNodeResponseForNode(String node) {
     return nodesInfo.get(node);
   }
 

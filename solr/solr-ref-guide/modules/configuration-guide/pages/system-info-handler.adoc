@@ -18,17 +18,39 @@
 
 This API provides the same information displayed on the Dashboard.
 
-System information is available via:
+System information is available via the V2 API:
+
+[source,bash]
+----
+http://localhost:8983/api/node/info/system
+----
+
+The equivalent V1 API is available at:
 
 [source,bash]
 ----
 http://localhost:8983/solr/admin/info/system
 ----
 
+
+== Node Information Object
+
 The keys in the result are:
 
 `mode`::
 Either `solrcloud` or `std`, indicating the mode Solr is running in
+
+`solr_home`::
+Solr base directory.
+
+`core_root`::
+Solr core base directory.
+
+`zkHost`::
+Zookeeper host, when running in cloud mode.
+
+`node`::
+Node name, when running cloud mode.
 
 `lucene`::
 An object containing Solr and Lucene version information
@@ -39,18 +61,15 @@ An object containing information on the JVM
 `system`::
 Information on the system.
 
-`solr_home`::
-Solr base directory.  Only available under `/solr/admin/info/system`.
+`security`::
+Information on security.
 
-`zkHost`::
-Zookeeper host, when running in cloud mode.
+`gpu`::
+Information on GPUs.
 
-`node`::
-Node name, when running cloud mode.
+== Lucene and Solr Versions Information Object
 
-== Lucene and Solr Information Object
-
-The `solr` key in the response is an object with these keys:
+The `lucene` key in the response is an object with these keys:
 
 `lucene-spec-version`::
 The specification version of the Lucene package.
@@ -79,7 +98,7 @@ An object containing memory usage information.
 
 == System Information Object
 
-The `system` key in the response is an object with these keys and more:
+The `system` key in the response is a map of the underlying system information, containing these keys, and more:
 
 `name`::
 Operating system name.
@@ -90,215 +109,217 @@ The result of running `uname -a`.  Not available on Windows.
 `uptime`::
 The result of running `uptime`.  Not available on Windows.
 
+== Security Information Object
+
+The `security` key in the response is an object with these keys:
+
+`tls`::
+Flag to indicate if TLS is enabled or not. If disabled, this is the only key in the response.
+
+`authenticationPlugin`::
+The name of the configured authentication plugin.
+
+`authorizationPlugin`::
+The name of the configured authorization plugin.
+
+`username`::
+The name of the current user.
+
+`roles`::
+The roles of the current user.
+
+`permissions`::
+The permissions of the current user.
+
+== GPU Information Object
+
+The `gpu` key in the response is an object with these keys:
+
+`available`::
+Flag to indicate if GPU is available or not. If unavailable, this is the only key in the response.
+
+`count`::
+Count of available GPUs.
+
+`memory`::
+An object listing the 'free', 'total', and 'used' memory.
+
+`devices`::
+A listing of the GPU devices.
+
 == System Information API Examples
 
-Retrieve system information from a node in cloud mode.
+Examples on this page refer to the V2 API.
+
+[NOTE]
+----
+The V1 response format is slightly different from th V2 response shown here.  In V1, the node information in not wrapped in the `nodeInfo` element, therefore, the information is presented at the same level as the `status`and `QTime`of the response header.
+----
+
+=== Retrieve system information from a node in cloud mode.
+
 
 [source.bash]
 ----
-curl http://localhost:8983/solr/admin/info/system
+curl http://localhost:8983/api/node/info/system
 ----
 
 [source.json]
 ----
 {
-  "responseHeader":{
-    "status":0,
-    "QTime":13},
-  "mode":"solrcloud",
-  "host":"localhost",
-  "zkHost":"192.168.32.3:2181",
-  "solr_home":"/var/solr/data",
-  "lucene":{
-    "solr-spec-version":"8.1.1",
-    "solr-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:20:01",
-    "lucene-spec-version":"8.1.1",
-    "lucene-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:15:24"},
-  "jvm":{
-    "version":"11.0.3 11.0.3+7",
-    "name":"Oracle Corporation OpenJDK 64-Bit Server VM",
-    "spec":{
-      "vendor":"Oracle Corporation",
-      "name":"Java Platform API Specification",
-      "version":"11"},
-    "jre":{
-      "vendor":"Oracle Corporation",
-      "version":"11.0.3"},
-    "vm":{
-      "vendor":"Oracle Corporation",
-      "name":"OpenJDK 64-Bit Server VM",
-      "version":"11.0.3+7"},
-    "processors":4,
-    "memory":{
-      "free":"396 MB",
-      "total":"512 MB",
-      "max":"512 MB",
-      "used":"116 MB (%22.7)",
-      "raw":{
-        "free":415213560,
-        "total":536870912,
-        "max":536870912,
-        "used":121657352,
-        "used%":22.660447657108307}},
-    "jmx":{
-      "classpath":"start.jar",
-      "commandLineArgs":["-Xms512m",
-        "-Xmx512m",
-        "-XX:+UseG1GC",
-        "-XX:+PerfDisableSharedMem",
-        "-XX:+ParallelRefProcEnabled",
-        "-XX:MaxGCPauseMillis=250",
-        "-XX:+UseLargePages",
-        "-XX:+AlwaysPreTouch",
-        "-Xlog:gc*:file=/var/solr/logs/solr_gc.log:time,uptime:filecount=9,filesize=20M",
-        "-Dcom.sun.management.jmxremote",
-        "-Dcom.sun.management.jmxremote.local.only=false",
-        "-Dcom.sun.management.jmxremote.ssl=false",
-        "-Dcom.sun.management.jmxremote.authenticate=false",
-        "-Dcom.sun.management.jmxremote.port=18983",
-        "-Dcom.sun.management.jmxremote.rmi.port=18983",
-        "-DzkClientTimeout=15000",
-        "-DzkHost=192.168.32.3:2181",
-        "-Dsolr.logs.dir=/var/solr/logs",
-        "-Dsolr.port.listen=8983",
-        "-DSTOP.PORT=7983",
-        "-DSTOP.KEY=solrrocks",
-        "-Duser.timezone=UTC",
-        "-Djetty.home=/opt/solr/server",
-        "-Dsolr.solr.home=/var/solr/data",
-        "-Dsolr.data.home=",
-        "-Dsolr.install.dir=/opt/solr",
-        "-Dsolr.configset.default.confdir=/opt/solr/server/solr/configsets/_default/conf",
-        "-Dlog4j.configurationFile=file:/var/solr/log4j2.xml",
-        "-Xss256k",
-        "-Dsolr.jetty.https.port=8983"],
-      "startTime":"2019-07-18T11:16:00.769Z",
-      "upTimeMS":1339007}},
-  "system":{
-    "name":"Linux",
-    "arch":"amd64",
-    "availableProcessors":4,
-    "systemLoadAverage":0.92,
-    "version":"4.9.0-9-amd64",
-    "committedVirtualMemorySize":4317540352,
-    "freePhysicalMemorySize":117563392,
-    "freeSwapSpaceSize":11583721472,
-    "processCpuLoad":0.0,
-    "processCpuTime":42690000000,
-    "systemCpuLoad":0.0,
-    "totalPhysicalMemorySize":4005376000,
-    "totalSwapSpaceSize":12884897792,
-    "maxFileDescriptorCount":1048576,
-    "openFileDescriptorCount":225,
-    "uname":"Linux f0281c6ee880 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u3 (2019-06-16) x86_64 GNU/Linux\n",
-    "uptime":" 11:38:19 up 28 days, 22:41,  0 users,  load average: 0.92, 0.57, 0.51\n"},
-  "node":"172.17.0.4:8983_solr"}
+  "responseHeader": {
+    "status": 0,
+    "QTime": 4
+  },
+  "nodeInfo": {
+    "node": "localhost:8983_solr",
+    "mode": "solrcloud",
+    "zkHost": "127.0.0.1:9983",
+    "solr_home": "/opt/solr/example/cloud/node1/solr",
+    "core_root": "/opt/solr/example/cloud/node1/solr",
+    "lucene": {
+      "solr-spec-version": "11.0.0",
+      "solr-impl-version": "11.0.0-SNAPSHOT f096b9a8aa2e10b8d2e87d7b8699953544d0f4f6 [snapshot build, details omitted]",
+      "lucene-spec-version": "10.3.2",
+      "lucene-impl-version": "10.3.2 dadfd90b4401947f4d0387669dc94999fbb2c830 - 2025-11-13 10:41:29"
+    },
+    "jvm": {
+      "name": "Ubuntu OpenJDK 64-Bit Server VM",
+      "version": "21.0.9 21.0.9+10-Ubuntu-124.04",
+      "processors": 4,
+      "jre": {
+        "vendor": "Ubuntu",
+        "version": "21.0.9"
+      },
+      "spec": {
+        "name": "Java Platform API Specification",
+        "vendor": "Oracle Corporation",
+        "version": "21"
+      },
+      "vm": {
+        "name": "OpenJDK 64-Bit Server VM",
+        "vendor": "Ubuntu",
+        "version": "21.0.9+10-Ubuntu-124.04"
+      },
+      "jmx": {
+        "classpath": "start.jar",
+        "startTime": 1771355675708,
+        "upTimeMS": 1695023,
+        "commandLineArgs": [
+          "-Xms512m",
+          "-Xmx512m",
+          "-XX:+UseG1GC",
+          "-XX:+PerfDisableSharedMem",
+          "-XX:+ParallelRefProcEnabled",
+          "-XX:MaxGCPauseMillis=250",
+          "-XX:+UseLargePages",
+          "-XX:+AlwaysPreTouch",
+          "-XX:+ExplicitGCInvokesConcurrent",
+          "-Xlog:gc*:file=/opt/solr/../logs/solr_gc.log:time,uptime:filecount=9,filesize=20M",
+          "-Dsolr.jetty.inetaccess.includes=",
+          "-Dsolr.jetty.inetaccess.excludes=",
+          "-Dsolr.zookeeper.client.timeout=30000",
+          "-Dsolr.zookeeper.server.enabled=true",
+          "-Dsolr.logs.dir=/opt/solr/../logs",
+          "-Dsolr.port.listen=8983",
+          "-DSTOP.PORT=7983",
+          "-DSTOP.KEY=solrrocks",
+          "-Djava.io.tmpdir=/tmp",
+          "-Dsolr.host.advertise=localhost",
+          "-Duser.timezone=UTC",
+          "-XX:-OmitStackTraceInFastThrow",
+          "-XX:+CrashOnOutOfMemoryError",
+          "-XX:ErrorFile=/opt/solr/../logs/jvm_crash_%p.log",
+          "-Djetty.home=/opt/solr/server",
+          "-Dsolr.solr.home=/opt/solr/example/cloud/node1/solr",
+          "-Dsolr.install.dir=/opt/solr/",
+          "-Dsolr.install.symDir=/opt/solr/",
+          "-Dlog4j.configurationFile=/opt/solr/server/resources/log4j2.xml",
+          "-Xss256k",
+          "--add-modules=jdk.incubator.vector",
+          "--enable-native-access=ALL-UNNAMED",
+          "-Djava.security.manager",
+          "-Djava.security.policy=/opt/solr/server/etc/security.policy",
+          "-Djava.security.properties=/opt/solr/server/etc/security.properties",
+          "-Dsolr.internal.network.permission=*",
+          "-Dsolr.log.muteconsole"
+        ]
+      },
+      "memory": {
+        "free": "229.5 MB",
+        "total": "512 MB",
+        "max": "512 MB",
+        "used": "282.5 MB (%55.2)",
+        "raw": {
+          "free": 240673856,
+          "total": 536870912,
+          "used": 296197056,
+          "max": 536870912,
+          "used%": 55.171000957489014
+        }
+      }
+    },
+    "security": {
+      "tls": false
+    },
+    "gpu": {
+      "available": false,
+      "count": 0
+    },
+    "system": {
+      "freePhysicalMemorySize": "2985586688",
+      "totalMemorySize": "8307912704",
+      "availableProcessors": "4",
+      "freeMemorySize": "2985586688",
+      "openFileDescriptorCount": "196",
+      "freeSwapSpaceSize": "2660519936",
+      "maxFileDescriptorCount": "65536",
+      "version": "6.14.0-33-generic",
+      "totalSwapSpaceSize": "4294963200",
+      "committedVirtualMemorySize": "4357632000",
+      "cpuLoad": "0.06624527740181138",
+      "systemLoadAverage": "0.3193359375",
+      "processCpuLoad": "0.004622084725943523",
+      "systemCpuLoad": "0.0",
+      "processCpuTime": "43450000000",
+      "name": "Linux",
+      "totalPhysicalMemorySize": "8307912704",
+      "arch": "amd64"
+    }
+  }
+}
 ----
 
-Retrieve system information from a core, without cloud mode.
+
+=== Retrieve specific system information.
+
+The `lucene`, `jvm`, `gpu`, and `system` information can be obtained individually, by adding the appropriate path element to the request.
+
+[NOTE]
+----
+Only available from the V2 API.
+----
 
 [source.bash]
 ----
-curl http://localhost:8983/solr/gettingstarted/admin/system
+curl http://localhost:8983/api/node/info/system/lucene
 ----
+
 
 [source.json]
 ----
 {
-  "responseHeader":{
-    "status":0,
-    "QTime":23},
-  "core":{
-    "schema":"default-config",
-    "host":"fd7fbdff8b3e",
-    "now":"2019-07-18T11:56:51.472Z",
-    "start":"2019-07-18T11:54:52.509Z",
-    "directory":{
-      "cwd":"/opt/solr-8.1.1/server",
-      "instance":"/var/solr/data/gettingstarted",
-      "data":"/var/solr/data/gettingstarted/data",
-      "dirimpl":"org.apache.solr.core.NRTCachingDirectoryFactory",
-      "index":"/var/solr/data/gettingstarted/data/index"}},
-  "mode":"std",
-  "lucene":{
-    "solr-spec-version":"8.1.1",
-    "solr-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:20:01",
-    "lucene-spec-version":"8.1.1",
-    "lucene-impl-version":"8.1.1 fcbe46c28cef11bc058779afba09521de1b19bef - ab - 2019-05-22 15:15:24"},
-  "jvm":{
-    "version":"11.0.3 11.0.3+7",
-    "name":"Oracle Corporation OpenJDK 64-Bit Server VM",
-    "spec":{
-      "vendor":"Oracle Corporation",
-      "name":"Java Platform API Specification",
-      "version":"11"},
-    "jre":{
-      "vendor":"Oracle Corporation",
-      "version":"11.0.3"},
-    "vm":{
-      "vendor":"Oracle Corporation",
-      "name":"OpenJDK 64-Bit Server VM",
-      "version":"11.0.3+7"},
-    "processors":4,
-    "memory":{
-      "free":"394.9 MB",
-      "total":"512 MB",
-      "max":"512 MB",
-      "used":"117.1 MB (%22.9)",
-      "raw":{
-        "free":414074904,
-        "total":536870912,
-        "max":536870912,
-        "used":122796008,
-        "used%":22.87253886461258}},
-    "jmx":{
-      "classpath":"start.jar",
-      "commandLineArgs":["-Xms512m",
-        "-Xmx512m",
-        "-XX:+UseG1GC",
-        "-XX:+PerfDisableSharedMem",
-        "-XX:+ParallelRefProcEnabled",
-        "-XX:MaxGCPauseMillis=250",
-        "-XX:+UseLargePages",
-        "-XX:+AlwaysPreTouch",
-        "-Xlog:gc*:file=/var/solr/logs/solr_gc.log:time,uptime:filecount=9,filesize=20M",
-        "-Dcom.sun.management.jmxremote",
-        "-Dcom.sun.management.jmxremote.local.only=false",
-        "-Dcom.sun.management.jmxremote.ssl=false",
-        "-Dcom.sun.management.jmxremote.authenticate=false",
-        "-Dcom.sun.management.jmxremote.port=18983",
-        "-Dcom.sun.management.jmxremote.rmi.port=18983",
-        "-Dsolr.logs.dir=/var/solr/logs",
-        "-Dsolr.port.listen=8983",
-        "-DSTOP.PORT=7983",
-        "-DSTOP.KEY=solrrocks",
-        "-Duser.timezone=UTC",
-        "-Djetty.home=/opt/solr/server",
-        "-Dsolr.solr.home=/var/solr/data",
-        "-Dsolr.data.home=",
-        "-Dsolr.install.dir=/opt/solr",
-        "-Dsolr.configset.default.confdir=/opt/solr/server/solr/configsets/_default/conf",
-        "-Dlog4j.configurationFile=file:/var/solr/log4j2.xml",
-        "-Xss256k",
-        "-Dsolr.jetty.https.port=8983"],
-      "startTime":"2019-07-16T05:52:16.213Z",
-      "upTimeMS":194675370}},
-  "system":{
-    "name":"Linux",
-    "arch":"amd64",
-    "availableProcessors":4,
-    "systemLoadAverage":0.88,
-    "version":"4.9.0-9-amd64",
-    "committedVirtualMemorySize":4306059264,
-    "freePhysicalMemorySize":144179200,
-    "freeSwapSpaceSize":11626409984,
-    "processCpuLoad":0.0,
-    "processCpuTime":557920000000,
-    "systemCpuLoad":0.0,
-    "totalPhysicalMemorySize":4005376000,
-    "totalSwapSpaceSize":12884897792,
-    "maxFileDescriptorCount":1048576,
-    "openFileDescriptorCount":223,
-    "uname":"Linux fd7fbdff8b3e 4.9.0-9-amd64 #1 SMP Debian 4.9.168-1+deb9u3 (2019-06-16) x86_64 GNU/Linux\n",
-    "uptime":" 11:56:51 up 28 days, 23:00,  0 users,  load average: 0.88, 0.65, 0.62\n"}}
+  "responseHeader": {
+    "status": 0,
+    "QTime": 2
+  },
+  "nodeInfo": {
+    "lucene": {
+      "solr-spec-version": "11.0.0",
+      "solr-impl-version": "11.0.0-SNAPSHOT f096b9a8aa2e10b8d2e87d7b8699953544d0f4f6 [snapshot build, details omitted]",
+      "lucene-spec-version": "10.3.2",
+      "lucene-impl-version": "10.3.2 dadfd90b4401947f4d0387669dc94999fbb2c830 - 2025-11-13 10:41:29"
+    }
+  }
+}
 ----

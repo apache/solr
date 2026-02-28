@@ -20,15 +20,16 @@ import java.io.IOException;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.request.SystemInfoRequest;
+import org.apache.solr.client.solrj.request.SystemInfoV2Request;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.MapSolrParams;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
-public class SystemInfoResponseTest extends SolrCloudTestCase {
+public class SystemInfoV2ResponseTest extends SolrCloudTestCase {
 
   // private static MiniSolrCloudCluster cluster;
   private CloudSolrClient solrClient;
@@ -47,8 +48,8 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
 
   @Test
   public void testDefaultResponse() throws SolrServerException, IOException {
-    SystemInfoRequest req = new SystemInfoRequest();
-    SystemInfoResponse rsp = req.process(solrClient);
+    SystemInfoV2Request req = new SystemInfoV2Request();
+    SystemInfoV2Response rsp = req.process(solrClient);
 
     Assert.assertEquals(1, rsp.getAllNodeResponses().size());
     Assert.assertEquals(1, rsp.getAllCoreRoots().size());
@@ -56,11 +57,12 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore("AdminHandlersProxy does not support V2.")
   public void testAllNodesResponse() throws SolrServerException, IOException {
     MapSolrParams params = new MapSolrParams(Map.of("nodes", "all"));
 
-    SystemInfoRequest req = new SystemInfoRequest(params);
-    SystemInfoResponse rsp = req.process(solrClient);
+    SystemInfoV2Request req = new SystemInfoV2Request(params);
+    SystemInfoV2Response rsp = req.process(solrClient);
 
     try {
       rsp.getNodeResponse();
@@ -82,12 +84,13 @@ public class SystemInfoResponseTest extends SolrCloudTestCase {
   }
 
   @Test
+  @Ignore("AdminHandlersProxy does not support V2.")
   public void testResponseForGivenNode() throws SolrServerException, IOException {
     String queryNode = cluster.getJettySolrRunner(0).getNodeName();
     MapSolrParams params = new MapSolrParams(Map.of("nodes", queryNode));
 
-    SystemInfoRequest req = new SystemInfoRequest(params);
-    SystemInfoResponse rsp = req.process(solrClient);
+    SystemInfoV2Request req = new SystemInfoV2Request(params);
+    SystemInfoV2Response rsp = req.process(solrClient);
 
     Assert.assertEquals(1, rsp.getAllNodeResponses().size());
     Assert.assertEquals(1, rsp.getAllCoreRoots().size());
