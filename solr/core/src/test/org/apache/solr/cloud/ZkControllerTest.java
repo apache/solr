@@ -784,9 +784,7 @@ public class ZkControllerTest extends SolrCloudTestCase {
         @SuppressWarnings("unchecked")
         Map<String, Object> message = (Map<String, Object>) Utils.fromJSON(messageBytes);
 
-        assertEquals(
-            Set.of(Overseer.QUEUE_OPERATION, "node", "role", "persist"),
-            message.keySet());
+        assertEquals(Set.of(Overseer.QUEUE_OPERATION, "node", "role", "persist"), message.keySet());
         assertEquals("addrole", message.get(Overseer.QUEUE_OPERATION));
         assertEquals(zkController.getNodeName(), message.get("node"));
         assertEquals("overseer", message.get("role"));
