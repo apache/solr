@@ -483,6 +483,7 @@ public class ZkTestServer {
 
   public void run(boolean solrFormat) throws InterruptedException, IOException {
     log.info("STARTING ZK TEST SERVER");
+    SolrZkServer.ensureZkMaxCnxnsConfigured();
     ensureStatCommandWhitelisted();
 
     AtomicReference<Throwable> zooError = new AtomicReference<>();
