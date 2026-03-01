@@ -123,8 +123,7 @@ public class PackageAPIJaxRs extends JerseyResource implements PackageApis {
     FileStoreUtils.validateFiles(
         coreContainer.getFileStore(), requestBody.files, true, errors::add);
     if (!errors.isEmpty()) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, String.join("; ", errors));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.join("; ", errors));
     }
 
     final PackageAPI.Packages[] finalState = new PackageAPI.Packages[1];
@@ -303,8 +302,7 @@ public class PackageAPIJaxRs extends JerseyResource implements PackageApis {
     request.setResponseParser(new JavaBinResponseParser());
 
     for (String liveNode : FileStoreUtils.fetchAndShuffleRemoteLiveNodes(coreContainer)) {
-      var baseUrl =
-          coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
+      var baseUrl = coreContainer.getZkController().zkStateReader.getBaseUrlV2ForNodeName(liveNode);
       try {
         var solrClient = coreContainer.getDefaultHttpSolrClient();
         solrClient.requestWithBaseUrl(baseUrl, request::process);

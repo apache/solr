@@ -28,7 +28,9 @@ public class AddPackageVersionRequestBody {
   public String version;
 
   @JsonProperty("files")
-  @Schema(description = "File paths from the file store to include in this version.", required = true)
+  @Schema(
+      description = "File paths from the file store to include in this version.",
+      required = true)
   public List<String> files;
 
   @JsonProperty("manifest")

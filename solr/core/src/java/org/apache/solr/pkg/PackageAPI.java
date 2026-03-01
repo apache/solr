@@ -118,8 +118,7 @@ public class PackageAPI {
     }
   }
 
-  Packages readPkgsFromZk(byte[] data, Stat stat)
-      throws KeeperException, InterruptedException {
+  Packages readPkgsFromZk(byte[] data, Stat stat) throws KeeperException, InterruptedException {
 
     if (data == null || stat == null) {
       stat = new Stat();
@@ -173,8 +172,7 @@ public class PackageAPI {
     public PkgVersion(String packageName, AddPackageVersionRequestBody addVersion) {
       this.pkg = packageName;
       this.version = addVersion.version;
-      this.files =
-          addVersion.files == null ? null : Collections.unmodifiableList(addVersion.files);
+      this.files = addVersion.files == null ? null : Collections.unmodifiableList(addVersion.files);
       this.manifest = addVersion.manifest;
       this.manifestSHA512 = addVersion.manifestSHA512;
     }

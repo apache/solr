@@ -656,7 +656,8 @@ public class TestPackages extends SolrCloudTestCase {
     // we are expecting an error
     expectError(deleteReq, cluster.getSolrClient(), errPath, "No such version:");
 
-    new V2Request.Builder("/cluster/package/test_pkg/versions/0.12") // correct version. Should succeed
+    new V2Request.Builder(
+            "/cluster/package/test_pkg/versions/0.12") // correct version. Should succeed
         .forceV2(true)
         .withMethod(SolrRequest.METHOD.DELETE)
         .build()
