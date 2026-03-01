@@ -1,0 +1,7 @@
+title: Update nl.littlerobots.version-catalog-update to v1
+type: dependency_update
+authors:
+- name: solrbot
+links:
+- name: PR#3293
+  url: https://github.com/apache/solr/pull/3293
