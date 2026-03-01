@@ -58,8 +58,8 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.filestore.TestDistribFileStore.Fetcher;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
@@ -93,7 +93,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+    public Map<String, PackageStore.PkgVersion> packageDetails() {
       return null; // only used to print meta information
     }
 

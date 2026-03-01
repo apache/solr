@@ -58,7 +58,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;

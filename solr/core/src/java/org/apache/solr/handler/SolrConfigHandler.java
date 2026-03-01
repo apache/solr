@@ -88,8 +88,8 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.admin.api.GetConfigAPI;
 import org.apache.solr.handler.admin.api.ModifyConfigComponentAPI;
 import org.apache.solr.handler.admin.api.ModifyParamSetAPI;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -303,7 +303,7 @@ public class SolrConfigHandler extends RequestHandlerBase
                   List<PackageListeners.Listener> listeners =
                       req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener : listeners) {
-                    Map<String, PackageAPI.PkgVersion> infos = listener.packageDetails();
+                    Map<String, PackageStore.PkgVersion> infos = listener.packageDetails();
                     if (infos == null || infos.isEmpty()) continue;
                     infos.forEach(
                         (s, mapWriter) -> {

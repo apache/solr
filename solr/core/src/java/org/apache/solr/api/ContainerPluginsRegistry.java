@@ -335,7 +335,7 @@ public class ContainerPluginsRegistry implements ClusterPropertiesListener, MapW
             coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         if (ver.isEmpty()) {
           // may be we are a bit early. Do a refresh and try again
-          coreContainer.getPackageLoader().getPackageAPI().refreshPackages(null);
+          coreContainer.getPackageLoader().getPackageStore().refreshPackages(null);
           ver = coreContainer.getPackageLoader().getPackageVersion(pkg, info.version);
         }
         if (ver.isEmpty()) {
