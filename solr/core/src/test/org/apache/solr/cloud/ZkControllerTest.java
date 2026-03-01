@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -759,6 +760,35 @@ public class ZkControllerTest extends SolrCloudTestCase {
               "Overseer should be enabled when overseerEnabled cluster property is true, meaning distributed state updates should be disabled",
               zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
         }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testSetPreferredOverseerHasRightKeysSet() throws Exception {
+    Path zkDir = createTempDir("testSetPreferredOverseerHasRightKeysSet");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      CoreContainer cc = getCoreContainer();
+      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+      try (ZkController zkController =
+          new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+        zkController.setPreferredOverseer();
+        byte[] messageBytes = zkController.getOverseerCollectionQueue().peek();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> message = (Map<String, Object>) Utils.fromJSON(messageBytes);
+
+        assertEquals(Set.of(Overseer.QUEUE_OPERATION, "node", "role", "persist"), message.keySet());
+        assertEquals("addrole", message.get(Overseer.QUEUE_OPERATION));
+        assertEquals(zkController.getNodeName(), message.get("node"));
+        assertEquals("overseer", message.get("role"));
+        assertEquals("false", message.get("persist"));
       } finally {
         cc.shutdown();
       }

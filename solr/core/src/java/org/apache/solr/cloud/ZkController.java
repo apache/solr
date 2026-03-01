@@ -2609,7 +2609,7 @@ public class ZkController implements Closeable {
     MapWriter props =
         ew ->
             ew.put(Overseer.QUEUE_OPERATION, ADDROLE.toString().toLowerCase(Locale.ROOT))
-                .put(getNodeName(), getNodeName())
+                .put("node", getNodeName())
                 .put("role", "overseer")
                 .put("persist", "false");
     log.warn(
