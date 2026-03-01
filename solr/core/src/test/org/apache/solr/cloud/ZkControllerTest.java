@@ -37,8 +37,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-
-import org.apache.logging.log4j.core.Core;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -785,20 +783,12 @@ public class ZkControllerTest extends SolrCloudTestCase {
         @SuppressWarnings("unchecked")
         Map<String, Object> message = (Map<String, Object>) Utils.fromJSON(messageBytes);
         String nodeName = zkController.getNodeName();
-        assertEquals(
-            "addrole operation",
-            "addrole",
-            message.get(Overseer.QUEUE_OPERATION));
-        assertEquals(
-            "node key with node name as value",
-            nodeName,
-            message.get("node"));
+        assertEquals("addrole operation", "addrole", message.get(Overseer.QUEUE_OPERATION));
+        assertEquals("node key with node name as value", nodeName, message.get("node"));
         assertEquals("overseer role", "overseer", message.get("role"));
-        assertEquals(
-            "persist as false", "false", message.get("persist"));
+        assertEquals("persist as false", "false", message.get("persist"));
         assertFalse(
-            "Node name '" + nodeName + "' != as message key",
-            message.containsKey(nodeName));
+            "Node name '" + nodeName + "' != as message key", message.containsKey(nodeName));
         assertEquals("4 keys", 4, message.size());
       } finally {
         cc.shutdown();
