@@ -162,7 +162,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
           coreContainer.getCoreDescriptors().stream()
               .map(cd -> cd.getCloudDescriptor())
               .collect(Collectors.toList());
-      long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
+      int unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
         response.numCoresUnhealthy = unhealthyCores;
         throw new SolrException(
@@ -289,24 +289,26 @@ public class HealthCheckHandler extends RequestHandlerBase {
    * @param clusterState clusterstate from ZK
    * @return number of unhealthy cores, either in DOWN or RECOVERING state
    */
-  public static long findUnhealthyCores(
+  public static int findUnhealthyCores(
       Collection<CloudDescriptor> cores, ClusterState clusterState) {
-    return cores.stream()
-        .filter(
-            c ->
-                !c.hasRegistered()
-                    || UNHEALTHY_STATES.contains(c.getLastPublished())) // Find candidates locally
-        .filter(
-            c ->
-                clusterState.hasCollection(
-                    c.getCollectionName())) // Only care about cores for actual collections
-        .filter(
-            c ->
-                clusterState
-                    .getCollection(c.getCollectionName())
-                    .getActiveSlicesMap()
-                    .containsKey(c.getShardId()))
-        .count();
+    return Math.toIntExact(
+        cores.stream()
+            .filter(
+                c ->
+                    !c.hasRegistered()
+                        || UNHEALTHY_STATES.contains(
+                            c.getLastPublished())) // Find candidates locally
+            .filter(
+                c ->
+                    clusterState.hasCollection(
+                        c.getCollectionName())) // Only care about cores for actual collections
+            .filter(
+                c ->
+                    clusterState
+                        .getCollection(c.getCollectionName())
+                        .getActiveSlicesMap()
+                        .containsKey(c.getShardId()))
+            .count());
   }
 
   @Override
@@ -326,7 +328,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override

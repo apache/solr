@@ -26,5 +26,5 @@ public class NodeHealthResponse extends SolrJerseyResponse {
   @JsonProperty public String message;
 
   @JsonProperty("num_cores_unhealthy")
-  public Long numCoresUnhealthy;
+  public Integer numCoresUnhealthy;
 }
