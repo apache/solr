@@ -136,7 +136,7 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
     var addRequest = new PackageApi.AddPackageVersion("mypkg");
     addRequest.setVersion(version);
     addRequest.setFiles(List.of("/my-plugin/plugin-" + version + ".jar"));
-    processRequest(client, addRequest);
+    addRequest.process(client);
   }
 
   private void createCollection() throws Exception {
