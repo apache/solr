@@ -17,9 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
+import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.common.params.CommonParams.FAILURE;
 import static org.apache.solr.common.params.CommonParams.OK;
-import static org.apache.solr.common.params.CommonParams.STATUS;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 
 import java.lang.invoke.MethodHandles;
@@ -30,8 +31,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.NodeHealthResponse;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
@@ -45,6 +47,7 @@ import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.NodeHealthAPI;
+import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -100,138 +103,125 @@ public class HealthCheckHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
+    final Boolean requireHealthyCores = req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES);
+    final Integer maxGenerationLag =
+        req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+        rsp, checkNodeHealth(requireHealthyCores, maxGenerationLag));
+  }
 
-    // Core container should not be null and active (redundant check)
+  /**
+   * Performs the node health check and returns the result as a {@link NodeHealthResponse}.
+   *
+   * <p>This method is the shared implementation used by both the v1 {@link #handleRequestBody} path
+   * and the v2 JAX-RS {@link NodeHealthAPI}.
+   */
+  public NodeHealthResponse checkNodeHealth(Boolean requireHealthyCores, Integer maxGenerationLag) {
     if (coreContainer == null || coreContainer.isShutDown()) {
-      rsp.setException(
-          new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "CoreContainer is either not initialized or shutting down"));
-      return;
+      throw new SolrException(
+          SERVER_ERROR, "CoreContainer is either not initialized or shutting down");
     }
+
+    final NodeHealthResponse response = new NodeHealthResponse();
+
     if (!coreContainer.isZooKeeperAware()) {
       if (log.isDebugEnabled()) {
         log.debug("Invoked HealthCheckHandler in legacy mode.");
       }
-      healthCheckLegacyMode(req, rsp);
+      healthCheckLegacyMode(response, maxGenerationLag);
     } else {
       if (log.isDebugEnabled()) {
         log.debug(
             "Invoked HealthCheckHandler in cloud mode on [{}]",
-            this.coreContainer.getZkController().getNodeName());
+            coreContainer.getZkController().getNodeName());
       }
-      healthCheckCloudMode(req, rsp);
+      healthCheckCloudMode(response, requireHealthyCores);
     }
+
+    return response;
   }
 
-  private void healthCheckCloudMode(SolrQueryRequest req, SolrQueryResponse rsp) {
+  private void healthCheckCloudMode(NodeHealthResponse response, Boolean requireHealthyCores) {
     ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
-    // Check for isConnected and isClosed
+
     if (zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
-      rsp.add(STATUS, FAILURE);
-      rsp.setException(
-          new SolrException(
-              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "Host Unavailable: Not connected to zk"));
-      return;
+      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk");
     }
 
-    // Fail if not in live_nodes
     if (!clusterState.getLiveNodes().contains(coreContainer.getZkController().getNodeName())) {
-      rsp.add(STATUS, FAILURE);
-      rsp.setException(
-          new SolrException(
-              SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-              "Host Unavailable: Not in live nodes as per zk"));
-      return;
+      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk");
     }
 
-    // Optionally require that all cores on this node are active if param 'requireHealthyCores=true'
-    if (req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES, false)) {
+    if (Boolean.TRUE.equals(requireHealthyCores)) {
       if (!coreContainer.isStatusLoadComplete()) {
-        rsp.add(STATUS, FAILURE);
-        rsp.setException(
-            new SolrException(
-                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                "Host Unavailable: Core Loading not complete"));
-        return;
+        throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Core Loading not complete");
       }
       Collection<CloudDescriptor> coreDescriptors =
           coreContainer.getCoreDescriptors().stream()
               .map(cd -> cd.getCloudDescriptor())
               .collect(Collectors.toList());
-      long unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
+      int unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
-        rsp.add(STATUS, FAILURE);
-        rsp.add("num_cores_unhealthy", unhealthyCores);
-        rsp.setException(
-            new SolrException(
-                SolrException.ErrorCode.SERVICE_UNAVAILABLE,
-                unhealthyCores
-                    + " out of "
-                    + coreContainer.getNumAllCores()
-                    + " replicas are currently initializing or recovering"));
-        return;
+        response.numCoresUnhealthy = unhealthyCores;
+        throw new SolrException(
+            SERVICE_UNAVAILABLE,
+            unhealthyCores
+                + " out of "
+                + coreContainer.getNumAllCores()
+                + " replicas are currently initializing or recovering");
       }
-      rsp.add("message", "All cores are healthy");
+      response.message = "All cores are healthy";
     }
 
-    // All lights green, report healthy
-    rsp.add(STATUS, OK);
+    response.status = OK;
   }
 
-  private void healthCheckLegacyMode(SolrQueryRequest req, SolrQueryResponse rsp) {
-    Integer maxGenerationLag = req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
+  private void healthCheckLegacyMode(NodeHealthResponse response, Integer maxGenerationLag) {
     List<String> laggingCoresInfo = new ArrayList<>();
     boolean allCoresAreInSync = true;
 
-    // check only if max generation lag is specified
     if (maxGenerationLag != null) {
-      // if is not negative
       if (maxGenerationLag < 0) {
         log.error("Invalid value for maxGenerationLag:[{}]", maxGenerationLag);
-        rsp.add(
-            "message",
-            String.format(Locale.ROOT, "Invalid value of maxGenerationLag:%s", maxGenerationLag));
-        rsp.add(STATUS, FAILURE);
-      } else {
-        for (SolrCore core : coreContainer.getCores()) {
-          ReplicationHandler replicationHandler =
-              (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
-          if (replicationHandler.isFollower()) {
-            boolean isCoreInSync =
-                isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+        response.message =
+            String.format(Locale.ROOT, "Invalid value of maxGenerationLag:%s", maxGenerationLag);
+        response.status = FAILURE;
+        return;
+      }
 
-            allCoresAreInSync &= isCoreInSync;
-          }
+      for (SolrCore core : coreContainer.getCores()) {
+        ReplicationHandler replicationHandler =
+            (ReplicationHandler) core.getRequestHandler(ReplicationHandler.PATH);
+        if (replicationHandler.isFollower()) {
+          boolean isCoreInSync =
+              isWithinGenerationLag(core, replicationHandler, maxGenerationLag, laggingCoresInfo);
+          allCoresAreInSync &= isCoreInSync;
         }
       }
+
       if (allCoresAreInSync) {
-        rsp.add(
-            "message",
+        response.message =
             String.format(
                 Locale.ROOT,
                 "All the followers are in sync with leader (within maxGenerationLag: %d) "
                     + "or the cores are acting as leader",
-                maxGenerationLag));
-        rsp.add(STATUS, OK);
+                maxGenerationLag);
+        response.status = OK;
       } else {
-        rsp.add(
-            "message",
+        response.message =
             String.format(
                 Locale.ROOT,
                 "Cores violating maxGenerationLag:%d.%n%s",
                 maxGenerationLag,
-                String.join(",\n", laggingCoresInfo)));
-        rsp.add(STATUS, FAILURE);
+                String.join(",\n", laggingCoresInfo));
+        response.status = FAILURE;
       }
-    } else { // if maxGeneration lag is not specified (is null) we aren't checking for lag
-      rsp.add(
-          "message",
+    } else {
+      response.message =
           "maxGenerationLag isn't specified. Followers aren't "
-              + "checking for the generation lag from the leaders");
-      rsp.add(STATUS, OK);
+              + "checking for the generation lag from the leaders";
+      response.status = OK;
     }
   }
 
@@ -244,9 +234,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     try {
       // may not be the best way to get leader's replicableCommit
       NamedList<?> follower = (NamedList<?>) replicationHandler.getInitArgs().get("follower");
-
       indexFetcher = new IndexFetcher(follower, replicationHandler, core);
-
       NamedList<?> replicableCommitOnLeader = indexFetcher.getLatestVersion();
       long leaderGeneration = (Long) replicableCommitOnLeader.get(GENERATION);
 
@@ -272,7 +260,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
               generationDiff,
               leaderGeneration,
               followerGeneration);
-
           laggingCoresInfo.add(
               String.format(
                   Locale.ROOT,
@@ -301,23 +288,26 @@ public class HealthCheckHandler extends RequestHandlerBase {
    * @param clusterState clusterstate from ZK
    * @return number of unhealthy cores, either in DOWN or RECOVERING state
    */
-  static long findUnhealthyCores(Collection<CloudDescriptor> cores, ClusterState clusterState) {
-    return cores.stream()
-        .filter(
-            c ->
-                !c.hasRegistered()
-                    || UNHEALTHY_STATES.contains(c.getLastPublished())) // Find candidates locally
-        .filter(
-            c ->
-                clusterState.hasCollection(
-                    c.getCollectionName())) // Only care about cores for actual collections
-        .filter(
-            c ->
-                clusterState
-                    .getCollection(c.getCollectionName())
-                    .getActiveSlicesMap()
-                    .containsKey(c.getShardId()))
-        .count();
+  public static int findUnhealthyCores(
+      Collection<CloudDescriptor> cores, ClusterState clusterState) {
+    return Math.toIntExact(
+        cores.stream()
+            .filter(
+                c ->
+                    !c.hasRegistered()
+                        || UNHEALTHY_STATES.contains(
+                            c.getLastPublished())) // Find candidates locally
+            .filter(
+                c ->
+                    clusterState.hasCollection(
+                        c.getCollectionName())) // Only care about cores for actual collections
+            .filter(
+                c ->
+                    clusterState
+                        .getCollection(c.getCollectionName())
+                        .getActiveSlicesMap()
+                        .containsKey(c.getShardId()))
+            .count());
   }
 
   @Override
@@ -337,7 +327,12 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodeHealthAPI(this));
+    return List.of();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(NodeHealthAPI.class);
   }
 
   @Override

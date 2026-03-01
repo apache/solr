@@ -17,32 +17,44 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
 import static org.apache.solr.security.PermissionNameProvider.Name.HEALTH_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.NodeHealthApi;
+import org.apache.solr.client.api.model.NodeHealthResponse;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.HealthCheckHandler;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.jersey.PermissionName;
 
 /**
  * V2 API for checking the health of the receiving node.
  *
  * <p>This API (GET /v2/node/health) is analogous to the v1 /admin/info/health.
+ *
+ * <p>This is a thin JAX-RS wrapper; the health-check logic lives in {@link HealthCheckHandler}.
  */
-public class NodeHealthAPI {
+public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
+
   private final HealthCheckHandler handler;
 
-  public NodeHealthAPI(HealthCheckHandler handler) {
-    this.handler = handler;
+  @Inject
+  public NodeHealthAPI(CoreContainer coreContainer) {
+    this.handler = new HealthCheckHandler(coreContainer);
   }
 
-  // TODO Update permission here once SOLR-11623 lands.
-  @EndPoint(
-      path = {"/node/health"},
-      method = GET,
-      permission = HEALTH_PERM)
-  public void getSystemInformation(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    handler.handleRequestBody(req, rsp);
+  @Override
+  @PermissionName(HEALTH_PERM)
+  public NodeHealthResponse checkNodeHealth(Boolean requireHealthyCores) {
+    return handler.checkNodeHealth(requireHealthyCores, null);
+  }
+
+  /**
+   * Convenience overload used by tests and the v1 handler to pass both health-check parameters.
+   *
+   * @see HealthCheckHandler#checkNodeHealth(Boolean, Integer)
+   */
+  public NodeHealthResponse checkNodeHealth(Boolean requireHealthyCores, Integer maxGenerationLag) {
+    return handler.checkNodeHealth(requireHealthyCores, maxGenerationLag);
   }
 }
