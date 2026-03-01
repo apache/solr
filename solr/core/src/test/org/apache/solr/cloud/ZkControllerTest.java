@@ -37,6 +37,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.logging.log4j.core.Core;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
@@ -759,6 +761,45 @@ public class ZkControllerTest extends SolrCloudTestCase {
               "Overseer should be enabled when overseerEnabled cluster property is true, meaning distributed state updates should be disabled",
               zkController.getDistributedClusterStateUpdater().isDistributedStateUpdate());
         }
+      } finally {
+        cc.shutdown();
+      }
+    } finally {
+      server.shutdown();
+    }
+  }
+
+  @Test
+  public void testSetPreferredOverseer() throws Exception {
+    Path zkDir = createTempDir("testSetPreferredOverseer");
+    ZkTestServer server = new ZkTestServer(zkDir);
+    try {
+      server.run();
+      CoreContainer cc = getCoreContainer();
+      CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("127.0.0.1", 8983).build();
+      try (ZkController zkController =
+          new ZkController(cc, server.getZkAddress(), TIMEOUT, cloudConfig)) {
+        zkController.setPreferredOverseer();
+        OverseerTaskQueue queue = zkController.getOverseerCollectionQueue();
+        byte[] messageBytes = queue.peek();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> message = (Map<String, Object>) Utils.fromJSON(messageBytes);
+        String nodeName = zkController.getNodeName();
+        assertEquals(
+            "addrole operation",
+            "addrole",
+            message.get(Overseer.QUEUE_OPERATION));
+        assertEquals(
+            "node key with node name as value",
+            nodeName,
+            message.get("node"));
+        assertEquals("overseer role", "overseer", message.get("role"));
+        assertEquals(
+            "persist as false", "false", message.get("persist"));
+        assertFalse(
+            "Node name '" + nodeName + "' != as message key",
+            message.containsKey(nodeName));
+        assertEquals("4 keys", 4, message.size());
       } finally {
         cc.shutdown();
       }
