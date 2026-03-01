@@ -58,6 +58,9 @@ import org.slf4j.LoggerFactory;
 public class PackageAPIJaxRs extends JerseyResource implements PackageApis {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static final int SYNC_MAX_RETRIES = 10;
+  private static final long SYNC_SLEEP_MS = 10L;
+
   private final CoreContainer coreContainer;
   private final SolrQueryRequest solrQueryRequest;
   private final SolrQueryResponse solrQueryResponse;
@@ -266,7 +269,7 @@ public class PackageAPIJaxRs extends JerseyResource implements PackageApis {
 
   private void syncToVersion(PackageAPI packageAPI, int expectedVersion) {
     int origVersion = packageAPI.pkgs.znodeVersion;
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < SYNC_MAX_RETRIES; i++) {
       if (log.isDebugEnabled()) {
         log.debug(
             "my version is {} , and expected version {}",
@@ -280,7 +283,7 @@ public class PackageAPIJaxRs extends JerseyResource implements PackageApis {
         return;
       }
       try {
-        Thread.sleep(10);
+        Thread.sleep(SYNC_SLEEP_MS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
