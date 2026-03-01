@@ -49,11 +49,11 @@ public class TestCustomCoreProperties extends SolrTestCaseJ4 {
 
     Files.createDirectories(confDir);
 
-    String srcDir = TEST_HOME() + "/collection1/conf";
-    Files.copy(Path.of(srcDir, "schema-tiny.xml"), confDir.resolve("schema.xml"));
-    Files.copy(Path.of(srcDir, "solrconfig-coreproperties.xml"), confDir.resolve("solrconfig.xml"));
+    Path srcDir = TEST_HOME().resolve("collection1").resolve("conf");
+    Files.copy(srcDir.resolve("schema-tiny.xml"), confDir.resolve("schema.xml"));
+    Files.copy(srcDir.resolve("solrconfig-coreproperties.xml"), confDir.resolve("solrconfig.xml"));
     Files.copy(
-        Path.of(srcDir, "solrconfig.snippet.randomindexconfig.xml"),
+        srcDir.resolve("solrconfig.snippet.randomindexconfig.xml"),
         confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
 
     Properties p = new Properties();
