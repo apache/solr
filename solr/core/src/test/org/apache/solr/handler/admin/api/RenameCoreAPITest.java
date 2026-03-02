@@ -35,15 +35,16 @@ import org.junit.Test;
 
 /**
  * The success case and the missing-parameter error case use the generated {@link
- * CoresApi.RenameCore} request type, asserting directly on {@link
- * SolrJerseyResponse#responseHeader} status and {@link
+ * org.apache.solr.client.solrj.request.CoresApi.RenameCore} request type, asserting directly on
+ * {@link SolrJerseyResponse#responseHeader} status and {@link
  * org.apache.solr.client.api.model.ErrorInfo#msg} because the generated typed client uses {@code
  * JacksonDataBindResponseParser}, which does not yet propagate errors as exceptions (SOLR-17549).
  *
  * <p>The missing-body error case uses {@link GenericV2SolrRequest} with an explicit {@code "null"}
- * JSON body, because {@link CoresApi.RenameCore} always serializes a request body and therefore
- * cannot represent a truly absent body. The standard response parser used by {@link
- * GenericV2SolrRequest} does propagate 4xx responses as {@link RemoteSolrException}s.
+ * JSON body, because {@link org.apache.solr.client.solrj.request.CoresApi.RenameCore} always
+ * serializes a request body and therefore cannot represent a truly absent body. The standard
+ * response parser used by {@link GenericV2SolrRequest} does propagate 4xx responses as {@link
+ * RemoteSolrException}s.
  *
  * <p>TODO: Deal with this when generated code does properly throw an exception!
  */
