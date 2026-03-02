@@ -25,6 +25,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.UpdateApi;
 import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
 import org.apache.solr.jersey.APIConfigProvider;
 import org.apache.solr.jersey.PermissionName;
@@ -89,7 +90,9 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
     if (pathOverride != null) {
       solrQueryRequest.getContext().put(PATH, pathOverride);
     }
+    SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
     updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+    SolrCore.postDecorateResponse(updateRequestHandler, solrQueryRequest, solrQueryResponse);
     rethrowAnyException(solrQueryResponse);
     return response;
   }
