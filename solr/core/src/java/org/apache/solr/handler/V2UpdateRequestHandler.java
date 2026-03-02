@@ -18,7 +18,9 @@
 package org.apache.solr.handler;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.api.UpdateAPI;
 import org.apache.solr.jersey.APIConfigProvider;
@@ -36,6 +38,11 @@ import org.apache.solr.jersey.APIConfigProvider;
  */
 public class V2UpdateRequestHandler extends UpdateRequestHandler
     implements APIConfigProvider<UpdateAPI.UpdateRequestHandlerConfig> {
+  
+  @Override
+  public Collection<Api> getApis() {
+    return Collections.emptyList();
+  }
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
