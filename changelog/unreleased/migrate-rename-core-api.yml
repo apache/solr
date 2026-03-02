@@ -16,7 +16,10 @@
 #    test infrastructure, or documentation.
 #    Most such changes are too small/minor to bother with a changelog entry.
 
-title: PR#4172: Remove dead code related to the V2 RenameCore api.  Add additional tests.
+title: Remove dead code related to the V2 RenameCore API.  Add additional tests.
 type: removed
 authors:
   - name: Eric Pugh
+links:
+- name: PR#4172
+  url: https://github.com/apache/solr/pull/4172
