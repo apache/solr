@@ -63,29 +63,29 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateJson() throws Exception {
+  public SolrJerseyResponse updateJson() {
     return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateXml() throws Exception {
+  public SolrJerseyResponse updateXml() {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateCsv() throws Exception {
+  public SolrJerseyResponse updateCsv() {
     return handleUpdate(null);
   }
 
   @Override
   @PermissionName(UPDATE_PERM)
-  public SolrJerseyResponse updateBin() throws Exception {
+  public SolrJerseyResponse updateBin() {
     return handleUpdate(null);
   }
 
-  private SolrJerseyResponse handleUpdate(String pathOverride) throws Exception {
+  private SolrJerseyResponse handleUpdate(String pathOverride) {
     final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
     if (pathOverride != null) {
       solrQueryRequest.getContext().put(PATH, pathOverride);
@@ -104,11 +104,7 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
   }
 
   /** Configuration object providing access to the {@link UpdateRequestHandler} instance. */
-  public static class UpdateRequestHandlerConfig implements APIConfigProvider.APIConfig {
-    final UpdateRequestHandler updateRequestHandler;
-
-    public UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler) {
-      this.updateRequestHandler = updateRequestHandler;
-    }
+    public record UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler)
+      implements APIConfigProvider.APIConfig {
   }
 }
