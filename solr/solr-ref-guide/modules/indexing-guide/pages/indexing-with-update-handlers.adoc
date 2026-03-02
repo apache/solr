@@ -1,5 +1,5 @@
 = Indexing with Update Handlers
-:page-children: transforming-and-indexing-custom-json
+:page-children: transforming-and-indexing-custom-json, indexing-with-v2-apis
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -19,6 +19,9 @@
 
 Update handlers are request handlers designed to add, delete and update documents to the index.
 In addition to having plugins for importing rich documents (see xref:indexing-with-tika.adoc[]), Solr natively supports indexing structured documents in XML, CSV, and JSON.
+
+NOTE: Solr also exposes update functionality via the xref:configuration-guide:v2-api.adoc[v2 API].
+See xref:indexing-with-v2-apis.adoc[] for details on the v2 update endpoints and their differences from the v1 handlers described on this page.
 
 The recommended way to configure and use request handlers is with path based names that map to paths in the request URL.
 However, request handlers can also be specified with the `qt` (query type) parameter if the xref:configuration-guide:requestdispatcher.adoc[`requestDispatcher`] is appropriately configured.
