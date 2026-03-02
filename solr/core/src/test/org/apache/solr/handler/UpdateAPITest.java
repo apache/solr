@@ -68,12 +68,8 @@ public class UpdateAPITest extends SolrTestCaseJ4 {
             "[{\"id\":\"v2update1\",\"title\":\"V2 update test\"}]", "application/json"));
     client.request(addReq);
 
-    // Commit via V2 update endpoint
-    final GenericV2SolrRequest commitReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    commitReq.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter("{\"commit\":{}}", "application/json"));
-    client.request(commitReq);
+    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
+    client.commit(CORE_NAME);
 
     // Verify the document was indexed
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
@@ -94,12 +90,8 @@ public class UpdateAPITest extends SolrTestCaseJ4 {
             "[{\"id\":\"v2updatejson1\",\"title\":\"V2 update/json test\"}]", "application/json"));
     client.request(addReq);
 
-    // Commit
-    final GenericV2SolrRequest commitReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    commitReq.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter("{\"commit\":{}}", "application/json"));
-    client.request(commitReq);
+    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
+    client.commit(CORE_NAME);
 
     // Verify
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
@@ -122,12 +114,8 @@ public class UpdateAPITest extends SolrTestCaseJ4 {
             "application/xml"));
     client.request(addReq);
 
-    // Commit
-    final GenericV2SolrRequest commitReq =
-        new GenericV2SolrRequest(SolrRequest.METHOD.POST, "/cores/" + CORE_NAME + "/update");
-    commitReq.setContentWriter(
-        new RequestWriter.StringPayloadContentWriter("{\"commit\":{}}", "application/json"));
-    client.request(commitReq);
+    // Commit via standard SolrJ commit (v2 /update is docs-only and does not support commands)
+    client.commit(CORE_NAME);
 
     // Verify
     final ModifiableSolrParams queryParams = new ModifiableSolrParams();
