@@ -104,7 +104,6 @@ public class UpdateAPI extends JerseyResource implements UpdateApi {
   }
 
   /** Configuration object providing access to the {@link UpdateRequestHandler} instance. */
-    public record UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler)
-      implements APIConfigProvider.APIConfig {
-  }
+  public record UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler)
+      implements APIConfigProvider.APIConfig {}
 }
