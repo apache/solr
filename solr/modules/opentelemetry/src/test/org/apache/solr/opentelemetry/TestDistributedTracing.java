@@ -159,17 +159,15 @@ public class TestDistributedTracing extends SolrCloudTestCase {
     assertEquals("post:/collections/{collection}/reload", finishedSpans.get(0).getName());
     assertCollectionName(finishedSpans.get(0), COLLECTION);
 
-    cloudClient.add(COLLECTION, sdoc("id", "9"));
+    new V2Request.Builder("/c/" + COLLECTION + "/update/json")
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{\n" + " \"id\" : \"9\"\n" + "}")
+        .withParams(params("commit", "true"))
+        .build()
+        .process(cloudClient);
     finishedSpans = getAndClearSpans();
-    finishedSpans.removeIf(
-        span ->
-            span.getAttributes().get(TraceUtils.TAG_HTTP_URL) == null
-                || !span.getAttributes().get(TraceUtils.TAG_HTTP_URL).endsWith("/update"));
-    assertEquals("post:/{core}/update", finishedSpans.get(0).getName());
-    assertCoreName(finishedSpans.get(0), COLLECTION);
-
-    cloudClient.commit(COLLECTION);
-    getAndClearSpans();
+    assertEquals("post:/c/{collection}/update/json", finishedSpans.get(0).getName());
+    assertCollectionName(finishedSpans.get(0), COLLECTION);
 
     final V2Response v2Response =
         new V2Request.Builder("/c/" + COLLECTION + "/select")
