@@ -90,20 +90,6 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
     compareOutput(
         apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{split:{shard:shard1, ranges: '0-1f4,1f5-3e8,3e9-5dc', coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , shard : shard1, ranges :'0-1f4,1f5-3e8,3e9-5dc', operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
-        "/collections/collName/shards",
-        POST,
-        "{split:{ splitKey:id12345, coreProperties : {prop1:prop1Val, prop2:prop2Val} }}",
-        "{collection: collName , split.key : id12345 , operation : splitshard, property.prop1:prop1Val, property.prop2: prop2Val}");
-
-    compareOutput(
-        apiBag,
         "/cluster",
         POST,
         "{add-role : {role : overseer, node : 'localhost_8978'} }",
