@@ -25,14 +25,14 @@ import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.common.util.NamedList;
 
-/** This class holds the response from V1 "/admin/info/system" */
+/** This class holds the response from V1 "/admin/info/system" or V2 "/node/system" */
 public class SystemInfoResponse extends SolrResponseBase {
 
   private static final long serialVersionUID = 1L;
 
   // AdminHandlersProxy wraps nodes responses in a map.
   // Mimic that here, even if the response might be just a single node.
-  protected final Map<String, NodeSystemResponse.NodeSystemInfo> nodesInfo = new HashMap<>();
+  protected final Map<String, NodeSystemResponse> nodesInfo = new HashMap<>();
 
   protected SystemInfoResponse() {
     // required constructor for the V2 extension
@@ -64,8 +64,7 @@ public class SystemInfoResponse extends SolrResponseBase {
           nodesInfo.put(
               node.getKey(),
               JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                  removeHeader((NamedList<Object>) node.getValue()),
-                  NodeSystemResponse.NodeSystemInfo.class));
+                  removeHeader((NamedList<Object>) node.getValue()), NodeSystemResponse.class));
         }
       }
 
@@ -75,7 +74,7 @@ public class SystemInfoResponse extends SolrResponseBase {
         nodesInfo.put(
             null,
             JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-                removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
+                removeHeader(response), NodeSystemResponse.class));
       }
 
     } else {
@@ -83,7 +82,7 @@ public class SystemInfoResponse extends SolrResponseBase {
       nodesInfo.put(
           response.get("node").toString(),
           JacksonContentWriter.DEFAULT_MAPPER.convertValue(
-              removeHeader(response), NodeSystemResponse.NodeSystemInfo.class));
+              removeHeader(response), NodeSystemResponse.class));
     }
   }
 
@@ -236,7 +235,7 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for a single node */
-  public NodeSystemResponse.NodeSystemInfo getNodeResponse() {
+  public NodeSystemResponse getNodeResponse() {
     if (nodesInfo.size() == 1) {
       return nodesInfo.values().stream().findFirst().get();
     } else {
@@ -246,12 +245,16 @@ public class SystemInfoResponse extends SolrResponseBase {
   }
 
   /** Get all {@code NodeSystemResponse}s */
-  public Map<String, NodeSystemResponse.NodeSystemInfo> getAllNodeResponses() {
+  public Map<String, NodeSystemResponse> getAllNodeResponses() {
     return nodesInfo;
   }
 
   /** Get the {@code NodeSystemResponse.NodeSystemInfo} for the given node name */
-  public NodeSystemResponse.NodeSystemInfo getNodeResponseForNode(String node) {
+  public NodeSystemResponse getNodeResponseForNode(String node) {
+    // in standalone mode, the key in the map is null
+    if (node == null && nodesInfo.size() == 1) {
+      return nodesInfo.values().stream().findFirst().get();
+    }
     return nodesInfo.get(node);
   }
 

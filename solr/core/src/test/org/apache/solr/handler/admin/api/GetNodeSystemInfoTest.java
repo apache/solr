@@ -29,12 +29,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.client.api.model.NodeSystemResponse;
-import org.apache.solr.client.api.util.Constants;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -75,7 +75,7 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(TIMEOUT / 1000);
     jettyRunner = cluster.getRandomJetty(random());
     baseV2Url = jettyRunner.getBaseURLV2();
-    systemInfoV2Url = baseV2Url.toString().concat(Constants.NODE_INFO_SYSTEM_PATH);
+    systemInfoV2Url = baseV2Url.toString().concat(CommonParams.V2_SYSTEM_INFO_PATH);
 
     // useSsl = true, clientAuth = false
     SSLTestConfig sslConfig = new SSLTestConfig(true, false);
@@ -139,16 +139,15 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     try (InputStream in = new ByteArrayInputStream(response.getContent())) {
       infoResponse = parser.processToType(in, StandardCharsets.UTF_8.toString());
     }
+    Assert.assertNotNull(infoResponse);
     Assert.assertEquals(0, infoResponse.responseHeader.status);
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertNotNull(infoResponse.nodeInfo);
-    Assert.assertEquals(expectedNode, infoResponse.nodeInfo.node);
+    Assert.assertEquals(expectedNode, infoResponse.node);
     // other validations in NodeSystemInfoProviderTest
   }
 
   /** test through HTTP request: Xml */
-  @SuppressWarnings("unchecked")
   @Test
   public void testGetNodeInfoHttpXml() throws Exception {
     ContentResponse response = null;
@@ -179,11 +178,10 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     try (InputStream in = new ByteArrayInputStream(response.getContent())) {
       nlResponse = parser.processResponse(in, StandardCharsets.UTF_8.toString());
     }
+    Assert.assertNotNull(nlResponse);
 
     String expectedNode = baseV2Url.getHost() + ":" + baseV2Url.getPort() + "_solr";
-    Assert.assertNotNull(nlResponse.get("nodeInfo"));
-    Assert.assertEquals(
-        expectedNode, (String) ((NamedList<Object>) nlResponse.get("nodeInfo")).get("node"));
+    Assert.assertEquals(expectedNode, (String) nlResponse.get("node"));
     // other validations in NodeSystemInfoProviderTest
   }
 
@@ -197,46 +195,10 @@ public class GetNodeSystemInfoTest extends SolrCloudTestCase {
     GetNodeSystemInfo getter = new GetNodeSystemInfo(req, resp);
 
     NodeSystemResponse response = getter.getNodeSystemInfo(null);
-    Assert.assertNotNull(response.nodeInfo);
-    Assert.assertEquals("std", response.nodeInfo.mode);
+    Assert.assertNotNull(response);
+    Assert.assertEquals("std", response.mode);
     // Standalone mode : no "node"
-    Assert.assertNull(response.nodeInfo.node);
+    Assert.assertNull(response.node);
     // other validations in NodeSystemInfoProviderTest
-  }
-
-  /** Test getting specific information */
-  @Test
-  public void testGetSpecificNodeSystemInfo() throws Exception {
-    ContentResponse response = null;
-    try {
-      response =
-          jettyHttpClient
-              .newRequest(systemInfoV2Url.concat("/lucene"))
-              .timeout(TIMEOUT, TimeUnit.MILLISECONDS)
-              .method(HttpMethod.GET)
-              .send();
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      Assert.fail("Should not throw exception: " + e.getClass() + ".  message: " + e.getMessage());
-      return;
-    }
-    Assert.assertEquals(200, response.getStatus());
-    Assert.assertEquals("application/json", response.getMediaType());
-
-    NodeSystemResponse infoResponse;
-    JacksonDataBindResponseParser<NodeSystemResponse> parser =
-        new JacksonDataBindResponseParser<>(NodeSystemResponse.class);
-    try (InputStream in = new ByteArrayInputStream(response.getContent())) {
-      infoResponse = parser.processToType(in, StandardCharsets.UTF_8.toString());
-    }
-    Assert.assertNotNull(infoResponse.nodeInfo);
-    Assert.assertNotNull(infoResponse.nodeInfo.lucene);
-    Assert.assertEquals(
-        0,
-        SolrVersion.compareVersions(
-            infoResponse.nodeInfo.lucene.solrSpecVersion, SolrVersion.LATEST_STRING));
-    Assert.assertNull(infoResponse.nodeInfo.gpu);
-    Assert.assertNull(infoResponse.nodeInfo.jvm);
-    Assert.assertNull(infoResponse.nodeInfo.security);
-    Assert.assertNull(infoResponse.nodeInfo.system);
   }
 }

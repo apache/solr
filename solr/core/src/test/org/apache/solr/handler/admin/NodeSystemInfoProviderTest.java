@@ -61,26 +61,23 @@ public class NodeSystemInfoProviderTest extends SolrTestCaseJ4 {
     SystemInfoProvider provider = new SystemInfoProvider(req);
     NodeSystemResponse info = provider.getNodeSystemInfo(new NodeSystemResponse());
 
-    Assert.assertNotNull(info.nodeInfo);
+    Assert.assertNotNull(info);
     // these can be validated
-    Assert.assertEquals(h.getCoreContainer().getSolrHome().toString(), info.nodeInfo.solrHome);
-    Assert.assertEquals(
-        h.getCoreContainer().getCoreRootDirectory().toString(), info.nodeInfo.coreRoot);
-    Assert.assertNotNull(info.nodeInfo.lucene);
-    Assert.assertNotNull(info.nodeInfo.lucene.solrImplVersion);
-    Assert.assertEquals(
-        info.nodeInfo.lucene.solrImplVersion, SolrVersion.LATEST.getPrereleaseVersion());
-    Assert.assertNotNull(info.nodeInfo.lucene.solrSpecVersion);
-    Assert.assertEquals(info.nodeInfo.lucene.solrSpecVersion, SolrVersion.LATEST_STRING);
-    Assert.assertNotNull(info.nodeInfo.lucene.luceneImplVersion);
-    Assert.assertEquals(
-        info.nodeInfo.lucene.luceneImplVersion, Version.getPackageImplementationVersion());
-    Assert.assertNotNull(info.nodeInfo.lucene.luceneSpecVersion);
-    Assert.assertEquals(info.nodeInfo.lucene.luceneSpecVersion, Version.LATEST.toString());
+    Assert.assertEquals(h.getCoreContainer().getSolrHome().toString(), info.solrHome);
+    Assert.assertEquals(h.getCoreContainer().getCoreRootDirectory().toString(), info.coreRoot);
+    Assert.assertNotNull(info.lucene);
+    Assert.assertNotNull(info.lucene.solrImplVersion);
+    Assert.assertEquals(info.lucene.solrImplVersion, SolrVersion.LATEST.getPrereleaseVersion());
+    Assert.assertNotNull(info.lucene.solrSpecVersion);
+    Assert.assertEquals(info.lucene.solrSpecVersion, SolrVersion.LATEST_STRING);
+    Assert.assertNotNull(info.lucene.luceneImplVersion);
+    Assert.assertEquals(info.lucene.luceneImplVersion, Version.getPackageImplementationVersion());
+    Assert.assertNotNull(info.lucene.luceneSpecVersion);
+    Assert.assertEquals(info.lucene.luceneSpecVersion, Version.LATEST.toString());
     // these should be set
-    Assert.assertNotNull(info.nodeInfo.mode);
-    Assert.assertNotNull(info.nodeInfo.jvm);
-    Assert.assertNotNull(info.nodeInfo.security);
-    Assert.assertNotNull(info.nodeInfo.system);
+    Assert.assertNotNull(info.mode);
+    Assert.assertNotNull(info.jvm);
+    Assert.assertNotNull(info.security);
+    Assert.assertNotNull(info.system);
   }
 }

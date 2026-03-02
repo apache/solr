@@ -114,41 +114,38 @@ public class SystemInfoProvider {
 
   /** Fill-out the provided response with all system info. */
   public NodeSystemResponse getNodeSystemInfo(NodeSystemResponse response) {
-    NodeSystemResponse.NodeSystemInfo info = new NodeSystemResponse.NodeSystemInfo();
-
     if (cc != null) {
-      info.solrHome = cc.getSolrHome().toString();
-      info.coreRoot = cc.getCoreRootDirectory().toString();
+      response.solrHome = cc.getSolrHome().toString();
+      response.coreRoot = cc.getCoreRootDirectory().toString();
     }
 
     boolean solrCloudMode = cc != null && cc.isZooKeeperAware();
-    info.mode = solrCloudMode ? "solrcloud" : "std";
+    response.mode = solrCloudMode ? "solrcloud" : "std";
     if (solrCloudMode) {
-      info.zkHost = cc.getZkController().getZkServerAddress();
-      info.node = cc.getZkController().getNodeName();
+      response.zkHost = cc.getZkController().getZkServerAddress();
+      response.node = cc.getZkController().getNodeName();
     }
 
-    info.lucene = getLuceneInfo();
+    response.lucene = getLuceneInfo();
 
-    info.jvm = getJvmInfo();
+    response.jvm = getJvmInfo();
 
-    info.security = getSecurityInfo();
-    info.system = getSystemInfo();
-    info.gpu = getGpuInfo();
+    response.security = getSecurityInfo();
+    response.system = getSystemInfo();
+    response.gpu = getGpuInfo();
 
     SolrEnvironment env =
         SolrEnvironment.getFromSyspropOrClusterprop(
             solrCloudMode ? cc.getZkController().zkStateReader : null);
     if (env.isDefined()) {
-      info.environment = env.getCode();
+      response.environment = env.getCode();
       if (env.getLabel() != null) {
-        info.environmentLabel = env.getLabel();
+        response.environmentLabel = env.getLabel();
       }
       if (env.getColor() != null) {
-        info.environmentColor = env.getColor();
+        response.environmentColor = env.getColor();
       }
     }
-    response.nodeInfo = info;
     return response;
   }
 

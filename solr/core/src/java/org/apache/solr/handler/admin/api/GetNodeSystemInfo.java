@@ -31,7 +31,7 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Implementation of the V2 JerseyResource /node/info/system */
+/** Implementation of the V2 JerseyResource /node/system */
 public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -65,51 +65,8 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
     SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
     NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
     provider.getNodeSystemInfo(response);
-    if (response.nodeInfo != null && log.isTraceEnabled()) {
-      log.trace("Node {}, core root: {}", response.nodeInfo.node, response.nodeInfo.coreRoot);
-    }
-    return response;
-  }
-
-  @Override
-  public NodeSystemResponse getSpecificNodeSystemInfo(String requestedInfo, String nodes) {
-    solrQueryResponse.setHttpCaching(false);
-
-    // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
-    try {
-      // TODO: Should use the "nodes" param
-      if (solrQueryRequest.getCoreContainer() != null
-          && AdminHandlersProxy.maybeProxyToNodes(
-              solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
-        return null;
-      }
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
-    }
-
-    NodeSystemResponse response = instantiateJerseyResponse(NodeSystemResponse.class);
-    response.nodeInfo = new NodeSystemResponse.NodeSystemInfo();
-    SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
-    switch (requestedInfo) {
-      case "gpu":
-        response.nodeInfo.gpu = provider.getGpuInfo();
-        break;
-      case "jvm":
-        response.nodeInfo.jvm = provider.getJvmInfo();
-        break;
-      case "lucene":
-        response.nodeInfo.lucene = provider.getLuceneInfo();
-        break;
-      case "security":
-        response.nodeInfo.security = provider.getSecurityInfo();
-        break;
-      case "system":
-        response.nodeInfo.system = provider.getSystemInfo();
-        break;
-      default:
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, "Unknown parameter: " + requestedInfo);
+    if (log.isTraceEnabled()) {
+      log.trace("Node {}, core root: {}", response.node, response.coreRoot);
     }
     return response;
   }

@@ -19,14 +19,11 @@ package org.apache.solr.handler.admin;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Set;
-import org.apache.solr.api.AnnotatedApi;
-import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.api.GetNodeSystemInfo;
-import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -58,15 +55,12 @@ public class SystemInfoHandler extends RequestHandlerBase {
 
     SystemInfoProvider provider = new SystemInfoProvider(req);
     NodeSystemResponse response = provider.getNodeSystemInfo(new NodeSystemResponse());
-    // V1 does not wrap the system info into "nodeInfo" field
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response.nodeInfo);
+    V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
 
     // back-compatible response with core info if available
     if (req.getCore() != null) {
       rsp.add("core", SystemInfoProvider.getCoreInfo(req.getCore(), req.getSchema()));
     }
-
-    return;
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req) {
@@ -84,11 +78,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public Category getCategory() {
     return Category.ADMIN;
-  }
-
-  @Override
-  public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new NodeSystemInfoAPI(this));
   }
 
   @Override

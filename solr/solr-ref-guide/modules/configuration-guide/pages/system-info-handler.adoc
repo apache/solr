@@ -22,7 +22,7 @@ System information is available via the V2 API:
 
 [source,bash]
 ----
-http://localhost:8983/api/node/info/system
+http://localhost:8983/api/node/system
 ----
 
 The equivalent V1 API is available at:
@@ -161,7 +161,7 @@ The V1 response format is slightly different from th V2 response shown here.  In
 
 [source.bash]
 ----
-curl http://localhost:8983/api/node/info/system
+curl http://localhost:8983/api/node/system
 ----
 
 [source.json]
@@ -302,7 +302,7 @@ Only available from the V2 API.
 
 [source.bash]
 ----
-curl http://localhost:8983/api/node/info/system/lucene
+curl http://localhost:8983/api/node/system/lucene
 ----
 
 
