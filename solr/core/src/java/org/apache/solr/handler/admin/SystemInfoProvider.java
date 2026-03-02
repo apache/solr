@@ -184,11 +184,9 @@ public class SystemInfoProvider {
   public CoreInfoResponse getCoreInfo(String coreName, CoreInfoResponse info) {
 
     SolrCore core = req.getCore();
-    log.info("Request SolrCore: {}", core.getName());
     if (req.getCoreContainer() != null
         && req.getCoreContainer().getAllCoreNames().contains(coreName)) {
       core = req.getCoreContainer().getCore(coreName);
-      log.info("Requested SolrCore: {}", core.getName());
     }
 
     if (core == null) return info;

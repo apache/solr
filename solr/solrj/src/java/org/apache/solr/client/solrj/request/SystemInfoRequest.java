@@ -83,7 +83,7 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
       // (/solr) /admin/info/system
       return ApiVersion.V1;
     }
-    // Ref.org.apache.solr.client.api.model.NodeSystemResponse : /node/system
+    // /node/system
     return ApiVersion.V2;
   }
 }
