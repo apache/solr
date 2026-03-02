@@ -1,5 +1,5 @@
 # See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
-title: Node System Info V2 Jersey Resource
+title: Add V2 "System Info" API and SolrJ request 'SystemApi.GetNodeSystemInfo'
 type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
 authors:
   - name: Isabelle Giguère

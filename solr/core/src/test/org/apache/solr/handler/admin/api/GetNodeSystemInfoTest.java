@@ -29,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.apache.solr.client.api.model.NodeSystemResponse;
-import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
 import org.apache.solr.client.solrj.response.json.JacksonDataBindResponseParser;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
