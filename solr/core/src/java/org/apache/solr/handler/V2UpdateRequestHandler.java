@@ -38,7 +38,7 @@ import org.apache.solr.jersey.APIConfigProvider;
  */
 public class V2UpdateRequestHandler extends UpdateRequestHandler
     implements APIConfigProvider<UpdateAPI.UpdateRequestHandlerConfig> {
-  
+
   @Override
   public Collection<Api> getApis() {
     return Collections.emptyList();

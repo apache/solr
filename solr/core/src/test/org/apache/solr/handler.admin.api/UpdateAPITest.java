@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.handler;
+package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
@@ -36,8 +36,7 @@ import org.junit.Test;
 
 /**
  * Integration tests for the v2 update API endpoints implemented via JAX-RS in {@link
- * org.apache.solr.handler.admin.api.UpdateAPI}. Uses {@link SolrJettyTestRule} to run a real Solr
- * instance.
+ * org.apache.solr.handler.admin.api.UpdateAPI}.
  */
 public class UpdateAPITest extends SolrTestCaseJ4 {
 
