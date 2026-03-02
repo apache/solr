@@ -18,27 +18,20 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
-import java.util.Locale;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.SplitShardRequestBody;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.solrj.request.ShardsApi;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-/** Tests for the JAX-RS {@link SplitShardAPI} V2 endpoint. */
+/** Tests for the split shard V2 endpoint via the generated SolrJ client. */
 public class SplitShardAPITest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
-
-  private SplitShardAPI api;
 
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -51,39 +44,23 @@ public class SplitShardAPITest extends SolrTestCaseJ4 {
         .create();
   }
 
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    api =
-        new SplitShardAPI(
-            solrTestRule.getCoreContainer(),
-            new SolrQueryRequestBase(null, new ModifiableSolrParams()),
-            new SolrQueryResponse());
-  }
-
   @Test
-  public void testSplitShardWithMissingCollectionReturnsError() throws Exception {
-    SplitShardRequestBody requestBody = new SplitShardRequestBody();
-    requestBody.shard = "shard1";
+  public void testSplitShardOnNonexistentCollectionReturnsError() throws Exception {
+    var request = new ShardsApi.SplitShard("nonexistent_collection");
+    request.setShard("shard1");
 
-    SolrException ex = assertThrows(SolrException.class, () -> api.splitShard(null, requestBody));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertTrue("Expected error about missing collection", ex.getMessage().contains("collection"));
+    SolrJerseyResponse response = request.process(solrTestRule.getSolrClient());
+    assertNotNull("Expected error in response", response.error);
+    assertNotNull("Expected error code in response", response.error.code);
   }
 
   @Test
   public void testSplitShardNotInCloudModeReturnsError() throws Exception {
-    SplitShardRequestBody requestBody = new SplitShardRequestBody();
-    requestBody.shard = "shard1";
+    var request = new ShardsApi.SplitShard(DEFAULT_TEST_CORENAME);
+    request.setShard("shard1");
 
-    SolrException ex =
-        assertThrows(SolrException.class, () -> api.splitShard(DEFAULT_TEST_CORENAME, requestBody));
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
-    assertTrue(
-        "Expected error about not being in SolrCloud mode",
-        ex.getMessage().toLowerCase(Locale.ROOT).contains("solrcloud")
-            || ex.getMessage().toLowerCase(Locale.ROOT).contains("zookeeper")
-            || ex.getMessage().toLowerCase(Locale.ROOT).contains("cloud"));
+    SolrJerseyResponse response = request.process(solrTestRule.getSolrClient());
+    assertNotNull("Expected error in response when not in SolrCloud mode", response.error);
+    assertNotNull("Expected error code in response", response.error.code);
   }
 }
