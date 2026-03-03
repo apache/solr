@@ -33,8 +33,9 @@ import org.apache.solr.response.SolrQueryResponse;
 /**
  * V2 API for cancelling a currently running "task".
  *
- * <p>This API (GET /v2/collections/collectionName/tasks/cancel) is analogous to the v1
- * /solr/collectionName/tasks/cancel API.
+ * <p>This API (GET /v2/collections/{collectionName}/tasks/cancel and
+ * GET /v2/cores/{coreName}/tasks/cancel) is analogous to the v1
+ * /solr/{collectionName|coreName}/tasks/cancel API.
  */
 public class CancelTaskAPI extends JerseyResource implements CancelTaskApi {
   private final SolrCore solrCore;
