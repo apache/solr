@@ -1,0 +1,7 @@
+title: Migrate SplitCore and SplitShard to JAX-RS. SplitCore and SplitShard now have OpenAPI and SolrJ support.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4179
+  url: https://github.com/apache/solr/pull/4179
