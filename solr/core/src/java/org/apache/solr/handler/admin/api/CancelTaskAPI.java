@@ -54,6 +54,7 @@ public class CancelTaskAPI extends JerseyResource implements CancelTaskApi {
   public FlexibleSolrJerseyResponse cancelTask(String queryUUID) throws Exception {
     final FlexibleSolrJerseyResponse response =
         instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
+    ensureRequiredParameterProvided("queryUUID", queryUUID);
     final QueryCancellationHandler cancellationHandler =
         (QueryCancellationHandler) solrCore.getRequestHandler("/tasks/cancel");
     cancellationHandler.handleRequestBody(solrQueryRequest, solrQueryResponse);
