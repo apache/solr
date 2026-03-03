@@ -1002,6 +1002,72 @@ These parameters would be defined in `solrconfig.xml`, in the `defaults` section
 
 For more information about the possibilities of nested queries, see Yonik Seeley's blog post https://lucidworks.com/2009/03/31/nested-queries-in-solr/[Nested Queries in Solr].
 
+== Numeric Range Query Parser
+
+NOTE: Syntax specifics of the `{!numericRange}` query parser are considered experimental and may change in the future.
+
+Allows users to search range fields (e.g. `IntRangeField`) using a specified query-range.
+Multiple match semantics supported, see the `criteria` parameter below for more details.
+
+=== Numeric Range Parameters
+
+`field`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The field name to operate on.
+Must be a "range" field (e.g. `IntRangeField`)
+`criteria`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The criteria or semantics used to determine where a document matches the query-range.
+One of: `contains`, `within`, `crosses` or `intersects`.
+
+* `contains` if matching documents should entirely contain or enclose the query-range (i.e. doc-ranges that are a superset of query-range),
+* `within` if matching documents should be entirely within the query-range (i.e. doc-ranges that are sub-set of query-range)
+* `crosses` if matching documents should be partially **but not fully** contained within the query-range
+* `intersects` treats a document as a match if it meets any of the criteria above (i.e. `contains || within || crosses`)
+`v`::
++
+[%autowidth,frame=none]
+|===
+|Required |Default: none
+|===
++
+The query-range to be compared against field values.
+The specified range must have the same number of dimensions as the targeted field.
+Usually provided implicitly by specifying a range after the local-params block (see examples below).
+
+=== Numeric Range Examples
+
+Find products whose `price_range` is fully bounded between 100 and 120.
+
+[source,text]
+----
+{!numericRange field="price_range" criteria="within"}[100 TO 120]
+----
+
+Find products whose `price_range` contains 100.
+
+[source,text]
+----
+{!numericRange field="price_range" criteria="contains"}[100 TO 100]
+----
+
+Find products whose `price_range` overlaps at all with a user's desired price range (e.g. 100-120).
+
+[source,text]
+----
+{!numericRange field="price_range" criteria="intersects" v="[100 TO 120]"}
+----
+
 == Vector Query Parsers
 
 
