@@ -22,20 +22,17 @@ This page highlights the most important changes including new features and chang
 
 == Solr 10 Upgrade Planning
 
-Before starting an upgrade to this version of Solr, please take the time to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
+Before starting an upgrade to this version of Solr, please be sure to review all information about changes from the version you are currently on up to this one, to include the minor version number changes as well.
+For example, if you are currently using Solr 9.1, you should review changes made in all subsequent 9.x releases in addition to the 10.0-specific changes on this page.
 
-// TODO add similar text that previous releases have at this spot.
-
-There is a new limitation introduced in Solr 9.10, and that which is especially relevant to Solr 10
-and beyond.
-A Solr node will now fail to start if it's major.minor version (e.g. 9.10) is *lower* than that of any existing Solr node in a SolrCloud cluster (as reported by info in "live_node").
-What this
-means is that Solr supports rolling _upgrades_ but not rolling _downgrades_ spanning a major version.
-This compatibility safeguard can be toggled with "SOLR_CLOUD_DOWNGRADE_ENABLED".
+Users planning their upgrade process should be aware of a change introduced in Solr 9.10 which is especially relevant to Solr 10 and beyond.
+By default, starting in 9.10 SolrCloud nodes will now fail to start if their major.minor version (e.g. 9.10) is *lower* than the highest version found elsewhere in the SolrCloud cluster.
+The intention of this change is to allow Solr to support rolling _upgrades_ but not rolling _downgrades_ spanning a major version.
+This compatibility safeguard can be disabled via the environment variable "SOLR_CLOUD_DOWNGRADE_ENABLED".
 
 == System Requirements
 
-Minimum Java version for Solr 10.x is Java 21.
+Solr 10.0 requires at least Java 21, while SolrJ 10.0 requires at least Java 17.
 
 == Solr 10.0
 
@@ -49,14 +46,14 @@ The previous `jetty.port` is deprecated and now use `solr.port.listen`.
 
 === Solr CLI and Scripts
 
-The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, CLI commands now use unix-style options, e.g. `--help` instead of `-help`.
-Users are urged to review all use of the `bin/solr` command, such as in scripts and documentation, to ensure that the correct options are being used.
+The Solr CLI has gone through some significant renovations to reduce technical debt, and now functions more consistently and predictably. Most notably, "long-options" now use double-dashes per Unix style conventions., e.g. `--help` instead of `-help`.
+Users are urged to review all use of the `bin/solr` command in their automation, scripts, and documentation to ensure that the correct options are being used.
 
-Some key changes that you may run into are:
+Some key changes that users may encounter are:
 
  * Commands that interact with Solr now all use `--solr-url` (or `-s`) plus a `--name` (or `-c`) to specify the Solr to interact with.
- * You may use `--zk-host` (or `-z`) in place of the `--solr-url` option to lookup the Solr host.
- * Basic Authentication support has been added to bin/solr via the `--credentials` (or `-u`) option.
+ * `-z`/`--zk-host` is now supported across all `bin/solr` tools as an alternative to `-s`/`--solr-url`.
+ * `bin/solr` now allows users to specific basic auth credentials via the `-u`/`--credentials` option, supplementing the previous `SOLR_AUTHENTICATION_OPTS`-based support.
  * Some short and single-letter options have been removed to avoid conflicts or in favor to other options.
 
 To learn about the updated options in each CLI tool, use the `--help` option or look up the tool in the documentation.
@@ -64,10 +61,8 @@ To learn about the updated options in each CLI tool, use the `--help` option or 
 Additionally, the `bin/solr delete` command no longer deletes a configset when you delete a collection.  Previously if you deleted a collection, it would also delete it's associated configset if it was the only user of it.
 Now you have to explicitly provide a  `--delete-config` option to delete the configsets.  This decouples the lifecycle of a configset from that of a collection.
 
-The `bin/solr start --bootstrap_conf` flag is a legacy feature for converting from Solr to SolrCloud mode and has been removed.
-
-The system property "bootstrap_confdir" (recently renamed to "solr.configset.bootstrap.confdir") used in `bin/solr start` allwowed a collection creation command to default to the examination of system properties in the absence of proper creation parameters by the same name (like "collection.configName").
-That no longer happens in Solr 10.  It is only used to load a configuration as a ConfigSet.
+Several scripts formerly provided with Solr have been removed, including `bin/post`, `bin/postlogs`, and `zkcli.sh`.
+Users should instead rely on `bin/solr post` and `bin/solr zk` as appropriate.
 
 === SolrJ
 
@@ -84,16 +79,16 @@ The only built-in implementation is `org.apache.solr.client.solrj.jetty.Preempti
 * `SolrClient` implementations that rely on "base URL" strings now only accept "root" URL paths (i.e. URLs that end in "/solr").
 Users who previously relied on collection-specific URLs to avoid including the collection name with each request can instead achieve this by specifying a "default collection" using the `withDefaultCollection` method available on most `SolrClient` Builders.
 
-* Minimum Java version for Solrj 10.x is Java 17.
+* Minimum Java version for SolrJ 10.x is Java 17.
 
 * Deprecate CloudSolrClient’s ZooKeeper Hosts constructor. Users are encouraged to supply Solr URLs instead of communicating with ZooKeeper. It’s not likely to be removed before Solr 11.
 
 * Rename BinaryResponseParser and BinaryRequestWriter including StreamingBinaryResponseParser to JavaBinRequestWriter, JavaBinResponseParser, StreamingJavaBinResponseParser.
 This makes it clear that they pertain specifically to “JavaBin” rather than binary in general.
 
-* The deprecated SolrClient implementations based on Apache HttpClient are removed from Solrj,  thus the related dependencies are no longer present.
+* The deprecated SolrClient implementations based on Apache HttpClient are removed from SolrJ,  thus the related dependencies are no longer present.
 
-* A number of classes moved to different packages to be better organized:
+* A number of classes moved to different packages to be better organized, including:
 ShardTerms, DelegatingClusterStateProvider, JavaBinRequestWriter, RoutedAliasTypes, SolrQuery, XMLRequestWriter, JacksonContentWriter, FastStreamingDocsCallback, InputStreamResponse, InputStreamResponseParser, JavaBinResponseParser, ResponseParser, StreamingJavaBinResponseParser, StreamingResponseCallback, XMLResponseParser, JacksonDataBindResponseParser, JsonMapResponseParser, SocketProxy
 
 === SolrCloud Overseer
@@ -121,11 +116,11 @@ Using xref:configuration-guide:configuring-solr-xml.adoc[minStateByteLenForCompr
 Creating a replica (either via collection creation or other circumstances) can take more time without the Overseer if these creation commands are delivered to many nodes around the cluster.
 That can be avoided simply by sending admin requests to a consistent node.
 
-=== Service installer
+=== Service Installer
 
 The service installer now installs a `systemd` startup script instead of an `init.d` startup script. It is up to the user to uninstall any existing `init.d` script when upgrading.
 
-=== SolrCloud request routing
+=== SolrCloud Request Routing
 
 HTTP requests to SolrCloud that are for a specific core must be delivered to the node with that core, or else an HTTP 404 Not Found response will occur.
 Previously, SolrCloud would try too hard scanning the cluster's state to look for it and internally route/proxy it.
@@ -141,13 +136,14 @@ It is available as part of the `analysis-extras` module.
 
 * The `efSearchScaleFactor` parameter is now available for the KNN query parser (SOLR-17928). This parameter controls how many candidate vectors are explored during HNSW graph traversal, allowing users to independently tune search accuracy versus the number of results returned. Previously, improving accuracy required increasing `topK` (which returns more results), but `efSearchScaleFactor` enables exploring more candidates while still receiving exactly `topK` results. The `efSearch` value is calculated internally as `efSearchScaleFactor * topK`. Default value is `1.0`, which means `efSearch` defaults to `topK`.
 
-=== Deprecation removals
+=== Deprecation Code Removals
 
-* The `jaegertracer-configurator` module, which was deprecated in 9.2, is removed. Users should migrate to the `opentelemetry` module.
+* Several deprecated modules have been removed.
+** `jaegertracer-configurator` is gone; the new `opentelemetry` module should be used instead.
+** `analytics` has been removed
+** `hadoop-auth` (including the `solr.KerberosPlugin` class) has been removed
 
 * `OpenTracing` libraries were removed and replaced with `OpenTelemetry` libraries. Any Java agents providing `OpenTracing` tracers will no longer work. Telemetry tags `http.status_code` and `http.method` have been deprecated, newer version of the tags have been added to the span data: `http.response.status_code`, `http.request.method`.
-
-* The `analytics` module, which was deprecated in 9.2, is removed.
 
 * The sysProp `-Dsolr.redaction.system.pattern`, which allows users to provide a pattern to match sysProps that should be redacted for sensitive information,
 has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_SYS_PROPS` instead.
@@ -158,7 +154,7 @@ has been removed. Please use `-Dsolr.hiddenSysProps` or the envVar `SOLR_HIDDEN_
 
 * The node configuration file `/solr.xml` can no longer be loaded from Zookeeper. Solr startup will fail if it is present.
 
-* The legacy Circuit Breaker named `CircuitBreakerManager`, is removed. Please use individual Circuit Breaker plugins instead.
+* The legacy Circuit Breaker named `CircuitBreakerManager` is removed. Please use individual Circuit Breaker plugins instead.
 
 * BlobRepository and BlobHandler have both been removed in favour of the `FileStore` API implementation (per node stored file).
 To share resource intensive objects across multiple cores in components you should now use the `CoreContainer.getObjectCache` approach
@@ -173,8 +169,6 @@ The removed writer types (invoked as part of the `wt` parameter) include `python
 * Support for the `<lib/>` directive, which historically could be used in solrconfig.xml to add JARs on a core-by-core basis, was deprecated in 9.8 and has now been removed.
 Users that need to vary JAR accessibility on a per-core basis can use Solr's xref:configuration-guide:package-manager.adoc[Package Manager].
 Users who that don't need to vary JAR access on a per-core basis have several options, including the xref:configuration-guide:configuring-solr-xml.adoc[`<sharedLib/>` tag supported by solr.xml] or manipulation of Solr's classpath prior to JVM startup.
-
-* Kerberos based authentication has been removed.  This results in changes to SolrJ, the Solr Admin app, and the removal of the `hadoop-auth` module.
 
 * Storing indexes and snapshots in HDFS has been removed.  This results in changes to solrconfig.xml and related configuration files and removal of the `hdfs` module.
 
@@ -219,7 +213,7 @@ Nowadays, the HTTP request is available via internal APIs: `SolrQueryRequest.get
 
 * There is no longer a distinction between trusted and untrusted configSets; all configSets are now considered trusted. To ensure security, Solr should be properly protected using authentication and authorization mechanisms, allowing only authorized users with administrative privileges to publish them.
 
-* Use of `stream.file`, `stream.url`, and `stream.body` params in http requests have been removed.
+* `stream.file`, `stream.url`, and `stream.body` params are no longer supported..
 
 === Upgrade to Jetty 12.x and Jakarta namespace
 
