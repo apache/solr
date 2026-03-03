@@ -17,6 +17,7 @@
 package org.apache.solr.schema.numericrange;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -142,7 +143,7 @@ public class IntRangeField extends PrimitiveFieldType {
   @Override
   public List<IndexableField> createFields(SchemaField field, Object value) {
     IndexableField indexedField = createField(field, value);
-    List<IndexableField> fields = new java.util.ArrayList<>();
+    List<IndexableField> fields = new ArrayList<>();
 
     if (indexedField != null) {
       fields.add(indexedField);
@@ -375,7 +376,7 @@ public class IntRangeField extends PrimitiveFieldType {
     if (numDimensions == 1) {
       mins[0] = min;
       maxs[0] = max;
-      return IntRange.newIntersectsQuery(field.getName(), mins, maxs);
+      return IntRange.newContainsQuery(field.getName(), mins, maxs);
     } else {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
