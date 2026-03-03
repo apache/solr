@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
