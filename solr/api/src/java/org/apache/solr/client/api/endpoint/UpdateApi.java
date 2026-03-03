@@ -31,7 +31,7 @@ public interface UpdateApi {
   @POST
   @StoreApiParameters
   @Operation(
-      summary = "Add, delete, or update documents using any supported content type",
+      summary = "Index documents using any supported content type",
       tags = {"update"})
   SolrJerseyResponse update() throws Exception;
 
@@ -39,7 +39,7 @@ public interface UpdateApi {
   @Path("/json")
   @StoreApiParameters
   @Operation(
-      summary = "Add, delete, or update documents in JSON format",
+      summary = "Index documents in JSON format",
       tags = {"update"})
   SolrJerseyResponse updateJson() throws Exception;
 
@@ -47,7 +47,7 @@ public interface UpdateApi {
   @Path("/xml")
   @StoreApiParameters
   @Operation(
-      summary = "Add, delete, or update documents in XML format",
+      summary = "Index documents in XML format",
       tags = {"update"})
   SolrJerseyResponse updateXml() throws Exception;
 
@@ -55,7 +55,7 @@ public interface UpdateApi {
   @Path("/csv")
   @StoreApiParameters
   @Operation(
-      summary = "Add, delete, or update documents in CSV format",
+      summary = "Index documents in CSV format",
       tags = {"update"})
   SolrJerseyResponse updateCsv() throws Exception;
 
@@ -63,7 +63,7 @@ public interface UpdateApi {
   @Path("/bin")
   @StoreApiParameters
   @Operation(
-      summary = "Add, delete, or update documents in JavaBin format",
+      summary = "Index documents documents in Javabin format",
       tags = {"update"})
   SolrJerseyResponse updateBin() throws Exception;
 }
