@@ -21,7 +21,9 @@ import static org.apache.solr.client.api.util.Constants.INDEX_PATH_PREFIX;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import jakarta.ws.rs.QueryParam;
+import java.util.List;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /**
@@ -38,5 +40,6 @@ public interface RealTimeGetApi {
   @Operation(
       summary = "Fetch the latest version of one or more documents by their unique id.",
       tags = {"documents"})
-  SolrJerseyResponse getDocuments() throws Exception;
+  FlexibleSolrJerseyResponse getDocuments(
+      @QueryParam("id") String id, @QueryParam("ids") List<String> ids) throws Exception;
 }

@@ -17,9 +17,10 @@
 package org.apache.solr.handler.admin.api;
 
 import jakarta.inject.Inject;
+import java.util.List;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.RealTimeGetApi;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RealTimeGetHandler;
 import org.apache.solr.jersey.PermissionName;
@@ -49,8 +50,8 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
 
   @Override
   @PermissionName(PermissionNameProvider.Name.READ_PERM)
-  public SolrJerseyResponse getDocuments() throws Exception {
-    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+  public FlexibleSolrJerseyResponse getDocuments(String id, List<String> ids) throws Exception {
+    final var response = instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
     rtgHandler.handleRequestBody(solrQueryRequest, solrQueryResponse);
     return response;
   }

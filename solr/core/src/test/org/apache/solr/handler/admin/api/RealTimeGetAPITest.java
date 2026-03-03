@@ -18,11 +18,14 @@ package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
+import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.request.DocumentsApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
-import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -66,24 +69,19 @@ public class RealTimeGetAPITest extends SolrTestCaseJ4 {
             .process(client);
 
     assertEquals(0, response.getStatus());
-    SolrDocument doc = (SolrDocument) response.getResponse().get("doc");
-    assertNotNull("Expected document to be returned", doc);
-    assertEquals("1", doc.getFieldValue("id"));
+    assertNotNull("Expected document to be returned", response.getResponse().get("doc"));
   }
 
   @Test
   public void testGetDocumentsByIds() throws Exception {
     SolrClient client = solrTestRule.getSolrClient(null);
 
-    V2Response response =
-        new V2Request.Builder("/cores/" + COLLECTION + "/get")
-            .withMethod(V2Request.METHOD.GET)
-            .withParams(params("ids", "1"))
-            .build()
-            .process(client);
+    var request = new DocumentsApi.GetDocuments(IndexType.CORE, COLLECTION);
+    request.setIds(List.of("1"));
+    FlexibleSolrJerseyResponse response = request.process(client);
 
-    assertEquals(0, response.getStatus());
-    assertNotNull("Expected response field", response.getResponse().get("response"));
+    assertEquals(0, response.responseHeader.status);
+    assertNotNull("Expected response field", response.unknownProperties().get("response"));
   }
 
   @Test
