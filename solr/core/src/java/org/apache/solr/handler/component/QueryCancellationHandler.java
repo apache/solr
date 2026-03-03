@@ -19,11 +19,12 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
+import org.apache.solr.api.JerseyResource;
 import org.apache.solr.handler.admin.api.CancelTaskAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -94,7 +95,12 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return AnnotatedApi.getApis(new CancelTaskAPI(this));
+    return Collections.emptyList();
+  }
+
+  @Override
+  public Collection<Class<? extends JerseyResource>> getJerseyResources() {
+    return List.of(CancelTaskAPI.class);
   }
 
   private List<SearchComponent> getComponentsList() {
