@@ -20,14 +20,10 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 import static org.apache.solr.security.AllowListUrlChecker.ENABLE_URL_ALLOW_LIST;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrRequest.SolrRequestType;
-import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.IndexType;
+import org.apache.solr.client.solrj.request.TasksApi;
 import org.apache.solr.common.util.EnvUtils;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -56,21 +52,12 @@ public class CancelTaskAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCancelNonExistentTask() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.QUERY_UUID, "nonexistent-uuid");
+    final TasksApi.CancelTask request = new TasksApi.CancelTask(IndexType.CORE, COLLECTION_NAME);
+    request.setQueryUUID("nonexistent-uuid");
 
-    // Test via the V2 JAX-RS endpoint
-    String v2BaseUrl = solrTestRule.getJetty().getBaseURLV2().toString();
-    try (HttpSolrClient v2Client = new HttpSolrClient.Builder(v2BaseUrl).build()) {
-      GenericSolrRequest request =
-          new GenericSolrRequest(
-              SolrRequest.METHOD.GET,
-              "/cores/" + COLLECTION_NAME + "/tasks/cancel",
-              SolrRequestType.ADMIN,
-              params);
-      NamedList<Object> response = v2Client.request(request);
-      assertNotNull(response);
-      assertEquals("not found", response.get("cancellationResult"));
-    }
+    final FlexibleSolrJerseyResponse response =
+        request.process(solrTestRule.getSolrClient(COLLECTION_NAME));
+    assertNotNull(response);
+    assertEquals("not found", response.unknownProperties().get("cancellationResult"));
   }
 }

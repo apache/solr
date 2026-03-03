@@ -17,12 +17,13 @@
 
 package org.apache.solr.handler.admin.api;
 
+import static org.apache.solr.response.SolrQueryResponse.RESPONSE_HEADER_KEY;
 import static org.apache.solr.security.PermissionNameProvider.Name.READ_PERM;
 
 import jakarta.inject.Inject;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.CancelTaskApi;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryCancellationHandler;
 import org.apache.solr.jersey.PermissionName;
@@ -49,11 +50,21 @@ public class CancelTaskAPI extends JerseyResource implements CancelTaskApi {
 
   @Override
   @PermissionName(READ_PERM)
-  public SolrJerseyResponse cancelTask(String queryUUID) throws Exception {
-    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+  public FlexibleSolrJerseyResponse cancelTask(String queryUUID) throws Exception {
+    final FlexibleSolrJerseyResponse response =
+        instantiateJerseyResponse(FlexibleSolrJerseyResponse.class);
     final QueryCancellationHandler cancellationHandler =
         (QueryCancellationHandler) solrCore.getRequestHandler("/tasks/cancel");
     cancellationHandler.handleRequestBody(solrQueryRequest, solrQueryResponse);
+    // Copy response data added by the handler into the jersey response object
+    solrQueryResponse
+        .getValues()
+        .forEach(
+            (key, value) -> {
+              if (!RESPONSE_HEADER_KEY.equals(key)) {
+                response.setUnknownProperty(key, value);
+              }
+            });
     return response;
   }
 }
