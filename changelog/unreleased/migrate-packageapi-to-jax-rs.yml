@@ -1,0 +1,7 @@
+title: Migrate PackageAPI to JAX-RS. PackageAPI now has OpenAPI and SolrJ support.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4178
+  url: https://github.com/apache/solr/pull/4178
