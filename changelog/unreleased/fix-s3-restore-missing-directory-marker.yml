@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Fix restore failure when S3 backup has no directory marker objects for configset
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Samuel Verstraete
+links:
+  - name: GitHub PR #4182
+    url: https://github.com/apache/solr/pull/4182
