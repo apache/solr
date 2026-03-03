@@ -1,0 +1,7 @@
+title: Migrate RealtimeGetAPI to JAX-RS.  Realtime Get API now has OpenAPI and SolrJ support.
+type: changed
+authors:
+  - name: Eric Pugh
+links:
+- name: PR#4181
+  url: https://github.com/apache/solr/pull/4181
