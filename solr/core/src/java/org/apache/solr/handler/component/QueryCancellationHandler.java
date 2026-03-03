@@ -19,7 +19,6 @@ package org.apache.solr.handler.component;
 import static org.apache.solr.common.params.CommonParams.QUERY_UUID;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,7 +33,7 @@ import org.apache.solr.security.PermissionNameProvider;
 
 /** Handles requests for query cancellation for cancellable queries */
 public class QueryCancellationHandler extends TaskManagementHandler {
-  // This can be a parent level member but we keep it here to allow future handlers to have
+  // This can be a parent level member, but we keep it here to allow future handlers to have
   // a custom list of components
   private List<SearchComponent> components;
 

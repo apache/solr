@@ -35,8 +35,6 @@ public class CancelTaskAPITest extends SolrTestCaseJ4 {
 
   @ClassRule public static SolrJettyTestRule solrTestRule = new SolrJettyTestRule();
 
-  private static final String COLLECTION_NAME = "collection1";
-
   @BeforeClass
   public static void beforeTest() throws Exception {
     EnvUtils.setProperty(
@@ -45,18 +43,18 @@ public class CancelTaskAPITest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(ENABLE_URL_ALLOW_LIST, "false");
     solrTestRule.startSolr(createTempDir());
     solrTestRule
-        .newCollection(COLLECTION_NAME)
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withConfigSet(ExternalPaths.DEFAULT_CONFIGSET)
         .create();
   }
 
   @Test
   public void testCancelNonExistentTask() throws Exception {
-    final TasksApi.CancelTask request = new TasksApi.CancelTask(IndexType.CORE, COLLECTION_NAME);
+    final TasksApi.CancelTask request = new TasksApi.CancelTask(IndexType.CORE, DEFAULT_TEST_COLLECTION_NAME);
     request.setQueryUUID("nonexistent-uuid");
 
     final FlexibleSolrJerseyResponse response =
-        request.process(solrTestRule.getSolrClient(COLLECTION_NAME));
+        request.process(solrTestRule.getSolrClient(DEFAULT_TEST_COLLECTION_NAME));
     assertNotNull(response);
     assertEquals("not found", response.unknownProperties().get("cancellationResult"));
   }
