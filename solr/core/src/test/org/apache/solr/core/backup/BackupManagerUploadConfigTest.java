@@ -24,6 +24,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.SolrTestCaseJ4;
@@ -80,7 +81,7 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     when(mockRepo.getPathType(SOLRCONFIG_URI)).thenReturn(BackupRepository.PathType.FILE);
 
     // Return minimal valid XML bytes so FileTypeMagicUtil does not reject the file
-    byte[] configBytes = "<config/>".getBytes();
+    byte[] configBytes = "<config/>".getBytes(StandardCharsets.UTF_8);
     IndexInput mockInput = mock(IndexInput.class);
     when(mockInput.length()).thenReturn((long) configBytes.length);
     doAnswer(
@@ -95,15 +96,15 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     when(mockRepo.openInput(CONFIG_DIR_URI, "solrconfig.xml", IOContext.DEFAULT))
         .thenReturn(mockInput);
 
-    BackupManager backupManager =
-        BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
+    BackupManager backupManager = BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
 
     // Must not throw even though exists() returned false
     backupManager.uploadConfigDir("myconfig", "restoredConfig", mockConfigSetService);
 
     // The config file must have been uploaded to the target configset
     verify(mockConfigSetService)
-        .uploadFileToConfig(eq("restoredConfig"), eq("solrconfig.xml"), any(byte[].class), eq(false));
+        .uploadFileToConfig(
+            eq("restoredConfig"), eq("solrconfig.xml"), any(byte[].class), eq(false));
   }
 
   /**
@@ -116,20 +117,17 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     ZkStateReader mockZkStateReader = mock(ZkStateReader.class);
     ConfigSetService mockConfigSetService = mock(ConfigSetService.class);
 
-    URI missingConfigDir =
-        URI.create("s3://bucket/backup/zk_backup/configs/nonexistent/");
+    URI missingConfigDir = URI.create("s3://bucket/backup/zk_backup/configs/nonexistent/");
 
     when(mockRepo.exists(missingConfigDir)).thenReturn(false);
     when(mockRepo.listAll(missingConfigDir)).thenReturn(new String[0]);
 
     when(mockRepo.resolveDirectory(BACKUP_PATH, BackupManager.ZK_STATE_DIR))
         .thenReturn(ZK_STATE_URI);
-    when(mockRepo.resolveDirectory(
-            ZK_STATE_URI, BackupManager.CONFIG_STATE_DIR, "nonexistent"))
+    when(mockRepo.resolveDirectory(ZK_STATE_URI, BackupManager.CONFIG_STATE_DIR, "nonexistent"))
         .thenReturn(missingConfigDir);
 
-    BackupManager backupManager =
-        BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
+    BackupManager backupManager = BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
 
     assertThrows(
         IllegalArgumentException.class,
@@ -158,7 +156,7 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     when(mockRepo.resolve(CONFIG_DIR_URI, "solrconfig.xml")).thenReturn(SOLRCONFIG_URI);
     when(mockRepo.getPathType(SOLRCONFIG_URI)).thenReturn(BackupRepository.PathType.FILE);
 
-    byte[] configBytes = "<config/>".getBytes();
+    byte[] configBytes = "<config/>".getBytes(StandardCharsets.UTF_8);
     IndexInput mockInput = mock(IndexInput.class);
     when(mockInput.length()).thenReturn((long) configBytes.length);
     doAnswer(
@@ -173,12 +171,12 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     when(mockRepo.openInput(CONFIG_DIR_URI, "solrconfig.xml", IOContext.DEFAULT))
         .thenReturn(mockInput);
 
-    BackupManager backupManager =
-        BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
+    BackupManager backupManager = BackupManager.forBackup(mockRepo, mockZkStateReader, BACKUP_PATH);
 
     backupManager.uploadConfigDir("myconfig", "restoredConfig", mockConfigSetService);
 
     verify(mockConfigSetService)
-        .uploadFileToConfig(eq("restoredConfig"), eq("solrconfig.xml"), any(byte[].class), eq(false));
+        .uploadFileToConfig(
+            eq("restoredConfig"), eq("solrconfig.xml"), any(byte[].class), eq(false));
   }
 }
