@@ -95,7 +95,7 @@ public class QueryCancellationHandler extends TaskManagementHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override
