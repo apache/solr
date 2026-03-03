@@ -29,7 +29,8 @@ import org.apache.solr.client.api.util.StoreApiParameters;
 /**
  * V2 API definition for cancelling a currently-running task.
  *
- * <p>This API (GET /v2/collections/collectionName/tasks/cancel) is analogous to the v1
+ * <p>This API (GET /v2/collections/{collectionName}/tasks/cancel and
+ * GET /v2/cores/{coreName}/tasks/cancel) is analogous to the v1
  * /solr/collectionName/tasks/cancel API.
  */
 @Path(INDEX_PATH_PREFIX + "/tasks/cancel")
