@@ -16,10 +16,13 @@
  */
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
-
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.RealTimeGetApi;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RealTimeGetHandler;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -30,19 +33,25 @@ import org.apache.solr.security.PermissionNameProvider;
  * <p>This API (GET /v2/collections/collectionName/get) is analogous to the v1
  * /solr/collectionName/get API.
  */
-public class RealTimeGetAPI {
+public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
 
   private final RealTimeGetHandler rtgHandler;
+  private final SolrQueryRequest solrQueryRequest;
+  private final SolrQueryResponse solrQueryResponse;
 
-  public RealTimeGetAPI(RealTimeGetHandler rtgHandler) {
-    this.rtgHandler = rtgHandler;
+  @Inject
+  public RealTimeGetAPI(
+      SolrCore solrCore, SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
+    this.rtgHandler = (RealTimeGetHandler) solrCore.getRequestHandler("/get");
+    this.solrQueryRequest = solrQueryRequest;
+    this.solrQueryResponse = solrQueryResponse;
   }
 
-  @EndPoint(
-      path = {"/get"},
-      method = GET,
-      permission = PermissionNameProvider.Name.READ_PERM)
-  public void getDocuments(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    rtgHandler.handleRequestBody(req, rsp);
+  @Override
+  @PermissionName(PermissionNameProvider.Name.READ_PERM)
+  public SolrJerseyResponse getDocuments() throws Exception {
+    final var response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    rtgHandler.handleRequestBody(solrQueryRequest, solrQueryResponse);
+    return response;
   }
 }

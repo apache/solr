@@ -111,7 +111,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
 
   @Test
   public void testInvalidWTParamReturnsError() throws Exception {
-    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/select/_introspect").build();
     // Using an invalid wt parameter should return a 400 error
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
@@ -127,7 +127,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testWTParam() throws Exception {
     // When no response parser is set, the default JSON writer should be used
-    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/select/_introspect").build();
     request.setResponseParser(null);
     Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
     String respString = resp.toString();
@@ -135,8 +135,9 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
     assertFalse(respString.contains("400"));
     assertFalse(
         respString.contains(
-            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
-    assertEquals("/c/collection1/get", Utils.getObjectByPath(resp, true, "/spec[0]/url/paths[0]"));
+            "<p>Problem accessing /solr/____v2/c/collection1/select/_introspect. Reason:"));
+    assertEquals(
+        "/c/collection1/select", Utils.getObjectByPath(resp, true, "/spec[0]/url/paths[0]"));
     assertEquals(respString, 0, Utils.getObjectByPath(resp, true, "/responseHeader/status"));
   }
 
@@ -220,17 +221,17 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   @Test
   public void testCollectionsApi() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
-    V2Request req1 = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
+    V2Request req1 = new V2Request.Builder("/c/" + COLL_NAME + "/select/_introspect").build();
     assertEquals(COLL_NAME, req1.getCollection());
     Map<?, ?> result = resAsMap(client, req1);
     assertEquals(
-        "/c/collection1/get", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
+        "/c/collection1/select", Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     result =
         resAsMap(
             client,
-            new V2Request.Builder("/collections/" + COLL_NAME + "/get/_introspect").build());
+            new V2Request.Builder("/collections/" + COLL_NAME + "/select/_introspect").build());
     assertEquals(
-        "/collections/collection1/get",
+        "/collections/collection1/select",
         Utils.getObjectByPath(result, true, "/spec[0]/url/paths[0]"));
     String tempDir = createTempDir().toString();
     Map<String, Object> backupParams = new HashMap<>();
