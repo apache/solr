@@ -50,7 +50,8 @@ public class CancelTaskAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testCancelNonExistentTask() throws Exception {
-    final TasksApi.CancelTask request = new TasksApi.CancelTask(IndexType.CORE, DEFAULT_TEST_COLLECTION_NAME);
+    final TasksApi.CancelTask request =
+        new TasksApi.CancelTask(IndexType.CORE, DEFAULT_TEST_COLLECTION_NAME);
     request.setQueryUUID("nonexistent-uuid");
 
     final FlexibleSolrJerseyResponse response =
