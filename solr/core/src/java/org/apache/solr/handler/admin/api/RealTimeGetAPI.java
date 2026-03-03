@@ -48,6 +48,15 @@ public class RealTimeGetAPI extends JerseyResource implements RealTimeGetApi {
     this.solrQueryResponse = solrQueryResponse;
   }
 
+  /**
+   * Fetches the latest (possibly uncommitted) version of one or more documents.
+   *
+   * <p>The {@code id} and {@code ids} parameters are declared here to satisfy the interface
+   * contract and to drive OpenAPI spec and client code generation. They are not used directly in
+   * this method body because {@link #solrQueryRequest} is populated from the full HTTP request
+   * (including all query parameters) before Jersey dispatches to this method, and {@link
+   * RealTimeGetHandler#handleRequestBody} reads {@code id}/{@code ids} from there.
+   */
   @Override
   @PermissionName(PermissionNameProvider.Name.READ_PERM)
   public FlexibleSolrJerseyResponse getDocuments(String id, List<String> ids) throws Exception {
