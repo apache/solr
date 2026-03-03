@@ -23,7 +23,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
-import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /**
@@ -40,5 +40,5 @@ public interface CancelTaskApi {
   @Operation(
       summary = "Cancel a currently-running task",
       tags = {"tasks"})
-  SolrJerseyResponse cancelTask(@QueryParam("queryUUID") String queryUUID) throws Exception;
+  FlexibleSolrJerseyResponse cancelTask(@QueryParam("queryUUID") String queryUUID) throws Exception;
 }
