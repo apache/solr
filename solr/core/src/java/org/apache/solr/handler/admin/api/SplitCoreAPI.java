@@ -14,84 +14,86 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
+import static org.apache.solr.common.params.CommonAdminParams.SPLIT_METHOD;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
 import static org.apache.solr.handler.ClusterAPI.wrapParams;
 import static org.apache.solr.security.PermissionNameProvider.Name.CORE_EDIT_PERM;
 
+import jakarta.inject.Inject;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import org.apache.solr.api.Command;
-import org.apache.solr.api.EndPoint;
-import org.apache.solr.api.PayloadObj;
-import org.apache.solr.common.annotation.JsonProperty;
+import org.apache.solr.client.api.endpoint.SplitCoreApi;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.client.api.model.SplitCoreRequestBody;
+import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
-import org.apache.solr.common.util.ReflectMapWriter;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CoreAdminHandler;
+import org.apache.solr.jersey.PermissionName;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * V2 API for splitting a single core into multiple pieces
+ * V2 API for splitting a single core into multiple pieces.
  *
- * <p>The new API (POST /v2/cores/coreName {'split': {...}}) is equivalent to the v1
- * /admin/cores?action=split command.
+ * <p>The new API (POST /v2/cores/{coreName}/split) is equivalent to the v1
+ * /admin/cores?action=split command. The logic remains in the V1 {@link CoreAdminHandler}.
  */
-@EndPoint(
-    path = {"/cores/{core}"},
-    method = POST,
-    permission = CORE_EDIT_PERM)
-public class SplitCoreAPI {
-  private static final String V2_SPLIT_CORE_CMD = "split";
+public class SplitCoreAPI extends CoreAdminAPIBase implements SplitCoreApi {
 
-  private final CoreAdminHandler coreHandler;
-
-  public SplitCoreAPI(CoreAdminHandler coreHandler) {
-    this.coreHandler = coreHandler;
+  @Inject
+  public SplitCoreAPI(
+      CoreContainer coreContainer,
+      CoreAdminHandler.CoreAdminAsyncTracker coreAdminAsyncTracker,
+      SolrQueryRequest req,
+      SolrQueryResponse rsp) {
+    super(coreContainer, coreAdminAsyncTracker, req, rsp);
   }
 
-  @Command(name = V2_SPLIT_CORE_CMD)
-  public void splitCore(PayloadObj<SplitCorePayload> obj) throws Exception {
-    final SplitCorePayload v2Body = obj.get();
-    final Map<String, Object> v1Params = v2Body.toMap(new HashMap<>());
+  @Override
+  @PermissionName(CORE_EDIT_PERM)
+  public SolrJerseyResponse splitCore(String coreName, SplitCoreRequestBody requestBody)
+      throws Exception {
+    ensureRequiredParameterProvided("coreName", coreName);
+    SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+
+    final Map<String, Object> v1Params = new HashMap<>();
     v1Params.put(
         CoreAdminParams.ACTION,
         CoreAdminParams.CoreAdminAction.SPLIT.name().toLowerCase(Locale.ROOT));
-    v1Params.put(
-        CoreAdminParams.CORE, obj.getRequest().getPathTemplateValues().get(CoreAdminParams.CORE));
+    v1Params.put(CoreAdminParams.CORE, coreName);
 
-    if (v2Body.path != null && !v2Body.path.isEmpty()) {
-      v1Params.put(PATH, v2Body.path.toArray(new String[0]));
+    if (requestBody != null) {
+      if (requestBody.path != null && !requestBody.path.isEmpty()) {
+        v1Params.put(PATH, requestBody.path.toArray(new String[0]));
+      }
+      if (requestBody.targetCore != null && !requestBody.targetCore.isEmpty()) {
+        v1Params.put(TARGET_CORE, requestBody.targetCore.toArray(new String[0]));
+      }
+      if (requestBody.splitKey != null) {
+        v1Params.put(SPLIT_KEY, requestBody.splitKey);
+      }
+      if (requestBody.splitMethod != null) {
+        v1Params.put(SPLIT_METHOD, requestBody.splitMethod);
+      }
+      if (requestBody.getRanges != null) {
+        v1Params.put(CoreAdminParams.GET_RANGES, requestBody.getRanges);
+      }
+      if (requestBody.ranges != null) {
+        v1Params.put(CoreAdminParams.RANGES, requestBody.ranges);
+      }
+      if (requestBody.async != null) {
+        v1Params.put(CommonAdminParams.ASYNC, requestBody.async);
+      }
     }
-    if (v2Body.targetCore != null && !v2Body.targetCore.isEmpty()) {
-      v1Params.put(TARGET_CORE, v2Body.targetCore.toArray(new String[0]));
-    }
 
-    if (v2Body.splitKey != null) {
-      v1Params.put(SPLIT_KEY, v1Params.remove("splitKey"));
-    }
-
-    coreHandler.handleRequestBody(wrapParams(obj.getRequest(), v1Params), obj.getResponse());
-  }
-
-  public static class SplitCorePayload implements ReflectMapWriter {
-    @JsonProperty public List<String> path;
-
-    @JsonProperty public List<String> targetCore;
-
-    @JsonProperty public String splitKey;
-
-    @JsonProperty public String splitMethod;
-
-    @JsonProperty public Boolean getRanges;
-
-    @JsonProperty public String ranges;
-
-    @JsonProperty public String async;
+    CoreAdminHandler coreHandler = coreContainer.getMultiCoreHandler();
+    coreHandler.handleRequestBody(wrapParams(req, v1Params), rsp);
+    return response;
   }
 }

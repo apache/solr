@@ -672,6 +672,31 @@ The `SPLIT` action splits an index into two or more indexes.
 The index being split can continue to handle requests.
 The split pieces can be placed into a specified directory on the server's filesystem or it can be merged into running Solr cores.
 
+[tabs#coreadmin-split-request]
+======
+V1 API::
++
+====
+[source,bash]
+----
+http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1", "core2"]
+  }
+'
+----
+====
+======
+
 The `SPLIT` action supports five parameters, which are described in the table below.
 
 === SPLIT Parameters
@@ -684,6 +709,7 @@ s|Required |Default: none
 |===
 +
 The name of the core to be split.
+This parameter is required in v1, and part of the URL in the v2 API.
 
 `path`::
 +
@@ -718,7 +744,7 @@ A comma-separated list of hash ranges in hexadecimal format.
 If this parameter is used, `split.key` should not be.
 See the <<SPLIT Examples>> below for an example of how this parameter can be used.
 
-`split.key`::
+`split.key` (v1), `splitKey` (v2)::
 +
 [%autowidth,frame=none]
 |===
@@ -744,29 +770,119 @@ The `core` index will be split into as many pieces as the number of `path` or `t
 
 *Usage with two targetCore parameters*:
 
+[tabs#coreadmin-split-targetcore-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1", "core2"]
+  }
+'
+----
+====
+======
 
 Here the `core` index will be split into two pieces and merged into the two `targetCore` indexes.
 
 *Usage with two path parameters*:
 
+[tabs#coreadmin-split-path-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&path=/path/to/index/1&path=/path/to/index/2
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "path": ["/path/to/index/1", "/path/to/index/2"]
+  }
+'
+----
+====
+======
 
 The `core` index will be split into two pieces and written into the two directory paths specified.
 
 *Usage with the split.key parameter*:
 
+[tabs#coreadmin-split-splitkey-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&split.key=A!
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1"],
+    "splitKey": "A!"
+  }
+'
+----
+====
+======
 
 Here all documents having the same route key as the `split.key` i.e., `A!` will be split from the `core` index and written to the `targetCore`.
 
 *Usage with ranges parameter*:
 
+[tabs#coreadmin-split-ranges-request]
+======
+V1 API::
++
+====
 [source,bash]
+----
 http://localhost:8983/solr/admin/cores?action=SPLIT&core=core0&targetCore=core1&targetCore=core2&targetCore=core3&ranges=0-1f4,1f5-3e8,3e9-5dc
+----
+====
+
+V2 API::
++
+====
+[source,bash]
+----
+curl -X POST http://localhost:8983/api/cores/core0/split -H 'Content-Type: application/json' -d '
+  {
+    "targetCore": ["core1", "core2", "core3"],
+    "ranges": "0-1f4,1f5-3e8,3e9-5dc"
+  }
+'
+----
+====
+======
 
 This example uses the `ranges` parameter with hash ranges 0-500, 501-1000 and 1001-1500 specified in hexadecimal.
 Here the index will be split into three pieces with each targetCore receiving documents matching the hash ranges specified i.e., core1 will get documents with hash range 0-500, core2 will receive documents with hash range 501-1000 and finally, core3 will receive documents with hash range 1001-1500.

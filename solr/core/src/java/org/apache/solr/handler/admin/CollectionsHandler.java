@@ -1373,13 +1373,13 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         ListCollectionSnapshots.class,
         CreateCollectionSnapshot.class,
         DeleteCollectionSnapshot.class,
-        ClusterProperty.class);
+        ClusterProperty.class,
+        SplitShardAPI.class);
   }
 
   @Override
   public Collection<Api> getApis() {
     final List<Api> apis = new ArrayList<>();
-    apis.addAll(AnnotatedApi.getApis(new SplitShardAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MigrateDocsAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new ModifyCollectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new MoveReplicaAPI(this)));

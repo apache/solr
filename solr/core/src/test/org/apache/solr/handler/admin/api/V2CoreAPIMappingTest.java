@@ -17,19 +17,12 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonAdminParams.SPLIT_KEY;
 import static org.apache.solr.common.params.CommonParams.ACTION;
-import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.common.params.CoreAdminParams.CORE;
 import static org.apache.solr.common.params.CoreAdminParams.CORE_NODE_NAME;
 import static org.apache.solr.common.params.CoreAdminParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.OTHER;
-import static org.apache.solr.common.params.CoreAdminParams.RANGES;
-import static org.apache.solr.common.params.CoreAdminParams.TARGET_CORE;
 
-import java.util.Arrays;
-import java.util.List;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.handler.admin.CoreAdminHandler;
@@ -63,7 +56,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
   public void populateApiBag() {
     final CoreAdminHandler handler = getRequestHandler();
     apiBag.registerObject(new RenameCoreAPI(handler));
-    apiBag.registerObject(new SplitCoreAPI(handler));
     apiBag.registerObject(new RequestCoreRecoveryAPI(handler));
     apiBag.registerObject(new PrepareCoreRecoveryAPI(handler));
     apiBag.registerObject(new RequestApplyCoreUpdatesAPI(handler));
@@ -80,34 +72,6 @@ public class V2CoreAPIMappingTest extends V2ApiMappingTest<CoreAdminHandler> {
     assertEquals("rename", v1Params.get(ACTION));
     assertEquals("coreName", v1Params.get(CORE));
     assertEquals("otherCore", v1Params.get(OTHER));
-  }
-
-  @Test
-  public void testSplitCoreAllParams() throws Exception {
-    final SolrParams v1Params =
-        captureConvertedV1Params(
-            "/cores/coreName",
-            "POST",
-            "{"
-                + "\"split\": {"
-                + "\"path\": [\"path1\", \"path2\"], "
-                + "\"targetCore\": [\"core1\", \"core2\"], "
-                + "\"splitKey\": \"someSplitKey\", "
-                + "\"getRanges\": true, "
-                + "\"ranges\": \"range1,range2\", "
-                + "\"async\": \"someRequestId\"}}");
-
-    assertEquals("split", v1Params.get(ACTION));
-    assertEquals("coreName", v1Params.get(CORE));
-    assertEquals("someSplitKey", v1Params.get(SPLIT_KEY));
-    assertEquals("range1,range2", v1Params.get(RANGES));
-    assertEquals("someRequestId", v1Params.get(ASYNC));
-    final List<String> pathEntries = Arrays.asList(v1Params.getParams(PATH));
-    assertEquals(2, pathEntries.size());
-    assertTrue(pathEntries.containsAll(List.of("path1", "path2")));
-    final List<String> targetCoreEntries = Arrays.asList(v1Params.getParams(TARGET_CORE));
-    assertEquals(2, targetCoreEntries.size());
-    assertTrue(targetCoreEntries.containsAll(List.of("core1", "core2")));
   }
 
   @Test

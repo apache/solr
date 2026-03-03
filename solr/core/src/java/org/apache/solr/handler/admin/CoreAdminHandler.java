@@ -314,7 +314,6 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     final List<Api> apis = new ArrayList<>();
     apis.addAll(AnnotatedApi.getApis(new RejoinLeaderElectionAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new OverseerOperationAPI(this)));
-    apis.addAll(AnnotatedApi.getApis(new SplitCoreAPI(this)));
     // Internal APIs
     apis.addAll(AnnotatedApi.getApis(new RequestCoreRecoveryAPI(this)));
     apis.addAll(AnnotatedApi.getApis(new PrepareCoreRecoveryAPI(this)));
@@ -339,6 +338,7 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
         SwapCores.class,
         RenameCore.class,
         MergeIndexes.class,
+        SplitCoreAPI.class,
         GetNodeCommandStatus.class);
   }
 

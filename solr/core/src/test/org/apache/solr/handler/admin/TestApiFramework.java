@@ -95,18 +95,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
     coreHandlers.put("/admin/ping", new PingRequestHandler());
 
     Map<String, String> parts = new HashMap<>();
-    String fullPath = "/collections/hello/shards";
-    Api api = V2HttpCall.getApiInfo(containerHandlers, fullPath, "POST", fullPath, parts);
-    assertNotNull(api);
-    assertEquals("hello", parts.get("collection"));
-
-    parts = new HashMap<>();
-    api =
-        V2HttpCall.getApiInfo(containerHandlers, "/collections/hello/shards", "POST", null, parts);
-    assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/split", NOT_NULL));
-
-    parts = new HashMap<>();
-    api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
+    Api api = V2HttpCall.getApiInfo(containerHandlers, "/collections/hello", "POST", null, parts);
     assertConditions(api.getSpec(), Map.of("/methods[0]", "POST", "/commands/modify", NOT_NULL));
     assertEquals("hello", parts.get("collection"));
 
