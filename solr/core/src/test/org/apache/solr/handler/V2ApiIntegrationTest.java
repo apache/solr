@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -31,7 +33,9 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -255,6 +259,35 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build()
             .process(cloudClient);
     assertEquals(0, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
+  }
+
+  @Test
+  public void testV2ApiErrorHandling() throws Exception {
+    final var deleteRequest = new CollectionsApi.DeleteCollection("collection-does-not-exist");
+
+    // Test with "Http" client
+    final String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    try (var httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+      final var ex =
+          expectThrows(RemoteSolrException.class, () -> deleteRequest.process(httpClient));
+      assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+    }
+
+    // Test with "Cloud" client
+    final var ex =
+        expectThrows(
+            RemoteSolrException.class, () -> deleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+  }
+
+  private void assertRSECodeAndMessage(
+      RemoteSolrException rse, int expectedCode, String... expectedMessagePices) {
+    assertEquals(expectedCode, rse.code());
+    if (expectedMessagePices != null) {
+      for (String expectedMessageSubStr : expectedMessagePices) {
+        assertThat(rse.getMessage(), containsString(expectedMessageSubStr));
+      }
+    }
   }
 
   private Map<?, ?> resAsMap(CloudSolrClient client, V2Request request)
