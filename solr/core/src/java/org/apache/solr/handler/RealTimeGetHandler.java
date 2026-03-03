@@ -53,7 +53,7 @@ public class RealTimeGetHandler extends SearchHandler {
 
   @Override
   public Collection<Api> getApis() {
-    return Collections.emptyList();
+    return List.of();
   }
 
   @Override
