@@ -29,7 +29,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.HttpSolrClient;
-import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -43,7 +42,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.URLUtil;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -67,7 +65,6 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
   @BeforeClass
   public static void setupCluster() throws Exception {
     final Path configDir = TEST_COLL1_CONF();
-
 
     int nodeCount = 5;
     configureCluster(nodeCount).addConfig(configName, configDir).configure();
@@ -142,7 +139,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
     // verify the join with fromIndex works
     final String fromQ = "match_s:c^2";
     SolrClient cloudClient = cluster.getSolrClient();
-    SolrClient client = buildCoordNodeClient(); //TODO random().nextBoolean()
+    SolrClient client = buildCoordNodeClient(); // TODO random().nextBoolean()
     {
       final String joinQ =
           "{!join "
@@ -226,18 +223,27 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
     nodesWithoutShards.removeAll(nodesWithShards);
 
     if (nodesWithoutShards.isEmpty()) {
-      throw new IllegalStateException(
-          "All nodes have shards for collection: " + toColl);
+      throw new IllegalStateException("All nodes have shards for collection: " + toColl);
     }
 
     // Pick one
     String targetNode = nodesWithoutShards.iterator().next();
-    String anynodeScheme = cs.collectionStream().findFirst().get().getActiveSlices().iterator().next().iterator().next().getBaseUrl().split(":")[0];
+    String anynodeScheme =
+        cs.collectionStream()
+            .findFirst()
+            .get()
+            .getActiveSlices()
+            .iterator()
+            .next()
+            .iterator()
+            .next()
+            .getBaseUrl()
+            .split(":")[0];
     String baseUrl = URLUtil.getBaseUrlForNodeName(targetNode, anynodeScheme);
     String SYNTHETIC_COLLECTION =
         CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig(configName);
     // Build direct client
-    return new HttpSolrClient.Builder(baseUrl+"/"+SYNTHETIC_COLLECTION)
+    return new HttpSolrClient.Builder(baseUrl + "/" + SYNTHETIC_COLLECTION)
         .withConnectionTimeout(15000)
         .withSocketTimeout(90000)
         .build();
