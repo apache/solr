@@ -232,7 +232,7 @@ public class DistribJoinFromCollectionTest extends SolrCloudTestCase {
 
     // Pick one
     String targetNode = nodesWithoutShards.iterator().next();
-    String anynodeScheme = cs.collectionStream().findFirst().get().getActiveSlices().iterator().next().iterator().next().getBaseUrl().split(":")[0]
+    String anynodeScheme = cs.collectionStream().findFirst().get().getActiveSlices().iterator().next().iterator().next().getBaseUrl().split(":")[0];
     String baseUrl = URLUtil.getBaseUrlForNodeName(targetNode, anynodeScheme);
     String SYNTHETIC_COLLECTION =
         CoordinatorHttpSolrCall.getSyntheticCollectionNameFromConfig(configName);
