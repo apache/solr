@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -278,13 +279,21 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
         expectThrows(
             RemoteSolrException.class, () -> deleteRequest.process(cluster.getSolrClient()));
     assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+
+    // Test with the less desirable Generic option to make sure exception is equivalent.
+    final var genericDeleteRequest =
+        new GenericV2SolrRequest(SolrRequest.METHOD.DELETE, "/collections/coll-does-not-exist");
+    final var ex2 =
+        expectThrows(
+            RemoteSolrException.class, () -> genericDeleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex2, 400, "Could not find collection", "coll-does-not-exist");
   }
 
   private void assertRSECodeAndMessage(
-      RemoteSolrException rse, int expectedCode, String... expectedMessagePices) {
+      RemoteSolrException rse, int expectedCode, String... expectedMessagePieces) {
     assertEquals(expectedCode, rse.code());
-    if (expectedMessagePices != null) {
-      for (String expectedMessageSubStr : expectedMessagePices) {
+    if (expectedMessagePieces != null) {
+      for (String expectedMessageSubStr : expectedMessagePieces) {
         assertThat(rse.getMessage(), containsString(expectedMessageSubStr));
       }
     }

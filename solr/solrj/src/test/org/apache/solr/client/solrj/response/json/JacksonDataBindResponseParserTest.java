@@ -79,16 +79,22 @@ public class JacksonDataBindResponseParserTest extends SolrTestCase {
   public void testErrorResponseIncludesMetadataAtTopLevel() throws IOException {
     final var parser = new JacksonDataBindResponseParser<>(SolrJerseyResponse.class);
     final var json =
-        "{"
-            + "\"responseHeader\":{\"status\":500,\"QTime\":1},"
-            + "\"error\":{"
-            + "  \"code\":500,"
-            + "  \"errorClass\":\"org.apache.solr.common.SolrException\","
-            + "  \"msg\":\"Internal error\","
-            + "  \"metadata\":{\"error-class\":\"org.apache.solr.common.SolrException\","
-            + "               \"root-error-class\":\"java.lang.IllegalStateException\"}"
-            + "}"
-            + "}";
+        """
+        {
+            "responseHeader":{
+                "status":500,
+                "QTime":1
+            },
+            "error": {
+                "code":500,
+                "errorClass": "org.apache.solr.common.SolrException",
+                "msg": "Internal error",
+                "metadata":{
+                    "error-class": "org.apache.solr.common.SolrException",
+                    "root-error-class": "java.lang.IllegalStateException"
+                }
+            }
+        }""";
 
     final NamedList<Object> result = parser.processResponse(toStream(json), null);
 
