@@ -37,7 +37,6 @@ import java.lang.reflect.Type;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.CSVResponseWriter;
-import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.JavaBinResponseWriter;
 import org.apache.solr.response.PrometheusResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
@@ -50,21 +49,10 @@ import org.apache.solr.response.XMLResponseWriter;
  */
 public class MessageBodyWriters {
 
+  // JacksonJsonProvider (registered in JerseyApplications) handles JSON writing — no need to
+  // declare a JsonMessageBodyWriter here. All other formats use the legacy QueryResponseWriter
+  // path.
   // Which other response-writer formats are worth carrying forward into v2?
-
-  @Produces(MediaType.APPLICATION_JSON)
-  public static class JsonMessageBodyWriter extends BaseMessageBodyWriter
-      implements MessageBodyWriter<Object> {
-    @Override
-    public QueryResponseWriter createResponseWriter() {
-      return new JSONResponseWriter();
-    }
-
-    @Override
-    public String getSupportedMediaType() {
-      return MediaType.APPLICATION_JSON;
-    }
-  }
 
   @Produces(MediaType.APPLICATION_XML)
   public static class XmlMessageBodyWriter extends BaseMessageBodyWriter

@@ -44,7 +44,6 @@ public class JerseyApplications {
       // Request and response serialization/deserialization
       // TODO: could these be singletons to save per-request object creations?
       register(JacksonJsonProvider.class, 1);
-      register(MessageBodyWriters.JsonMessageBodyWriter.class, 5);
       register(MessageBodyWriters.JavabinMessageBodyWriter.class, 5);
       register(MessageBodyWriters.XmlMessageBodyWriter.class, 5);
       register(MessageBodyWriters.CsvMessageBodyWriter.class, 5);

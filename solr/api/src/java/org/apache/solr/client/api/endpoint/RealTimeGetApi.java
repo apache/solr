@@ -23,7 +23,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
 import java.util.List;
-import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.GetDocumentsResponse;
 import org.apache.solr.client.api.util.StoreApiParameters;
 
 /**
@@ -40,6 +40,6 @@ public interface RealTimeGetApi {
   @Operation(
       summary = "Fetch the latest version of one or more documents by their unique id.",
       tags = {"documents"})
-  FlexibleSolrJerseyResponse getDocuments(
+  GetDocumentsResponse getDocuments(
       @QueryParam("id") String id, @QueryParam("ids") List<String> ids) throws Exception;
 }

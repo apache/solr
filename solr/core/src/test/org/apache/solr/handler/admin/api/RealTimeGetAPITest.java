@@ -20,7 +20,7 @@ import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.api.model.GetDocumentsResponse;
 import org.apache.solr.client.api.model.IndexType;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.DocumentsApi;
@@ -78,10 +78,15 @@ public class RealTimeGetAPITest extends SolrTestCaseJ4 {
 
     var request = new DocumentsApi.GetDocuments(IndexType.CORE, COLLECTION);
     request.setIds(List.of("1"));
-    FlexibleSolrJerseyResponse response = request.process(client);
+    GetDocumentsResponse response = request.process(client);
 
     assertEquals(0, response.responseHeader.status);
-    assertNotNull("Expected response field", response.unknownProperties().get("response"));
+    assertNotNull("Expected response field", response.response);
+    assertEquals("Expected exactly one document", 1, response.response.numFound);
+    assertNotNull("Expected docs list", response.response.docs);
+    assertFalse("Expected non-empty docs list", response.response.docs.isEmpty());
+    Object idValue = response.response.docs.get(0).get("id");
+    assertEquals("Expected document with id '1'", "1", idValue);
   }
 
   @Test
