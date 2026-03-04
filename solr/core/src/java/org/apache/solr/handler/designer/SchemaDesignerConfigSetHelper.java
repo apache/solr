@@ -474,10 +474,25 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   void deleteStoredSampleDocs(String configSet) {
     try {
+      ensureSystemCollectionExists();
       cloudClient().deleteByQuery(BLOB_STORE_ID, "id:" + configSet + "_sample/*", 10);
     } catch (IOException | SolrServerException | SolrException exc) {
       final String excStr = exc.toString();
       log.warn("Failed to delete sample docs from blob store for {} due to: {}", configSet, excStr);
+    }
+  }
+
+  private void ensureSystemCollectionExists() throws IOException, SolrServerException {
+    if (!zkStateReader().getClusterState().hasCollection(BLOB_STORE_ID)) {
+      log.info("Creating {} collection for blob storage", BLOB_STORE_ID);
+      CollectionAdminRequest.createCollection(BLOB_STORE_ID, null, 1, 1).process(cloudClient());
+      try {
+        zkStateReader().waitForState(BLOB_STORE_ID, 30, TimeUnit.SECONDS, Objects::nonNull);
+      } catch (InterruptedException | TimeoutException e) {
+        throw new IOException(
+            "Failed to see created collection " + BLOB_STORE_ID + " reflected in cluster state",
+            SolrZkClient.checkInterrupted(e));
+      }
     }
   }
 
@@ -496,12 +511,23 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       } else return Collections.emptyList();
     } catch (SolrServerException e) {
       throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
+    } catch (SolrException e) {
+      // Collection not found or blob not found - treat as no documents stored
+      if (log.isDebugEnabled()) {
+        log.debug("No stored sample docs found for {}", configSet, e);
+      }
+      return Collections.emptyList();
     } finally {
       IOUtils.closeQuietly(inputStream);
     }
   }
 
   void storeSampleDocs(final String configSet, List<SolrInputDocument> docs) throws IOException {
+    try {
+      ensureSystemCollectionExists();
+    } catch (SolrServerException e) {
+      throw new IOException("Failed to ensure .system collection exists", e);
+    }
     docs.forEach(d -> d.removeField(VERSION_FIELD)); // remove _version_ field before storing ...
     postDataToBlobStore(
         cloudClient(),
