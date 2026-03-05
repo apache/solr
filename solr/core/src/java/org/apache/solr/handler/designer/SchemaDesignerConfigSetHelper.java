@@ -528,10 +528,14 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       throw new IOException("Failed to lookup stored docs for " + configSet + " due to: " + e);
     } catch (SolrException e) {
       // Collection not found or blob not found - treat as no documents stored
-      if (log.isDebugEnabled()) {
-        log.debug("No stored sample docs found for {}", configSet, e);
+      if (e.code() == ErrorCode.NOT_FOUND.code) {
+        if (log.isDebugEnabled()) {
+          log.debug("No stored sample docs found for {}", configSet, e);
+        }
+        return Collections.emptyList();
       }
-      return Collections.emptyList();
+      // For other SolrExceptions, propagate as an IOException to avoid hiding real server problems
+      throw new IOException("Failed to lookup stored docs for " + configSet, e);
     } finally {
       IOUtils.closeQuietly(inputStream);
     }
