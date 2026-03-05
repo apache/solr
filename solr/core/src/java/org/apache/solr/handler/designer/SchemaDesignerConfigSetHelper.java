@@ -486,10 +486,10 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     if (!zkStateReader().getClusterState().hasCollection(BLOB_STORE_ID)) {
       log.info("Creating {} collection for blob storage", BLOB_STORE_ID);
       try {
-          int liveNodes = zkStateReader().getClusterState().getLiveNodes().size();
-          int replicationFactor = Math.max(1, Math.min(3, liveNodes));
-          CollectionAdminRequest.createCollection(BLOB_STORE_ID, null, 1, replicationFactor)
-                  .process(cloudClient());
+        int liveNodes = zkStateReader().getClusterState().getLiveNodes().size();
+        int replicationFactor = Math.max(1, Math.min(3, liveNodes));
+        CollectionAdminRequest.createCollection(BLOB_STORE_ID, null, 1, replicationFactor)
+            .process(cloudClient());
       } catch (SolrServerException | IOException e) {
         // Handle race where another node created the collection between the hasCollection()
         // check above and the createCollection() call. If the collection now exists, treat
