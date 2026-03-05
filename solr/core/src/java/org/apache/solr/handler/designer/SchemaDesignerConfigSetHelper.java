@@ -485,7 +485,22 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
   private void ensureSystemCollectionExists() throws IOException, SolrServerException {
     if (!zkStateReader().getClusterState().hasCollection(BLOB_STORE_ID)) {
       log.info("Creating {} collection for blob storage", BLOB_STORE_ID);
-      CollectionAdminRequest.createCollection(BLOB_STORE_ID, null, 1, 1).process(cloudClient());
+      try {
+        CollectionAdminRequest.createCollection(BLOB_STORE_ID, null, 1, 1).process(cloudClient());
+      } catch (SolrServerException | IOException e) {
+        // Handle race where another node created the collection between the hasCollection()
+        // check above and the createCollection() call. If the collection now exists, treat
+        // this as success; otherwise, propagate the original failure.
+        if (zkStateReader().getClusterState().hasCollection(BLOB_STORE_ID)) {
+          if (log.isInfoEnabled()) {
+            log.info(
+                "Collection {} already exists after failed create attempt; treating as success",
+                BLOB_STORE_ID);
+          }
+          return;
+        }
+        throw e;
+      }
       try {
         zkStateReader().waitForState(BLOB_STORE_ID, 30, TimeUnit.SECONDS, Objects::nonNull);
       } catch (InterruptedException | TimeoutException e) {
