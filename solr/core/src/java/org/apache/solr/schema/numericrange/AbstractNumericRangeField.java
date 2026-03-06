@@ -231,7 +231,37 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @param rangeValue a pre-parsed range value produced by this field type
    * @return a contains query for the given field and range
    */
-  protected abstract Query newContainsQuery(String field, NumericRangeValue rangeValue);
+  public abstract Query newContainsQuery(String field, NumericRangeValue rangeValue);
+
+  /**
+   * Creates a Lucene query that matches indexed documents whose stored range <em>intersects</em>
+   * the query range described by {@code rangeValue}.
+   *
+   * @param field the name of the field to query
+   * @param rangeValue a pre-parsed range value produced by this field type
+   * @return an intersects query for the given field and range
+   */
+  public abstract Query newIntersectsQuery(String field, NumericRangeValue rangeValue);
+
+  /**
+   * Creates a Lucene query that matches indexed documents whose stored range is <em>within</em> the
+   * query range described by {@code rangeValue}.
+   *
+   * @param field the name of the field to query
+   * @param rangeValue a pre-parsed range value produced by this field type
+   * @return a within query for the given field and range
+   */
+  public abstract Query newWithinQuery(String field, NumericRangeValue rangeValue);
+
+  /**
+   * Creates a Lucene query that matches indexed documents whose stored range <em>crosses</em> the
+   * boundaries of the query range described by {@code rangeValue}.
+   *
+   * @param field the name of the field to query
+   * @param rangeValue a pre-parsed range value produced by this field type
+   * @return a crosses query for the given field and range
+   */
+  public abstract Query newCrossesQuery(String field, NumericRangeValue rangeValue);
 
   /**
    * Creates a query for this field that matches docs where the query-range is fully contained by

@@ -17,16 +17,14 @@
 package org.apache.solr.search.numericrange;
 
 import java.util.Locale;
-import org.apache.lucene.document.IntRange;
-import org.apache.lucene.document.LongRange;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.numericrange.IntRangeField;
-import org.apache.solr.schema.numericrange.LongRangeField;
+import org.apache.solr.schema.numericrange.AbstractNumericRangeField;
+import org.apache.solr.schema.numericrange.AbstractNumericRangeField.NumericRangeValue;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
@@ -178,63 +176,26 @@ public class NumericRangeQParserPlugin extends QParserPlugin {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Field not found: " + fieldName, e);
         }
 
-        if (schemaField.getType() instanceof IntRangeField intField) {
-          IntRangeField.RangeValue range;
+        if (schemaField.getType() instanceof AbstractNumericRangeField rangeField) {
+          NumericRangeValue range;
           try {
-            range = intField.parseRangeValue(rangeValue);
+            range = rangeField.parseRangeValue(rangeValue);
           } catch (SolrException e) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
           }
-          return createIntRangeQuery(fieldName, range.mins, range.maxs, criteria);
-
-        } else if (schemaField.getType() instanceof LongRangeField longField) {
-          LongRangeField.RangeValue range;
-          try {
-            range = longField.parseRangeValue(rangeValue);
-          } catch (SolrException e) {
-            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
-          }
-          return createLongRangeQuery(fieldName, range.mins, range.maxs, criteria);
-
+          return switch (criteria) {
+            case INTERSECTS -> rangeField.newIntersectsQuery(fieldName, range);
+            case WITHIN -> rangeField.newWithinQuery(fieldName, range);
+            case CONTAINS -> rangeField.newContainsQuery(fieldName, range);
+            case CROSSES -> rangeField.newCrossesQuery(fieldName, range);
+          };
         } else {
           throw new SolrException(
               ErrorCode.BAD_REQUEST,
               "Field '"
                   + fieldName
-                  + "' must be of type IntRangeField or LongRangeField, but is: "
+                  + "' must be a numeric range field type, but is: "
                   + schemaField.getType().getTypeName());
-        }
-      }
-
-      private Query createIntRangeQuery(
-          String fieldName, int[] mins, int[] maxs, QueryCriteria criteria) {
-        switch (criteria) {
-          case INTERSECTS:
-            return IntRange.newIntersectsQuery(fieldName, mins, maxs);
-          case WITHIN:
-            return IntRange.newWithinQuery(fieldName, mins, maxs);
-          case CONTAINS:
-            return IntRange.newContainsQuery(fieldName, mins, maxs);
-          case CROSSES:
-            return IntRange.newCrossesQuery(fieldName, mins, maxs);
-          default:
-            throw new AssertionError("Unhandled QueryCriteria: " + criteria);
-        }
-      }
-
-      private Query createLongRangeQuery(
-          String fieldName, long[] mins, long[] maxs, QueryCriteria criteria) {
-        switch (criteria) {
-          case INTERSECTS:
-            return LongRange.newIntersectsQuery(fieldName, mins, maxs);
-          case WITHIN:
-            return LongRange.newWithinQuery(fieldName, mins, maxs);
-          case CONTAINS:
-            return LongRange.newContainsQuery(fieldName, mins, maxs);
-          case CROSSES:
-            return LongRange.newCrossesQuery(fieldName, mins, maxs);
-          default:
-            throw new AssertionError("Unhandled QueryCriteria: " + criteria);
         }
       }
     };

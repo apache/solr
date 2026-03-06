@@ -185,9 +185,27 @@ public class LongRangeField extends AbstractNumericRangeField {
   }
 
   @Override
-  protected Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
+  public Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rangeValueTyped = (RangeValue) rangeValue;
     return LongRange.newContainsQuery(fieldName, rangeValueTyped.mins, rangeValueTyped.maxs);
+  }
+
+  @Override
+  public Query newIntersectsQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return LongRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
+  }
+
+  @Override
+  public Query newWithinQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return LongRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
+  }
+
+  @Override
+  public Query newCrossesQuery(String fieldName, NumericRangeValue rangeValue) {
+    final var rv = (RangeValue) rangeValue;
+    return LongRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
