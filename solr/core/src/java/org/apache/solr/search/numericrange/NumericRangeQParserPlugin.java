@@ -25,6 +25,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField;
 import org.apache.solr.schema.numericrange.AbstractNumericRangeField.NumericRangeValue;
+import org.apache.solr.schema.numericrange.IntRangeField;
+import org.apache.solr.schema.numericrange.LongRangeField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
