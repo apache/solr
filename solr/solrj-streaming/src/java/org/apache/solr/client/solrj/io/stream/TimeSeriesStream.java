@@ -22,6 +22,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
@@ -528,7 +529,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible {
 
       if (formatter != null) {
         LocalDateTime localDateTime =
-            LocalDateTime.ofInstant(((java.util.Date) val).toInstant(), ZoneOffset.UTC);
+            LocalDateTime.ofInstant(((Date) val).toInstant(), ZoneOffset.UTC);
         val = localDateTime.format(formatter);
       }
 

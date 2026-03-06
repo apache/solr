@@ -54,6 +54,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.embedded.JettyConfig;
 import org.apache.solr.util.ExternalPaths;
@@ -469,7 +470,7 @@ public abstract class HttpSolrClientTestBase extends SolrTestCaseJ4 {
     assertThat(stream, instanceOf(InputStream.class));
     InputStream is = (InputStream) stream;
     assertNotNull(is.readAllBytes()); // throws IOException if closed
-    org.apache.solr.common.util.IOUtils.closeQuietly((InputStream) stream);
+    IOUtils.closeQuietly((InputStream) stream);
   }
 
   protected void testSetCredentialsExplicitly(HttpSolrClientBase client) {
