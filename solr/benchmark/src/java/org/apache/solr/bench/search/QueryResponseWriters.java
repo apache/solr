@@ -60,7 +60,7 @@ public class QueryResponseWriters {
   @State(Scope.Benchmark)
   public static class BenchState {
 
-    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml", "raw"})
+    @Param({CommonParams.JAVABIN, CommonParams.JSON, "cbor", "smile", "xml"})
     String wt;
 
     private int docs = 100;
