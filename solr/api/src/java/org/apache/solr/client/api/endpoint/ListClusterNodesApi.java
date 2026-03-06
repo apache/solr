@@ -21,13 +21,13 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import org.apache.solr.client.api.model.ListClusterNodesResponse;
 
-/** V2 API definition for listing the live nodes in the SolrCloud cluster. */
+/** V2 API definition for listing the nodes in the SolrCloud cluster. */
 @Path("/cluster/nodes")
 public interface ListClusterNodesApi {
 
   @GET
   @Operation(
-      summary = "List the live nodes in this Solr cluster.",
+      summary = "List the nodes in this Solr cluster.",
       tags = {"cluster"})
   ListClusterNodesResponse listClusterNodes();
 }
