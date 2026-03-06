@@ -28,7 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.numericrange.IntRangeQParserPlugin;
+import org.apache.solr.search.numericrange.NumericRangeQParserPlugin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -58,7 +58,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     if (!doAssertParserCoverage) return;
 
     final var qParsersToTest = new HashSet<>(QParserPlugin.standardPlugins.keySet());
-    qParsersToTest.remove(IntRangeQParserPlugin.NAME); // Tested in IntRangeQParserPluginTest
+    qParsersToTest.remove(NumericRangeQParserPlugin.NAME); // Tested in IntRangeQParserPluginTest and LongRangeQParserPluginTest
     for (String name : qParsersToTest) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing qparser: " + name,

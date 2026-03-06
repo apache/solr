@@ -18,6 +18,7 @@ package org.apache.solr.search.numericrange;
 
 import java.util.Locale;
 import org.apache.lucene.document.IntRange;
+import org.apache.lucene.document.LongRange;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -25,22 +26,22 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.numericrange.IntRangeField;
-import org.apache.solr.schema.numericrange.IntRangeField.RangeValue;
+import org.apache.solr.schema.numericrange.LongRangeField;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SyntaxError;
 
 /**
- * Query parser for IntRangeField with support for different query relationship types.
+ * Query parser for numeric range fields with support for different query relationship types.
  *
- * <p>This parser enables queries against {@link IntRangeField} fields with explicit control over
- * the query relationship type (intersects, within, contains, crosses).
+ * <p>This parser enables queries against {@link IntRangeField} and {@link LongRangeField} fields
+ * with explicit control over the query relationship type (intersects, within, contains, crosses).
  *
  * <h2>Parameters</h2>
  *
  * <ul>
- *   <li><b>field</b> (required): The IntRangeField to query
+ *   <li><b>field</b> (required): The numeric range field to query
  *   <li><b>criteria</b> (required): Query relationship criteria. One of: intersects, within,
  *       contains, crosses
  * </ul>
@@ -58,28 +59,26 @@ import org.apache.solr.search.SyntaxError;
  * <h2>Example Usage</h2>
  *
  * <pre>
- * // 1D range queries
+ * // IntRangeField queries
  * {!numericRange criteria="intersects" field=price_range}[100 TO 200]
  * {!numericRange criteria="within" field=price_range}[0 TO 300]
  * {!numericRange criteria="contains" field=price_range}[150 TO 175]
  * {!numericRange criteria="crosses" field=price_range}[150 TO 250]
  *
- * // 2D range queries (bounding boxes)
+ * // LongRangeField queries
+ * {!numericRange criteria="intersects" field=long_range}[1000000000 TO 2000000000]
+ * {!numericRange criteria="within" field=long_range}[0 TO 9999999999]
+ *
+ * // Multi-dimensional queries (bounding boxes, cubes, tesseracts)
  * {!numericRange criteria="intersects" field=bbox}[0,0 TO 10,10]
  * {!numericRange criteria="within" field=bbox}[-10,-10 TO 20,20]
- *
- * // 3D range queries (bounding cubes)
- * {!numericRange criteria="intersects" field=cube}[0,0,0 TO 10,10,10]
- *
- * // 4D range queries (tesseracts)
- * {!numericRange criteria="intersects" field=tesseract}[0,0,0,0 TO 10,10,10,10]
  * </pre>
  *
  * @see IntRangeField
- * @see IntRange
+ * @see LongRangeField
  * @lucene.experimental
  */
-public class IntRangeQParserPlugin extends QParserPlugin {
+public class NumericRangeQParserPlugin extends QParserPlugin {
 
   /** Query relationship criteria for range queries. */
   public enum QueryCriteria {
@@ -171,7 +170,7 @@ public class IntRangeQParserPlugin extends QParserPlugin {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Range value cannot be empty");
         }
 
-        // Validate field exists and is an IntRangeField
+        // Validate field exists and is a supported numeric range field type
         SchemaField schemaField;
         try {
           schemaField = req.getSchema().getField(fieldName);
@@ -179,53 +178,63 @@ public class IntRangeQParserPlugin extends QParserPlugin {
           throw new SolrException(ErrorCode.BAD_REQUEST, "Field not found: " + fieldName, e);
         }
 
-        if (!(schemaField.getType() instanceof IntRangeField)) {
+        if (schemaField.getType() instanceof IntRangeField intField) {
+          IntRangeField.RangeValue range;
+          try {
+            range = intField.parseRangeValue(rangeValue);
+          } catch (SolrException e) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
+          }
+          return createIntRangeQuery(fieldName, range.mins, range.maxs, criteria);
+
+        } else if (schemaField.getType() instanceof LongRangeField longField) {
+          LongRangeField.RangeValue range;
+          try {
+            range = longField.parseRangeValue(rangeValue);
+          } catch (SolrException e) {
+            throw new SolrException(
+                ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
+          }
+          return createLongRangeQuery(fieldName, range.mins, range.maxs, criteria);
+
+        } else {
           throw new SolrException(
               ErrorCode.BAD_REQUEST,
               "Field '"
                   + fieldName
-                  + "' must be of type IntRangeField, but is: "
+                  + "' must be of type IntRangeField or LongRangeField, but is: "
                   + schemaField.getType().getTypeName());
         }
-
-        IntRangeField fieldType = (IntRangeField) schemaField.getType();
-
-        // Parse the range value
-        RangeValue range;
-        try {
-          range = fieldType.parseRangeValue(rangeValue);
-        } catch (SolrException e) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
-        }
-
-        // Create appropriate query based on criteria
-        return createRangeQuery(fieldName, range.mins, range.maxs, criteria);
       }
 
-      /**
-       * Create the appropriate Lucene query based on the query criteria.
-       *
-       * @param fieldName the field to query
-       * @param mins minimum values for each dimension
-       * @param maxs maximum values for each dimension
-       * @param criteria the query relationship criteria
-       * @return the created Lucene Query
-       */
-      private Query createRangeQuery(
+      private Query createIntRangeQuery(
           String fieldName, int[] mins, int[] maxs, QueryCriteria criteria) {
         switch (criteria) {
           case INTERSECTS:
             return IntRange.newIntersectsQuery(fieldName, mins, maxs);
-
           case WITHIN:
             return IntRange.newWithinQuery(fieldName, mins, maxs);
-
           case CONTAINS:
             return IntRange.newContainsQuery(fieldName, mins, maxs);
-
           case CROSSES:
             return IntRange.newCrossesQuery(fieldName, mins, maxs);
+          default:
+            throw new AssertionError("Unhandled QueryCriteria: " + criteria);
+        }
+      }
 
+      private Query createLongRangeQuery(
+          String fieldName, long[] mins, long[] maxs, QueryCriteria criteria) {
+        switch (criteria) {
+          case INTERSECTS:
+            return LongRange.newIntersectsQuery(fieldName, mins, maxs);
+          case WITHIN:
+            return LongRange.newWithinQuery(fieldName, mins, maxs);
+          case CONTAINS:
+            return LongRange.newContainsQuery(fieldName, mins, maxs);
+          case CROSSES:
+            return LongRange.newCrossesQuery(fieldName, mins, maxs);
           default:
             throw new AssertionError("Unhandled QueryCriteria: " + criteria);
         }
