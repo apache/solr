@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -30,6 +31,7 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.PrimitiveFieldType;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
 /**
@@ -63,7 +65,9 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * so callers within the subclass receive the concrete type directly (e.g. {@code
    * IntRangeField.RangeValue}) with no casting required.
    */
-  public interface NumericRangeValue {}
+  public interface NumericRangeValue {
+    int getDimensions();
+  }
 
   /** Regex fragment matching a comma-separated list of signed integers (no decimal points). */
   protected static final String COMMA_DELIMITED_NUMS = "-?\\d+(?:\\s*,\\s*-?\\d+)*";
@@ -190,4 +194,94 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * @throws SolrException if value format is invalid
    */
   public abstract NumericRangeValue parseRangeValue(String value);
+
+  /**
+   * Parses a single N-dimensional point expressed as a comma-separated string (e.g. {@code "5"} or
+   * {@code "5,10"}) into a {@link NumericRangeValue} where both mins and maxs are set to the parsed
+   * bound.
+   *
+   * <p>This is used by {@link #getFieldQuery} to support the "single bound" query shorthand, where
+   * a bare coordinate is treated as a degenerate range {@code [p TO p]}. Dimension-count validation
+   * against {@link #numDimensions} is performed by the caller and does not need to be repeated
+   * here.
+   *
+   * <p>Subclasses should override with a covariant return type so that internal callers receive the
+   * concrete {@code RangeValue} type without casting.
+   *
+   * @param value a comma-separated numeric string (e.g. {@code "5,10"} for a 2D point)
+   * @return a {@link NumericRangeValue} with mins and maxs both equal to the parsed bound
+   * @throws SolrException if the string contains non-numeric values
+   */
+  public abstract NumericRangeValue parseSingleBound(String value);
+
+  /**
+   * Creates a Lucene query that matches indexed documents whose stored range <em>contains</em> the
+   * query range described by {@code rangeValue}.
+   *
+   * <p>This is the default query semantics used by {@link #getFieldQuery}. Queries with other match
+   * semantics (intersects, within, crosses) are available via {@link
+   * org.apache.solr.search.numericrange.NumericRangeQParserPlugin}.
+   *
+   * <p>The {@code rangeValue} argument may originate from either {@link #parseRangeValue} (full
+   * {@code [min TO max]} syntax) or {@link #parseSingleBound} (point query shorthand). In the point
+   * case, mins and maxs are equal, so the query finds documents whose range contains that exact
+   * point.
+   *
+   * @param field the name of the field to query
+   * @param rangeValue a pre-parsed range value produced by this field type
+   * @return a contains query for the given field and range
+   */
+  protected abstract Query newContainsQuery(String field, NumericRangeValue rangeValue);
+
+  /**
+   * Creates a query for this field that matches docs where the query-range is fully contained by
+   * the field value.
+   *
+   * <p>Queries requiring other match semantics can use {@link
+   * org.apache.solr.search.numericrange.NumericRangeQParserPlugin}
+   *
+   * @param parser The {@link org.apache.solr.search.QParser} calling the method
+   * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
+   * @param externalVal The String representation of the value to search. Supports both a
+   *     (multi-)dimensional range of the form [1,2 TO 3,4], or a single (multi-)dimensional bound
+   *     (e.g. 1,2). In the latter case, the single bound will be used as both the min and max. Both
+   *     formats use "contains" query semantics to find indexed ranges that contain the query range.
+   * @return Query for this field using contains semantics
+   */
+  @Override
+  public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    if (externalVal == null || externalVal.trim().isEmpty()) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Query value cannot be null or empty");
+    }
+
+    String trimmed = externalVal.trim();
+
+    // Check if it's the full range syntax: [min1,min2 TO max1,max2]
+    if (RANGE_PATTERN_REGEX.matcher(trimmed).matches()) {
+      final var rangeValue = parseRangeValue(trimmed);
+      return newContainsQuery(field.getName(), rangeValue);
+    }
+
+    // Syntax sugar: also accept a single-bound (i.e pX,pY,pZ)
+    if (SINGLE_BOUND_PATTERN.matcher(trimmed).matches()) {
+      final var singleBoundRange = parseSingleBound(trimmed);
+
+      if (singleBoundRange.getDimensions() != numDimensions) {
+        throw new SolrException(
+            ErrorCode.BAD_REQUEST,
+            "Single bound dimensions ("
+                + singleBoundRange.getDimensions()
+                + ") do not match field type numDimensions ("
+                + numDimensions
+                + ")");
+      }
+
+      return newContainsQuery(field.getName(), singleBoundRange);
+    }
+
+    throw new SolrException(
+        ErrorCode.BAD_REQUEST,
+        "Invalid query format. Expected either a range [min TO max] or a single bound to search for, got: "
+            + externalVal);
+  }
 }
