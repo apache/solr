@@ -393,8 +393,8 @@ class ChildDocTransformer extends DocTransformer {
     StoredField vector = (StoredField) singleVector.iterator().next();
     BytesRef byteVector = vector.binaryValue();
     List<Number> extractedVector = new ArrayList<>(byteVector.length);
-    for (Byte element : byteVector.bytes) {
-      extractedVector.add(element.byteValue());
+    for (int i = byteVector.offset; i < byteVector.offset + byteVector.length; i++) {
+      extractedVector.add(byteVector.bytes[i]);
     }
     return extractedVector;
   }
