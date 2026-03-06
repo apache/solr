@@ -315,6 +315,13 @@ public class S3StorageClient {
   /**
    * Check if path is directory.
    *
+   * <p>A path is considered a directory if either (a) an explicit directory marker object exists
+   * (i.e. a zero-byte object with key {@code path + "/"} and content-type {@code
+   * application/x-directory}), or (b) no such marker exists but at least one object exists whose
+   * key starts with {@code path + "/"} (a "virtual directory"). Case (b) arises after an {@code aws
+   * s3 sync} round-trip, which skips directory marker objects, causing them to be absent in the
+   * target bucket.
+   *
    * @param path to File/Directory in S3.
    * @return true if path is directory, otherwise false.
    */
@@ -329,7 +336,30 @@ public class S3StorageClient {
       return StrUtils.isNotNullOrEmpty(contentType)
           && contentType.equalsIgnoreCase(S3_DIR_CONTENT_TYPE);
     } catch (NoSuchKeyException nske) {
-      return false;
+      // No explicit directory marker found; fall back to checking whether any objects exist under
+      // this prefix. This handles "virtual directories" that arise after an 'aws s3 sync'
+      // round-trip, which does not preserve directory marker objects (keys ending with '/').
+      return hasChildrenUnderPrefix(s3Path);
+    } catch (SdkException sdke) {
+      throw handleAmazonException(sdke);
+    }
+  }
+
+  /**
+   * Returns {@code true} if at least one object exists in S3 whose key starts with {@code dirPath}.
+   *
+   * <p>Used as a fallback in {@link #isDirectory} when no explicit directory marker object is
+   * present.
+   *
+   * @param dirPath directory path with a trailing {@code /} (as produced by {@link
+   *     #sanitizedDirPath})
+   */
+  private boolean hasChildrenUnderPrefix(String dirPath) throws S3Exception {
+    try {
+      return !s3Client
+          .listObjectsV2(b -> b.bucket(bucketName).prefix(dirPath).maxKeys(1))
+          .contents()
+          .isEmpty();
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }

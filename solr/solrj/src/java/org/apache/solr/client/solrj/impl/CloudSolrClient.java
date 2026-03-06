@@ -1663,6 +1663,11 @@ public abstract class CloudSolrClient extends SolrClient {
       DocCollection cached = cacheEntry == null ? null : cacheEntry.cached;
       return CompletableFuture.completedFuture(cached);
     }
+    // Remove any already-completed future that hasn't been cleaned up by whenCompleteAsync yet.
+    // Without this, computeIfAbsent below would reuse the stale done future instead of submitting
+    // a genuinely new refresh, causing callers (e.g. stale-state retry) to observe no new
+    // ref.get().
+    collectionRefreshes.computeIfPresent(collection, (k, v) -> v.isDone() ? null : v);
     return collectionRefreshes.computeIfAbsent(
         collection,
         key -> {
