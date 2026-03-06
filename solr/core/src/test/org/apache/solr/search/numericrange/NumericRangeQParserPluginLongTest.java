@@ -329,11 +329,15 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
 
   @Test
   public void testGetFieldQueryFullRange() {
+    // doc 1: narrow range, fully inside the query range  → should NOT match (doc contains query)
+    // doc 2: wide range that fully contains the query range → should match
+    // doc 3: range that only partially overlaps            → should NOT match
     assertU(adoc("id", "1", "long_range", "[130 TO 160]")); // No match
     assertU(adoc("id", "2", "long_range", "[100 TO 200]")); // Match!
     assertU(adoc("id", "3", "long_range", "[150 TO 250]")); // No match
     assertU(commit());
 
+    // Contains semantics: find indexed ranges that fully contain [120 TO 180]
     assertQ(
         req("q", "long_range:[120 TO 180]"),
         "//result[@numFound='1']",
@@ -341,11 +345,27 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testGetFieldQueryFullRangeMultipleMatches() {
+    assertU(adoc("id", "1", "long_range", "[0 TO 1000]")); // Match!
+    assertU(adoc("id", "2", "long_range", "[100 TO 200]")); // Match!
+    assertU(adoc("id", "3", "long_range", "[100 TO 199]")); // No match - max too low
+    assertU(adoc("id", "4", "long_range", "[101 TO 200]")); // No match - min too high
+    assertU(commit());
+
+    assertQ(
+        req("q", "long_range:[100 TO 200]"),
+        "//result[@numFound='2']",
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/str[@name='id'][.='2']");
+  }
+
+  @Test
   public void testGetFieldQuerySingleBound() {
+    // Single-bound syntax: long_range:150 is sugar for contains([150 TO 150])
     assertU(adoc("id", "1", "long_range", "[100 TO 200]")); // Match!
     assertU(adoc("id", "2", "long_range", "[150 TO 150]")); // Match!
-    assertU(adoc("id", "3", "long_range", "[100 TO 149]")); // No match
-    assertU(adoc("id", "4", "long_range", "[151 TO 300]")); // No match
+    assertU(adoc("id", "3", "long_range", "[100 TO 149]")); // No match - max below 150
+    assertU(adoc("id", "4", "long_range", "[151 TO 300]")); // No match - min above 150
     assertU(commit());
 
     assertQ(
@@ -356,43 +376,74 @@ public class NumericRangeQParserPluginLongTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testGetFieldQueryOutsideIntRange() {
-    long point = 3_500_000_000L;
-    assertU(adoc("id", "1", "long_range", "[3000000000 TO 4000000000]")); // Match!
-    assertU(adoc("id", "2", "long_range", "[3000000000 TO 3499999999]")); // No match
+  public void testGetFieldQuerySingleBound2D() {
+    // 2D single-bound: bbox:5,5 is sugar for contains([5,5 TO 5,5])
+    assertU(adoc("id", "1", "bbox", "[0,0 TO 10,10]")); // Match!
+    assertU(adoc("id", "2", "bbox", "[5,5 TO 5,5]")); // Match!
+    assertU(adoc("id", "3", "bbox", "[0,0 TO 4,10]")); // No match - X dimension ends too low
+    assertU(adoc("id", "4", "bbox", "[6,0 TO 10,10]")); // No match - X dimension starts too high
     assertU(commit());
 
     assertQ(
-        req("q", "long_range:" + point),
-        "//result[@numFound='1']",
-        "//result/doc/str[@name='id'][.='1']");
+        req("q", "bbox:5,5"),
+        "//result[@numFound='2']",
+        "//result/doc/str[@name='id'][.='1']",
+        "//result/doc/str[@name='id'][.='2']");
   }
 
   @Test
   public void testGetFieldQueryFieldFormatting() {
+    // Test 1D field formatting
     assertU(adoc("id", "1", "long_range", "[100 TO 200]"));
-    assertU(adoc("id", "2", "long_range_2d", "[10,20 TO 30,40]"));
+    // Test 2D field formatting
+    assertU(adoc("id", "2", "bbox", "[10,20 TO 30,40]"));
+    // Test 3D field formatting
+    assertU(adoc("id", "3", "cube", "[5,10,15 TO 25,30,35]"));
+    // Test 4D field formatting
+    assertU(adoc("id", "4", "tesseract", "[1,2,3,4 TO 11,12,13,14]"));
+    // Test multi-valued field formatting
     assertU(
         adoc(
-            "id", "3",
-            "long_range_multi", "[50 TO 100]",
-            "long_range_multi", "[200 TO 300]"));
+            "id",
+            "5",
+            "long_range_multi",
+            "[50 TO 100]",
+            "long_range_multi",
+            "[200 TO 300]",
+            "long_range_multi",
+            "[400 TO 500]"));
     assertU(commit());
 
+    // Verify 1D field returns correctly formatted value
     assertQ(
         req("q", "id:1"),
         "//result[@numFound='1']",
         "//result/doc/str[@name='long_range'][.='[100 TO 200]']");
 
+    // Verify 2D field returns correctly formatted value
     assertQ(
         req("q", "id:2"),
         "//result[@numFound='1']",
-        "//result/doc/str[@name='long_range_2d'][.='[10,20 TO 30,40]']");
+        "//result/doc/str[@name='bbox'][.='[10,20 TO 30,40]']");
 
+    // Verify 3D field returns correctly formatted value
     assertQ(
         req("q", "id:3"),
         "//result[@numFound='1']",
+        "//result/doc/str[@name='cube'][.='[5,10,15 TO 25,30,35]']");
+
+    // Verify 4D field returns correctly formatted value
+    assertQ(
+        req("q", "id:4"),
+        "//result[@numFound='1']",
+        "//result/doc/str[@name='tesseract'][.='[1,2,3,4 TO 11,12,13,14]']");
+
+    // Verify multi-valued field returns all values correctly formatted
+    assertQ(
+        req("q", "id:5"),
+        "//result[@numFound='1']",
         "//result/doc/arr[@name='long_range_multi']/str[1][.='[50 TO 100]']",
-        "//result/doc/arr[@name='long_range_multi']/str[2][.='[200 TO 300]']");
+        "//result/doc/arr[@name='long_range_multi']/str[2][.='[200 TO 300]']",
+        "//result/doc/arr[@name='long_range_multi']/str[3][.='[400 TO 500]']");
   }
 }
