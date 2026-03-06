@@ -122,10 +122,11 @@ public class NestedUpdateProcessorFactory extends UpdateRequestProcessorFactory 
           originalVectorFieldsToRemove.add(field.getName());
         } else {
           for (Object val : field) {
-            if (!(val instanceof SolrInputDocument cDoc)) {
+            if (!(val instanceof SolrInputDocument)) {
               // either all collection items are child docs or none are.
               break;
             }
+            SolrInputDocument cDoc = (SolrInputDocument) val;
             final String fieldName = field.getName();
 
             if (fieldName.contains(PATH_SEP_CHAR)) {
