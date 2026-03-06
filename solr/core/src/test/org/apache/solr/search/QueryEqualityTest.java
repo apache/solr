@@ -58,7 +58,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     if (!doAssertParserCoverage) return;
 
     final var qParsersToTest = new HashSet<>(QParserPlugin.standardPlugins.keySet());
-    qParsersToTest.remove(NumericRangeQParserPlugin.NAME); // Tested in IntRangeQParserPluginTest and LongRangeQParserPluginTest
+    qParsersToTest.remove(NumericRangeQParserPlugin.NAME); // Tested in NumericRangeQParserPluginIntTest and NumericRangeQParserPluginLongTest
     for (String name : qParsersToTest) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing qparser: " + name,

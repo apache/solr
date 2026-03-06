@@ -22,7 +22,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /** Tests for {@link NumericRangeQParserPlugin} using {@link org.apache.solr.schema.numericrange.IntRangeField} fields. */
-public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
+public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
