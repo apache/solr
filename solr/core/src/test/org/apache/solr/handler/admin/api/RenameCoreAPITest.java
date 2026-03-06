@@ -17,6 +17,7 @@
 package org.apache.solr.handler.admin.api;
 
 import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+import static org.hamcrest.Matchers.containsString;
 
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.SolrTestCaseJ4;
@@ -25,7 +26,6 @@ import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CoresApi;
 import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -34,19 +34,13 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 /**
- * The success case and the missing-parameter error case use the generated {@link
- * org.apache.solr.client.solrj.request.CoresApi.RenameCore} request type, asserting directly on
- * {@link SolrJerseyResponse#responseHeader} status and {@link
- * org.apache.solr.client.api.model.ErrorInfo#msg} because the generated typed client uses {@code
- * JacksonDataBindResponseParser}, which does not yet propagate errors as exceptions (SOLR-17549).
+ * Test cases for the v2 {@link RenameCore}
  *
  * <p>The missing-body error case uses {@link GenericV2SolrRequest} with an explicit {@code "null"}
  * JSON body, because {@link org.apache.solr.client.solrj.request.CoresApi.RenameCore} always
  * serializes a request body and therefore cannot represent a truly absent body. The standard
  * response parser used by {@link GenericV2SolrRequest} does propagate 4xx responses as {@link
  * RemoteSolrException}s.
- *
- * <p>TODO: Deal with this when generated code does properly throw an exception!
  */
 public class RenameCoreAPITest extends SolrTestCaseJ4 {
 
@@ -90,14 +84,14 @@ public class RenameCoreAPITest extends SolrTestCaseJ4 {
 
   @Test
   public void testMissingToParameterThrowsError() throws Exception {
-    // CoresApi.RenameCore always serializes a body, so leaving setTo() uncalled sends a body
-    // whose "to" field is null. The handler's ensureRequiredParameterProvided guard returns a 400,
-    // which JacksonDataBindResponseParser surfaces via the response fields rather than as an
-    // exception (SOLR-17549), so we assert directly on responseHeader.status and error.msg.
     CoresApi.RenameCore renameRequest = new CoresApi.RenameCore(DEFAULT_TEST_CORENAME);
-    SolrJerseyResponse response = renameRequest.process(solrTestRule.getAdminClient());
-    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, response.responseHeader.status);
-    assertNotNull(response.error);
-    assertTrue(response.error.msg.contains("Missing required parameter: to"));
+    final var ex =
+        expectThrows(
+            RemoteSolrException.class,
+            () -> {
+              renameRequest.process(solrTestRule.getAdminClient());
+            });
+    assertEquals(400, ex.code());
+    assertThat(ex.getMessage(), containsString("Missing required parameter: to"));
   }
 }
