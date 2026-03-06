@@ -183,8 +183,7 @@ public class NumericRangeQParserPlugin extends QParserPlugin {
           try {
             range = intField.parseRangeValue(rangeValue);
           } catch (SolrException e) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
           }
           return createIntRangeQuery(fieldName, range.mins, range.maxs, criteria);
 
@@ -193,8 +192,7 @@ public class NumericRangeQParserPlugin extends QParserPlugin {
           try {
             range = longField.parseRangeValue(rangeValue);
           } catch (SolrException e) {
-            throw new SolrException(
-                ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid range value: " + rangeValue, e);
           }
           return createLongRangeQuery(fieldName, range.mins, range.maxs, criteria);
 

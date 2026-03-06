@@ -21,7 +21,10 @@ import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests for {@link NumericRangeQParserPlugin} using {@link org.apache.solr.schema.numericrange.IntRangeField} fields. */
+/**
+ * Tests for {@link NumericRangeQParserPlugin} using {@link
+ * org.apache.solr.schema.numericrange.IntRangeField} fields.
+ */
 public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @BeforeClass

@@ -46,8 +46,8 @@ import org.apache.solr.uninverting.UninvertingReader.Type;
  * </ul>
  *
  * <p>Concrete subclasses must implement {@link #parseRangeValue(String)} to parse the string
- * representation into a type-specific range value, and {@link #createField(SchemaField, Object)}
- * to produce the underlying Lucene {@link IndexableField}.
+ * representation into a type-specific range value, and {@link #createField(SchemaField, Object)} to
+ * produce the underlying Lucene {@link IndexableField}.
  *
  * @see IntRangeField
  * @see LongRangeField
@@ -60,8 +60,8 @@ public abstract class AbstractNumericRangeField extends PrimitiveFieldType {
    * parsed values without knowing the concrete type.
    *
    * <p>Concrete subclasses override {@link #parseRangeValue(String)} with a covariant return type
-   * so callers within the subclass receive the concrete type directly (e.g.
-   * {@code IntRangeField.RangeValue}) with no casting required.
+   * so callers within the subclass receive the concrete type directly (e.g. {@code
+   * IntRangeField.RangeValue}) with no casting required.
    */
   public interface NumericRangeValue {}
 
