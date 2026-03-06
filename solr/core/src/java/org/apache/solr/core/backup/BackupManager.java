@@ -36,7 +36,6 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigSetService;
@@ -344,7 +343,7 @@ public class BackupManager {
       // checking for '/' is correct for a directory since ConfigSetService#getAllConfigFiles
       // always separates file paths with '/'
       if (!filePath.endsWith("/")) {
-        if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+        if (ConfigSetService.isFileForbiddenInConfigSets(filePath)) {
           log.warn(
               "Not including zookeeper file in backup, as it is a forbidden type: {}", filePath);
         } else {
@@ -385,7 +384,7 @@ public class BackupManager {
       switch (t) {
         case FILE:
           {
-            if (ZkMaintenanceUtils.isFileForbiddenInConfigSets(filePath)) {
+            if (ConfigSetService.isFileForbiddenInConfigSets(filePath)) {
               log.warn(
                   "Not including zookeeper file in restore, as it is a forbidden type: {}", file);
             } else {

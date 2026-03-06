@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.apache.solr.cloud.ZkConfigSetService;
 import org.apache.solr.cloud.ZkController;
@@ -33,6 +34,7 @@ import org.apache.solr.common.ConfigNode;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
@@ -46,6 +48,36 @@ public abstract class ConfigSetService {
   public static final String UPLOAD_FILENAME_EXCLUDE_REGEX = "^\\..*$";
   public static final Pattern UPLOAD_FILENAME_EXCLUDE_PATTERN =
       Pattern.compile(UPLOAD_FILENAME_EXCLUDE_REGEX);
+
+  public static final String FORBIDDEN_FILE_TYPES_PROP = "solr.configset.forbidden.file.types";
+  public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
+      Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
+  private static volatile Set<String> USE_FORBIDDEN_FILE_TYPES = null;
+
+  /**
+   * Determine if a file path is forbidden for use in configsets based on its file extension.
+   *
+   * @param filePath the file path or name to check
+   * @return true if the file extension is among the forbidden types
+   */
+  public static boolean isFileForbiddenInConfigSets(String filePath) {
+    // Try to set the forbidden file types just once, since it is set by SysProp/EnvVar
+    if (USE_FORBIDDEN_FILE_TYPES == null) {
+      synchronized (DEFAULT_FORBIDDEN_FILE_TYPES) {
+        if (USE_FORBIDDEN_FILE_TYPES == null) {
+          String userForbiddenFileTypes = EnvUtils.getProperty(FORBIDDEN_FILE_TYPES_PROP);
+          if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
+            USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
+          } else {
+            USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));
+          }
+        }
+      }
+    }
+    int lastDot = filePath.lastIndexOf('.');
+    return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
+  }
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static ConfigSetService createConfigSetService(CoreContainer coreContainer) {

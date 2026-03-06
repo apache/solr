@@ -17,10 +17,15 @@
 package org.apache.solr.cli;
 
 import java.lang.invoke.MethodHandles;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.core.ConfigSetService;
@@ -96,6 +101,22 @@ public class ConfigSetUploadTool extends ToolBase {
               + " to ZooKeeper at "
               + zkHost);
       FileTypeMagicUtil.assertConfigSetFolderLegal(confPath);
+      Files.walkFileTree(
+          confPath,
+          new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+              String filename = file.getFileName().toString();
+              if (ConfigSetService.isFileForbiddenInConfigSets(filename)) {
+                throw new SolrException(
+                    SolrException.ErrorCode.BAD_REQUEST,
+                    "The file type provided for upload, '"
+                        + filename
+                        + "', is forbidden for use in uploading configsets.");
+              }
+              return FileVisitResult.CONTINUE;
+            }
+          });
       ZkMaintenanceUtils.uploadToZK(
           zkClient,
           confPath,
