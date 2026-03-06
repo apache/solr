@@ -18,7 +18,6 @@ package org.apache.solr.schema;
 
 import static org.hamcrest.core.Is.is;
 
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.core.AbstractBadConfigTestBase;
 import org.junit.Before;
@@ -153,9 +152,7 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
 
       ScalarQuantizedDenseVectorField vectorType =
           (ScalarQuantizedDenseVectorField) vectorField.getType();
-      assertThat(
-          vectorType.getConfidenceInterval(),
-          is(Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL));
+      assertThat(vectorType.getConfidenceInterval(), is(0f));
     } finally {
       deleteCore();
     }

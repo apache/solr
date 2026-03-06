@@ -23,15 +23,15 @@ https://lucene.apache.org/core/9_4_0/MIGRATE.html
 
 ## Start
 
-Create a new branch locally e.g. `git checkout -b lucene940 -t origin/main` for upgrading to Lucene 9.4.0 version.
+Create a new branch locally e.g. `git checkout -b lucene1040 -t origin/main` for upgrading to Lucene 10.4.0 version.
 
 ## Build
 
 ### `gradle/libs.versions.toml` update
 
 ```
-- org.apache.lucene:*=9.3.0
-+ org.apache.lucene:*=9.4.0
+- apache-lucene:*=10.3.0
++ apache-lucene:*=10.4.0
 ```
 
 ### lockfiles update
@@ -60,7 +60,7 @@ git add solr/licenses
   * additional abstract base class or interface methods
   * inner classes becoming outer classes
 * codec changes (if any)
-  * conceptually `s/org.apache.lucene.codecs.lucene9x.Lucene9x/org.apache.lucene.codecs.lucene94.Lucene94`
+  * conceptually `s/org.apache.lucene.codecs.lucene10x.Lucene10x/org.apache.lucene.codecs.lucene104.Lucene104`
 
 ## Test
 

@@ -20,7 +20,7 @@ import com.nvidia.cuvs.lucene.Lucene99AcceleratedHNSWVectorsFormat;
 import java.lang.invoke.MethodHandles;
 import org.apache.lucene.codecs.FilterCodec;
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene103.Lucene103Codec;
+import org.apache.lucene.codecs.lucene104.Lucene104Codec;
 import org.apache.lucene.codecs.perfield.PerFieldKnnVectorsFormat;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -40,11 +40,11 @@ import org.slf4j.LoggerFactory;
 public class CuVSCodec extends FilterCodec {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String FALLBACK_CODEC = "Lucene103";
+  private static final String FALLBACK_CODEC = "Lucene104";
   private final SolrCore core;
-  private final Lucene103Codec fallbackCodec;
+  private final Lucene104Codec fallbackCodec;
 
-  public CuVSCodec(SolrCore core, Lucene103Codec fallback, NamedList<?> args) {
+  public CuVSCodec(SolrCore core, Lucene104Codec fallback, NamedList<?> args) {
     super(FALLBACK_CODEC, fallback);
     this.core = core;
     this.fallbackCodec = fallback;

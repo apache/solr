@@ -17,12 +17,11 @@
 package org.apache.solr.schema;
 
 import static java.util.Optional.ofNullable;
-import static org.apache.lucene.codecs.lucene99.Lucene99HnswVectorsFormat.DEFAULT_NUM_MERGE_WORKER;
 
 import java.util.Map;
 import org.apache.lucene.codecs.KnnVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99HnswScalarQuantizedVectorsFormat;
-import org.apache.lucene.codecs.lucene99.Lucene99ScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104HnswScalarQuantizedVectorsFormat;
+import org.apache.lucene.codecs.lucene104.Lucene104ScalarQuantizedVectorsFormat.ScalarEncoding;
 import org.apache.lucene.index.VectorEncoding;
 import org.apache.lucene.index.VectorSimilarityFunction;
 import org.apache.solr.common.SolrException;
@@ -87,7 +86,7 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
     if (ofNullable(args.remove(DYNAMIC_CONFIDENCE_INTERVAL_PARAM))
         .map(Boolean::parseBoolean)
         .orElse(false)) {
-      this.confidenceInterval = Lucene99ScalarQuantizedVectorsFormat.DYNAMIC_CONFIDENCE_INTERVAL;
+      this.confidenceInterval = 0f;
     }
 
     super.init(schema, args);
@@ -95,14 +94,9 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
 
   @Override
   public KnnVectorsFormat buildKnnVectorsFormat() {
-    return new Lucene99HnswScalarQuantizedVectorsFormat(
-        getHnswM(),
-        getHnswEfConstruction(),
-        DEFAULT_NUM_MERGE_WORKER,
-        getBits(),
-        useCompression(),
-        getConfidenceInterval(),
-        null);
+    ScalarEncoding encoding = ScalarEncoding.fromNumBits(getBits());
+    return new Lucene104HnswScalarQuantizedVectorsFormat(
+        encoding, getHnswM(), getHnswEfConstruction());
   }
 
   @Override
