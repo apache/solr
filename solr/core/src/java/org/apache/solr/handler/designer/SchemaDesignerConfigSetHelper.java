@@ -383,7 +383,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       }
     }
 
-    // detect if they're trying to copy multi-valued fields into a single-valued field
+    // detect if they're trying to copy multivalued fields into a single-valued field
     Object multiValued = diff.get(MULTIVALUED);
     if (multiValued == null) {
       // mv not overridden explicitly, but we need the actual value, which will come from the new
@@ -404,7 +404,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
               name,
               src);
           multiValued = Boolean.TRUE;
-          diff.put(MULTIVALUED, multiValued);
+          diff.put(MULTIVALUED, true);
           break;
         }
       }
@@ -415,8 +415,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
       validateMultiValuedChange(configSet, schemaField, Boolean.FALSE);
     }
 
-    // switch from single-valued to multi-valued requires a full rebuild
-    // See SOLR-12185 ... if we're switching from single to multi-valued, then it's a big operation
+    // switch from single-valued to multivalued requires a full rebuild
+    // See SOLR-12185 ... if we're switching from single to multivalued, then it's a big operation
     if (fieldHasMultiValuedChange(multiValued, schemaField)) {
       needsRebuild = true;
       log.warn(
@@ -709,7 +709,7 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
           continue; // cannot copy to self
         }
 
-        // make sure the field exists and is multi-valued if this field is
+        // make sure the field exists and is multivalued if this field is
         SchemaField toAddField = schema.getFieldOrNull(toAdd);
         if (toAddField != null) {
           if (!field.multiValued() || toAddField.multiValued()) {

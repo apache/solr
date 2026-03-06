@@ -101,7 +101,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
               + MAX_STREAM_SIZE
               + " bytes is the max upload size for sample documents.");
     }
-    // use a byte stream for the parsers in case they need to re-parse using a different strategy
+    // use a byte stream for the parsers in case they need to reparse using a different strategy
     // e.g. JSON vs. JSON lines or different CSV strategies ...
     ContentStreamBase.ByteArrayStream byteStream =
         new ContentStreamBase.ByteArrayStream(uploadedBytes, fileSource, contentType);
@@ -161,7 +161,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       String line;
       while ((line = br.readLine()) != null) {
         line = line.trim();
-        if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
+        if (line.startsWith("{") && line.endsWith("}")) {
           Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
           if (jsonLine instanceof Map) {
             docs.add((Map<String, Object>) jsonLine);
@@ -203,7 +203,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
       if (lines.length > 1) {
         for (String line : lines) {
           line = line.trim();
-          if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
+          if (line.startsWith("{") && line.endsWith("}")) {
             isJsonLines = true;
             break;
           }
@@ -298,7 +298,7 @@ public class DefaultSampleDocumentsLoader implements SampleDocumentsLoader {
     List<Map<String, Object>> docs = new ArrayList<>(lines.length);
     for (String line : lines) {
       line = line.trim();
-      if (!line.isEmpty() && line.startsWith("{") && line.endsWith("}")) {
+      if (line.startsWith("{") && line.endsWith("}")) {
         Object jsonLine = ObjectBuilder.getVal(new JSONParser(line));
         if (jsonLine instanceof Map) {
           docs.add((Map<String, Object>) jsonLine);

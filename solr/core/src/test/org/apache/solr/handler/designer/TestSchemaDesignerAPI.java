@@ -226,7 +226,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     @SuppressWarnings("unchecked")
     List<Object> queryDocs = (List<Object>) queryResponse.get("docs");
     assertNotNull("response.docs must be a list", queryDocs);
-    assertTrue("response.docs must be non-empty", queryDocs.size() > 0);
+    assertFalse("response.docs must be non-empty", queryDocs.isEmpty());
 
     // publish schema to a config set that can be used by real collections
     String collection = "techproducts";
@@ -449,7 +449,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(response.unknownProperties().get("fields"));
 
     // update an existing field
-    // switch a single-valued field to a multi-valued field, which triggers a full rebuild of the
+    // switch a single-valued field to a multivalued field, which triggers a full rebuild of the
     // "temp" collection
     stream = new ContentStreamBase.FileStream(getFile("schema-designer/update-author-field.json"));
     stream.setContentType(JSON_MIME);

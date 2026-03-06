@@ -372,7 +372,7 @@ public class SchemaDesignerAPI extends JerseyResource
 
   @Override
   @PermissionName(CONFIG_READ_PERM)
-  public FlexibleSolrJerseyResponse listCollectionsForConfig(String configSet) throws Exception {
+  public FlexibleSolrJerseyResponse listCollectionsForConfig(String configSet) {
     requireNotEmpty(CONFIG_SET_PARAM, configSet);
     return buildFlexibleResponse(
         Collections.singletonMap(
