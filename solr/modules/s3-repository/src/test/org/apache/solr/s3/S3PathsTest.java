@@ -163,6 +163,39 @@ public class S3PathsTest extends AbstractS3ClientTest {
     assertTrue(client.pathExists("/my-file2"));
   }
 
+  /**
+   * Test that a directory containing objects but lacking an explicit directory marker (i.e. a
+   * "virtual directory") is still recognised as a directory. This mirrors the situation that arises
+   * after an {@code aws s3 sync} round-trip: {@code aws s3 sync} skips directory marker objects
+   * (keys ending with {@code /}) when downloading, so they are never re-uploaded and are absent in
+   * the target bucket.
+   */
+  @Test
+  public void testVirtualDirectoryWithoutMarker() throws S3Exception {
+    // Set up a normal directory tree with markers and content.
+    client.createDirectory("/virtual-dir");
+    pushContent("/virtual-dir/file1", "file1");
+    client.createDirectory("/virtual-dir/sub-dir");
+    pushContent("/virtual-dir/sub-dir/file2", "file2");
+
+    // Simulate the post-sync state by deleting just the directory marker objects.
+    // deleteObjects(Collection, int) accepts raw keys, bypassing sanitizedFilePath checks.
+    client.deleteObjects(List.of("virtual-dir/", "virtual-dir/sub-dir/"), 100);
+
+    // The paths should still be considered directories via the virtual-directory fallback.
+    assertTrue(
+        "A path with objects under it should be considered a virtual directory",
+        client.isDirectory("/virtual-dir"));
+    assertTrue(
+        "A nested path with objects under it should be considered a virtual directory",
+        client.isDirectory("/virtual-dir/sub-dir"));
+
+    // A path with neither a marker nor any objects underneath must not be a directory.
+    assertFalse(
+        "A path with no objects and no marker should not be a directory",
+        client.isDirectory("/virtual-dir/empty-sub-dir"));
+  }
+
   /** Check listing objects of a directory. */
   @Test
   public void testListDir() throws S3Exception {
