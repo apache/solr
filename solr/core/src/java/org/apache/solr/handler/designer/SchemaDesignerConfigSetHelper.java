@@ -516,6 +516,13 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
   @SuppressWarnings("unchecked")
   List<SolrInputDocument> getStoredSampleDocs(final String configSet) throws IOException {
+
+    try {
+      ensureSystemCollectionExists();
+    } catch (SolrServerException e) {
+      throw new IOException("Failed to ensure .system collection exists", e);
+    }
+
     var request = new GenericSolrRequest(SolrRequest.METHOD.GET, "/blob/" + configSet + "_sample");
     request.setRequiresCollection(true);
     request.setResponseParser(new InputStreamResponseParser("filestream"));
