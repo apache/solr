@@ -52,7 +52,16 @@ public abstract class ConfigSetService {
   public static final String FORBIDDEN_FILE_TYPES_PROP = "solr.configset.forbidden.file.types";
   public static final Set<String> DEFAULT_FORBIDDEN_FILE_TYPES =
       Set.of("class", "java", "jar", "tgz", "zip", "tar", "gz");
-  private static volatile Set<String> USE_FORBIDDEN_FILE_TYPES = null;
+
+  private static final Set<String> USE_FORBIDDEN_FILE_TYPES;
+
+  static {
+    String userForbiddenFileTypes = EnvUtils.getProperty(FORBIDDEN_FILE_TYPES_PROP);
+    USE_FORBIDDEN_FILE_TYPES =
+        StrUtils.isNullOrEmpty(userForbiddenFileTypes)
+            ? DEFAULT_FORBIDDEN_FILE_TYPES
+            : Set.of(userForbiddenFileTypes.split(","));
+  }
 
   /**
    * Determine if a file path is forbidden for use in configsets based on its file extension.
@@ -61,19 +70,6 @@ public abstract class ConfigSetService {
    * @return true if the file extension is among the forbidden types
    */
   public static boolean isFileForbiddenInConfigSets(String filePath) {
-    // Try to set the forbidden file types just once, since it is set by SysProp/EnvVar
-    if (USE_FORBIDDEN_FILE_TYPES == null) {
-      synchronized (DEFAULT_FORBIDDEN_FILE_TYPES) {
-        if (USE_FORBIDDEN_FILE_TYPES == null) {
-          String userForbiddenFileTypes = EnvUtils.getProperty(FORBIDDEN_FILE_TYPES_PROP);
-          if (StrUtils.isNullOrEmpty(userForbiddenFileTypes)) {
-            USE_FORBIDDEN_FILE_TYPES = DEFAULT_FORBIDDEN_FILE_TYPES;
-          } else {
-            USE_FORBIDDEN_FILE_TYPES = Set.of(userForbiddenFileTypes.split(","));
-          }
-        }
-      }
-    }
     int lastDot = filePath.lastIndexOf('.');
     return lastDot >= 0 && USE_FORBIDDEN_FILE_TYPES.contains(filePath.substring(lastDot + 1));
   }
