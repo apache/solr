@@ -95,7 +95,6 @@ public class KubernetesConfigSetService extends ConfigSetService {
     coreV1Api = new CoreV1Api(kubeClient);
 
     existingConfigSetConfigMaps = new ConcurrentHashMap<>();
-    // TODO: Finalize these
     solrCloudNamespace = System.getenv(POD_NAMESPACE_ENV_VAR);
     solrCloudName = System.getenv(SOLR_CLOUD_NAME_ENV_VAR);
   }
@@ -162,7 +161,8 @@ public class KubernetesConfigSetService extends ConfigSetService {
     return Optional.ofNullable(configMap.getMetadata())
         .map(V1ObjectMeta::getAnnotations)
         .map(ann -> ann.get(CONFIG_SET_NAME_ANNOTATION_KEY))
-        .orElse(configMap.getMetadata().getName());
+        .orElseGet(
+            () -> configMap.getMetadata() != null ? configMap.getMetadata().getName() : null);
   }
 
   private V1ConfigMap getCachedConfigMap(String configName) throws SolrException {
@@ -231,7 +231,7 @@ public class KubernetesConfigSetService extends ConfigSetService {
     String configMapName = "";
     try {
       if (existingConfigSetConfigMaps.containsKey(configName)) {
-        V1ConfigMap configMap = existingConfigSetConfigMaps.get(configName);
+        V1ConfigMap configMap = getCachedConfigMap(configName);
         configMapName = configMap.getMetadata().getName();
         coreV1Api
             .deleteNamespacedConfigMap(configMapName, configMap.getMetadata().getNamespace())
@@ -303,8 +303,12 @@ public class KubernetesConfigSetService extends ConfigSetService {
                 fromConfigMap.getMetadata().getName()));
       }
       if (existingConfigSetConfigMaps.containsKey(toConfig)) {
-        // Patch an existing configSet
-        // TODO: Should this be an option or an error?
+        // TODO: Patch an existing configSet once patch support is implemented
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST,
+            "ConfigSet "
+                + toConfig
+                + " already exists; overwrite not yet supported for Kubernetes");
       } else {
         V1ConfigMap toConfigMap = newConfigMap(toConfig).data(existingData);
         coreV1Api.createNamespacedConfigMap(solrCloudNamespace, toConfigMap).execute();
@@ -388,12 +392,9 @@ public class KubernetesConfigSetService extends ConfigSetService {
     var existingData = configMap.getData();
     String newMetadata = Utils.toJSONString(data);
 
-    String patchType;
-    if (existingData == null || !existingData.containsKey(CONFIG_SET_METADATA_KEY)) {
-      patchType = "insert";
-    } else if (!data.get(CONFIG_SET_METADATA_KEY).equals(newMetadata)) {
-      patchType = "replace";
-    } else {
+    if (existingData != null
+        && existingData.containsKey(CONFIG_SET_METADATA_KEY)
+        && newMetadata.equals(existingData.get(CONFIG_SET_METADATA_KEY))) {
       return;
     }
     // TODO: Patch the data using JSON Patch

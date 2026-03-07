@@ -62,7 +62,6 @@ public class KubernetesSolrResourceLoader extends SolrResourceLoader {
     super(instanceDir, parent);
     this.configSetName = configSetName;
     this.coreV1Api = coreV1Api;
-    // TODO: namespace should come from the environment (POD_NAMESPACE env var)
     this.namespace = System.getenv(KubernetesConfigSetService.POD_NAMESPACE_ENV_VAR);
   }
 
@@ -114,7 +113,7 @@ public class KubernetesSolrResourceLoader extends SolrResourceLoader {
         }
       }
     } catch (ApiException e) {
-      log.debug(
+      log.warn(
           "Could not retrieve resource '{}' from Kubernetes ConfigMap for configSet '{}'",
           resource,
           configSetName,
