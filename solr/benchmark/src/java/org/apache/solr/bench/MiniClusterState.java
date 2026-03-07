@@ -47,6 +47,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.embedded.JettySolrRunner;
@@ -157,6 +158,11 @@ public class MiniClusterState {
       IOUtils.closeQuietly(client);
       cluster.shutdown();
       logClusterDirectorySize();
+
+      String orr = ObjectReleaseTracker.clearObjectTrackerAndCheckEmpty();
+      if (orr != null) {
+        throw new AssertionError("ObjectReleaseTracker found unreleased objects:\n" + orr);
+      }
     }
 
     private void logClusterDirectorySize() throws IOException {
