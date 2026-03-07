@@ -16,116 +16,115 @@
  */
 package org.apache.solr.cloud.kube;
 
+import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.apis.CoreV1Api;
-import org.apache.solr.cloud.ZkConfigSetService;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.ZooKeeperException;
-import org.apache.solr.common.util.Pair;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.core.SolrResourceNotFoundException;
-import org.apache.solr.schema.ZkIndexSchemaReader;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
+import io.kubernetes.client.openapi.models.V1ConfigMap;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.Locale;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrResourceNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** ResourceLoader that works with Kubernetes ConfigMaps. */
+/**
+ * ResourceLoader that works with Kubernetes ConfigMaps.
+ *
+ * <p>This loader attempts to load resources from a Kubernetes ConfigMap corresponding to the
+ * configured configSet. If a resource is not found in the ConfigMap, it falls back to the classpath
+ * loader.
+ */
 public class KubernetesSolrResourceLoader extends SolrResourceLoader {
 
-  private final String configSetZkPath;
-  private CoreV1Api coreV1Api;
-  private ZkIndexSchemaReader zkIndexSchemaReader;
+  private final String configSetName;
+  private final String namespace;
+  private final CoreV1Api coreV1Api;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   /**
-   * This loader will first attempt to load resources from a Kubernetes ConfigMap, but if not found will delegate
-   * to the context classloader when possible, otherwise it will attempt to resolve resources using
-   * any jar files found in the "lib/" directory in the specified instance directory.
+   * Creates a new KubernetesSolrResourceLoader.
+   *
+   * <p>This loader will first attempt to load resources from a Kubernetes ConfigMap for the given
+   * configSet. If not found, it will delegate to the context classloader.
+   *
+   * @param instanceDir the instance directory for the core
+   * @param configSetName the name of the configSet (used to look up the ConfigMap)
+   * @param parent the parent classloader
+   * @param coreV1Api the Kubernetes CoreV1Api client
    */
   public KubernetesSolrResourceLoader(
-      Path instanceDir, String configSet, ClassLoader parent, CoreV1Api coreV1Api) {
+      Path instanceDir, String configSetName, ClassLoader parent, CoreV1Api coreV1Api) {
     super(instanceDir, parent);
+    this.configSetName = configSetName;
     this.coreV1Api = coreV1Api;
-    configSetZkPath = ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet;
-  }
-
-  public Pair<String, Integer> getZkResourceInfo(String resource) {
-    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
-    try {
-      Stat stat = zkController.getZkClient().exists(file, null, true);
-      if (stat != null) {
-        return new Pair<>(file, stat.getVersion());
-      } else {
-        return null;
-      }
-    } catch (Exception e) {
-      return null;
-    }
+    // TODO: namespace should come from the environment (POD_NAMESPACE env var)
+    this.namespace = System.getenv(KubernetesConfigSetService.POD_NAMESPACE_ENV_VAR);
   }
 
   /**
-   * Opens any resource by its name. By default, this will look in multiple locations to load the
-   * resource: $configDir/$resource from ZooKeeper. It will look for it in any jar accessible
-   * through the class loader if it cannot be found in ZooKeeper. Override this method to customize
-   * loading resources.
+   * Opens any resource by its name. First attempts to load the resource from the Kubernetes
+   * ConfigMap for the configSet. If not found, delegates to the parent classloader.
    *
    * @return the stream for the named resource
    */
   @Override
   public InputStream openResource(String resource) throws IOException {
-    InputStream is;
-    String file = (".".equals(resource)) ? configSetZkPath : configSetZkPath + "/" + resource;
-    int maxTries = 10;
-    Exception exception = null;
-    while (maxTries-- > 0) {
-      try {
-        if (zkController.pathExists(file)) {
-          Stat stat = new Stat();
-          byte[] bytes = zkController.getZkClient().getData(file, null, stat, true);
-          return new ZkByteArrayInputStream(bytes, file, stat);
-        } else {
-          // Path does not exists. We only retry for session expired exceptions.
-          break;
-        }
-      } catch (KeeperException.SessionExpiredException e) {
-        exception = e;
-        if (!zkController.getCoreContainer().isShutDown()) {
-          // Retry in case of session expiry
-          try {
-            Thread.sleep(1000);
-            log.debug("Sleeping for 1s before retrying fetching resource={}", resource);
-          } catch (InterruptedException ie) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Could not load resource=" + resource, ie);
-          }
-        }
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        throw new IOException("Error opening " + file, e);
-      } catch (Exception e) {
-        throw new IOException("Error opening " + file, e);
-      }
-    }
-
-    if (exception != null) {
-      throw new IOException(
-          "We re-tried 10 times but was still unable to fetch resource=" + resource + " from ZK",
-          exception);
-    }
-
+    // Try to get the resource from the Kubernetes ConfigMap
     try {
-      // delegate to the class loader (looking into $INSTANCE_DIR/lib jars)
-      is = classLoader.getResourceAsStream(resource.replace(File.separatorChar, '/'));
+      // TODO: Cache the ConfigMap locally rather than fetching from the API each time.
+      // Consider passing in the existingConfigSetConfigMaps cache from KubernetesConfigSetService.
+      String solrCloudName = System.getenv(KubernetesConfigSetService.SOLR_CLOUD_NAME_ENV_VAR);
+      String labelSelector =
+          String.format(
+              Locale.ROOT,
+              "%s=%s",
+              String.format(
+                  Locale.ROOT, KubernetesConfigSetService.CONFIG_SET_LABEL_KEY, solrCloudName),
+              KubernetesConfigSetService.CONFIG_SET_LABEL_VALUE);
+
+      V1ConfigMap configMap =
+          coreV1Api
+              .listNamespacedConfigMap(namespace)
+              .labelSelector(labelSelector)
+              .execute()
+              .getItems()
+              .stream()
+              .filter(
+                  cm -> {
+                    if (cm.getMetadata() == null || cm.getMetadata().getAnnotations() == null) {
+                      return false;
+                    }
+                    return configSetName.equals(
+                        cm.getMetadata()
+                            .getAnnotations()
+                            .get(KubernetesConfigSetService.CONFIG_SET_NAME_ANNOTATION_KEY));
+                  })
+              .findFirst()
+              .orElse(null);
+
+      if (configMap != null && configMap.getData() != null) {
+        String data = configMap.getData().get(resource);
+        if (data != null) {
+          return new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+        }
+      }
+    } catch (ApiException e) {
+      log.debug(
+          "Could not retrieve resource '{}' from Kubernetes ConfigMap for configSet '{}'",
+          resource,
+          configSetName,
+          e);
+    }
+
+    // Fall back to the classpath loader
+    InputStream is;
+    try {
+      is = classLoader.getResourceAsStream(resource.replace('\\', '/'));
     } catch (Exception e) {
       throw new IOException("Error opening " + resource, e);
     }
@@ -133,55 +132,15 @@ public class KubernetesSolrResourceLoader extends SolrResourceLoader {
       throw new SolrResourceNotFoundException(
           "Can't find resource '"
               + resource
-              + "' in classpath or '"
-              + configSetZkPath
+              + "' in classpath or in Kubernetes ConfigMap '"
+              + configSetName
               + "', cwd="
               + System.getProperty("user.dir"));
     }
     return is;
   }
 
-  public static class ZkByteArrayInputStream extends ByteArrayInputStream {
-
-    public final String fileName;
-    private final Stat stat;
-
-    public ZkByteArrayInputStream(byte[] buf, String fileName, Stat stat) {
-      super(buf);
-      this.fileName = fileName;
-      this.stat = stat;
-    }
-
-    public Stat getStat() {
-      return stat;
-    }
-  }
-
-  @Override
-  public String getConfigDir() {
-    throw new ZooKeeperException(
-        ErrorCode.SERVER_ERROR,
-        "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
-  }
-
-  public String getConfigSetZkPath() {
-    return configSetZkPath;
-  }
-
-  public ZkController getZkController() {
-    return zkController;
-  }
-
-  public void setZkIndexSchemaReader(ZkIndexSchemaReader zkIndexSchemaReader) {
-    this.zkIndexSchemaReader = zkIndexSchemaReader;
-  }
-
-  public ZkIndexSchemaReader getZkIndexSchemaReader() {
-    return zkIndexSchemaReader;
-  }
-
-  @Override
-  public CoreContainer getCoreContainer() {
-    return zkController.getCoreContainer();
+  public String getConfigSetName() {
+    return configSetName;
   }
 }

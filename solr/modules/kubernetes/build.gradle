@@ -23,12 +23,25 @@ dependencies {
   api project(':solr:core')
 
   implementation project(':solr:solrj')
+  implementation project(':solr:solrj-zookeeper')
 
-  implementation 'io.kubernetes:client-java'
+  implementation libs.slf4j.api
+  implementation(libs.kubernetes.client.java) {
+    // Exclude optional auth and monitoring dependencies not needed for ConfigMap operations
+    exclude group: 'io.prometheus'
+    exclude group: 'com.amazonaws'
+    exclude group: 'com.google.auth'
+    exclude group: 'com.google.http-client'
+    exclude group: 'io.opencensus'
+  }
+  implementation libs.kubernetes.client.java.api
+  // OkHttp is needed for the Kubernetes client's Call API (buildCall returns okhttp3.Call)
+  implementation libs.squareup.okhttp3.okhttp
 
-  testImplementation project(':solr:test-framework')
-  testImplementation 'junit:junit'
-  testImplementation('org.mockito:mockito-core', {
-    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  })
+  // TODO: Add test dependencies when tests are added
+  // testImplementation project(':solr:test-framework')
+  // testImplementation libs.junit.junit
+  // testImplementation(libs.mockito.core, {
+  //   exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  // })
 }
