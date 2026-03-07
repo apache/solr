@@ -38,10 +38,12 @@ dependencies {
   // OkHttp is needed for the Kubernetes client's Call API (buildCall returns okhttp3.Call)
   implementation libs.squareup.okhttp3.okhttp
 
-  // TODO: Add test dependencies when tests are added
-  // testImplementation project(':solr:test-framework')
-  // testImplementation libs.junit.junit
-  // testImplementation(libs.mockito.core, {
-  //   exclude group: "net.bytebuddy", module: "byte-buddy-agent"
-  // })
+  testImplementation project(':solr:test-framework')
+  testImplementation libs.junit.junit
+  testImplementation(libs.mockito.core, {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testRuntimeOnly(libs.mockito.subclass, {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
 }

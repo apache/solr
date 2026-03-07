@@ -99,6 +99,26 @@ public class KubernetesConfigSetService extends ConfigSetService {
     solrCloudName = System.getenv(SOLR_CLOUD_NAME_ENV_VAR);
   }
 
+  /** Package-private constructor for testing; bypasses {@link ClientBuilder#cluster()}. */
+  KubernetesConfigSetService(
+      SolrResourceLoader loader,
+      boolean hasSchemaCache,
+      CoreV1Api coreV1Api,
+      String namespace,
+      String name) {
+    super(loader, hasSchemaCache);
+    this.kubeClient = null;
+    this.coreV1Api = coreV1Api;
+    this.existingConfigSetConfigMaps = new ConcurrentHashMap<>();
+    this.solrCloudNamespace = namespace;
+    this.solrCloudName = name;
+  }
+
+  /** Package-private helper to pre-populate the configMap cache in tests. */
+  void cacheConfigMap(String configSetName, V1ConfigMap configMap) {
+    existingConfigSetConfigMaps.put(configSetName, configMap);
+  }
+
   public void init() {
     SharedInformerFactory factory = new SharedInformerFactory(kubeClient);
 
@@ -157,7 +177,8 @@ public class KubernetesConfigSetService extends ConfigSetService {
     factory.startAllRegisteredInformers();
   }
 
-  private String extractConfigSetName(V1ConfigMap configMap) {
+  /** Package-private for testing. */
+  String extractConfigSetName(V1ConfigMap configMap) {
     return Optional.ofNullable(configMap.getMetadata())
         .map(V1ObjectMeta::getAnnotations)
         .map(ann -> ann.get(CONFIG_SET_NAME_ANNOTATION_KEY))
