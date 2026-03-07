@@ -26,14 +26,17 @@ import java.util.List;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.MiniClusterState;
 import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.stream.CloudSolrStream;
 import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.TupleStream;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -67,7 +70,7 @@ public class StreamingSearch {
     private String zkHost;
     private ModifiableSolrParams params;
     private StreamContext streamContext;
-    private HttpJettySolrClient httpJettySolrClient;
+    private SolrClient httpSolrClient;
 
     @Setup(Level.Trial)
     public void setup(MiniClusterBenchState miniClusterState) throws Exception {
@@ -95,18 +98,17 @@ public class StreamingSearch {
     @Setup(Level.Iteration)
     public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
         throws SolrServerException, IOException {
-      System.setProperty("solr.http1", String.valueOf(useHttp1)); // used by our HTTP clients
-      SolrClientCache solrClientCache = new SolrClientCache();
+      var httpSolrClient = new HttpJettySolrClient.Builder().useHttp1_1(useHttp1).build();
+      this.httpSolrClient = httpSolrClient;
+      SolrClientCache solrClientCache = new SolrClientCache(httpSolrClient);
       streamContext = new StreamContext();
       streamContext.setSolrClientCache(solrClientCache);
     }
 
     @TearDown(Level.Iteration)
-    public void teardownIt() throws IOException {
+    public void teardownIt() {
       streamContext.getSolrClientCache().close();
-      if (httpJettySolrClient != null) {
-        httpJettySolrClient.close();
-      }
+      IOUtils.closeQuietly(httpSolrClient);
     }
   }
 
