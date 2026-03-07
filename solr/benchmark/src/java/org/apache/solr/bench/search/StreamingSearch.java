@@ -24,8 +24,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
-import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
+import org.apache.solr.bench.SolrBenchState;
+import org.apache.solr.bench.SolrBenchState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -94,7 +94,7 @@ public class StreamingSearch {
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws SolrServerException, IOException {
       SolrClientCache solrClientCache;
       // TODO tune params?
@@ -116,7 +116,7 @@ public class StreamingSearch {
 
   @Benchmark
   public Object stream(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     CloudSolrStream stream = new CloudSolrStream(benchState.zkHost, collection, benchState.params);
     stream.setStreamContext(benchState.streamContext);

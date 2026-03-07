@@ -24,7 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -67,7 +67,7 @@ public class ExitableDirectoryReaderSearch {
     int WORDS = NUM_DOCS / 100;
 
     @Setup(Level.Trial)
-    public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupTrial(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws Exception {
       miniClusterState.setUseHttp1(true);
       System.setProperty("documentCache.enabled", "false");
@@ -116,7 +116,7 @@ public class ExitableDirectoryReaderSearch {
     private static final String matchExpression = "ExitableTermsEnum:-1";
 
     @Setup(Level.Iteration)
-    public void setupQueries(MiniClusterState.MiniClusterBenchState state) throws Exception {
+    public void setupQueries(SolrBenchState.MiniClusterBenchState state) throws Exception {
       if (verifyEDRInUse) {
         TestInjection.queryTimeout = new CallerSpecificQueryLimit(Set.of(matchExpression));
       }
@@ -154,13 +154,13 @@ public class ExitableDirectoryReaderSearch {
 
   private static ModifiableSolrParams createInitialParams() {
     ModifiableSolrParams params =
-        MiniClusterState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
+        SolrBenchState.params("rows", "100", "timeAllowed", "1000", "fl", "*");
     return params;
   }
 
   @Benchmark
   public void testShortQuery(
-      MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
+      SolrBenchState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();
@@ -172,7 +172,7 @@ public class ExitableDirectoryReaderSearch {
 
   @Benchmark
   public void testLongQuery(
-      MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
+      SolrBenchState.MiniClusterBenchState miniClusterState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();

@@ -24,7 +24,7 @@ import java.util.SplittableRandom;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.BaseBenchState;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -100,7 +100,7 @@ public class JsonFaceting {
 
     @Setup(Level.Trial)
     public void setup(
-        BenchmarkParams benchmarkParams, MiniClusterState.MiniClusterBenchState miniClusterState)
+        BenchmarkParams benchmarkParams, SolrBenchState.MiniClusterBenchState miniClusterState)
         throws Exception {
 
       System.setProperty("maxMergeAtOnce", "50");
@@ -137,7 +137,7 @@ public class JsonFaceting {
 
       params = new ModifiableSolrParams();
 
-      MiniClusterState.params(
+      SolrBenchState.params(
           params,
           "q",
           "*:*",
@@ -167,7 +167,7 @@ public class JsonFaceting {
         params.set("timeAllowed", "5000");
       }
 
-      // MiniClusterState.log("params: " + params + "\n");
+      // SolrBenchState.log("params: " + params + "\n");
     }
 
     @State(Scope.Thread)
@@ -185,7 +185,7 @@ public class JsonFaceting {
   @Benchmark
   @Timeout(time = 500, timeUnit = TimeUnit.SECONDS)
   public void jsonFacet(
-      MiniClusterState.MiniClusterBenchState miniClusterState,
+      SolrBenchState.MiniClusterBenchState miniClusterState,
       BenchState state,
       BenchState.ThreadState threadState,
       Blackhole bh)
@@ -195,7 +195,7 @@ public class JsonFaceting {
     NamedList<Object> result =
         miniClusterState.client.requestWithBaseUrl(url, queryRequest, state.collection);
 
-    // MiniClusterState.log("result: " + result);
+    // SolrBenchState.log("result: " + result);
 
     bh.consume(result);
   }

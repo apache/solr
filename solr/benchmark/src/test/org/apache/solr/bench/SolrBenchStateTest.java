@@ -42,8 +42,8 @@ import org.openjdk.jmh.runner.WorkloadParams;
 import org.openjdk.jmh.runner.options.TimeValue;
 
 @ThreadLeakLingering(linger = 10)
-public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
-  private MiniClusterState.MiniClusterBenchState miniBenchState;
+public class SolrBenchStateTest extends SolrTestCaseJ4 {
+  private SolrBenchState.MiniClusterBenchState miniBenchState;
   private BaseBenchState baseBenchState;
   private BenchmarkParams benchParams;
 
@@ -53,7 +53,7 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
     System.setProperty("workBaseDir", createTempDir("work").toString());
     System.setProperty("random.counts", "true");
 
-    miniBenchState = new MiniClusterState.MiniClusterBenchState();
+    miniBenchState = new SolrBenchState.MiniClusterBenchState();
     benchParams =
         new BenchmarkParams(
             "benchmark",
@@ -114,7 +114,7 @@ public class MiniClusterBenchStateTest extends SolrTestCaseJ4 {
 
     miniBenchState.forceMerge(collection, 15);
 
-    ModifiableSolrParams params = MiniClusterState.params("q", "*:*");
+    ModifiableSolrParams params = SolrBenchState.params("q", "*:*");
     QueryRequest queryRequest = new QueryRequest(params);
     QueryResponse result = queryRequest.process(miniBenchState.client, collection);
 

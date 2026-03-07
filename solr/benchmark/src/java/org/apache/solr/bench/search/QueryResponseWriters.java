@@ -23,8 +23,8 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 
 import java.io.IOException;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
-import org.apache.solr.bench.MiniClusterState.MiniClusterBenchState;
+import org.apache.solr.bench.SolrBenchState;
+import org.apache.solr.bench.SolrBenchState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -91,7 +91,7 @@ public class QueryResponseWriters {
 
   @Benchmark
   public Object query(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     return miniClusterState.client.request(benchState.q, collection);
   }

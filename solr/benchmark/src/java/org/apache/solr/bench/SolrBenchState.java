@@ -60,7 +60,7 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
 
 /** The base class for Solr JMH benchmarks that operate against a {@code MiniSolrCloudCluster}. */
-public class MiniClusterState {
+public class SolrBenchState {
 
   /** The constant PROC_COUNT. */
   public static final int PROC_COUNT =
@@ -556,7 +556,7 @@ public class MiniClusterState {
    */
   public static Path getFile(String name) {
     final URL url =
-        MiniClusterState.class
+        SolrBenchState.class
             .getClassLoader()
             .getResource(name.replace(FileSystems.getDefault().getSeparator(), "/"));
     if (url != null) {

@@ -24,7 +24,7 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -114,7 +114,7 @@ public class CloudIndexing {
     }
 
     @Setup(Level.Trial)
-    public void doSetup(MiniClusterState.MiniClusterBenchState miniClusterState) throws Exception {
+    public void doSetup(SolrBenchState.MiniClusterBenchState miniClusterState) throws Exception {
       preGenerate();
 
       System.setProperty("mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
@@ -124,7 +124,7 @@ public class CloudIndexing {
   }
 
   @Benchmark
-  public Object indexDoc(MiniClusterState.MiniClusterBenchState miniClusterState, BenchState state)
+  public Object indexDoc(SolrBenchState.MiniClusterBenchState miniClusterState, BenchState state)
       throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(state.getNextDoc());

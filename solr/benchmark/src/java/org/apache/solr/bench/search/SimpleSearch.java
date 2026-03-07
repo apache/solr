@@ -19,7 +19,7 @@ package org.apache.solr.bench.search;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.solr.bench.BaseBenchState;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -60,7 +60,7 @@ public class SimpleSearch {
     QueryRequest q = new QueryRequest(new SolrQuery("q", "id:0")); // no match is OK
 
     @Setup(Level.Trial)
-    public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupTrial(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws Exception {
       miniClusterState.setUseHttp1(useHttp1);
       miniClusterState.startMiniCluster(1);
@@ -68,7 +68,7 @@ public class SimpleSearch {
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
@@ -141,7 +141,7 @@ public class SimpleSearch {
    */
   @Benchmark
   public Object query(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState, Blackhole bh)
+      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState, Blackhole bh)
       throws SolrServerException, IOException {
     if (benchState.strict) {
       return miniClusterState.client.request(benchState.q, COLLECTION);

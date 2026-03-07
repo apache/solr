@@ -24,7 +24,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import org.apache.solr.bench.BaseBenchState;
 import org.apache.solr.bench.Docs;
-import org.apache.solr.bench.MiniClusterState;
+import org.apache.solr.bench.SolrBenchState;
 import org.apache.solr.bench.SolrRandomnessSource;
 import org.apache.solr.bench.generators.SolrGen;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -71,7 +71,7 @@ public class FilterCache {
     String baseUrl;
 
     @Setup(Level.Trial)
-    public void setupTrial(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupTrial(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws Exception {
       String cacheEnabled = cacheEnabledAsyncSize.split(":")[0];
       String asyncCache = cacheEnabledAsyncSize.split(":")[1];
@@ -105,7 +105,7 @@ public class FilterCache {
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(MiniClusterState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
@@ -113,7 +113,7 @@ public class FilterCache {
     }
 
     @TearDown(Level.Iteration)
-    public void dumpMetrics(MiniClusterState.MiniClusterBenchState miniClusterState) {
+    public void dumpMetrics(SolrBenchState.MiniClusterBenchState miniClusterState) {
       // TODO add a verbose flag
 
       String url =
@@ -135,7 +135,7 @@ public class FilterCache {
 
   @Benchmark
   public Object filterCacheMultipleQueries(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     return miniClusterState.client.requestWithBaseUrl(
         benchState.baseUrl,
@@ -145,7 +145,7 @@ public class FilterCache {
 
   @Benchmark
   public Object filterCacheSingleQuery(
-      BenchState benchState, MiniClusterState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
       throws SolrServerException, IOException {
     return miniClusterState.client.requestWithBaseUrl(
         benchState.baseUrl, benchState.q1, COLLECTION);
