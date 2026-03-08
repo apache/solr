@@ -43,12 +43,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A servlet filter to handle authentication. Anything that needs to be served without
- * authentication (such as UI) must be resolved and returned by a filter preceding this one,
- * typically by forwarding to the default servlet. Also, any tracing, auditing and ratelimiting
- * decisions or setup usually want to be resolved ahead of this filter. Similarly, any potentially
- * expensive operations should occur after this filter to eliminate denial of service by
- * unauthenticated users.
+ * A servlet filter to handle authentication. Anything this filter wraps that needs to be served
+ * without authentication (such as UI) must be resolved and returned by a filter preceding this one,
+ * typically by forwarding to the default servlet or another servlet. Also, any tracing, auditing
+ * and ratelimiting decisions or setup usually want to be resolved ahead of this filter. Similarly,
+ * any potentially expensive operations should occur after this filter to eliminate denial of
+ * service by unauthenticated users.
  */
 public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
 
