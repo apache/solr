@@ -71,8 +71,7 @@ public class FilterCache {
     String baseUrl;
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState solrBenchState)
-        throws Exception {
+    public void setupTrial(SolrBenchState solrBenchState) throws Exception {
       String cacheEnabled = cacheEnabledAsyncSize.split(":")[0];
       String asyncCache = cacheEnabledAsyncSize.split(":")[1];
       String cacheSize = cacheEnabledAsyncSize.split(":")[2];
@@ -81,7 +80,7 @@ public class FilterCache {
       System.setProperty("filterCache.initialSize", cacheSize);
       System.setProperty("filterCache.async", asyncCache);
 
-      solrBenchState.startMiniCluster(1);
+      solrBenchState.startSolr(1);
       solrBenchState.createCollection(COLLECTION, 1, 1);
 
       Docs docs = Docs.docs().field("id", integers().incrementing());
@@ -134,8 +133,7 @@ public class FilterCache {
   }
 
   @Benchmark
-  public Object filterCacheMultipleQueries(
-      BenchState benchState, SolrBenchState solrBenchState)
+  public Object filterCacheMultipleQueries(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     return solrBenchState.client.requestWithBaseUrl(
         benchState.baseUrl,
@@ -144,10 +142,8 @@ public class FilterCache {
   }
 
   @Benchmark
-  public Object filterCacheSingleQuery(
-      BenchState benchState, SolrBenchState solrBenchState)
+  public Object filterCacheSingleQuery(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    return solrBenchState.client.requestWithBaseUrl(
-        benchState.baseUrl, benchState.q1, COLLECTION);
+    return solrBenchState.client.requestWithBaseUrl(benchState.baseUrl, benchState.q1, COLLECTION);
   }
 }

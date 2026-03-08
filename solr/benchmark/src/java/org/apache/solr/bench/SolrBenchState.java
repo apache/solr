@@ -59,9 +59,7 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
 
-/**
- * JMH {@link State} class for Solr benchmarks operating against a {@code MiniSolrCloudCluster}.
- */
+/** JMH {@link State} class for Solr benchmarks. This is the benchmark's facade to Solr. */
 @State(Scope.Benchmark)
 public class SolrBenchState {
 
@@ -143,13 +141,13 @@ public class SolrBenchState {
   }
 
   /**
-   * Shutdown mini cluster.
+   * Shutdown Solr.
    *
    * @param benchmarkParams the benchmark params
    * @throws Exception the exception
    */
   @TearDown(Level.Trial)
-  public void shutdownMiniCluster(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
+  public void shutdownSolr(BenchmarkParams benchmarkParams, BaseBenchState baseBenchState)
       throws Exception {
     BaseBenchState.dumpHeap(benchmarkParams);
 
@@ -246,11 +244,11 @@ public class SolrBenchState {
   }
 
   /**
-   * Start mini cluster.
+   * Start Solr.
    *
    * @param nodeCount the node count
    */
-  public void startMiniCluster(int nodeCount) {
+  public void startSolr(int nodeCount) {
     log("starting mini cluster at base directory: " + miniClusterBaseDir.toAbsolutePath());
 
     if (!allowClusterReuse && Files.exists(miniClusterBaseDir)) {
@@ -313,8 +311,7 @@ public class SolrBenchState {
    * @param numReplicas the num replicas
    * @throws Exception the exception
    */
-  public void createCollection(String collection, int numShards, int numReplicas)
-      throws Exception {
+  public void createCollection(String collection, int numShards, int numReplicas) throws Exception {
     if (createCollectionAndIndex) {
       try {
 
@@ -356,8 +353,7 @@ public class SolrBenchState {
    * @param docCount the doc count
    * @throws Exception the exception
    */
-  public void index(String collection, Docs docs, int docCount, boolean parallel)
-      throws Exception {
+  public void index(String collection, Docs docs, int docCount, boolean parallel) throws Exception {
     if (createCollectionAndIndex) {
       log("indexing data for benchmark...");
       if (parallel) {
@@ -418,8 +414,7 @@ public class SolrBenchState {
             @Override
             public void run() {
               UpdateRequest updateRequest = new UpdateRequest();
-              final var url =
-                  nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size()));
+              final var url = nodes.get(threadRandom.nextInt(cluster.getJettySolrRunners().size()));
               SolrInputDocument doc = docs.inputDocument();
               // log("add doc " + doc);
               updateRequest.add(doc);

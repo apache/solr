@@ -65,7 +65,7 @@ public class QueryResponseWriters {
     @Setup(Level.Trial)
     public void setup(SolrBenchState solrBenchState) throws Exception {
 
-      solrBenchState.startMiniCluster(1);
+      solrBenchState.startSolr(1);
       solrBenchState.createCollection(collection, 1, 1);
 
       // only stored fields are needed to cover the response writers perf
@@ -89,8 +89,7 @@ public class QueryResponseWriters {
   }
 
   @Benchmark
-  public Object query(
-      BenchState benchState, SolrBenchState solrBenchState)
+  public Object query(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     return solrBenchState.client.request(benchState.q, collection);
   }

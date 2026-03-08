@@ -72,7 +72,7 @@ public class StreamingSearch {
     @Setup(Level.Trial)
     public void setup(SolrBenchState solrBenchState) throws Exception {
 
-      solrBenchState.startMiniCluster(3);
+      solrBenchState.startSolr(3);
       solrBenchState.createCollection(collection, 3, 1);
       Docs docGen =
           docs()
@@ -114,8 +114,7 @@ public class StreamingSearch {
   }
 
   @Benchmark
-  public Object stream(
-      BenchState benchState, SolrBenchState solrBenchState)
+  public Object stream(BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     CloudSolrStream stream = new CloudSolrStream(benchState.zkHost, collection, benchState.params);
     stream.setStreamContext(benchState.streamContext);

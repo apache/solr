@@ -68,10 +68,9 @@ public class NumericSearch {
     Iterator<String> queries;
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState solrBenchState)
-        throws Exception {
+    public void setupTrial(SolrBenchState solrBenchState) throws Exception {
       solrBenchState.setUseHttp1(true);
-      solrBenchState.startMiniCluster(1);
+      solrBenchState.startSolr(1);
       solrBenchState.createCollection(COLLECTION, 1, 1);
       int maxCardinality = 10000;
       int numDocs = 2000000;
@@ -101,8 +100,7 @@ public class NumericSearch {
       q.setParam("facet.field", "numbers_i_dv", "term_low_s", "term_high_s");
       q.setParam("facet.limit", String.valueOf(maxCardinality));
       QueryRequest req = new QueryRequest(q);
-      QueryResponse response =
-          req.processWithBaseUrl(solrBenchState.client, basePath, COLLECTION);
+      QueryResponse response = req.processWithBaseUrl(solrBenchState.client, basePath, COLLECTION);
       Set<String> numbers =
           response.getFacetField("numbers_i_dv").getValues().stream()
               .map(FacetField.Count::getName)
@@ -176,10 +174,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object intSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object intSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.intSetQuery(false).process(solrBenchState.client, COLLECTION);
@@ -188,10 +183,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object longSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object longSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.longSetQuery(false).process(solrBenchState.client, COLLECTION);
@@ -200,10 +192,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object floatSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object floatSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.floatSetQuery(false).process(solrBenchState.client, COLLECTION);
@@ -212,10 +201,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object doubleSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object doubleSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.doubleSetQuery(false).process(solrBenchState.client, COLLECTION);
@@ -224,10 +210,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object intDvSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object intDvSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.intSetQuery(true).process(solrBenchState.client, COLLECTION);
@@ -236,10 +219,7 @@ public class NumericSearch {
   }
 
   @Benchmark
-  public Object longDvSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+  public Object longDvSet(Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.longSetQuery(true).process(solrBenchState.client, COLLECTION);
@@ -249,9 +229,7 @@ public class NumericSearch {
 
   @Benchmark
   public Object floatDvSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+      Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.floatSetQuery(true).process(solrBenchState.client, COLLECTION);
@@ -261,9 +239,7 @@ public class NumericSearch {
 
   @Benchmark
   public Object doubleDvSet(
-      Blackhole blackhole,
-      BenchState benchState,
-      SolrBenchState solrBenchState)
+      Blackhole blackhole, BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
         benchState.doubleSetQuery(true).process(solrBenchState.client, COLLECTION);

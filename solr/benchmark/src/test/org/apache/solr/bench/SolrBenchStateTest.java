@@ -48,7 +48,7 @@ public class SolrBenchStateTest extends SolrTestCaseJ4 {
   private BenchmarkParams benchParams;
 
   @Test
-  public void testMiniClusterState() throws Exception {
+  public void test() throws Exception {
 
     System.setProperty("workBaseDir", createTempDir("work").toString());
     System.setProperty("random.counts", "true");
@@ -82,7 +82,7 @@ public class SolrBenchStateTest extends SolrTestCaseJ4 {
     solrBenchState.doSetup(benchParams, baseBenchState);
 
     int nodeCount = 3;
-    solrBenchState.startMiniCluster(nodeCount);
+    solrBenchState.startSolr(nodeCount);
     String collection = "collection1";
     int numShards = 1;
     int numReplicas = 1;
@@ -128,6 +128,6 @@ public class SolrBenchStateTest extends SolrTestCaseJ4 {
     BaseBenchState.doTearDown(benchParams);
 
     solrBenchState.tearDown(benchParams);
-    solrBenchState.shutdownMiniCluster(benchParams, baseBenchState);
+    solrBenchState.shutdownSolr(benchParams, baseBenchState);
   }
 }

@@ -99,14 +99,13 @@ public class JsonFaceting {
     private ModifiableSolrParams params;
 
     @Setup(Level.Trial)
-    public void setup(
-        BenchmarkParams benchmarkParams, SolrBenchState solrBenchState)
+    public void setup(BenchmarkParams benchmarkParams, SolrBenchState solrBenchState)
         throws Exception {
 
       System.setProperty("maxMergeAtOnce", "50");
       System.setProperty("segmentsPerTier", "50");
 
-      solrBenchState.startMiniCluster(nodeCount);
+      solrBenchState.startSolr(nodeCount);
 
       solrBenchState.createCollection(collection, numShards, numReplicas);
 

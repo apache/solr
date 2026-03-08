@@ -60,10 +60,9 @@ public class SimpleSearch {
     QueryRequest q = new QueryRequest(new SolrQuery("q", "id:0")); // no match is OK
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState solrBenchState)
-        throws Exception {
+    public void setupTrial(SolrBenchState solrBenchState) throws Exception {
       solrBenchState.setUseHttp1(useHttp1);
-      solrBenchState.startMiniCluster(1);
+      solrBenchState.startSolr(1);
       solrBenchState.createCollection(COLLECTION, 1, 1);
     }
 
@@ -140,8 +139,7 @@ public class SimpleSearch {
    * }</pre>
    */
   @Benchmark
-  public Object query(
-      BenchState benchState, SolrBenchState solrBenchState, Blackhole bh)
+  public Object query(BenchState benchState, SolrBenchState solrBenchState, Blackhole bh)
       throws SolrServerException, IOException {
     if (benchState.strict) {
       return solrBenchState.client.request(benchState.q, COLLECTION);

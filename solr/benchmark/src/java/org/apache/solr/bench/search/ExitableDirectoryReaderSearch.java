@@ -67,8 +67,7 @@ public class ExitableDirectoryReaderSearch {
     int WORDS = NUM_DOCS / 100;
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState solrBenchState)
-        throws Exception {
+    public void setupTrial(SolrBenchState solrBenchState) throws Exception {
       solrBenchState.setUseHttp1(true);
       System.setProperty("documentCache.enabled", "false");
       System.setProperty("queryResultCache.enabled", "false");
@@ -78,7 +77,7 @@ public class ExitableDirectoryReaderSearch {
       System.setProperty("segmentsPerTier", "200");
       System.setProperty("maxBufferedDocs", "100");
 
-      solrBenchState.startMiniCluster(1);
+      solrBenchState.startSolr(1);
       log("######### Creating index ...");
       solrBenchState.createCollection(COLLECTION, 1, 1);
       // create a lot of large-ish fields to scan positions
@@ -159,8 +158,7 @@ public class ExitableDirectoryReaderSearch {
   }
 
   @Benchmark
-  public void testShortQuery(
-      SolrBenchState solrBenchState, Blackhole bh, BenchState state)
+  public void testShortQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();
@@ -171,8 +169,7 @@ public class ExitableDirectoryReaderSearch {
   }
 
   @Benchmark
-  public void testLongQuery(
-      SolrBenchState solrBenchState, Blackhole bh, BenchState state)
+  public void testLongQuery(SolrBenchState solrBenchState, Blackhole bh, BenchState state)
       throws Exception {
     SolrInputDocument queryDoc = state.queryFields.inputDocument();
     ModifiableSolrParams params = createInitialParams();
