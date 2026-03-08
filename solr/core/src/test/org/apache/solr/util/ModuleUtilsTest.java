@@ -51,7 +51,7 @@ public class ModuleUtilsTest extends SolrTestCase {
   }
 
   public void testResolveFromSyspropOrEnv() {
-    assertEquals(Set.of(), ModuleUtils.resolveFromSyspropOrEnv());
+    assertTrue(ModuleUtils.resolveFromSyspropOrEnv().isEmpty());
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(Set.of("foo", "bar", "baz", "mod1"), ModuleUtils.resolveFromSyspropOrEnv());
     System.clearProperty("solr.modules");
@@ -65,7 +65,7 @@ public class ModuleUtilsTest extends SolrTestCase {
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
         Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1")));
-    assertEquals(Set.of(), Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("")));
+    assertTrue(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("").isEmpty());
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),

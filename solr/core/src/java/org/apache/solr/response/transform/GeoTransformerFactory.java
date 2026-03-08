@@ -18,7 +18,6 @@ package org.apache.solr.response.transform;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -199,7 +198,7 @@ public class GeoTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return updater.isJSON ? Collections.singleton(updater.display) : Set.of();
+      return updater.isJSON ? Set.of(updater.display) : Set.of();
     }
   }
 
