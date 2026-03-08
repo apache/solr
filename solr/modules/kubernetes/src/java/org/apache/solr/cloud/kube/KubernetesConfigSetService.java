@@ -269,6 +269,18 @@ public class KubernetesConfigSetService extends ConfigSetService {
     }
   }
 
+  private void replaceConfigMapData(V1ConfigMap configMap, Map<String, String> newData)
+      throws IOException {
+    String cmName = configMap.getMetadata().getName();
+    String cmNamespace = configMap.getMetadata().getNamespace();
+    V1ConfigMap updated = new V1ConfigMap().metadata(configMap.getMetadata()).data(newData);
+    try {
+      coreV1Api.replaceNamespacedConfigMap(cmName, cmNamespace, updated).execute();
+    } catch (ApiException e) {
+      throw new IOException("Could not update ConfigMap " + cmName, e);
+    }
+  }
+
   @Override
   public void deleteFilesFromConfig(String configName, List<String> filesToDelete)
       throws IOException {
@@ -279,14 +291,14 @@ public class KubernetesConfigSetService extends ConfigSetService {
     var existingData = configMap.getData();
     Set<String> chosenFilesToDelete = new HashSet<>(filesToDelete);
     if (existingData != null) {
-      // If there is existing data cached, then only delete the files we know to exist
-      // If there is no existing data cached, then try to do a patch delete and fail if it doesn't
-      // work.
       chosenFilesToDelete.retainAll(existingData.keySet());
     }
-    // TODO: Patch the data to delete the files
-    throw new UnsupportedOperationException(
-        "deleteFilesFromConfig not yet implemented for Kubernetes");
+    if (chosenFilesToDelete.isEmpty()) {
+      return;
+    }
+    Map<String, String> newData = new HashMap<>(existingData != null ? existingData : Map.of());
+    newData.keySet().removeAll(chosenFilesToDelete);
+    replaceConfigMapData(configMap, newData);
   }
 
   private V1ConfigMap newConfigMap(String configName) {
@@ -385,9 +397,16 @@ public class KubernetesConfigSetService extends ConfigSetService {
           }
         });
 
-    // TODO: Patch with new Data using JSON Merge Patch or Strategic Merge Patch
-    throw new UnsupportedOperationException(
-        "uploadConfig not yet fully implemented for Kubernetes");
+    if (existingConfigSetConfigMaps.containsKey(configName)) {
+      replaceConfigMapData(getCachedConfigMap(configName), dataToPut);
+    } else {
+      try {
+        V1ConfigMap newCM = newConfigMap(configName).data(dataToPut);
+        coreV1Api.createNamespacedConfigMap(solrCloudNamespace, newCM).execute();
+      } catch (ApiException e) {
+        throw new IOException("Could not create ConfigMap for configSet " + configName, e);
+      }
+    }
   }
 
   @Override
@@ -400,9 +419,9 @@ public class KubernetesConfigSetService extends ConfigSetService {
       V1ConfigMap configMap = getCachedConfigMap(configName);
       var existingData = configMap.getData();
       if (existingData == null || !existingData.containsKey(fileName) || overwriteOnExists) {
-        // TODO: Patch the data
-        throw new UnsupportedOperationException(
-            "uploadFileToConfig not yet implemented for Kubernetes");
+        Map<String, String> newData = new HashMap<>(existingData != null ? existingData : Map.of());
+        newData.put(fileName, new String(data, StandardCharsets.UTF_8));
+        replaceConfigMapData(configMap, newData);
       }
     }
   }
@@ -418,8 +437,9 @@ public class KubernetesConfigSetService extends ConfigSetService {
         && newMetadata.equals(existingData.get(CONFIG_SET_METADATA_KEY))) {
       return;
     }
-    // TODO: Patch the data using JSON Patch
-    throw new UnsupportedOperationException("setConfigMetadata not yet implemented for Kubernetes");
+    Map<String, String> newData = new HashMap<>(existingData != null ? existingData : Map.of());
+    newData.put(CONFIG_SET_METADATA_KEY, newMetadata);
+    replaceConfigMapData(configMap, newData);
   }
 
   @SuppressWarnings("unchecked")

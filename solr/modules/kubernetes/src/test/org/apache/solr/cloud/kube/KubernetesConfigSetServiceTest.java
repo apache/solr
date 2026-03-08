@@ -279,14 +279,11 @@ public class KubernetesConfigSetServiceTest extends SolrTestCase {
   }
 
   @Test
-  public void testUploadFileToConfig_newFile_throwsUnsupported() {
-    // File does not exist in configMap → placeholder throws UnsupportedOperationException
+  public void testUploadFileToConfig_newFile_callsReplace() throws Exception {
     service.cacheConfigMap("config", makeConfigMap("cm-name", "config", Map.of()));
-    assertThrows(
-        UnsupportedOperationException.class,
-        () ->
-            service.uploadFileToConfig(
-                "config", "solrconfig.xml", "<config/>".getBytes(StandardCharsets.UTF_8), false));
+    service.uploadFileToConfig(
+        "config", "solrconfig.xml", "<config/>".getBytes(StandardCharsets.UTF_8), false);
+    verify(coreV1Api).replaceNamespacedConfigMap(eq("cm-name"), any(), any());
   }
 
   // --- setConfigMetadata ---
@@ -306,16 +303,55 @@ public class KubernetesConfigSetServiceTest extends SolrTestCase {
   }
 
   @Test
-  public void testSetConfigMetadata_throwsWhenDifferent() {
+  public void testSetConfigMetadata_callsReplaceWhenDifferent() throws Exception {
     service.cacheConfigMap(
         "config",
         makeConfigMap(
             "cm-name",
             "config",
             Map.of(KubernetesConfigSetService.CONFIG_SET_METADATA_KEY, "old-value")));
-    assertThrows(
-        UnsupportedOperationException.class,
-        () -> service.setConfigMetadata("config", Map.of("new", "data")));
+    service.setConfigMetadata("config", Map.of("new", "data"));
+    verify(coreV1Api).replaceNamespacedConfigMap(eq("cm-name"), any(), any());
+  }
+
+  // --- deleteFilesFromConfig ---
+
+  @Test
+  public void testDeleteFilesFromConfig_removesFiles() throws Exception {
+    service.cacheConfigMap(
+        "config",
+        makeConfigMap(
+            "cm-name", "config", Map.of("solrconfig.xml", "<config/>", "schema.xml", "<schema/>")));
+    service.deleteFilesFromConfig("config", List.of("schema.xml"));
+    verify(coreV1Api).replaceNamespacedConfigMap(eq("cm-name"), any(), any());
+  }
+
+  @Test
+  public void testDeleteFilesFromConfig_noopWhenFilesNotPresent() throws Exception {
+    service.cacheConfigMap(
+        "config", makeConfigMap("cm-name", "config", Map.of("solrconfig.xml", "<config/>")));
+    service.deleteFilesFromConfig("config", List.of("nonexistent.xml"));
+    verify(coreV1Api, never()).replaceNamespacedConfigMap(any(), any(), any());
+  }
+
+  // --- uploadConfig ---
+
+  @Test
+  public void testUploadConfig_existingConfigCallsReplace() throws Exception {
+    service.cacheConfigMap(
+        "config", makeConfigMap("cm-name", "config", Map.of("solrconfig.xml", "<old/>")));
+    Path tmpDir = createTempDir();
+    Files.writeString(tmpDir.resolve("solrconfig.xml"), "<new/>");
+    service.uploadConfig("config", tmpDir);
+    verify(coreV1Api).replaceNamespacedConfigMap(eq("cm-name"), any(), any());
+  }
+
+  @Test
+  public void testUploadConfig_newConfigCallsCreate() throws Exception {
+    Path tmpDir = createTempDir();
+    Files.writeString(tmpDir.resolve("solrconfig.xml"), "<config/>");
+    service.uploadConfig("new-config", tmpDir);
+    verify(coreV1Api).createNamespacedConfigMap(eq("default"), any());
   }
 
   // --- createCoreResourceLoader ---
