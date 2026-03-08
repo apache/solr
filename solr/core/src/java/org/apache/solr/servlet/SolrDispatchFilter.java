@@ -37,7 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This filter looks at the incoming URL maps them to handlers defined in solrconfig.xml
+ * This filter instantiates an instance of {@link HttpSolrCall}, invokes it and then based on the
+ * action returned handles retry/forward/passthrough dispatch decisions.
  *
  * @since solr 1.2
  */
@@ -120,8 +121,7 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   In late 2025 SOLR-18040 moved request wrappers to independent ServletFilters
     such as PathExclusionFilter see web.xml for a full, up-to-date list
 
-  This class is moving toward only handling dispatch, please think twice
-  before adding anything else to it.
+  This class is only handling dispatch, please think twice before adding anything else to it.
    */
 
   private void dispatch(
@@ -171,7 +171,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   protected HttpSolrCall getHttpSolrCall(
       HttpServletRequest request, HttpServletResponse response, boolean retry) {
     String path = ServletUtils.getPathAfterContext(request);
-
     CoreContainer cores;
     try {
       cores = getCores();
