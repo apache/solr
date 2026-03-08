@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
@@ -41,6 +42,14 @@ import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * A servlet filter to handle authentication. Anything that needs to be served without
+ * authentication (such as UI) must be resolved and returned by a filter preceding this one,
+ * typically by forwarding to the default servlet. Also, any tracing, auditing and ratelimiting
+ * decisions or setup usually want to be resolved ahead of this filter. Similarly, any potentially
+ * expensive operations should occur after this filter to eliminate denial of service by
+ * unauthenticated users.
+ */
 public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -66,7 +75,7 @@ public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
 
     // Is authentication configured?
     if (authenticationPlugin == null) {
-      cc.audit(ANONYMOUS, req);
+      cc.audit(() -> new AuditEvent(ANONYMOUS, req), ANONYMOUS);
       chain.doFilter(req, res);
       return;
     }
@@ -99,7 +108,7 @@ public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
           authenticate(req, res, new AuditSuccessChainWrapper(cc, chain), authenticationPlugin);
     } finally {
       if (!authSuccess) {
-        cc.audit(REJECTED, req);
+        cc.audit(() -> new AuditEvent(REJECTED, req), REJECTED);
         res.flushBuffer();
         if (res.getStatus() < 400) {
           log.error(PLUGIN_DID_NOT_SET_ERROR_STATUS, authenticationPlugin.getClass());
@@ -156,17 +165,23 @@ public class AuthenticationFilter extends CoreContainerAwareHttpFilter {
     }
   }
 
+  @SuppressWarnings("ClassCanBeRecord")
+  private static class AuditSuccessChainWrapper implements FilterChain {
 
+    private final FilterChain chain;
+    private final CoreContainer cc;
 
-  private record AuditSuccessChainWrapper(CoreContainer cc, FilterChain chain)
-      implements FilterChain {
+    private AuditSuccessChainWrapper(CoreContainer cc, FilterChain chain) {
+      this.cc = cc;
+      this.chain = chain;
+    }
 
     @Override
     public void doFilter(ServletRequest rq, ServletResponse rsp)
         throws IOException, ServletException {
       // this is a hack. The authentication plugin should accept a callback
       // to be executed before doFilter is called if authentication succeeds
-      cc.audit(AUTHENTICATED, (HttpServletRequest) rq);
+      cc.audit(() -> new AuditEvent(AUTHENTICATED, (HttpServletRequest) rq), AUTHENTICATED);
       Span span = TraceUtils.getSpan((HttpServletRequest) rq);
       setPrincipalForTracing((HttpServletRequest) rq, span);
       chain.doFilter(rq, rsp);

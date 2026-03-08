@@ -18,7 +18,6 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.util.tracing.TraceUtils.getSpan;
 
-import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
 import jakarta.servlet.ServletException;
@@ -34,7 +33,6 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeRoles;
 import org.apache.solr.handler.api.V2ApiUtils;
-import org.apache.solr.util.tracing.TraceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,11 +41,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 1.2
  */
-// todo: get rid of this class entirely! Request dispatch is the container's responsibility. Much of
-// what we have here should be several separate but composable servlet Filters, wrapping multiple
-// servlets that are more focused in scope. This should become possible now that we have a
-// ServletContextListener for startup/shutdown of CoreContainer that sets up a service from which
-// things like CoreContainer can be requested. (or better yet injected)
 public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -101,7 +94,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       if (log.isTraceEnabled()) {
         log.trace("SolrDispatchFilter.init(): {}", this.getClass().getClassLoader());
       }
-
     } catch (Throwable t) {
       // catch this so our filter still works
       log.error("Could not start Dispatch Filter.", t);
@@ -117,7 +109,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
   public void doFilter(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
       throws IOException, ServletException {
     // internal version of doFilter that tracks if we are in a retry
-
     dispatch(chain, request, response, false);
   }
 
@@ -172,8 +163,6 @@ public class SolrDispatchFilter extends CoreContainerAwareHttpFilter {
       ExecutorUtil.setServerThreadFlag(null);
     }
   }
-
-
 
   /**
    * Allow a subclass to modify the HttpSolrCall. In particular, subclasses may want to add

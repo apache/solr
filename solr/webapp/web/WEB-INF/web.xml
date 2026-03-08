@@ -45,12 +45,12 @@
   </filter-mapping>
 
   <filter>
-    <filter-name>MDCLoggingFilter</filter-name>
+    <filter-name>SolrFilter</filter-name>
     <filter-class>org.apache.solr.servlet.RequiredSolrRequestFilter</filter-class>
   </filter>
 
   <filter-mapping>
-    <filter-name>MDCLoggingFilter</filter-name>
+    <filter-name>SolrFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
 

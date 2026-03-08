@@ -39,7 +39,6 @@ import com.google.common.annotations.VisibleForTesting;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Tracer;
 import jakarta.inject.Singleton;
-import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
@@ -2514,27 +2513,17 @@ public class CoreContainer {
   }
 
   /**
-   * Check if audit logging is enabled and should happen for given event type
+   * Audit an event if our audit plugin is installed and wants to audit this type of event.
    *
-   * @param eventType the audit event
+   * @param event the event to audit.
+   * @param eventType a producer to defer event creation and avoid gc load when auditing is not
+   *     enabled. Lambdas are preferred for this since they are easily inlined.
    */
-  public boolean shouldAudit(AuditEvent.EventType eventType) {
-    return this.getAuditLoggerPlugin() != null && this.getAuditLoggerPlugin().shouldLog(eventType);
-  }
-
-  /**
-   * Audit an event
-   *
-   * @param type The type of event to audit.
-   * @param req The request being audited
-   */
-  public void audit(AuditEvent.EventType type, HttpServletRequest req) {
-    if (shouldAudit(type)) {
-      getAuditLoggerPlugin().doAudit(new AuditEvent(type, req));
+  public void audit(Supplier<AuditEvent> event, AuditEvent.EventType eventType) {
+    if (getAuditLoggerPlugin() != null && getAuditLoggerPlugin().shouldLog(eventType)) {
+      // The lambda should get optimized out, and produce no GC load:
+      // https://medium.com/@reetesh043/how-lambda-expressions-work-internally-in-java-f2a6f0e0bc68
+      getAuditLoggerPlugin().doAudit(event.get());
     }
-  }
-
-  public boolean isAuthEnabled() {
-    return getAuthenticationPlugin() != null;
   }
 }
