@@ -678,7 +678,7 @@ public class HttpSolrCall {
           solrParams = SolrRequestParsers.parseQueryString(req.getQueryString());
         } else {
           // we have no params at all, use empty ones:
-          solrParams = new MapSolrParams(Collections.emptyMap());
+          solrParams = new MapSolrParams(Map.of());
         }
         solrReq = new SolrQueryRequestBase(core, solrParams) {};
       }
@@ -1113,7 +1113,7 @@ public class HttpSolrCall {
   }
 
   protected Map<String, JsonSchemaValidator> getValidators() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**

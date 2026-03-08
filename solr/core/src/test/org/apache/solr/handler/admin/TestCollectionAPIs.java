@@ -25,7 +25,6 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.fromJSONString;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +139,7 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
 
   public Pair<SolrQueryRequest, SolrQueryResponse> makeCall(
       final ApiBag apiBag, String path, final SolrRequest.METHOD method, final String payload) {
-    SolrParams queryParams = new MultiMapSolrParams(Collections.emptyMap());
+    SolrParams queryParams = new MultiMapSolrParams(Map.of());
     if (path.indexOf('?') > 0) {
       String queryStr = path.substring(path.indexOf('?') + 1);
       path = path.substring(0, path.indexOf('?'));

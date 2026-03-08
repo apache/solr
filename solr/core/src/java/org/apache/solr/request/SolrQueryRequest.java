@@ -18,7 +18,6 @@ package org.apache.solr.request;
 
 import io.opentelemetry.api.trace.Span;
 import java.security.Principal;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -149,7 +148,7 @@ public interface SolrQueryRequest extends AutoCloseable {
    * would contain {segment1:x ,segment2:y}
    */
   default Map<String, String> getPathTemplateValues() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   /**

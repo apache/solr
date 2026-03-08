@@ -64,7 +64,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getAliasProperties(alias);
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 
@@ -100,7 +100,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getClusterProperties();
     } else {
-      return Collections.emptyMap();
+      return Map.of();
     }
   }
 

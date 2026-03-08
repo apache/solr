@@ -18,7 +18,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -136,7 +135,7 @@ public class CloudUtil {
       }
     } catch (KeeperException.NoNodeException e) {
       log.info("Error fetching key names");
-      return Collections.emptyMap();
+      return Map.of();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to read crypto keys", e);

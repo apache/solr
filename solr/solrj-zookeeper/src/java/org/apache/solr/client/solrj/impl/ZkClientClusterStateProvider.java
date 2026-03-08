@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,7 +107,7 @@ public class ZkClientClusterStateProvider
       SolrZkClient zkClient,
       Instant createTime) {
     if (bytes == null || bytes.length == 0) {
-      return new ClusterState(liveNodes, Collections.emptyMap());
+      return new ClusterState(liveNodes, Map.of());
     }
     Map<String, Object> stateMap = (Map<String, Object>) Utils.fromJSON(bytes);
     Map<String, Object> props = (Map<String, Object>) stateMap.get(coll);

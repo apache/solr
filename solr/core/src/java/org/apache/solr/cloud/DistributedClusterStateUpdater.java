@@ -26,6 +26,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -412,7 +413,7 @@ public class DistributedClusterStateUpdater {
         // state. Knowing about all collections in the cluster might not be needed.
         ClusterState initialClusterState;
         if (updater.isCollectionCreation()) {
-          initialClusterState = new ClusterState(liveNodes, Collections.emptyMap());
+          initialClusterState = new ClusterState(liveNodes, Map.of());
         } else {
           // Get the state for existing data in ZK (and if no data exists we should fail)
           initialClusterState = fetchStateForCollection();

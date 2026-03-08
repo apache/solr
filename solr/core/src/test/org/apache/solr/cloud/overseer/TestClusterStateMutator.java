@@ -40,8 +40,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
   }
 
   public void testCreateCollection() {
-    ClusterState clusterState =
-        new ClusterState(Set.of(), Collections.<String, DocCollection>emptyMap());
+    ClusterState clusterState = new ClusterState(Set.of(), Map.of());
     DistribStateManager mockStateManager = mock(DistribStateManager.class);
     SolrCloudManager dataProvider = mock(SolrCloudManager.class);
     when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);

@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -450,7 +449,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
                       .collect(Collectors.groupingBy(CopyFieldDef::getMaxChars)));
             }
           }
-          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Collections.emptyMap()));
+          newFields.add(oldSchema.newField(fieldName, fieldTypeName, Map.of()));
         }
         if (newFields.isEmpty() && newCopyFields.isEmpty()) {
           // nothing to do - no fields will be added - exit from the retry loop
@@ -494,7 +493,7 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
         // the schema on the request is the latest
         synchronized (oldSchema.getSchemaUpdateLock()) {
           try {
-            IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
+            IndexSchema newSchema = oldSchema.addFields(newFields, Map.of(), false);
             // Add copyFields
             for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry :
                 newCopyFields.entrySet()) {

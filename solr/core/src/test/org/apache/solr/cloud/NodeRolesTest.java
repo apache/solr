@@ -19,7 +19,6 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -120,8 +119,7 @@ public class NodeRolesTest extends SolrCloudTestCase {
             .process(cluster.getSolrClient());
 
     Map<String, Object> l =
-        (Map<String, Object>)
-            Objects.requireNonNullElse(rsp._get("supported-roles"), Collections.emptyMap());
+        (Map<String, Object>) Objects.requireNonNullElse(rsp._get("supported-roles"), Map.of());
 
     assertTrue(l.containsKey("data"));
     assertTrue(l.containsKey("overseer"));

@@ -187,12 +187,7 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
       long prioritizedFreeDiskGB,
       Map<String, String> withCollection,
       Map<String, String> collectionNodeType) {
-    this(
-        minimalFreeDiskGB,
-        prioritizedFreeDiskGB,
-        withCollection,
-        Collections.emptyMap(),
-        collectionNodeType);
+    this(minimalFreeDiskGB, prioritizedFreeDiskGB, withCollection, Map.of(), collectionNodeType);
   }
 
   public void validate() {

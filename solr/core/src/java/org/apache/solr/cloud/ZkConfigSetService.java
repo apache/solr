@@ -234,7 +234,7 @@ public class ZkConfigSetService extends ConfigSetService {
               Utils.fromJSON(zkClient.getData(CONFIGS_ZKNODE + "/" + configName, null, null));
       return data;
     } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyMap();
+      return Map.of();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error getting config metadata", SolrZkClient.checkInterrupted(e));
     }

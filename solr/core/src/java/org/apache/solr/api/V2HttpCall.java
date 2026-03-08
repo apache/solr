@@ -29,7 +29,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -488,7 +487,7 @@ public class V2HttpCall extends HttpSolrCall {
     // myColName -> collection
     final Map<String, String> pathTemplateValKey;
     if (pathTemplateKeyVal.isEmpty()) { // typical
-      pathTemplateValKey = Collections.emptyMap();
+      pathTemplateValKey = Map.of();
     } else if (pathTemplateKeyVal.size() == 1) { // typical
       Map.Entry<String, String> entry = pathTemplateKeyVal.entrySet().iterator().next();
       pathTemplateValKey = Map.of(entry.getValue(), entry.getKey());

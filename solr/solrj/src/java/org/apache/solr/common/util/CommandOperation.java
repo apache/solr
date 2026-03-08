@@ -16,7 +16,6 @@
  */
 package org.apache.solr.common.util;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.StrUtils.formatString;
@@ -78,7 +77,7 @@ public class CommandOperation {
         StrUtils.formatString(
             "The command ''{0}'' should have the values as a json object '{'key:val'}' format but is ''{1}''",
             name, commandData));
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   private Object getRootPrimitive() {
@@ -182,7 +181,7 @@ public class CommandOperation {
   /** Get all the values from the metadata for the command without the specified keys */
   public Map<String, Object> getValuesExcluding(String... keys) {
     getMapVal(null);
-    if (hasError()) return emptyMap(); // just to verify the type is Map
+    if (hasError()) return Map.of(); // just to verify the type is Map
     @SuppressWarnings("unchecked")
     LinkedHashMap<String, Object> cp = new LinkedHashMap<>((Map<String, Object>) commandData);
     if (keys == null) return cp;

@@ -23,7 +23,6 @@ import com.carrotsearch.randomizedtesting.RandomizedRunner;
 import java.security.Principal;
 import java.security.cert.CertificateParsingException;
 import java.security.cert.X509Certificate;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -324,7 +323,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         path,
         List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
-        Collections.emptyMap(),
+        Map.of(),
         expectedValue);
   }
 
@@ -336,7 +335,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
       String expectedValue) {
 
     testCertificateCases(
-        sanData, null, path, filterValues, filterCheckType, Collections.emptyMap(), expectedValue);
+        sanData, null, path, filterValues, filterCheckType, Map.of(), expectedValue);
   }
 
   private void testCertificateCases(String dn, String path, String expectedValue) {
@@ -347,7 +346,7 @@ public class PathBasedCertPrincipalResolverTest extends SolrTestCaseJ4 {
         path,
         List.of(),
         CertResolverPattern.CheckType.WILDCARD.toString(),
-        Collections.emptyMap(),
+        Map.of(),
         expectedValue);
   }
 

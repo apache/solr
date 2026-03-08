@@ -24,7 +24,6 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
 
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -230,7 +229,7 @@ public class PluginInfo implements MapSerializable {
   }
 
   public static final PluginInfo EMPTY_INFO =
-      new PluginInfo("", Collections.emptyMap(), new NamedList<>(), List.of());
+      new PluginInfo("", Map.of(), new NamedList<>(), List.of());
 
   private static final HashSet<String> NL_TAGS =
       new HashSet<>(asList("lst", "arr", "bool", "str", "int", "long", "float", "double"));

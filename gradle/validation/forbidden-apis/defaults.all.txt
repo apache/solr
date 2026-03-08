@@ -60,6 +60,9 @@ java.util.Collections#emptyList()
 @defaultMessage Use Set.of()
 java.util.Collections#emptySet()
 
+@defaultMessage Use Map.of()
+java.util.Collections#emptyMap()
+
 java.util.Locale#forLanguageTag(java.lang.String) @ use new Locale.Builder().setLanguageTag(...).build() which has error handling
 java.util.Locale#toString() @ use Locale#toLanguageTag() for a standardized BCP47 locale name
 

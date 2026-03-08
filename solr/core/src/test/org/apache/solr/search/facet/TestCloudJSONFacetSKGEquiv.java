@@ -921,12 +921,12 @@ public class TestCloudJSONFacetSKGEquiv extends SolrCloudTestCase {
 
     /** Assumes null for fore/back queries w/no options */
     public RelatednessFacet() {
-      this(null, null, Collections.emptyMap());
+      this(null, null, Map.of());
     }
 
     /** Assumes no options */
     public RelatednessFacet(final String foreQ, final String backQ) {
-      this(foreQ, backQ, Collections.emptyMap());
+      this(foreQ, backQ, Map.of());
     }
 
     public RelatednessFacet(

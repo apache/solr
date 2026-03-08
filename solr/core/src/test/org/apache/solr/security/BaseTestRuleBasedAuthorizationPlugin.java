@@ -16,7 +16,6 @@
  */
 package org.apache.solr.security;
 
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.CommandOperation.captureErrors;
@@ -574,7 +573,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         STATUS_OK);
   }
 
@@ -621,7 +620,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         STATUS_OK);
   }
 
@@ -668,7 +667,7 @@ public class BaseTestRuleBasedAuthorizationPlugin extends SolrTestCaseJ4 {
             "handler",
             handler,
             "params",
-            new MapSolrParams(emptyMap())),
+            new MapSolrParams(Map.of())),
         FORBIDDEN);
   }
 

@@ -41,13 +41,7 @@ public class TestWrapperModel extends TestRerankBase {
     }
 
     private StubWrapperModel(String name, List<Feature> features, List<Normalizer> norms) {
-      super(
-          name,
-          features,
-          norms,
-          FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-          features,
-          Collections.emptyMap());
+      super(name, features, norms, FeatureStore.DEFAULT_FEATURE_STORE_NAME, features, Map.of());
     }
 
     @Override
@@ -73,9 +67,7 @@ public class TestWrapperModel extends TestRerankBase {
     // wrapper model with features
     WrapperModel wrapperModelWithFeatures =
         new StubWrapperModel(
-            "testModel",
-            Collections.singletonList(new ValueFeature("val", Collections.emptyMap())),
-            List.of());
+            "testModel", Collections.singletonList(new ValueFeature("val", Map.of())), List.of());
     ModelException e = expectThrows(ModelException.class, wrapperModelWithFeatures::validate);
     assertEquals("features must be empty for the wrapper model testModel", e.getMessage());
 
@@ -93,9 +85,7 @@ public class TestWrapperModel extends TestRerankBase {
       LTRScoringModel wrappedModel =
           createMockWrappedModel(
               FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-              Arrays.asList(
-                  new ValueFeature("v1", Collections.emptyMap()),
-                  new ValueFeature("v2", Collections.emptyMap())),
+              Arrays.asList(new ValueFeature("v1", Map.of()), new ValueFeature("v2", Map.of())),
               Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       wrapperModel.updateModel(wrappedModel);
     }
@@ -105,9 +95,7 @@ public class TestWrapperModel extends TestRerankBase {
       LTRScoringModel wrappedModel =
           createMockWrappedModel(
               "wrappedFeatureStore",
-              Arrays.asList(
-                  new ValueFeature("v1", Collections.emptyMap()),
-                  new ValueFeature("v2", Collections.emptyMap())),
+              Arrays.asList(new ValueFeature("v1", Map.of()), new ValueFeature("v2", Map.of())),
               Arrays.asList(IdentityNormalizer.INSTANCE, IdentityNormalizer.INSTANCE));
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals(
@@ -131,9 +119,7 @@ public class TestWrapperModel extends TestRerankBase {
       LTRScoringModel wrappedModel =
           createMockWrappedModel(
               FeatureStore.DEFAULT_FEATURE_STORE_NAME,
-              Arrays.asList(
-                  new ValueFeature("v1", Collections.emptyMap()),
-                  new ValueFeature("v2", Collections.emptyMap())),
+              Arrays.asList(new ValueFeature("v1", Map.of()), new ValueFeature("v2", Map.of())),
               List.of());
       e = expectThrows(ModelException.class, () -> wrapperModel.updateModel(wrappedModel));
       assertEquals("counted 2 features and 0 norms in model testModel", e.getMessage());

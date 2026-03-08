@@ -1556,7 +1556,7 @@ public class IndexSchema {
 
   /** Get a map of property name -&gt; value for the whole schema. */
   public Map<String, Object> getNamedPropertyValues() {
-    return getNamedPropertyValues(null, new MapSolrParams(Collections.emptyMap()));
+    return getNamedPropertyValues(null, new MapSolrParams(Map.of()));
   }
 
   public static class SchemaProps implements MapSerializable {
@@ -1801,7 +1801,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addField(SchemaField newField, boolean persist) {
-    return addFields(Collections.singletonList(newField), Collections.emptyMap(), persist);
+    return addFields(Collections.singletonList(newField), Map.of(), persist);
   }
 
   public IndexSchema addField(SchemaField newField) {
@@ -1832,7 +1832,7 @@ public class IndexSchema {
    * @see #newField(String, String, Map)
    */
   public IndexSchema addFields(Collection<SchemaField> newFields) {
-    return addFields(newFields, Collections.<String, Collection<String>>emptyMap(), true);
+    return addFields(newFields, Map.of(), true);
   }
 
   /**

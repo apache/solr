@@ -798,7 +798,7 @@ public class CoreContainer {
 
     Map<String, CacheConfig> cachesConfig = cfg.getCachesConfig();
     if (cachesConfig.isEmpty()) {
-      this.caches = Collections.emptyMap();
+      this.caches = Map.of();
     } else {
       Map<String, SolrCache<?, ?>> m = CollectionUtil.newHashMap(cachesConfig.size());
       for (Map.Entry<String, CacheConfig> e : cachesConfig.entrySet()) {

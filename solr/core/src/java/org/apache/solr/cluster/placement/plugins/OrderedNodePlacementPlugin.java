@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -439,12 +438,12 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<String> getShardsOnNode(String collection) {
-      return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
+      return replicas.getOrDefault(collection, Map.of()).keySet();
     }
 
     public boolean hasShardOnNode(Shard shard) {
       return replicas
-          .getOrDefault(shard.getCollection().getName(), Collections.emptyMap())
+          .getOrDefault(shard.getCollection().getName(), Map.of())
           .containsKey(shard.getShardName());
     }
 
@@ -505,7 +504,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
-      return Collections.emptyMap();
+      return Map.of();
     }
 
     public final void removeReplica(Replica replica) {
