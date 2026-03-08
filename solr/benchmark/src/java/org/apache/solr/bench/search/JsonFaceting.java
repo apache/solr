@@ -100,15 +100,15 @@ public class JsonFaceting {
 
     @Setup(Level.Trial)
     public void setup(
-        BenchmarkParams benchmarkParams, SolrBenchState.MiniClusterBenchState miniClusterState)
+        BenchmarkParams benchmarkParams, SolrBenchState solrBenchState)
         throws Exception {
 
       System.setProperty("maxMergeAtOnce", "50");
       System.setProperty("segmentsPerTier", "50");
 
-      miniClusterState.startMiniCluster(nodeCount);
+      solrBenchState.startMiniCluster(nodeCount);
 
-      miniClusterState.createCollection(collection, numShards, numReplicas);
+      solrBenchState.createCollection(collection, numShards, numReplicas);
 
       // Define random documents
       Docs docs =
@@ -132,8 +132,8 @@ public class JsonFaceting {
               .field(integers().allWithMaxCardinality(facetCard2))
               .field(integers().allWithMaxCardinality(facetCard2));
 
-      miniClusterState.index(collection, docs, docCount);
-      miniClusterState.forceMerge(collection, 25);
+      solrBenchState.index(collection, docs, docCount);
+      solrBenchState.forceMerge(collection, 25);
 
       params = new ModifiableSolrParams();
 
@@ -185,15 +185,15 @@ public class JsonFaceting {
   @Benchmark
   @Timeout(time = 500, timeUnit = TimeUnit.SECONDS)
   public void jsonFacet(
-      SolrBenchState.MiniClusterBenchState miniClusterState,
+      SolrBenchState solrBenchState,
       BenchState state,
       BenchState.ThreadState threadState,
       Blackhole bh)
       throws Exception {
-    final var url = miniClusterState.nodes.get(threadState.random.nextInt(state.nodeCount));
+    final var url = solrBenchState.nodes.get(threadState.random.nextInt(state.nodeCount));
     QueryRequest queryRequest = new QueryRequest(state.params);
     NamedList<Object> result =
-        miniClusterState.client.requestWithBaseUrl(url, queryRequest, state.collection);
+        solrBenchState.client.requestWithBaseUrl(url, queryRequest, state.collection);
 
     // SolrBenchState.log("result: " + result);
 

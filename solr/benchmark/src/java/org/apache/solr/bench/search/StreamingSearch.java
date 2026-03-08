@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
-import org.apache.solr.bench.SolrBenchState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -71,20 +70,20 @@ public class StreamingSearch {
     private HttpJettySolrClient httpJettySolrClient;
 
     @Setup(Level.Trial)
-    public void setup(MiniClusterBenchState miniClusterState) throws Exception {
+    public void setup(SolrBenchState solrBenchState) throws Exception {
 
-      miniClusterState.startMiniCluster(3);
-      miniClusterState.createCollection(collection, 3, 1);
+      solrBenchState.startMiniCluster(3);
+      solrBenchState.createCollection(collection, 3, 1);
       Docs docGen =
           docs()
               .field("id", integers().incrementing())
               .field("text2_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
               .field("text3_ts", strings().basicLatinAlphabet().multi(312).ofLengthBetween(30, 64))
               .field("int1_i_dv", integers().all());
-      miniClusterState.index(collection, docGen, docs);
-      miniClusterState.waitForMerges(collection);
+      solrBenchState.index(collection, docGen, docs);
+      solrBenchState.waitForMerges(collection);
 
-      zkHost = miniClusterState.zkHost;
+      zkHost = solrBenchState.zkHost;
 
       params = new ModifiableSolrParams();
       params.set(CommonParams.Q, "*:*");
@@ -94,7 +93,7 @@ public class StreamingSearch {
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState solrBenchState)
         throws SolrServerException, IOException {
       SolrClientCache solrClientCache;
       // TODO tune params?
@@ -116,7 +115,7 @@ public class StreamingSearch {
 
   @Benchmark
   public Object stream(
-      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     CloudSolrStream stream = new CloudSolrStream(benchState.zkHost, collection, benchState.params);
     stream.setStreamContext(benchState.streamContext);

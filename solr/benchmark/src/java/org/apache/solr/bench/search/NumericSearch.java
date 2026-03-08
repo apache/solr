@@ -68,11 +68,11 @@ public class NumericSearch {
     Iterator<String> queries;
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState.MiniClusterBenchState miniClusterState)
+    public void setupTrial(SolrBenchState solrBenchState)
         throws Exception {
-      miniClusterState.setUseHttp1(true);
-      miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(COLLECTION, 1, 1);
+      solrBenchState.setUseHttp1(true);
+      solrBenchState.startMiniCluster(1);
+      solrBenchState.createCollection(COLLECTION, 1, 1);
       int maxCardinality = 10000;
       int numDocs = 2000000;
       setValues = integers().allWithMaxCardinality(maxCardinality);
@@ -93,8 +93,8 @@ public class NumericSearch {
               .field("term_high_s", highCardinalityTerms);
       // .field("numbers_dt", setValues);
 
-      miniClusterState.index(COLLECTION, docs, numDocs, false);
-      basePath = miniClusterState.nodes.get(0);
+      solrBenchState.index(COLLECTION, docs, numDocs, false);
+      basePath = solrBenchState.nodes.get(0);
       SolrQuery q = new SolrQuery("*:*");
       q.setParam("facet", "true");
       q.setParam("rows", "0");
@@ -102,7 +102,7 @@ public class NumericSearch {
       q.setParam("facet.limit", String.valueOf(maxCardinality));
       QueryRequest req = new QueryRequest(q);
       QueryResponse response =
-          req.processWithBaseUrl(miniClusterState.client, basePath, COLLECTION);
+          req.processWithBaseUrl(solrBenchState.client, basePath, COLLECTION);
       Set<String> numbers =
           response.getFacetField("numbers_i_dv").getValues().stream()
               .map(FacetField.Count::getName)
@@ -140,11 +140,11 @@ public class NumericSearch {
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState solrBenchState)
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      miniClusterState.client.requestWithBaseUrl(miniClusterState.nodes.get(0), reload, null);
+      solrBenchState.client.requestWithBaseUrl(solrBenchState.nodes.get(0), reload, null);
     }
 
     public QueryRequest intSetQuery(boolean dvs) {
@@ -179,10 +179,10 @@ public class NumericSearch {
   public Object intSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.intSetQuery(false).process(miniClusterState.client, COLLECTION);
+        benchState.intSetQuery(false).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -191,10 +191,10 @@ public class NumericSearch {
   public Object longSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.longSetQuery(false).process(miniClusterState.client, COLLECTION);
+        benchState.longSetQuery(false).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -203,10 +203,10 @@ public class NumericSearch {
   public Object floatSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.floatSetQuery(false).process(miniClusterState.client, COLLECTION);
+        benchState.floatSetQuery(false).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -215,10 +215,10 @@ public class NumericSearch {
   public Object doubleSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.doubleSetQuery(false).process(miniClusterState.client, COLLECTION);
+        benchState.doubleSetQuery(false).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -227,10 +227,10 @@ public class NumericSearch {
   public Object intDvSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.intSetQuery(true).process(miniClusterState.client, COLLECTION);
+        benchState.intSetQuery(true).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -239,10 +239,10 @@ public class NumericSearch {
   public Object longDvSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.longSetQuery(true).process(miniClusterState.client, COLLECTION);
+        benchState.longSetQuery(true).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -251,10 +251,10 @@ public class NumericSearch {
   public Object floatDvSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.floatSetQuery(true).process(miniClusterState.client, COLLECTION);
+        benchState.floatSetQuery(true).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }
@@ -263,10 +263,10 @@ public class NumericSearch {
   public Object doubleDvSet(
       Blackhole blackhole,
       BenchState benchState,
-      SolrBenchState.MiniClusterBenchState miniClusterState)
+      SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
     QueryResponse response =
-        benchState.doubleSetQuery(true).process(miniClusterState.client, COLLECTION);
+        benchState.doubleSetQuery(true).process(solrBenchState.client, COLLECTION);
     blackhole.consume(response);
     return response;
   }

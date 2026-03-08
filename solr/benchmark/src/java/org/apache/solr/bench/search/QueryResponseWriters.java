@@ -24,7 +24,6 @@ import static org.apache.solr.bench.generators.SourceDSL.strings;
 import java.io.IOException;
 import org.apache.solr.bench.Docs;
 import org.apache.solr.bench.SolrBenchState;
-import org.apache.solr.bench.SolrBenchState.MiniClusterBenchState;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
@@ -64,10 +63,10 @@ public class QueryResponseWriters {
     private QueryRequest q;
 
     @Setup(Level.Trial)
-    public void setup(MiniClusterBenchState miniClusterState) throws Exception {
+    public void setup(SolrBenchState solrBenchState) throws Exception {
 
-      miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(collection, 1, 1);
+      solrBenchState.startMiniCluster(1);
+      solrBenchState.createCollection(collection, 1, 1);
 
       // only stored fields are needed to cover the response writers perf
       Docs docGen =
@@ -76,8 +75,8 @@ public class QueryResponseWriters {
               .field("text2_ts", strings().basicLatinAlphabet().multi(25).ofLengthBetween(30, 64))
               .field("bools_b", booleans().all())
               .field("int1_is", integers().all());
-      miniClusterState.index(collection, docGen, docs);
-      miniClusterState.forceMerge(collection, 5);
+      solrBenchState.index(collection, docGen, docs);
+      solrBenchState.forceMerge(collection, 5);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set(CommonParams.Q, "*:*");
@@ -85,14 +84,14 @@ public class QueryResponseWriters {
       params.set(CommonParams.ROWS, docs);
       q = new QueryRequest(params);
       q.setResponseParser(new InputStreamResponseParser(wt));
-      String base = miniClusterState.nodes.get(0);
+      String base = solrBenchState.nodes.get(0);
     }
   }
 
   @Benchmark
   public Object query(
-      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState)
+      BenchState benchState, SolrBenchState solrBenchState)
       throws SolrServerException, IOException {
-    return miniClusterState.client.request(benchState.q, collection);
+    return solrBenchState.client.request(benchState.q, collection);
   }
 }

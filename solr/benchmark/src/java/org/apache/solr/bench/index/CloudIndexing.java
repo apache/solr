@@ -114,22 +114,22 @@ public class CloudIndexing {
     }
 
     @Setup(Level.Trial)
-    public void doSetup(SolrBenchState.MiniClusterBenchState miniClusterState) throws Exception {
+    public void doSetup(SolrBenchState solrBenchState) throws Exception {
       preGenerate();
 
       System.setProperty("mergePolicyFactory", "org.apache.solr.index.NoMergePolicyFactory");
-      miniClusterState.startMiniCluster(nodeCount);
-      miniClusterState.createCollection(COLLECTION, numShards, numReplicas);
+      solrBenchState.startMiniCluster(nodeCount);
+      solrBenchState.createCollection(COLLECTION, numShards, numReplicas);
     }
   }
 
   @Benchmark
-  public Object indexDoc(SolrBenchState.MiniClusterBenchState miniClusterState, BenchState state)
+  public Object indexDoc(SolrBenchState solrBenchState, BenchState state)
       throws Exception {
     UpdateRequest updateRequest = new UpdateRequest();
     updateRequest.add(state.getNextDoc());
     final var url =
-        miniClusterState.nodes.get(miniClusterState.getRandom().nextInt(state.nodeCount));
-    return miniClusterState.client.requestWithBaseUrl(url, updateRequest, BenchState.COLLECTION);
+        solrBenchState.nodes.get(solrBenchState.getRandom().nextInt(state.nodeCount));
+    return solrBenchState.client.requestWithBaseUrl(url, updateRequest, BenchState.COLLECTION);
   }
 }

@@ -60,19 +60,19 @@ public class SimpleSearch {
     QueryRequest q = new QueryRequest(new SolrQuery("q", "id:0")); // no match is OK
 
     @Setup(Level.Trial)
-    public void setupTrial(SolrBenchState.MiniClusterBenchState miniClusterState)
+    public void setupTrial(SolrBenchState solrBenchState)
         throws Exception {
-      miniClusterState.setUseHttp1(useHttp1);
-      miniClusterState.startMiniCluster(1);
-      miniClusterState.createCollection(COLLECTION, 1, 1);
+      solrBenchState.setUseHttp1(useHttp1);
+      solrBenchState.startMiniCluster(1);
+      solrBenchState.createCollection(COLLECTION, 1, 1);
     }
 
     @Setup(Level.Iteration)
-    public void setupIteration(SolrBenchState.MiniClusterBenchState miniClusterState)
+    public void setupIteration(SolrBenchState solrBenchState)
         throws SolrServerException, IOException {
       // Reload the collection/core to drop existing caches
       CollectionAdminRequest.Reload reload = CollectionAdminRequest.reloadCollection(COLLECTION);
-      miniClusterState.client.request(reload);
+      solrBenchState.client.request(reload);
 
       total = new AtomicLong();
       err = new AtomicLong();
@@ -141,15 +141,15 @@ public class SimpleSearch {
    */
   @Benchmark
   public Object query(
-      BenchState benchState, SolrBenchState.MiniClusterBenchState miniClusterState, Blackhole bh)
+      BenchState benchState, SolrBenchState solrBenchState, Blackhole bh)
       throws SolrServerException, IOException {
     if (benchState.strict) {
-      return miniClusterState.client.request(benchState.q, COLLECTION);
+      return solrBenchState.client.request(benchState.q, COLLECTION);
     }
 
     // non strict run ignores exceptions
     try {
-      return miniClusterState.client.request(benchState.q, COLLECTION);
+      return solrBenchState.client.request(benchState.q, COLLECTION);
     } catch (SolrServerException e) {
       bh.consume(e);
       benchState.err.getAndIncrement();
