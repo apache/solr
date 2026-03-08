@@ -77,6 +77,7 @@ import org.apache.solr.search.CacheConfig;
 import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.servlet.SolrRequestParsers;
@@ -320,7 +321,7 @@ public class SolrConfig implements MapSerializable {
       dataDir = get("dataDir").txt();
       if (dataDir != null && dataDir.length() == 0) dataDir = null;
 
-      org.apache.solr.search.SolrIndexSearcher.initRegenerators(this);
+      SolrIndexSearcher.initRegenerators(this);
 
       if (get("jmx").exists()) {
         log.warn(

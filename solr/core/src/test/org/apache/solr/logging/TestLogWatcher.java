@@ -37,6 +37,7 @@ import org.apache.solr.util.TimeOut;
 import org.junit.Before;
 import org.junit.Test;
 import org.noggit.CharArr;
+import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -136,7 +137,7 @@ public class TestLogWatcher extends SolrTestCaseJ4 {
 
   private static void validateWrite(SolrDocumentList docs, String expectMsg) throws IOException {
     CharArr arr = new CharArr();
-    org.noggit.JSONWriter w = new org.noggit.JSONWriter(arr, 2);
+    JSONWriter w = new JSONWriter(arr, 2);
     docs.writeMap(
         new MapWriter.EntryWriter() {
           boolean first = true;

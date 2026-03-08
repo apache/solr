@@ -43,6 +43,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
@@ -324,8 +325,7 @@ public abstract class FieldType extends FieldProperties {
    * @param type {@link org.apache.lucene.document.FieldType}
    * @return the {@link org.apache.lucene.index.IndexableField}.
    */
-  protected IndexableField createField(
-      String name, String val, org.apache.lucene.index.IndexableFieldType type) {
+  protected IndexableField createField(String name, String val, IndexableFieldType type) {
     return new Field(name, val, type);
   }
 

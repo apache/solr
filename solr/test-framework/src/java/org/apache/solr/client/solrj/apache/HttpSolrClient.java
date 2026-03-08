@@ -25,6 +25,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
@@ -49,6 +50,7 @@ import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -542,8 +544,7 @@ public class HttpSolrClient extends SolrClient {
       throws SolrServerException {
     method.addHeader("User-Agent", USER_AGENT);
 
-    org.apache.http.client.config.RequestConfig.Builder requestConfigBuilder =
-        HttpClientUtil.createDefaultRequestConfigBuilder();
+    RequestConfig.Builder requestConfigBuilder = HttpClientUtil.createDefaultRequestConfigBuilder();
     requestConfigBuilder.setSocketTimeout(soTimeout);
     requestConfigBuilder.setConnectTimeout(connectionTimeout);
 
@@ -679,7 +680,7 @@ public class HttpSolrClient extends SolrClient {
               .append("\n\n")
               .append("request: ")
               .append(method.getURI());
-          String reason = java.net.URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
+          String reason = URLDecoder.decode(msg.toString(), FALLBACK_CHARSET);
           throw new RemoteSolrException(baseUrl, httpStatus, reason, null);
         } else {
           throw new RemoteSolrException(baseUrl, httpStatus, error);
