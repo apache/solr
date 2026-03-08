@@ -1,0 +1,9 @@
+title: "SOLR-17550: Fixed preferred Overseer ADDROLE message to use the correct node key"
+type: fixed
+authors:
+  - name: r4mercur
+links:
+  - name: SOLR-17550
+    url: https://issues.apache.org/jira/browse/SOLR-17550
+  - name: PR#4175
+    url: https://github.com/apache/solr/pull/4175

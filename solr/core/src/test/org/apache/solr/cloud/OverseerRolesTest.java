@@ -224,4 +224,43 @@ public class OverseerRolesTest extends SolrCloudTestCase {
     // assert that there is just a single leadership transition
     waitForNewOverseer(15, overseer1, true);
   }
+
+  @Test
+  public void testSetPreferredOverseerIntegration() throws Exception {
+    final String collection = "preferred_overseer_" + System.nanoTime();
+    ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
+
+    String oldLeader = OverseerCollectionConfigSetProcessor.getLeaderNode(zkClient());
+    assertNotNull("Expected current overseer leader", oldLeader);
+
+    zkController.setPreferredOverseer();
+
+    String leaderId = OverseerCollectionConfigSetProcessor.getLeaderId(zkClient());
+    assertNotNull("Expected current overseer leader id", leaderId);
+
+    Objects.requireNonNull(getOverseerJetty())
+        .getCoreContainer()
+        .getZkController()
+        .getOverseer()
+        .sendQuitToOverseer(leaderId);
+
+    waitForNewOverseer(15, s -> s != null && !Objects.equals(s, oldLeader), false);
+
+    try {
+      CollectionAdminRequest.createCollection(collection, "conf", 1, 1)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(collection, 1, 1);
+
+      assertTrue(
+          "Collection should exist after setPreferredOverseer() was called",
+          zkController.getZkStateReader().getClusterState().hasCollection(collection));
+    } finally {
+      try {
+        if (zkController.getZkStateReader().getClusterState().hasCollection(collection)) {
+          CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
+        }
+      } catch (Exception ignored) {
+      }
+    }
+  }
 }
