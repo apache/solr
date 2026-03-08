@@ -2516,7 +2516,7 @@ public class CoreContainer {
    * Audit an event if our audit plugin is installed and wants to audit this type of event.
    *
    * @param event the event to audit.
-   * @param eventType a producer to defer event creation and avoid gc load when auditing is not
+   * @param eventType a Supplier to defer event creation and avoid gc load when auditing is not
    *     enabled. Lambdas are preferred for this since they are easily inlined.
    */
   public void audit(Supplier<AuditEvent> event, AuditEvent.EventType eventType) {
