@@ -199,7 +199,7 @@ public class GeoTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return updater.isJSON ? Collections.singleton(updater.display) : Collections.emptySet();
+      return updater.isJSON ? Collections.singleton(updater.display) : Set.of();
     }
   }
 

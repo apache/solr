@@ -21,6 +21,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Set;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -40,8 +41,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
 
   public void testCreateCollection() {
     ClusterState clusterState =
-        new ClusterState(
-            Collections.<String>emptySet(), Collections.<String, DocCollection>emptyMap());
+        new ClusterState(Set.of(), Collections.<String, DocCollection>emptyMap());
     DistribStateManager mockStateManager = mock(DistribStateManager.class);
     SolrCloudManager dataProvider = mock(SolrCloudManager.class);
     when(dataProvider.getDistribStateManager()).thenReturn(mockStateManager);
@@ -57,9 +57,7 @@ public class TestClusterStateMutator extends SolrTestCaseJ4 {
     assertEquals("xyz", collection.getName());
     assertEquals(1, collection.getSlicesMap().size());
 
-    ClusterState state =
-        new ClusterState(
-            Collections.<String>emptySet(), Collections.singletonMap("xyz", collection));
+    ClusterState state = new ClusterState(Set.of(), Collections.singletonMap("xyz", collection));
     message =
         new ZkNodeProps(
             Map.of(

@@ -603,7 +603,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin
             }
 
             // Find scopes for user
-            Set<String> scopes = Collections.emptySet();
+            Set<String> scopes = Set.of();
             Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
             if (scopesObj != null) {
               if (scopesObj instanceof String) {

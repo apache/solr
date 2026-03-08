@@ -780,7 +780,7 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
                 .map(Shard::getShardName)
                 .findFirst()
                 .map(Set::of)
-                .orElseGet(Collections::emptySet),
+                .orElseGet(Set::of),
             cluster.getLiveNodes(),
             ReplicaCount.of(0, 1, 1));
 

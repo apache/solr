@@ -451,7 +451,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
       return Optional.ofNullable(replicas.get(shard.getCollection().getName()))
           .map(m -> m.get(shard.getShardName()))
-          .orElseGet(Collections::emptySet);
+          .orElseGet(Set::of);
     }
 
     public abstract int calcWeight();

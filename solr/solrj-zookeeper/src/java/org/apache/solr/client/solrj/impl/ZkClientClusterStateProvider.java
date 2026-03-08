@@ -158,7 +158,7 @@ public class ZkClientClusterStateProvider
     if (clusterState != null) {
       return clusterState.getLiveNodes();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 

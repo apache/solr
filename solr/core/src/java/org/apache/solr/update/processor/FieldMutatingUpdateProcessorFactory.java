@@ -20,7 +20,6 @@ import static org.apache.solr.update.processor.FieldMutatingUpdateProcessor.SELE
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -100,8 +99,8 @@ public abstract class FieldMutatingUpdateProcessorFactory extends UpdateRequestP
     implements SolrCoreAware {
 
   public static final class SelectorParams {
-    public Set<String> fieldName = Collections.emptySet();
-    public Set<String> typeName = Collections.emptySet();
+    public Set<String> fieldName = Set.of();
+    public Set<String> typeName = Set.of();
     public Collection<String> typeClass = List.of();
     public Collection<Pattern> fieldRegex = List.of();
     public Boolean fieldNameMatchesSchemaField = null; // null => not specified

@@ -19,7 +19,6 @@ package org.apache.solr.util;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.Set;
 import org.apache.solr.SolrTestCase;
 
@@ -52,7 +51,7 @@ public class ModuleUtilsTest extends SolrTestCase {
   }
 
   public void testResolveFromSyspropOrEnv() {
-    assertEquals(Collections.emptySet(), ModuleUtils.resolveFromSyspropOrEnv());
+    assertEquals(Set.of(), ModuleUtils.resolveFromSyspropOrEnv());
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(Set.of("foo", "bar", "baz", "mod1"), ModuleUtils.resolveFromSyspropOrEnv());
     System.clearProperty("solr.modules");
@@ -66,8 +65,7 @@ public class ModuleUtilsTest extends SolrTestCase {
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),
         Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("foo ,bar, baz,mod1")));
-    assertEquals(
-        Collections.emptySet(), Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("")));
+    assertEquals(Set.of(), Set.copyOf(ModuleUtils.resolveModulesFromStringOrSyspropOrEnv("")));
     System.setProperty("solr.modules", "foo ,bar, baz,mod1");
     assertEquals(
         Set.of("foo", "bar", "baz", "mod1"),

@@ -210,7 +210,7 @@ public class CommandOperation {
   }
 
   public static List<CommandOperation> parse(Reader rdr) throws IOException {
-    return parse(rdr, Collections.emptySet());
+    return parse(rdr, Set.of());
   }
 
   /**
@@ -322,7 +322,7 @@ public class CommandOperation {
   public static List<CommandOperation> readCommands(
       Iterable<ContentStream> streams, @SuppressWarnings({"rawtypes"}) NamedList resp)
       throws IOException {
-    return readCommands(streams, resp, Collections.emptySet());
+    return readCommands(streams, resp, Set.of());
   }
 
   /**

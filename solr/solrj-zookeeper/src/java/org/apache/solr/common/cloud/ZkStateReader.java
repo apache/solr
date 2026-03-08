@@ -718,7 +718,7 @@ public class ZkStateReader implements SolrCloseable {
   }
 
   private void notifyNewCloudCollectionsListener(CloudCollectionsListener listener) {
-    listener.onChange(Collections.emptySet(), lastFetchedCollectionSet.get());
+    listener.onChange(Set.of(), lastFetchedCollectionSet.get());
   }
 
   private void notifyCloudCollectionsListeners() {
@@ -1367,7 +1367,7 @@ public class ZkStateReader implements SolrCloseable {
       log.debug("A collections change: [{}], has occurred - updating...", event);
       refreshAndWatch();
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
 
@@ -1454,7 +1454,7 @@ public class ZkStateReader implements SolrCloseable {
             ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
                 stat.getVersion(),
                 data,
-                Collections.emptySet(),
+                Set.of(),
                 coll,
                 zkClient,
                 Instant.ofEpochMilli(stat.getCtime()));
@@ -1557,7 +1557,7 @@ public class ZkStateReader implements SolrCloseable {
         });
     if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
   }
@@ -1863,7 +1863,7 @@ public class ZkStateReader implements SolrCloseable {
         });
     if (reconstructState.get()) {
       synchronized (getUpdateLock()) {
-        constructState(Collections.emptySet());
+        constructState(Set.of());
       }
     }
   }
@@ -1979,7 +1979,7 @@ public class ZkStateReader implements SolrCloseable {
   // called by createClusterStateWatchersAndUpdate()
   private void refreshAliases(AliasesManager watcher) throws KeeperException, InterruptedException {
     synchronized (getUpdateLock()) {
-      constructState(Collections.emptySet());
+      constructState(Set.of());
       zkClient.exists(ALIASES, watcher);
     }
     aliasesManager.update();

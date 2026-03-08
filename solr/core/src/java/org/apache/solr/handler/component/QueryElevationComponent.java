@@ -1215,7 +1215,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     public Elevation(Set<BytesRef> elevatedIds, Set<BytesRef> excludedIds, String queryFieldName) {
       if (elevatedIds == null || elevatedIds.isEmpty()) {
         includeQuery = EMPTY_QUERY;
-        this.elevatedIds = Collections.emptySet();
+        this.elevatedIds = Set.of();
       } else {
         this.elevatedIds = Collections.unmodifiableSet(new LinkedHashSet<>(elevatedIds));
         BooleanQuery.Builder includeQueryBuilder = new BooleanQuery.Builder();
@@ -1227,7 +1227,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       }
 
       if (excludedIds == null || excludedIds.isEmpty()) {
-        this.excludedIds = Collections.emptySet();
+        this.excludedIds = Set.of();
         excludeQueries = null;
       } else {
         this.excludedIds = Collections.unmodifiableSet(new LinkedHashSet<>(excludedIds));

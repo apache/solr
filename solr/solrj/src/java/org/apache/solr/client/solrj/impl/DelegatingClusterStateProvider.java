@@ -46,7 +46,7 @@ public class DelegatingClusterStateProvider implements ClusterStateProvider {
     if (delegate != null) {
       return delegate.getLiveNodes();
     } else {
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 

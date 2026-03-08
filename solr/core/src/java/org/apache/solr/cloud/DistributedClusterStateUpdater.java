@@ -387,7 +387,7 @@ public class DistributedClusterStateUpdater {
       // For now trying to diverge as little as possible from existing data structures and code
       // given the need to support both the old way (Overseer) and new way (distributed) of handling
       // cluster state update.
-      final Set<String> liveNodes = Collections.emptySet();
+      final Set<String> liveNodes = Set.of();
 
       // Per Replica States updates are done before all other updates and not subject to the number
       // of attempts of CAS made here, given they have their own CAS strategy and implementation
@@ -586,7 +586,7 @@ public class DistributedClusterStateUpdater {
           ZkClientClusterStateProvider.createFromJsonSupportingLegacyConfigName(
               stat.getVersion(),
               data,
-              Collections.emptySet(),
+              Set.of(),
               updater.getCollectionName(),
               zkStateReader.getZkClient(),
               Instant.ofEpochMilli(stat.getCtime()));

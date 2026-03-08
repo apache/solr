@@ -517,7 +517,7 @@ public class SolrConfig implements MapSerializable {
 
       this.clazz = clz;
       this.tag = tag;
-      this.options = opts == null ? Collections.emptySet() : EnumSet.of(NOOP, opts);
+      this.options = opts == null ? Set.of() : EnumSet.of(NOOP, opts);
     }
 
     public String getCleanTag() {

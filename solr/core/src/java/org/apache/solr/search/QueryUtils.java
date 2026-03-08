@@ -313,7 +313,7 @@ public class QueryUtils {
     Map<?, ?> tagMap = (Map<?, ?>) req.getContext().get("tags");
 
     if (tagMap == null || tagMap.isEmpty() || desiredTags == null || desiredTags.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
 
     Set<Query> taggedQueries = Collections.newSetFromMap(new IdentityHashMap<>());

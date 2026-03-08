@@ -599,7 +599,7 @@ public class NodeConfig {
     private PluginInfo tracerConfig;
     private PluginInfo[] clusterPlugins;
     private String defaultZkHost;
-    private Set<Path> allowPaths = Collections.emptySet();
+    private Set<Path> allowPaths = Set.of();
     private List<String> allowUrls = List.of();
     private boolean hideStackTrace =
         !EnvUtils.getPropertyAsBool("solr.responses.stacktrace.enabled", true);
@@ -845,7 +845,7 @@ public class NodeConfig {
           hiddenSysProps = fromProps;
         }
       }
-      Set<String> hiddenSysPropSet = Collections.emptySet();
+      Set<String> hiddenSysPropSet = Set.of();
       if (hiddenSysProps != null) {
         hiddenSysPropSet =
             StrUtils.splitSmart(hiddenSysProps, ',').stream()

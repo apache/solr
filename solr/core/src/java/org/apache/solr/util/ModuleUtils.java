@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -76,7 +75,7 @@ public class ModuleUtils {
           .collect(Collectors.toSet());
     } catch (IOException e) {
       log.warn("Found no modules in {}", getModulesPath(solrInstallDirPath), e);
-      return Collections.emptySet();
+      return Set.of();
     }
   }
 

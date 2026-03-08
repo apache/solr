@@ -95,7 +95,7 @@ public class ClusterAPI {
       if (children != null && !children.isEmpty()) {
         result = new HashMap<>();
       } else {
-        return Collections.emptySet();
+        return Set.of();
       }
       for (String child : children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);

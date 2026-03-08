@@ -124,7 +124,7 @@ public class PathBasedCertPrincipalResolver extends PathBasedCertResolverBase
         getValuesFromPaths(certificate, Collections.singletonList(pattern));
     String basePrincipal = null;
     if (matches != null && !matches.isEmpty()) {
-      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Collections.emptySet());
+      Set<String> fieldValues = matches.getOrDefault(pattern.getName(), Set.of());
       basePrincipal = fieldValues.stream().findFirst().orElse(null);
     }
 

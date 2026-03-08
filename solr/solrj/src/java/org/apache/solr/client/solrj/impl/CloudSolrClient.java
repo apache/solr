@@ -1577,7 +1577,7 @@ public abstract class CloudSolrClient extends SolrClient {
    */
   private Set<String> resolveAliases(List<String> inputCollections) {
     if (inputCollections.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
     LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
