@@ -34,10 +34,6 @@ public class SystemInfoResponse extends SolrResponseBase {
   // Mimic that here, even if the response might be just a single node.
   protected final Map<String, NodeSystemResponse> nodesInfo = new HashMap<>();
 
-  protected SystemInfoResponse() {
-    // required constructor for the V2 extension
-  }
-
   public SystemInfoResponse(NamedList<Object> namedList) {
     if (namedList == null) throw new IllegalArgumentException("Null NamedList is not allowed.");
     setResponse(namedList);

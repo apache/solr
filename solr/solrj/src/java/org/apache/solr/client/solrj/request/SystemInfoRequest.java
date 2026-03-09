@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -38,8 +37,8 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   }
 
   /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or old V2 "/node/system"
+   * @param path the HTTP path to use for this request. Defaults to the v1 path,
+   *     "/admin/info/system"
    */
   public SystemInfoRequest(String path) {
     this(path, new ModifiableSolrParams());
@@ -53,17 +52,12 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   }
 
   /**
-   * @param path the HTTP path to use for this request. Supports V1 "/admin/info/system" (default)
-   *     or old V2 "/node/system"
+   * @param path the HTTP path to use for this request. Defaults to the v1 path,
+   *     "/admin/info/system"
    * @param params query parameter names and values for making this request.
    */
   public SystemInfoRequest(String path, SolrParams params) {
     super(METHOD.GET, path, SolrRequestType.ADMIN);
-    if (!path.equals(CommonParams.SYSTEM_INFO_PATH)
-        && !path.equals(CommonParams.V2_SYSTEM_INFO_PATH)) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST, "Unsupported request path: " + path);
-    }
     this.params = params;
   }
 
@@ -75,15 +69,5 @@ public class SystemInfoRequest extends SolrRequest<SystemInfoResponse> {
   @Override
   protected SystemInfoResponse createResponse(NamedList<Object> namedList) {
     return new SystemInfoResponse(namedList);
-  }
-
-  @Override
-  public ApiVersion getApiVersion() {
-    if (CommonParams.SYSTEM_INFO_PATH.equals(getPath())) {
-      // (/solr) /admin/info/system
-      return ApiVersion.V1;
-    }
-    // /node/system
-    return ApiVersion.V2;
   }
 }

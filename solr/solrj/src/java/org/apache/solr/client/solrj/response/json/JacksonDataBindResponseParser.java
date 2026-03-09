@@ -82,29 +82,4 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
 
     return result;
   }
-
-  /** Parse the Json {@code stream} to the expected Java type. */
-  public T processToType(InputStream stream, String encoding) throws IOException {
-    // TODO SOLR-17549 for error handling, implying a significant ResponseParser API change
-    // TODO generalize to CBOR, Smile, ...
-    var mapper = JacksonContentWriter.DEFAULT_MAPPER;
-
-    T parsedVal;
-    try {
-      if (encoding == null) {
-        parsedVal = mapper.readValue(stream, typeParam);
-      } else {
-        parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
-      }
-    } catch (Exception e) {
-
-      if (encoding == null) {
-        parsedVal = mapper.convertValue(stream, typeParam);
-      } else {
-        parsedVal = mapper.convertValue(new InputStreamReader(stream, encoding), typeParam);
-      }
-    }
-
-    return parsedVal;
-  }
 }
