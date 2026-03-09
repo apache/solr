@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.JSONTestUtil;
@@ -112,7 +113,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
     if (null != TEST_ONLY_ONE_FACET_METHOD) {
-      return Collections.singleton(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
+      return Set.<Object[]>of(new Object[] {TEST_ONLY_ONE_FACET_METHOD});
     } else if (TEST_NIGHTLY) {
       // wrap each enum val in an Object[] and return as Iterable
       return () ->
@@ -123,8 +124,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
       // can't use LuceneTestCase.random() because we're not in the runner context yet
       String seed = System.getProperty("tests.seed", "");
-      return Collections.singleton(
-          new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
+      return Set.<Object[]>of(new Object[] {methods[Math.abs(seed.hashCode()) % methods.length]});
     }
   }
 
