@@ -41,6 +41,9 @@ public class SolrZkServer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String ZK_WHITELIST_PROPERTY = "zookeeper.4lw.commands.whitelist";
+  public static final String ZK_MAX_CNXNS_PROPERTY = "zookeeper.maxCnxns";
+  // Per ZooKeeper, "0" means no limit for max client connections.
+  public static final String ZK_MAX_CNXNS_DEFAULT = "0";
 
   boolean zkRun = false;
   String zkHost;
@@ -138,6 +141,7 @@ public class SolrZkServer {
       return;
     }
 
+    ensureZkMaxCnxnsConfigured();
     if (System.getProperty(ZK_WHITELIST_PROPERTY) == null) {
       System.setProperty(ZK_WHITELIST_PROPERTY, "ruok, mntr, conf");
     }
@@ -207,6 +211,10 @@ public class SolrZkServer {
       return;
     }
     zkThread.interrupt();
+  }
+
+  static void ensureZkMaxCnxnsConfigured() {
+    System.getProperties().putIfAbsent(ZK_MAX_CNXNS_PROPERTY, ZK_MAX_CNXNS_DEFAULT);
   }
 }
 
