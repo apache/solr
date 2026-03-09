@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.apache.lucene.util.BytesRef;
@@ -95,9 +96,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
     assertDocContainsSubset(preMergeDoc, dummyBlock);
     assertDocContainsSubset(addedDoc, dummyBlock);
     final List<SolrInputDocument> children =
-        dummyBlock.getFieldValues("child").stream()
-            .map(SolrInputDocument.class::cast)
-            .collect(Collectors.toList());
+        dummyBlock.getFieldValues("child").stream().map(SolrInputDocument.class::cast).toList();
     assertDocContainsSubset(newChildDoc, children.get(1));
     assertEquals(dummyBlock.getFieldValue("id"), dummyBlock.getFieldValue("id"));
   }
@@ -317,7 +316,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
       docs =
           IntStream.range(i * 10, (i * 10) + 5)
               .mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild"))
-              .collect(Collectors.toList());
+              .toList();
       doc =
           sdoc(
               "id",
@@ -392,7 +391,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
       docs =
           IntStream.range(i * 10, (i * 10) + 5)
               .mapToObj(x -> sdoc("id", String.valueOf(x), "string_s", "grandChild"))
-              .collect(Collectors.toList());
+              .toList();
       doc =
           sdoc(
               "id",
@@ -694,13 +693,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
   public void testBlockAtomicSet() throws Exception {
     SolrInputDocument sdoc2 = sdoc("id", "2", "cat_ss", "child");
     SolrInputDocument doc =
-        sdoc(
-            "id",
-            "1",
-            "cat_ss",
-            new String[] {"aaa", "ccc"},
-            "child1",
-            Collections.singleton(sdoc2));
+        sdoc("id", "1", "cat_ss", new String[] {"aaa", "ccc"}, "child1", Set.of(sdoc2));
     assertU(adoc(doc));
 
     BytesRef rootDocId = new BytesRef("1");
