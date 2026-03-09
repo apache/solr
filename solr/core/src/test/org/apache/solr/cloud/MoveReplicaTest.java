@@ -182,7 +182,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
           if (!r.getNodeName().equals(targetNode)) {
             continue;
           }
-          if (!r.isActive(Collections.singleton(targetNode))) {
+          if (!r.isActive(Set.of(targetNode))) {
             log.info("Not active: {}", r);
             allActive = false;
           }
@@ -227,7 +227,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
           if (!r.getNodeName().equals(replica.getNodeName())) {
             continue;
           }
-          if (!r.isActive(Collections.singleton(replica.getNodeName()))) {
+          if (!r.isActive(Set.of(replica.getNodeName()))) {
             log.info("Not active yet: {}", r);
             allActive = false;
           }

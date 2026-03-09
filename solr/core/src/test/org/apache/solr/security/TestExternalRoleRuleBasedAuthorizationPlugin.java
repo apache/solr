@@ -19,10 +19,10 @@ package org.apache.solr.security;
 
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import org.apache.http.auth.BasicUserPrincipal;
 
 /**
@@ -50,7 +50,7 @@ public class TestExternalRoleRuleBasedAuthorizationPlugin
 
   @Override
   protected void setUserRole(String user, String role) {
-    principals.put(user, new PrincipalWithUserRoles(user, Collections.singleton(role)));
+    principals.put(user, new PrincipalWithUserRoles(user, Set.of(role)));
   }
 
   @Override
