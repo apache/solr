@@ -25,6 +25,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.NodeApi;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
@@ -80,17 +81,12 @@ public class NodeHealthAPITest extends SolrCloudTestCase {
       // Break the ZK connection to put the node into an unhealthy state
       newJetty.getCoreContainer().getZkController().getZkClient().close();
 
-      // JacksonDataBindResponseParser deserializes error responses into the response type rather
-      // than throwing (see SOLR-17549). The server returns HTTP 503, which gets deserialized into
-      // a NodeHealthResponse with the 'error' field populated instead of throwing SolrException.
-      // FIXME AFTER MAIN MERGE.
-      final var response = new NodeApi.Healthcheck().process(nodeClient);
-      assertNotNull("Expected error info on an unhealthy node", response.error);
-      assertEquals(
-          SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, response.error.code.intValue());
+      SolrException e =
+          assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
+      assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
       assertTrue(
-          "Expected 'Host Unavailable' in error message",
-          response.error.msg.contains("Host Unavailable"));
+          "Expected 'Host Unavailable' in exception message",
+          e.getMessage().contains("Host Unavailable"));
     } finally {
       newJetty.stop();
     }
