@@ -75,6 +75,10 @@ public class ScalarQuantizedDenseVectorField extends DenseVectorField {
   public void init(IndexSchema schema, Map<String, String> args) {
     this.bits = ofNullable(args.remove(BITS_PARAM)).map(Integer::parseInt).orElse(DEFAULT_BITS);
 
+    // Retain parsing of these ("compress", "confidenceInterval") legacy Solr 10 schema params for
+    // compatibility even though
+    // Lucene 10.4's scalar-quantized vector format no longer consumes them directly. They are no-op
+    // going forward.
     this.compress =
         ofNullable(args.remove(COMPRESS_PARAM)).map(Boolean::parseBoolean).orElse(false);
 

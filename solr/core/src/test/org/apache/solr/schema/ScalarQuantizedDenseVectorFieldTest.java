@@ -36,31 +36,6 @@ public class ScalarQuantizedDenseVectorFieldTest extends AbstractBadConfigTestBa
   }
 
   @Test
-  public void fieldTypeDefinition_improperCompressionUse_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-compress.xml",
-        "ScalarQuantizedDenseVectorField compress=true only applies when bits=4: v_scalar_compressed");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooLow_shouldThrowException() throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-low.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=0.8: v_scalar_ci");
-  }
-
-  @Test
-  public void fieldTypeDefinition_confidenceIntervalTooHigh_shouldThrowException()
-      throws Exception {
-    assertConfigs(
-        "solrconfig-basic.xml",
-        "bad-schema-densevector-quantized-confidence-interval-high.xml",
-        "ScalarQuantizedDenseVectorField confidenceInterval must be between 0.9 and 1.0 or 0; confidenceInterval=1.5: v_scalar_ci");
-  }
-
-  @Test
   public void fieldDefinition_default_shouldLoadSchemaField() throws Exception {
     try {
       initCore("solrconfig_codec.xml", "schema-densevector-quantized.xml");
