@@ -45,7 +45,7 @@ public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
 
   @Override
   @PermissionName(HEALTH_PERM)
-  public NodeHealthResponse checkNodeHealth(Boolean requireHealthyCores) {
+  public NodeHealthResponse healthcheck(Boolean requireHealthyCores) {
     return handler.checkNodeHealth(requireHealthyCores, null);
   }
 

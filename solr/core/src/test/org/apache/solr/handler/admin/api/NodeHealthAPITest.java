@@ -50,7 +50,7 @@ public class NodeHealthAPITest extends SolrCloudTestCase {
   public void testCloudMode_HealthyNodeReturnsOkStatus() {
     CoreContainer coreContainer = cluster.getJettySolrRunner(0).getCoreContainer();
 
-    final var response = new NodeHealthAPI(coreContainer).checkNodeHealth(null);
+    final var response = new NodeHealthAPI(coreContainer).healthcheck(null);
 
     assertNotNull(response);
     assertEquals(OK, response.status);
@@ -62,7 +62,7 @@ public class NodeHealthAPITest extends SolrCloudTestCase {
     CoreContainer coreContainer = cluster.getJettySolrRunner(0).getCoreContainer();
 
     // requireHealthyCores=true should succeed on a node with no unhealthy cores
-    final var response = new NodeHealthAPI(coreContainer).checkNodeHealth(true);
+    final var response = new NodeHealthAPI(coreContainer).healthcheck(true);
 
     assertNotNull(response);
     assertEquals(OK, response.status);
@@ -77,14 +77,14 @@ public class NodeHealthAPITest extends SolrCloudTestCase {
       CoreContainer coreContainer = newJetty.getCoreContainer();
 
       // Sanity check: the new node should start out healthy
-      assertEquals(OK, new NodeHealthAPI(coreContainer).checkNodeHealth(null).status);
+      assertEquals(OK, new NodeHealthAPI(coreContainer).healthcheck(null).status);
 
       // Break the ZK connection to put the node into an unhealthy state
       coreContainer.getZkController().getZkClient().close();
 
       SolrException e =
           assertThrows(
-              SolrException.class, () -> new NodeHealthAPI(coreContainer).checkNodeHealth(null));
+              SolrException.class, () -> new NodeHealthAPI(coreContainer).healthcheck(null));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
       assertTrue(
           "Expected 'Host Unavailable' in exception message",
