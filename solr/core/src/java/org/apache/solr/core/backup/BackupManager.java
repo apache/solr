@@ -258,7 +258,9 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    if (!repository.exists(source)) {
+    // Use both exists() and listAll() to handle object stores (e.g. S3) where a "directory"
+    // may have no explicit marker object but still contain config files under that prefix.
+    if (!repository.exists(source) && repository.listAll(source).length == 0) {
       throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
