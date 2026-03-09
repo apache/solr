@@ -1,7 +1,7 @@
 title: Migrate NodeHealthAPI to JAX-RS. NodeHealthAPI now has OpenAPI and SolrJ support.
-type: changed
+type: added
 authors:
   - name: Eric Pugh
 links:
-- name: PR#4171
-  url: https://github.com/apache/solr/pull/4171
+  - name: SOLR-16458
+    url: https://issues.apache.org/jira/browse/SOLR-16458
