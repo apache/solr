@@ -21,7 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /** Response body for the '/api/node/health' endpoint. */
 public class NodeHealthResponse extends SolrJerseyResponse {
 
-  @JsonProperty public String status;
+  /** The possible health statuses for a Solr node. */
+  public enum NodeStatus {
+    OK,
+    FAILURE
+  }
+
+  @JsonProperty public NodeStatus status;
 
   @JsonProperty public String message;
 

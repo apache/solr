@@ -17,10 +17,10 @@
 
 package org.apache.solr.handler.admin;
 
+import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.FAILURE;
+import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
-import static org.apache.solr.common.params.CommonParams.FAILURE;
-import static org.apache.solr.common.params.CommonParams.OK;
 import static org.apache.solr.handler.admin.api.ReplicationAPIBase.GENERATION;
 
 import java.lang.invoke.MethodHandles;

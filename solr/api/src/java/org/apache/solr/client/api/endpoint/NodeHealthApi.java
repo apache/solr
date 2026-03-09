@@ -30,6 +30,5 @@ public interface NodeHealthApi {
   @Operation(
       summary = "Determine the health of a Solr node.",
       tags = {"node"})
-  NodeHealthResponse healthcheck(
-      @QueryParam("requireHealthyCores") Boolean requireHealthyCores);
+  NodeHealthResponse healthcheck(@QueryParam("requireHealthyCores") Boolean requireHealthyCores);
 }
