@@ -36,7 +36,6 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.NamedList;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 /**
@@ -45,15 +44,11 @@ import org.junit.Ignore;
  * converts them from Map to NamedList
  */
 public class SolrExampleCborTest extends SolrExampleTests {
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
 
   @Override
   public SolrClient createNewSolrClient() {
-    return new HttpSolrClient.Builder(getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+    return new HttpSolrClient.Builder(solrTestRule.getBaseUrl())
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .allowMultiPartPost(random().nextBoolean())
         .withRequestWriter(cborRequestWriter())
         .withResponseParser(cborResponseParser())

@@ -14,16 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler;
 
-import org.apache.solr.handler.component.SearchHandler;
+package org.apache.solr.ui.data
 
-@Deprecated
-public class StandardRequestHandler extends SearchHandler {
-  //////////////////////// SolrInfoMBeans methods //////////////////////
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-  @Override
-  public String getDescription() {
-    return "The standard Solr request handler";
-  }
-}
+@Serializable
+data class AuthorizationResponse(
+    @SerialName("access_token")
+    val accessToken: String = "",
+    @SerialName("expires_in")
+    val expiresIn: Long = 0,
+    @SerialName("refresh_expires_in")
+    val refreshExpiresIn: Long = 0,
+    @SerialName("refresh_token")
+    val refreshToken: String = "",
+    @SerialName("token_type")
+    val tokenType: String = "",
+    @SerialName("id_token")
+    val idToken: String? = null,
+    @SerialName("not-before-policy")
+    val notBeforePolicy: Int = -1,
+    @SerialName("session_state")
+    val sessionState: String = "",
+    val scope: String = "",
+)

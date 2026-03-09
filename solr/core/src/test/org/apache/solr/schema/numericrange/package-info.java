@@ -14,20 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.client.solrj.embedded;
 
-import org.apache.solr.client.solrj.SolrExampleTests;
-import org.junit.BeforeClass;
-
-/**
- * This runs SolrServer test using
- *
- * @since solr 1.3
- */
-public class SolrExampleEmbeddedTest extends SolrExampleTests {
-
-  @BeforeClass
-  public static void beforeTest() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
-  }
-}
+/** Tests for code in the corresponding 'main' package */
+package org.apache.solr.schema.numericrange;

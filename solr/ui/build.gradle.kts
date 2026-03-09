@@ -96,6 +96,7 @@ kotlin {
                 implementation(libs.ktor.client.cio)
                 implementation(libs.ktor.client.contentNegotiation)
                 implementation(libs.ktor.client.serialization.json)
+                implementation(libs.squareup.okio)
 
                 implementation(libs.oshai.logging)
                 implementation(libs.slf4j.api)
@@ -114,6 +115,9 @@ kotlin {
 
         val desktopMain by getting {
             dependencies {
+                implementation(libs.ktor.server.core)
+                implementation(libs.ktor.server.cio)
+                implementation(libs.ktor.server.htmlBuilder)
                 implementation(compose.desktop.currentOs)
                 implementation(libs.kotlinx.coroutines.swing)
             }
@@ -131,6 +135,11 @@ configurations {
 compose.desktop {
     application {
         mainClass = "org.apache.solr.ui.MainKt"
+
+        buildTypes.release.proguard {
+            version.set("7.6.0")
+            configurationFiles.from("proguard.pro")
+        }
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

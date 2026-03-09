@@ -74,7 +74,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
    */
   @Deprecated public static final Set<Class<? extends FieldType>> KNOWN_TYPES = new HashSet<>();
 
-  private final org.apache.solr.response.ResultContext rctx;
+  private final ResultContext rctx;
   private final SolrDocumentFetcher docFetcher; // a collaborator of SolrIndexSearcher
   private final DocList docs;
 
