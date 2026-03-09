@@ -104,12 +104,12 @@ public class TestCoreDiscovery extends SolrTestCaseJ4 {
   }
 
   private void addConfFiles(Path confDir) throws Exception {
-    String top = SolrTestCaseJ4.TEST_HOME() + "/collection1/conf";
+    Path top = SolrTestCaseJ4.TEST_HOME().resolve("collection1").resolve("conf");
     Files.createDirectories(confDir);
-    Files.copy(Path.of(top, "schema-tiny.xml"), confDir.resolve("schema-tiny.xml"));
-    Files.copy(Path.of(top, "solrconfig-minimal.xml"), confDir.resolve("solrconfig-minimal.xml"));
+    Files.copy(top.resolve("schema-tiny.xml"), confDir.resolve("schema-tiny.xml"));
+    Files.copy(top.resolve("solrconfig-minimal.xml"), confDir.resolve("solrconfig-minimal.xml"));
     Files.copy(
-        Path.of(top, "solrconfig.snippet.randomindexconfig.xml"),
+        top.resolve("solrconfig.snippet.randomindexconfig.xml"),
         confDir.resolve("solrconfig.snippet.randomindexconfig.xml"));
   }
 
