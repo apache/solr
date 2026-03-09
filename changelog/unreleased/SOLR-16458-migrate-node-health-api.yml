@@ -1,4 +1,4 @@
-title: Migrate NodeHealthAPI to JAX-RS. NodeHealthAPI now has OpenAPI and SolrJ support.
+title: "SolrJ now offers a SolrRequest class allowing users to perform single-node healthchecks: NodeApi.Healthcheck"
 type: added
 authors:
   - name: Eric Pugh
