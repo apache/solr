@@ -56,11 +56,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
     SystemInfoProvider provider = new SystemInfoProvider(req);
     NodeSystemResponse response = provider.getNodeSystemInfo(new NodeSystemResponse());
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, response);
-
-    // back-compatible response with core info if available
-    if (req.getCore() != null) {
-      rsp.add("core", SystemInfoProvider.getCoreInfo(req.getCore(), req.getSchema()));
-    }
   }
 
   private CoreContainer getCoreContainer(SolrQueryRequest req) {

@@ -46,7 +46,6 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.lucene.util.Version;
-import org.apache.solr.client.api.model.CoreInfoResponse;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -177,45 +176,6 @@ public class SystemInfoProvider {
       log.warn("Problem getting the normalized index directory path", e);
     }
     info.add("directory", dirs);
-    return info;
-  }
-
-  /** Get core info for V2 */
-  public CoreInfoResponse getCoreInfo(String coreName, CoreInfoResponse info) {
-
-    SolrCore core = req.getCore();
-    if (req.getCoreContainer() != null
-        && req.getCoreContainer().getAllCoreNames().contains(coreName)) {
-      core = req.getCoreContainer().getCore(coreName);
-    }
-
-    if (core == null) return info;
-
-    IndexSchema schema = req.getSchema();
-
-    info.schema = schema != null ? schema.getSchemaName() : "no schema!";
-    info.host = hostname;
-    info.now = new Date();
-    info.start = core.getStartTimeStamp();
-
-    // Solr Home
-    CoreInfoResponse.Directory dirs = new CoreInfoResponse.Directory();
-    dirs.cwd = Path.of(System.getProperty("user.dir")).toAbsolutePath().toString();
-    dirs.instance = core.getInstancePath().toString();
-    try {
-      dirs.data = core.getDirectoryFactory().normalize(core.getDataDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-      dirs.data = "N/A";
-    }
-    dirs.dirimpl = core.getDirectoryFactory().getClass().getName();
-    try {
-      dirs.index = core.getDirectoryFactory().normalize(core.getIndexDir());
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-      dirs.index = "N/A";
-    }
-    info.directory = dirs;
     return info;
   }
 

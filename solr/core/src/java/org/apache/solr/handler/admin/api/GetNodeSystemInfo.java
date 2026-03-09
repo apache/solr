@@ -22,6 +22,7 @@ import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.api.endpoint.NodeSystemInfoApi;
 import org.apache.solr.client.api.model.NodeSystemResponse;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.AdminHandlersProxy;
 import org.apache.solr.handler.admin.SystemInfoProvider;
 import org.apache.solr.jersey.PermissionName;
@@ -31,15 +32,17 @@ import org.apache.solr.security.PermissionNameProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Implementation of the V2 JerseyResource /node/system */
+/** Implementation for {@link NodeSystemInfoApi} */
 public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoApi {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private final CoreContainer coreContainer;
   private final SolrQueryRequest solrQueryRequest;
   private final SolrQueryResponse solrQueryResponse;
 
   @Inject
   public GetNodeSystemInfo(SolrQueryRequest solrQueryRequest, SolrQueryResponse solrQueryResponse) {
+    this.coreContainer = solrQueryRequest.getCoreContainer();
     this.solrQueryRequest = solrQueryRequest;
     this.solrQueryResponse = solrQueryResponse;
   }
@@ -49,17 +52,8 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
   public NodeSystemResponse getNodeSystemInfo(String nodes) {
     solrQueryResponse.setHttpCaching(false);
 
-    // TODO: AdminHandlersProxy does not support V2: PRs #4057, #3991
-    try {
-      // TODO: Should use the "nodes" param
-      if (solrQueryRequest.getCoreContainer() != null
-          && AdminHandlersProxy.maybeProxyToNodes(
-              solrQueryRequest, solrQueryResponse, solrQueryRequest.getCoreContainer())) {
-        return null;
-      }
-    } catch (Exception e) {
-      throw new SolrException(
-          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    if (proxyToNodes()) {
+      return null; // Request handled via proxying
     }
 
     SystemInfoProvider provider = new SystemInfoProvider(solrQueryRequest);
@@ -69,5 +63,19 @@ public class GetNodeSystemInfo extends JerseyResource implements NodeSystemInfoA
       log.trace("Node {}, core root: {}", response.node, response.coreRoot);
     }
     return response;
+  }
+
+  private boolean proxyToNodes() {
+    try {
+      if (coreContainer != null
+          && AdminHandlersProxy.maybeProxyToNodes(
+              "V2", solrQueryRequest, solrQueryResponse, coreContainer)) {
+        return true; // Request was proxied to other node
+      }
+    } catch (Exception e) {
+      throw new SolrException(
+          SolrException.ErrorCode.SERVER_ERROR, "Error occurred while proxying to other node", e);
+    }
+    return false;
   }
 }
