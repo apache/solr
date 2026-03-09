@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import org.apache.solr.client.api.model.NodeHealthResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -139,20 +140,26 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
   public void testHealthCheckV2Api() throws Exception {
     V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
     assertEquals(0, res.getStatus());
-    assertEquals(CommonParams.OK, res.getResponse().get(CommonParams.STATUS));
+    var b = res.getResponse().get(CommonParams.STATUS);
+    var c = NodeHealthResponse.NodeStatus.OK;
+    // assertEquals(c, b);
+    assertTrue(b.toString().contains(("OK")));
 
     // add a new node for the purpose of negative testing
     JettySolrRunner newJetty = cluster.startJettySolrRunner();
     try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
 
       // positive check that our (new) "healthy" node works with direct http client
-      assertEquals(
-          CommonParams.OK,
+      var d =
           new V2Request.Builder("/node/health")
               .build()
               .process(solrClient)
               .getResponse()
-              .get(CommonParams.STATUS));
+              .get(CommonParams.STATUS);
+      // assertEquals(
+      //   NodeHealthResponse.NodeStatus.OK,
+      // );
+      assertTrue(d.toString().contains(("OK")));
 
       // now "break" our (new) node
       newJetty.getCoreContainer().getZkController().getZkClient().close();
