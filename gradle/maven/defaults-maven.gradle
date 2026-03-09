@@ -179,6 +179,34 @@ configure(subprojects.findAll {it.path in rootProject.published}) {prj ->
                 }
               }
             }
+
+            // Resolve actual dependency versions for any <dependency> entries with missing
+            // <version>. This handles BOM-managed dependencies (e.g. Jackson) whose versions
+            // are resolved by Gradle but not written into the generated POM, which causes
+            // "missing version" errors for Maven consumers.
+            def resolvedVersions = [:]
+            ['compileClasspath', 'runtimeClasspath'].each { configName ->
+              def config = prj.configurations.findByName(configName)
+              if (config) {
+                config.resolvedConfiguration.resolvedArtifacts.each { artifact ->
+                  def id = artifact.moduleVersion.id
+                  def key = "${id.group}:${id.name}"
+                  if (!resolvedVersions.containsKey(key)) {
+                    resolvedVersions[key] = id.version
+                  }
+                }
+              }
+            }
+            root.dependencies?.dependency?.each { dep ->
+              def versionNodes = dep.version
+              if (!versionNodes || !versionNodes.text()) {
+                def key = "${dep.groupId.text()}:${dep.artifactId.text()}"
+                def resolvedVersion = resolvedVersions[key]
+                if (resolvedVersion) {
+                  dep.appendNode('version', resolvedVersion)
+                }
+              }
+            }
           }
         }
       }
