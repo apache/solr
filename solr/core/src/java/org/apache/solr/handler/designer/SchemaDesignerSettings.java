@@ -25,7 +25,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.apache.solr.schema.ManagedIndexSchema;
 
-public class SchemaDesignerSettings implements SchemaDesignerConstants {
+class SchemaDesignerSettings implements SchemaDesignerConstants {
 
   private String copyFrom;
   private boolean isDisabled;

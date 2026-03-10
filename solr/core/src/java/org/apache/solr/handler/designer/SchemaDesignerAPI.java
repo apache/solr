@@ -935,7 +935,7 @@ public class SchemaDesignerAPI extends JerseyResource
     return schema;
   }
 
-  protected SchemaDesignerSettings getMutableSchemaForConfigSet(
+  SchemaDesignerSettings getMutableSchemaForConfigSet(
       final String configSet, final int schemaVersion, String copyFrom) throws IOException {
     // The designer works with mutable config sets stored in a "temp" znode in ZK instead of the
     // "live" configSet
@@ -1156,7 +1156,7 @@ public class SchemaDesignerAPI extends JerseyResource
     return numFound;
   }
 
-  protected Map<String, Object> buildResponse(
+  Map<String, Object> buildResponse(
       String configSet,
       final ManagedIndexSchema schema,
       SchemaDesignerSettings settings,
@@ -1310,8 +1310,7 @@ public class SchemaDesignerAPI extends JerseyResource
     return (Map<String, Object>) json;
   }
 
-  protected void addSettingsToResponse(
-      SchemaDesignerSettings settings, final Map<String, Object> response) {
+  void addSettingsToResponse(SchemaDesignerSettings settings, final Map<String, Object> response) {
     response.put(LANGUAGES_PARAM, settings.getLanguages());
     response.put(ENABLE_FIELD_GUESSING_PARAM, settings.fieldGuessingEnabled());
     response.put(ENABLE_DYNAMIC_FIELDS_PARAM, settings.dynamicFieldsEnabled());
