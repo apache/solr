@@ -1752,25 +1752,34 @@ public class IndexFetcher {
             aborted = true;
             throw new ReplicationHandlerException("User aborted replication");
           }
-          long checkSumServer = -1;
 
           fis.readFully(intbytes);
           // read the size of the packet
           int packetSize = readInt(intbytes);
+
+          // EOF marker: size=0 with no trailing data (no checksum follows)
+          if (packetSize <= 0 && fis.peek() == -1) {
+            continue;
+          }
+
+          // read the checksum (all data packets have checksums, including zero-length ones)
+          long checkSumServer = -1;
+          if (checksum != null) {
+            fis.readFully(longbytes);
+            checkSumServer = readLong(longbytes);
+          }
+
+          // zero-length data packet: checksum already consumed, skip to next packet
           if (packetSize <= 0) {
             continue;
           }
+
           // TODO consider recoding the remaining logic to not use/need buf[]; instead use the
           // internal buffer of fis
           if (buf.length < packetSize) {
             // This shouldn't happen since sender should use PACKET_SZ and we init the buf based on
             // that too
             buf = new byte[packetSize];
-          }
-          if (checksum != null) {
-            // read the checksum
-            fis.readFully(longbytes);
-            checkSumServer = readLong(longbytes);
           }
           // then read the packet of bytes
           fis.readFully(buf, 0, packetSize);
