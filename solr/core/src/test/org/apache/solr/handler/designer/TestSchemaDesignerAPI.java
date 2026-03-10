@@ -23,6 +23,7 @@ import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import jakarta.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -511,7 +512,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
 
     // Download ZIP
     when(mockReq.getContentStreams()).thenReturn(null);
-    jakarta.ws.rs.core.Response downloadResponse = schemaDesignerAPI.downloadConfig(configSet);
+    Response downloadResponse = schemaDesignerAPI.downloadConfig(configSet);
     assertNotNull(downloadResponse);
     assertEquals(200, downloadResponse.getStatus());
     assertTrue(
@@ -747,8 +748,7 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     // Prep the schema and analyze sample docs so the temp collection and stored docs exist
     schemaDesignerAPI.prepNewSchema(configSet, null);
     ContentStreamBase.StringStream stream =
-        new ContentStreamBase.StringStream(
-            "[{\"id\":\"doc1\",\"title\":\"test doc\"}]", JSON_MIME);
+        new ContentStreamBase.StringStream("[{\"id\":\"doc1\",\"title\":\"test doc\"}]", JSON_MIME);
     ModifiableSolrParams reqParams = new ModifiableSolrParams();
     reqParams.set(CONFIG_SET_PARAM, configSet);
     when(mockReq.getParams()).thenReturn(reqParams);
