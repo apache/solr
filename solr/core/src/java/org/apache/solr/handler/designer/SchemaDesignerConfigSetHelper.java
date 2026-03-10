@@ -47,7 +47,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -74,7 +73,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.DocCollection;
-import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkMaintenanceUtils;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -536,29 +534,6 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     }
   }
 
-  private String getBaseUrl(final String collection) {
-    String baseUrl = null;
-    try {
-      Set<String> liveNodes = zkStateReader().getClusterState().getLiveNodes();
-      DocCollection docColl = zkStateReader().getCollection(collection);
-      if (docColl != null && !liveNodes.isEmpty()) {
-        Optional<Replica> maybeActive =
-            docColl.getReplicas().stream().filter(r -> r.isActive(liveNodes)).findAny();
-        if (maybeActive.isPresent()) {
-          baseUrl = maybeActive.get().getBaseUrl();
-        }
-      }
-    } catch (Exception exc) {
-      log.warn("Failed to lookup base URL for collection {}", collection, exc);
-    }
-
-    if (baseUrl == null) {
-      baseUrl = zkStateReader().getBaseUrlForNodeName(cc.getZkController().getNodeName());
-    }
-
-    return baseUrl;
-  }
-
   protected String getManagedSchemaZkPath(final String configSet) {
     return getConfigSetZkPath(configSet, DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME);
   }
@@ -819,8 +794,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
     final Set<String> toRemove =
         types.values().stream()
             .filter(this::isTextType)
-            .filter(t -> !languages.contains(t.getTypeName().substring(TEXT_PREFIX_LEN)))
             .map(FieldType::getTypeName)
+            .filter(typeName -> !languages.contains(typeName.substring(TEXT_PREFIX_LEN)))
             .filter(t -> !usedTypes.contains(t)) // not explicitly used by a field
             .collect(Collectors.toSet());
 
@@ -961,9 +936,9 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
 
       List<SchemaField> addDynFields =
           Arrays.stream(copyFromSchema.getDynamicFields())
-              .filter(df -> langFieldTypeNames.contains(df.getPrototype().getType().getTypeName()))
-              .filter(df -> !existingDynFields.contains(df.getPrototype().getName()))
               .map(IndexSchema.DynamicField::getPrototype)
+              .filter(prototype -> langFieldTypeNames.contains(prototype.getType().getTypeName()))
+              .filter(prototype -> !existingDynFields.contains(prototype.getName()))
               .collect(Collectors.toList());
       if (!addDynFields.isEmpty()) {
         schema = schema.addDynamicFields(addDynFields, null, false);
@@ -1035,8 +1010,8 @@ class SchemaDesignerConfigSetHelper implements SchemaDesignerConstants {
             .collect(Collectors.toSet());
     List<SchemaField> toAdd =
         Arrays.stream(dynamicFields)
-            .filter(df -> !existingDFNames.contains(df.getPrototype().getName()))
             .map(IndexSchema.DynamicField::getPrototype)
+            .filter(prototype -> !existingDFNames.contains(prototype.getName()))
             .collect(Collectors.toList());
 
     // only restore language specific dynamic fields that match our langSet
