@@ -81,11 +81,9 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    */
   @Override
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
-    final boolean isRoot = parentPath.equals("/");
-
     // allParents filter: (*:* -{prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
-    final Query allParentsFilter = buildAllParentsFilterFromPath(isRoot, parentPath);
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
     final BooleanQuery parsedParentQuery = parseImpl();
 
@@ -104,12 +102,12 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     // For root: (+<original_parent> -_nest_path_:*)
     final BooleanQuery.Builder constrainedBuilder =
         new BooleanQuery.Builder().add(parsedParentQuery, Occur.MUST);
-    if (isRoot) {
+    if (parentPath.equals("/")) {
       constrainedBuilder.add(
           new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
     } else {
       constrainedBuilder.add(
-          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.MUST);
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.FILTER);
     }
     final Query constrainedParentQuery = constrainedBuilder.build();
 

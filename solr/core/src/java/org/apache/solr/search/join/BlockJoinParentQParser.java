@@ -129,30 +129,28 @@ public class BlockJoinParentQParser extends FiltersQParser {
    *     root "/")
    */
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
-    final boolean isRoot = parentPath.equals("/");
-
     // allParents filter: (*:* -{prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
-    final Query allParentsFilter = buildAllParentsFilterFromPath(isRoot, parentPath);
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
     final BooleanQuery parsedChildQuery = parseImpl();
 
     if (parsedChildQuery.clauses().isEmpty()) {
       // no child query: return all "parent" docs at this level
-      return wrapWithParentPathConstraint(isRoot, parentPath, allParentsFilter);
+      return wrapWithParentPathConstraint(parentPath, allParentsFilter);
     }
 
     // constrain child query: (+<original_child> +{prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (+<original_child> +_nest_path_:*)
     final Query constrainedChildQuery =
-        buildChildQueryWithPathConstraint(isRoot, parentPath, parsedChildQuery);
+        buildChildQueryWithPathConstraint(parentPath, parsedChildQuery);
 
     final String scoreMode = localParams.get("score", ScoreMode.None.name());
     final Query parentJoinQuery = createQuery(allParentsFilter, constrainedChildQuery, scoreMode);
 
     // wrap result: (+<parent_join> +{field f="_nest_path_" v="<parentPath>"})
     // For root: (+<parent_join> -_nest_path_:*)
-    return wrapWithParentPathConstraint(isRoot, parentPath, parentJoinQuery);
+    return wrapWithParentPathConstraint(parentPath, parentJoinQuery);
   }
 
   /**
@@ -170,9 +168,9 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * <p>Equivalent to: {@code (*:* -{prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
    * /}): {@code (*:* -_nest_path_:*)}
    */
-  protected static Query buildAllParentsFilterFromPath(boolean isRoot, String parentPath) {
+  protected static Query buildAllParentsFilterFromPath(String parentPath) {
     final Query excludeQuery;
-    if (isRoot) {
+    if (parentPath.equals("/")) {
       excludeQuery = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
     } else {
       excludeQuery = new PrefixQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath + "/"));
@@ -188,14 +186,13 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * level are matched. For root, this excludes docs that have a {@code _nest_path_} value. For
    * non-root, this requires an exact match on {@code _nest_path_}.
    */
-  private static Query wrapWithParentPathConstraint(
-      boolean isRoot, String parentPath, Query query) {
+  private static Query wrapWithParentPathConstraint(String parentPath, Query query) {
     final BooleanQuery.Builder builder = new BooleanQuery.Builder().add(query, Occur.MUST);
-    if (isRoot) {
+    if (parentPath.equals("/")) {
       builder.add(new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
     } else {
       builder.add(
-          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.MUST);
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.FILTER);
     }
     return builder.build();
   }
@@ -206,10 +203,9 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * sub-path of the parent path (i.e. starts with {@code parentPath/}). For root, any doc with a
    * {@code _nest_path_} is a "child".
    */
-  private static Query buildChildQueryWithPathConstraint(
-      boolean isRoot, String parentPath, Query childQuery) {
+  private static Query buildChildQueryWithPathConstraint(String parentPath, Query childQuery) {
     final Query nestPathConstraint;
-    if (isRoot) {
+    if (parentPath.equals("/")) {
       nestPathConstraint = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
     } else {
       nestPathConstraint =
@@ -217,7 +213,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     }
     return new BooleanQuery.Builder()
         .add(childQuery, Occur.MUST)
-        .add(nestPathConstraint, Occur.MUST)
+        .add(nestPathConstraint, Occur.FILTER)
         .build();
   }
 
