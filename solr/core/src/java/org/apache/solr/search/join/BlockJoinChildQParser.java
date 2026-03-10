@@ -16,13 +16,17 @@
  */
 package org.apache.solr.search.join;
 
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SyntaxError;
 
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
@@ -51,5 +55,64 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
             .add(parents, Occur.MUST_NOT)
             .build();
     return new BitSetProducerQuery(getBitSetProducer(notParents));
+  }
+
+  /**
+   * Parses the query using the {@code parentPath} localparam for the child parser.
+   *
+   * <p>For the {@code child} parser with {@code parentPath="/a/b/c"}:
+   *
+   * <pre>NEW: q={!child parentPath="/a/b/c"}p_title:dad
+   *
+   * OLD: q={!child of=$ff v=$vv}
+   *      ff=(*:* -{prefix f="_nest_path_" v="/a/b/c/"})
+   *      vv=(+p_title:dad +{field f="_nest_path_" v="/a/b/c"})</pre>
+   *
+   * <p>For {@code parentPath="/"}:
+   *
+   * <pre>NEW: q={!child parentPath="/"}p_title:dad
+   *
+   * OLD: q={!child of=$ff v=$vv}
+   *      ff=(*:* -_nest_path_:*)
+   *      vv=(+p_title:dad -_nest_path_:*)</pre>
+   *
+   * @param parentPath the normalized parent path (starts with "/", no trailing slash except for
+   *     root "/")
+   */
+  @Override
+  protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
+    final boolean isRoot = parentPath.equals("/");
+
+    // allParents filter: (*:* -{prefix f="_nest_path_" v="<parentPath>/"})
+    // For root: (*:* -_nest_path_:*)
+    final Query allParentsFilter = buildAllParentsFilterFromPath(isRoot, parentPath);
+
+    final BooleanQuery parsedParentQuery = parseImpl();
+
+    if (parsedParentQuery.clauses().isEmpty()) {
+      // no parent query: return all children of parents at this level
+      final BooleanQuery notParents =
+          new BooleanQuery.Builder()
+              .add(new MatchAllDocsQuery(), Occur.MUST)
+              .add(allParentsFilter, Occur.MUST_NOT)
+              .build();
+      return new BitSetProducerQuery(getBitSetProducer(notParents));
+    }
+
+    // constrain the parent query to only match docs at exactly parentPath
+    // (+<original_parent> +{field f="_nest_path_" v="<parentPath>"})
+    // For root: (+<original_parent> -_nest_path_:*)
+    final BooleanQuery.Builder constrainedBuilder =
+        new BooleanQuery.Builder().add(parsedParentQuery, Occur.MUST);
+    if (isRoot) {
+      constrainedBuilder.add(
+          new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
+    } else {
+      constrainedBuilder.add(
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.MUST);
+    }
+    final Query constrainedParentQuery = constrainedBuilder.build();
+
+    return createQuery(allParentsFilter, constrainedParentQuery, null);
   }
 }

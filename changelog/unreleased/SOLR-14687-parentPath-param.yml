@@ -1,0 +1,6 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: The {!parent} and {!child} query parsers now support a parentPath local param that automatically derives the correct parent filter using the _nest_path_ field, making nested document queries easier to write correctly.
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+links:
+  - name: SOLR-14687
+    url: https://issues.apache.org/jira/browse/SOLR-14687

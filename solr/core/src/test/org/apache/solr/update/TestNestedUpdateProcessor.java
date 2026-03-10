@@ -545,7 +545,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams parentQueryMaker(String parent_path, String inner_child_query) {
       assertValidPathSyntax(parent_path);
-      final boolean verbose = random().nextBoolean();
+      final int variant = random().nextInt(3);
+
+      if (variant == 2) {
+        // new parentPath sugar
+        return params("q", "{!parent parentPath='" + parent_path + "'}" + inner_child_query);
+      } // else old-style with explicit which/of...
+
+      final boolean verbose = variant == 1;
 
       if (parent_path.equals("/")) {
         if (verbose) {
@@ -633,7 +640,14 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
      */
     private SolrParams childQueryMaker(String parent_path, String inner_parent_query) {
       assertValidPathSyntax(parent_path);
-      final boolean verbose = random().nextBoolean();
+      final int variant = random().nextInt(3);
+
+      if (variant == 2) {
+        // new parentPath sugar
+        return params("q", "{!child parentPath='" + parent_path + "'}" + inner_parent_query);
+      } // else old-style with explicit which/of...
+
+      final boolean verbose = variant == 1;
 
       if (parent_path.equals("/")) {
         if (verbose) {
