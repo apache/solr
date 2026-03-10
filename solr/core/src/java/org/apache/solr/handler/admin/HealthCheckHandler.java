@@ -23,8 +23,6 @@ import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -90,17 +88,6 @@ public class HealthCheckHandler extends RequestHandlerBase {
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
         rsp,
         new NodeHealthAPI(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
-  }
-
-  /**
-   * Find replicas DOWN or RECOVERING, or replicas in clusterstate that do not exist on local node.
-   *
-   * @deprecated Use {@link NodeHealthAPI#findUnhealthyCores(Collection, ClusterState)} instead.
-   */
-  @Deprecated
-  public static int findUnhealthyCores(
-      Collection<CloudDescriptor> cores, ClusterState clusterState) {
-    return NodeHealthAPI.findUnhealthyCores(cores, clusterState);
   }
 
   @Override

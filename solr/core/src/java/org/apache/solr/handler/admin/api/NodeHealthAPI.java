@@ -43,6 +43,7 @@ import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.IndexFetcher;
 import org.apache.solr.handler.ReplicationHandler;
@@ -108,16 +109,7 @@ public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
   }
 
   private void healthCheckCloudMode(NodeHealthResponse response, Boolean requireHealthyCores) {
-    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
-
-    if (zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
-      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk");
-    }
-
-    if (!clusterState.getLiveNodes().contains(coreContainer.getZkController().getNodeName())) {
-      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk");
-    }
+    ClusterState clusterState = getClusterState();
 
     if (Boolean.TRUE.equals(requireHealthyCores)) {
       if (!coreContainer.isStatusLoadComplete()) {
@@ -125,7 +117,7 @@ public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
       }
       Collection<CloudDescriptor> coreDescriptors =
           coreContainer.getCoreDescriptors().stream()
-              .map(cd -> cd.getCloudDescriptor())
+              .map(CoreDescriptor::getCloudDescriptor)
               .collect(Collectors.toList());
       int unhealthyCores = findUnhealthyCores(coreDescriptors, clusterState);
       if (unhealthyCores > 0) {
@@ -141,6 +133,20 @@ public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
     }
 
     response.status = OK;
+  }
+
+  private ClusterState getClusterState() {
+    ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+    ClusterState clusterState = zkStateReader.getClusterState();
+
+    if (zkStateReader.getZkClient().isClosed() || !zkStateReader.getZkClient().isConnected()) {
+      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not connected to zk");
+    }
+
+    if (!clusterState.getLiveNodes().contains(coreContainer.getZkController().getNodeName())) {
+      throw new SolrException(SERVICE_UNAVAILABLE, "Host Unavailable: Not in live nodes as per zk");
+    }
+    return clusterState;
   }
 
   private void healthCheckLegacyMode(NodeHealthResponse response, Integer maxGenerationLag) {

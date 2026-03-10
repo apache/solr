@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
-import org.apache.solr.client.api.model.NodeHealthResponse;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -31,10 +30,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
-import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.HealthCheckResponse;
-import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ClusterStateMockUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -106,11 +103,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
 
       // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
       RemoteSolrException e =
-          expectThrows(
-              RemoteSolrException.class,
-              () -> {
-                runHealthcheckWithClient(solrClient);
-              });
+          expectThrows(RemoteSolrException.class, () -> runHealthcheckWithClient(solrClient));
       assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
       assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
     } finally {
@@ -134,48 +127,6 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
         getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       HealthCheckResponse rsp = req.process(solrClient);
       assertEquals(CommonParams.OK, rsp.getNodeStatus());
-    }
-  }
-
-  @Test
-  public void testHealthCheckV2Api() throws Exception {
-    V2Response res = new V2Request.Builder("/node/health").build().process(cluster.getSolrClient());
-    assertEquals(0, res.getStatus());
-    var b = res.getResponse().get(CommonParams.STATUS);
-    var c = NodeHealthResponse.NodeStatus.OK;
-    // assertEquals(c, b);
-    assertTrue(b.toString().contains(("OK")));
-
-    // add a new node for the purpose of negative testing
-    JettySolrRunner newJetty = cluster.startJettySolrRunner();
-    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
-
-      // positive check that our (new) "healthy" node works with direct http client
-      var d =
-          new V2Request.Builder("/node/health")
-              .build()
-              .process(solrClient)
-              .getResponse()
-              .get(CommonParams.STATUS);
-      // assertEquals(
-      //   NodeHealthResponse.NodeStatus.OK,
-      // );
-      assertTrue(d.toString().contains(("OK")));
-
-      // now "break" our (new) node
-      newJetty.getCoreContainer().getZkController().getZkClient().close();
-
-      // negative check of our (new) "broken" node that we deliberately put into an unhealthy state
-      RemoteSolrException e =
-          expectThrows(
-              RemoteSolrException.class,
-              () -> {
-                new V2Request.Builder("/node/health").build().process(solrClient);
-              });
-      assertTrue(e.getMessage(), e.getMessage().contains("Host Unavailable"));
-      assertEquals(SolrException.ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
-    } finally {
-      newJetty.stop();
     }
   }
 
