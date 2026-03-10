@@ -1834,6 +1834,11 @@ solrAdminApp.controller('SchemaDesignerController', function ($scope, $timeout, 
     }
 
     SchemaDesigner.get(params, function (data) {
+      if (data.updateError != null) {
+        $scope.onError(data.updateError, data.updateErrorCode, data.errorDetails);
+        return;
+      }
+
       $("#sort").trigger("chosen:updated");
       $("#ff").trigger("chosen:updated");
       $("#hl").trigger("chosen:updated");

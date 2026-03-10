@@ -820,9 +820,16 @@ public class SchemaDesignerAPI extends JerseyResource
     }
 
     if (errorsDuringIndexing != null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
+      Map<String, Object> errorResponse = new HashMap<>();
+      addErrorToResponse(
+          mutableId,
+          new SolrException(
+              SolrException.ErrorCode.BAD_REQUEST,
+              "Failed to re-index sample documents after schema updated."),
+          errorsDuringIndexing,
+          errorResponse,
           "Failed to re-index sample documents after schema updated.");
+      return buildFlexibleResponse(errorResponse);
     }
 
     // execute the user's query against the temp collection

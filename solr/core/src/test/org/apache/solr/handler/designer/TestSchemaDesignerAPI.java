@@ -23,6 +23,7 @@ import static org.apache.solr.handler.designer.SchemaDesignerAPI.getMutableId;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -34,10 +35,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.apache.solr.client.api.model.FlexibleSolrJerseyResponse;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -734,6 +737,55 @@ public class TestSchemaDesignerAPI extends SolrCloudTestCase implements SchemaDe
     assertNotNull(fieldTypesDiff.get("added"));
     Map<String, Object> fieldTypesAdded = (Map<String, Object>) fieldTypesDiff.get("added");
     assertNotNull(fieldTypesAdded.get("test_txt"));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testQueryReturnsErrorDetailsOnIndexingFailure() throws Exception {
+    String configSet = "queryIndexErrTest";
+
+    // Prep the schema and analyze sample docs so the temp collection and stored docs exist
+    schemaDesignerAPI.prepNewSchema(configSet, null);
+    ContentStreamBase.StringStream stream =
+        new ContentStreamBase.StringStream(
+            "[{\"id\":\"doc1\",\"title\":\"test doc\"}]", JSON_MIME);
+    ModifiableSolrParams reqParams = new ModifiableSolrParams();
+    reqParams.set(CONFIG_SET_PARAM, configSet);
+    when(mockReq.getParams()).thenReturn(reqParams);
+    when(mockReq.getContentStreams()).thenReturn(Collections.singletonList(stream));
+    schemaDesignerAPI.analyze(configSet, null, null, null, null, null, null, null);
+
+    // Build a fresh API instance whose indexedVersion cache is empty (so it always
+    // attempts to re-index before running the query), and which simulates indexing errors.
+    Map<Object, Throwable> fakeErrors = new HashMap<>();
+    fakeErrors.put("doc1", new RuntimeException("simulated indexing failure"));
+    SchemaDesignerAPI apiWithErrors =
+        new SchemaDesignerAPI(
+            cc,
+            SchemaDesignerAPI.newSchemaSuggester(),
+            SchemaDesignerAPI.newSampleDocumentsLoader(),
+            mockReq) {
+          @Override
+          protected Map<Object, Throwable> indexSampleDocsWithRebuildOnAnalysisError(
+              String idField,
+              List<SolrInputDocument> docs,
+              String collectionName,
+              boolean asBatch,
+              String[] analysisErrorHolder)
+              throws IOException, SolrServerException {
+            return fakeErrors;
+          }
+        };
+
+    when(mockReq.getContentStreams()).thenReturn(null);
+    FlexibleSolrJerseyResponse response = apiWithErrors.query(configSet);
+
+    Map<String, Object> props = response.unknownProperties();
+    assertNotNull("updateError must be present in error response", props.get(UPDATE_ERROR));
+    assertEquals(400, props.get("updateErrorCode"));
+    Map<Object, Throwable> details = (Map<Object, Throwable>) props.get(ERROR_DETAILS);
+    assertNotNull("errorDetails must be present in error response", details);
+    assertTrue("errorDetails must contain the failing doc id", details.containsKey("doc1"));
   }
 
   protected void assertDesignerSettings(Map<String, Object> expected, Map<String, Object> actual) {
