@@ -112,7 +112,7 @@ Let's consider again the `description_t:staplers` query used above -- if we wrap
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!child parentPath="/"}description_t:staplers'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/"}description_t:staplers'
 {
   "response":{"numFound":5,"start":0,"maxScore":0.30136836,"numFoundExact":true,"docs":[
       {
@@ -146,14 +146,14 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example `parentPath="/"` indicates we want to consider all root-level documents (those with no `_nest_path_`) as the set of possible parents.
+In this example `parentPath="/"` indicates we want to consider all root-level documents as the set of possible parents.
 
 By changing the `parentPath` to a specific `_nest_path_` level, we can narrow down the list of children we return.
 In the query below, we search for all children of `skus` with a `price_i` less than `50`:
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!child parentPath="/skus"}price_i:[* TO 50]'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!child parentPath="/skus"}price_i:[* TO 50]'
 {
   "response":{"numFound":1,"start":0,"maxScore":1.0,"numFoundExact":true,"docs":[
       {
@@ -164,9 +164,6 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
         "_version_":1675662666752851968}]
   }}
 ----
-
-The `parentPath` parameter handles `_nest_path_` construction and escaping automatically.
-The traditional `of` parameter approach (constructing a Block Mask manually with escaped `_nest_path_` prefixes) continues to work for cases where `_nest_path_` is not in use or for greater control.
 
 === Parent Query Parser
 
@@ -205,7 +202,7 @@ We can wrap that query in a `{!parent}` query with `parentPath="/"` to return th
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!parent parentPath="/"}pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -221,14 +218,14 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
   }}
 ----
 
-In this example `parentPath="/"` indicates we want root-level documents (those with no `_nest_path_`) to be the parents.
+In this example `parentPath="/"` indicates we want root-level documents to be the parents.
 
 By changing `parentPath` to a specific path, we can change the type of ancestors we return.
 In the query below, we search for the `skus` that are the ancestors of `manuals` with exactly `1` page:
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -d 'q={!parent parentPath="/skus"}pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {
@@ -243,9 +240,6 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
         "_version_":1676585794347728896}]
   }}
 ----
-
-The `parentPath` parameter handles `_nest_path_` construction and escaping automatically.
-The traditional `which` parameter approach (constructing a Block Mask manually with escaped `_nest_path_` prefixes) continues to work for cases where `_nest_path_` is not in use or for greater control.
 
 === Combining Block Join Query Parsers with Child Doc Transformer
 

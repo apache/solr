@@ -51,10 +51,10 @@ The example usage of the query parsers below assumes the following documents hav
 
 This parser wraps a query that matches some parent documents and returns the children of those documents.
 
-=== Using `parentPath` (Recommended for `_nest_path_`-based Nesting)
+=== Using `parentPath`
 
-When using xref:indexing-guide:indexing-nested-documents.adoc[`_nest_path_`-based nested documents], the `parentPath` parameter is the simplest and most reliable way to use this parser.
-Instead of constructing a manual Block Mask with escaped `_nest_path_` prefixes, you simply specify the path at which the parent documents live:
+If your schema supports xref:indexing-guide:indexing-nested-documents.adoc[nested documents], you _should_ specify `parentPath`.
+Specify the path at which the parent documents live:
 
 [source,text]
 q={!child parentPath=<path>}<someParents>
@@ -62,10 +62,9 @@ q={!child parentPath=<path>}<someParents>
 Key points about `parentPath`:
 
 * Must start with `/`.
-* Use `parentPath="/"` to treat root-level documents (those without a `_nest_path_`) as the parents.
+* Use `parentPath="/"` to treat root-level documents as the parents.
 * A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
 * `parentPath` and `of` are mutually exclusive; specifying both returns a `400 Bad Request` error.
-* The parser automatically derives the Block Mask and constrains the subordinate query to the correct `_nest_path_` level — no manual escaping of `/` characters is required.
 
 For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns all children of root-level product documents that match a description query:
 
@@ -79,7 +78,9 @@ q={!child parentPath="/skus"}price_i:[* TO 50]
 
 === Using the `of` Parameter
 
-The traditional syntax for this parser is: `q={!child of=<blockMask>}<someParents>`.
+This approach is used with anonymous child documents (schemas without `_nest_path_`).
+It is more verbose and has some <<block-mask,gotchas>>.
+The syntax is: `q={!child of=<blockMask>}<someParents>`.
 
 * The inner subordinate query string (`someParents`) must be a query that will match some parent documents.
 * The `of` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents.
@@ -139,10 +140,10 @@ More precisely, `q={!child of=<blockMask>}` is equivalent to `q=\*:* -<blockMask
 
 This parser takes a query that matches child documents and returns their parents.
 
-=== Using `parentPath` (Recommended for `_nest_path_`-based Nesting)
+=== Using `parentPath`
 
-When using xref:indexing-guide:indexing-nested-documents.adoc[`_nest_path_`-based nested documents], the `parentPath` parameter is the simplest and most reliable way to use this parser.
-Instead of constructing a manual Block Mask with escaped `_nest_path_` prefixes, you simply specify the path at which the parent documents live:
+If your schema supports xref:indexing-guide:indexing-nested-documents.adoc[nested documents], you _should_ specify `parentPath`.
+Specify the path at which the parent documents live:
 
 [source,text]
 q={!parent parentPath=<path>}<someChildren>
@@ -150,10 +151,9 @@ q={!parent parentPath=<path>}<someChildren>
 Key points about `parentPath`:
 
 * Must start with `/`.
-* Use `parentPath="/"` to treat root-level documents (those without a `_nest_path_`) as the parents.
+* Use `parentPath="/"` to treat root-level documents as the parents.
 * A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
 * `parentPath` and `which` are mutually exclusive; specifying both returns a `400 Bad Request` error.
-* The parser automatically derives the Block Mask and constrains the subordinate query to the correct `_nest_path_` level — no manual escaping of `/` characters is required.
 
 For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns the root-level product documents that are ancestors of manuals with exactly one page:
 
@@ -167,7 +167,9 @@ q={!parent parentPath="/skus"}(+_nest_path_:"/skus/manuals" +pages_i:1)
 
 === Using the `which` Parameter
 
-The traditional syntax for this parser is: `q={!parent which=<blockMask>}<someChildren>`.
+This approach is used with anonymous child documents (schemas without `_nest_path_`).
+It is more verbose and has some <<block-mask,gotchas>>.
+The syntax is: `q={!parent which=<blockMask>}<someChildren>`.
 
 * The inner subordinate query string (`someChildren`) must be a query that will match some child documents.
 * The `which` parameter must be a query string to use as a <<block-mask,Block Mask>> -- typically a query that matches the set of all possible parent documents.
