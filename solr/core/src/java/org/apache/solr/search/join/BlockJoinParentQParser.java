@@ -67,6 +67,16 @@ public class BlockJoinParentQParser extends FiltersQParser {
    */
   public static final String PARENT_PATH_PARAM = "parentPath";
 
+  /**
+   * Optional localparam, only valid together with {@link #PARENT_PATH_PARAM} on the {@code parent}
+   * parser. When specified, the subordinate (child) query is constrained to docs at exactly the
+   * path formed by concatenating {@code parentPath + "/" + childPath}, instead of the default
+   * behavior of matching all descendants. For example, {@code parentPath="/skus"
+   * childPath="manuals"} constrains children to docs whose {@code _nest_path_} is exactly {@code
+   * /skus/manuals}.
+   */
+  public static final String CHILD_PATH_PARAM = "childPath";
+
   protected String getParentFilterLocalParamName() {
     return "which";
   }
@@ -103,6 +113,10 @@ public class BlockJoinParentQParser extends FiltersQParser {
       }
       return parseUsingParentPath(parentPath);
     }
+    if (localParams.get(CHILD_PATH_PARAM) != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " requires " + PARENT_PATH_PARAM);
+    }
     return super.parse();
   }
 
@@ -134,6 +148,18 @@ public class BlockJoinParentQParser extends FiltersQParser {
     // For root: (*:* -_nest_path_:*)
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
+    String childPath = localParams.get(CHILD_PATH_PARAM);
+    if (childPath != null) {
+      // strip leading slash if present
+      if (childPath.startsWith("/")) {
+        childPath = childPath.substring(1);
+      }
+      if (childPath.isEmpty()) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " must not be empty");
+      }
+    }
+
     final BooleanQuery parsedChildQuery = parseImpl();
 
     if (parsedChildQuery.clauses().isEmpty()) {
@@ -143,8 +169,10 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
     // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (+<original_child> +_nest_path_:*)
+    // If childPath specified: (+<original_child> +{!term f="_nest_path_"
+    // v="<parentPath>/<childPath>"})
     final Query constrainedChildQuery =
-        buildChildQueryWithPathConstraint(parentPath, parsedChildQuery);
+        buildChildQueryWithPathConstraint(parentPath, childPath, parsedChildQuery);
 
     final String scoreMode = localParams.get("score", ScoreMode.None.name());
     final Query parentJoinQuery = createQuery(allParentsFilter, constrainedChildQuery, scoreMode);
@@ -202,11 +230,18 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * Constrains the child query to only match docs strictly below the given {@code parentPath}. For
    * the parent parser, the child query must match docs with a {@code _nest_path_} that is a
    * sub-path of the parent path (i.e. starts with {@code parentPath/}). For root, any doc with a
-   * {@code _nest_path_} is a "child".
+   * {@code _nest_path_} is a "child". If {@code childPath} is non-null, the constraint is an exact
+   * term match on {@code parentPath/childPath} instead of a prefix query.
    */
-  private static Query buildChildQueryWithPathConstraint(String parentPath, Query childQuery) {
+  private static Query buildChildQueryWithPathConstraint(
+      String parentPath, String childPath, Query childQuery) {
     final Query nestPathConstraint;
-    if (parentPath.equals("/")) {
+    if (childPath != null) {
+      String effectiveChildPath =
+          parentPath.equals("/") ? "/" + childPath : parentPath + "/" + childPath;
+      nestPathConstraint =
+          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, effectiveChildPath));
+    } else if (parentPath.equals("/")) {
       nestPathConstraint = new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME);
     } else {
       nestPathConstraint =

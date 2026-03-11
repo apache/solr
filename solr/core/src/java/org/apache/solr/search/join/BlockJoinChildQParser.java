@@ -21,6 +21,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SyntaxError;
@@ -78,6 +79,11 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    */
   @Override
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
+    if (localParams.get(CHILD_PATH_PARAM) != null) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST,
+          CHILD_PATH_PARAM + " is not supported by the {!child} parser");
+    }
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);

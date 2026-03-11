@@ -221,11 +221,12 @@ $ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' -
 In this example `parentPath="/"` indicates we want root-level documents to be the parents.
 
 By changing `parentPath` to a specific path, we can change the type of ancestors we return.
-In the query below, we search for the `skus` that are the ancestors of `manuals` with exactly `1` page:
+In the query below, we search for the `skus` that are the ancestors of `manuals` with exactly `1` page.
+Adding `childPath="manuals"` constrains the child query to only docs nested at `/skus/manuals`, preventing pages from other child types from matching:
 
 [source,text]
 ----
-$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus"}pages_i:1'
+$ curl 'http://localhost:8983/solr/gettingstarted/select' -d 'omitHeader=true' --data-urlencode 'q={!parent parentPath="/skus" childPath="manuals"}pages_i:1'
 {
   "response":{"numFound":2,"start":0,"maxScore":1.4E-45,"numFoundExact":true,"docs":[
       {

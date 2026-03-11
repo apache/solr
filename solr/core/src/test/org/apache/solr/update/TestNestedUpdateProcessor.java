@@ -439,6 +439,60 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
               "//result/@numFound=1",
               "//doc/str[@name='id'][.='" + ancestorId + "']");
 
+          // additionally test childPath: find the immediate parent of descendentId and use
+          // childPath to constrain to that exact child path level
+          final String directParentPath =
+              doc_path.contains("/")
+                  ? (doc_path.lastIndexOf("/") == 0
+                      ? "/"
+                      : doc_path.substring(0, doc_path.lastIndexOf("/")))
+                  : "/";
+          final String childSegment = doc_path.substring(doc_path.lastIndexOf("/") + 1);
+          // find the ancestor ID whose path is directParentPath
+          for (Object candAncestorId : allAncestorIds) {
+            final String candPath =
+                allDocs.get(candAncestorId.toString()).getFieldValue("test_path_s").toString();
+            if (candPath.equals(directParentPath)) {
+              // childPath constrains the child query to exactly doc_path, so we should find
+              // the direct parent
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!parent parentPath='"
+                              + directParentPath
+                              + "' childPath='"
+                              + childSegment
+                              + "'}id:"
+                              + descendentId),
+                      "_trace_childPath_tested",
+                      directParentPath + "/" + childSegment,
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=1",
+                  "//doc/str[@name='id'][.='" + candAncestorId + "']");
+              // a childPath that doesn't match descendentId's path should return 0 results
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!parent parentPath='"
+                              + directParentPath
+                              + "' childPath='xxx_yyy'}id:"
+                              + descendentId),
+                      "_trace_childPath_tested",
+                      directParentPath + "/xxx_yyy",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=0");
+              break;
+            }
+          }
+
           // meanwhile, a 'child' query wrapped around a query for the ancestorId, using the
           // ancestor_path, should match all of its descendents (for simplicity we'll check just
           // the numFound and the 'descendentId' we started with)

@@ -154,16 +154,17 @@ Key points about `parentPath`:
 * Use `parentPath="/"` to treat root-level documents as the parents.
 * A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
 * `parentPath` and `which` are mutually exclusive; specifying both returns a `400 Bad Request` error.
+* Optionally, use `childPath` to constrain the child query to docs at exactly `parentPath/childPath`. Without `childPath`, all descendants of `parentPath` are eligible as children.
 
 For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns the root-level product documents that are ancestors of manuals with exactly one page:
 
 [source,text]
 q={!parent parentPath="/"}pages_i:1
 
-To instead return the `skus` that are ancestors of those same one-page manuals:
+To instead return the `skus` that are ancestors of one-page _manuals_ (only manuals, not other sku children):
 
 [source,text]
-q={!parent parentPath="/skus"}(+_nest_path_:"/skus/manuals" +pages_i:1)
+q={!parent parentPath="/skus" childPath="manuals"}pages_i:1
 
 === Using the `which` Parameter
 
