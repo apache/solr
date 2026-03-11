@@ -16,19 +16,16 @@
  */
 package org.apache.solr.search.join;
 
-import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.FieldExistsQuery;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.join.ToChildBlockJoinQuery;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SyntaxError;
 
+/** Matches child documents based on parent doc criteria. */
 public class BlockJoinChildQParser extends BlockJoinParentQParser {
 
   public BlockJoinChildQParser(
@@ -65,8 +62,8 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    * <pre>NEW: q={!child parentPath="/a/b/c"}p_title:dad
    *
    * OLD: q={!child of=$ff v=$vv}
-   *      ff=(*:* -{prefix f="_nest_path_" v="/a/b/c/"})
-   *      vv=(+p_title:dad +{field f="_nest_path_" v="/a/b/c"})</pre>
+   *      ff=(*:* -{!prefix f="_nest_path_" v="/a/b/c/"})
+   *      vv=(+p_title:dad +{!field f="_nest_path_" v="/a/b/c"})</pre>
    *
    * <p>For {@code parentPath="/"}:
    *
@@ -81,7 +78,7 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    */
   @Override
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
-    // allParents filter: (*:* -{prefix f="_nest_path_" v="<parentPath>/"})
+    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
@@ -98,18 +95,9 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     }
 
     // constrain the parent query to only match docs at exactly parentPath
-    // (+<original_parent> +{field f="_nest_path_" v="<parentPath>"})
+    // (+<original_parent> +{!field f="_nest_path_" v="<parentPath>"})
     // For root: (+<original_parent> -_nest_path_:*)
-    final BooleanQuery.Builder constrainedBuilder =
-        new BooleanQuery.Builder().add(parsedParentQuery, Occur.MUST);
-    if (parentPath.equals("/")) {
-      constrainedBuilder.add(
-          new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
-    } else {
-      constrainedBuilder.add(
-          new TermQuery(new Term(IndexSchema.NEST_PATH_FIELD_NAME, parentPath)), Occur.FILTER);
-    }
-    final Query constrainedParentQuery = constrainedBuilder.build();
+    Query constrainedParentQuery = wrapWithParentPathConstraint(parentPath, parsedParentQuery);
 
     return createQuery(allParentsFilter, constrainedParentQuery, null);
   }

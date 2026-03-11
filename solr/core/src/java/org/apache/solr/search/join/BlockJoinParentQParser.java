@@ -51,6 +51,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.SolrDefaultScorerSupplier;
 
+/** Matches parent documents based on child doc criteria. */
 public class BlockJoinParentQParser extends FiltersQParser {
   /** implementation detail subject to change */
   public static final String CACHE_NAME = "perSegFilter";
@@ -114,8 +115,8 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * <pre>NEW: q={!parent parentPath="/a/b/c"}c_title:son
    *
    * OLD: q=(+{!field f="_nest_path_" v="/a/b/c"} +{!parent which=$ff v=$vv})
-   *      ff=(*:* -{prefix f="_nest_path_" v="/a/b/c/"})
-   *      vv=(+c_title:son +{prefix f="_nest_path_" v="/a/b/c/"})</pre>
+   *      ff=(*:* -{!prefix f="_nest_path_" v="/a/b/c/"})
+   *      vv=(+c_title:son +{!prefix f="_nest_path_" v="/a/b/c/"})</pre>
    *
    * <p>For {@code parentPath="/"}:
    *
@@ -129,7 +130,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    *     root "/")
    */
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
-    // allParents filter: (*:* -{prefix f="_nest_path_" v="<parentPath>/"})
+    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
 
@@ -140,7 +141,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
       return wrapWithParentPathConstraint(parentPath, allParentsFilter);
     }
 
-    // constrain child query: (+<original_child> +{prefix f="_nest_path_" v="<parentPath>/"})
+    // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (+<original_child> +_nest_path_:*)
     final Query constrainedChildQuery =
         buildChildQueryWithPathConstraint(parentPath, parsedChildQuery);
@@ -148,7 +149,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
     final String scoreMode = localParams.get("score", ScoreMode.None.name());
     final Query parentJoinQuery = createQuery(allParentsFilter, constrainedChildQuery, scoreMode);
 
-    // wrap result: (+<parent_join> +{field f="_nest_path_" v="<parentPath>"})
+    // wrap result: (+<parent_join> +{!field f="_nest_path_" v="<parentPath>"})
     // For root: (+<parent_join> -_nest_path_:*)
     return wrapWithParentPathConstraint(parentPath, parentJoinQuery);
   }
@@ -165,7 +166,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    *       /a/b/c})
    * </ul>
    *
-   * <p>Equivalent to: {@code (*:* -{prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
+   * <p>Equivalent to: {@code (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})} For root ({@code
    * /}): {@code (*:* -_nest_path_:*)}
    */
   protected static Query buildAllParentsFilterFromPath(String parentPath) {
@@ -186,7 +187,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * level are matched. For root, this excludes docs that have a {@code _nest_path_} value. For
    * non-root, this requires an exact match on {@code _nest_path_}.
    */
-  private static Query wrapWithParentPathConstraint(String parentPath, Query query) {
+  protected static Query wrapWithParentPathConstraint(String parentPath, Query query) {
     final BooleanQuery.Builder builder = new BooleanQuery.Builder().add(query, Occur.MUST);
     if (parentPath.equals("/")) {
       builder.add(new FieldExistsQuery(IndexSchema.NEST_PATH_FIELD_NAME), Occur.MUST_NOT);
