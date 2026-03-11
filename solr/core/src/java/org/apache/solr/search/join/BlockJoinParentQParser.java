@@ -150,13 +150,12 @@ public class BlockJoinParentQParser extends FiltersQParser {
 
     String childPath = localParams.get(CHILD_PATH_PARAM);
     if (childPath != null) {
-      // strip leading slash if present
       if (childPath.startsWith("/")) {
-        childPath = childPath.substring(1);
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " must not start with '/'");
       }
       if (childPath.isEmpty()) {
-        throw new SolrException(
-            SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " must not be empty");
+        childPath = null; // treat empty as not specified
       }
     }
 
