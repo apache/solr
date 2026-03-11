@@ -42,7 +42,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.embedded.JettySolrRunner;
-import org.apache.solr.handler.admin.api.NodeHealthAPI;
+import org.apache.solr.handler.admin.api.NodeHealth;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -152,7 +152,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
               mockCD("invalid", "invalid", "slice1", false, Replica.State.RECOVERING),
               // A core for a slice that is not an active slice will not fail the check
               mockCD("collection1", "invalid_replica1", "invalid", true, Replica.State.DOWN));
-      long unhealthy1 = NodeHealthAPI.findUnhealthyCores(node1Cores, clusterState);
+      long unhealthy1 = NodeHealth.findUnhealthyCores(node1Cores, clusterState);
       assertEquals(2, unhealthy1);
 
       // Node 2
@@ -162,7 +162,7 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
               mockCD("collection1", "slice1_replica4", "slice1", true, Replica.State.DOWN),
               mockCD(
                   "collection2", "slice1_replica1", "slice1", true, Replica.State.RECOVERY_FAILED));
-      long unhealthy2 = NodeHealthAPI.findUnhealthyCores(node2Cores, clusterState);
+      long unhealthy2 = NodeHealth.findUnhealthyCores(node2Cores, clusterState);
       assertEquals(1, unhealthy2);
     }
   }

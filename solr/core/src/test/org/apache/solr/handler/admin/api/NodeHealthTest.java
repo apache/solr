@@ -32,7 +32,7 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
 
-public class NodeHealthAPITest extends SolrCloudTestCase {
+public class NodeHealthTest extends SolrCloudTestCase {
 
   /**
    * A standalone (non-ZooKeeper) Jetty instance used by the legacy-mode tests. The
@@ -107,12 +107,12 @@ public class NodeHealthAPITest extends SolrCloudTestCase {
 
   @Test
   public void testLegacyMode_WithNegativeMaxGenerationLagReturnsFailure() {
-    // maxGenerationLag is a v1-only parameter: NodeHealthAPI.healthcheck() (v2) hardcodes it to
+    // maxGenerationLag is a v1-only parameter: NodeHealth.healthcheck() (v2) hardcodes it to
     // null and never forwards it from request params. NodeApi.Healthcheck therefore cannot be used
     // to exercise this code path, so we call the JAX-RS implementation directly.
     // FIXME: IInteresting!  Do we have a gap?
     final var response =
-        new NodeHealthAPI(standaloneJetty.getCoreContainer()).checkNodeHealth(null, -1);
+        new NodeHealth(standaloneJetty.getCoreContainer()).checkNodeHealth(null, -1);
 
     assertNotNull(response);
     assertEquals(FAILURE, response.status);

@@ -58,7 +58,7 @@ import org.slf4j.LoggerFactory;
  *
  * <p>The v1 {@link org.apache.solr.handler.admin.HealthCheckHandler} delegates to this class.
  */
-public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
+public class NodeHealth extends JerseyResource implements NodeHealthApi {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final List<State> UNHEALTHY_STATES = Arrays.asList(State.DOWN, State.RECOVERING);
@@ -66,7 +66,7 @@ public class NodeHealthAPI extends JerseyResource implements NodeHealthApi {
   private final CoreContainer coreContainer;
 
   @Inject
-  public NodeHealthAPI(CoreContainer coreContainer) {
+  public NodeHealth(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 

@@ -26,7 +26,7 @@ import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.handler.admin.api.NodeHealthAPI;
+import org.apache.solr.handler.admin.api.NodeHealth;
 import org.apache.solr.handler.api.V2ApiUtils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -59,7 +59,7 @@ import org.apache.solr.security.AuthorizationContext;
  * <code>maxGenerationLag=&lt;max_generation_lag&gt;</code> request parameter. If <code>
  * maxGenerationLag</code> is not provided then health check would simply return OK.
  *
- * <p>All health-check logic lives in the v2 {@link NodeHealthAPI}; this handler is a thin v1 bridge
+ * <p>All health-check logic lives in the v2 {@link NodeHealth}; this handler is a thin v1 bridge
  * that extracts request parameters and delegates.
  */
 public class HealthCheckHandler extends RequestHandlerBase {
@@ -86,8 +86,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
     final Integer maxGenerationLag =
         req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
     V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-        rsp,
-        new NodeHealthAPI(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
+        rsp, new NodeHealth(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
   }
 
   @Override
@@ -112,7 +111,7 @@ public class HealthCheckHandler extends RequestHandlerBase {
 
   @Override
   public Collection<Class<? extends JerseyResource>> getJerseyResources() {
-    return List.of(NodeHealthAPI.class);
+    return List.of(NodeHealth.class);
   }
 
   @Override
