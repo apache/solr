@@ -284,7 +284,7 @@ public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
     // Query on non-IntRangeField should fail
     assertQEx(
         "Query on wrong field type should fail",
-        "must be of type IntRangeField or LongRangeField",
+        "must be a numeric range field type",
         req("q", "{!numericRange criteria=intersects field=title}[100 TO 200]"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
