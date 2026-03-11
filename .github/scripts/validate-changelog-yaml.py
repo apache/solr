@@ -25,7 +25,7 @@ Checks:
 - All top-level keys are valid (title, type, issues, links, important_notes, modules, authors)
 - Deprecated keys (merge_requests, configurations) are not used
 - Contains required 'title' field (non-empty string)
-- Contains required 'type' field (one of: added, changed, fixed, deprecated, removed, dependency_update, security, other)
+- Contains required 'type' field (one of: added, changed, fixed, optimized, deprecated, removed, dependency_update, security, other)
 - Contains required 'authors' field with at least one author
 - Each author has a 'name' field (non-empty string)
 - Contains either 'links' or 'issues' field (or both)
@@ -39,7 +39,7 @@ import yaml
 
 def validate_changelog_yaml(file_path):
     """Validate a changelog YAML file."""
-    valid_types = ['added', 'changed', 'fixed', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
+    valid_types = ['added', 'changed', 'fixed', 'optimized', 'deprecated', 'removed', 'dependency_update', 'security', 'other']
     valid_keys = ['title', 'type', 'issues', 'links', 'important_notes', 'modules', 'authors']
     deprecated_keys = ['merge_requests', 'configurations']
     not_allowed_text = ['DELETE ALL COMMENTS UP HERE', 'Most such changes are too small']

@@ -42,7 +42,7 @@ Below is an example of a changelog yaml fragment. The full yaml format is https:
 [source, yaml]
 ----
 title: Fix nasty bug in CoreContainer shutdown
-# added, changed, fixed, deprecated, removed, dependency_update, security, other
+# added, changed, fixed, optimized, deprecated, removed, dependency_update, security, other
 type: fixed
 authors:
   - name: John Contributor
@@ -138,7 +138,7 @@ which will output to `stdout`:
 ----
 title: Removed TikaLanguageIdentifierUpdateProcessor. Use LangDetectLanguageIdentifierUpdateProcessor
   or OpenNLPLangDetectUpdateProcessor instead.
-type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+type: other # added, changed, fixed, optimized, deprecated, removed, dependency_update, security, other
 authors:
 - name: janhoy
 links:
