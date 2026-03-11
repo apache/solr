@@ -196,7 +196,7 @@ public class RestoreCore implements Callable<Boolean> {
               downloadTask.run();
             } catch (RuntimeException e) {
               if (e.getCause() instanceof IOException) {
-                throw (IOException) e.getCause();
+                throw new IOException(e.getMessage(), e.getCause());
               }
               throw e;
             }
@@ -212,13 +212,7 @@ public class RestoreCore implements Callable<Boolean> {
               future.get();
             } catch (ExecutionException e) {
               if (firstError == null) {
-                Throwable cause = e.getCause();
-                // Unwrap RuntimeExceptions that wrap the original IOException
-                if (cause instanceof RuntimeException && cause.getCause() != null) {
-                  firstError = cause.getCause();
-                } else {
-                  firstError = cause;
-                }
+                firstError = e.getCause();
               }
             } catch (InterruptedException e) {
               Thread.currentThread().interrupt();

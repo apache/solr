@@ -3,7 +3,7 @@ title: Parallelize Backup and Restore File Operations
 type: changed
 authors:
   - name: Samuel Verstraete
-    github: elangelo
+    nick: elangelo
 links:
 - name: PR#4023
   url: https://github.com/apache/solr/pull/4023
