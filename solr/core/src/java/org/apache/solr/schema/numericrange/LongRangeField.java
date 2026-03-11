@@ -17,7 +17,7 @@
 package org.apache.solr.schema.numericrange;
 
 import java.util.regex.Matcher;
-import org.apache.lucene.document.IntRange;
+import org.apache.lucene.document.LongRange;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -26,10 +26,10 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.QParser;
 
 /**
- * Field type for integer ranges with support for 1-4 dimensions.
+ * Field type for long ranges with support for 1-4 dimensions.
  *
- * <p>This field type wraps Lucene's {@link IntRange} to provide storage and querying of integer
- * range values. Ranges can be 1-dimensional (simple ranges), 2-dimensional (bounding boxes),
+ * <p>This field type wraps Lucene's {@link LongRange} to provide storage and querying of long range
+ * values. Ranges can be 1-dimensional (simple ranges), 2-dimensional (bounding boxes),
  * 3-dimensional (bounding cubes), or 4-dimensional (tesseracts).
  *
  * <h2>Value Format</h2>
@@ -44,15 +44,16 @@ import org.apache.solr.search.QParser;
  * </ul>
  *
  * As the name suggests minimum values (those on the left) must always be less than or equal to the
- * maximum value for the corresponding dimension.
+ * maximum value for the corresponding dimension. Long values outside the range of {@code int} are
+ * fully supported (e.g. {@code [3000000000 TO 4000000000]}).
  *
  * <h2>Schema Configuration</h2>
  *
  * <pre>
- * &lt;fieldType name="intrange" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="1"/&gt;
- * &lt;fieldType name="intrange2d" class="org.apache.solr.schema.numericrange.IntRangeField" numDimensions="2"/&gt;
- * &lt;field name="price_range" type="intrange" indexed="true" stored="true"/&gt;
- * &lt;field name="bbox" type="intrange2d" indexed="true" stored="true"/&gt;
+ * &lt;fieldType name="longrange" class="org.apache.solr.schema.numericrange.LongRangeField" numDimensions="1"/&gt;
+ * &lt;fieldType name="longrange2d" class="org.apache.solr.schema.numericrange.LongRangeField" numDimensions="2"/&gt;
+ * &lt;field name="long_range" type="longrange" indexed="true" stored="true"/&gt;
+ * &lt;field name="long_range_2d" type="longrange2d" indexed="true" stored="true"/&gt;
  * </pre>
  *
  * <h2>Querying</h2>
@@ -61,10 +62,10 @@ import org.apache.solr.search.QParser;
  * types:
  *
  * <ul>
- *   <li>Intersects: {@code {!numericRange criteria="intersects" field=price_range}[100 TO 200]}
- *   <li>Within: {@code {!numericRange criteria="within" field=price_range}[0 TO 300]}
- *   <li>Contains: {@code {!numericRange criteria="contains" field=price_range}[150 TO 175]}
- *   <li>Crosses: {@code {!numericRange criteria="crosses" field=price_range}[150 TO 250]}
+ *   <li>Intersects: {@code {!numericRange criteria="intersects" field=long_range}[100 TO 200]}
+ *   <li>Within: {@code {!numericRange criteria="within" field=long_range}[0 TO 300]}
+ *   <li>Contains: {@code {!numericRange criteria="contains" field=long_range}[150 TO 175]}
+ *   <li>Crosses: {@code {!numericRange criteria="crosses" field=long_range}[150 TO 250]}
  * </ul>
  *
  * <h2>Limitations</h2>
@@ -72,10 +73,10 @@ import org.apache.solr.search.QParser;
  * The main limitation of this field type is that it doesn't support docValues or uninversion, and
  * therefore can't be used for sorting, faceting, etc.
  *
- * @see IntRange
+ * @see LongRange
  * @see org.apache.solr.search.numericrange.NumericRangeQParserPlugin
  */
-public class IntRangeField extends AbstractNumericRangeField {
+public class LongRangeField extends AbstractNumericRangeField {
 
   @Override
   public IndexableField createField(SchemaField field, Object value) {
@@ -86,7 +87,7 @@ public class IntRangeField extends AbstractNumericRangeField {
     String valueStr = value.toString();
     RangeValue rangeValue = parseRangeValue(valueStr);
 
-    return new IntRange(field.getName(), rangeValue.mins, rangeValue.maxs);
+    return new LongRange(field.getName(), rangeValue.mins, rangeValue.maxs);
   }
 
   /**
@@ -106,15 +107,15 @@ public class IntRangeField extends AbstractNumericRangeField {
     if (!matcher.matches()) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
-          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...] where min and max values are ints, but got: "
+          "Invalid range format. Expected: [min1,min2,... TO max1,max2,...] where min and max values are longs, but got: "
               + value);
     }
 
     String minPart = matcher.group(1).trim();
     String maxPart = matcher.group(2).trim();
 
-    int[] mins = parseIntArray(minPart, "min values");
-    int[] maxs = parseIntArray(maxPart, "max values");
+    long[] mins = parseLongArray(minPart, "min values");
+    long[] maxs = parseLongArray(maxPart, "max values");
 
     if (mins.length != maxs.length) {
       throw new SolrException(
@@ -154,28 +155,28 @@ public class IntRangeField extends AbstractNumericRangeField {
 
   @Override
   public NumericRangeValue parseSingleBound(String value) {
-    final var singleBoundTyped = parseIntArray(value, "single bound values");
+    final var singleBoundTyped = parseLongArray(value, "single bound values");
     return new RangeValue(singleBoundTyped, singleBoundTyped);
   }
 
   /**
-   * Parse a comma-separated string of integers into an array.
+   * Parse a comma-separated string of longs into an array.
    *
    * @param str the string to parse
    * @param description description for error messages
-   * @return array of parsed integers
+   * @return array of parsed longs
    */
-  private int[] parseIntArray(String str, String description) {
+  private long[] parseLongArray(String str, String description) {
     String[] parts = str.split(",");
-    int[] result = new int[parts.length];
+    long[] result = new long[parts.length];
 
     for (int i = 0; i < parts.length; i++) {
       try {
-        result[i] = Integer.parseInt(parts[i].trim());
+        result[i] = Long.parseLong(parts[i].trim());
       } catch (NumberFormatException e) {
         throw new SolrException(
             ErrorCode.BAD_REQUEST,
-            "Invalid integer in " + description + ": '" + parts[i].trim() + "'",
+            "Invalid long in " + description + ": '" + parts[i].trim() + "'",
             e);
       }
     }
@@ -186,25 +187,25 @@ public class IntRangeField extends AbstractNumericRangeField {
   @Override
   public Query newContainsQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rangeValueTyped = (RangeValue) rangeValue;
-    return IntRange.newContainsQuery(fieldName, rangeValueTyped.mins, rangeValueTyped.maxs);
+    return LongRange.newContainsQuery(fieldName, rangeValueTyped.mins, rangeValueTyped.maxs);
   }
 
   @Override
   public Query newIntersectsQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return IntRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
+    return LongRange.newIntersectsQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
   public Query newWithinQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return IntRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
+    return LongRange.newWithinQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
   public Query newCrossesQuery(String fieldName, NumericRangeValue rangeValue) {
     final var rv = (RangeValue) rangeValue;
-    return IntRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
+    return LongRange.newCrossesQuery(fieldName, rv.mins, rv.maxs);
   }
 
   @Override
@@ -215,40 +216,40 @@ public class IntRangeField extends AbstractNumericRangeField {
       String part2,
       boolean minInclusive,
       boolean maxInclusive) {
-    // For standard range syntax field:[value TO value], default to intersects query
+    // For standard range syntax field:[value TO value], default to contains query
     if (part1 == null || part2 == null) {
       return super.getSpecializedRangeQuery(
           parser, field, part1, part2, minInclusive, maxInclusive);
     }
 
     // Parse the range bounds as single-dimensional values
-    int min, max;
+    long min, max;
     try {
-      min = Integer.parseInt(part1.trim());
-      max = Integer.parseInt(part2.trim());
+      min = Long.parseLong(part1.trim());
+      max = Long.parseLong(part2.trim());
     } catch (NumberFormatException e) {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
-          "Invalid integer values in range query: [" + part1 + " TO " + part2 + "]",
+          "Invalid long values in range query: [" + part1 + " TO " + part2 + "]",
           e);
     }
 
     if (!minInclusive) {
-      min = (min == Integer.MAX_VALUE) ? min : min + 1;
+      min = (min == Long.MAX_VALUE) ? min : min + 1;
     }
     if (!maxInclusive) {
-      max = (max == Integer.MIN_VALUE) ? max : max - 1;
+      max = (max == Long.MIN_VALUE) ? max : max - 1;
     }
 
     // Build arrays for the query based on configured dimensions
-    int[] mins = new int[numDimensions];
-    int[] maxs = new int[numDimensions];
+    long[] mins = new long[numDimensions];
+    long[] maxs = new long[numDimensions];
 
     // For now, only support 1D range syntax with field:[X TO Y]
     if (numDimensions == 1) {
       mins[0] = min;
       maxs[0] = max;
-      return IntRange.newContainsQuery(field.getName(), mins, maxs);
+      return LongRange.newContainsQuery(field.getName(), mins, maxs);
     } else {
       throw new SolrException(
           ErrorCode.BAD_REQUEST,
@@ -257,12 +258,12 @@ public class IntRangeField extends AbstractNumericRangeField {
     }
   }
 
-  /** Simple holder class for parsed integer range values. */
+  /** Simple holder class for parsed long range values. */
   public static class RangeValue implements AbstractNumericRangeField.NumericRangeValue {
-    public final int[] mins;
-    public final int[] maxs;
+    public final long[] mins;
+    public final long[] maxs;
 
-    public RangeValue(int[] mins, int[] maxs) {
+    public RangeValue(long[] mins, long[] maxs) {
       this.mins = mins;
       this.maxs = maxs;
     }
