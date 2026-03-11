@@ -1006,7 +1006,7 @@ For more information about the possibilities of nested queries, see Yonik Seeley
 
 NOTE: Syntax specifics of the `{!numericRange}` query parser are considered experimental and may change in the future.
 
-Allows users to search range fields (e.g. `IntRangeField`) using a specified query-range.
+Allows users to search range fields (e.g. `IntRangeField`, `LongRangeField`) using a specified query-range.
 Multiple match semantics supported, see the `criteria` parameter below for more details.
 
 === Numeric Range Parameters
@@ -1019,7 +1019,7 @@ Multiple match semantics supported, see the `criteria` parameter below for more 
 |===
 +
 The field name to operate on.
-Must be a "range" field (e.g. `IntRangeField`)
+Must be a numeric range field type (e.g. `IntRangeField`, `LongRangeField`)
 `criteria`::
 +
 [%autowidth,frame=none]
@@ -1066,6 +1066,13 @@ Find products whose `price_range` overlaps at all with a user's desired price ra
 [source,text]
 ----
 {!numericRange field="price_range" criteria="intersects" v="[100 TO 120]"}
+----
+
+Find events whose `event_window` (a `LongRangeField` storing Unix epoch milliseconds) overlaps a time range.
+
+[source,text]
+----
+{!numericRange field="event_window" criteria="intersects"}[1700000000000 TO 1800000000000]
 ----
 
 == Vector Query Parsers
