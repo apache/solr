@@ -232,7 +232,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * {@code _nest_path_} is a "child". If {@code childPath} is non-null, the constraint is an exact
    * term match on {@code parentPath/childPath} instead of a prefix query.
    */
-  private static Query buildChildQueryWithPathConstraint(
+  protected static Query buildChildQueryWithPathConstraint(
       String parentPath, String childPath, Query childQuery) {
     final Query nestPathConstraint;
     if (childPath != null) {

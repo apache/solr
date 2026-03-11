@@ -489,6 +489,43 @@ public class TestNestedUpdateProcessor extends SolrTestCaseJ4 {
                       "indent",
                       "true"),
                   "//result/@numFound=0");
+              // childPath for {!child}: constrain returned children to exactly doc_path
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!child parentPath='"
+                              + directParentPath
+                              + "' childPath='"
+                              + childSegment
+                              + "'}id:"
+                              + candAncestorId),
+                      "_trace_child_childPath_tested",
+                      directParentPath + "/" + childSegment,
+                      "rows",
+                      "9999",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "count(//doc)>=1",
+                  "//doc/str[@name='id'][.='" + descendentId + "']");
+              // a childPath that doesn't match should return 0 results
+              assertQ(
+                  req(
+                      params(
+                          "q",
+                          "{!child parentPath='"
+                              + directParentPath
+                              + "' childPath='xxx_yyy'}id:"
+                              + candAncestorId),
+                      "_trace_child_childPath_tested",
+                      directParentPath + "/xxx_yyy",
+                      "fl",
+                      "id",
+                      "indent",
+                      "true"),
+                  "//result/@numFound=0");
               break;
             }
           }

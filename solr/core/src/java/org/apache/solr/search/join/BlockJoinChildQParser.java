@@ -74,15 +74,23 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
    *      ff=(*:* -_nest_path_:*)
    *      vv=(+p_title:dad -_nest_path_:*)</pre>
    *
+   * <p>The optional {@code childPath} localparam narrows the returned children to docs at exactly
+   * {@code parentPath/childPath}.
+   *
    * @param parentPath the normalized parent path (starts with "/", no trailing slash except for
    *     root "/")
    */
   @Override
   protected Query parseUsingParentPath(String parentPath) throws SyntaxError {
-    if (localParams.get(CHILD_PATH_PARAM) != null) {
-      throw new SolrException(
-          SolrException.ErrorCode.BAD_REQUEST,
-          CHILD_PATH_PARAM + " is not supported by the {!child} parser");
+    String childPath = localParams.get(CHILD_PATH_PARAM);
+    if (childPath != null) {
+      if (childPath.startsWith("/")) {
+        throw new SolrException(
+            SolrException.ErrorCode.BAD_REQUEST, CHILD_PATH_PARAM + " must not start with '/'");
+      }
+      if (childPath.isEmpty()) {
+        childPath = null; // treat empty as not specified
+      }
     }
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
@@ -97,7 +105,11 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
               .add(new MatchAllDocsQuery(), Occur.MUST)
               .add(allParentsFilter, Occur.MUST_NOT)
               .build();
-      return new BitSetProducerQuery(getBitSetProducer(notParents));
+      Query result = new BitSetProducerQuery(getBitSetProducer(notParents));
+      if (childPath != null) {
+        result = buildChildQueryWithPathConstraint(parentPath, childPath, result);
+      }
+      return result;
     }
 
     // constrain the parent query to only match docs at exactly parentPath
@@ -105,6 +117,10 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
     // For root: (+<original_parent> -_nest_path_:*)
     Query constrainedParentQuery = wrapWithParentPathConstraint(parentPath, parsedParentQuery);
 
-    return createQuery(allParentsFilter, constrainedParentQuery, null);
+    Query joinQuery = createQuery(allParentsFilter, constrainedParentQuery, null);
+    if (childPath != null) {
+      return buildChildQueryWithPathConstraint(parentPath, childPath, joinQuery);
+    }
+    return joinQuery;
   }
 }

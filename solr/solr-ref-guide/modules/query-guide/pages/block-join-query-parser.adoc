@@ -65,16 +65,17 @@ Key points about `parentPath`:
 * Use `parentPath="/"` to treat root-level documents as the parents.
 * A trailing `/` is stripped automatically (e.g., `"/skus/"` is treated as `"/skus"`).
 * `parentPath` and `of` are mutually exclusive; specifying both returns a `400 Bad Request` error.
+* Optionally, use `childPath` to narrow the returned children to docs at exactly `parentPath/childPath`. Without `childPath`, all descendants of parents at `parentPath` are returned.
 
 For example, using the deeply nested documents described in xref:searching-nested-documents.adoc[], the following query returns all children of root-level product documents that match a description query:
 
 [source,text]
 q={!child parentPath="/"}description_t:staplers
 
-To return only children of `skus` documents with a price under 50:
+To return only `skus` children of root documents matching a description query (excluding other child types):
 
 [source,text]
-q={!child parentPath="/skus"}price_i:[* TO 50]
+q={!child parentPath="/" childPath="skus"}description_t:staplers
 
 === Using the `of` Parameter
 
