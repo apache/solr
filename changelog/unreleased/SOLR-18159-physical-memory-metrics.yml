@@ -1,5 +1,4 @@
-title: Add jvm_system_memory_bytes and jvm_system_memory_free_bytes gauges exposing
-  total and free physical (host or container) memory to the Prometheus metrics endpoint.
+title: Add jvm.system.memory.bytes and jvm.system.memory.free.bytes metric gauges
 type: added
 authors:
   - name: Jan Høydahl
