@@ -24,10 +24,12 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.util.SolrJettyTestRule;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -104,5 +106,52 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
     assertTrue(
         "Should have JVM buffer metrics",
         metricNames.stream().anyMatch(name -> name.startsWith("jvm_buffer")));
+  }
+
+  @Test
+  @SuppressForbidden(reason = "Testing com.sun.management.OperatingSystemMXBean availability")
+  public void testSystemMemoryMetrics() {
+    PrometheusMetricReader reader =
+        solrTestRule
+            .getJetty()
+            .getCoreContainer()
+            .getMetricManager()
+            .getPrometheusMetricReader("solr.jvm");
+    MetricSnapshots snapshots = reader.collect();
+
+    Set<String> metricNames =
+        snapshots.stream()
+            .map(metric -> metric.getMetadata().getPrometheusName())
+            .collect(Collectors.toSet());
+
+    // Physical memory metrics are only present on HotSpot JDK (com.sun.management available).
+    // If absent, the test is skipped (graceful degradation is tested separately).
+    boolean isHotSpot =
+        java.lang.management.ManagementFactory.getOperatingSystemMXBean()
+            instanceof com.sun.management.OperatingSystemMXBean;
+    Assume.assumeTrue(
+        "Skipping: com.sun.management.OperatingSystemMXBean not available", isHotSpot);
+
+    assertTrue(
+        "Should have jvm_system_memory_bytes metric",
+        metricNames.contains("jvm_system_memory_bytes"));
+    assertTrue(
+        "Should have jvm_system_memory_free_bytes metric",
+        metricNames.contains("jvm_system_memory_free_bytes"));
+  }
+
+  @Test
+  public void testJvmMetricsDisabledNoSystemMemory() throws Exception {
+    // Verify that when JVM metrics are disabled, initialization is a no-op and close() is safe
+    SolrMetricManager metricManager = solrTestRule.getJetty().getCoreContainer().getMetricManager();
+    System.setProperty("solr.metrics.jvm.enabled", "false");
+    try {
+      OtelRuntimeJvmMetrics disabledMetrics = new OtelRuntimeJvmMetrics();
+      OtelRuntimeJvmMetrics result = disabledMetrics.initialize(metricManager, "solr.jvm");
+      assertFalse("Should not be initialized when JVM metrics disabled", result.isInitialized());
+      disabledMetrics.close(); // must not throw
+    } finally {
+      System.setProperty("solr.metrics.jvm.enabled", "true");
+    }
   }
 }

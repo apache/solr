@@ -1,0 +1,9 @@
+title: Add jvm_system_memory_bytes and jvm_system_memory_free_bytes gauges exposing
+  total and free physical (host or container) memory to the Prometheus metrics endpoint.
+type: added
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18159
+    url: https://issues.apache.org/jira/browse/SOLR-18159
