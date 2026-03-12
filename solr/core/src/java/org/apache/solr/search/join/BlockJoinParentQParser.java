@@ -58,7 +58,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   public static final String CACHE_NAME = "perSegFilter";
 
   /**
-   * Optional localparam that, when specified, makes this parser natively aware of the {@link
+   * Optional local-param that, when specified, makes this parser natively aware of the {@link
    * IndexSchema#NEST_PATH_FIELD_NAME} field to automatically derive the parent filter (the {@code
    * which} param). The value must be an absolute path starting with {@code /} using {@code /} as
    * separator, e.g. {@code /} for root-level parents or {@code /skus} for parents nested at that
@@ -69,7 +69,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   public static final String PARENT_PATH_PARAM = "parentPath";
 
   /**
-   * Optional localparam, only valid together with {@link #PARENT_PATH_PARAM} on the {@code parent}
+   * Optional local-param, only valid together with {@link #PARENT_PATH_PARAM} on the {@code parent}
    * parser. When specified, the subordinate (child) query is constrained to docs at exactly the
    * path formed by concatenating {@code parentPath + "/" + childPath}, instead of the default
    * behavior of matching all descendants. For example, {@code parentPath="/skus"
@@ -160,16 +160,16 @@ public class BlockJoinParentQParser extends FiltersQParser {
    * @param childPath optional path constraining the children relative to parentPath
    */
   protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
+    final BooleanQuery parsedChildQuery = parseImpl();
+
+    if (parsedChildQuery.clauses().isEmpty()) { // i.e. all children
+      // no block-join needed; just return all "parent" docs at this level
+      return wrapWithParentPathConstraint(parentPath, new MatchAllDocsQuery());
+    }
+
     // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (*:* -_nest_path_:*)
     final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
-
-    final BooleanQuery parsedChildQuery = parseImpl();
-
-    if (parsedChildQuery.clauses().isEmpty()) {
-      // no child query: return all "parent" docs at this level
-      return wrapWithParentPathConstraint(parentPath, allParentsFilter);
-    }
 
     // constrain child query: (+<original_child> +{!prefix f="_nest_path_" v="<parentPath>/"})
     // For root: (+<original_child> +_nest_path_:*)

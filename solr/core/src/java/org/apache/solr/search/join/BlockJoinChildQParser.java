@@ -83,10 +83,6 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
   @Override
   protected Query parseUsingParentPath(String parentPath, String childPath) throws SyntaxError {
 
-    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
-    // For root: (*:* -_nest_path_:*)
-    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
-
     final BooleanQuery parsedParentQuery = parseImpl();
 
     if (parsedParentQuery.clauses().isEmpty()) { // i.e. match all parents
@@ -94,15 +90,21 @@ public class BlockJoinChildQParser extends BlockJoinParentQParser {
       return wrapWithChildPathConstraint(parentPath, childPath, new MatchAllDocsQuery());
     }
 
+    // allParents filter: (*:* -{!prefix f="_nest_path_" v="<parentPath>/"})
+    // For root: (*:* -_nest_path_:*)
+    final Query allParentsFilter = buildAllParentsFilterFromPath(parentPath);
+
     // constrain the parent query to only match docs at exactly parentPath
     // (+<original_parent> +{!field f="_nest_path_" v="<parentPath>"})
     // For root: (+<original_parent> -_nest_path_:*)
     Query constrainedParentQuery = wrapWithParentPathConstraint(parentPath, parsedParentQuery);
 
     Query joinQuery = createQuery(allParentsFilter, constrainedParentQuery, null);
-    if (childPath != null) {
-      return wrapWithChildPathConstraint(parentPath, childPath, joinQuery);
+    // matches all children of matching parents
+    if (childPath == null) {
+      return joinQuery;
     }
-    return joinQuery;
+    // need to constrain to certain children
+    return wrapWithChildPathConstraint(parentPath, childPath, joinQuery);
   }
 }
