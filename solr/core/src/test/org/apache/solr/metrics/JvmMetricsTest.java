@@ -16,8 +16,10 @@
  */
 package org.apache.solr.metrics;
 
+import com.sun.management.OperatingSystemMXBean;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.MetricSnapshots;
+import java.lang.management.ManagementFactory;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -124,11 +126,10 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
             .map(metric -> metric.getMetadata().getPrometheusName())
             .collect(Collectors.toSet());
 
-    // Physical memory metrics are only present on HotSpot JDK (com.sun.management available).
-    // If absent, the test is skipped (graceful degradation is tested separately).
+    // Physical memory metrics are only present when com.sun.management.OperatingSystemMXBean
+    // is available. If absent, the test is skipped.
     boolean isHotSpot =
-        java.lang.management.ManagementFactory.getOperatingSystemMXBean()
-            instanceof com.sun.management.OperatingSystemMXBean;
+        ManagementFactory.getOperatingSystemMXBean() instanceof OperatingSystemMXBean;
     Assume.assumeTrue(
         "Skipping: com.sun.management.OperatingSystemMXBean not available", isHotSpot);
 
@@ -144,6 +145,7 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
   public void testJvmMetricsDisabledNoSystemMemory() throws Exception {
     // Verify that when JVM metrics are disabled, initialization is a no-op and close() is safe
     SolrMetricManager metricManager = solrTestRule.getJetty().getCoreContainer().getMetricManager();
+    String prevValue = System.getProperty("solr.metrics.jvm.enabled");
     System.setProperty("solr.metrics.jvm.enabled", "false");
     try {
       OtelRuntimeJvmMetrics disabledMetrics = new OtelRuntimeJvmMetrics();
@@ -151,7 +153,11 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
       assertFalse("Should not be initialized when JVM metrics disabled", result.isInitialized());
       disabledMetrics.close(); // must not throw
     } finally {
-      System.setProperty("solr.metrics.jvm.enabled", "true");
+      if (prevValue == null) {
+        System.clearProperty("solr.metrics.jvm.enabled");
+      } else {
+        System.setProperty("solr.metrics.jvm.enabled", prevValue);
+      }
     }
   }
 }

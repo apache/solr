@@ -109,7 +109,7 @@ Solr exposes two additional gauges for host or container physical memory, regist
 | `jvm_system_memory_free_bytes` | gauge | Free (unused) physical memory of the host or container in bytes.
 |===
 
-NOTE: These metrics are available only on HotSpot-based JDK distributions (Oracle JDK, Eclipse Temurin, Amazon Corretto, IBM Semeru, and others). On JVMs that do not provide `com.sun.management.OperatingSystemMXBean`, the metrics are silently absent.
+NOTE: These metrics are available when the JVM provides the `com.sun.management.OperatingSystemMXBean` interface (this includes most HotSpot-derived JVMs). On JVMs that do not provide `com.sun.management.OperatingSystemMXBean`, the metrics are silently absent.
 
 NOTE: On Linux containers with cgroup v1 or v2 memory limits set, the JDK reports the container memory limit as the total, not the host's physical RAM. This is the correct value for calculating MMap cache efficiency in containerised deployments.
 
