@@ -1,0 +1,48 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# prometheus.yml — Prometheus configuration for the Solr 10.x monitoring stack.
+#
+# Used by the docker-compose.yml stack (solr/monitoring/docker-compose.yml).
+# For non-Docker deployments, change the target from "solr:8983" to your
+# actual Solr host:port (e.g., "localhost:8983" or "solr-host.example.com:8983").
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alert rules are loaded from the rules directory.
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+
+scrape_configs:
+  - job_name: solr
+    metrics_path: /api/metrics
+    scrape_interval: 15s
+    static_configs:
+      # Docker service DNS name. For non-Docker deployments, change to your
+      # actual Solr host:port, e.g.: targets: ['localhost:8983']
+      - targets: ['solr:8983']
+    # Uncomment and adjust the relabel_configs block below to add "environment"
+    # and "cluster" labels to all Solr metrics. These labels are required for
+    # the Grafana dashboard's $environment and $cluster template variables to
+    # show meaningful values. Without them, both dropdowns show "All" which
+    # still works — all panels match all series.
+    #
+    # relabel_configs:
+    #   - target_label: environment
+    #     replacement: prod        # change to: dev, staging, prod, etc.
+    #   - target_label: cluster
+    #     replacement: cluster-1   # change to a unique name for this Solr cluster

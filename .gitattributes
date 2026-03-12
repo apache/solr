@@ -4,3 +4,7 @@ versions.lock text eol=lf
 
 # Gradle files are always in LF.
 *.gradle          text eol=lf
+
+# Monitoring mixin generated outputs — always LF to ensure make regeneration is idempotent.
+solr/monitoring/grafana-solr-dashboard.json text eol=lf
+solr/monitoring/prometheus-solr-alerts.yml  text eol=lf

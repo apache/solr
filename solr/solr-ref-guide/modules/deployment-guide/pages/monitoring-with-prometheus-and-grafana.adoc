@@ -1,0 +1,181 @@
+= Monitoring Solr with Prometheus and Grafana
+// Licensed to the Apache Software Foundation (ASF) under one or more
+// contributor license agreements.  See the NOTICE file distributed with
+// this work for additional information regarding copyright ownership.
+// The ASF licenses this file to You under the Apache License, Version 2.0
+// (the "License"); you may not use this file except in compliance with
+// the License.  You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+Solr ships two ready-to-use monitoring artifacts in `solr/monitoring/` (source release only):
+
+* `grafana-solr-dashboard.json` — a Grafana dashboard covering the most important Solr operational metrics
+* `prometheus-solr-alerts.yml` — a set of Prometheus alert rules for common failure conditions
+
+Import these into your own Prometheus + Grafana installation.
+Solr exposes all metrics natively at the `/api/metrics` endpoint; no additional exporter process is required.
+For the full list of available metrics see xref:metrics-reporting.adoc[].
+
+.Solr 10.x monitoring architecture — Prometheus pull path and OTLP push path
+image::monitoring-with-prometheus-and-grafana/solr-monitoring-diagram.png[Solr monitoring architecture diagram,800]
+
+== The Grafana Dashboard
+
+The "Solr 10.x Overview" dashboard provides five sections covering node health, JVM,
+SolrCloud cluster state, index health, and cache efficiency.
+
+// TODO: Replace with a screenshot of the new Solr 10.x dashboard.
+.Solr 10.x Overview dashboard (placeholder screenshot)
+image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[Solr Grafana dashboard screenshot,800]
+
+The dashboard includes template variable dropdowns at the top — `datasource`, `environment`,
+`cluster`, `instance`, `collection`, `shard`, `replica_type`, and `interval` — letting you
+scope all panels to a specific cluster, environment, or collection.
+
+Import the dashboard by going to *Dashboards → Import* in Grafana and uploading
+`grafana-solr-dashboard.json`.
+
+[[metrics-collection]]
+== Getting Metrics into Prometheus
+
+There are two ways to get Solr metrics into Prometheus:
+
+[[prometheus-scrape]]
+=== Option 1: Prometheus Pull (recommended)
+
+Prometheus scrapes Solr's `/api/metrics` endpoint directly — no extra process needed.
+Add a scrape job to your `prometheus.yml`:
+
+[source,yaml]
+----
+scrape_configs:
+  - job_name: solr
+    metrics_path: /api/metrics
+    static_configs:
+      - targets: ['solr-node1:8983', 'solr-node2:8983']
+    relabel_configs:
+      - target_label: environment
+        replacement: prod       # <1>
+      - target_label: cluster
+        replacement: my-cluster # <2>
+----
+<1> Attach an `environment` label to all scraped metrics (`dev`, `staging`, `prod`, etc.).
+    This populates the `environment` dashboard dropdown.
+<2> Attach a `cluster` label identifying this Solr deployment.
+    This populates the `cluster` dashboard dropdown.
+
+Both labels are optional — the dashboard works without them (dropdowns default to "All").
+
+[[otlp-push]]
+=== Option 2: OTLP Push via OpenTelemetry Collector
+
+When Solr's xref:distributed-tracing.adoc[OpenTelemetry module] is enabled, Solr can push
+metrics (and traces) via OTLP to an https://opentelemetry.io/docs/collector/[OpenTelemetry Collector].
+The Collector can then forward to Prometheus, but also to any other OTLP-compatible backend —
+including hosted SaaS observability platforms.
+
+The file `solr/monitoring/otel-collector-solr.yml` provides an example Collector configuration
+showing how to receive OTLP from Solr and export to a Prometheus scrape endpoint, including
+transform processor rules that promote OTel resource attributes (`deployment.environment`,
+`service.namespace`) to Prometheus metric labels so the dashboard dropdowns work the same
+way as with the pull path:
+
+[source,yaml]
+----
+processors:
+  transform/promote_resource_attrs:
+    metric_statements:
+      - context: datapoint
+        statements:
+          - set(attributes["environment"], resource.attributes["deployment.environment"])
+            where resource.attributes["deployment.environment"] != nil
+          - set(attributes["cluster"], resource.attributes["service.namespace"])
+            where resource.attributes["service.namespace"] != nil
+----
+
+Set `OTEL_RESOURCE_ATTRIBUTES=deployment.environment=prod,service.namespace=my-cluster`
+(or equivalent) in your Solr environment to supply these values.
+
+[NOTE]
+====
+Solr 10.x emits JVM metrics under two OTel instrumentation scopes.
+Do *not* filter on `otel_scope_name` in PromQL expressions — the dashboard handles
+deduplication internally using `max by (instance, ...)` aggregation.
+====
+
+[[alert-rules]]
+== Alert Rules
+
+Reference `prometheus-solr-alerts.yml` from your `prometheus.yml`:
+
+[source,yaml]
+----
+rule_files:
+  - /etc/prometheus/rules/solr-alerts.yml
+----
+
+Seven rules are included covering the most common operational failure modes:
+
+[cols="2,1,3",options="header"]
+|===
+| Alert | Severity | Fires when
+| `SolrHighHeapUsage` | critical | JVM heap > 90% for 2 minutes
+| `SolrJvmGcThrashing` | critical | GC time > 10 s/min for 3 minutes
+| `SolrLowDiskSpace` | critical | Free disk < 15% for 5 minutes
+| `SolrHighSearchLatency` | warning | Search p99 > 1000ms for 5 minutes
+| `SolrHighErrorRate` | warning | Error rate > 1% of requests for 5 minutes
+| `SolrOverseerQueueBuildup` | warning | Overseer queue > 50 items for 5 minutes
+| `SolrHighMmapRatio` | warning | Index > 85% of MMap RAM for 5 minutes
+|===
+
+[[environment-cluster-variables]]
+== Configuring the `environment` and `cluster` Dropdowns
+
+The `environment` and `cluster` variables are template variables in the Grafana dashboard.
+By default they query Prometheus for the set of distinct label values present in your metrics
+(e.g., `label_values(solr_node_requests_total, environment)`).
+
+If your setup uses different label names, or if you prefer a static list over a dynamic
+PromQL query, you can update the variable definitions directly in Grafana without regenerating
+the dashboard from source:
+
+. Open the dashboard and go to *Dashboard settings → Variables*
+. Select the `environment` or `cluster` variable
+. Change the *Query* field to match your label name (e.g., `label_values(..., deployment_environment)`)
+  or switch *Type* to *Custom* and enter a static comma-separated list (`dev,staging,prod`)
+
+Alternatively, you can change the label names baked into the dashboard source by editing
+`mixin/config.libsonnet` and regenerating — see <<customizing>> below.
+
+[[customizing]]
+== Customizing the Artifacts
+
+The dashboard and alert rules are generated from a https://jsonnet.org/[Jsonnet] mixin source
+in `solr/monitoring/mixin/`.
+All tunable parameters — alert thresholds, metric label names, rate intervals — are
+centralized in `mixin/config.libsonnet`.
+After editing, regenerate with `make all` (requires `jsonnet`, `jb`, and `gojsontoyaml`).
+
+See `solr/monitoring/README.md` for the complete contributor guide including build
+prerequisites, Makefile targets, and instructions for publishing to the Grafana dashboard
+marketplace.
+
+[[distributed-tracing]]
+== Metrics and Tracing Together
+
+The same OpenTelemetry module that powers the OTLP push path for metrics also supports
+xref:distributed-tracing.adoc[distributed tracing].
+When tracing is enabled, Solr records spans for incoming requests and propagates trace
+context through distributed operations, so you can correlate a latency spike on the
+Grafana dashboard directly with its full execution trace in a compatible tracing backend.
+
+Both metrics and traces are exported via OTLP and flow through the same OpenTelemetry
+Collector pipeline, making it straightforward to route them together to a unified
+observability backend — or independently to specialized systems.
