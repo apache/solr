@@ -1,0 +1,30 @@
+# trafficgen.yml — configuration for the dev docker-compose stack.
+#
+# Tuned for SolrCloud (numShards: 2) with faster indexing so the
+# Grafana dashboard panels show activity immediately.
+# Solr URL is overridden at runtime via SOLR_URL env var in docker-compose.yml.
+# Word list is auto-generated in RAM by trafficgen.py (no 'words' key needed).
+
+solrUrl: http://localhost:8983/solr
+
+collection:
+  name: test
+  numShards: 2
+  replicationFactor: 2
+  configSet: _default
+
+indexing:
+  batchSize: 10
+  sleepSecs: 5
+  freetextFieldName: text_t
+  numWords: 20
+  facetFieldName: keywords_s
+
+searching:
+  sleepSecs: 1
+  freetextFieldName: text_t
+  numWords: 1
+  facetFieldName: keywords_s
+
+deletions:
+  sleepSecs: 30

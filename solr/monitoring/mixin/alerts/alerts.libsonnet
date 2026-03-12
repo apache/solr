@@ -89,7 +89,7 @@ local cfg = config._config;
         {
           alert: 'SolrLowDiskSpace',
           expr: |||
-            min by (instance) (solr_disk_space_megabytes{type="free_space"})
+            min by (instance) (solr_disk_space_megabytes{type="usable_space"})
             /
             min by (instance) (solr_disk_space_megabytes{type="total_space"})
             < %(threshold)s

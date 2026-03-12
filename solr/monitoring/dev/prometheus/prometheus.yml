@@ -29,12 +29,12 @@ rule_files:
 
 scrape_configs:
   - job_name: solr
-    metrics_path: /api/metrics
+    # NOTE: The dev stack uses solr:10 (10.0.0) which only exposes /solr/admin/metrics.
+    # Production Solr 10.1+ exposes the shorter /api/metrics endpoint (use that instead).
+    metrics_path: /solr/admin/metrics
     scrape_interval: 15s
     static_configs:
-      # Docker service DNS name. For non-Docker deployments, change to your
-      # actual Solr host:port, e.g.: targets: ['localhost:8983']
-      - targets: ['solr:8983']
+      - targets: ['solr1:8983', 'solr2:8983']
     # Uncomment and adjust the relabel_configs block below to add "environment"
     # and "cluster" labels to all Solr metrics. These labels are required for
     # the Grafana dashboard's $environment and $cluster template variables to

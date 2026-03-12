@@ -77,6 +77,7 @@ local instanceVar =
   )
   + v.query.withDatasourceFromVariable(datasourceVar)
   + v.query.selectionOptions.withMulti()
+  + v.query.selectionOptions.withIncludeAll(value=true, customAllValue='.*')
   + v.query.refresh.onTime()
   + v.query.generalOptions.withLabel('Instance');
 
@@ -115,7 +116,7 @@ local replicaTypeVar =
 
 local intervalVar =
   v.interval.new('interval', ['1m', '5m', '10m', '30m', '1h'])
-  + v.interval.generalOptions.withCurrent('5m')
+  + v.interval.generalOptions.withCurrent('1m')
   + v.interval.generalOptions.withLabel('Interval');
 
 // -----------------------------------------------------------------------
@@ -175,7 +176,7 @@ local nodeOverviewPanels = [
   ts(
     'Query Request Rate',
     [prom(
-      'rate(solr_node_requests_total{%s,%s,%s,category="QUERY"}[$interval])' % [envSel, clusterSel, instSel],
+      'sum by (instance)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="QUERY"}[$interval]))' % [envSel, clusterSel, instSel],
       '{{instance}}'
     )],
     unit='reqps',
@@ -205,7 +206,7 @@ local nodeOverviewPanels = [
   ts(
     'Indexing Rate',
     [prom(
-      'rate(solr_node_requests_total{%s,%s,%s,category="UPDATE"}[$interval])' % [envSel, clusterSel, instSel],
+      'sum by (instance)(rate(solr_core_requests_times_milliseconds_count{%s,%s,%s,category="UPDATE"}[$interval]))' % [envSel, clusterSel, instSel],
       '{{instance}}'
     )],
     unit='reqps',
@@ -215,7 +216,7 @@ local nodeOverviewPanels = [
   ts(
     'Update Latency p99',
     [prom(
-      'histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update",internal="false"}[$interval])))' % [envSel, clusterSel, instSel],
+      'histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{%s,%s,%s,handler="/update"}[$interval])))' % [envSel, clusterSel, instSel],
       '{{instance}}'
     )],
     unit='ms',
@@ -235,7 +236,7 @@ local nodeOverviewPanels = [
   gaugePanel(
     'Disk Free',
     [prom(
-      'min(solr_disk_space_megabytes{%s,%s,%s,type="free_space"}) / min(solr_disk_space_megabytes{%s,%s,%s,type="total_space"}) * 100' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+      'min(solr_disk_space_megabytes{%s,%s,%s,type="usable_space"}) / min(solr_disk_space_megabytes{%s,%s,%s,type="total_space"}) * 100' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel],
       'Free %%'
     )],
     unit='percent',
@@ -282,11 +283,11 @@ local jvmPanels = [
   statPanel(
     'Heap Max',
     [prom(
-      'max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})' % [envSel, clusterSel, instSel],
-      '{{instance}}'
+      'min(max by (instance)(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"}))' % [envSel, clusterSel, instSel],
+      'min across instances'
     )],
     unit='bytes',
-    desc='Maximum JVM heap size (-Xmx) per instance.'
+    desc='Minimum -Xmx heap setting across selected instances. In a well-configured cluster all nodes share the same value, so one number suffices; the min highlights any under-provisioned node.'
   ) + { gridPos: { x: 16, y: 22, w: 8, h: 8 } },
 
   ts(
@@ -558,14 +559,14 @@ local cacheRow =
         desc='Rate of document cache evictions per second.'
       ) + { gridPos: { x: 16, y: 57, w: 8, h: 8 } },
 
-      barPanel(
+      ts(
         'Cache RAM Used',
         [prom(
           'sum by (name)(solr_core_indexsearcher_cache_ram_used_bytes{%s,%s,%s,collection=~"$collection"})' % [envSel, clusterSel, instSel],
           '{{name}}'
         )],
         unit='bytes',
-        desc='Total RAM consumed by each Solr cache type (filterCache, queryResultCache, documentCache) across all selected cores.'
+        desc='RAM consumed over time by each Solr cache type (filterCache, queryResultCache, documentCache) across all selected cores.'
       ) + { gridPos: { x: 0, y: 65, w: 24, h: 8 } },
     ],
   };
@@ -591,11 +592,11 @@ local dashboard =
     + 'Both default to All (matches all series) when labels are not configured.'
   )
   + d.withTags(['solr', 'solr10', 'prometheus'])
-  + d.withRefresh('1m')
+  + d.withRefresh('auto')
   + d.withTimezone('browser')
   + d.withEditable(true)
   + d.withSchemaVersion(36)
-  + d.time.withFrom('now-1h')
+  + d.time.withFrom('now-15m')
   + d.time.withTo('now')
   + d.withVariables([
     datasourceVar,

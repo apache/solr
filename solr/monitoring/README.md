@@ -234,7 +234,7 @@ cd dev
 docker-compose up -d
 ```
 
-Services: Solr (`:8983`), Prometheus (`:9090`), Grafana (`:3000`, admin/solr), Alertmanager (`:9093`)
+Services: Solr (`:8983`), Prometheus (`:9090`), Grafana (`:3000`, admin/admin), Alertmanager (`:9093`)
 
 ---
 

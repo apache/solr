@@ -57,7 +57,7 @@ groups:
         Free up space or expand the disk immediately.
       summary: Solr instance {{ $labels.instance }} is low on disk space
     expr: |
-      min by (instance) (solr_disk_space_megabytes{type="free_space"})
+      min by (instance) (solr_disk_space_megabytes{type="usable_space"})
       /
       min by (instance) (solr_disk_space_megabytes{type="total_space"})
       < 0.14999999999999999

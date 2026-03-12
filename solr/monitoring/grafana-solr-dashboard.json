@@ -48,7 +48,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "rate(solr_node_requests_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"QUERY\"}[$interval])",
+               "expr": "sum by (instance)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"QUERY\"}[$interval]))",
                "interval": "$interval",
                "legendFormat": "{{instance}}"
             }
@@ -148,7 +148,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "rate(solr_node_requests_total{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"UPDATE\"}[$interval])",
+               "expr": "sum by (instance)(rate(solr_core_requests_times_milliseconds_count{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",category=\"UPDATE\"}[$interval]))",
                "interval": "$interval",
                "legendFormat": "{{instance}}"
             }
@@ -189,7 +189,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\",internal=\"false\"}[$interval])))",
+               "expr": "histogram_quantile(0.99, sum by (le, instance)(rate(solr_core_requests_times_milliseconds_bucket{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",handler=\"/update\"}[$interval])))",
                "interval": "$interval",
                "legendFormat": "{{instance}}"
             }
@@ -292,7 +292,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"free_space\"}) / min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"total_space\"}) * 100",
+               "expr": "min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"usable_space\"}) / min(solr_disk_space_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",type=\"total_space\"}) * 100",
                "interval": "$interval",
                "legendFormat": "Free %%"
             }
@@ -399,7 +399,7 @@
             "type": "datasource",
             "uid": "-- Mixed --"
          },
-         "description": "Maximum JVM heap size (-Xmx) per instance.",
+         "description": "Minimum -Xmx heap setting across selected instances. In a well-configured cluster all nodes share the same value, so one number suffices; the min highlights any under-provisioned node.",
          "fieldConfig": {
             "defaults": {
                "unit": "bytes"
@@ -428,9 +428,9 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})",
+               "expr": "min(max by (instance)(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"}))",
                "interval": "$interval",
-               "legendFormat": "{{instance}}"
+               "legendFormat": "min across instances"
             }
          ],
          "title": "Heap Max",
@@ -1437,7 +1437,7 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Total RAM consumed by each Solr cache type (filterCache, queryResultCache, documentCache) across all selected cores.",
+               "description": "RAM consumed over time by each Solr cache type (filterCache, queryResultCache, documentCache) across all selected cores.",
                "fieldConfig": {
                   "defaults": {
                      "unit": "bytes"
@@ -1450,6 +1450,14 @@
                   "y": 65
                },
                "id": 38,
+               "options": {
+                  "legend": {
+                     "displayMode": "list"
+                  },
+                  "tooltip": {
+                     "mode": "multi"
+                  }
+               },
                "pluginVersion": "v11.4.0",
                "targets": [
                   {
@@ -1463,14 +1471,14 @@
                   }
                ],
                "title": "Cache RAM Used",
-               "type": "barchart"
+               "type": "timeseries"
             }
          ],
          "title": "Cache Efficiency",
          "type": "row"
       }
    ],
-   "refresh": "1m",
+   "refresh": "auto",
    "schemaVersion": 36,
    "tags": [
       "solr",
@@ -1514,10 +1522,12 @@
             "type": "query"
          },
          {
+            "allValue": ".*",
             "datasource": {
                "type": "prometheus",
                "uid": "${datasource}"
             },
+            "includeAll": true,
             "label": "Instance",
             "multi": true,
             "name": "instance",
@@ -1570,8 +1580,8 @@
          {
             "current": {
                "selected": false,
-               "text": "5m",
-               "value": "5m"
+               "text": "1m",
+               "value": "1m"
             },
             "label": "Interval",
             "name": "interval",
@@ -1608,7 +1618,7 @@
       ]
    },
    "time": {
-      "from": "now-1h",
+      "from": "now-15m",
       "to": "now"
    },
    "timezone": "browser",

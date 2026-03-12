@@ -32,21 +32,39 @@
 #   docker-compose up -d
 #
 # Services:
-#   Solr         http://localhost:8983
+#   solr1        http://localhost:8983  (SolrCloud node 1, embedded ZooKeeper)
+#   solr2        http://localhost:8984  (SolrCloud node 2)
 #   Prometheus   http://localhost:9090
-#   Grafana      http://localhost:3000  (admin / solr)
+#   Grafana      http://localhost:3000  (admin / admin)
 #   Alertmanager http://localhost:9093
+#   trafficgen   (no port — continuously indexes/searches the 'test' collection)
 #
 # Prometheus may show scrape errors for the first 30-60 seconds while Solr starts.
 # ============================================================================
 
-version: "3.8"
-
 services:
-  solr:
-    image: apache/solr:10
+  solr1:
+    image: solr:10
     ports:
       - "8983:8983"
+      - "9983:9983"   # embedded ZooKeeper (Solr 10 default: ZK_PORT = SOLR_PORT + 1000)
+    # No ZK_HOST set: Solr 10 defaults to SolrCloud with embedded ZooKeeper on port 9983.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/admin/info/system || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
+  solr2:
+    image: solr:10
+    ports:
+      - "8984:8983"
+    environment:
+      ZK_HOST: "solr1:9983"
+    depends_on:
+      solr1:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:8983/solr/admin/info/system || exit 1"]
       interval: 10s
@@ -66,7 +84,9 @@ services:
       - "--storage.tsdb.retention.time=7d"
       - "--web.enable-lifecycle"
     depends_on:
-      solr:
+      solr1:
+        condition: service_healthy
+      solr2:
         condition: service_healthy
     restart: unless-stopped
 
@@ -76,7 +96,7 @@ services:
       - "3000:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: solr
+      GF_SECURITY_ADMIN_PASSWORD: admin
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
@@ -91,4 +111,15 @@ services:
       - "9093:9093"
     volumes:
       - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    restart: unless-stopped
+
+  trafficgen:
+    build: ./trafficgen
+    environment:
+      SOLR_URL: http://solr1:8983/solr
+    depends_on:
+      solr1:
+        condition: service_healthy
+      solr2:
+        condition: service_healthy
     restart: unless-stopped
