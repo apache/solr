@@ -33,7 +33,7 @@ or testing.
 | `dev/` | **Developer convenience only** — docker-compose stack for testing changes to the artifacts |
 
 For the full integration guide see the Solr Reference Guide:
-**xref:monitoring-with-prometheus-and-grafana.adoc** (deployment-guide module)
+**[Monitoring with Prometheus and Grafana](solr-ref-guide/modules/deployment-guide/pages/monitoring-with-prometheus-and-grafana.adoc)**
 
 ---
 

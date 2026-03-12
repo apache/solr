@@ -149,7 +149,7 @@ This endpoint can be used to pull/scrape metrics to a Prometheus server or any P
 [NOTE]
 ====
 For a complete Prometheus + Grafana + Alertmanager setup including a pre-built dashboard and alert rules, see xref:monitoring-with-prometheus-and-grafana.adoc[].
-A docker-compose evaluation stack is also available in `solr/monitoring/` in the source release.
+A docker-compose evaluation stack is also available in `solr/monitoring/dev/` in the source release.
 ====
 
 ==== Prometheus Setup

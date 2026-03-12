@@ -62,10 +62,12 @@
     // Overseer collection work queue depth that triggers SolrOverseerQueueBuildup (warning).
     overseerQueueThreshold: 50,
 
-    // MMap index-to-available-RAM ratio (%) that triggers SolrHighMmapRatio (warning).
-    mmapRatioThreshold: 85,
+    // MMap efficiency threshold (%): alert fires when less than this percentage of the
+    // index fits in available MMap space (physical RAM minus heap). Below 10% means
+    // almost none of the index is RAM-resident, causing heavy I/O.
+    mmapRatioThreshold: 10,
 
     // Default rate interval used in rate() expressions and the $interval variable default.
-    defaultRateInterval: '5m',
+    defaultRateInterval: '1m',
   },
 }

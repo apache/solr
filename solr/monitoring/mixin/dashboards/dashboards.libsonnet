@@ -36,7 +36,7 @@ local cfg = config._config;
 // -----------------------------------------------------------------------
 local envSel = '%s=~"$environment"' % cfg.environmentLabel;
 local clusterSel = '%s=~"$cluster"' % cfg.clusterLabel;
-local instSel = 'instance=~"$instance"';
+local instSel = '%s=~"$instance"' % cfg.instanceLabel;
 local colSel = 'collection=~"$collection",shard=~"$shard",replica_type=~"$replica_type"';
 
 // -----------------------------------------------------------------------
@@ -73,7 +73,7 @@ local clusterVar =
 local instanceVar =
   v.query.new(
     'instance',
-    'label_values(solr_cores_loaded{%s,%s}, instance)' % [envSel, clusterSel]
+    'label_values(solr_cores_loaded{%s,%s}, %s)' % [envSel, clusterSel, cfg.instanceLabel]
   )
   + v.query.withDatasourceFromVariable(datasourceVar)
   + v.query.selectionOptions.withMulti()
@@ -116,7 +116,7 @@ local replicaTypeVar =
 
 local intervalVar =
   v.interval.new('interval', ['1m', '5m', '10m', '30m', '1h'])
-  + v.interval.generalOptions.withCurrent('1m')
+  + v.interval.generalOptions.withCurrent(cfg.defaultRateInterval)
   + v.interval.generalOptions.withLabel('Interval');
 
 // -----------------------------------------------------------------------
@@ -424,17 +424,17 @@ local indexHealthRow =
       gaugePanel(
         'MMap Efficiency',
         [prom(
-          'sum(solr_core_index_size_megabytes{%s,%s,%s}) / ((max(jvm_system_memory_total_bytes{%s,%s,%s}) - sum(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})) / 1e6) * 100' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel, envSel, clusterSel, instSel],
+          'clamp_max((max(jvm_system_memory_total_bytes{%s,%s,%s}) - sum(jvm_memory_limit_bytes{%s,%s,%s,jvm_memory_type="heap"})) / 1e6 / sum(solr_core_index_size_megabytes{%s,%s,%s}) * 100, 100)' % [envSel, clusterSel, instSel, envSel, clusterSel, instSel, envSel, clusterSel, instSel],
           'MMap %%'
         )],
         unit='percent',
-        desc='Percentage of available MMap address space (physical RAM minus heap) used by the index. Above 70%% (yellow) risks page-cache thrashing; above 85%% (red) causes I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows "No data" if absent.',
+        desc='Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows "No data" if absent.',
         min=0,
         max=100,
         steps=[
-          { color: 'green', value: null },
-          { color: 'yellow', value: 70 },
-          { color: 'red', value: 85 },
+          { color: 'red', value: null },
+          { color: 'orange', value: 25 },
+          { color: 'green', value: 50 },
         ]
       ) + { gridPos: { x: 18, y: 48, w: 6, h: 8 } },
 

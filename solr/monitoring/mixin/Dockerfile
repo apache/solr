@@ -26,13 +26,13 @@ FROM golang:1-bookworm AS go-tools
 
 ENV CGO_ENABLED=0
 
-RUN go install github.com/google/go-jsonnet/cmd/jsonnet@latest    \
- && go install github.com/google/go-jsonnet/cmd/jsonnetfmt@latest \
- && go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest \
- && go install github.com/brancz/gojsontoyaml@latest
+RUN go install github.com/google/go-jsonnet/cmd/jsonnet@v0.20.0    \
+ && go install github.com/google/go-jsonnet/cmd/jsonnetfmt@v0.20.0 \
+ && go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@v0.5.1 \
+ && go install github.com/brancz/gojsontoyaml@v0.1.0
 
 # --- Stage 2: extract promtool from the official Prometheus image -------------
-FROM prom/prometheus:latest AS prometheus
+FROM prom/prometheus:v2.52.0 AS prometheus
 
 # --- Stage 3: lean runtime image ---------------------------------------------
 FROM ubuntu:24.04

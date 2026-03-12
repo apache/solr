@@ -27,9 +27,9 @@ groups:
         Consider increasing -Xmx or reducing cache sizes in solrconfig.xml.
       summary: Solr instance {{ $labels.instance }} has high JVM heap usage
     expr: |
-      max by (instance) (jvm_memory_used_bytes{jvm_memory_type="heap"})
+      max by (instance) (jvm_memory_used_bytes{job="solr",jvm_memory_type="heap"})
       /
-      max by (instance) (jvm_memory_limit_bytes{jvm_memory_type="heap"})
+      max by (instance) (jvm_memory_limit_bytes{job="solr",jvm_memory_type="heap"})
       > 0.90000000000000002
     for: 2m
     labels:
@@ -43,7 +43,7 @@ groups:
         Check heap usage (SolrHighHeapUsage), consider tuning GC or increasing heap.
       summary: Solr instance {{ $labels.instance }} is experiencing GC thrashing
     expr: |
-      sum by (instance) (rate(jvm_gc_duration_seconds_sum{instance=~".+"}[1m]))
+      sum by (instance) (rate(jvm_gc_duration_seconds_sum{job="solr"}[1m]))
       > 10
     for: 3m
     labels:
@@ -114,20 +114,28 @@ groups:
   - alert: SolrHighMmapRatio
     annotations:
       description: |
-        The Solr index is using {{ $value | humanize }}% of available MMap address space
-        (physical RAM minus JVM heap), threshold: 85%.
-        When the index exceeds available MMap memory, Lucene falls back to I/O reads,
+        Only {{ $value | humanize }}% of the index fits in available MMap address space
+        (physical RAM minus JVM heap) on instance {{ $labels.instance }}
+        (threshold: 10%).
+        When less of the index is RAM-resident, Lucene falls back to I/O reads,
         significantly degrading search performance. Consider adding RAM, reducing index size,
         or increasing the JVM heap ratio.
-      summary: Solr index is using a high fraction of available MMap memory
+      summary: Solr MMap efficiency is low on {{ $labels.instance }}
     expr: |
-      sum(solr_core_index_size_megabytes)
-      /
       (
-        (max(jvm_system_memory_total_bytes) - sum(jvm_memory_limit_bytes{jvm_memory_type="heap"}))
-        / 1e6
+        clamp_max(
+          (
+            max by (instance) (jvm_system_memory_total_bytes{job="solr"})
+            - sum by (instance) (jvm_memory_limit_bytes{job="solr",jvm_memory_type="heap"})
+          )
+          / 1e6
+          / sum by (instance) (solr_core_index_size_megabytes{job="solr"})
+          * 100,
+          100
+        ) < 10
       )
-      * 100 > 85
+      and on(instance)
+        max by (instance) (jvm_system_memory_total_bytes{job="solr"}) > 0
     for: 5m
     labels:
       severity: warning

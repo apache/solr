@@ -20,7 +20,8 @@
 //   Warning  (4): SolrHighSearchLatency, SolrHighErrorRate, SolrOverseerQueueBuildup, SolrHighMmapRatio
 //
 // Thresholds are defined in config.libsonnet and can be overridden.
-// All expressions include "by (instance)" so alerts fire and resolve per-node.
+// All expressions use cfg.solrSelector to scope alerts to Solr JVMs only, and
+// "by (instance)" so alerts fire and resolve per-node.
 
 local config = import '../config.libsonnet';
 local cfg = config._config;
@@ -39,11 +40,11 @@ local cfg = config._config;
         {
           alert: 'SolrHighHeapUsage',
           expr: |||
-            max by (instance) (jvm_memory_used_bytes{jvm_memory_type="heap"})
+            max by (instance) (jvm_memory_used_bytes{%(solrSelector)s,jvm_memory_type="heap"})
             /
-            max by (instance) (jvm_memory_limit_bytes{jvm_memory_type="heap"})
+            max by (instance) (jvm_memory_limit_bytes{%(solrSelector)s,jvm_memory_type="heap"})
             > %(threshold)s
-          ||| % { threshold: cfg.heapUsageThreshold },
+          ||| % { threshold: cfg.heapUsageThreshold, solrSelector: cfg.solrSelector },
           'for': '2m',
           labels: { severity: 'critical' },
           annotations: {
@@ -65,9 +66,9 @@ local cfg = config._config;
         {
           alert: 'SolrJvmGcThrashing',
           expr: |||
-            sum by (instance) (rate(jvm_gc_duration_seconds_sum{instance=~".+"}[1m]))
+            sum by (instance) (rate(jvm_gc_duration_seconds_sum{%(solrSelector)s}[1m]))
             > %(threshold)s
-          ||| % { threshold: cfg.gcThrashThresholdSecsPerMin },
+          ||| % { threshold: cfg.gcThrashThresholdSecsPerMin, solrSelector: cfg.solrSelector },
           'for': '3m',
           labels: { severity: 'critical' },
           annotations: {
@@ -189,30 +190,40 @@ local cfg = config._config;
 
         // ---------------------------------------------------------------
         // WARNING: SolrHighMmapRatio
-        // Fires when index size exceeds 85% of available MMap memory (RAM minus heap).
-        // No absent() guard needed: when jvm_system_memory_total_bytes is absent, the
-        // expression produces no data and the alert naturally does not fire.
+        // Fires when less than cfg.mmapRatioThreshold percent of the index fits in
+        // available MMap address space (physical RAM minus heap).
+        // The "and on(instance)" guard ensures the alert never fires if
+        // jvm_system_memory_total_bytes is absent (metric not available) or zero
+        // (would otherwise produce a negative available-mmap and a spurious alert).
         // This alert requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric).
         // ---------------------------------------------------------------
         {
           alert: 'SolrHighMmapRatio',
           expr: |||
-            sum(solr_core_index_size_megabytes)
-            /
             (
-              (max(jvm_system_memory_total_bytes) - sum(jvm_memory_limit_bytes{jvm_memory_type="heap"}))
-              / 1e6
+              clamp_max(
+                (
+                  max by (instance) (jvm_system_memory_total_bytes{%(solrSelector)s})
+                  - sum by (instance) (jvm_memory_limit_bytes{%(solrSelector)s,jvm_memory_type="heap"})
+                )
+                / 1e6
+                / sum by (instance) (solr_core_index_size_megabytes{%(solrSelector)s})
+                * 100,
+                100
+              ) < %(threshold)s
             )
-            * 100 > %(threshold)s
-          ||| % { threshold: cfg.mmapRatioThreshold },
+            and on(instance)
+              max by (instance) (jvm_system_memory_total_bytes{%(solrSelector)s}) > 0
+          ||| % { threshold: cfg.mmapRatioThreshold, solrSelector: cfg.solrSelector },
           'for': '5m',
           labels: { severity: 'warning' },
           annotations: {
-            summary: 'Solr index is using a high fraction of available MMap memory',
+            summary: 'Solr MMap efficiency is low on {{ $labels.instance }}',
             description: |||
-              The Solr index is using {{ $value | humanize }}%% of available MMap address space
-              (physical RAM minus JVM heap), threshold: %(threshold)s%%.
-              When the index exceeds available MMap memory, Lucene falls back to I/O reads,
+              Only {{ $value | humanize }}%% of the index fits in available MMap address space
+              (physical RAM minus JVM heap) on instance {{ $labels.instance }}
+              (threshold: %(threshold)s%%).
+              When less of the index is RAM-resident, Lucene falls back to I/O reads,
               significantly degrading search performance. Consider adding RAM, reducing index size,
               or increasing the JVM heap ratio.
             ||| % { threshold: cfg.mmapRatioThreshold },

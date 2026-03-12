@@ -911,7 +911,7 @@
                   "type": "datasource",
                   "uid": "-- Mixed --"
                },
-               "description": "Percentage of available MMap address space (physical RAM minus heap) used by the index. Above 70%% (yellow) risks page-cache thrashing; above 85%% (red) causes I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
+               "description": "Percentage of the total index that fits in available MMap address space (physical RAM minus heap). 100%% means the entire index fits in RAM (ideal). Below 50%% (orange) means less than half fits; below 25%% (red) risks frequent page-cache evictions and I/O bottlenecks. Requires jvm_system_memory_total_bytes (Solr 10.x physical RAM metric). Shows \"No data\" if absent.",
                "fieldConfig": {
                   "defaults": {
                      "color": {
@@ -922,16 +922,16 @@
                      "thresholds": {
                         "steps": [
                            {
-                              "color": "green",
+                              "color": "red",
                               "value": null
                            },
                            {
-                              "color": "yellow",
-                              "value": 70
+                              "color": "orange",
+                              "value": 25
                            },
                            {
-                              "color": "red",
-                              "value": 85
+                              "color": "green",
+                              "value": 50
                            }
                         ]
                      },
@@ -959,7 +959,7 @@
                         "type": "prometheus",
                         "uid": "$datasource"
                      },
-                     "expr": "sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) / ((max(jvm_system_memory_total_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6) * 100",
+                     "expr": "clamp_max((max(jvm_system_memory_total_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) - sum(jvm_memory_limit_bytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\",jvm_memory_type=\"heap\"})) / 1e6 / sum(solr_core_index_size_megabytes{environment=~\"$environment\",cluster=~\"$cluster\",instance=~\"$instance\"}) * 100, 100)",
                      "interval": "$interval",
                      "legendFormat": "MMap %%"
                   }

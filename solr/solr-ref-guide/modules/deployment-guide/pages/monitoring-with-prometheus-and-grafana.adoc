@@ -31,8 +31,7 @@ image::monitoring-with-prometheus-and-grafana/solr-monitoring-diagram.png[Solr m
 The "Solr 10.x Overview" dashboard provides five sections covering node health, JVM,
 SolrCloud cluster state, index health, and cache efficiency.
 
-// TODO: Replace with a screenshot of the new Solr 10.x dashboard.
-.Solr 10.x Overview dashboard (placeholder screenshot)
+.Solr 10.x Overview dashboard — JVM panel
 image::monitoring-with-prometheus-and-grafana/grafana-solr-dashboard.png[Solr Grafana dashboard screenshot,800]
 
 The dashboard includes template variable dropdowns at the top — `datasource`, `environment`,

@@ -72,19 +72,6 @@ processors:
           - set(attributes["otel_scope_name"], "org.apache.solr")
             where resource.attributes["service.name"] == "solr"
 
-  # Promote OTel resource attributes to metric labels.
-  # This maps deployment.environment -> environment and service.namespace -> cluster
-  # so that the Grafana dashboard's $environment and $cluster variables work
-  # on the OTLP ingestion path (matching what relabel_configs does on the scrape path).
-  resource/solr_labels:
-    attributes:
-      - action: upsert
-        key: deployment.environment
-        from_attribute: deployment.environment
-      - action: upsert
-        key: service.namespace
-        from_attribute: service.namespace
-
   # Convert resource attributes to metric labels (for Prometheus exporter).
   # This makes deployment.environment and service.namespace available as
   # Prometheus labels named "environment" and "cluster".

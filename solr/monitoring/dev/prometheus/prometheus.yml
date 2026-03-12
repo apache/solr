@@ -15,7 +15,7 @@
 
 # prometheus.yml — Prometheus configuration for the Solr 10.x monitoring stack.
 #
-# Used by the docker-compose.yml stack (solr/monitoring/docker-compose.yml).
+# Used by the docker-compose.yml stack (solr/monitoring/dev/docker-compose.yml).
 # For non-Docker deployments, change the target from "solr:8983" to your
 # actual Solr host:port (e.g., "localhost:8983" or "solr-host.example.com:8983").
 
