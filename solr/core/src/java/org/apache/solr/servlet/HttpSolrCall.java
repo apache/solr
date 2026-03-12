@@ -450,7 +450,7 @@ public class HttpSolrCall {
         AuthorizationUtils.AuthorizationFailure authzFailure =
             AuthorizationUtils.authorize(req, response, cores, authzContext);
         if (authzFailure != null) {
-          sendError(authzFailure.getStatusCode(), authzFailure.getMessage());
+          sendError(authzFailure.statusCode(), authzFailure.message());
           return RETURN;
         }
       }

@@ -21,12 +21,15 @@ import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-/** Tests for {@link IntRangeQParserPlugin} */
-public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
+/**
+ * Tests for {@link NumericRangeQParserPlugin} using {@link
+ * org.apache.solr.schema.numericrange.IntRangeField} fields.
+ */
+public class NumericRangeQParserPluginIntTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema-intrange.xml");
+    initCore("solrconfig.xml", "schema-numericrange.xml");
   }
 
   @Override
@@ -281,7 +284,7 @@ public class IntRangeQParserPluginTest extends SolrTestCaseJ4 {
     // Query on non-IntRangeField should fail
     assertQEx(
         "Query on wrong field type should fail",
-        "must be of type IntRangeField",
+        "must be a numeric range field type",
         req("q", "{!numericRange criteria=intersects field=title}[100 TO 200]"),
         SolrException.ErrorCode.BAD_REQUEST);
   }
