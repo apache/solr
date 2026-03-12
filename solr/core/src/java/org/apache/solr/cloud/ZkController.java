@@ -26,8 +26,13 @@ import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_ROLES;
 import static org.apache.solr.common.cloud.ZkStateReader.LIVE_NODE_SOLR_VERSION;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REJOIN_AT_HEAD_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.SYSTEM_COLL;
 import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDROLE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CoreAdminParams.ACTION;
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 import java.io.Closeable;
@@ -104,6 +109,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Compressor;
 import org.apache.solr.common.util.EnvUtils;
@@ -125,6 +131,8 @@ import org.apache.solr.core.SolrCoreInitializationException;
 import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.logging.MDCLoggingContext;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.AddressUtils;
@@ -3142,5 +3150,41 @@ public class ZkController implements Closeable {
         newestSearcher.decref();
       }
     }
+  }
+
+  /** Creates the .system collection if it doesn't exist. Returns true iff this created it. */
+  public boolean createSystemColl() throws Exception {
+    if (getClusterState().hasCollection(SYSTEM_COLL)) {
+      return false;
+    }
+    log.info("Going to auto-create {} collection", SYSTEM_COLL);
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    String repFactor = String.valueOf(Math.min(3, getClusterState().getLiveNodes().size()));
+    cc.getCollectionsHandler()
+        .handleRequestBody(
+            new LocalSolrQueryRequest(
+                null,
+                new ModifiableSolrParams()
+                    .add(ACTION, CREATE.toString())
+                    .add(NAME, SYSTEM_COLL)
+                    .add(REPLICATION_FACTOR, repFactor)),
+            rsp);
+    if (rsp.getValues().get("success") == null) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Could not auto-create "
+              + SYSTEM_COLL
+              + " collection: "
+              + Utils.toJSONString(rsp.getValues()));
+    }
+
+    try {
+      getZkStateReader().waitForState(SYSTEM_COLL, 3, TimeUnit.SECONDS, Objects::nonNull);
+    } catch (TimeoutException e) {
+      throw new SolrException(
+          ErrorCode.SERVER_ERROR,
+          "Could not find " + SYSTEM_COLL + " collection even after 3 seconds");
+    }
+    return true;
   }
 }

@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
-import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -60,9 +59,6 @@ public class TestSchemaDesignerConfigSetHelper extends SolrCloudTestCase
     configureCluster(1)
         .addConfig(DEFAULT_CONFIGSET_NAME, new File(ExternalPaths.DEFAULT_CONFIGSET).toPath())
         .configure();
-    // SchemaDesignerConfigSetHelper depends on the blob store
-    CollectionAdminRequest.createCollection(BLOB_STORE_ID, 1, 1).process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(BLOB_STORE_ID, 1, 1);
   }
 
   @AfterClass
