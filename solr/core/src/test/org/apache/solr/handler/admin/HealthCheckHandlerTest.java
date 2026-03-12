@@ -20,9 +20,14 @@ package org.apache.solr.handler.admin;
 import static org.apache.solr.common.params.CommonParams.HEALTH_CHECK_HANDLER_PATH;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -127,6 +132,62 @@ public class HealthCheckHandlerTest extends SolrCloudTestCase {
         getHttpSolrClient(cluster.getJettySolrRunner(0).getBaseUrl().toString())) {
       HealthCheckResponse rsp = req.process(solrClient);
       assertEquals(CommonParams.OK, rsp.getNodeStatus());
+    }
+  }
+
+  /**
+   * Verifies that the v1 health-check response body contains {@code "status":"FAILURE"} when the
+   * node is absent from ZooKeeper's live-nodes set.
+   *
+   * <p>This is a regression test for the refactoring that delegated health-check logic to {@link
+   * NodeHealth}: after that change, {@link SolrException} thrown by {@link NodeHealth} would escape
+   * {@link HealthCheckHandler#handleRequestBody} before the {@code status} field was written to the
+   * response, leaving callers without a machine-readable failure indicator in the body.
+   *
+   * <p>The node's ZK session is kept alive so that only the live-nodes check fires, not the "not
+   * connected to ZK" check, isolating the specific code path under test.
+   */
+  @Test
+  public void testV1FailureResponseIncludesStatusField() throws Exception {
+    JettySolrRunner newJetty = cluster.startJettySolrRunner();
+    try (SolrClient solrClient = getHttpSolrClient(newJetty.getBaseUrl().toString())) {
+      // Sanity check: the new node is initially healthy.
+      assertEquals(CommonParams.OK, runHealthcheckWithClient(solrClient).getNodeStatus());
+
+      String nodeName = newJetty.getCoreContainer().getZkController().getNodeName();
+
+      // Remove the node from ZooKeeper's live_nodes without closing the ZK session.
+      // This ensures the "ZK not connected" check passes and only the "not in live nodes"
+      // check fires, exercising the specific failure branch we fixed.
+      newJetty.getCoreContainer().getZkController().removeEphemeralLiveNode();
+
+      // Wait for the node's own ZkStateReader to reflect the removal before querying.
+      newJetty
+          .getCoreContainer()
+          .getZkController()
+          .getZkStateReader()
+          .waitForLiveNodes(10, TimeUnit.SECONDS, missingLiveNode(nodeName));
+
+      // Use a raw HTTP request so we can inspect the full response body.
+      // SolrJ's HealthCheckRequest throws RemoteSolrException on non-200 responses and does
+      // not expose the response body, so we go below SolrJ here.
+      try (HttpClient httpClient = HttpClient.newHttpClient()) {
+        HttpResponse<String> response =
+            httpClient.send(
+                HttpRequest.newBuilder()
+                    .uri(URI.create(newJetty.getBaseUrl() + HEALTH_CHECK_HANDLER_PATH))
+                    .build(),
+                HttpResponse.BodyHandlers.ofString());
+
+        assertEquals("Expected 503 SERVICE_UNAVAILABLE", 503, response.statusCode());
+        assertTrue(
+            "v1 error response body must contain status=FAILURE so body-inspecting clients get"
+                + " a clear signal; body was: "
+                + response.body(),
+            response.body().contains("FAILURE"));
+      }
+    } finally {
+      newJetty.stop();
     }
   }
 

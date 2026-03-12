@@ -22,7 +22,9 @@ import java.util.Collections;
 import java.util.List;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.model.NodeHealthResponse;
 import org.apache.solr.client.solrj.request.HealthCheckRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
@@ -85,8 +87,16 @@ public class HealthCheckHandler extends RequestHandlerBase {
     final Boolean requireHealthyCores = req.getParams().getBool(PARAM_REQUIRE_HEALTHY_CORES);
     final Integer maxGenerationLag =
         req.getParams().getInt(HealthCheckRequest.PARAM_MAX_GENERATION_LAG);
-    V2ApiUtils.squashIntoSolrResponseWithoutHeader(
-        rsp, new NodeHealth(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
+    try {
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(
+          rsp,
+          new NodeHealth(coreContainer).checkNodeHealth(requireHealthyCores, maxGenerationLag));
+    } catch (SolrException e) {
+      final NodeHealthResponse failureResponse = new NodeHealthResponse();
+      failureResponse.status = NodeHealthResponse.NodeStatus.FAILURE;
+      V2ApiUtils.squashIntoSolrResponseWithoutHeader(rsp, failureResponse);
+      rsp.setException(e);
+    }
   }
 
   @Override

@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin.api;
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.FAILURE;
 import static org.apache.solr.client.api.model.NodeHealthResponse.NodeStatus.OK;
 
+import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.NodeApi;
@@ -87,6 +88,46 @@ public class NodeHealthTest extends SolrCloudTestCase {
       assertTrue(
           "Expected 'Host Unavailable' in exception message",
           e.getMessage().contains("Host Unavailable"));
+    } finally {
+      newJetty.stop();
+    }
+  }
+
+  /**
+   * Verifies that when the node's name is absent from ZooKeeper's live-nodes set (while the ZK
+   * session itself is still connected), the v2 health-check API throws a {@code
+   * SERVICE_UNAVAILABLE} exception with a message identifying the live-nodes check as the cause.
+   *
+   * <p>This specifically exercises the code path at NodeHealth#getClusterState() that checks {@code
+   * clusterState.getLiveNodes().contains(nodeName)}.
+   */
+  @Test
+  public void testCloudMode_NotInLiveNodes_ThrowsServiceUnavailable() throws Exception {
+    JettySolrRunner newJetty = cluster.startJettySolrRunner();
+    try (SolrClient nodeClient = newJetty.newClient()) {
+      // Sanity check: the new node should start out healthy
+      assertEquals(OK, new NodeApi.Healthcheck().process(nodeClient).status);
+
+      String nodeName = newJetty.getCoreContainer().getZkController().getNodeName();
+
+      // Remove the node from ZooKeeper's live_nodes without closing the ZK session.
+      // This ensures the "ZK not connected" check passes and only the "not in live nodes"
+      // check fires, isolating the code path under test.
+      newJetty.getCoreContainer().getZkController().removeEphemeralLiveNode();
+
+      // Wait for the node's own ZkStateReader to reflect the removal before querying it.
+      newJetty
+          .getCoreContainer()
+          .getZkController()
+          .getZkStateReader()
+          .waitForLiveNodes(10, TimeUnit.SECONDS, missingLiveNode(nodeName));
+
+      SolrException e =
+          assertThrows(SolrException.class, () -> new NodeApi.Healthcheck().process(nodeClient));
+      assertEquals(ErrorCode.SERVICE_UNAVAILABLE.code, e.code());
+      assertTrue(
+          "Expected 'Not in live nodes' in exception message",
+          e.getMessage().contains("Not in live nodes"));
     } finally {
       newJetty.stop();
     }
