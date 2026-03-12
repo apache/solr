@@ -25,9 +25,9 @@
 //   jsonnet -J vendor -S -e '(import "mixin.libsonnet").prometheusAlerts' \
 //     | gojsontoyaml > ../prometheus-solr-alerts.yml
 
+local alerts = import 'alerts/alerts.libsonnet';
 local config = import 'config.libsonnet';
 local dashboards = import 'dashboards/dashboards.libsonnet';
-local alerts = import 'alerts/alerts.libsonnet';
 
 config {
   // grafanaDashboards is a map from output filename to dashboard JSON.

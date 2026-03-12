@@ -43,9 +43,9 @@ local cfg = config._config;
             /
             max by (instance) (jvm_memory_limit_bytes{jvm_memory_type="heap"})
             > %(threshold)s
-          ||| % {threshold: cfg.heapUsageThreshold},
+          ||| % { threshold: cfg.heapUsageThreshold },
           'for': '2m',
-          labels: {severity: 'critical'},
+          labels: { severity: 'critical' },
           annotations: {
             summary: 'Solr instance {{ $labels.instance }} has high JVM heap usage',
             description: |||
@@ -53,7 +53,7 @@ local cfg = config._config;
               maximum JVM heap (threshold: %(threshold)s%%).
               High heap usage increases GC pressure and risks OutOfMemoryError.
               Consider increasing -Xmx or reducing cache sizes in solrconfig.xml.
-            ||| % {threshold: std.floor(cfg.heapUsageThreshold * 100)},
+            ||| % { threshold: std.floor(cfg.heapUsageThreshold * 100) },
           },
         },
 
@@ -67,9 +67,9 @@ local cfg = config._config;
           expr: |||
             sum by (instance) (rate(jvm_gc_duration_seconds_sum{instance=~".+"}[1m]))
             > %(threshold)s
-          ||| % {threshold: cfg.gcThrashThresholdSecsPerMin},
+          ||| % { threshold: cfg.gcThrashThresholdSecsPerMin },
           'for': '3m',
-          labels: {severity: 'critical'},
+          labels: { severity: 'critical' },
           annotations: {
             summary: 'Solr instance {{ $labels.instance }} is experiencing GC thrashing',
             description: |||
@@ -77,7 +77,7 @@ local cfg = config._config;
               in garbage collection (threshold: %(threshold)s seconds/minute).
               GC thrashing causes stop-the-world pauses and severely degrades search latency.
               Check heap usage (SolrHighHeapUsage), consider tuning GC or increasing heap.
-            ||| % {threshold: cfg.gcThrashThresholdSecsPerMin},
+            ||| % { threshold: cfg.gcThrashThresholdSecsPerMin },
           },
         },
 
@@ -93,9 +93,9 @@ local cfg = config._config;
             /
             min by (instance) (solr_disk_space_megabytes{type="total_space"})
             < %(threshold)s
-          ||| % {threshold: cfg.diskFreeThreshold},
+          ||| % { threshold: cfg.diskFreeThreshold },
           'for': '5m',
-          labels: {severity: 'critical'},
+          labels: { severity: 'critical' },
           annotations: {
             summary: 'Solr instance {{ $labels.instance }} is low on disk space',
             description: |||
@@ -103,7 +103,7 @@ local cfg = config._config;
               free (threshold: %(threshold)s%%).
               Solr will stop accepting index updates when disk space is exhausted.
               Free up space or expand the disk immediately.
-            ||| % {threshold: std.floor(cfg.diskFreeThreshold * 100)},
+            ||| % { threshold: std.floor(cfg.diskFreeThreshold * 100) },
           },
         },
 
@@ -119,9 +119,9 @@ local cfg = config._config;
                 rate(solr_core_requests_times_milliseconds_bucket{handler=~"/select.*",internal="false"}[5m])
               )
             ) > %(threshold)s
-          ||| % {threshold: cfg.searchLatencyThresholdMs},
+          ||| % { threshold: cfg.searchLatencyThresholdMs },
           'for': '5m',
-          labels: {severity: 'warning'},
+          labels: { severity: 'warning' },
           annotations: {
             summary: 'Solr instance {{ $labels.instance }} has high search latency',
             description: |||
@@ -129,7 +129,7 @@ local cfg = config._config;
               (threshold: %(threshold)sms).
               Possible causes: large result sets, expensive faceting, insufficient cache, or GC pauses.
               Check the Search Latency panel in the Grafana dashboard for trends.
-            ||| % {threshold: cfg.searchLatencyThresholdMs},
+            ||| % { threshold: cfg.searchLatencyThresholdMs },
           },
         },
 
@@ -149,9 +149,9 @@ local cfg = config._config;
             /
             sum by (instance) (rate(solr_node_requests_total[5m]))
             > %(threshold)s
-          ||| % {threshold: cfg.errorRateThreshold},
+          ||| % { threshold: cfg.errorRateThreshold },
           'for': '5m',
-          labels: {severity: 'warning'},
+          labels: { severity: 'warning' },
           annotations: {
             summary: 'Solr instance {{ $labels.instance }} has a high error rate',
             description: |||
@@ -159,7 +159,7 @@ local cfg = config._config;
               (threshold: %(threshold)s%%).
               Check Solr logs for the root cause. Common causes: invalid queries, missing fields,
               core loading failures, or network connectivity issues.
-            ||| % {threshold: std.floor(cfg.errorRateThreshold * 100)},
+            ||| % { threshold: std.floor(cfg.errorRateThreshold * 100) },
           },
         },
 
@@ -173,9 +173,9 @@ local cfg = config._config;
           expr: |||
             sum by (instance) (solr_overseer_collection_work_queue_size)
             > %(threshold)s
-          ||| % {threshold: cfg.overseerQueueThreshold},
+          ||| % { threshold: cfg.overseerQueueThreshold },
           'for': '5m',
-          labels: {severity: 'warning'},
+          labels: { severity: 'warning' },
           annotations: {
             summary: 'Solr Overseer collection work queue is building up on {{ $labels.instance }}',
             description: |||
@@ -183,7 +183,7 @@ local cfg = config._config;
               instance {{ $labels.instance }} (threshold: %(threshold)s).
               A growing queue indicates the Overseer is falling behind; check for long-running
               collection operations, Overseer leader election issues, or ZooKeeper latency.
-            ||| % {threshold: cfg.overseerQueueThreshold},
+            ||| % { threshold: cfg.overseerQueueThreshold },
           },
         },
 
@@ -204,9 +204,9 @@ local cfg = config._config;
               / 1e6
             )
             * 100 > %(threshold)s
-          ||| % {threshold: cfg.mmapRatioThreshold},
+          ||| % { threshold: cfg.mmapRatioThreshold },
           'for': '5m',
-          labels: {severity: 'warning'},
+          labels: { severity: 'warning' },
           annotations: {
             summary: 'Solr index is using a high fraction of available MMap memory',
             description: |||
@@ -215,7 +215,7 @@ local cfg = config._config;
               When the index exceeds available MMap memory, Lucene falls back to I/O reads,
               significantly degrading search performance. Consider adding RAM, reducing index size,
               or increasing the JVM heap ratio.
-            ||| % {threshold: cfg.mmapRatioThreshold},
+            ||| % { threshold: cfg.mmapRatioThreshold },
           },
         },
 

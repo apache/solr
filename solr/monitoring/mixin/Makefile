@@ -35,9 +35,10 @@ dashboards:
 	  > ../grafana-solr-dashboard.json
 
 alerts:
+	cat license-header.yml > ../prometheus-solr-alerts.yml
 	$(JSONNET) $(JSONNET_FLAGS) \
 	  -e '(import "mixin.libsonnet").prometheusAlerts' \
-	  | $(GOJSONTOYAML) > ../prometheus-solr-alerts.yml
+	  | $(GOJSONTOYAML) >> ../prometheus-solr-alerts.yml
 
 check:
 	$(PROMTOOL) check rules ../prometheus-solr-alerts.yml
