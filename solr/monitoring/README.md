@@ -165,36 +165,60 @@ make check        # validates alert rules with promtool (optional)
 
 ---
 
-## Mixin Build Prerequisites
+## Mixin Build
 
-Only contributors who need to **regenerate** the dashboard or alert rules need these tools.
-Operators can use the pre-generated files directly without any build tooling.
+Only contributors who need to **regenerate** the dashboard or alert rules need build tooling.
+Operators can use the pre-generated files directly.
+
+There are two equivalent ways to build:
+
+### Option A — Docker (no local tool installation required)
+
+```bash
+cd mixin
+./make.sh install   # fetch grafonnet dependency into vendor/
+./make.sh all       # regenerate both artifacts
+./make.sh check     # validate alert rules
+```
+
+`make.sh` automatically builds the `solr-mixin-make:latest` Docker image on first run.
+Pass `--rebuild` to force a fresh image build (e.g. after a Dockerfile update):
+
+```bash
+./make.sh --rebuild all
+```
+
+### Option B — Local tools
+
+Install the required tools once:
 
 | Tool | Purpose | Install |
 |---|---|---|
 | `jsonnet` (go-jsonnet) | Evaluate jsonnet source | `brew install go-jsonnet` or `go install github.com/google/go-jsonnet/cmd/jsonnet@latest` |
 | `jb` (jsonnet-bundler) | Manage dependencies | `brew install jsonnet-bundler` or `go install github.com/jsonnet-bundler/jsonnet-bundler/cmd/jb@latest` |
 | `gojsontoyaml` | Convert JSON→YAML for alert rules | `go install github.com/brancz/gojsontoyaml@latest` |
-| `promtool` *(optional)* | Validate alert rules | Bundled with Prometheus binary download |
+| `promtool` *(optional)* | Validate alert rules | `brew install prometheus` or bundled with Prometheus binary download |
 
-### First-time setup
+Then build:
 
 ```bash
 cd mixin
-make install      # runs jb install to populate vendor/ from jsonnetfile.lock.json
-make all          # regenerate dashboard JSON and alert rules YAML
+make install      # fetch grafonnet dependency into vendor/
+make all          # regenerate both artifacts
 ```
 
 ### Makefile targets
 
+Both `./make.sh <target>` and `make <target>` accept the same targets:
+
 | Target | Action |
 |---|---|
-| `make install` | Download jsonnet dependencies (grafonnet) into `vendor/` |
-| `make dashboards` | Regenerate `grafana-solr-dashboard.json` |
-| `make alerts` | Regenerate `prometheus-solr-alerts.yml` |
-| `make all` | Regenerate both outputs |
-| `make check` | Run `promtool check rules` on alert rules |
-| `make fmt` | Auto-format all `.libsonnet` source files |
+| `install` | Download jsonnet dependencies (grafonnet) into `vendor/` |
+| `dashboards` | Regenerate `grafana-solr-dashboard.json` |
+| `alerts` | Regenerate `prometheus-solr-alerts.yml` |
+| `all` | Regenerate both outputs |
+| `check` | Run `promtool check rules` on alert rules |
+| `fmt` | Auto-format all `.libsonnet` source files |
 
 ---
 

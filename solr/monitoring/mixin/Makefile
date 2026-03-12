@@ -28,23 +28,29 @@ all: dashboards alerts
 
 install:
 	$(JB) install
+	@echo "→ Installed jsonnet dependencies into vendor/"
 
 dashboards:
 	$(JSONNET) $(JSONNET_FLAGS) \
 	  -e '(import "mixin.libsonnet").grafanaDashboards["grafana-solr-dashboard.json"]' \
 	  > ../grafana-solr-dashboard.json
+	@echo "→ Generated ../grafana-solr-dashboard.json"
 
 alerts:
 	cat license-header.yml > ../prometheus-solr-alerts.yml
 	$(JSONNET) $(JSONNET_FLAGS) \
 	  -e '(import "mixin.libsonnet").prometheusAlerts' \
 	  | $(GOJSONTOYAML) >> ../prometheus-solr-alerts.yml
+	@echo "→ Generated ../prometheus-solr-alerts.yml"
 
 check:
 	$(PROMTOOL) check rules ../prometheus-solr-alerts.yml
+	@echo "→ Alert rules validated OK"
 
 fmt:
 	find . -name '*.libsonnet' -exec $(JSONNETFMT) $(FMT_FLAGS) -i {} \;
+	@echo "→ Formatted all .libsonnet files"
 
 clean:
 	rm -f ../grafana-solr-dashboard.json ../prometheus-solr-alerts.yml
+	@echo "→ Removed generated artifacts"
