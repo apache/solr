@@ -362,7 +362,7 @@ public class KubernetesConfigSetServiceTest extends SolrTestCase {
     when(cd.getConfigSet()).thenReturn("my-configset");
     when(cd.getInstanceDir()).thenReturn(createTempDir());
 
-    org.apache.solr.core.SolrResourceLoader loader = service.createCoreResourceLoader(cd);
+    SolrResourceLoader loader = service.createCoreResourceLoader(cd);
     assertTrue(loader instanceof KubernetesSolrResourceLoader);
     assertEquals("my-configset", ((KubernetesSolrResourceLoader) loader).getConfigSetName());
   }
