@@ -1,4 +1,4 @@
-title: Add a new Grafana dashboard for Solr 10.x, replacing the 9.x dashboard that relied on the removed Prometheus Exporter sidecar. The new dashboard uses Solr 10's native OTLP/Prometheus metrics endpoint with PromQL queries for query throughput, latency, JVM heap, GC, index health, cache efficiency, and SolrCloud Overseer metrics.
+title: Add a new Grafana dashboard for Solr 10. This uses the new OTEL based metrics introduced in 10.0 and does not rely on solr-exporter
 type: added
 authors:
   - name: Jan Høydahl
