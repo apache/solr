@@ -134,11 +134,8 @@ public class JvmMetricsTest extends SolrTestCaseJ4 {
         "Skipping: com.sun.management.OperatingSystemMXBean not available", isHotSpot);
 
     assertTrue(
-        "Should have jvm_system_memory_bytes metric",
+        "Should have jvm_system_memory_bytes metric (with state=total and state=free)",
         metricNames.contains("jvm_system_memory_bytes"));
-    assertTrue(
-        "Should have jvm_system_memory_free_bytes metric",
-        metricNames.contains("jvm_system_memory_free_bytes"));
   }
 
   @Test

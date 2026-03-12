@@ -17,6 +17,8 @@
 package org.apache.solr.metrics;
 
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.api.common.AttributeKey;
+import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
 import io.opentelemetry.api.trace.TracerProvider;
@@ -33,10 +35,10 @@ import org.slf4j.LoggerFactory;
 /** Manages JVM metrics collection using OpenTelemetry Runtime Metrics with JFR features */
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final AttributeKey<String> STATE_KEY = AttributeKey.stringKey("state");
 
   private RuntimeMetrics runtimeMetrics;
-  private ObservableLongGauge systemMemoryTotalGauge;
-  private ObservableLongGauge systemMemoryFreeGauge;
+  private ObservableLongGauge systemMemoryGauge;
   private boolean isInitialized = false;
 
   // Main feature flag to enable/disable all JVM metrics
@@ -78,25 +80,17 @@ public class OtelRuntimeJvmMetrics {
     java.lang.management.OperatingSystemMXBean osMxBean =
         ManagementFactory.getOperatingSystemMXBean();
     if (osMxBean instanceof com.sun.management.OperatingSystemMXBean extOsMxBean) {
-      systemMemoryTotalGauge =
+      systemMemoryGauge =
           solrMetricManager.observableLongGauge(
               registryName,
               "jvm.system.memory",
-              "Total physical memory of the host or container in bytes."
-                  + " On Linux with cgroup limits, reflects the container memory limit.",
+              "Physical memory of the host or container in bytes (state=total|free)."
+                  + " On Linux with cgroup limits, total reflects the container memory limit.",
               measurement -> {
                 long total = extOsMxBean.getTotalMemorySize();
-                if (total > 0) measurement.record(total);
-              },
-              OtelUnit.BYTES);
-      systemMemoryFreeGauge =
-          solrMetricManager.observableLongGauge(
-              registryName,
-              "jvm.system.memory.free",
-              "Free (unused) physical memory of the host or container in bytes.",
-              measurement -> {
                 long free = extOsMxBean.getFreeMemorySize();
-                if (free > 0) measurement.record(free);
+                if (total >= 0) measurement.record(total, Attributes.of(STATE_KEY, "total"));
+                if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY, "free"));
               },
               OtelUnit.BYTES);
       log.info("Physical memory metrics enabled");
@@ -116,13 +110,9 @@ public class OtelRuntimeJvmMetrics {
     if (runtimeMetrics != null && isInitialized) {
       try {
         runtimeMetrics.close();
-        if (systemMemoryTotalGauge != null) {
-          systemMemoryTotalGauge.close();
-          systemMemoryTotalGauge = null;
-        }
-        if (systemMemoryFreeGauge != null) {
-          systemMemoryFreeGauge.close();
-          systemMemoryFreeGauge = null;
+        if (systemMemoryGauge != null) {
+          systemMemoryGauge.close();
+          systemMemoryGauge = null;
         }
       } catch (Exception e) {
         log.error("Failed to close JVM metrics collection", e);

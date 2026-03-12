@@ -1,4 +1,4 @@
-title: Add jvm.system.memory.bytes and jvm.system.memory.free.bytes metric gauges
+title: Add new metric jvm_system_memory_bytes
 type: added
 authors:
   - name: Jan Høydahl
