@@ -751,8 +751,10 @@ public class RunExampleTool extends ToolBase {
     if (!isWindows && cwdPath.length() > 1 && solrHome.startsWith(cwdPath))
       solrHome = solrHome.substring(cwdPath.length() + 1);
 
+    // For techproducts, add modules only if the modules directory exists (not in slim distribution)
     final var syspropArg =
-        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION)))
+        ("techproducts".equals(cli.getOptionValue(EXAMPLE_OPTION))
+                && Files.isDirectory(serverDir.getParent().resolve("modules")))
             ? "-Dsolr.modules=clustering,extraction,langid,ltr,scripting -Dsolr.ltr.enabled=true -Dsolr.clustering.enabled=true"
             : "";
 
