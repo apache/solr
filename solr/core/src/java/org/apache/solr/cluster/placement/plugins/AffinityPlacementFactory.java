@@ -77,7 +77,7 @@ import org.slf4j.LoggerFactory;
  * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
- * <p>In order to delete the placement-plugin section (and to fallback to either Legacy or rule
+ * <p>In order to delete the placement-plugin section (and fallback to either Legacy or rule
  * based placement if configured for a collection), execute:
  *
  * <pre>
@@ -295,7 +295,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         }
       }
 
-      // If there are not multiple spreadDomains, then there is nothing to spread across
+      // only spread across if there are multiple spreadDomains
       if (affinityPlacementContext.allSpreadDomains.size() < 2) {
         affinityPlacementContext.doSpreadAcrossDomains = false;
       }
@@ -307,8 +307,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
         Node node,
         AttributeValues attrValues,
         AffinityPlacementContext affinityPlacementContext,
-        boolean skipNodesWithErrors)
-        throws PlacementException {
+        boolean skipNodesWithErrors) {
       Set<Replica.ReplicaType> supportedReplicaTypes =
           attrValues.getSystemProperty(node, AffinityPlacementConfig.REPLICA_TYPE_SYSPROP).stream()
               .flatMap(s -> Arrays.stream(s.split(",")))

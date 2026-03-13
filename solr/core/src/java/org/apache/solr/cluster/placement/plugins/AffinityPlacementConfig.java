@@ -40,14 +40,14 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    *
    * <p>Nodes on which this system property is not defined are considered being in the same
    * Availability Zone {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is
-   * not the name of a real Availability Zone :).
+   * not the name of a real Availability Zone :) ).
    */
   public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
 
   /**
    * Name of the system property on a node indicating the type of replicas allowed on that node. The
    * value of that system property is a comma separated list or a single string of value names of
-   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case insensitive). If that property is not
+   * {@link org.apache.solr.cluster.Replica.ReplicaType} (case-insensitive). If that property is not
    * defined, that node is considered accepting all replica types (i.e. undefined is equivalent to
    * {@code "NRT,Pull,tlog"}).
    */
@@ -136,8 +136,8 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
 
   /**
    * Determines the maximum number of replicas of a particular type of a particular shard that can
-   * be placed within a single domain (as defined by the @link #SPREAD_DOMAIN_SYSPROP} System
-   * property.
+   * be placed within a single domain (as defined by the {@link #SPREAD_DOMAIN_SYSPROP} System
+   * property).
    */
   @JsonProperty public Integer maxReplicasPerShardInDomain = -1;
 
@@ -163,7 +163,7 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    * @param prioritizedFreeDiskGB prioritized free disk GB.
    * @param withCollection configuration of co-located collections: keys are primary collection
    *     names and values are secondary collection names.
-   * @param collectionNodeType configuration of reequired node types per collection. Keys are
+   * @param collectionNodeType configuration of required node types per collection. Keys are
    *     collection names and values are comma-separated lists of required node types.
    */
   public AffinityPlacementConfig(

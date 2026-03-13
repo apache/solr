@@ -748,7 +748,6 @@ public class AffinityPlacementFactoryTest extends AbstractPlacementFactoryTest {
     int NUM_NODES = 3;
     Builders.ClusterBuilder clusterBuilder =
         Builders.newClusterBuilder().initializeLiveNodes(NUM_NODES);
-    Node smallNode = null;
     for (int i = 0; i < NUM_NODES; i++) {
       Builders.NodeBuilder nodeBuilder = clusterBuilder.getLiveNodeBuilders().get(i);
       // Act as if the two replicas were placed on nodes 1 and 2
