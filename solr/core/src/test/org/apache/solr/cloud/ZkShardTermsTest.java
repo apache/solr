@@ -17,6 +17,9 @@
 
 package org.apache.solr.cloud;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -33,6 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
 import org.junit.BeforeClass;
@@ -49,6 +53,8 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
         .addConfig(
             "conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+
+    assumeWorkingMockito();
   }
 
   @Test
@@ -330,8 +336,13 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.close();
   }
 
-  public void testSetHighestTerms() throws InterruptedException {
+  public void testSetHighestTerms() throws Exception {
     String collection = "setHighestTerms";
+    DocCollection readOnlyCollection = mock(DocCollection.class);
+    DocCollection nonReadOnlyCollection = mock(DocCollection.class);
+    when(readOnlyCollection.isReadOnly()).thenReturn(true);
+    when(nonReadOnlyCollection.isReadOnly()).thenReturn(false);
+
     ZkShardTerms leaderTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     ZkShardTerms replica1Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     ZkShardTerms replica2Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
@@ -341,7 +352,11 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replica2Terms.registerTerm("replica2");
     replica3Terms.registerTerm("replica3");
 
-    leaderTerms.ensureHighestTerms(Set.of("leader", "replica1"));
+    expectThrows(
+        SolrServerException.class,
+        () -> leaderTerms.ensureHighestTerms(nonReadOnlyCollection, Set.of("leader", "replica1")));
+
+    leaderTerms.ensureHighestTerms(readOnlyCollection, Set.of("leader", "replica1"));
     waitFor(true, () -> leaderTerms.canBecomeLeader("leader"));
     waitFor(true, () -> replica1Terms.canBecomeLeader("replica1"));
     waitFor(false, () -> replica2Terms.canBecomeLeader("replica2"));
@@ -350,7 +365,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica2"));
     waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica3"));
 
-    leaderTerms.ensureHighestTerms(Set.of("replica2", "replica3"));
+    leaderTerms.ensureHighestTerms(readOnlyCollection, Set.of("replica2", "replica3"));
     waitFor(false, () -> leaderTerms.canBecomeLeader("leader"));
     waitFor(false, () -> replica1Terms.canBecomeLeader("replica1"));
     waitFor(true, () -> replica2Terms.canBecomeLeader("replica2"));
