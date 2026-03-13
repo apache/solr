@@ -1047,9 +1047,9 @@ public class ZkStateReader implements SolrCloseable {
         + (shardId != null ? ("/" + shardId + "/" + ELECTION_NODE) : "");
   }
 
-  public List<Replica> getReplicaProps(String collection, String shardId, String thisCoreNodeName) {
+  public List<Replica> getReplicas(String collection, String shardId, String thisCoreNodeName) {
     // TODO: It's odd that the default is to return replicas of type TLOG and NRT only
-    return getReplicaProps(
+    return getReplicas(
         collection,
         shardId,
         thisCoreNodeName,
@@ -1058,7 +1058,7 @@ public class ZkStateReader implements SolrCloseable {
         EnumSet.of(Replica.Type.TLOG, Replica.Type.NRT));
   }
 
-  public List<Replica> getReplicaProps(
+  public List<Replica> getReplicas(
       String collection,
       String shardId,
       String thisCoreNodeName,

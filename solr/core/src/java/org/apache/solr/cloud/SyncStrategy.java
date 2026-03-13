@@ -199,7 +199,7 @@ public class SyncStrategy {
     List<Replica> replicas =
         zkController
             .getZkStateReader()
-            .getReplicaProps(
+            .getReplicas(
                 collection,
                 shardId,
                 core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
@@ -256,7 +256,7 @@ public class SyncStrategy {
     List<Replica> replicas =
         zkController
             .getZkStateReader()
-            .getReplicaProps(collection, shardId, cd.getCloudDescriptor().getCoreNodeName());
+            .getReplicas(collection, shardId, cd.getCloudDescriptor().getCoreNodeName());
     if (replicas == null) {
       if (log.isInfoEnabled()) {
         log.info("{} has no replicas", ZkCoreNodeProps.getCoreUrl(leaderProps));
