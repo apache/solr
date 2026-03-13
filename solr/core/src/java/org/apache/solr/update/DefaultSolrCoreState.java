@@ -51,7 +51,7 @@ public final class DefaultSolrCoreState extends SolrCoreState
 
   private final ReentrantLock recoveryLock = new ReentrantLock();
 
-  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 10000);
+  private final ActionThrottle recoveryThrottle = new ActionThrottle("recovery", 1000);
 
   private final ActionThrottle leaderThrottle = new ActionThrottle("leader", 5000);
 

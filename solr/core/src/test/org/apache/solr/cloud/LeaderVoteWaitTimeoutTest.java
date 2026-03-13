@@ -284,6 +284,15 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     waitForState("Timeout waiting for 1x3 collection", collectionName, clusterShape(1, 3));
     assertDocsExistInAllReplicas(Arrays.asList(leader, replica1), collectionName, 1, 3);
+
+    try (ZkShardTerms zkShardTerms =
+        new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
+      assertEquals(3, zkShardTerms.getTerms().size());
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(leader.getName()));
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica1.getName()));
+      assertEquals(zkShardTerms.getHighestTerm(), zkShardTerms.getTerm(replica2.getName()));
+    }
+
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
