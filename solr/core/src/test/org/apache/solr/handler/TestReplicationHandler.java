@@ -255,7 +255,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   public void testUrlAllowList() throws Exception {
     // Run another test with URL allow-list enabled and allow-list is empty.
     // Expect an exception because the leader URL is not allowed.
-    systemClearPropertySolrEnableUrlAllowList();
+    systemSetPropertyEnableUrlAllowList(true);
     SolrException e = expectThrows(SolrException.class, this::doTestDetails);
     assertTrue(
         e.getMessage()

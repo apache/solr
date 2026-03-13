@@ -19,7 +19,7 @@ package org.apache.solr.servlet;
 
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_CONTEXT_PARAM;
 import static org.apache.solr.common.params.CommonParams.SOLR_REQUEST_TYPE_PARAM;
-import static org.apache.solr.servlet.RateLimitManager.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
+import static org.apache.solr.core.RateLimiterConfig.DEFAULT_SLOT_ACQUISITION_TIMEOUT_MS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 
@@ -49,7 +49,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.core.RateLimiterConfig;
 import org.junit.BeforeClass;
@@ -74,7 +73,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(FIRST_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(FIRST_COLLECTION, 1, 1);
 
-      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
 
       RateLimiterConfig rateLimiterConfig =
           new RateLimiterConfig(
@@ -87,11 +86,10 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       // We are fine with a null FilterConfig here since we ensure that MockBuilder never invokes
       // its parent here
       RateLimitManager.Builder builder =
-          new MockBuilder(
-              null /* dummy SolrZkClient */, new MockRequestRateLimiter(rateLimiterConfig));
+          new MockBuilder(new MockRequestRateLimiter(rateLimiterConfig));
       RateLimitManager rateLimitManager = builder.build();
 
-      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      rateLimitFilter.setRateLimitManager(rateLimitManager);
 
       int numDocs = TEST_NIGHTLY ? 10000 : 100;
 
@@ -295,7 +293,7 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       CollectionAdminRequest.createCollection(SECOND_COLLECTION, 1, 1).process(client);
       cluster.waitForActiveCollection(SECOND_COLLECTION, 1, 1);
 
-      SolrDispatchFilter solrDispatchFilter = cluster.getJettySolrRunner(0).getSolrDispatchFilter();
+      RateLimitFilter rateLimitFilter = cluster.getJettySolrRunner(0).getSolrRateLimitFilter();
 
       RateLimiterConfig queryRateLimiterConfig =
           new RateLimiterConfig(
@@ -317,12 +315,11 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
       // its parent
       RateLimitManager.Builder builder =
           new MockBuilder(
-              null /*dummy SolrZkClient */,
               new MockRequestRateLimiter(queryRateLimiterConfig),
               new MockRequestRateLimiter(indexRateLimiterConfig));
       RateLimitManager rateLimitManager = builder.build();
 
-      solrDispatchFilter.replaceRateLimitManager(rateLimitManager);
+      rateLimitFilter.setRateLimitManager(rateLimitManager);
 
       int numDocs = 10000;
 
@@ -435,18 +432,16 @@ public class TestRequestRateLimiter extends SolrCloudTestCase {
     private final RequestRateLimiter queryRequestRateLimiter;
     private final RequestRateLimiter indexRequestRateLimiter;
 
-    public MockBuilder(SolrZkClient zkClient, RequestRateLimiter queryRequestRateLimiter) {
-      super(zkClient);
+    public MockBuilder(RequestRateLimiter queryRequestRateLimiter) {
+      super();
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = null;
     }
 
     public MockBuilder(
-        SolrZkClient zkClient,
-        RequestRateLimiter queryRequestRateLimiter,
-        RequestRateLimiter indexRequestRateLimiter) {
-      super(zkClient);
+        RequestRateLimiter queryRequestRateLimiter, RequestRateLimiter indexRequestRateLimiter) {
+      super();
 
       this.queryRequestRateLimiter = queryRequestRateLimiter;
       this.indexRequestRateLimiter = indexRequestRateLimiter;

@@ -18,21 +18,12 @@
 
 This API provides the same information displayed on the Dashboard.
 
-System information is available via two different URLs:
+System information is available via:
 
 [source,bash]
 ----
-http://localhost:8983/solr/admin/system
+http://localhost:8983/solr/admin/info/system
 ----
-
-and
-
-[source,bash]
-----
-http://localhost:8983/solr/<collection-name>/admin/system
-----
-
-the only difference being populating the `core` key in the result.
 
 The keys in the result are:
 
@@ -49,17 +40,13 @@ An object containing information on the JVM
 Information on the system.
 
 `solr_home`::
-Solr base directory.  Only available under `/solr/admin/system`.
+Solr base directory.  Only available under `/solr/admin/info/system`.
 
 `zkHost`::
 Zookeeper host, when running in cloud mode.
 
 `node`::
 Node name, when running cloud mode.
-
-`core`::
-An object containing basic information on the core, only present if
-the core/collection name is provided
 
 == Lucene and Solr Information Object
 
@@ -103,23 +90,6 @@ The result of running `uname -a`.  Not available on Windows.
 `uptime`::
 The result of running `uptime`.  Not available on Windows.
 
-== Core Information Object
-
-`schema`::
-Schema name.
-
-`host`::
-Hostname.  `null` if not available.
-
-`start`::
-Core start time.
-
-`now`::
-Current time on the core's host.
-
-`directory`::
-Object with directories relevant to the core.
-
 == System Information API Examples
 
 Retrieve system information from a node in cloud mode.
@@ -136,6 +106,7 @@ curl http://localhost:8983/solr/admin/info/system
     "status":0,
     "QTime":13},
   "mode":"solrcloud",
+  "host":"localhost",
   "zkHost":"192.168.32.3:2181",
   "solr_home":"/var/solr/data",
   "lucene":{

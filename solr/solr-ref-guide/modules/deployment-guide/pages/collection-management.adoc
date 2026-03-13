@@ -682,7 +682,8 @@ If the status is anything other than "success", an error message will explain wh
 [[collectionprop]]
 == COLLECTIONPROP: Collection Properties
 
-Add, edit or delete a collection property.
+Add, update, delete, or retrieve collection properties.
+(Listing all collection properties, or fetching an individual property by name are only supported in Solr's v2 API)
 
 [tabs#collectionproperty-request]
 ======
@@ -691,7 +692,7 @@ V1 API::
 ====
 [source,bash]
 ----
-http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts_v2&propertyName=propertyName&propertyValue=propertyValue
+http://localhost:8983/solr/admin/collections?action=COLLECTIONPROP&name=techproducts&propertyName=propertyName&propertyValue=propertyValue
 ----
 ====
 
@@ -699,20 +700,36 @@ V2 API::
 +
 ====
 To create or update a collection property:
+
 [source,bash]
 ----
-curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/foo -H 'Content-Type: application/json' -d '
+curl -X PUT http://localhost:8983/api/collections/techproducts_v2/properties/propertyName -H 'Content-Type: application/json' -d '
   {
-    "value": "bar"
+    "value": "propertyValue"
   }
 '
 ----
+
+To list all properties for a collection:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/properties
+----
+
+To get a specific collection property by name:
+
+[source,bash]
+----
+curl http://localhost:8983/api/collections/techproducts/properties/propertyName
+----
+
 
 To delete an existing collection property:
 
 [source,bash]
 ----
-curl -X DELETE http://localhost:8983/api/collections/techproducts_v2/properties/foo 
+curl -X DELETE http://localhost:8983/api/collections/techproducts/properties/propertyName
 ----
 ====
 ======
@@ -751,8 +768,39 @@ When not provided in v1 requests, the property is deleted.
 
 === COLLECTIONPROP Response
 
-The response will include the status of the request and the properties that were updated or removed.
+The response will include the status of the request.
 If the status is anything other than "0", an error message will explain why the request failed.
+
+For GET requests to list all properties, the response includes a `properties` object containing all property name-value pairs:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 5
+  },
+  "properties": {
+    "foo": "bar",
+    "myProperty": "myValue"
+  }
+}
+----
+
+For GET requests to retrieve a single property, the response includes a `value` field with the property value:
+
+[source,json]
+----
+{
+  "responseHeader": {
+    "status": 0,
+    "QTime": 3
+  },
+  "value": "bar"
+}
+----
+
+If a requested property does not exist, the API will return a 404 error with an appropriate error message.
 
 [[migrate]]
 == MIGRATE: Migrate Documents to Another Collection

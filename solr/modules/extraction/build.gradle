@@ -38,9 +38,9 @@ dependencies {
 
   // For 'tikaserver' backend
   implementation libs.eclipse.jetty.client
-  permitUsedUndeclared libs.eclipse.jetty.http
-  permitUsedUndeclared libs.eclipse.jetty.util
-  permitUsedUndeclared libs.eclipse.jetty.io
+  implementation libs.eclipse.jetty.http
+  implementation libs.eclipse.jetty.util
+  implementation libs.eclipse.jetty.io
 
   testImplementation project(':solr:test-framework')
   testImplementation libs.apache.lucene.testframework

@@ -10,8 +10,76 @@
 This file lists Solr's raw release notes with details of every change to Solr. Most people will find the solr-upgrade-notes.adoc file more approachable. [https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc](https://github.com/apache/solr/blob/main/solr/solr-ref-guide/modules/upgrade-notes/pages/solr-upgrade-notes.adoc)
 
 
-[10.0.0] - 2026-01-02
----------------------
+[unreleased]
+------------
+
+### Added (12 changes)
+
+- Create new v2 APIs for listing and reading collection properties ("collprops") [SOLR-12224](https://issues.apache.org/jira/browse/SOLR-12224) (Jason Gerlowski)
+- Introduce new SolrJ SolrRequest classes for metrics and "system info" requests. [SOLR-17136](https://issues.apache.org/jira/browse/SOLR-17136) (Isabelle Giguère) (Pierre Salagnac)
+- New CombinedQuerySearchHandler etc. for implementing hybrid search with reciprocal rank fusion (RRF). [SOLR-17319](https://issues.apache.org/jira/browse/SOLR-17319) (Sonu Sharma) (David Smiley)
+- Create a v2 equivalent for /admin/metrics [SOLR-17436](https://issues.apache.org/jira/browse/SOLR-17436) (Isabelle Giguère)
+- Introducing support for nested vector search, enabling the retrieval of nested documents diversified by parent. This enables multi valued vectors scenarios and best child retrieval per parent. [SOLR-17736](https://issues.apache.org/jira/browse/SOLR-17736) (Alessandro Benedetti)
+- New StrFloatLateInteractionVectorField suitable for re-ranking documents using multi-vector values for late interaction models [SOLR-17975](https://issues.apache.org/jira/browse/SOLR-17975) (hossman)
+- Added new ConcurrentUpdateJdkSolrClient that works with HttpJdkSolrClient [SOLR-18065](https://issues.apache.org/jira/browse/SOLR-18065) (James Dyer)
+- Support including stored fields in Export Writer output. [SOLR-18071](https://issues.apache.org/jira/browse/SOLR-18071) (Luke Kot-Zaniewski)
+- Introducing support for multi valued dense vector representation in documents through nested vectors [SOLR-18074](https://issues.apache.org/jira/browse/SOLR-18074) (Alessandro Benedetti)
+- CoreAdmin API (/admin/cores?action=UPGRADECOREINDEX) to upgrade an index in-place [SOLR-18096](https://issues.apache.org/jira/browse/SOLR-18096) (Rahul Goswami)
+- CrossDC Consumer - add Prometheus metrics [SOLR-18060](https://issues.apache.org/jira/browse/SOLR-18060) (Andrzej Bialecki @ab)
+- CrossDC - support arbitrary Kafka properties [SOLR-18062](https://issues.apache.org/jira/browse/SOLR-18062) (Andrzej Bialecki @ab)
+
+### Changed (2 changes)
+
+- Add alwaysStopwords option to edismax so its "all stopwords" behaviour can be controlled #17959 [SOLR-17959](https://issues.apache.org/jira/browse/SOLR-17959) (Andy Webb)
+- CloudSolrClient/LBSolrClient should consider a retry-able request that times out as another condition to internally mark that replica as a "zombie". [SOLR-18002](https://issues.apache.org/jira/browse/SOLR-18002) (James Vanneman)
+
+### Fixed (9 changes)
+
+- Fix disk space check in shard split operation [SOLR-17437](https://issues.apache.org/jira/browse/SOLR-17437) (Matthew Biscocho) (David Smiley)
+- OTEL metrics - SplitShardCmd.checkDiskSpace needs conversion [SOLR-17955](https://issues.apache.org/jira/browse/SOLR-17955) (Matthew Biscocho) (David Smiley)
+- Fix the Text to Vector Managed Model Store Initialization in LLM Module [SOLR-17999](https://issues.apache.org/jira/browse/SOLR-17999) (Ilaria Petreti) (Alessandro Benedetti)
+- Solr response writing now correctly delegates to FieldType implementations to determine how internal binary field values are represented externally [SOLR-18033](https://issues.apache.org/jira/browse/SOLR-18033) (hossman)
+- Improve HttpJettySolrClient.requestAsync (used in sharded/distributed-search and more) to increase throughput and prevent a rare deadlock. [SOLR-18051](https://issues.apache.org/jira/browse/SOLR-18051) (James Vanneman)
+- JWT Authentication plugin now supports matching non-string claims such as boolean [SOLR-18073](https://issues.apache.org/jira/browse/SOLR-18073) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (Tony Panza)
+- SOLR-18063 - NPE when resubmitting to DLQ [SOLR-18063](https://issues.apache.org/jira/browse/SOLR-18063) (Andrzej Bialecki @ab)
+- ShardRequestTracker now indexes Admin API results by node and replica rather than just node. This fixes situations where multiple sub-requests are sent to a single node. [SOLR-18081](https://issues.apache.org/jira/browse/SOLR-18081) (Houston Putman @HoustonPutman)
+- Fix operational issues with readOnly collections, such as restarting SolrNodes and replicating from the leader. [SOLR-18083](https://issues.apache.org/jira/browse/SOLR-18083) (Houston Putman @HoustonPutman)
+
+### Removed (5 changes)
+
+- Remove deprecated streamFunctions in GraphHandler for registering streaming expressions. [PR#4100](https://github.com/apache/solr/pull/4100) (Eric Pugh)
+- Remove deprecated DirectSolrConnection use [SOLR-17933](https://issues.apache.org/jira/browse/SOLR-17933) (Eric Pugh)
+- Remove deprecated EmbeddedSolrServerTestBase from test-framework, tests updated to use EmbeddedSolrServerTestRule. [SOLR-18067](https://issues.apache.org/jira/browse/SOLR-18067) (Eric Pugh)
+- Removed the wt=standard concept that was used internally by Solr. [SOLR-18085](https://issues.apache.org/jira/browse/SOLR-18085) (Eric Pugh)
+- Remove Request ID based tracing. #17934 [SOLR-17934](https://issues.apache.org/jira/browse/SOLR-17934) (Eric Pugh)
+
+### Dependency Upgrades (8 changes)
+
+- Update com.github.ben-manes.versions to v0.53.0 [PR#3085](https://github.com/apache/solr/pull/3085) (solrbot)
+- Update jakarta.servlet:jakarta.servlet-api to v6.1.0 [PR#3366](https://github.com/apache/solr/pull/3366) (solrbot)
+- Update org.openapi.generator to v7.18.0 [PR#3601](https://github.com/apache/solr/pull/3601) (solrbot)
+- Update bytebuddy to v1.18.3 [PR#3764](https://github.com/apache/solr/pull/3764) (solrbot)
+- Update net.java.dev.jna:jna to v5.18.1 [PR#3781](https://github.com/apache/solr/pull/3781) (solrbot)
+- Update org.testcontainers:testcontainers to v2 [PR#3795](https://github.com/apache/solr/pull/3795) (solrbot)
+- Update actions/upload-artifact action to v6 [PR#3959](https://github.com/apache/solr/pull/3959) (solrbot)
+- Update langchain4j version to 1.9.1 and fasterxml to 2.20.1 [SOLR-18000](https://issues.apache.org/jira/browse/SOLR-18000) (Ilaria Petreti) (Alessandro Benedetti)
+
+### Other (10 changes)
+
+- Reformat gradle files with IntelliJ / .editorconfig [PR#4037](https://github.com/apache/solr/pull/4037) (David Smiley)
+- CborResponseWriter should use content-typ- application/cbor [SOLR-17787](https://issues.apache.org/jira/browse/SOLR-17787) (Sanjay Kumar Yadav)
+- Provide an internal API to force distributed search (even when one shard). Also, refactor/reorganize SearchHandler for clarity & extensibility. [SOLR-17982](https://issues.apache.org/jira/browse/SOLR-17982) (David Smiley) (Sonu Sharma)
+- Optimize existence queries for non-docValued FloatPointField and DoublePointField [SOLR-18019](https://issues.apache.org/jira/browse/SOLR-18019) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
+- SOLR 18041 - Path exclusions for the admin UI are now defined in a separate servlet filter [SOLR-18041](https://issues.apache.org/jira/browse/SOLR-18041) (Gus Heck)
+- EssentialSolrRequestFilter has been added to perform non-optional request wrapping operations required for proper functioning of Solr [SOLR-18044](https://issues.apache.org/jira/browse/SOLR-18044) (Gus Heck)
+- Ratelimiting now exists in it's own Servlet filter which can be customized or removed. [SOLR-18046](https://issues.apache.org/jira/browse/SOLR-18046) (Gus Heck)
+- Introduce minimal set of request writers for node/container-level requests. Core-specific request writers now leverage ImplicitPlugins.json for creation. [PR#4073](https://github.com/apache/solr/pull/4073) (Eric Pugh) (David Smiley)
+- Refactor CollectionApiCommands to add easily expandable AdminCmdContext argument [SOLR-18072](https://issues.apache.org/jira/browse/SOLR-18072) (Houston Putman @HoustonPutman) (David Smiley) (Jason Gerlowski)
+- Always reset ShardTerms when deleting and recreating a collection [SOLR-18090](https://issues.apache.org/jira/browse/SOLR-18090) (Houston Putman @HoustonPutman)
+
+
+[10.0.0]
+--------
 
 ### Added (18 changes)
 
@@ -45,6 +113,7 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Notify a user if they run healthcheck against standalone Solr that it is a SolrCloud only command. [SOLR-16850](https://issues.apache.org/jira/browse/SOLR-16850) (Eric Pugh)
 - "LB" and "Cloud" clients no longer use brittle URL pattern-matching when routing requests. [SOLR-17043](https://issues.apache.org/jira/browse/SOLR-17043) (Jude Muriithi) (Jason Gerlowski)
 - When a shard rejoins leader election, leave previous election only once to save unneeded calls to Zookeeper. [SOLR-17077](https://issues.apache.org/jira/browse/SOLR-17077) (Pierre Salagnac)
+- Separate out a new solrj-jetty module, meaning users can opt in to the jetty http client only if they need it. Also makes ConcurrentUpdateBaseSolrClient client independent. [SOLR-17161](https://issues.apache.org/jira/browse/SOLR-17161) (Jan Høydahl) (David Smiley) (Kevin Risden)
 - Switch from Dropwizard to OpenTelemetry. This change provides native Prometheus support on the /admin/metrics API, OTLP support, exemplar support for tracing correlation with OpenMetrics format and native attributes and labels on all metrics. [SOLR-17458](https://issues.apache.org/jira/browse/SOLR-17458) (Matthew Biscocho) (David Smiley) (Sanjay Dutt) (Jude Muriithi) (Luke Kot-Zaniewski) (Carlos Ugarte) (Kevin Liang) (Bryan Jacobowitz) (Adam Quigley)
 - Change Solr CLI delete command to not delete configs by default. Decouple lifecycle of collections from configsets. [SOLR-17495](https://issues.apache.org/jira/browse/SOLR-17495) (Eric Pugh)
 - `LBHttp2SolrClient` is now generic, adding support for `HttpJdkSolrClient`. [SOLR-17516](https://issues.apache.org/jira/browse/SOLR-17516) (James Dyer)
@@ -61,20 +130,21 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Improve tracking of time already spent to discount the limit for sub-requests when `timeAllowed` is used. [SOLR-17926](https://issues.apache.org/jira/browse/SOLR-17926) (Andrzej Bialecki) (hossman)
 - MultiAuthPlugin now looks up for auth plugins configured with "xBasic" as scheme if "Basic" authentication used and no plugin with "Basic" scheme found. This allows the new UI to authenticate in browser without a credentials prompt being displayed. The MultiAuthPlugin can now also be configured with a single plugin. [SOLR-17930](https://issues.apache.org/jira/browse/SOLR-17930) 
 - `Http2ClusterStateProvider` now also can work with `HttpJdkSolrClient`. [SOLR-17943](https://issues.apache.org/jira/browse/SOLR-17943) (James Dyer)
-- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 - Return structured error information in responses, parse correctly in SolrJ to give useful SolrExceptions [SOLR-17998](https://issues.apache.org/jira/browse/SOLR-17998) [PR#1382](https://github.com/apache/solr/pull/1382) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 - PropertiesInputStream overrides bulk read method, and rename it to IndexInputInputStream to match symmetrical class IndexOutputOutputStream. [SOLR-18029](https://issues.apache.org/jira/browse/SOLR-18029) (Pierre Salagnac)
 - Migrated system properties solr.allowPaths and solr.allowUrls to modern equivalents. #17864 [SOLR-17864](https://issues.apache.org/jira/browse/SOLR-17864) (Eric Pugh)
 - Rename vector search parameters and language model modules [SOLR-17927](https://issues.apache.org/jira/browse/SOLR-17927) (Ishan Chattopadhyaya) (Alessandro Benedetti) (Ilaria Petreti) (Chaitali Rajhans)
 
-### Fixed (6 changes)
+### Fixed (8 changes)
 
 - Restore actual infoStream logging when infoStream in solrconfig.xml is set to true. [SOLR-11373](https://issues.apache.org/jira/browse/SOLR-11373) (Eric Pugh)
 - ConcurrentUpdateSolrClient no longer detects "false-positive" stalls. [SOLR-17294](https://issues.apache.org/jira/browse/SOLR-17294) (Mark Miller) (Jason Gerlowski)
 - Tests for CLI examples were failing on Windows due to a legacy bug uncovered by fix in SOLR-7962. Additionally achieves simplification of CLI tests [SOLR-17772](https://issues.apache.org/jira/browse/SOLR-17772) [SOLR-7962](https://issues.apache.org/jira/browse/SOLR-7962) (Rahul Goswami)
 - Fix TextToVectorUpdateProcessor for Partial Updates [SOLR-17843](https://issues.apache.org/jira/browse/SOLR-17843) (Ilaria Petreti) ([Alessandro Benedetti](https://home.apache.org/phonebook.html?uid=abenedetti))
 - Fix DelegatingCollector to prevent the delegate from calling setMinCompetitiveScore if the scoreMode is not TOP_SCORES [SOLR-17940](https://issues.apache.org/jira/browse/SOLR-17940) (hossman)
+- Add the Jackson BOM import to solrj [SOLR-18003](https://issues.apache.org/jira/browse/SOLR-18003) ([Mark Prins](https://github.com/mprins) @mprins)
 - Admin UI "Nodes" view now works with the new Prometheus formatted metrics endpoint [SOLR-18004](https://issues.apache.org/jira/browse/SOLR-18004) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy)) (David Smiley)
+- Stale EndpointIterator state causes unexpected order when there are zombie servers in LBSolrClient [SOLR-18086](https://issues.apache.org/jira/browse/SOLR-18086) (Chris Hostetter) (Anshum Gupta)
 
 ### Removed (54 changes)
 
@@ -253,6 +323,10 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Upgrade to Lucene 10.3.1 [SOLR-17631](https://issues.apache.org/jira/browse/SOLR-17631) [SOLR-17917](https://issues.apache.org/jira/browse/SOLR-17917) (Ishan Chattopadhyaya) (noble) (Jason Gerlowski) (Eric Pugh) (janhoy) (Christine Poerschke) (hossman)
 - Upgrade Apache Lucene to 10.3.2 [SOLR-17997](https://issues.apache.org/jira/browse/SOLR-17997) (Anshum Gupta)
 
+### Security (1 change)
+
+- Ensure File Store API "getFrom" param rejects values not in liveNodes [SOLR-18014](https://issues.apache.org/jira/browse/SOLR-18014) (Jason Gerlowski) (monkeontheroof)
+
 ### Other (39 changes)
 
 - Logs: removed webapp=/solr and also removed from internal context map. [PR#3758](https://github.com/apache/solr/pull/3758) 
@@ -296,8 +370,12 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Modernize Jetty xml files [SOLR-17770](https://issues.apache.org/jira/browse/SOLR-17770) ([Houston Putman](https://home.apache.org/phonebook.html?uid=houston) @HoustonPutman)
 
 
-[9.10.1] - 2026-01-08
+[9.10.1] - 2026-01-20
 ---------------------
+
+### Changed (1 change)
+
+- CloudSolrClient now refreshes collection state asynchronously using a dedicated thread pool, reducing ZooKeeper blocking and improving performance under load. [SOLR-17947](https://issues.apache.org/jira/browse/SOLR-17947) (Mark Miller)
 
 ### Fixed (5 changes)
 
@@ -316,8 +394,8 @@ This file lists Solr's raw release notes with details of every change to Solr. M
 - Mitigate CVE-2025-54988 by disabling XFA parsing in PDF documents when using SolrCell extraction [SOLR-17888](https://issues.apache.org/jira/browse/SOLR-17888) ([Jan Høydahl](https://home.apache.org/phonebook.html?uid=janhoy))
 
 
-[9.10.0]
---------
+[9.10.0] - 2025-11-06
+---------------------
 
 ### Added (4 changes)
 

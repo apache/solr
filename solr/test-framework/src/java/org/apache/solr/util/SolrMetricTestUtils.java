@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
+import io.opentelemetry.api.metrics.LongCounter;
 import io.opentelemetry.exporter.prometheus.PrometheusMetricReader;
 import io.prometheus.metrics.model.snapshots.CounterSnapshot;
 import io.prometheus.metrics.model.snapshots.DataPointSnapshot;
@@ -261,7 +262,7 @@ public final class SolrMetricTestUtils {
 
   public static class TestSolrMetricProducer implements SolrMetricProducer {
     SolrMetricsContext solrMetricsContext;
-    private final Map<String, io.opentelemetry.api.metrics.LongCounter> counters = new HashMap<>();
+    private final Map<String, LongCounter> counters = new HashMap<>();
     private final String coreName;
     private final Map<String, Long> metrics;
 
@@ -287,7 +288,7 @@ public final class SolrMetricTestUtils {
       return solrMetricsContext;
     }
 
-    public Map<String, io.opentelemetry.api.metrics.LongCounter> getCounters() {
+    public Map<String, LongCounter> getCounters() {
       return counters;
     }
   }

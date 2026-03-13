@@ -17,15 +17,16 @@
 package org.apache.solr.client.solrj.request;
 
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.response.SolrResponseBase;
+import org.apache.solr.client.solrj.response.InputStreamResponse;
+import org.apache.solr.client.solrj.response.InputStreamResponseParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
-/** Request to "/admin/metrics" */
-public class MetricsRequest extends SolrRequest<SolrResponse> {
+/** Request to V1 "/admin/metrics" or V2 "/metrics" */
+public class MetricsRequest extends SolrRequest<InputStreamResponse> {
 
   private static final long serialVersionUID = 1L;
 
@@ -37,11 +38,36 @@ public class MetricsRequest extends SolrRequest<SolrResponse> {
   }
 
   /**
+   * @param path the HTTP path to use for this request. Supports V1 "/admin/metrics" (default) or V2
+   *     "/metrics"
+   */
+  public MetricsRequest(String path) {
+    this(path, new ModifiableSolrParams());
+  }
+
+  /**
    * @param params the Solr parameters to use for this request.
    */
   public MetricsRequest(SolrParams params) {
-    super(METHOD.GET, CommonParams.METRICS_PATH, SolrRequestType.ADMIN);
+    this(CommonParams.METRICS_PATH, params);
+  }
+
+  /**
+   * @param params the Solr parameters to use for this request.
+   */
+  public MetricsRequest(String path, SolrParams params) {
+    super(METHOD.GET, path, SolrRequestType.ADMIN);
+    if (!path.endsWith("/metrics")) {
+      throw new SolrException(
+          SolrException.ErrorCode.BAD_REQUEST, "Request path not supported: " + path);
+    }
     this.params = params;
+    // Set response parser according to "wt".
+    if ("openmetrics".equals(params.get(CommonParams.WT))) {
+      setResponseParser(new InputStreamResponseParser("openmetrics"));
+    } else {
+      setResponseParser(new InputStreamResponseParser("prometheus"));
+    }
   }
 
   @Override
@@ -50,8 +76,17 @@ public class MetricsRequest extends SolrRequest<SolrResponse> {
   }
 
   @Override
-  protected SolrResponse createResponse(NamedList<Object> namedList) {
-    SolrResponseBase resp = new SolrResponseBase();
-    return (SolrResponse) resp;
+  protected InputStreamResponse createResponse(NamedList<Object> namedList) {
+    return new InputStreamResponse();
+  }
+
+  @Override
+  public ApiVersion getApiVersion() {
+    if (CommonParams.METRICS_PATH.equals(getPath())) {
+      // (/solr) /admin/metrics
+      return ApiVersion.V1;
+    }
+    // Ref. org.apache.solr.client.api.endpoint.MetricsApi : /metrics
+    return ApiVersion.V2;
   }
 }

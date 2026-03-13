@@ -28,6 +28,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.numericrange.NumericRangeQParserPlugin;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -55,7 +56,12 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public static void afterClassParserCoverageTest() {
 
     if (!doAssertParserCoverage) return;
-    for (String name : QParserPlugin.standardPlugins.keySet()) {
+
+    final var qParsersToTest = new HashSet<>(QParserPlugin.standardPlugins.keySet());
+    qParsersToTest.remove(
+        NumericRangeQParserPlugin.NAME); // Tested in NumericRangeQParserPluginIntTest and
+    // NumericRangeQParserPluginLongTest
+    for (String name : qParsersToTest) {
       assertTrue(
           "testParserCoverage was run w/o any other method explicitly testing qparser: " + name,
           qParsersTested.contains(name));
@@ -1015,6 +1021,21 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
           "vectorSimilarity($f, vector)",
           "vectorSimilarity(vector, $f)",
           "vectorSimilarity(vector, vector)");
+    }
+  }
+
+  public void testFuncLateVector() throws Exception {
+    try (SolrQueryRequest req =
+        req(
+            "f", "late_vec_4",
+            "v1", "[[1,2,3,4],[4,5,6,7]]")) {
+      assertFuncEquals(
+          req,
+          "lateVector(late_vec_4, $v1)",
+          "lateVector($f, $v1)",
+          "lateVector($f, '[[1,2,3,4],[4,5,6,7]]')",
+          "lateVector(late_vec_4, '[[1.0,2.0,3.0,4.0],[4.0,5.0,6.0,7.0]]')",
+          "lateVector(late_vec_4, ' [[ 1, 2, 3, 4.0] ,[4,5,6,7]] ')");
     }
   }
 

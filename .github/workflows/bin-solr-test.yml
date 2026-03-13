@@ -17,9 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
 
-    env:
-      DEVELOCITY_ACCESS_KEY: ${{ secrets.SOLR_DEVELOCITY_ACCESS_KEY }}
-
     steps:
     - name: Checkout code
       uses: actions/checkout@v5

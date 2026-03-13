@@ -72,15 +72,38 @@ This is provided via the `language-models` xref:configuration-guide:solr-modules
 
 == Language Model Configuration
 
-You need to register / configure the plugins provided by the Language Models module that you want to use. This is done in `solrconfig.xml`.
+Language Models is a module and therefore its plugins must be configured in `solrconfig.xml`.
 
-* Declaration of the `knn_text_to_vector` query parser.
+=== Minimum Requirements
+
+* Enable the `language-models` module to make the Language Models classes available on Solr's classpath.
+See xref:configuration-guide:solr-modules.adoc[Solr Module] for more details.
+
+* At least one of the following components must be declared in `solrconfig.xml`:
+** the TextToVector Update Processor (index time)
++
+[source,xml]
+----
+<updateRequestProcessorChain name="textToVector">
+  <processor class="solr.languagemodels.textvectorisation.update.processor.TextToVectorUpdateProcessorFactory">
+   <str name="inputField">_text_</str>
+   <str name="outputField">vector</str>
+   <str name="model">dummy-1</str>
+  </processor>
+  <processor class="solr.RunUpdateProcessorFactory"/>
+</updateRequestProcessorChain>
+----
+** the TextToVector Query Parser (query time)
 +
 [source,xml]
 ----
 <queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
 ----
 
+[NOTE]
+====
+If no component is configured in `solrconfig.xml`, the Text-to-Vector model store will not be registered and requests to `/schema/text-to-vector-model-store` will return an error.
+====
 
 == Text to Vector Lifecycle
 
@@ -122,7 +145,7 @@ Accepted values:
 s|Required |Default: none
 |===
 +
-The identifier of your model, this is used by any component that intends to use the model (`knn_text_to_vector` query parser).
+The identifier of your model, this is used by any component that intends to use the model (e.g., `knn_text_to_vector` query parser or `TextToVectorUpdateProcessorFactory` update processor).
 
 `params`::
 +
@@ -410,6 +433,12 @@ Faceting or querying on the boolean 'vectorised' field can also give you a quick
 
 
 === Running a Text-to-Vector Query
+Before running a Text-to-Vector query, ensure that the `knn_text_to_vector` query parser is declared in `solrconfig.xml`:
+[source,xml]
+----
+<queryParser name="knn_text_to_vector" class="org.apache.solr.languagemodels.textvectorisation.search.TextToVectorQParserPlugin"/>
+----
+
 To run a query that vectorises your query text, using a model you previously uploaded is simple:
 
 [source,text]

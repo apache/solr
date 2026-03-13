@@ -44,21 +44,32 @@ In order to make a new contribution to Solr you will use the fork you have creat
 
 ## PR Do-s and Don't-s
 
-Please do not:
+**Please do not:**
 
 * reformat code unrelated to the bug being fixed: formatting changes should be separate patches/commits.
 * comment out code that is now obsolete: just remove it.
 * insert comments around each change, marking the change: folks can use git to figure out what's changed and by whom.
 * make things public which are not required by end users.
-* Combine multiple issues into a single patch, especially if they are unrelated or only loosely related. This is true even if the changes affect the same files. In some rare cases it is warranted, but for the most part it makes it harder for committers to evaluate the patch.
+* combine multiple issues into a single patch, especially if they are unrelated or only loosely related. This is true even if the changes affect the same files. In some rare cases it is warranted, but for the most part it makes it harder for committers to evaluate the patch.
+* contribute AI generated code without human review and transparent declaration.
 
-Please do:
+**Please do:**
 
 * try to adhere to the coding style of files you edit;
 * comment code whose function or rationale is not obvious;
 * update documentation (e.g., package.html files, this wiki, etc.)
 * try to provide a unit test that shows a bug was indeed fixed or the new functionality truly works
 * use the "draft state" for PRs which are work in progress
+* carefully review and take responsibility for any AI-assisted code or documentation (see below)
+
+## Use of AI Coding Assistants
+
+AI-powered tools or agents (like GitHub Copilot, ChatGPT, etc.) can assist with contributions, but human contributors remain fully responsible for all submitted code and documentation. See the [ASF Generative Tooling Guidance](https://www.apache.org/legal/generative-tooling.html) for the foundation's policy. If you use AI tools:
+
+- Do include our `AGENTS.md` file in the LLM's context for best result.
+- Carefully review all generated content for correctness, security, and alignment with Solr's architecture
+- For major AI-assisted contributions, disclose the use of AI tools in your PR description
+- For documentation contributions, prefer concise, human-readable content over verbose AI-generated text
 
 ## Getting Your Contribution Merged
 

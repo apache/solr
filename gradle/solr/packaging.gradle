@@ -55,6 +55,11 @@ configure(allprojects
       packaging
     }
 
+    // Align packaging configurations with tested runtimeClasspath versions
+    // This ensures the distribution contains the same library versions that were tested
+    alignWithRuntimeClasspath(configurations.runtimeLibs)
+    alignWithRuntimeClasspath(configurations.solrPlatformLibs)
+
     dependencies {
       solrPlatformLibs project(":solr:core")
       solrPlatformLibs project(":solr:solrj")

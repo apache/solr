@@ -21,13 +21,11 @@ description = 'Apache Solr Core'
 
 dependencies {
   api platform(project(":platform"))
-  permitUnusedDeclared platform(project(":platform"))
   // Spotbugs Annotations are only needed for old findbugs
   // annotation usage like in Zookeeper during compilation time.
   // It is not included in the release so exclude from checks.
   compileOnly libs.spotbugs.annotations
   testCompileOnly libs.spotbugs.annotations
-  permitUnusedDeclared libs.spotbugs.annotations
   // Exclude these from jar validation and license checks.
   configurations.jarValidation {
     exclude group: "com.github.spotbugs", module: "spotbugs-annotations"
@@ -54,17 +52,14 @@ dependencies {
 
   implementation libs.dropwizard.metrics.core
 
-  implementation(libs.jersey.containers.jettyhttp, {
+  runtimeOnly(libs.jersey.containers.jettyhttp, {
     exclude group: "org.eclipse.jetty", module: "jetty-continuation"
     exclude group: "org.glassfish.hk2.external", module: "jakarta.inject"
   })
-  permitUnusedDeclared libs.jersey.containers.jettyhttp
-  implementation libs.jersey.inject.hk2
-  permitUnusedDeclared libs.jersey.inject.hk2
+  runtimeOnly libs.jersey.inject.hk2
   implementation(libs.jersey.media.jsonjackson, {
     exclude group: "jakarta.xml.bind", module: "jakarta.xml.bind-api"
   })
-  permitUnusedDeclared libs.jersey.media.jsonjackson
   implementation libs.jersey.core.common
   implementation libs.jersey.core.server
   implementation libs.hk2.api
@@ -79,8 +74,6 @@ dependencies {
   runtimeOnly libs.apache.lucene.analysis.phonetic
   runtimeOnly libs.apache.lucene.backward.codecs
   implementation libs.apache.lucene.codecs
-  implementation libs.apache.lucene.backward.codecs
-  permitUnusedDeclared libs.apache.lucene.backward.codecs
   implementation libs.apache.lucene.classification
   implementation libs.apache.lucene.expressions
   implementation libs.apache.lucene.grouping

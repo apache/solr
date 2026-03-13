@@ -401,51 +401,47 @@ public class HttpJettySolrClient extends HttpSolrClientBase {
       future.completeExceptionally(e);
       return future;
     }
-    mrrv.request
-        .onRequestQueued(asyncTracker.queuedListener)
-        .onComplete(asyncTracker.completeListener)
-        .send(
-            new InputStreamResponseListener() {
-              // MDC snapshot from requestAsync's thread
-              MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
+    mrrv.request.send(
+        new InputStreamResponseListener() {
+          // MDC snapshot from requestAsync's thread
+          MDCCopyHelper mdcCopyHelper = new MDCCopyHelper();
 
-              @Override
-              public void onHeaders(Response response) {
-                super.onHeaders(response);
-                InputStreamResponseListener listener = this;
-                executor.execute(
-                    () -> {
-                      InputStream is = listener.getInputStream();
-                      try {
-                        NamedList<Object> body =
-                            processErrorsAndResponse(solrRequest, response, is, url);
-                        mdcCopyHelper.onBegin(null);
-                        log.debug("response processing success");
-                        future.complete(body);
-                      } catch (CancellationException e) {
-                        mdcCopyHelper.onBegin(null);
-                        log.debug("response processing cancelled", e);
-                        if (!future.isDone()) {
-                          future.cancel(true);
-                        }
-                      } catch (Throwable e) {
-                        mdcCopyHelper.onBegin(null);
-                        log.debug("response processing failed", e);
-                        future.completeExceptionally(e);
-                      } finally {
-                        log.debug("response processing completed");
-                        mdcCopyHelper.onComplete(null);
-                      }
-                    });
-              }
+          @Override
+          public void onHeaders(Response response) {
+            super.onHeaders(response);
+            InputStreamResponseListener listener = this;
+            executor.execute(
+                () -> {
+                  InputStream is = listener.getInputStream();
+                  try {
+                    NamedList<Object> body =
+                        processErrorsAndResponse(solrRequest, response, is, url);
+                    mdcCopyHelper.onBegin(null);
+                    log.debug("response processing success");
+                    future.complete(body);
+                  } catch (CancellationException e) {
+                    mdcCopyHelper.onBegin(null);
+                    log.debug("response processing cancelled", e);
+                    if (!future.isDone()) {
+                      future.cancel(true);
+                    }
+                  } catch (Throwable e) {
+                    mdcCopyHelper.onBegin(null);
+                    log.debug("response processing failed", e);
+                    future.completeExceptionally(e);
+                  } finally {
+                    log.debug("response processing completed");
+                    mdcCopyHelper.onComplete(null);
+                  }
+                });
+          }
 
-              @Override
-              public void onFailure(Response response, Throwable failure) {
-                super.onFailure(response, failure);
-                future.completeExceptionally(
-                    new SolrServerException(failure.getMessage(), failure));
-              }
-            });
+          @Override
+          public void onFailure(Response response, Throwable failure) {
+            super.onFailure(response, failure);
+            future.completeExceptionally(new SolrServerException(failure.getMessage(), failure));
+          }
+        });
 
     // SOLR-17916: Disable request aborting
     // future.exceptionally(

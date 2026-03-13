@@ -67,8 +67,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
   public void testPrometheusStructureOutput() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("wt", "prometheus");
-    var req = new MetricsRequest(params);
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
+    var req = new MetricsRequest(params); // response parser set in MetricsRequest constructor
 
     try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
@@ -195,6 +194,7 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
     try (SolrClient adminClient = getHttpSolrClient(solrTestRule.getBaseUrl())) {
       NamedList<Object> res = adminClient.request(req);
+      // Unknown wt parameter should return a 400 error
       assertEquals(400, res.get("responseStatus"));
     }
   }

@@ -35,6 +35,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.noggit.JSONWriter;
@@ -45,7 +46,7 @@ import org.slf4j.LoggerFactory;
 public class ZkClientClusterStateProvider
     implements ClusterStateProvider, SolrZkClientTimeoutAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
+  private static final String SOLR_SSL_ENABLED = "solr.ssl.enabled";
   volatile ZkStateReader zkStateReader;
   private boolean closeZkStateReader = true;
   private final String zkHost;
@@ -338,5 +339,21 @@ public class ZkClientClusterStateProvider
   @Override
   public void setZkClientTimeout(int zkClientTimeout) {
     this.zkClientTimeout = zkClientTimeout;
+  }
+
+  /**
+   * @return url scheme with the help of cluster property or environment variable.
+   */
+  @Override
+  public String getUrlScheme() {
+    final Boolean isSolrSslEnabled = EnvUtils.getPropertyAsBool(SOLR_SSL_ENABLED);
+    if (isSolrSslEnabled != null) {
+      return isSolrSslEnabled ? "https" : "http";
+    }
+    final Object urlSchemeClusterProperty = getClusterProperty(ClusterState.URL_SCHEME);
+    if (urlSchemeClusterProperty != null) {
+      return urlSchemeClusterProperty.toString();
+    }
+    return "http";
   }
 }

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.servlet;
 
-import static org.apache.solr.servlet.EssentialSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE;
+import static org.apache.solr.servlet.RequiredSolrRequestFilter.CORE_CONTAINER_REQUEST_ATTRIBUTE;
 
 import com.google.common.net.HttpHeaders;
 import jakarta.servlet.http.HttpServlet;

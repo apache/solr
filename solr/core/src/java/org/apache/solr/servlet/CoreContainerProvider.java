@@ -23,7 +23,6 @@ import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIB
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
 import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
-import com.google.common.annotations.VisibleForTesting;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
 import jakarta.servlet.ServletContextListener;
@@ -45,16 +44,13 @@ import javax.naming.NoInitialContextException;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.util.VectorUtil;
 import org.apache.solr.client.api.util.SolrVersion;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.NodeConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
-import org.apache.solr.servlet.RateLimitManager.Builder;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,8 +63,6 @@ import org.slf4j.LoggerFactory;
 public class CoreContainerProvider implements ServletContextListener {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreContainer cores;
-  // TODO: this probably should not live here...
-  private RateLimitManager rateLimitManager;
 
   /**
    * Acquires an instance from the context. Never null.
@@ -186,21 +180,6 @@ public class CoreContainerProvider implements ServletContextListener {
               });
 
       coresInit = createCoreContainer(computeSolrHome(servletContext), extraProperties);
-
-      SolrZkClient zkClient = null;
-      ZkController zkController = coresInit.getZkController();
-
-      if (zkController != null) {
-        zkClient = zkController.getZkClient();
-      }
-
-      Builder builder = new Builder(zkClient);
-
-      this.rateLimitManager = builder.build();
-
-      if (zkController != null) {
-        zkController.zkStateReader.registerClusterPropertiesListener(this.rateLimitManager);
-      }
 
       if (log.isDebugEnabled()) {
         log.debug("user.dir={}", System.getProperty("user.dir"));
@@ -363,14 +342,5 @@ public class CoreContainerProvider implements ServletContextListener {
     final CoreContainer coreContainer = new CoreContainer(nodeConfig, true);
     coreContainer.load();
     return coreContainer;
-  }
-
-  public RateLimitManager getRateLimitManager() {
-    return rateLimitManager;
-  }
-
-  @VisibleForTesting
-  void setRateLimitManager(RateLimitManager rateLimitManager) {
-    this.rateLimitManager = rateLimitManager;
   }
 }

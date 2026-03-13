@@ -37,7 +37,6 @@ ext {
 }
 
 dependencies {
-  permitUnusedDeclared project(":solr:core")
   serverLib project(path: ":solr:server", configuration: "libExt")
   serverLib project(path: ":solr:server", configuration: "serverLib")
   solrCore project(":solr:core")

@@ -117,8 +117,8 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.admin.api.ReplicationAPIBase;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
 import org.apache.solr.update.CommitUpdateCommand;
@@ -530,17 +530,17 @@ public class IndexFetcher {
           // we just clear ours and commit
           log.info("New index in Leader. Deleting mine...");
           RefCounted<IndexWriter> iw =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(solrCore, false);
           try {
             iw.get().deleteAll();
           } finally {
             iw.decref();
           }
           assert TestInjection.injectDelayBeforeFollowerCommitRefresh();
-          if (skipCommitOnLeaderVersionZero) {
+          if (skipCommitOnLeaderVersionZero || solrCore.readOnly) {
             openNewSearcherAndUpdateCommitPoint();
           } else {
-            SolrQueryRequest req = new LocalSolrQueryRequest(solrCore, new ModifiableSolrParams());
+            SolrQueryRequest req = new SolrQueryRequestBase(solrCore, new ModifiableSolrParams());
             solrCore.getUpdateHandler().commit(new CommitUpdateCommand(req, false));
           }
         }
@@ -624,7 +624,7 @@ public class IndexFetcher {
           // are successfully deleted
           solrCore.getUpdateHandler().newIndexWriter(true);
           RefCounted<IndexWriter> writer =
-              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
+              solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null, false);
           try {
             IndexWriter indexWriter = writer.get();
             int c = 0;

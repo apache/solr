@@ -771,6 +771,7 @@ def main():
     html = generator.generate(parser.releases, parser.title, parser.preamble)
 
     # Output
+    sys.stdout.reconfigure(encoding='utf-8') #UTF-8 encoding for Windows compatibility
     print(html)
 
 

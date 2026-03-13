@@ -49,6 +49,7 @@ import org.apache.lucene.analysis.CharFilterFactory;
 import org.apache.lucene.analysis.DelegatingAnalyzerWrapper;
 import org.apache.lucene.analysis.TokenFilterFactory;
 import org.apache.lucene.analysis.TokenizerFactory;
+import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
@@ -74,7 +75,7 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
@@ -106,6 +107,7 @@ public class IndexSchema {
   public static final String NAME = "name";
   public static final String NEST_PARENT_FIELD_NAME = "_nest_parent_";
   public static final String NEST_PATH_FIELD_NAME = "_nest_path_";
+  public static final String NESTED_VECTORS_PSEUDO_FIELD_NAME = "_nested_vectors_";
   public static final String REQUIRED = "required";
   public static final String SCHEMA = "schema";
   public static final String SIMILARITY = "similarity";
@@ -347,7 +349,7 @@ public class IndexSchema {
    * @return null if this schema has no unique key field
    * @see #printableUniqueKey
    */
-  public IndexableField getUniqueKeyField(org.apache.lucene.document.Document doc) {
+  public IndexableField getUniqueKeyField(Document doc) {
     return doc.getField(uniqueKeyFieldName); // this should return null if name is null
   }
 
@@ -356,7 +358,7 @@ public class IndexSchema {
    *
    * @return null if this schema has no unique key field
    */
-  public String printableUniqueKey(org.apache.lucene.document.Document doc) {
+  public String printableUniqueKey(Document doc) {
     IndexableField f = doc.getField(uniqueKeyFieldName);
     return f == null ? null : uniqueKeyFieldType.toExternal(f);
   }
@@ -451,7 +453,7 @@ public class IndexSchema {
     final SolrQueryResponse response = new SolrQueryResponse();
     response.add(IndexSchema.SCHEMA, getNamedPropertyValues());
     final SolrParams args = (new ModifiableSolrParams()).set("indent", "on");
-    final LocalSolrQueryRequest req = new LocalSolrQueryRequest(null, args);
+    final SolrQueryRequestBase req = new SolrQueryRequestBase(null, args);
     final SchemaXmlWriter schemaXmlWriter = new SchemaXmlWriter(writer, req, response);
     schemaXmlWriter.setEmitManagedSchemaDoNotEditWarning(true);
     schemaXmlWriter.writeResponse();

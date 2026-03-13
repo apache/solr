@@ -35,7 +35,6 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.MetricsRequest;
-import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
 import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.common.MapWriter;
@@ -214,7 +213,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
     params.add("name", String.join(",", metricNames));
 
     var req = new MetricsRequest(params);
-    req.setResponseParser(new InputStreamResponseParser("prometheus"));
 
     String baseUrl =
         ctx.zkClientClusterStateProvider.getZkStateReader().getBaseUrlForNodeName(solrNode);
