@@ -251,7 +251,7 @@ class ShardLeaderElectionContextBase extends ElectionContext {
                         .getName()
                         .equals(leaderProps.get(ZkStateReader.CORE_NODE_NAME_PROP)));
       } catch (TimeoutException e) {
-        throw new SgolrException(
+        throw new SolrException(
             ErrorCode.SERVER_ERROR,
             "Cluster state does not reflect leader change after issuing command",
             e);
