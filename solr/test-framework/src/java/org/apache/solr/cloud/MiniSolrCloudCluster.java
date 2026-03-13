@@ -55,7 +55,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
+import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
@@ -90,7 +93,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** "Mini" SolrCloud cluster to be used for testing */
-public class MiniSolrCloudCluster {
+public class MiniSolrCloudCluster implements SolrBackend {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final URL PRE_GENERATED_PRIVATE_KEY_URL =
@@ -725,6 +728,61 @@ public class MiniSolrCloudCluster {
         });
   }
 
+  // SolrBackend interface methods
+
+  @Override
+  public SolrClient newClient(String collection) {
+    return new CloudSolrClient.Builder(getSolrClient().getClusterStateProvider())
+        .withDefaultCollection(collection)
+        .build();
+  }
+
+  @Override
+  public SolrClient getAdminClient() {
+    return getSolrClient();
+  }
+
+  @Override
+  public void createCollection(CollectionAdminRequest.Create create)
+      throws SolrServerException, IOException {
+    String collectionName = create.getCollectionName();
+    create.process(getAdminClient());
+    int shards = create.getNumShards() != null ? create.getNumShards() : 1;
+    int replicas = create.getReplicationFactor() != null ? create.getReplicationFactor() : 1;
+    waitForActiveCollection(collectionName, 15, TimeUnit.SECONDS, shards, shards * replicas);
+  }
+
+  @Override
+  public boolean hasCollection(String name) {
+    return getZkStateReader().getClusterState().hasCollection(name);
+  }
+
+  @Override
+  public boolean hasConfigSet(String name) throws IOException {
+    try (SolrZkClient zkClient =
+        new SolrZkClient.Builder()
+            .withUrl(zkServer.getZkAddress())
+            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
+            .build()) {
+      return new ZkConfigSetService(zkClient).checkConfigExists(name);
+    }
+  }
+
+  @Override
+  public CoreContainer getCoreContainer() {
+    return jettys.isEmpty() ? null : jettys.get(0).getCoreContainer();
+  }
+
+  @Override
+  public void close() {
+    try {
+      shutdown();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   public SolrZkClient getZkClient() {
     return getZkStateReader().getZkClient();
   }
@@ -938,13 +996,19 @@ public class MiniSolrCloudCluster {
     }
   }
 
-  public void dumpMetrics(Path outputDirectory, String fileName) throws IOException {
-    for (JettySolrRunner jetty : jettys) {
-      jetty.outputMetrics(outputDirectory, fileName);
+  @Override
+  public void dumpMetrics(PrintStream out) {
+    try {
+      for (JettySolrRunner jetty : jettys) {
+        jetty.outputMetrics(out);
+      }
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  public void dumpCoreInfo(PrintStream pw) throws IOException {
+  @Override
+  public void dumpCoreInfo(PrintStream pw) {
     for (JettySolrRunner jetty : jettys) {
       jetty.dumpCoresInfo(pw);
     }
