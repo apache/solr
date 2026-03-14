@@ -29,14 +29,12 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.common.util.URLUtil;
 import org.apache.solr.core.CoreContainer;
 
 /**
  * {@link SolrBackend} that connects to a pre-existing remote SolrCloud cluster. The caller supplies
- * the ZooKeeper connection string at construction time (e.g. {@code localhost:9983/solr}).
- *
- * <p>Can be subclassed to add a startup step (e.g. launching a Docker container) before
- * constructing the client.
+ * the HTTP connection string at construction time (e.g. {@code http://localhost:8983/solr}).
  */
 public class RemoteSolrBackend implements SolrBackend {
 
@@ -53,10 +51,12 @@ public class RemoteSolrBackend implements SolrBackend {
 
   @Override
   public SolrClient newClient(String collection) {
-    return new CloudSolrClient.Builder(
-            List.of(adminClient.getClusterStateProvider().getQuorumHosts()))
-        .withDefaultCollection(collection)
-        .build();
+    String urlScheme = adminClient.getClusterStateProvider().getUrlScheme();
+    var urls =
+        adminClient.getClusterStateProvider().getLiveNodes().stream()
+            .map(liveNode -> URLUtil.getBaseUrlForNodeName(liveNode, urlScheme))
+            .toList();
+    return new CloudSolrClient.Builder(urls).withDefaultCollection(collection).build();
   }
 
   @Override

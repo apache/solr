@@ -740,7 +740,9 @@ public class JettySolrRunner implements SolrBackend {
       for (String registryName : registryNames) {
         var prometheusReader = metricsManager.getPrometheusMetricReader(registryName);
         if (prometheusReader != null) {
-          out.println("Registry: " + registryName);
+          out.println();
+          out.println("# Registry: " + registryName);
+          out.println();
           new PrometheusTextFormatWriter(false).write(out, prometheusReader.collect());
         }
       }
@@ -954,11 +956,10 @@ public class JettySolrRunner implements SolrBackend {
   @Override
   public void close() {
     IOUtils.closeQuietly(backendAdminClient);
-    backendAdminClient = null;
     try {
       stop();
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      log.error(e.toString(), e);
     }
   }
 }
