@@ -54,8 +54,7 @@ public class RecoveryStrategyStressTest extends SolrCloudTestCase {
         "Expected a collection with one shard and two replicas", collection, clusterShape(1, 4));
     final var scheduledExecutorService =
         Executors.newScheduledThreadPool(1, new SolrNamedThreadFactory("stressTestRecovery"));
-    try (SolrClient solrClient =
-        cluster.basicSolrClientBuilder().withDefaultCollection(collection).build()) {
+    try (SolrClient solrClient = cluster.newSolrClient(collection)) {
       final StoppableIndexingThread indexThread =
           new StoppableIndexingThread(null, solrClient, "1", true, 10, 1, true);
 

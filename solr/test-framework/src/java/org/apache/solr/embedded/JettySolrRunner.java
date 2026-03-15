@@ -922,14 +922,14 @@ public class JettySolrRunner implements SolrBackend {
   // ---- SolrBackend implementation ----
 
   @Override
-  public SolrClient newClient(String collection) {
+  public SolrClient newSolrClient(String collection) {
     return new HttpJettySolrClient.Builder(getBaseUrl().toString())
         .withDefaultCollection(collection)
         .build();
   }
 
   @Override
-  public SolrClient getAdminClient() {
+  public SolrClient getSolrClient() {
     return backendAdminClient;
   }
 
@@ -959,7 +959,7 @@ public class JettySolrRunner implements SolrBackend {
     try {
       stop();
     } catch (Exception e) {
-      log.error(e.toString(), e);
+      log.error(e.toString(), e); // nowarn
     }
   }
 }

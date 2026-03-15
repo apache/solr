@@ -50,7 +50,7 @@ public class RemoteSolrBackend implements SolrBackend {
   }
 
   @Override
-  public SolrClient newClient(String collection) {
+  public SolrClient newSolrClient(String collection) {
     String urlScheme = adminClient.getClusterStateProvider().getUrlScheme();
     var urls =
         adminClient.getClusterStateProvider().getLiveNodes().stream()
@@ -60,7 +60,7 @@ public class RemoteSolrBackend implements SolrBackend {
   }
 
   @Override
-  public SolrClient getAdminClient() {
+  public SolrClient getSolrClient() {
     return adminClient;
   }
 

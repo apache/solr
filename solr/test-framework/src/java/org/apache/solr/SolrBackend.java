@@ -46,16 +46,15 @@ public interface SolrBackend extends AutoCloseable {
    * this client and is responsible for closing it. Callers that want a long-lived client should
    * cache it themselves.
    */
-  SolrClient newClient(String collection); // nocommit or newSolrClient ?
+  SolrClient newSolrClient(String collection);
 
   /**
-   * Returns the admin (collection-less) {@link SolrClient} owned by this backend, to be used for
-   * tasks that are not the subject of what is being tested, and thus the details of the type or
-   * configuration of this client doesn't matter. The caller must NOT close it; it is released when
-   * this backend is {@link #close()}d. A {@link CloudSolrClient} should be returned if possible.
-   * nocommit
+   * Returns the node / admin (collection-less) {@link SolrClient} owned by this backend. The caller
+   * must NOT close it; it is released when this backend is {@link #close()}d. A {@link
+   * CloudSolrClient} should be returned if appropriate. While it *can* be used to target specific
+   * collections, please use {@link #newSolrClient(String)} for that instead.
    */
-  SolrClient getAdminClient(); // nocommit or "getNodeClient" or getSolrClient ?
+  SolrClient getSolrClient();
 
   /**
    * Upload a configSet, possibly overwriting (creating files, updating files, NOT deleting files).
@@ -98,7 +97,7 @@ public interface SolrBackend extends AutoCloseable {
 
   /** Reloads a collection or core by this name. The purpose is typically to clear caches. */
   default void reloadCollection(String name) throws SolrServerException, IOException {
-    getAdminClient().request(CollectionAdminRequest.reloadCollection(name));
+    getSolrClient().request(CollectionAdminRequest.reloadCollection(name));
   }
 
   /**
@@ -117,7 +116,7 @@ public interface SolrBackend extends AutoCloseable {
    */
   default String getBaseUrl(Random r) {
     // Get live nodes and pick one randomly
-    SolrClient adminClient = getAdminClient();
+    SolrClient adminClient = getSolrClient();
     if (adminClient instanceof HttpSolrClientBase httpSolrClient) {
       return httpSolrClient.getBaseURL();
     } else if (adminClient instanceof CloudSolrClient cloudClient) {
@@ -139,7 +138,7 @@ public interface SolrBackend extends AutoCloseable {
     try {
       var request = new MetricsRequest();
       request.setResponseParser(new InputStreamResponseParser("prometheus"));
-      var response = request.process(getAdminClient());
+      var response = request.process(getSolrClient());
       out.println(InputStreamResponseParser.consumeResponseToString(response.getResponse()));
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);
@@ -156,7 +155,7 @@ public interface SolrBackend extends AutoCloseable {
           new GenericSolrRequest(
               SolrRequest.METHOD.GET, "/admin/cores", SolrParams.of("indexInfo", "true"));
       request.setResponseParser(new InputStreamResponseParser("json"));
-      var response = request.process(getAdminClient());
+      var response = request.process(getSolrClient());
       out.println(InputStreamResponseParser.consumeResponseToString(response.getResponse()));
     } catch (SolrServerException | IOException e) {
       throw new RuntimeException(e);

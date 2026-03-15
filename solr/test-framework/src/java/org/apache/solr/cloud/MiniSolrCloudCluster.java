@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.core.ConfigSetProperties.DEFAULT_FILENAME;
-
 import com.codahale.metrics.MetricRegistry;
 import io.dropwizard.metrics.jetty12.ee10.InstrumentedEE10Handler;
 import jakarta.servlet.Filter;
@@ -57,13 +55,11 @@ import java.util.function.Consumer;
 import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.solr.SolrBackend;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.jetty.SSLConfig;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Aliases;
@@ -337,7 +333,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
       throw startupError;
     }
 
-    solrClient = buildSolrClient();
+    solrClient = newSolrClient(null);
 
     if (numServers > 0) {
       waitForAllNodes(numServers, 60);
@@ -567,18 +563,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return jetty;
   }
 
-  @Override
-  public void uploadConfigSet(Path configDir, String configName) throws IOException {
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkAddress())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      new ZkConfigSetService(zkClient).uploadConfig(configName, configDir);
-    }
-  }
-
   /** Delete all collections (and aliases) */
   public void deleteAllCollections() throws Exception {
     try (ZkStateReader reader = new ZkStateReader(getZkClient())) {
@@ -630,22 +614,32 @@ public class MiniSolrCloudCluster implements SolrBackend {
   }
 
   public void deleteAllConfigSets() throws Exception {
-
-    List<String> configSetNames =
-        new ConfigSetAdminRequest.List().process(solrClient).getConfigSets();
-
-    for (String configSet : configSetNames) {
+    ZkConfigSetService service = new ZkConfigSetService(getZkClient());
+    for (String configSet : service.listConfigs()) {
       if (configSet.equals("_default")) {
         continue;
       }
-      try {
-        // cleanup any property before removing the configset
-        getZkClient()
-            .delete(
-                ZkConfigSetService.CONFIGS_ZKNODE + "/" + configSet + "/" + DEFAULT_FILENAME, -1);
-      } catch (KeeperException.NoNodeException nne) {
-      }
-      new ConfigSetAdminRequest.Delete().setConfigSetName(configSet).process(solrClient);
+      service.deleteConfig(configSet);
+    }
+  }
+
+  @Override
+  public void uploadConfigSet(Path configDir, String configName) throws IOException {
+    new ZkConfigSetService(getZkClient()).uploadConfig(configName, configDir);
+  }
+
+  @Override
+  public boolean hasConfigSet(String name) throws IOException {
+    return new ZkConfigSetService(getZkClient()).checkConfigExists(name);
+  }
+
+  /** Shut down the cluster, including all Solr nodes and ZooKeeper. Doesn't throw. */
+  @Override
+  public void close() {
+    try {
+      shutdown();
+    } catch (Exception e) { // don't propagate; more noisy than helpful
+      log.error(e.toString(), e); // nowarn
     }
   }
 
@@ -688,6 +682,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return baseDir;
   }
 
+  @Override // SolrBackend
   public CloudSolrClient getSolrClient() {
     return solrClient;
   }
@@ -723,59 +718,14 @@ public class MiniSolrCloudCluster implements SolrBackend {
         });
   }
 
-  // SolrBackend interface methods
-
-  @Override
-  public SolrClient newClient(String collection) {
-    return new CloudSolrClient.Builder(getSolrClient().getClusterStateProvider())
+  @Override // SolrBackend
+  public CloudSolrClient newSolrClient(String collection) {
+    return new CloudLegacySolrClient.Builder(
+            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
+        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
+        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
         .withDefaultCollection(collection)
-        .build();
-  }
-
-  @Override
-  public SolrClient getAdminClient() {
-    return getSolrClient();
-  }
-
-  @Override
-  public void createCollection(CollectionAdminRequest.Create create)
-      throws SolrServerException, IOException {
-    String collectionName = create.getCollectionName();
-    create.process(getAdminClient());
-    int shards = create.getNumShards() != null ? create.getNumShards() : 1;
-    int replicas = create.getReplicationFactor() != null ? create.getReplicationFactor() : 1;
-    waitForActiveCollection(collectionName, 15, TimeUnit.SECONDS, shards, shards * replicas);
-  }
-
-  @Override
-  public boolean hasCollection(String name) {
-    return getZkStateReader().getClusterState().hasCollection(name);
-  }
-
-  @Override
-  public boolean hasConfigSet(String name) throws IOException {
-    try (SolrZkClient zkClient =
-        new SolrZkClient.Builder()
-            .withUrl(zkServer.getZkAddress())
-            .withTimeout(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .withConnTimeOut(AbstractZkTestCase.TIMEOUT, TimeUnit.MILLISECONDS)
-            .build()) {
-      return new ZkConfigSetService(zkClient).checkConfigExists(name);
-    }
-  }
-
-  @Override
-  public CoreContainer getCoreContainer() {
-    return jettys.isEmpty() ? null : jettys.get(0).getCoreContainer();
-  }
-
-  @Override
-  public void close() {
-    try {
-      shutdown();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+        .build(); // we choose 90 because we run in some harsh envs
   }
 
   public SolrZkClient getZkClient() {
@@ -792,27 +742,6 @@ public class MiniSolrCloudCluster implements SolrBackend {
     } catch (KeeperException e) {
       throw new SolrException(ErrorCode.UNKNOWN, "Failed writing to Zookeeper", e);
     }
-  }
-
-  protected CloudSolrClient buildSolrClient() {
-    return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000, TimeUnit.MILLISECONDS)
-        .withConnectionTimeout(15000, TimeUnit.MILLISECONDS)
-        .build(); // we choose 90 because we run in some harsh envs
-  }
-
-  /**
-   * creates a basic CloudSolrClient Builder that then can be customized by callers, for example by
-   * specifying what collection they want to use.
-   *
-   * @return CloudLegacySolrClient.Builder
-   */
-  public CloudLegacySolrClient.Builder basicSolrClientBuilder() {
-    return new CloudLegacySolrClient.Builder(
-            Collections.singletonList(getZkServer().getZkAddress()), Optional.empty())
-        .withSocketTimeout(90000) // we choose 90 because we run in some harsh envs
-        .withConnectionTimeout(15000);
   }
 
   private Exception checkForExceptions(String message, Collection<Future<JettySolrRunner>> futures)
@@ -871,6 +800,26 @@ public class MiniSolrCloudCluster implements SolrBackend {
       }
     }
     throw new SolrException(ErrorCode.NOT_FOUND, "No open Overseer found");
+  }
+
+  @Override // SolrBackend
+  public CoreContainer getCoreContainer() {
+    return jettys.isEmpty() ? null : jettys.get(0).getCoreContainer();
+  }
+
+  @Override // SolrBackend
+  public void createCollection(CollectionAdminRequest.Create create)
+      throws SolrServerException, IOException {
+    String collectionName = create.getCollectionName();
+    create.process(this.getSolrClient());
+    int shards = create.getNumShards() != null ? create.getNumShards() : 1;
+    int replicas = create.getReplicationFactor() != null ? create.getReplicationFactor() : 1;
+    waitForActiveCollection(collectionName, 15, TimeUnit.SECONDS, shards, shards * replicas);
+  }
+
+  @Override // SolrBackend
+  public boolean hasCollection(String name) {
+    return getZkStateReader().getClusterState().hasCollection(name);
   }
 
   public void waitForActiveCollection(

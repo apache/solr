@@ -60,12 +60,12 @@ public class EmbeddedSolrBackend implements SolrBackend {
   }
 
   @Override
-  public SolrClient newClient(String collection) {
+  public SolrClient newSolrClient(String collection) {
     return new EmbeddedSolrServer(coreContainer, collection);
   }
 
   @Override
-  public EmbeddedSolrServer getAdminClient() {
+  public EmbeddedSolrServer getSolrClient() {
     return adminClient;
   }
 

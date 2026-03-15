@@ -102,7 +102,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
                 .process(cluster.getSolrClient()))
             .getStatus());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION);
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
