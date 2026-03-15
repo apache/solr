@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -93,8 +94,10 @@ public class UpdateLogReplayTracingTest extends SolrTestCaseJ4 {
 
     clearIndex();
     ulog.bufferUpdates();
-    assertNotNull(addAndGetVersion(sdoc("id", "1", "title_s", "doc-1"), withVersion(replayParams, 1001L)));
-    assertNotNull(addAndGetVersion(sdoc("id", "2", "title_s", "doc-2"), withVersion(replayParams, 1002L)));
+    assertNotNull(
+        updateJ(jsonAdd(sdoc("id", "1", "title_s", "doc-1")), withVersion(replayParams, 1001L)));
+    assertNotNull(
+        updateJ(jsonAdd(sdoc("id", "2", "title_s", "doc-2")), withVersion(replayParams, 1002L)));
 
     spanExporter.reset();
     Future<UpdateLog.RecoveryInfo> replayFuture = ulog.applyBufferedUpdates();
@@ -123,7 +126,9 @@ public class UpdateLogReplayTracingTest extends SolrTestCaseJ4 {
   }
 
   private SolrParams withVersion(SolrParams base, long version) {
-    return params(base, "_version_", Long.toString(version));
+    ModifiableSolrParams versioned = new ModifiableSolrParams(base);
+    versioned.set("_version_", Long.toString(version));
+    return versioned;
   }
 
   private SpanData findSpan(List<SpanData> spans, String spanName) {
