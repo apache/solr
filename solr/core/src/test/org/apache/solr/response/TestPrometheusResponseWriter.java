@@ -17,7 +17,6 @@
 package org.apache.solr.response;
 
 import static org.apache.solr.client.solrj.response.InputStreamResponseParser.STREAM_KEY;
-import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
 
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
@@ -32,7 +31,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.MetricsRequest;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
@@ -49,8 +47,6 @@ public class TestPrometheusResponseWriter extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    EnvUtils.setProperty(
-        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(LuceneTestCase.createTempDir());
     solrTestRule.newCollection("core1").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
     solrTestRule.newCollection("core2").withConfigSet(ExternalPaths.DEFAULT_CONFIGSET).create();
