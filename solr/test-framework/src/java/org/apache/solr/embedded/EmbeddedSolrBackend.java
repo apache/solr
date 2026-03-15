@@ -27,6 +27,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 
 /**
  * {@link SolrBackend} backed by an in-process {@link CoreContainer}/{@link EmbeddedSolrServer}. No
@@ -70,15 +71,15 @@ public class EmbeddedSolrBackend implements SolrBackend {
 
   @Override
   public void createCollection(CollectionAdminRequest.Create create) {
-    String coreName = create.getCollectionName();
+    // convert configset & properties to a map of "create params":
     Map<String, String> coreParams = new HashMap<>();
     if (create.getConfigName() != null) {
-      coreParams.put("configSet", create.getConfigName());
+      coreParams.put(CoreDescriptor.CORE_CONFIGSET, create.getConfigName());
     }
     if (create.getProperties() != null) {
       create.getProperties().forEach((k, v) -> coreParams.put(k.toString(), v.toString()));
     }
-    coreContainer.create(coreName, coreParams);
+    coreContainer.create(create.getCollectionName(), coreParams);
   }
 
   @Override

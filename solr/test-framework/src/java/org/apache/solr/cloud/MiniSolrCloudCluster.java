@@ -567,12 +567,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
     return jetty;
   }
 
-  /**
-   * Upload a config set
-   *
-   * @param configDir a path to the config set to upload
-   * @param configName the name to give the configset
-   */
+  @Override
   public void uploadConfigSet(Path configDir, String configName) throws IOException {
     try (SolrZkClient zkClient =
         new SolrZkClient.Builder()
