@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,7 +47,12 @@ public class DistributedMultiLock {
     for (DistributedLock lock : locks) {
       log.debug("DistributedMultiLock.waitUntilAcquired. About to wait on lock {}", lock);
       lock.waitUntilAcquired();
-      log.debug("DistributedMultiLock.waitUntilAcquired. Acquired lock {}", lock);
+      if (lock.isMirroringLock()) {
+        log.debug(
+            "DistributedMultiLock.waitUntilAcquired. Mirroring already-acquired lock {}", lock);
+      } else {
+        log.debug("DistributedMultiLock.waitUntilAcquired. Acquired lock {}", lock);
+      }
     }
   }
 
@@ -68,6 +74,10 @@ public class DistributedMultiLock {
       }
     }
     return true;
+  }
+
+  public String getLockId() {
+    return locks.stream().map(DistributedLock::getLockId).collect(Collectors.joining(","));
   }
 
   @VisibleForTesting
