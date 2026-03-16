@@ -24,15 +24,19 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
+import org.apache.lucene.search.TermInSetQuery;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.CharsRef;
@@ -53,7 +57,17 @@ import org.slf4j.LoggerFactory;
  * FieldCache} is not supported for {@code PointField}s, so sorting, faceting, etc on these fields
  * require the use of {@code docValues="true"} in the schema.
  */
-public abstract class PointField extends NumericFieldType {
+public abstract class NumericField extends PrimitiveFieldType {
+
+  protected NumberType type;
+
+  /**
+   * @return the type of this field
+   */
+  @Override
+  public NumberType getNumberType() {
+    return type;
+  }
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -89,7 +103,7 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   protected boolean hasIndexedTerms(SchemaField field) {
-    return false;
+    return field.enhancedIndex();
   }
 
   @Override
@@ -153,23 +167,70 @@ public abstract class PointField extends NumericFieldType {
   }
 
   @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
-    return super.getSetQuery(parser, field, externalVals);
-  }
-
-  @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    if (!field.indexed() && field.hasDocValues()) {
-      // currently implemented as singleton range
-      return getRangeQuery(parser, field, externalVal, externalVal, true, true);
-    } else if (field.indexed() && field.hasDocValues()) {
-      Query indexQuery = getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
-      Query dvQuery = getDocValuesRangeQuery(parser, field, externalVal, externalVal, true, true);
+    if (field.indexed() && field.hasDocValues()) {
+      Query indexQuery = getIndexFieldQuery(parser, field, externalVal);
+      Query dvQuery = getDocValuesFieldQuery(parser, field, externalVal);
       return new IndexOrDocValuesQuery(indexQuery, dvQuery);
+    } else if (field.hasDocValues()) {
+      // currently implemented as singleton range
+      return getDocValuesFieldQuery(parser, field, externalVal);
     } else {
-      return getPointRangeQuery(parser, field, externalVal, externalVal, true, true);
+      return getIndexFieldQuery(parser, field, externalVal);
     }
   }
+
+  final Query getIndexFieldQuery(QParser parser, SchemaField field, String externalVal) {
+    if (hasIndexedTerms(field)) {
+      BytesRefBuilder br = new BytesRefBuilder();
+      readableToIndexed(externalVal, br);
+      return new TermQuery(new Term(field.getName(), br));
+    } else {
+      return getPointFieldQuery(parser, field, externalVal);
+    }
+  }
+
+  public abstract Query getPointFieldQuery(QParser parser, SchemaField field, String externalVal);
+
+  public abstract Query getDocValuesFieldQuery(
+      QParser parser, SchemaField field, String externalVal);
+
+  @Override
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    assert !externalVals.isEmpty();
+    if (field.indexed() && field.hasDocValues()) {
+      Query pointsQuery = getIndexSetQuery(parser, field, externalVals);
+      Query dvQuery = getDocValuesSetQuery(parser, field, externalVals);
+      return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
+    } else if (field.hasDocValues()) {
+      return getDocValuesSetQuery(parser, field, externalVals);
+    } else if (field.indexed()) {
+      return getIndexSetQuery(parser, field, externalVals);
+    } else {
+      return super.getSetQuery(parser, field, externalVals);
+    }
+  }
+
+  final Query getIndexSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    if (hasIndexedTerms(field)) {
+      List<BytesRef> lst = new ArrayList<>(externalVals.size());
+      BytesRefBuilder br = new BytesRefBuilder();
+      for (String externalVal : externalVals) {
+        readableToIndexed(externalVal, br);
+        lst.add(br.toBytesRef());
+      }
+      return new TermInSetQuery(field.getName(), lst);
+    } else if (field.indexed()) {
+      return getPointSetQuery(parser, field, externalVals);
+    }
+    return null;
+  }
+
+  public abstract Query getPointSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals);
+
+  public abstract Query getDocValuesSetQuery(
+      QParser parser, SchemaField field, Collection<String> externalVals);
 
   @Override
   protected Query getSpecializedRangeQuery(
@@ -179,18 +240,26 @@ public abstract class PointField extends NumericFieldType {
       String max,
       boolean minInclusive,
       boolean maxInclusive) {
-    if (!field.indexed() && field.hasDocValues()) {
-      return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
-    } else if (field.indexed() && field.hasDocValues()) {
+    if (field.indexed() && field.hasDocValues()) {
       Query pointsQuery = getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
       Query dvQuery = getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
       return new IndexOrDocValuesQuery(pointsQuery, dvQuery);
+    } else if (field.hasDocValues()) {
+      return getDocValuesRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     } else {
       return getPointRangeQuery(parser, field, min, max, minInclusive, maxInclusive);
     }
   }
 
   public abstract Query getPointRangeQuery(
+      QParser parser,
+      SchemaField field,
+      String min,
+      String max,
+      boolean minInclusive,
+      boolean maxInclusive);
+
+  public abstract Query getDocValuesRangeQuery(
       QParser parser,
       SchemaField field,
       String min,
@@ -205,8 +274,7 @@ public abstract class PointField extends NumericFieldType {
 
   @Override
   public String toInternal(String val) {
-    throw new UnsupportedOperationException(
-        "Can't generate internal string in PointField. use PointField.toInternalByteRef");
+    return toInternalByteRef(val).utf8ToString();
   }
 
   public BytesRef toInternalByteRef(String val) {
@@ -272,6 +340,9 @@ public abstract class PointField extends NumericFieldType {
     if (sf.indexed()) {
       field = createField(sf, value);
       fields.add(field);
+      if (sf.enhancedIndex()) {
+        fields.add(new StringField(sf.getName(), field.binaryValue(), Field.Store.NO));
+      }
     }
 
     if (sf.hasDocValues()) {
@@ -287,28 +358,16 @@ public abstract class PointField extends NumericFieldType {
         numericValue = field.numericValue();
       }
       final long bits;
-      if (!sf.multiValued()) {
-        if (numericValue instanceof Integer || numericValue instanceof Long) {
-          bits = numericValue.longValue();
-        } else if (numericValue instanceof Float) {
-          bits = Float.floatToIntBits(numericValue.floatValue());
-        } else {
-          assert numericValue instanceof Double;
-          bits = Double.doubleToLongBits(numericValue.doubleValue());
-        }
-        fields.add(new NumericDocValuesField(sf.getName(), bits));
+      // MultiValued
+      if (numericValue instanceof Integer || numericValue instanceof Long) {
+        bits = numericValue.longValue();
+      } else if (numericValue instanceof Float) {
+        bits = NumericUtils.floatToSortableInt(numericValue.floatValue());
       } else {
-        // MultiValued
-        if (numericValue instanceof Integer || numericValue instanceof Long) {
-          bits = numericValue.longValue();
-        } else if (numericValue instanceof Float) {
-          bits = NumericUtils.floatToSortableInt(numericValue.floatValue());
-        } else {
-          assert numericValue instanceof Double;
-          bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
-        }
-        fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
+        assert numericValue instanceof Double;
+        bits = NumericUtils.doubleToSortableLong(numericValue.doubleValue());
       }
+      fields.add(new SortedNumericDocValuesField(sf.getName(), bits));
     }
     if (sf.stored()) {
       fields.add(getStoredField(sf, value));

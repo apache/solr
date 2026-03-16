@@ -18,14 +18,15 @@
 package org.apache.solr.schema;
 
 import java.util.Collection;
-import org.apache.lucene.document.DoubleField;
 import org.apache.lucene.document.DoublePoint;
+import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
+import org.apache.lucene.search.IndexOrDocValuesQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -109,27 +110,53 @@ public class DoublePointField extends PointField implements DoubleValueFieldType
   }
 
   @Override
-  protected Query getExactQuery(SchemaField field, String externalVal) {
-    return DoublePoint.newExactQuery(
-        field.getName(), parseDoubleFromUser(field.getName(), externalVal));
-  }
-
-  @Override
-  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVal) {
-    assert externalVal.size() > 0;
-    if (!field.indexed()) {
-      return super.getSetQuery(parser, field, externalVal);
-    }
-    double[] values = new double[externalVal.size()];
-    int i = 0;
-    for (String val : externalVal) {
-      values[i] = parseDoubleFromUser(field.getName(), val);
-      i++;
+  public Query getSetQuery(QParser parser, SchemaField field, Collection<String> externalVals) {
+    assert externalVals.size() > 0;
+    Query indexQuery = null;
+    double[] values = null;
+    if (field.indexed()) {
+      values = new double[externalVals.size()];
+      int i = 0;
+      for (String val : externalVals) {
+        values[i++] = parseDoubleFromUser(field.getName(), val);
+      }
+      indexQuery = DoublePoint.newSetQuery(field.getName(), values);
     }
     if (field.hasDocValues()) {
-      return DoubleField.newSetQuery(field.getName(), values);
+      long[] points = new long[externalVals.size()];
+      if (values != null) {
+        if (field.multiValued()) {
+          for (int i = 0; i < values.length; i++) {
+            points[i] = NumericUtils.doubleToSortableLong(values[i]);
+          }
+        } else {
+          for (int i = 0; i < values.length; i++) {
+            points[i] = Double.doubleToLongBits(values[i]);
+          }
+        }
+      } else {
+        int i = 0;
+        if (field.multiValued()) {
+          for (String val : externalVals) {
+            points[i++] =
+                NumericUtils.doubleToSortableLong(parseDoubleFromUser(field.getName(), val));
+          }
+        } else {
+          for (String val : externalVals) {
+            points[i++] = Double.doubleToLongBits(parseDoubleFromUser(field.getName(), val));
+          }
+        }
+      }
+      Query docValuesQuery = SortedNumericDocValuesField.newSlowSetQuery(field.getName(), points);
+      if (indexQuery != null) {
+        return new IndexOrDocValuesQuery(indexQuery, docValuesQuery);
+      } else {
+        return docValuesQuery;
+      }
+    } else if (indexQuery != null) {
+      return indexQuery;
     } else {
-      return DoublePoint.newSetQuery(field.getName(), values);
+      return super.getSetQuery(parser, field, externalVals);
     }
   }
 
