@@ -34,6 +34,15 @@
             <Item>
               <New class="org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory">
                 <Arg name="config"><Ref refid="httpConfig" /></Arg>
+                <Set name="maxConcurrentStreams" property="jetty.http2c.maxConcurrentStreams"/>
+                <Set name="initialStreamRecvWindow" property="jetty.http2c.initialStreamRecvWindow"/>
+                <Set name="initialSessionRecvWindow" property="jetty.http2c.initialSessionRecvWindow"/>
+                <Set name="maxSettingsKeys" property="jetty.http2c.maxSettingsKeys"/>
+                <Set name="rateControlFactory">
+                  <New class="org.eclipse.jetty.http2.WindowRateControl$Factory">
+                    <Arg type="int"><Property name="jetty.http2c.rateControl.maxEventsPerSecond" default="128"/></Arg>
+                  </New>
+                </Set>
               </New>
             </Item>
           </Array>

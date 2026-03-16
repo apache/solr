@@ -33,6 +33,9 @@ import org.apache.solr.util.ServletFixtures.DebugServlet;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.eclipse.jetty.client.transport.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.ee10.servlet.ServletHolder;
+import org.eclipse.jetty.http2.FlowControlStrategy;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
+import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.http2.client.transport.HttpClientTransportOverHTTP2;
 import org.junit.ClassRule;
 
@@ -50,6 +53,73 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
     System.clearProperty("solr.http1");
     try (var client = new HttpJettySolrClient.Builder().build()) {
       assertTrue(client.getHttpClient().getTransport() instanceof HttpClientTransportOverHTTP2);
+    }
+  }
+
+  public void testHttp2FlowControlSystemProperties() {
+    // Test with custom session and stream recv window sizes
+    System.setProperty(
+        HttpJettySolrClient.HTTP2_SESSION_RECV_WINDOW_SYSPROP, String.valueOf(4 * 1024 * 1024));
+    System.setProperty(
+        HttpJettySolrClient.HTTP2_STREAM_RECV_WINDOW_SYSPROP, String.valueOf(2 * 1024 * 1024));
+    System.setProperty(HttpJettySolrClient.HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP, "true");
+
+    try (var client = new HttpJettySolrClient.Builder().build()) {
+      var transport = client.getHttpClient().getTransport();
+      assertTrue("Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
+
+      HttpClientTransportOverHTTP2 http2Transport = (HttpClientTransportOverHTTP2) transport;
+      HTTP2Client http2Client = http2Transport.getHTTP2Client();
+
+      assertEquals(
+          "Session recv window should be set",
+          4 * 1024 * 1024,
+          http2Client.getInitialSessionRecvWindow());
+      assertEquals(
+          "Stream recv window should be set",
+          2 * 1024 * 1024,
+          http2Client.getInitialStreamRecvWindow());
+
+      // Verify simple flow control strategy is used
+      FlowControlStrategy.Factory factory = http2Client.getFlowControlStrategyFactory();
+      FlowControlStrategy strategy = factory.newFlowControlStrategy();
+      assertTrue(
+          "Expected SimpleFlowControlStrategy", strategy instanceof SimpleFlowControlStrategy);
+    } finally {
+      System.clearProperty(HttpJettySolrClient.HTTP2_SESSION_RECV_WINDOW_SYSPROP);
+      System.clearProperty(HttpJettySolrClient.HTTP2_STREAM_RECV_WINDOW_SYSPROP);
+      System.clearProperty(HttpJettySolrClient.HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP);
+    }
+  }
+
+  @SuppressWarnings("try") // HTTP2Client is AutoCloseable but doesn't need closing when not started
+  public void testHttp2FlowControlDefaultsUnchangedWhenPropertiesNotSet() {
+    // Ensure no flow control properties are set
+    System.clearProperty(HttpJettySolrClient.HTTP2_SESSION_RECV_WINDOW_SYSPROP);
+    System.clearProperty(HttpJettySolrClient.HTTP2_STREAM_RECV_WINDOW_SYSPROP);
+    System.clearProperty(HttpJettySolrClient.HTTP2_SIMPLE_FLOW_CONTROL_SYSPROP);
+
+    // Get default values from a fresh HTTP2Client for comparison
+    // Note: HTTP2Client doesn't need to be closed if never started
+    HTTP2Client defaultHttp2Client = new HTTP2Client();
+    int defaultSessionWindow = defaultHttp2Client.getInitialSessionRecvWindow();
+    int defaultStreamWindow = defaultHttp2Client.getInitialStreamRecvWindow();
+
+    try (var client = new HttpJettySolrClient.Builder().build()) {
+      var transport = client.getHttpClient().getTransport();
+      assertTrue("Expected HTTP/2 transport", transport instanceof HttpClientTransportOverHTTP2);
+
+      HttpClientTransportOverHTTP2 http2Transport = (HttpClientTransportOverHTTP2) transport;
+      HTTP2Client http2Client = http2Transport.getHTTP2Client();
+
+      assertEquals(
+          "Session recv window should remain at default",
+          defaultSessionWindow,
+          http2Client.getInitialSessionRecvWindow());
+      assertEquals(
+          "Stream recv window should remain at default",
+          defaultStreamWindow,
+          http2Client.getInitialStreamRecvWindow());
     }
   }
 
