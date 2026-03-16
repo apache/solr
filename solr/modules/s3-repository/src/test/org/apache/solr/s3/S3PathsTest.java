@@ -46,13 +46,17 @@ public class S3PathsTest extends AbstractS3ClientTest {
   /** Simple tests with a directory. */
   @Test
   public void testDirectory() throws S3Exception {
+    // createDirectory is a no-op on S3 (no marker objects are written).
+    // A prefix is treated as a directory if it has children — write one to establish the prefix.
+    client.createDirectory("/simple-directory"); // no-op
+    pushContent("/simple-directory/a-file", "content");
 
-    client.createDirectory("/simple-directory");
-    assertFalse("Dir path needs a trailing slash", client.pathExists("/simple-directory"));
-    assertTrue("Dir should exist without a leading slash", client.pathExists("simple-directory/"));
-    assertTrue("Dir should exist with a leading slash", client.pathExists("/simple-directory/"));
+    assertFalse(
+        "Bare name without trailing slash is not a key", client.pathExists("/simple-directory"));
     assertTrue(
-        "Leading slash should be irrelevant for determining if dir is a dir",
+        "Dir should exist without a leading slash", client.pathExists("simple-directory/a-file"));
+    assertTrue(
+        "Prefix with children should be considered a directory",
         client.isDirectory("simple-directory/"));
     assertTrue(
         "Leading slash should be irrelevant for determining if dir is a dir",
@@ -172,25 +176,17 @@ public class S3PathsTest extends AbstractS3ClientTest {
    */
   @Test
   public void testVirtualDirectoryWithoutMarker() throws S3Exception {
-    // Set up a normal directory tree with markers and content.
-    client.createDirectory("/virtual-dir");
+    // Since createDirectory is a no-op, there are never marker objects.
+    // Write files directly under a prefix to establish virtual directories.
     pushContent("/virtual-dir/file1", "file1");
-    client.createDirectory("/virtual-dir/sub-dir");
     pushContent("/virtual-dir/sub-dir/file2", "file2");
 
-    // Simulate the post-sync state by deleting just the directory marker objects.
-    // deleteObjects(Collection, int) accepts raw keys, bypassing sanitizedFilePath checks.
-    client.deleteObjects(List.of("virtual-dir/", "virtual-dir/sub-dir/"), 100);
-
-    // The paths should still be considered directories via the virtual-directory fallback.
     assertTrue(
         "A path with objects under it should be considered a virtual directory",
         client.isDirectory("/virtual-dir"));
     assertTrue(
         "A nested path with objects under it should be considered a virtual directory",
         client.isDirectory("/virtual-dir/sub-dir"));
-
-    // A path with neither a marker nor any objects underneath must not be a directory.
     assertFalse(
         "A path with no objects and no marker should not be a directory",
         client.isDirectory("/virtual-dir/empty-sub-dir"));

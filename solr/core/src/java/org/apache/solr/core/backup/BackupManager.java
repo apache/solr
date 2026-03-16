@@ -131,7 +131,7 @@ public class BackupManager {
     Objects.requireNonNull(repository);
     Objects.requireNonNull(stateReader);
 
-    if (!repository.exists(backupPath)) {
+    if (repository.listAllOrEmpty(backupPath).length == 0) {
       throw new SolrException(
           ErrorCode.SERVER_ERROR, "Couldn't restore since doesn't exist: " + backupPath);
     }
@@ -258,9 +258,7 @@ public class BackupManager {
       String sourceConfigName, String targetConfigName, ConfigSetService configSetService)
       throws IOException {
     URI source = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, sourceConfigName);
-    // Use both exists() and listAll() to handle object stores (e.g. S3) where a "directory"
-    // may have no explicit marker object but still contain config files under that prefix.
-    if (!repository.exists(source) && repository.listAll(source).length == 0) {
+    if (repository.listAll(source).length == 0) {
       throw new IllegalArgumentException("Configset expected at " + source + " does not exist");
     }
     uploadConfigToSolrCloud(configSetService, source, targetConfigName, "");
@@ -277,9 +275,6 @@ public class BackupManager {
   public void downloadConfigDir(String configName, ConfigSetService configSetService)
       throws IOException {
     URI dest = repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR, configName);
-    repository.createDirectory(repository.resolveDirectory(getZkStateDir(), CONFIG_STATE_DIR));
-    repository.createDirectory(dest);
-
     downloadConfigToRepo(configSetService, configName, dest);
   }
 
@@ -370,9 +365,8 @@ public class BackupManager {
           }
         }
       } else {
-        if (!repository.exists(uri)) {
-          repository.createDirectory(uri);
-        }
+        // Directory entries from getAllConfigFiles are implicit on object stores;
+        // no explicit directory creation is needed.
       }
     }
   }
@@ -433,6 +427,7 @@ public class BackupManager {
   }
 
   public void createZkStateDir() throws IOException {
-    repository.createDirectory(getZkStateDir());
+    // S3 does not require directory marker objects to be written before files are stored
+    // under a prefix. This is kept as a no-op for interface compatibility.
   }
 }

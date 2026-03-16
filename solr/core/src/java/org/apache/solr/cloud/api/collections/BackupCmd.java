@@ -198,15 +198,13 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
       throws IOException {
     final URI backupNamePath = repository.resolveDirectory(location, backupName);
 
-    if ((!incremental) && repository.exists(backupNamePath)) {
+    if ((!incremental) && repository.listAllOrEmpty(backupNamePath).length > 0) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "The backup directory already exists: " + backupNamePath);
     }
 
-    if (!repository.exists(backupNamePath)) {
-      repository.createDirectory(backupNamePath);
-    } else if (incremental) {
+    if (incremental && repository.listAllOrEmpty(backupNamePath).length > 0) {
       final String[] directoryContents = repository.listAll(backupNamePath);
       if (directoryContents.length == 1) {
         String directoryContentsName = directoryContents[0];
@@ -238,9 +236,6 @@ public class BackupCmd implements CollApiCmds.CollectionApiCommand {
     // Incremental backups have an additional directory named after the collection that needs
     // created
     final URI backupPathWithCollection = repository.resolveDirectory(backupNamePath, collection);
-    if (!repository.exists(backupPathWithCollection)) {
-      repository.createDirectory(backupPathWithCollection);
-    }
     BackupFilePaths incBackupFiles = new BackupFilePaths(repository, backupPathWithCollection);
     incBackupFiles.createIncrementalBackupFolders();
     return backupPathWithCollection;

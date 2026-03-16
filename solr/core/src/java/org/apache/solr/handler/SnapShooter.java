@@ -162,12 +162,12 @@ public class SnapShooter {
   public void validateCreateSnapshot() throws IOException {
     // Note - Removed the current behavior of creating the directory hierarchy.
     // Do we really need to provide this support?
-    if (!backupRepo.exists(baseSnapDirPath)) {
+    if (backupRepo.listAllOrEmpty(baseSnapDirPath).length == 0) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, " Directory does not exist: " + snapshotDirPath);
     }
 
-    if (backupRepo.exists(snapshotDirPath)) {
+    if (backupRepo.listAllOrEmpty(snapshotDirPath).length > 0) {
       throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST,
           "Snapshot directory already exists: " + snapshotDirPath);

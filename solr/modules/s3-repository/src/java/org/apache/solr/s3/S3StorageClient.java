@@ -39,10 +39,8 @@ import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.awscore.retry.AwsRetryStrategy;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.exception.SdkException;
 import software.amazon.awssdk.core.retry.RetryMode;
-import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.http.apache.ProxyConfiguration;
@@ -61,7 +59,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectResponse;
 import software.amazon.awssdk.services.s3.model.NoSuchBucketException;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Object;
 import software.amazon.awssdk.services.s3.paginators.ListObjectsV2Iterable;
 
@@ -181,27 +178,9 @@ public class S3StorageClient {
 
   /** Create a directory in S3, if it does not already exist. */
   void createDirectory(String path) throws S3Exception {
-    String sanitizedDirPath = sanitizedDirPath(path);
-
-    // Only create the directory if it does not already exist
-    if (!pathExists(sanitizedDirPath)) {
-      createDirectory(getParentDirectory(sanitizedDirPath));
-      // TODO see https://issues.apache.org/jira/browse/SOLR-15359
-      //            throw new S3Exception("Parent directory doesn't exist, path=" + path);
-
-      try {
-        // Create empty object with content type header
-        PutObjectRequest putRequest =
-            PutObjectRequest.builder()
-                .bucket(bucketName)
-                .contentType(S3_DIR_CONTENT_TYPE)
-                .key(sanitizedDirPath)
-                .build();
-        s3Client.putObject(putRequest, RequestBody.empty());
-      } catch (SdkClientException ase) {
-        throw handleAmazonException(ase);
-      }
-    }
+    // S3 does not require explicit directory marker objects. Writing a file directly
+    // under a prefix is sufficient. Creating zero-byte marker objects is an anti-pattern
+    // that causes failures after tools like 'aws s3 sync' drop them.
   }
 
   /**
@@ -236,9 +215,6 @@ public class S3StorageClient {
 
     // Get all the files and subdirectories
     Set<String> entries = listAll(path);
-    if (pathExists(path)) {
-      entries.add(path);
-    }
 
     deleteObjects(entries);
   }
@@ -435,10 +411,6 @@ public class S3StorageClient {
   OutputStream pushStream(String path) throws S3Exception {
     path = sanitizedFilePath(path);
 
-    if (!parentDirectoryExist(path)) {
-      throw new S3Exception("Parent directory doesn't exist of path: " + path);
-    }
-
     try {
       return new S3OutputStream(s3Client, path, bucketName);
     } catch (SdkException sdke) {
@@ -543,34 +515,6 @@ public class S3StorageClient {
     } catch (SdkException sdke) {
       throw handleAmazonException(sdke);
     }
-  }
-
-  private boolean parentDirectoryExist(String path) throws S3Exception {
-    // Get the last non-slash character of the string, to find the parent directory
-    String parentDirectory = getParentDirectory(path);
-
-    // If we have no specific parent directory, we consider parent is root (and always exists)
-    if (parentDirectory.isEmpty() || parentDirectory.equals(S3_FILE_PATH_DELIMITER)) {
-      return true;
-    }
-
-    // Check for existence twice, because s3Mock has issues in the tests
-    return pathExists(parentDirectory);
-  }
-
-  private String getParentDirectory(String path) {
-    if (!path.contains(S3_FILE_PATH_DELIMITER)) {
-      return "";
-    }
-
-    // Get the last non-slash character of the string, to find the parent directory
-    int fromEnd = path.length() - 1;
-    if (path.endsWith(S3_FILE_PATH_DELIMITER)) {
-      fromEnd -= 1;
-    }
-    return fromEnd > 0
-        ? path.substring(0, path.lastIndexOf(S3_FILE_PATH_DELIMITER, fromEnd) + 1)
-        : "";
   }
 
   /** Ensures path adheres to some rules: -Doesn't start with a leading slash */
