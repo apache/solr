@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.lang.management.ManagementFactory;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -60,6 +61,7 @@ import org.openjdk.jmh.infra.BenchmarkParams;
 import org.openjdk.jmh.infra.Control;
 
 /** The base class for Solr JMH benchmarks that operate against a {@code MiniSolrCloudCluster}. */
+@SuppressForbidden(reason = "This module does not need to deal with logging context")
 public class MiniClusterState {
 
   /** The constant PROC_COUNT. */
@@ -129,7 +131,10 @@ public class MiniClusterState {
               benchmarkParams.getBenchmark() + ".txt");
       Files.createDirectories(metricsResults.getParent());
 
-      cluster.dumpMetrics(metricsResults.getParent(), metricsResults.getFileName().toString());
+      try (var out =
+          new PrintStream(Files.newOutputStream(metricsResults), false, Charset.defaultCharset())) {
+        cluster.dumpMetrics(out);
+      }
     }
 
     /**
@@ -344,7 +349,6 @@ public class MiniClusterState {
       this.useHttp1 = useHttp1;
     }
 
-    @SuppressForbidden(reason = "This module does not need to deal with logging context")
     public void index(String collection, Docs docs, int docCount) throws Exception {
       index(collection, docs, docCount, true);
     }
@@ -389,7 +393,7 @@ public class MiniClusterState {
       dumpCoreInfo();
     }
 
-    @SuppressForbidden(reason = "This module does not need to deal with logging context")
+    @SuppressForbidden(reason = "Benchmarks may use JDK ExecutorService impls")
     private void indexParallel(String collection, Docs docs, int docCount)
         throws InterruptedException {
       Meter meter = new Meter();

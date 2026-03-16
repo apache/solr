@@ -119,7 +119,7 @@ public class TestCloudJSONFacetJoinDomain extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(cluster.getSolrClient());
 
-    CLOUD_CLIENT = cluster.basicSolrClientBuilder().withDefaultCollection(COLLECTION_NAME).build();
+    CLOUD_CLIENT = cluster.newSolrClient(COLLECTION_NAME);
 
     waitForRecoveriesToFinish(CLOUD_CLIENT);
 
