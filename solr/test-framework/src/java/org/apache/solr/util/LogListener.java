@@ -100,6 +100,7 @@ public final class LogListener implements Closeable, AutoCloseable {
   // far easier to use FQN for our (one) slf4j Logger then to use a FQN every time we refer to
   // log4j2
   // Logger
+  @SuppressWarnings("UnnecessarilyFullyQualified") // disambiguates from log4j2 Logger
   private static final org.slf4j.Logger log =
       org.slf4j.LoggerFactory.getLogger(
           MethodHandles.lookup().lookupClass()); // nowarn_valid_logger

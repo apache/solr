@@ -19,6 +19,7 @@ package org.apache.solr.util.circuitbreaker;
 
 import io.prometheus.metrics.model.snapshots.GaugeSnapshot;
 import java.lang.invoke.MethodHandles;
+import java.util.Collection;
 import java.util.Locale;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -116,7 +117,7 @@ public class CPUCircuitBreaker extends CircuitBreaker implements SolrCoreAware {
         .filter(GaugeSnapshot.class::isInstance)
         .map(GaugeSnapshot.class::cast)
         .map(GaugeSnapshot::getDataPoints)
-        .flatMap(java.util.Collection::stream)
+        .flatMap(Collection::stream)
         .findFirst()
         .map(dp -> dp.getValue() * 100)
         .orElse(-1.0); // Unable to unpack metric

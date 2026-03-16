@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BinaryNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -220,8 +221,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   public static Object decodeSmile(InputStream is) throws IOException {
     final SmileFactory smileFactory = new SmileFactory();
-    com.fasterxml.jackson.databind.ObjectMapper mapper =
-        new com.fasterxml.jackson.databind.ObjectMapper(smileFactory);
+    ObjectMapper mapper = new ObjectMapper(smileFactory);
     JsonNode jsonNode = mapper.readTree(is);
     return getVal(jsonNode);
   }
