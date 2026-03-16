@@ -804,7 +804,7 @@ public class MiniSolrCloudCluster implements SolrBackend {
 
   @Override // SolrBackend
   public CoreContainer getCoreContainer() {
-    return jettys.isEmpty() ? null : jettys.get(0).getCoreContainer();
+    return jettys.size() != 1 ? null : jettys.getFirst().getCoreContainer();
   }
 
   @Override // SolrBackend

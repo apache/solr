@@ -71,9 +71,9 @@ public class EmbeddedSolrBackend implements SolrBackend {
 
   @Override
   public void createCollection(CollectionAdminRequest.Create create) {
-    // convert configset & properties to a map of "create params":
+    // convert configSet & properties to a map of "create params":
     Map<String, String> coreParams = new HashMap<>();
-    if (create.getConfigName() != null) {
+    if (create.getConfigName() != null) { // actually the configSet name; "config" is ambiguous
       coreParams.put(CoreDescriptor.CORE_CONFIGSET, create.getConfigName());
     }
     if (create.getProperties() != null) {
