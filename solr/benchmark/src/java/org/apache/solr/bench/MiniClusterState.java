@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -371,7 +372,7 @@ public class MiniClusterState {
         log("committing data ...");
         UpdateRequest commitRequest = new UpdateRequest();
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
-        commitRequest.setAction(UpdateRequest.ACTION.COMMIT, false, true);
+        commitRequest.setAction(UpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
         client.requestWithBaseUrl(url, commitRequest, collection);
         log("done committing data");
       } else {
@@ -501,7 +502,8 @@ public class MiniClusterState {
 
         UpdateRequest optimizeRequest = new UpdateRequest();
         final var url = nodes.get(random.nextInt(cluster.getJettySolrRunners().size()));
-        optimizeRequest.setAction(UpdateRequest.ACTION.OPTIMIZE, false, true, maxMergeSegments);
+        optimizeRequest.setAction(
+            UpdateRequest.ACTION.OPTIMIZE, CommitOptions.forOptimize(maxMergeSegments));
         client.requestWithBaseUrl(url, optimizeRequest, collection);
       }
     }

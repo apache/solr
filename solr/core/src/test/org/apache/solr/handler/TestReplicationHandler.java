@@ -441,15 +441,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // higher than that of the leader, just to make the test harder.
 
     index(followerClient, "id", 551, "name", "name = " + 551);
-    followerClient.commit(true, true);
+    followerClient.commit();
     index(followerClient, "id", 552, "name", "name = " + 552);
-    followerClient.commit(true, true);
+    followerClient.commit();
     index(followerClient, "id", 553, "name", "name = " + 553);
-    followerClient.commit(true, true);
+    followerClient.commit();
     index(followerClient, "id", 554, "name", "name = " + 554);
-    followerClient.commit(true, true);
+    followerClient.commit();
     index(followerClient, "id", 555, "name", "name = " + 555);
-    followerClient.commit(true, true);
+    followerClient.commit();
 
     // this doc is added to follower, so it should show an item w/ that result
     assertEquals(1, numFound(rQuery(1, "id:555", followerClient)));

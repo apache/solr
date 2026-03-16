@@ -53,6 +53,7 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.ZkConfigSetService;
@@ -1026,7 +1027,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
     // load sample docs from blob store
     CloudSolrClient cloudSolrClient = cloudClient();
     cloudSolrClient.deleteByQuery(collectionName, "*:*", 1);
-    cloudSolrClient.optimize(collectionName, true, true, 1);
+    cloudSolrClient.optimize(collectionName);
 
     final int commitWithin = 100;
     final int numDocs = docs.size();
@@ -1060,8 +1061,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       }
     }
 
-    cloudSolrClient.commit(collectionName, true, true, true);
-
+    cloudSolrClient.commit(collectionName, CommitOptions.forSoftCommit());
     if (!errorsDuringIndexing.isEmpty()) {
       return errorsDuringIndexing;
     }
@@ -1084,7 +1084,7 @@ public class SchemaDesignerAPI implements SchemaDesignerConstants {
       // wait up to 5 seconds for this to occur
       final long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
       do {
-        cloudSolrClient.commit(collectionName, true, true, true);
+        cloudSolrClient.commit(collectionName, CommitOptions.forSoftCommit());
         queryResponse = cloudSolrClient.query(collectionName, query);
         numFound = queryResponse.getResults().getNumFound();
         if (numFound >= numAdded) {

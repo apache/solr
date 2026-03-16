@@ -24,6 +24,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.apache.ConcurrentUpdateSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.XMLRequestWriter;
 import org.apache.solr.client.solrj.response.XMLResponseParser;
@@ -59,15 +60,13 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
             .build()) {
       int docId = 42;
       for (AbstractUpdateRequest.ACTION action : EnumSet.allOf(UpdateRequest.ACTION.class)) {
-        for (boolean waitSearch : Arrays.asList(true, false)) {
-          for (boolean waitFlush : Arrays.asList(true, false)) {
-            UpdateRequest updateRequest = new UpdateRequest();
-            SolrInputDocument document = new SolrInputDocument();
-            document.addField("id", docId++);
-            updateRequest.add(document);
-            updateRequest.setAction(action, waitSearch, waitFlush);
-            concurrentClient.request(updateRequest);
-          }
+        for (boolean waitSearcher : Arrays.asList(true, false)) {
+          UpdateRequest updateRequest = new UpdateRequest();
+          SolrInputDocument document = new SolrInputDocument();
+          document.addField("id", docId++);
+          updateRequest.add(document);
+          updateRequest.setAction(action, new CommitOptions().waitSearcher(waitSearcher));
+          concurrentClient.request(updateRequest);
         }
       }
       concurrentClient.commit();

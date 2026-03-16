@@ -389,7 +389,7 @@ public class TestLTROnSolrCloud extends TestRerankBase {
       }
       docCounter++;
     }
-    solrCluster.getSolrClient().commit(collection, true, true);
+    solrCluster.getSolrClient().commit(collection);
   }
 
   private void loadModelsAndFeatures() throws Exception {

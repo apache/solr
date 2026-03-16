@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.WaitForState;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
@@ -305,7 +306,8 @@ public class RecoveryStrategy implements Runnable, Closeable {
       ureq.getParams().set(UpdateParams.OPEN_SEARCHER, false);
       // If the leader is readOnly, do not fail since the core is already committed.
       ureq.getParams().set(UpdateParams.FAIL_ON_READ_ONLY, false);
-      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, false, true).process(client);
+      ureq.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit())
+          .process(client);
     }
   }
 

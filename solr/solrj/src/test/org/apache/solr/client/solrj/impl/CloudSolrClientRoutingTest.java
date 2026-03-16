@@ -70,7 +70,7 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
       documents.add(document);
     }
     client.add(collection, documents);
-    client.commit(collection, true, true);
+    client.commit(collection);
 
     int numForwardedWithRoute = 0;
     int numForwardedWithoutRoute = 0;

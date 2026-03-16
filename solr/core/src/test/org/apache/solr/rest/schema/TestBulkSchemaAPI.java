@@ -1224,7 +1224,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
   public void testAddNewFieldAndQuery() throws Exception {
     getSolrClient().add(Arrays.asList(sdoc("id", "1", "term_s", "tux")));
 
-    getSolrClient().commit(true, true);
+    getSolrClient().commit();
     Map<String, Object> attrs = new HashMap<>();
     attrs.put("name", "newstringtestfield");
     attrs.put("type", "string");

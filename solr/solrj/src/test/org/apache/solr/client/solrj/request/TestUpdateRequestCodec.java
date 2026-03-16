@@ -80,7 +80,6 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     doc.addField("foobar", foobar);
     updateRequest.add(doc);
 
-    //    updateRequest.setWaitFlush(true);
     updateRequest.deleteById("2");
     updateRequest.deleteByQuery("id:3");
     JavaBinUpdateRequestCodec codec = new JavaBinUpdateRequestCodec();

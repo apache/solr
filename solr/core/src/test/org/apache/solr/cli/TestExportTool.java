@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -90,7 +91,7 @@ public class TestExportTool extends SolrCloudTestCase {
       Path baseDir = cluster.getBaseDir();
 
       UpdateRequest ur = new UpdateRequest();
-      ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+      ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit());
       int docCount = 1000;
 
       for (int i = 0; i < docCount; i++) {
@@ -194,7 +195,8 @@ public class TestExportTool extends SolrCloudTestCase {
       for (int j = 0; j < 4; j++) {
         int bsz = 10000;
         UpdateRequest ur = new UpdateRequest();
-        ur.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
+        ur.setAction(
+            AbstractUpdateRequest.ACTION.COMMIT, CommitOptions.forHardCommit().waitSearcher(true));
         for (int i = 0; i < bsz; i++) {
           ur.add(
               "id",

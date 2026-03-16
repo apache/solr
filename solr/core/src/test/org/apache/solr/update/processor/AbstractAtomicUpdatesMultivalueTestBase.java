@@ -86,7 +86,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
             Arrays.asList(
                 sdoc("id", "20000", fieldName, Arrays.asList(values[0], values[1], values[2])),
                 sdoc("id", "20001", fieldName, Arrays.asList(values[1], values[2], values[3]))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 1);
@@ -110,7 +110,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
     solrTestRule
         .getSolrClient()
         .add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(values[0]))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 0);
@@ -137,7 +137,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
                 "20001",
                 fieldName,
                 Map.of("remove", List.of(values[0], values[1], values[2]))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 0);
@@ -170,7 +170,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
                     "20001",
                     fieldName,
                     Map.of("add", List.of(values[0]), "remove", List.of(values[3])))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 2);
@@ -204,7 +204,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
                     "20001",
                     fieldName,
                     Map.of("set", List.of(values[0], values[1], values[2], values[3])))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     if (queries != null) {
       assertQR(fieldName, queries[0], 2);
@@ -277,7 +277,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
             Arrays.asList(
                 sdoc("id", "20000", fieldName, List.of(true, false)),
                 sdoc("id", "20001", fieldName, List.of(false, true))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 2);
@@ -293,7 +293,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
     solrTestRule
         .getSolrClient()
         .add(sdoc("id", "20000", fieldName, Map.of("remove", List.of(false))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 1);
@@ -308,7 +308,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
     solrTestRule
         .getSolrClient()
         .add(sdoc("id", "20001", fieldName, Map.of("remove", List.of(true, false))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     assertQR(fieldName, "true", 1);
     assertQR(fieldName, "false", 0);
@@ -323,7 +323,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
     solrTestRule
         .getSolrClient()
         .add(Arrays.asList(sdoc("id", "20000", fieldName, Map.of("add", List.of(false, false)))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     assertQR(fieldName, "true", 1);
     assertQR(fieldName, "false", 1);
@@ -340,7 +340,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends SolrTestCa
             Arrays.asList(
                 sdoc("id", "20000", fieldName, Map.of("set", List.of(true, false))),
                 sdoc("id", "20001", fieldName, Map.of("set", List.of(false, true)))));
-    solrTestRule.getSolrClient().commit(true, true);
+    solrTestRule.getSolrClient().commit();
 
     assertQR(fieldName, "true", 2);
     assertQR(fieldName, "false", 2);

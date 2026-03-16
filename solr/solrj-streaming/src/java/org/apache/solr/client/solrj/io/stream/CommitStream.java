@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.request.CommitOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +49,6 @@ public class CommitStream extends TupleStream implements Expressible {
   // Part of expression / passed in
   private String collection;
   private String zkHost;
-  private boolean waitFlush;
   private boolean waitSearcher;
   private boolean softCommit;
   private int commitBatchSize;
@@ -63,7 +63,6 @@ public class CommitStream extends TupleStream implements Expressible {
     String collectionName = factory.getValueOperand(expression, 0);
     String zkHost = findZkHost(factory, collectionName, expression);
     int batchSize = factory.getIntOperand(expression, "batchSize", 0);
-    boolean waitFlush = factory.getBooleanOperand(expression, "waitFlush", false);
     boolean waitSearcher = factory.getBooleanOperand(expression, "waitSearcher", false);
     boolean softCommit = factory.getBooleanOperand(expression, "softCommit", false);
 
@@ -110,7 +109,6 @@ public class CommitStream extends TupleStream implements Expressible {
         factory.constructStream(sourceStreamExpression),
         zkHost,
         batchSize,
-        waitFlush,
         waitSearcher,
         softCommit);
   }
@@ -120,7 +118,6 @@ public class CommitStream extends TupleStream implements Expressible {
       TupleStream tupleSource,
       String zkHost,
       int batchSize,
-      boolean waitFlush,
       boolean waitSearcher,
       boolean softCommit)
       throws IOException {
@@ -128,7 +125,7 @@ public class CommitStream extends TupleStream implements Expressible {
       throw new IOException(
           String.format(Locale.ROOT, "batchSize '%d' cannot be less than 0.", batchSize));
     }
-    init(collectionName, tupleSource, zkHost, batchSize, waitFlush, waitSearcher, softCommit);
+    init(collectionName, tupleSource, zkHost, batchSize, waitSearcher, softCommit);
   }
 
   private void init(
@@ -136,13 +133,11 @@ public class CommitStream extends TupleStream implements Expressible {
       TupleStream tupleSource,
       String zkHost,
       int batchSize,
-      boolean waitFlush,
       boolean waitSearcher,
       boolean softCommit) {
     this.collection = collectionName;
     this.zkHost = zkHost;
     this.commitBatchSize = batchSize;
-    this.waitFlush = waitFlush;
     this.waitSearcher = waitSearcher;
     this.softCommit = softCommit;
     this.tupleSource = tupleSource;
@@ -230,8 +225,6 @@ public class CommitStream extends TupleStream implements Expressible {
     expression.addParameter(
         new StreamExpressionNamedParameter("batchSize", Integer.toString(commitBatchSize)));
     expression.addParameter(
-        new StreamExpressionNamedParameter("waitFlush", Boolean.toString(waitFlush)));
-    expression.addParameter(
         new StreamExpressionNamedParameter("waitSearcher", Boolean.toString(waitSearcher)));
     expression.addParameter(
         new StreamExpressionNamedParameter("softCommit", Boolean.toString(softCommit)));
@@ -308,7 +301,7 @@ public class CommitStream extends TupleStream implements Expressible {
     try {
       clientCache
           .getCloudSolrClient(zkHost)
-          .commit(collection, waitFlush, waitSearcher, softCommit);
+          .commit(collection, CommitOptions.commit(softCommit).waitSearcher(waitSearcher));
     } catch (SolrServerException | IOException e) {
       log.warn(
           String.format(
