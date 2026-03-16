@@ -1809,6 +1809,10 @@ public abstract class CloudSolrClient extends SolrClient {
     return results;
   }
 
+  /**
+   * Determines whether an UpdateRequest contains sufficient routing information to identify shard
+   * leaders for direct updates when directUpdatesToLeadersOnly is enabled.
+   */
   private static boolean hasInfoToFindLeaders(UpdateRequest updateRequest, String idField) {
     final Map<SolrInputDocument, Map<String, Object>> documents = updateRequest.getDocumentsMap();
     final Map<String, Map<String, Object>> deleteById = updateRequest.getDeleteByIdMap();
@@ -1826,6 +1830,16 @@ public abstract class CloudSolrClient extends SolrClient {
         final Object fieldValue = doc.getFieldValue(idField);
         if (fieldValue == null) {
           // a document with no id field value, so can't find leader for it
+          return false;
+        }
+      }
+    }
+
+    if (deleteById != null) {
+      for (final Map.Entry<String, Map<String, Object>> entry : deleteById.entrySet()) {
+        final Map<String, Object> params = entry.getValue();
+        if (params == null || params.get(ShardParams._ROUTE_) == null) {
+          // deleteById entry lacks explicit route parameter, can't find leader for it
           return false;
         }
       }

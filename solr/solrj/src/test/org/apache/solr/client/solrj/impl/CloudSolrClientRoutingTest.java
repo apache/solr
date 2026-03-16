@@ -18,11 +18,14 @@ package org.apache.solr.client.solrj.impl;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
@@ -129,5 +132,40 @@ public final class CloudSolrClientRoutingTest extends SolrCloudTestCase {
 
     assertEquals(0, numForwardedWithRoute);
     assertEquals(100, numForwardedWithoutRoute);
+  }
+
+  @Test
+  public void testDeleteWithoutRouteWithDirectUpdatesToLeadersOnly() throws Exception {
+    final String collectionName = "delete_without_route_collection";
+
+    CollectionAdminRequest.createCollection(collectionName, "conf", 2, 1)
+        .setRouterField("router_field_s")
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(collectionName, 2, 2);
+
+    try (CloudSolrClient client =
+        new CloudSolrClient.Builder(
+                Collections.singletonList(cluster.getZkServer().getZkAddress()), Optional.empty())
+            .withDefaultCollection(collectionName)
+            .sendUpdatesOnlyToShardLeaders()
+            .sendDirectUpdatesToShardLeadersOnly()
+            .build()) {
+
+      UpdateRequest addRequest = new UpdateRequest();
+      addRequest.add("id", "doc1", "router_field_s", "testRoute");
+      addRequest.process(client);
+      client.commit();
+
+      assertEquals(1, client.query(new SolrQuery("id:doc1")).getResults().getNumFound());
+
+      // Delete by ID without providing explicit route
+      // Should still delete via sending to all shards
+      UpdateRequest deleteRequest = new UpdateRequest();
+      deleteRequest.deleteById("doc1");
+      deleteRequest.process(client);
+      client.commit();
+
+      assertEquals(0, client.query(new SolrQuery("id:doc1")).getResults().getNumFound());
+    }
   }
 }
