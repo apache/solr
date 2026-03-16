@@ -42,6 +42,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizerFactory;
 import org.apache.lucene.analysis.pattern.PatternReplaceCharFilterFactory;
 import org.apache.lucene.util.ResourceLoader;
 import org.apache.lucene.util.ResourceLoaderAware;
+import org.apache.solr.client.api.model.AddPackageVersionRequestBody;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -54,7 +55,6 @@ import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -130,15 +130,14 @@ public class TestPackages extends SolrCloudTestCase {
         FILE1,
         "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
+    AddPackageVersionRequestBody add = new AddPackageVersionRequestBody();
     add.version = "1.0";
-    add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1});
     V2Request req =
-        new V2Request.Builder("/cluster/package")
+        new V2Request.Builder("/cluster/package/mypkg/versions")
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("add", add))
+            .withPayload(add)
             .build();
 
     req.process(cluster.getSolrClient());
@@ -160,7 +159,7 @@ public class TestPackages extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
 
     verifyComponent(
-        cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", add.pkg, add.version);
+        cluster.getSolrClient(), COLLECTION_NAME, "query", "filterCache", "mypkg", add.version);
 
     add.version = "2.0";
     req.process(cluster.getSolrClient());
@@ -211,15 +210,14 @@ public class TestPackages extends SolrCloudTestCase {
         EXPR1,
         "ZOT11arAiPmPZYOHzqodiNnxO9pRyRozWZEBX8XGjU1/HJptFnZK+DI7eXnUtbNaMcbXE2Ze8hh4M/eGyhY8BQ==");
 
-    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
+    AddPackageVersionRequestBody add = new AddPackageVersionRequestBody();
     add.version = "1.0";
-    add.pkg = "mypkg";
     add.files = Arrays.asList(new String[] {FILE1, URP1, EXPR1});
     V2Request req =
-        new V2Request.Builder("/cluster/package")
+        new V2Request.Builder("/cluster/package/mypkg/versions")
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("add", add))
+            .withPayload(add)
             .build();
 
     req.process(cluster.getSolrClient());
@@ -402,16 +400,11 @@ public class TestPackages extends SolrCloudTestCase {
 
     assertEquals("Version 2", result.getResults().get(0).getFieldValue("TestVersionedURP.Ver_s"));
 
-    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
-    delVersion.pkg = "mypkg";
-    delVersion.version = "1.0";
-    V2Request delete =
-        new V2Request.Builder("/cluster/package")
-            .withMethod(SolrRequest.METHOD.POST)
-            .forceV2(true)
-            .withPayload(Collections.singletonMap("delete", delVersion))
-            .build();
-    delete.process(cluster.getSolrClient());
+    new V2Request.Builder("/cluster/package/mypkg/versions/1.0")
+        .withMethod(SolrRequest.METHOD.DELETE)
+        .forceV2(true)
+        .build()
+        .process(cluster.getSolrClient());
 
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "queryResponseWriter", "json1", "mypkg", "2.1");
@@ -422,9 +415,12 @@ public class TestPackages extends SolrCloudTestCase {
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "requestHandler", "/runtime", "mypkg", "2.1");
 
-    // now remove the hughest version. So, it will roll back to the next highest one
-    delVersion.version = "2.1";
-    delete.process(cluster.getSolrClient());
+    // now remove the highest version. So, it will roll back to the next highest one
+    new V2Request.Builder("/cluster/package/mypkg/versions/2.1")
+        .withMethod(SolrRequest.METHOD.DELETE)
+        .forceV2(true)
+        .build()
+        .process(cluster.getSolrClient());
 
     verifyComponent(
         cluster.getSolrClient(), COLLECTION_NAME, "queryResponseWriter", "json1", "mypkg", "1.1");
@@ -473,9 +469,8 @@ public class TestPackages extends SolrCloudTestCase {
 
     // now, let's force every collection using 'mypkg' to refresh
     // so that it uses version 2.1
-    new V2Request.Builder("/cluster/package")
+    new V2Request.Builder("/cluster/package/mypkg/refresh")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{refresh : mypkg}")
         .forceV2(true)
         .build()
         .process(cluster.getSolrClient());
@@ -578,20 +573,19 @@ public class TestPackages extends SolrCloudTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testAPI() throws Exception {
-    String errPath = "/details[0]/errorMessages[0]";
+    String errPath = "/msg";
     String FILE1 = "/mypkg/v.0.12/jar_a.jar";
     String FILE2 = "/mypkg/v.0.12/jar_b.jar";
     String FILE3 = "/mypkg/v.0.13/jar_a.jar";
 
-    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
+    AddPackageVersionRequestBody add = new AddPackageVersionRequestBody();
     add.version = "0.12";
-    add.pkg = "test_pkg";
     add.files = List.of(FILE1, FILE2);
     V2Request req =
-        new V2Request.Builder("/cluster/package")
+        new V2Request.Builder("/cluster/package/test_pkg/versions")
             .forceV2(true)
             .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("add", add))
+            .withPayload(add)
             .build();
 
     // the files are not yet there. The command should fail with error saying "No such file"
@@ -640,7 +634,6 @@ public class TestPackages extends SolrCloudTestCase {
 
     // this time we are adding the second version of the package (0.13)
     add.version = "0.13";
-    add.pkg = "test_pkg";
     add.files = Collections.singletonList(FILE3);
 
     // this request should succeed
@@ -654,21 +647,21 @@ public class TestPackages extends SolrCloudTestCase {
         Map.of(":packages:test_pkg[1]:version", "0.13", ":packages:test_pkg[1]:files[0]", FILE3));
 
     // Now we will just delete one version
-    PackagePayload.DelVersion delVersion = new PackagePayload.DelVersion();
-    delVersion.version = "0.1"; // this version does not exist
-    delVersion.pkg = "test_pkg";
-    req =
-        new V2Request.Builder("/cluster/package")
+    V2Request deleteReq =
+        new V2Request.Builder("/cluster/package/test_pkg/versions/0.1")
             .forceV2(true)
-            .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("delete", delVersion))
+            .withMethod(SolrRequest.METHOD.DELETE)
             .build();
 
     // we are expecting an error
-    expectError(req, cluster.getSolrClient(), errPath, "No such version:");
+    expectError(deleteReq, cluster.getSolrClient(), errPath, "No such version:");
 
-    delVersion.version = "0.12"; // correct version. Should succeed
-    req.process(cluster.getSolrClient());
+    new V2Request.Builder(
+            "/cluster/package/test_pkg/versions/0.12") // correct version. Should succeed
+        .forceV2(true)
+        .withMethod(SolrRequest.METHOD.DELETE)
+        .build()
+        .process(cluster.getSolrClient());
     // Verify with ZK that the data is correct
     TestDistribFileStore.assertResponseValues(
         1,
@@ -762,17 +755,15 @@ public class TestPackages extends SolrCloudTestCase {
         "gI6vYUDmSXSXmpNEeK1cwqrp4qTeVQgizGQkd8A4Prx2K8k7c5QlXbcs4lxFAAbbdXz9F4esBqTCiLMjVDHJ5Q==");
 
     // upload package v1.0
-    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
+    AddPackageVersionRequestBody add = new AddPackageVersionRequestBody();
     add.version = "1.0";
-    add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1, FILE2);
-    V2Request req =
-        new V2Request.Builder("/cluster/package")
-            .forceV2(true)
-            .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("add", add))
-            .build();
-    req.process(cluster.getSolrClient());
+    new V2Request.Builder("/cluster/package/schemapkg/versions")
+        .forceV2(true)
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload(add)
+        .build()
+        .process(cluster.getSolrClient());
 
     TestDistribFileStore.assertResponseValues(
         10,
@@ -804,17 +795,15 @@ public class TestPackages extends SolrCloudTestCase {
     coreProvider.withCore(core -> schemas[0] = core.getLatestSchema());
 
     // upload package v2.0
-    add = new PackagePayload.AddVersion();
+    add = new AddPackageVersionRequestBody();
     add.version = "2.0";
-    add.pkg = "schemapkg";
     add.files = Arrays.asList(FILE1, FILE2);
-    req =
-        new V2Request.Builder("/cluster/package")
-            .forceV2(true)
-            .withMethod(SolrRequest.METHOD.POST)
-            .withPayload(Collections.singletonMap("add", add))
-            .build();
-    req.process(cluster.getSolrClient());
+    new V2Request.Builder("/cluster/package/schemapkg/versions")
+        .forceV2(true)
+        .withMethod(SolrRequest.METHOD.POST)
+        .withPayload(add)
+        .build()
+        .process(cluster.getSolrClient());
 
     TestDistribFileStore.assertResponseValues(
         10,

@@ -40,25 +40,19 @@ import java.util.stream.Collectors;
 import org.apache.solr.cli.SolrCLI;
 import org.apache.solr.client.api.util.SolrVersion;
 import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.FileStoreApi;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.client.solrj.request.SystemInfoRequest;
-import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.response.SystemInfoResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -227,10 +221,9 @@ public class RepositoryManager {
 
       // Call Package API to add this version of the package
       printGreen("Executing Package API to register this package...");
-      PackagePayload.AddVersion add = new PackagePayload.AddVersion();
-      add.version = version;
-      add.pkg = packageName;
-      add.files =
+      PackageApi.AddPackageVersion addRequest = new PackageApi.AddPackageVersion(packageName);
+      addRequest.setVersion(version);
+      addRequest.setFiles(
           downloaded.stream()
               .map(
                   file ->
@@ -240,21 +233,12 @@ public class RepositoryManager {
                           packageName,
                           version,
                           file.getFileName().toString()))
-              .collect(Collectors.toList());
-      add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
-      add.manifestSHA512 = manifestSHA512;
-
-      GenericSolrRequest request =
-          new GenericV2SolrRequest(SolrRequest.METHOD.POST, PackageUtils.PACKAGE_PATH) {
-            @Override
-            public RequestWriter.ContentWriter getContentWriter(String expectedType) {
-              return new RequestWriter.StringPayloadContentWriter(
-                  "{add:" + add.jsonStr() + "}", "application/json");
-            }
-          };
+              .collect(Collectors.toList()));
+      addRequest.setManifest("/package/" + packageName + "/" + version + "/manifest.json");
+      addRequest.setManifestSHA512(manifestSHA512);
       try {
-        NamedList<Object> resp = solrClient.request(request);
-        printGreen("Response: " + resp.jsonStr());
+        addRequest.process(solrClient);
+        printGreen("Package version registered successfully.");
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }

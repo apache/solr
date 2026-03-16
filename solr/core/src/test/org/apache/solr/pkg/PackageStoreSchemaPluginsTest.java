@@ -27,10 +27,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.util.Base64;
 import java.util.List;
-import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -133,22 +133,10 @@ public class PackageStoreSchemaPluginsTest extends SolrCloudTestCase {
   }
 
   private void registerPackage(String version) throws Exception {
-    var packageRequest =
-        new V2Request.Builder("/cluster/package")
-            .POST()
-            .forceV2(true)
-            .withPayload(
-                Map.of(
-                    "add",
-                    Map.of(
-                        "package",
-                        "mypkg",
-                        "version",
-                        version,
-                        "files",
-                        List.of("/my-plugin/plugin-" + version + ".jar"))))
-            .build();
-    processRequest(client, packageRequest);
+    var addRequest = new PackageApi.AddPackageVersion("mypkg");
+    addRequest.setVersion(version);
+    addRequest.setFiles(List.of("/my-plugin/plugin-" + version + ".jar"));
+    addRequest.process(client);
   }
 
   private void createCollection() throws Exception {

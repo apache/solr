@@ -42,8 +42,8 @@ import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.RemoteSolrException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.PackageApi;
 import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.request.beans.PackagePayload;
 import org.apache.solr.client.solrj.request.beans.PluginMeta;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.ClusterSingleton;
@@ -58,8 +58,8 @@ import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.filestore.ClusterFileStore;
 import org.apache.solr.filestore.TestDistribFileStore;
 import org.apache.solr.filestore.TestDistribFileStore.Fetcher;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.pkg.TestPackages;
 import org.apache.solr.request.SolrQueryRequest;
@@ -93,7 +93,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     }
 
     @Override
-    public Map<String, PackageAPI.PkgVersion> packageDetails() {
+    public Map<String, PackageStore.PkgVersion> packageDetails() {
       return null; // only used to print meta information
     }
 
@@ -309,16 +309,9 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     // We have two versions of the plugin in 2 different jar files. they are already uploaded to
     // the package store
     listener.reset();
-    PackagePayload.AddVersion add = new PackagePayload.AddVersion();
-    add.version = "1.0";
-    add.pkg = "mypkg";
-    add.files = singletonList(FILE1);
-    V2Request addPkgVersionReq =
-        new V2Request.Builder("/cluster/package")
-            .forceV2(forceV2)
-            .POST()
-            .withPayload(singletonMap("add", add))
-            .build();
+    PackageApi.AddPackageVersion addPkgVersionReq = new PackageApi.AddPackageVersion("mypkg");
+    addPkgVersionReq.setVersion("1.0");
+    addPkgVersionReq.setFiles(singletonList(FILE1));
     addPkgVersionReq.process(cluster.getSolrClient());
     assertTrue(
         "core package listeners did not notify",
@@ -336,7 +329,7 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = "myplugin";
     plugin.klass = "mypkg:org.apache.solr.handler.MyPlugin";
-    plugin.version = add.version;
+    plugin.version = "1.0";
     final V2Request addPluginReq = postPlugin(singletonMap("add", plugin));
     addPluginReq.process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
@@ -352,12 +345,12 @@ public class TestContainerPlugin extends SolrCloudTestCase {
     TestDistribFileStore.assertResponseValues(invokePlugin, Map.of("/myplugin.version", "1.0"));
 
     // now let's upload the jar file for version 2.0 of the plugin
-    add.version = "2.0";
-    add.files = singletonList(FILE2);
+    addPkgVersionReq.setVersion("2.0");
+    addPkgVersionReq.setFiles(singletonList(FILE2));
     addPkgVersionReq.process(cluster.getSolrClient());
 
     // here the plugin version is updated
-    plugin.version = add.version;
+    plugin.version = "2.0";
     postPlugin(singletonMap("update", plugin)).process(cluster.getSolrClient());
     version = phaser.awaitAdvanceInterruptibly(version, 10, TimeUnit.SECONDS);
 

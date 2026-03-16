@@ -62,8 +62,8 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.SolrMetricsContext;
-import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageStore;
 import org.apache.solr.pkg.SolrPackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -202,7 +202,7 @@ public class SearchHandler extends RequestHandlerBase
                 }
 
                 @Override
-                public Map<String, PackageAPI.PkgVersion> packageDetails() {
+                public Map<String, PackageStore.PkgVersion> packageDetails() {
                   return Collections.emptyMap();
                 }
 

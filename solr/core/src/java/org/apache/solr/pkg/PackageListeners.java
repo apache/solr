@@ -110,7 +110,7 @@ public class PackageListeners {
     String packageName();
 
     /** fetch the package versions of class names */
-    Map<String, PackageAPI.PkgVersion> packageDetails();
+    Map<String, PackageStore.PkgVersion> packageDetails();
 
     /** A callback when the package is updated */
     void changed(SolrPackageLoader.SolrPackage pkg, Ctx ctx);
