@@ -14,3 +14,7 @@
   - `./gradlew :solr:core:test --tests org.apache.solr.update.PeerSyncWithBufferUpdatesTest`
   both succeeded after the fix.
 - Pushed update to PR #4216 and left a comment summarizing the completed local checks.
+
+## 2026-03-16
+- Reintroduced an automated `solr.security.allow.paths` preload inside `SolrTestCase.beforeSolrTestCase()` so tests that reference `ExternalPaths.SERVER_HOME` no longer need to set the system property manually, and cleaned up the few remaining test files accordingly (including the `RenameCoreAPITest` formatting fix).  
+- Verified `RenameCoreAPITest` again under Java 21 using `./gradlew :solr:core:test --tests org.apache.solr.handler.admin.api.RenameCoreAPITest` (build succeeded).

@@ -36,6 +36,7 @@ import org.apache.lucene.tests.util.QuickPatchThreadsFilter;
 import org.apache.lucene.tests.util.VerifyTestClassNamingConvention;
 import org.apache.solr.common.util.EnvUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.core.CoreContainer;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.LogLevelTestRule;
@@ -146,6 +147,29 @@ public class SolrTestCase extends LuceneTestCase {
               + "for tests to run properly",
           SolrDispatchFilter.SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE,
           ExternalPaths.DEFAULT_CONFIGSET);
+    }
+
+    final String allowPaths = EnvUtils.getProperty(CoreContainer.ALLOW_PATHS_SYSPROP);
+    if (null != allowPaths) {
+      log.info(
+          "Test env includes allow-paths system property '{}'='{}'",
+          CoreContainer.ALLOW_PATHS_SYSPROP,
+          allowPaths);
+    } else if (Files.isReadable(ExternalPaths.SERVER_HOME)
+        && Files.isDirectory(ExternalPaths.SERVER_HOME)) {
+      log.info(
+          "Setting '{}' system property to test-framework derived value of '{}'",
+          CoreContainer.ALLOW_PATHS_SYSPROP,
+          ExternalPaths.SERVER_HOME);
+      System.setProperty(
+          CoreContainer.ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toString());
+    } else {
+      log.warn(
+          "System property '{}' is not already set, but test-framework derived value ('{}') either "
+              + "does not exist or is not a readable directory; tests may need to set the property "
+              + "explicitly when loading external configsets",
+          CoreContainer.ALLOW_PATHS_SYSPROP,
+          ExternalPaths.SERVER_HOME);
     }
 
     // set solr.install.dir needed by some test configs outside the test sandbox (!)
