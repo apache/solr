@@ -1,0 +1,8 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: Support deleting implictly created RequestHandlers and Response Writers through Configset API
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Eric Pugh
+links:
+  - name: SOLR-18078
+    url: https://issues.apache.org/jira/browse/SOLR-18078

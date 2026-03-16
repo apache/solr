@@ -144,7 +144,7 @@ The Config API commands for modifications are categorized into 3 types, each of 
 These types are:
 
 * `set-property` and `unset-property` for <<Commands for Common Properties,Common Properties>>
-* Component-specific `add-`, `update-`, and `delete-` commands for <<Commands for Handlers and Components,Custom Handlers and Local Components>>
+* Component-specific `add-`, `update-`, and `delete-` commands for <<Commands for Handlers and Components,Handlers and Local Components>>
 * `set-user-property` and `unset-user-property` for <<Commands for User-Defined Properties,User-defined properties>>
 
 === Commands for Common Properties
@@ -324,7 +324,7 @@ In each case, `add-` commands add a new configuration to `configoverlay.json`, w
 
 `update-` commands overwrite an existing setting in `configoverlay.json`.
 
-`delete-` commands remove the setting from `configoverlay.json`.
+`delete-` commands remove the setting from `configoverlay.json` or for components that ship with Solr marks it as deleted in `configoverlay.json`. 
 
 Settings removed from `configoverlay.json` are not removed from `solrconfig.xml` if they happen to be duplicated there.
 
