@@ -66,8 +66,7 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     ZkStateReader mockZkStateReader = mock(ZkStateReader.class);
     ConfigSetService mockConfigSetService = mock(ConfigSetService.class);
 
-    // Simulate S3: no marker object → exists() is false, but listAll() finds the files
-    when(mockRepo.exists(CONFIG_DIR_URI)).thenReturn(false);
+    // Simulate S3: no marker object → listAll() finds the files
     when(mockRepo.listAll(CONFIG_DIR_URI)).thenReturn(new String[] {"solrconfig.xml"});
 
     // resolveDirectory chain used by getZkStateDir() and uploadConfigDir()
@@ -119,7 +118,6 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
 
     URI missingConfigDir = URI.create("s3://bucket/backup/zk_backup/configs/nonexistent/");
 
-    when(mockRepo.exists(missingConfigDir)).thenReturn(false);
     when(mockRepo.listAll(missingConfigDir)).thenReturn(new String[0]);
 
     when(mockRepo.resolveDirectory(BACKUP_PATH, BackupManager.ZK_STATE_DIR))
@@ -144,8 +142,7 @@ public class BackupManagerUploadConfigTest extends SolrTestCaseJ4 {
     ZkStateReader mockZkStateReader = mock(ZkStateReader.class);
     ConfigSetService mockConfigSetService = mock(ConfigSetService.class);
 
-    // Marker present → exists() returns true, listAll() should not be called
-    when(mockRepo.exists(CONFIG_DIR_URI)).thenReturn(true);
+    // listAll() is the sole existence check
     when(mockRepo.listAll(CONFIG_DIR_URI)).thenReturn(new String[] {"solrconfig.xml"});
 
     when(mockRepo.resolveDirectory(BACKUP_PATH, BackupManager.ZK_STATE_DIR))

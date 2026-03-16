@@ -285,7 +285,6 @@ public class S3BackupRepository extends AbstractBackupRepository {
         throw new CorruptIndexException("file is too small:" + indexInput.length(), indexInput);
       }
 
-      client.createDirectory(getS3Path(dest));
       try (OutputStream outputStream = client.pushStream(s3Path)) {
 
         byte[] buffer = new byte[CHUNK_SIZE];
