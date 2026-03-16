@@ -18,8 +18,9 @@ package org.apache.solr.handler;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Constructor;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -242,22 +243,35 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
               new SolrQueryRequestBase(h.getCore(), new ModifiableSolrParams()) {},
               new SolrQueryResponse());
 
-      Method doFetchFileMethod =
-          ReplicationAPIBase.class.getDeclaredMethod(
+      MethodHandles.Lookup lookup =
+          MethodHandles.privateLookupIn(ReplicationAPIBase.class, MethodHandles.lookup());
+      Class<?> directoryFileStreamClass =
+          Class.forName(ReplicationAPIBase.class.getName() + "$DirectoryFileStream");
+      MethodHandle doFetchFileHandle =
+          lookup.findVirtual(
+              ReplicationAPIBase.class,
               "doFetchFile",
-              String.class,
-              String.class,
-              String.class,
-              String.class,
-              boolean.class,
-              boolean.class,
-              double.class,
-              Long.class);
-      doFetchFileMethod.setAccessible(true);
+              MethodType.methodType(
+                  directoryFileStreamClass,
+                  String.class,
+                  String.class,
+                  String.class,
+                  String.class,
+                  boolean.class,
+                  boolean.class,
+                  double.class,
+                  Long.class));
 
-      Object stream =
-          doFetchFileMethod.invoke(
-              replicationAPI, fileName, "file", null, null, false, true, 0.0, null);
+      Object stream;
+      try {
+        stream =
+            doFetchFileHandle.invoke(
+                replicationAPI, fileName, "file", null, null, false, true, 0.0, null);
+      } catch (Exception e) {
+        throw e;
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
+      }
 
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       Method writeMethod = stream.getClass().getMethod("write", java.io.OutputStream.class);
@@ -300,26 +314,44 @@ public class IndexFetcherPacketProtocolTest extends SolrTestCaseJ4 {
 
       Object mockFileInterface = createMockFileInterface(output);
 
-      Constructor<?> constructor =
-          fileFetcherClass.getDeclaredConstructor(
-              IndexFetcher.class,
-              getFileInterfaceClass(),
-              Map.class,
-              String.class,
-              String.class,
-              long.class);
-      constructor.setAccessible(true);
+      MethodHandles.Lookup lookup =
+          MethodHandles.privateLookupIn(fileFetcherClass, MethodHandles.lookup());
+      MethodHandle ctorHandle =
+          lookup.findConstructor(
+              fileFetcherClass,
+              MethodType.methodType(
+                  void.class,
+                  IndexFetcher.class,
+                  getFileInterfaceClass(),
+                  Map.class,
+                  String.class,
+                  String.class,
+                  long.class));
 
-      Object fileFetcher =
-          constructor.newInstance(
-              indexFetcher, mockFileInterface, fileDetails, fileName, "file", 0L);
+      Object fileFetcher;
+      try {
+        fileFetcher =
+            ctorHandle.invoke(indexFetcher, mockFileInterface, fileDetails, fileName, "file", 0L);
+      } catch (Exception e) {
+        throw e;
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
+      }
 
-      Method fetchPacketsMethod =
-          fileFetcherClass.getDeclaredMethod("fetchPackets", FastInputStream.class);
-      fetchPacketsMethod.setAccessible(true);
+      MethodHandle fetchPacketsHandle =
+          lookup.findVirtual(
+              fileFetcherClass,
+              "fetchPackets",
+              MethodType.methodType(int.class, FastInputStream.class));
 
       FastInputStream fis = new FastInputStream(new ByteArrayInputStream(streamBytes));
-      return (Integer) fetchPacketsMethod.invoke(fileFetcher, fis);
+      try {
+        return (int) fetchPacketsHandle.invoke(fileFetcher, fis);
+      } catch (Exception e) {
+        throw e;
+      } catch (Throwable t) {
+        throw new RuntimeException(t);
+      }
     } finally {
       indexFetcher.destroy();
     }
