@@ -16,8 +16,9 @@
  */
 package org.apache.solr.metrics;
 
+import static org.apache.solr.metrics.SolrMetricProducer.STATE_KEY_ATTR;
+
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.common.AttributeKey;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.metrics.MeterProvider;
 import io.opentelemetry.api.metrics.ObservableLongGauge;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 /** Manages JVM metrics collection using OpenTelemetry Runtime Metrics with JFR features */
 public class OtelRuntimeJvmMetrics {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final AttributeKey<String> STATE_KEY = AttributeKey.stringKey("state");
 
   private RuntimeMetrics runtimeMetrics;
   private ObservableLongGauge systemMemoryGauge;
@@ -89,8 +89,8 @@ public class OtelRuntimeJvmMetrics {
               measurement -> {
                 long total = extOsMxBean.getTotalMemorySize();
                 long free = extOsMxBean.getFreeMemorySize();
-                if (total >= 0) measurement.record(total, Attributes.of(STATE_KEY, "total"));
-                if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY, "free"));
+                if (total >= 0) measurement.record(total, Attributes.of(STATE_KEY_ATTR, "total"));
+                if (free >= 0) measurement.record(free, Attributes.of(STATE_KEY_ATTR, "free"));
               },
               OtelUnit.BYTES);
       log.info("Physical memory metrics enabled");
