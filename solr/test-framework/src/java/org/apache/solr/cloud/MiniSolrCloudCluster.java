@@ -944,6 +944,9 @@ public class MiniSolrCloudCluster implements SolrBackend {
   public void dumpMetrics(PrintStream out) {
     try {
       for (JettySolrRunner jetty : jettys) {
+        out.println();
+        out.println("# Jetty " + jetty.getNodeName() + " metrics:");
+        out.println();
         jetty.outputMetrics(out);
       }
     } catch (IOException e) {
@@ -952,9 +955,12 @@ public class MiniSolrCloudCluster implements SolrBackend {
   }
 
   @Override
-  public void dumpCoreInfo(PrintStream pw) {
+  public void dumpCoreInfo(PrintStream out) {
     for (JettySolrRunner jetty : jettys) {
-      jetty.dumpCoresInfo(pw);
+      out.println();
+      out.println("  Jetty " + jetty.getNodeName() + " cores:");
+      out.println();
+      jetty.dumpCoresInfo(out);
     }
   }
 
