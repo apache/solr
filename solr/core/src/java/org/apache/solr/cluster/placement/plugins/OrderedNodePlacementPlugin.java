@@ -92,7 +92,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       }
 
       List<WeightedNode> nodesForRequest =
-          weightedNodes.stream().filter(request::isTargetingNode).collect(Collectors.toList());
+          weightedNodes.stream().filter(request::isTargetingNode).toList();
 
       SolrCollection solrCollection = request.getCollection();
       // Now place all replicas of all shards on available nodes
@@ -240,7 +240,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
         List<Replica> availableReplicasToMove =
             highestWeight.getAllReplicasOnNode().stream()
                 .sorted(Comparator.comparing(Replica::getReplicaName))
-                .collect(Collectors.toList());
+                .toList();
         int combinedNodeWeights = highestWeight.calcWeight() + lowestWeight.calcWeight();
         for (Replica r : availableReplicasToMove) {
           // Only continue if the replica can be removed from the old node and moved to the new node
@@ -283,7 +283,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           break;
         }
       }
-      // For now we do not have any way to see if there are out-of-date notes in the middle of the
+      // For now, we do not have any way to see if there are out-of-date nodes in the middle of the
       // TreeSet. Therefore, we need to re-sort this list after every selection. In the future, we
       // should find a way to re-sort the out-of-date nodes without having to sort all nodes.
       traversedHighNodes.addAll(orderedNodes);
@@ -439,12 +439,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
 
     public Set<String> getShardsOnNode(String collection) {
       return replicas.getOrDefault(collection, Map.of()).keySet();
-    }
-
-    public boolean hasShardOnNode(Shard shard) {
-      return replicas
-          .getOrDefault(shard.getCollection().getName(), Map.of())
-          .containsKey(shard.getShardName());
     }
 
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
@@ -772,15 +766,6 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
       } else {
         nodesByWeight.computeIfAbsent(nodeWeight, w -> new ArrayDeque<>()).addLast(node);
       }
-    }
-
-    /**
-     * Get the number of nodes in the heap.
-     *
-     * @return number of nodes
-     */
-    public int size() {
-      return size;
     }
 
     /**
