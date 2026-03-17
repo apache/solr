@@ -474,7 +474,7 @@ public class PKIAuthenticationPlugin extends AuthenticationPlugin
       if (principal == null) {
         log.debug("generateToken: principal is null");
         // this had a request but not authenticated
-        // so we don't not need to set a principal
+        // so we do not need to set a principal
         return Optional.empty();
       } else {
         assert principal.getName() != null;

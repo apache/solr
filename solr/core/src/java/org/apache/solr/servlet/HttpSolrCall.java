@@ -450,7 +450,7 @@ public class HttpSolrCall {
         AuthorizationUtils.AuthorizationFailure authzFailure =
             AuthorizationUtils.authorize(req, response, cores, authzContext);
         if (authzFailure != null) {
-          sendError(authzFailure.getStatusCode(), authzFailure.getMessage());
+          sendError(authzFailure.statusCode(), authzFailure.message());
           return RETURN;
         }
       }
@@ -699,7 +699,7 @@ public class HttpSolrCall {
 
   protected void logAndFlushAdminRequest(SolrQueryResponse solrResp) throws IOException {
     if (solrResp.getToLog().size() > 0) {
-      // has to come second and in it's own if to keep ./gradlew check happy.
+      // has to come second and in its own "if" to keep ./gradlew check happy.
       if (log.isInfoEnabled()) {
         log.info(
             handler != null

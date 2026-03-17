@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
 import org.apache.solr.client.solrj.request.json.JacksonContentWriter;
 import org.apache.solr.client.solrj.response.ResponseParser;
 import org.apache.solr.common.util.NamedList;
@@ -53,9 +55,11 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
   // TODO it'd be nice if the ResponseParser could receive the mime type so it can parse
   //  accordingly, maybe json, cbor, smile
 
+  /**
+   * Parse the Json {@code stream} to the expected Java type, then, converts to a {@link NamedList}.
+   */
   @Override
   public NamedList<Object> processResponse(InputStream stream, String encoding) throws IOException {
-    // TODO SOLR-17549 for error handling, implying a significant ResponseParser API change
     // TODO generalize to CBOR, Smile, ...
     var mapper = JacksonContentWriter.DEFAULT_MAPPER;
 
@@ -66,6 +70,16 @@ public class JacksonDataBindResponseParser<T> extends ResponseParser {
       parsedVal = mapper.readValue(new InputStreamReader(stream, encoding), typeParam);
     }
 
-    return SimpleOrderedMap.of("response", parsedVal);
+    final var result = new SimpleOrderedMap<Object>();
+    result.add("response", parsedVal);
+
+    // Surface errors from V2 response POJOs to the top-level NamedList so that
+    // HttpSolrClientBase.processErrorsAndResponse() can detect and throw RemoteSolrException,
+    // matching the exception-throwing behavior of V1 API requests.
+    if (parsedVal instanceof SolrJerseyResponse jerseyResponse && jerseyResponse.error != null) {
+      result.add("error", mapper.convertValue(jerseyResponse.error, Map.class));
+    }
+
+    return result;
   }
 }

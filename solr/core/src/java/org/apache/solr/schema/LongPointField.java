@@ -27,6 +27,7 @@ import org.apache.lucene.queries.function.valuesource.LongFieldSource;
 import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SortedNumericSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.search.QParser;
@@ -155,8 +156,7 @@ public class LongPointField extends PointField implements LongValueFieldType {
   }
 
   @Override
-  protected ValueSource getSingleValueSource(
-      org.apache.lucene.search.SortedNumericSelector.Type choice, SchemaField field) {
+  protected ValueSource getSingleValueSource(SortedNumericSelector.Type choice, SchemaField field) {
     return new MultiValuedLongFieldSource(field.getName(), choice);
   }
 

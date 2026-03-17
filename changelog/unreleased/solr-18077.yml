@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: "CrossDC Consumer: fix potential out-of-order Kafka partition processing"
+type: fixed # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Andrzej Bialecki
+    nick: ab
+links:
+  - name: SOLR-18077
+    url: https://issues.apache.org/jira/browse/SOLR-18077

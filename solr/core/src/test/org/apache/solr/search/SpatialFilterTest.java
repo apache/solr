@@ -201,7 +201,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
    ModifiableSolrParams params = new ModifiableSolrParams();
    params.add(SpatialParams.POINT, "5.0,5.0");
    params.add(SpatialParams.DISTANCE, "3");
-   SolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), "", "", 0, 10, new HashMap());
+   SolrQueryRequest req = new SolrQueryRequestBase(h.getCore(), "", "", 0, 10, new HashMap());
    SpatialFilterQParserPlugin parserPlugin;
    Query query;
 
@@ -217,7 +217,7 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
    params = new ModifiableSolrParams();
    params.add(SpatialParams.POINT, "5.0");
    params.add(SpatialParams.DISTANCE, "3");
-   req = new LocalSolrQueryRequest(h.getCore(), "", "", 0, 10, new HashMap());
+   req = new SolrQueryRequestBase(h.getCore(), "", "", 0, 10, new HashMap());
    parser = parserPlugin.createParser("'foo'", local, params, req);
    query = parser.parse();
    assertNotNull("Query is null", query);

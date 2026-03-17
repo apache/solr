@@ -45,24 +45,7 @@ public class AuthorizationUtils {
     /* Private ctor prevents instantiation */
   }
 
-  @SuppressWarnings("ClassCanBeRecord")
-  public static class AuthorizationFailure {
-    private final int statusCode;
-    private final String message;
-
-    public AuthorizationFailure(int statusCode, String message) {
-      this.statusCode = statusCode;
-      this.message = message;
-    }
-
-    public int getStatusCode() {
-      return statusCode;
-    }
-
-    public String getMessage() {
-      return message;
-    }
-  }
+  public record AuthorizationFailure(int statusCode, String message) {}
 
   public static AuthorizationFailure authorize(
       HttpServletRequest servletReq,

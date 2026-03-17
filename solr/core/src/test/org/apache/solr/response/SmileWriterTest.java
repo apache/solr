@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.BinaryNode;
 import com.fasterxml.jackson.databind.node.BooleanNode;
@@ -43,8 +44,8 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrReturnFields;
 import org.junit.BeforeClass;
@@ -157,7 +158,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
     SolrDocumentList l = constructSolrDocList(response);
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     new SmileResponseWriter()
-        .write(baos, new LocalSolrQueryRequest(null, new ModifiableSolrParams()), response);
+        .write(baos, new SolrQueryRequestBase(null, new ModifiableSolrParams()), response);
 
     byte[] bytes = baos.toByteArray();
     Map m = (Map) decodeSmile(new ByteArrayInputStream(bytes, 0, bytes.length));
@@ -220,8 +221,7 @@ public class SmileWriterTest extends SolrTestCaseJ4 {
 
   public static Object decodeSmile(InputStream is) throws IOException {
     final SmileFactory smileFactory = new SmileFactory();
-    com.fasterxml.jackson.databind.ObjectMapper mapper =
-        new com.fasterxml.jackson.databind.ObjectMapper(smileFactory);
+    ObjectMapper mapper = new ObjectMapper(smileFactory);
     JsonNode jsonNode = mapper.readTree(is);
     return getVal(jsonNode);
   }

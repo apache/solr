@@ -1,0 +1,9 @@
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+title: CrossDC - support arbitrary Kafka properties
+type: added # added, changed, fixed, deprecated, removed, dependency_update, security, other
+authors:
+  - name: Andrzej Bialecki
+    nick: ab
+links:
+  - name: SOLR-18062
+    url: https://issues.apache.org/jira/browse/SOLR-18062

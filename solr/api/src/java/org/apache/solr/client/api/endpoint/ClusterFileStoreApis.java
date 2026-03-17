@@ -107,7 +107,9 @@ public interface ClusterFileStoreApis {
       @Parameter(description = "Path to a file or directory within the filestore")
           @PathParam("path")
           String path,
-      @Parameter(description = "An optional Solr node name to fetch the file from")
+      @Parameter(
+              description =
+                  "An optional Solr node name to fetch the file from, typically in the form \"host:port_solr\".")
           @QueryParam("getFrom")
           String getFrom);
 

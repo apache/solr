@@ -540,6 +540,7 @@ allprojects {prj ->
             '-Xep:UnescapedEntity:WARN',
             // '-Xep:UnicodeEscape:OFF', // can't enable since Lucene/Solr tests use unicode a bunch
             // '-Xep:UnnecessaryAssignment:OFF', // we don't use these annotations
+            '-Xep:UnnecessarilyFullyQualified:WARN',
             '-Xep:UnnecessaryAsync:WARN',
             // '-Xep:UnnecessaryBreakInSwitch:WARN', // todo check if useful or comment why not
             // '-Xep:UnnecessaryCopy:OFF', // proto-specific, not widely used
@@ -584,6 +585,24 @@ allprojects {prj ->
             // END -- Experimental: SUGGESTION
         ]
       }
+    }
+  }
+}
+
+// Exclude generated OpenAPI sources in solrj from Error Prone checks.
+configure(project(":solr:solrj")) {
+  plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+    tasks.withType(JavaCompile) {
+      options.errorprone.excludedPaths = ".*/build/generated/.*"
+    }
+  }
+}
+
+// Exclude JavaCC-generated parser sources in solr:core from Error Prone checks.
+configure(project(":solr:core")) {
+  plugins.withId(libs.plugins.ltgt.errorprone.get().pluginId) {
+    tasks.withType(JavaCompile) {
+      options.errorprone.excludedPaths = ".*/org/apache/solr/parser/.*"
     }
   }
 }

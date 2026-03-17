@@ -17,6 +17,8 @@
 
 package org.apache.solr.handler;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -31,7 +33,10 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.apache.CloudLegacySolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.jetty.HttpJettySolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.CollectionsApi;
+import org.apache.solr.client.solrj.request.GenericV2SolrRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.InputStreamResponseParser;
 import org.apache.solr.client.solrj.response.JavaBinResponseParser;
@@ -48,7 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class V2ApiIntegrationTest extends SolrCloudTestCase {
-  private static String COLL_NAME = "collection1";
+  private static final String COLL_NAME = "collection1";
 
   @BeforeClass
   public static void createCluster() throws Exception {
@@ -80,11 +85,7 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build();
     v2Request.setResponseParser(responseParser);
     RemoteSolrException ex =
-        expectThrows(
-            RemoteSolrException.class,
-            () -> {
-              v2Request.process(cluster.getSolrClient());
-            });
+        expectThrows(RemoteSolrException.class, () -> v2Request.process(cluster.getSolrClient()));
     assertEquals(expectedCode, ex.code());
   }
 
@@ -114,28 +115,29 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testWTParam() throws Exception {
+  public void testInvalidWTParamReturnsError() throws Exception {
     V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
-    // TODO: If possible do this in a better way
+    // Using an invalid wt parameter should return a 400 error
     request.setResponseParser(new InputStreamResponseParser("bleh"));
     NamedList<Object> res = cluster.getSolrClient().request(request);
     String respString = InputStreamResponseParser.consumeResponseToString(res);
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
-    assertFalse(respString.contains("500"));
-    assertFalse(respString.contains("NullPointerException"));
-    assertFalse(
-        respString.contains(
-            "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
-    // since no-op response writer is used, doing contains match
-    assertTrue(respString.contains("/c/collection1/get"));
+    // Should get a 400 Bad Request error for unknown writer type
+    assertTrue(
+        "Expected error message about unknown writer type",
+        respString.contains("Unknown response writer type"));
+    assertTrue("Expected 400 error code", respString.contains("400"));
+  }
 
-    // no response parser
+  @Test
+  public void testWTParam() throws Exception {
+    // When no response parser is set, the default JSON writer should be used
+    V2Request request = new V2Request.Builder("/c/" + COLL_NAME + "/get/_introspect").build();
     request.setResponseParser(null);
     Map<?, ?> resp = resAsMap(cluster.getSolrClient(), request);
-    respString = resp.toString();
+    String respString = resp.toString();
 
-    assertFalse(respString.contains("<body><h2>HTTP ERROR 500</h2>"));
+    assertFalse(respString.contains("400"));
     assertFalse(
         respString.contains(
             "<p>Problem accessing /solr/____v2/c/collection1/get/_introspect. Reason:"));
@@ -258,6 +260,43 @@ public class V2ApiIntegrationTest extends SolrCloudTestCase {
             .build()
             .process(cloudClient);
     assertEquals(0, ((SolrDocumentList) v2Response.getResponse().get("response")).getNumFound());
+  }
+
+  @Test
+  public void testV2ApiErrorHandling() throws Exception {
+    final var deleteRequest = new CollectionsApi.DeleteCollection("collection-does-not-exist");
+
+    // Test with "Http" client
+    final String baseUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    try (var httpClient = new HttpJettySolrClient.Builder(baseUrl).build()) {
+      final var ex =
+          expectThrows(RemoteSolrException.class, () -> deleteRequest.process(httpClient));
+      assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+    }
+
+    // Test with "Cloud" client
+    final var ex =
+        expectThrows(
+            RemoteSolrException.class, () -> deleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex, 400, "Could not find collection", "collection-does-not-exist");
+
+    // Test with the less desirable Generic option to make sure exception is equivalent.
+    final var genericDeleteRequest =
+        new GenericV2SolrRequest(SolrRequest.METHOD.DELETE, "/collections/coll-does-not-exist");
+    final var ex2 =
+        expectThrows(
+            RemoteSolrException.class, () -> genericDeleteRequest.process(cluster.getSolrClient()));
+    assertRSECodeAndMessage(ex2, 400, "Could not find collection", "coll-does-not-exist");
+  }
+
+  private void assertRSECodeAndMessage(
+      RemoteSolrException rse, int expectedCode, String... expectedMessagePieces) {
+    assertEquals(expectedCode, rse.code());
+    if (expectedMessagePieces != null) {
+      for (String expectedMessageSubStr : expectedMessagePieces) {
+        assertThat(rse.getMessage(), containsString(expectedMessageSubStr));
+      }
+    }
   }
 
   private Map<?, ?> resAsMap(CloudSolrClient client, V2Request request)

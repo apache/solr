@@ -103,7 +103,7 @@ public abstract class RoutedAlias {
       // multi-dimensional routed alias
       typeStr = typeStr.substring(DIMENSIONAL.length(), typeStr.length() - 1);
       String[] types = typeStr.split(",");
-      java.util.List<String> fields = new ArrayList<>();
+      List<String> fields = new ArrayList<>();
       if (types.length > 2) {
         throw new SolrException(
             BAD_REQUEST,
