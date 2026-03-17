@@ -128,8 +128,8 @@ public class JettySolrRunner {
 
   private List<FilterHolder> extraFilters;
 
-  private static final String DEFAULT_EXCLUDE_PATTERNS =
-      "/$,/(partials|libs|css|js|img|templates)/"; // root and Admin UI stuff
+  private static final String excludePatterns =
+      "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+";
 
   private int proxyPort = -1;
 
@@ -411,7 +411,7 @@ public class JettySolrRunner {
       // added for parity with the live application.
       pathExcludeFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       pathExcludeFilter.setHeldClass(PathExclusionFilter.class);
-      pathExcludeFilter.setInitParameter("excludePatterns", DEFAULT_EXCLUDE_PATTERNS);
+      pathExcludeFilter.setInitParameter("excludePatterns", excludePatterns);
 
       // required request setup
       requiredFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
