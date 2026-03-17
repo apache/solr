@@ -517,7 +517,7 @@ public class SolrConfig implements MapSerializable {
 
       this.clazz = clz;
       this.tag = tag;
-      this.options = opts == null ? Collections.emptySet() : EnumSet.of(NOOP, opts);
+      this.options = opts == null ? Set.of() : EnumSet.of(NOOP, opts);
     }
 
     public String getCleanTag() {
@@ -539,7 +539,7 @@ public class SolrConfig implements MapSerializable {
         // TODO: we should be explicitly looking for file not found exceptions
         // and logging if it's not the expected IOException
         // hopefully no problem, assume no overlay.json file
-        return new ConfigOverlay(Collections.emptyMap(), -1);
+        return new ConfigOverlay(Map.of(), -1);
       }
 
       int version = 0;
@@ -564,7 +564,7 @@ public class SolrConfig implements MapSerializable {
     }
   }
 
-  private Map<String, InitParams> initParams = Collections.emptyMap();
+  private Map<String, InitParams> initParams = Map.of();
 
   public Map<String, InitParams> getInitParams() {
     return initParams;
@@ -901,7 +901,7 @@ public class SolrConfig implements MapSerializable {
         result = new ArrayList<>(map.values());
       }
     }
-    return result == null ? Collections.emptyList() : result;
+    return result == null ? List.of() : result;
   }
 
   public PluginInfo getPluginInfo(String type) {

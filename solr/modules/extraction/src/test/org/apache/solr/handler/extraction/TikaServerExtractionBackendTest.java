@@ -21,7 +21,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -175,7 +174,7 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   }
 
   private ExtractionRequest newRequest(String file, String contentType, String content) {
-    return newRequest(file, contentType, content, false, Collections.emptyMap());
+    return newRequest(file, contentType, content, false, Map.of());
   }
 
   @Test

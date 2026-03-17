@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.mockito.Mockito.mock;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,7 +100,7 @@ public class V2UpdateAPIMappingTest extends SolrTestCaseJ4 {
     return new SolrQueryRequestBase(null, new ModifiableSolrParams()) {
       @Override
       public List<CommandOperation> getCommands(boolean validateInput) {
-        return Collections.emptyList();
+        return List.of();
       }
 
       @Override

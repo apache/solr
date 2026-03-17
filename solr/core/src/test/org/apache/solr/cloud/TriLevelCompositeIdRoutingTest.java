@@ -17,7 +17,6 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -114,7 +113,7 @@ public class TriLevelCompositeIdRoutingTest extends ShardRoutingTest {
           uniqueKeysOnDuplicateShards.retainAll(actualUniqueKeys);
           assertEquals(
               shardId + " contains some uniqueKeys that were already found on a previous shard",
-              Collections.emptySet(),
+              Set.of(),
               uniqueKeysOnDuplicateShards);
           actualUniqueKeys.addAll(uniqueKeysInShard);
         }

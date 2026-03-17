@@ -14,14 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.client.api.model;
 
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
+import java.util.Set;
 
-public class DefaultZkCredentialsInjector implements ZkCredentialsInjector {
+/**
+ * Response for the v2 "list cluster nodes" API. This is a bit unusual that it's wrapping a non
+ * JAX-RS V2 API defined in org.apache.solr.handler.ClusterAPI.getNodes(). The calls are made using
+ * just the defaults. TODO: Update this when we migrate ClusterAPI to JAX-RS.
+ */
+public class ListClusterNodesResponse extends SolrJerseyResponse {
 
-  @Override
-  public List<ZkCredential> getZkCredentials() {
-    return List.of();
-  }
+  @Schema(description = "The live nodes in the cluster.")
+  @JsonProperty("nodes")
+  public Set<String> nodes;
 }

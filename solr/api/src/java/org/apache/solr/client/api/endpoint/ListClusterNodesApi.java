@@ -14,14 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.client.api.endpoint;
 
-import java.util.List;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import org.apache.solr.client.api.model.ListClusterNodesResponse;
 
-public class DefaultZkCredentialsInjector implements ZkCredentialsInjector {
+/** V2 API definition for listing the nodes in the SolrCloud cluster. */
+@Path("/cluster/nodes")
+public interface ListClusterNodesApi {
 
-  @Override
-  public List<ZkCredential> getZkCredentials() {
-    return List.of();
-  }
+  @GET
+  @Operation(
+      summary = "List the nodes in this Solr cluster.",
+      tags = {"cluster"})
+  ListClusterNodesResponse listClusterNodes();
 }

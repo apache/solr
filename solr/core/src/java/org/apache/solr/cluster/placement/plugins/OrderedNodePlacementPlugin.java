@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.HashMap;
@@ -439,13 +438,13 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
     }
 
     public Set<String> getShardsOnNode(String collection) {
-      return replicas.getOrDefault(collection, Collections.emptyMap()).keySet();
+      return replicas.getOrDefault(collection, Map.of()).keySet();
     }
 
     public Set<Replica> getReplicasForShardOnNode(Shard shard) {
       return Optional.ofNullable(replicas.get(shard.getCollection().getName()))
           .map(m -> m.get(shard.getShardName()))
-          .orElseGet(Collections::emptySet);
+          .orElseGet(Set::of);
     }
 
     public abstract int calcWeight();
@@ -499,7 +498,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
      *     removed.
      */
     public Map<Replica, String> canRemoveReplicas(Collection<Replica> replicas) {
-      return Collections.emptyMap();
+      return Map.of();
     }
 
     public final void removeReplica(Replica replica) {
@@ -884,7 +883,7 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
           .map(Map::keySet)
           // Use a sorted TreeSet to make sure that tests are repeatable
           .<Collection<Replica.ReplicaType>>map(TreeSet::new)
-          .orElseGet(Collections::emptyList);
+          .orElseGet(List::of);
     }
 
     /**

@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -399,14 +398,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase
     }
 
     long warmingStartTime = System.nanoTime();
-    Map<K, V> hottest = Collections.emptyMap();
+    Map<K, V> hottest = Map.of();
     CaffeineCache<K, V> other = (CaffeineCache<K, V>) old;
 
     // warm entries
     if (isAutowarmingOn()) {
       int size = autowarm.getWarmCount(other.cache.asMap().size());
-      hottest =
-          other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Collections.emptyMap());
+      hottest = other.cache.policy().eviction().map(p -> p.hottest(size)).orElse(Map.of());
     }
 
     for (Entry<K, V> entry : hottest.entrySet()) {

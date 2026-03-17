@@ -19,7 +19,7 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
+import java.util.List;
 
 /** Passes the entire query string to the configured analyzer as-is. */
 public class SuggestQueryConverter extends SpellingQueryConverter {
@@ -27,7 +27,7 @@ public class SuggestQueryConverter extends SpellingQueryConverter {
   @Override
   public Collection<Token> convert(String original) {
     if (original == null) { // this can happen with q.alt = and no query
-      return Collections.emptyList();
+      return List.of();
     }
 
     Collection<Token> result = new ArrayList<>();

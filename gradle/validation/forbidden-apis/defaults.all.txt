@@ -54,6 +54,15 @@ java.io.File#delete() @ use Files.delete for real exception, IOUtils.deleteFiles
 
 java.util.Collections#shuffle(java.util.List) @ Use shuffle(List, Random) instead so that it can be reproduced
 
+@defaultMessage Use List.of()
+java.util.Collections#emptyList()
+
+@defaultMessage Use Set.of()
+java.util.Collections#emptySet()
+
+@defaultMessage Use Map.of()
+java.util.Collections#emptyMap()
+
 @defaultMessage Use Set.of()
 java.util.Collections#singleton(**)
 
