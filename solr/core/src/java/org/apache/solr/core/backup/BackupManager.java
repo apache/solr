@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.solr.common.SolrException;
@@ -224,8 +225,7 @@ public class BackupManager {
       is.readBytes(arr, 0, (int) is.length());
       // set a default created date, we don't aim at reading actual zookeeper state. The restored
       // collection will have a new creation date when persisted in zookeeper.
-      ClusterState c_state =
-          ClusterState.createFromJson(-1, arr, Collections.emptySet(), Instant.EPOCH, null);
+      ClusterState c_state = ClusterState.createFromJson(-1, arr, Set.of(), Instant.EPOCH, null);
       return c_state.getCollection(collectionName);
     }
   }

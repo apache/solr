@@ -17,7 +17,6 @@
 package org.apache.solr.ltr.response.transform;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -462,13 +461,7 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
   private static class LoggingModel extends LTRScoringModel {
 
     public LoggingModel(String name, String featureStoreName, List<Feature> allFeatures) {
-      this(
-          name,
-          Collections.emptyList(),
-          Collections.emptyList(),
-          featureStoreName,
-          allFeatures,
-          Collections.emptyMap());
+      this(name, List.of(), List.of(), featureStoreName, allFeatures, Map.of());
     }
 
     protected LoggingModel(

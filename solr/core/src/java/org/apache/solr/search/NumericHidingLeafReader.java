@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Map;
 import org.apache.lucene.index.BinaryDocValues;
 import org.apache.lucene.index.DocValuesSkipIndexType;
 import org.apache.lucene.index.DocValuesType;
@@ -71,7 +72,7 @@ public class NumericHidingLeafReader extends FilterLeafReader {
                 DocValuesType.NONE,
                 DocValuesSkipIndexType.NONE,
                 -1,
-                Collections.emptyMap(),
+                Map.of(),
                 fi.getPointDimensionCount(),
                 fi.getPointIndexDimensionCount(),
                 fi.getPointNumBytes(),

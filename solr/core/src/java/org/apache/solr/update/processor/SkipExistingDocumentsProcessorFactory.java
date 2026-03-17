@@ -21,7 +21,7 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
+import java.util.Set;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
  * there already exists a document with the same uniqueKey value in the index. It will also skip
  * Atomic Updates to a document if that document does not already exist. This behaviour is applied
  * to each document in turn, so adding a batch of documents can result in some being added and some
- * ignored, depending on what is already in the index. If all of the documents are skipped, no
- * changes to the index will occur. These two forms of skipping can be switched on or off
- * independently, by using init params:
+ * ignored, depending on what is already in the index. If all the documents are skipped, no changes
+ * to the index will occur. These two forms of skipping can be switched on or off independently, by
+ * using init params:
  *
  * <ul>
  *   <li><code>skipInsertIfExists</code> - This boolean parameter defaults to <code>true</code>, but
@@ -197,11 +197,7 @@ public class SkipExistingDocumentsProcessorFactory extends UpdateRequestProcesso
       // we don't need any fields populated, we just need to know if the doc is in the tlog...
       SolrInputDocument oldDoc =
           RealTimeGetComponent.getInputDocumentFromTlog(
-              core,
-              indexedDocId,
-              null,
-              Collections.emptySet(),
-              RealTimeGetComponent.Resolution.PARTIAL);
+              core, indexedDocId, null, Set.of(), RealTimeGetComponent.Resolution.PARTIAL);
       if (oldDoc == RealTimeGetComponent.DELETED) {
         return false;
       }

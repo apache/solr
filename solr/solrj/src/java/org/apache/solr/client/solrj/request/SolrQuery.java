@@ -623,7 +623,7 @@ public class SolrQuery extends ModifiableSolrParams {
    * @since 4.2
    */
   public List<SortClause> getSorts() {
-    if (sortClauses == null) return Collections.emptyList();
+    if (sortClauses == null) return List.of();
     else return Collections.unmodifiableList(sortClauses);
   }
 

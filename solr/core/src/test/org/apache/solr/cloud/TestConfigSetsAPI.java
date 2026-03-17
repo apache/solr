@@ -40,7 +40,6 @@ import java.security.Principal;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -1728,7 +1727,7 @@ public class TestConfigSetsAPI extends SolrCloudTestCase {
 
         @Override
         public Map<String, String> getPromptHeaders() {
-          return Collections.emptyMap();
+          return Map.of();
         }
       };
     }

@@ -56,7 +56,7 @@ public class AllowListUrlChecker {
   static {
     try {
       ALLOW_ALL =
-          new AllowListUrlChecker(Collections.emptyList()) {
+          new AllowListUrlChecker(List.of()) {
             @Override
             public void checkAllowList(List<String> urls, ClusterState clusterState) {
               // Allow.
@@ -207,7 +207,7 @@ public class AllowListUrlChecker {
   @VisibleForTesting
   static Set<String> parseHostPorts(List<String> urls) throws MalformedURLException {
     if (urls == null || urls.isEmpty()) {
-      return Collections.emptySet();
+      return Set.of();
     }
     Set<String> hostPorts = new HashSet<>();
     for (String urlString : urls) {

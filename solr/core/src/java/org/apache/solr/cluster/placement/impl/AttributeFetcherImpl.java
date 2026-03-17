@@ -17,7 +17,6 @@
 
 package org.apache.solr.cluster.placement.impl;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -46,7 +45,7 @@ public class AttributeFetcherImpl implements AttributeFetcher {
   Set<NodeMetric<?>> requestedNodeMetricSnitchTags = new HashSet<>();
   Map<SolrCollection, Set<ReplicaMetric<?>>> requestedCollectionMetrics = new HashMap<>();
 
-  Set<Node> nodes = Collections.emptySet();
+  Set<Node> nodes = Set.of();
 
   private final SolrCloudManager cloudManager;
 

@@ -17,7 +17,6 @@
 package org.apache.solr.legacy;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -599,8 +598,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(0x0L, 0x1L), Arrays.asList(63));
 
     // the inverse range should produce no sub-ranges
-    assertLongRangeSplit(
-        9500L, -5000L, 4, false, Collections.<Long>emptyList(), Collections.<Integer>emptyList());
+    assertLongRangeSplit(9500L, -5000L, 4, false, List.of(), List.of());
 
     // a 0-length range should reproduce the range itself
     assertLongRangeSplit(
@@ -717,8 +715,7 @@ public class TestLegacyNumericUtils extends SolrTestCase {
         Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(0x0, 0x1), Arrays.asList(31));
 
     // the inverse range should produce no sub-ranges
-    assertIntRangeSplit(
-        9500, -5000, 4, false, Collections.<Integer>emptyList(), Collections.<Integer>emptyList());
+    assertIntRangeSplit(9500, -5000, 4, false, List.of(), List.of());
 
     // a 0-length range should reproduce the range itself
     assertIntRangeSplit(

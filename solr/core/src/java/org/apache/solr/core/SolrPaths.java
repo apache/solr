@@ -143,7 +143,7 @@ public final class SolrPaths {
     }
 
     public Set<Path> build() {
-      return paths == null ? Collections.emptySet() : paths;
+      return paths == null ? Set.of() : paths;
     }
   }
 }

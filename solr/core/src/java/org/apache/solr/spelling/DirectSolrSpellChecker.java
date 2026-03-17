@@ -19,7 +19,6 @@ package org.apache.solr.spelling;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.lucene.index.Term;
@@ -192,7 +191,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
 
     for (Token token : options.tokens) {
       if (token.length() == 0) {
-        result.add(token, Collections.emptyList());
+        result.add(token, List.of());
         continue;
       }
       String tokenText = token.toString();
@@ -227,7 +226,7 @@ public class DirectSolrSpellChecker extends SolrSpellChecker {
         }
       }
       if (suggestions.length == 0 && freq == 0) {
-        List<String> empty = Collections.emptyList();
+        List<String> empty = List.of();
         result.add(token, empty);
       } else {
         for (SuggestWord suggestion : suggestions) {
