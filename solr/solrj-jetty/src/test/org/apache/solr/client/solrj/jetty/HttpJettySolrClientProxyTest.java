@@ -51,7 +51,7 @@ public class HttpJettySolrClientProxyTest extends SolrTestCaseJ4 {
         ALLOW_PATHS_SYSPROP,
         ExternalPaths.SERVER_HOME.toAbsolutePath().toString()); // Needed for configset location
     solrTestRule.enableProxy();
-    solrTestRule.startSolr(createTempDir());
+    solrTestRule.startSolr();
     // Actually only need extremely minimal configSet but just use the default
     solrTestRule
         .newCollection()
