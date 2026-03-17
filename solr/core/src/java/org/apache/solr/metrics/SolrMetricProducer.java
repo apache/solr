@@ -30,6 +30,7 @@ public interface SolrMetricProducer extends AutoCloseable {
   public static final AttributeKey<String> RESULT_ATTR = AttributeKey.stringKey("result");
   public static final AttributeKey<String> NAME_ATTR = AttributeKey.stringKey("name");
   public static final AttributeKey<String> PLUGIN_NAME_ATTR = AttributeKey.stringKey("plugin_name");
+  public static final AttributeKey<String> STATE_KEY_ATTR = AttributeKey.stringKey("state");
 
   /**
    * Unique metric tag identifies components with the same life-cycle, which should be registered /
