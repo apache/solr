@@ -637,14 +637,14 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_buffered_ops",
+            "solr.core.update_log.buffered.ops",
             "The current number of buffered operations",
             (observableLongMeasurement ->
                 observableLongMeasurement.record(computeBufferedOps(), baseAttributes))));
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_replay_logs_remaining",
+            "solr.core.update_log.replay.logs_remaining",
             "The current number of tlogs remaining to be replayed",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(logs.size(), baseAttributes);
@@ -652,7 +652,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_size_remaining",
+            "solr.core.update_log.size_remaining",
             "The total size in bytes of all tlogs remaining to be replayed",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(getTotalLogsSize(), baseAttributes);
@@ -663,7 +663,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_log_state",
+            "solr.core.update_log.state",
             "The current state of the update log. Replaying (0), buffering (1), applying buffered (2), active (3)",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(state.getValue(), baseAttributes);
@@ -672,20 +672,20 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
     applyingBufferedOpsCounter =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_update_log_applied_buffered_ops",
+                "solr.core.update_log.applied_buffered_ops",
                 "Total number of buffered operations applied"),
             baseAttributes);
 
     replayOpsCounter =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_update_log_replay_ops", "Total number of log replay operations"),
+                "solr.core.update_log.replay_ops", "Total number of log replay operations"),
             baseAttributes);
 
     copyOverOldUpdatesCounter =
         new AttributedLongCounter(
             solrMetricsContext.longCounter(
-                "solr_core_update_log_old_updates_copied",
+                "solr.core.update_log.old_updates_copied",
                 "Total number of updates copied from previous tlog or last tlog to a new tlog"),
             baseAttributes);
   }

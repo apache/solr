@@ -132,7 +132,7 @@ public class AttributedInstrumentFactory {
 
   /** Replace core metric name prefix to node prefix */
   private String toNodeMetricName(String coreMetricName) {
-    return coreMetricName.replace("solr_core", "solr_node");
+    return coreMetricName.replace("solr.core", "solr.node");
   }
 
   /** Filter out core attributes and keep all others for node-level metrics */

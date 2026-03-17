@@ -439,6 +439,6 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory
     httpListenerFactory.initializeMetrics(solrMetricsContext, Attributes.empty());
     commExecutor =
         solrMetricsContext.instrumentedExecutorService(
-            commExecutor, "solr_core_executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
+            commExecutor, "solr.core.executor", "httpShardExecutor", SolrInfoBean.Category.QUERY);
   }
 }

@@ -132,14 +132,14 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     coreAdminAsyncTracker.standardExecutor =
         solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.standardExecutor,
-            "solr_node_executor",
+            "solr.node.executor",
             "asyncCoreAdminExecutor",
             getCategory());
 
     coreAdminAsyncTracker.expensiveExecutor =
         solrMetricsContext.instrumentedExecutorService(
             coreAdminAsyncTracker.expensiveExecutor,
-            "solr_node_executor",
+            "solr.node.executor",
             "asyncCoreExpensiveAdminExecutor",
             getCategory());
   }

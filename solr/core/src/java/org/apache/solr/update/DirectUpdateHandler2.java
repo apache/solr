@@ -246,102 +246,102 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     addCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            "solr_core_update_cumulative_ops",
+            "solr.core.update.cumulative.ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     deleteByIdCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            "solr_core_update_cumulative_ops",
+            "solr.core.update.cumulative.ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     deleteByQueryCommandsCumulative =
         factory.attributedLongUpDownCounter(
-            "solr_core_update_cumulative_ops",
+            "solr.core.update.cumulative.ops",
             "Cumulative number of update commands processed. Cumulative can decrease from rollback command",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     commitCommands =
         factory.attributedLongCounter(
-            "solr_core_update_commit_ops",
+            "solr.core.update.commit.ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "commits"));
 
     optimizeCommands =
         factory.attributedLongCounter(
-            "solr_core_update_commit_ops",
+            "solr.core.update.commit.ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "optimize"));
 
     mergeIndexesCommands =
         factory.attributedLongCounter(
-            "solr_core_update_commit_ops",
+            "solr.core.update.commit.ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "merge_indexes"));
 
     expungeDeleteCommands =
         factory.attributedLongCounter(
-            "solr_core_update_commit_ops",
+            "solr.core.update.commit.ops",
             "Total number of commit operations",
             Attributes.of(OPERATION_ATTR, "expunge_deletes"));
 
     rollbackCommands =
         factory.attributedLongCounter(
-            "solr_core_update_maintenance_ops",
+            "solr.core.update.maintenance.ops",
             "Total number of maintenance operations",
             Attributes.of(OPERATION_ATTR, "rollback"));
 
     splitCommands =
         factory.attributedLongCounter(
-            "solr_core_update_maintenance_ops",
+            "solr.core.update.maintenance.ops",
             "Total number of maintenance operations",
             Attributes.of(OPERATION_ATTR, "split"));
 
     numErrorsCumulative =
         factory.attributedLongCounter(
-            "solr_core_update_errors", "Total number of update errors", Attributes.empty());
+            "solr.core.update.errors", "Total number of update errors", Attributes.empty());
 
     submittedAdds =
         factory.attributedLongCounter(
-            "solr_core_update_submitted_ops",
+            "solr.core.update.submitted.ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     submittedDeleteById =
         factory.attributedLongCounter(
-            "solr_core_update_submitted_ops",
+            "solr.core.update.submitted.ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     submittedDeleteByQuery =
         factory.attributedLongCounter(
-            "solr_core_update_submitted_ops",
+            "solr.core.update.submitted.ops",
             "Total number of submitted update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     committedAdds =
         factory.attributedLongCounter(
-            "solr_core_update_committed_ops",
+            "solr.core.update.committed.ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "adds"));
 
     committedDeleteById =
         factory.attributedLongCounter(
-            "solr_core_update_committed_ops",
+            "solr.core.update.committed.ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_id"));
 
     committedDeleteByQuery =
         factory.attributedLongCounter(
-            "solr_core_update_committed_ops",
+            "solr.core.update.committed.ops",
             "Total number of committed update operations",
             Attributes.of(OPERATION_ATTR, "deletes_by_query"));
 
     // Create observable metrics only for core registry
     observables.add(
         solrMetricsContext.observableLongCounter(
-            "solr_core_update_auto_commits",
+            "solr.core.update.auto_commits",
             "Current number of auto commits",
             (observableLongMeasurement -> {
               observableLongMeasurement.record(
@@ -354,7 +354,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_commit_stats",
+            "solr.core.update.commit.stats",
             "Metrics around commits",
             (observableLongMeasurement -> {
               if (commitTracker.getDocsUpperBound() > 0) {
@@ -386,7 +386,7 @@ public class DirectUpdateHandler2 extends UpdateHandler
 
     observables.add(
         solrMetricsContext.observableLongGauge(
-            "solr_core_update_docs_pending_commit",
+            "solr.core.update.docs.pending_commit",
             "Current number of documents pending commit. Value is reset to 0 on commit.",
             (observableLongMeasurement) -> {
               observableLongMeasurement.record(

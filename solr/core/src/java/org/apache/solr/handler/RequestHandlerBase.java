@@ -198,27 +198,27 @@ public abstract class RequestHandlerBase
 
       requests =
           factory.attributedLongCounter(
-              "solr_core_requests", "HTTP Solr requests", Attributes.empty());
+              "solr.core.requests", "HTTP Solr requests", Attributes.empty());
 
       numServerErrors =
           factory.attributedLongCounter(
-              "solr_core_requests_errors",
+              "solr.core.requests.errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "server"));
 
       numClientErrors =
           factory.attributedLongCounter(
-              "solr_core_requests_errors",
+              "solr.core.requests.errors",
               "HTTP Solr request errors",
               Attributes.of(SOURCE_ATTR, "client"));
 
       numTimeouts =
           factory.attributedLongCounter(
-              "solr_core_requests_timeout", "HTTP Solr request timeouts", Attributes.empty());
+              "solr.core.requests.timeout", "HTTP Solr request timeouts", Attributes.empty());
 
       requestTimes =
           factory.attributedLongTimer(
-              "solr_core_requests_times",
+              "solr.core.requests.times",
               "HTTP Solr request times",
               OtelUnit.MILLISECONDS,
               Attributes.empty());

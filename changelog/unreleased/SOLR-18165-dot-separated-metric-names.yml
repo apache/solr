@@ -1,0 +1,8 @@
+title: Use dot-separated OTel metric names for OTLP export. This is a back-compat break from version 10.0
+type: changed
+authors:
+  - name: Jan Høydahl
+    url: https://home.apache.org/phonebook.html?uid=janhoy
+links:
+  - name: SOLR-18165
+    url: https://issues.apache.org/jira/browse/SOLR-18165
