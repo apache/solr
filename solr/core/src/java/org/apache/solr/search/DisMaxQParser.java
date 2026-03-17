@@ -55,8 +55,7 @@ public class DisMaxQParser extends QParser {
    * @see DisMaxParams#MM
    */
   public static String parseMinShouldMatch(final IndexSchema schema, final SolrParams params) {
-    org.apache.solr.parser.QueryParser.Operator op =
-        QueryParsing.parseOP(params.get(QueryParsing.OP));
+    QueryParser.Operator op = QueryParsing.parseOP(params.get(QueryParsing.OP));
 
     return params.get(DisMaxParams.MM, op.equals(QueryParser.Operator.AND) ? "100%" : "0%");
   }

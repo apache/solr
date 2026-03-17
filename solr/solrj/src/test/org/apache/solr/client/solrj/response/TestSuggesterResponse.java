@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.response;
 
+import static org.apache.solr.core.CoreContainer.ALLOW_PATHS_SYSPROP;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.SolrQuery;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.util.EnvUtils;
+import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.SolrJettyTestRule;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
@@ -39,7 +43,13 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    solrTestRule.startSolr(legacyExampleCollection1SolrHome());
+    EnvUtils.setProperty(
+        ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
+    solrTestRule.startSolr(createTempDir());
+    solrTestRule
+        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
+        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
+        .create();
   }
 
   static String field = "cat";
@@ -139,7 +149,7 @@ public class TestSuggesterResponse extends SolrTestCaseJ4 {
         random().nextBoolean() ? new JavaBinResponseParser() : new XMLResponseParser();
     return new HttpSolrClient.Builder()
         .withBaseSolrUrl(solrTestRule.getBaseUrl())
-        .withDefaultCollection(DEFAULT_TEST_CORENAME)
+        .withDefaultCollection(DEFAULT_TEST_COLLECTION_NAME)
         .withResponseParser(randomParser)
         .build();
   }

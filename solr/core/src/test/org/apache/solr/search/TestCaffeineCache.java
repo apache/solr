@@ -39,6 +39,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.metrics.otel.FilterablePrometheusMetricReader;
 import org.apache.solr.util.SolrMetricTestUtils;
 import org.junit.Test;
 
@@ -384,9 +385,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   private CounterSnapshot.CounterDataPointSnapshot getCacheOperation(
-      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
-      String cacheName,
-      String operation) {
+      FilterablePrometheusMetricReader prometheusReader, String cacheName, String operation) {
     return SolrMetricTestUtils.getCounterDatapoint(
         prometheusReader,
         "solr_cache_ops",
@@ -399,9 +398,7 @@ public class TestCaffeineCache extends SolrTestCase {
   }
 
   private CounterSnapshot.CounterDataPointSnapshot getCacheLookup(
-      org.apache.solr.metrics.otel.FilterablePrometheusMetricReader prometheusReader,
-      String cacheName,
-      String result) {
+      FilterablePrometheusMetricReader prometheusReader, String cacheName, String result) {
     var builder =
         Labels.builder()
             .label("category", "CACHE")

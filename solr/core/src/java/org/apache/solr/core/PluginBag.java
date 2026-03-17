@@ -202,7 +202,7 @@ public class PluginBag<T> implements AutoCloseable {
    * Fetches a plugin by name , or the default
    *
    * @param name name using which it is registered
-   * @param useDefault Return the default , if a plugin by that name does not exist
+   * @param useDefault Return the default, if a plugin by that name does not exist
    */
   public T get(String name, boolean useDefault) {
     T result = get(name);

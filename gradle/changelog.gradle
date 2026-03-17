@@ -54,15 +54,39 @@ task writeChangelog {
     def fileName = "changelog/unreleased/${sanitizedBranchName}.yml"
     def file = new File(fileName)
     file.parentFile.mkdirs()
-    file.text = """# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+    file.text = """# (DELETE ALL COMMENTS UP HERE AFTER FILLING THIS IN
+
+# See https://github.com/apache/solr/blob/main/dev-docs/changelog.adoc
+
+# If the change is minor, don't bother adding a changelog entry.
+# For `other` type entries, the threshold to bother with a changelog entry should be even higher.
+
+# title:
+#  * The audience is end-users and administrators, not committers.
+#  * Be short and focused on the user impact.  Multiple sentences is fine!
+#  * For technical/geeky details, prefer the commit message instead of changelog.
+#  * Reference JIRA issues like `SOLR-12345`, or if no JIRA but have a GitHub PR then `PR#12345`.
+
+# type:
+#  `added` for new features/improvements, opt-in by the user typically documented in the ref guide
+#  `changed` for improvements; not opt-in
+#  `fixed` for improvements that are deemed to have fixed buggy behavior
+#  `deprecated` for marking things deprecated
+#  `removed` for code removed
+#  `dependency_update` for updates to dependencies
+#  `other` for anything else, like large/significant refactorings, build changes,
+#    test infrastructure, or documentation.
+#    Most such changes are too small/minor to bother with a changelog entry.
+
 title: ${title}
-type: other # added, changed, fixed, deprecated, removed, dependency_update, security, other
+type:
 authors:
   - name: ${configuredName}${nick}${asfIdUrl}
 ${jiraLinks}
 """
 
     println "Generated file: ${fileName} -- open and edit before committing"
+    println "Read dev-docs/changelog.adoc if you don't contribute here often."
   }
 }
 

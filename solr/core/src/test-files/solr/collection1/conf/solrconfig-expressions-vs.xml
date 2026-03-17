@@ -25,7 +25,7 @@
 
   <xi:include href="solrconfig.snippet.randomindexconfig.xml" xmlns:xi="http://www.w3.org/2001/XInclude"/>
 
-  <requestHandler name="standard" class="solr.StandardRequestHandler"/>
+  <requestHandler name="standard" class="solr.SearchHandler"/>
   <requestHandler name="/update" class="solr.UpdateRequestHandler"  />
 
   <valueSourceParser name="sin1" class="solr.ExpressionValueSourceParser">
