@@ -36,7 +36,7 @@ public class SolrExampleStreamingBinaryHttp2Test extends SolrExampleStreamingHtt
 
   @Override
   public SolrClient createNewSolrClient() {
-    String url = getBaseUrl();
+    String url = solrTestRule.getBaseUrl();
     // smaller queue size hits locks more often
     var solrClient =
         new HttpJettySolrClient.Builder()

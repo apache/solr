@@ -16,17 +16,17 @@
  */
 package org.apache.solr;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.join.TestScoreJoinQPNoScore;
@@ -184,8 +184,11 @@ public class TestCrossCoreJoin extends SolrTestCaseJ4 {
   @Test
   public void testCoresAreDifferent() throws Exception {
     assertQEx("schema12.xml" + " has no \"cat\" field", req("cat:*"), ErrorCode.BAD_REQUEST);
-    try (var req =
-        new LocalSolrQueryRequest(fromCore, "cat:*", "/select", 0, 100, Collections.emptyMap())) {
+    ModifiableSolrParams solrParams = new ModifiableSolrParams();
+    solrParams.set(CommonParams.Q, "cat:*");
+    solrParams.set(CommonParams.QT, "/select");
+    solrParams.set(CommonParams.ROWS, 100);
+    try (var req = new SolrQueryRequestBase(fromCore, solrParams)) {
       final String resp = query(fromCore, req);
       assertTrue(resp, resp.contains("numFound=\"1\""));
       assertTrue(resp, resp.contains("<str name=\"id\">10</str>"));

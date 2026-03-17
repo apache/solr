@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
@@ -74,8 +73,6 @@ import org.apache.http.client.HttpClient;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.tests.analysis.MockAnalyzer;
 import org.apache.lucene.tests.analysis.MockTokenizer;
-import org.apache.lucene.tests.mockfile.FilterPath;
-import org.apache.lucene.tests.util.LuceneTestCase;
 import org.apache.lucene.tests.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.tests.util.TestUtil;
 import org.apache.lucene.util.Constants;
@@ -118,13 +115,13 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrXmlConfig;
 import org.apache.solr.embedded.JettySolrRunner;
 import org.apache.solr.handler.UpdateRequestHandler;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.PointField;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
@@ -133,9 +130,7 @@ import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.apache.solr.update.processor.DistributedZkUpdateProcessor;
 import org.apache.solr.update.processor.UpdateRequestProcessor;
 import org.apache.solr.util.BaseTestHarness;
-import org.apache.solr.util.DirectoryUtil;
 import org.apache.solr.util.ErrorLogMuter;
-import org.apache.solr.util.ExternalPaths;
 import org.apache.solr.util.RandomizeSSL;
 import org.apache.solr.util.RandomizeSSL.SSLRandomizer;
 import org.apache.solr.util.RefCounted;
@@ -1292,7 +1287,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     for (int i = 0; i < moreParams.length; i += 2) {
       mp.add(moreParams[i], moreParams[i + 1]);
     }
-    return new LocalSolrQueryRequest(h.getCore(), mp);
+    return new SolrQueryRequestBase(h.getCore(), mp);
   }
 
   /** Necessary to make method signatures un-ambiguous */
@@ -1346,7 +1341,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       args = newArgs;
     }
 
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, args);
+    SolrQueryRequestBase req = new SolrQueryRequestBase(core, args);
     if (json != null && !json.isEmpty()) {
       req.setContentStreams(List.of(new ContentStreamBase.StringStream(json)));
     }
@@ -2280,40 +2275,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     Files.copy(top.resolve("synonyms.txt"), subHome.resolve("synonyms.txt"));
   }
 
-  /** Creates a temp solr home using sample_techproducts_configs. Returns the home path. */
-  @Deprecated // Instead use a basic config + whatever is needed or default config
-  public static Path legacyExampleCollection1SolrHome() {
-    Path sourceHome = ExternalPaths.SOURCE_HOME;
-    if (sourceHome == null)
-      throw new IllegalStateException(
-          "No source home! Cannot create the legacy example solr home directory.");
-
-    try {
-      Path tempSolrHome = FilterPath.unwrap(LuceneTestCase.createTempDir());
-      Path serverSolr = tempSolrHome.resolve(sourceHome).resolve("server").resolve("solr");
-
-      Path sourceConfig = serverSolr.resolve("configsets").resolve("sample_techproducts_configs");
-      Path collection1Dir = tempSolrHome.resolve("collection1");
-
-      DirectoryUtil.copyDirectoryContents(
-          sourceConfig.resolve("conf"), collection1Dir.resolve("conf"));
-
-      Properties props = new Properties();
-      props.setProperty("name", "collection1");
-      try (Writer writer =
-          new OutputStreamWriter(
-              Files.newOutputStream(collection1Dir.resolve("core.properties")),
-              StandardCharsets.UTF_8)) {
-        props.store(writer, null);
-      }
-      return tempSolrHome;
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (IOException e) {
-      throw new UncheckedIOException(e);
-    }
-  }
-
   public boolean compareSolrDocument(Object expected, Object actual) {
 
     if (!(expected instanceof SolrDocument solrDocument1)
@@ -2842,7 +2803,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       log.info(
           "Using TrieFields (NUMERIC_POINTS_SYSPROP=false) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
-      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
+      PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.TrieIntField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.TrieFloatField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.TrieLongField");
@@ -2854,7 +2815,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       log.info(
           "Using PointFields (NUMERIC_POINTS_SYSPROP=true) w/NUMERIC_DOCVALUES_SYSPROP={}", useDV);
 
-      org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
+      PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = true;
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Integer.class, "solr.IntPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Float.class, "solr.FloatPointField");
       private_RANDOMIZED_NUMERIC_FIELDTYPES.put(Long.class, "solr.LongPointField");
@@ -2886,7 +2847,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * @lucene.internal
    */
   private static void clearNumericTypesProperties() {
-    org.apache.solr.schema.PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
+    PointField.TEST_HACK_IGNORE_USELESS_TRIEFIELD_ARGS = false;
     private_RANDOMIZED_NUMERIC_FIELDTYPES.clear();
   }
 

@@ -101,7 +101,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
       ++ihCount;
       assertEquals(pathToClassMap.get("/admin/segments"), "solr.SegmentsInfoRequestHandler");
       ++ihCount;
-      assertEquals(pathToClassMap.get("/admin/system"), "solr.SystemInfoHandler");
+      assertEquals(pathToClassMap.get("/admin/info"), "solr.CoreInfoHandler");
       ++ihCount;
       assertEquals(pathToClassMap.get("/config"), "solr.SolrConfigHandler");
       ++ihCount;
@@ -196,7 +196,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     c1.close();
     cores.shutdown();
     assertEquals("Refcount != 0", 0, core.getOpenCount());
-    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed);
   }
 
   @Test
@@ -263,7 +263,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     cores.shutdown();
     assertEquals("Refcount != 0", 0, core.getOpenCount());
-    assertTrue("Handler not closed", core.isClosed() && handler1.closed == true);
+    assertTrue("Handler not closed", core.isClosed() && handler1.closed);
 
     service.shutdown();
     assertTrue("Running for too long...", service.awaitTermination(60, TimeUnit.SECONDS));

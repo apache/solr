@@ -25,6 +25,7 @@ import java.util.Map;
 public class NodeSystemResponse extends SolrJerseyResponse {
 
   @JsonProperty public String mode;
+  @JsonProperty public String host;
   @JsonProperty public String zkHost;
 
   @JsonProperty("solr_home")

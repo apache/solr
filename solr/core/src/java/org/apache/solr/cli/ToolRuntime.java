@@ -35,7 +35,7 @@ public abstract class ToolRuntime {
   public void exit(int status) {
     try {
       System.exit(status);
-    } catch (java.lang.SecurityException secExc) {
+    } catch (SecurityException secExc) {
       if (status != 0) throw new RuntimeException("SolrCLI failed to exit with status " + status);
     }
   }

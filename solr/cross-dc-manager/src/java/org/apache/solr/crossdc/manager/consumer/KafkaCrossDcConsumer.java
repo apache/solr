@@ -25,16 +25,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.common.Node;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.SerializationException;
 import org.apache.kafka.common.errors.WakeupException;
@@ -42,7 +45,9 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.request.HealthCheckRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.HealthCheckResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -72,10 +77,12 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final KafkaConsumer<String, MirroredSolrRequest<?>> kafkaConsumer;
+  private final AdminClient adminClient;
   private final CountDownLatch startLatch;
   KafkaMirroringSink kafkaMirroringSink;
 
   private static final int KAFKA_CONSUMER_POLL_TIMEOUT_MS = 5000;
+
   private final String[] topicNames;
   private final int maxAttempts;
   private final CrossDcConf.CollapseUpdates collapseUpdates;
@@ -83,7 +90,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final SolrMessageProcessor messageProcessor;
   protected final ConsumerMetrics metrics;
 
-  protected SolrClientSupplier solrClientSupplier;
+  protected final SolrClientSupplier solrClientSupplier;
 
   private final ThreadPoolExecutor executor;
 
@@ -92,6 +99,8 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   private final PartitionManager partitionManager;
 
   private final BlockingQueue<Runnable> queue = new BlockingQueue<>(10);
+
+  private volatile boolean running = false;
 
   /**
    * Supplier for creating and managing a working CloudSolrClient instance. This class ensures that
@@ -224,6 +233,7 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
     log.info("Creating Kafka consumer with configuration {}", kafkaConsumerProps);
     kafkaConsumer = createKafkaConsumer(kafkaConsumerProps);
+    adminClient = createKafkaAdminClient(kafkaConsumerProps);
     partitionManager = new PartitionManager(kafkaConsumer);
     // Create producer for resubmitting failed requests
     log.info("Creating Kafka resubmit producer");
@@ -242,6 +252,10 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
   public KafkaConsumer<String, MirroredSolrRequest<?>> createKafkaConsumer(Properties properties) {
     return new KafkaConsumer<>(
         properties, new StringDeserializer(), new MirroredSolrRequestSerializer());
+  }
+
+  public AdminClient createKafkaAdminClient(Properties properties) {
+    return AdminClient.create(properties);
   }
 
   protected KafkaMirroringSink createKafkaMirroringSink(KafkaCrossDcConf conf) {
@@ -269,17 +283,24 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
 
       log.info("Consumer started");
       startLatch.countDown();
+      running = true;
 
       while (pollAndProcessRequests()) {
         // no-op within this loop: everything is done in pollAndProcessRequests method defined
         // above.
       }
+      running = false;
 
-      log.info("Closed kafka consumer. Exiting now.");
+      log.info("Closing kafka consumer. Exiting now.");
       try {
         kafkaConsumer.close();
       } catch (Exception e) {
         log.warn("Failed to close kafka consumer", e);
+      }
+      try {
+        adminClient.close();
+      } catch (Exception e) {
+        log.warn("Failed to close kafka admin client", e);
       }
 
       try {
@@ -289,6 +310,44 @@ public class KafkaCrossDcConsumer extends Consumer.CrossDcConsumer {
       }
     } finally {
       IOUtils.closeQuietly(solrClientSupplier);
+    }
+  }
+
+  public boolean isRunning() {
+    return running;
+  }
+
+  public boolean isSolrConnected() {
+    if (solrClientSupplier == null) {
+      return false;
+    }
+    try {
+      HealthCheckRequest request = new HealthCheckRequest();
+      HealthCheckResponse response = request.process(solrClientSupplier.get());
+      if (response.getStatus() != 0) {
+        return false;
+      }
+      return true;
+    } catch (Exception e) {
+      return false;
+    }
+  }
+
+  public boolean isKafkaConnected() {
+    if (adminClient == null) {
+      return false;
+    }
+    try {
+      Collection<Node> nodes = adminClient.describeCluster().nodes().get();
+      if (nodes == null || nodes.isEmpty()) {
+        return false;
+      }
+      return true;
+    } catch (InterruptedException | ExecutionException e) {
+      if (e instanceof InterruptedException) {
+        Thread.currentThread().interrupt();
+      }
+      return false;
     }
   }
 

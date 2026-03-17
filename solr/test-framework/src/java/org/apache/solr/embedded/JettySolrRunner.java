@@ -65,6 +65,7 @@ import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
 import org.apache.solr.servlet.RequiredSolrRequestFilter;
 import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.TracingFilter;
 import org.apache.solr.util.SocketProxy;
 import org.apache.solr.util.TimeOut;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
@@ -117,6 +118,7 @@ public class JettySolrRunner {
   volatile FilterHolder requiredFilter;
   volatile FilterHolder rateLimitFilter;
   volatile ServletHolder solrServlet;
+  private FilterHolder tracingFilter;
 
   private int jettyPort = -1;
 
@@ -421,10 +423,15 @@ public class JettySolrRunner {
       rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       rateLimitFilter.setHeldClass(RateLimitFilter.class);
 
+      // Ratelimit Requests
+      tracingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      tracingFilter.setHeldClass(TracingFilter.class);
+
       // Map filters in same path as in web.xml
       root.addFilter(pathExcludeFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // This is our main workhorse - now a servlet instead of filter
       solrServlet = root.getServletHandler().newServletHolder(Source.EMBEDDED);

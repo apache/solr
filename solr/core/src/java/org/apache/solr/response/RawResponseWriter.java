@@ -47,7 +47,7 @@ public class RawResponseWriter implements QueryResponseWriter {
    */
   public static final String CONTENT = "content";
 
-  private String _baseWriter = null;
+  private String baseWriter = null;
 
   /**
    * A fallback writer used for requests that don't return raw content and that aren't associated
@@ -62,14 +62,17 @@ public class RawResponseWriter implements QueryResponseWriter {
     if (n != null) {
       Object base = n.get("base");
       if (base != null) {
-        _baseWriter = base.toString();
+        baseWriter = base.toString();
       }
     }
   }
 
   protected QueryResponseWriter getBaseWriter(SolrQueryRequest request) {
     if (request.getCore() != null) {
-      return request.getCore().getQueryResponseWriter(_baseWriter);
+      // When baseWriter is null, use the core's default writer (useDefault=true)
+      // Otherwise, look up the specific writer by name (useDefault=false for explicit lookups)
+      boolean useDefault = (baseWriter == null);
+      return request.getCore().getResponseWriters().get(baseWriter, useDefault);
     }
 
     // Requests to a specific core already have writers, but we still need a 'default writer' for

@@ -22,7 +22,6 @@ import java.beans.BeanInfo;
 import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
 import java.lang.management.OperatingSystemMXBean;
@@ -30,7 +29,6 @@ import java.lang.management.PlatformManagedObject;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.ArrayList;
@@ -58,7 +56,6 @@ import org.apache.solr.handler.admin.api.NodeSystemInfoAPI;
 import org.apache.solr.metrics.GpuMetricsProvider;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.AuthorizationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
@@ -69,9 +66,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This handler returns system info
- *
- * @since solr 1.2
+ * This handler returns node/container level info. See {@link
+ * org.apache.solr.handler.admin.CoreInfoHandler}
  */
 public class SystemInfoHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -102,10 +98,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private String hostname = null;
 
   private CoreContainer cc;
-
-  public SystemInfoHandler() {
-    this(null);
-  }
 
   public SystemInfoHandler(CoreContainer cc) {
     super();
@@ -218,13 +210,14 @@ public class SystemInfoHandler extends RequestHandlerBase {
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     rsp.setHttpCaching(false);
-    SolrCore core = req.getCore();
     if (AdminHandlersProxy.maybeProxyToNodes(req, rsp, getCoreContainer(req))) {
       return; // Request was proxied to other node
     }
-    if (core != null) rsp.add("core", getCoreInfo(core, req.getSchema()));
     boolean solrCloudMode = getCoreContainer(req).isZooKeeperAware();
     rsp.add("mode", solrCloudMode ? "solrcloud" : "std");
+
+    rsp.add("host", hostname);
+
     if (solrCloudMode) {
       rsp.add("zkHost", getCoreContainer(req).getZkController().getZkServerAddress());
     }
@@ -260,42 +253,6 @@ public class SystemInfoHandler extends RequestHandlerBase {
   private CoreContainer getCoreContainer(SolrQueryRequest req) {
     CoreContainer coreContainer = req.getCoreContainer();
     return coreContainer == null ? cc : coreContainer;
-  }
-
-  /** Get system info */
-  private SimpleOrderedMap<Object> getCoreInfo(SolrCore core, IndexSchema schema) {
-    SimpleOrderedMap<Object> info = new SimpleOrderedMap<>();
-
-    info.add("schema", schema != null ? schema.getSchemaName() : "no schema!");
-
-    // Host
-    info.add("host", hostname);
-
-    // Now
-    info.add("now", new Date());
-
-    // Start Time
-    info.add("start", core.getStartTimeStamp());
-
-    // Solr Home
-    SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<>();
-    dirs.add("cwd", Path.of(System.getProperty("user.dir")).toAbsolutePath().toString());
-    dirs.add("instance", core.getInstancePath().toString());
-    try {
-      dirs.add("data", core.getDirectoryFactory().normalize(core.getDataDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized data directory path", e);
-      dirs.add("data", "N/A");
-    }
-    dirs.add("dirimpl", core.getDirectoryFactory().getClass().getName());
-    try {
-      dirs.add("index", core.getDirectoryFactory().normalize(core.getIndexDir()));
-    } catch (IOException e) {
-      log.warn("Problem getting the normalized index directory path", e);
-      dirs.add("index", "N/A");
-    }
-    info.add("directory", dirs);
-    return info;
   }
 
   /** Get system info */
@@ -480,13 +437,13 @@ public class SystemInfoHandler extends RequestHandlerBase {
     String newSizeAndUnits;
 
     if (bytes / ONE_GB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_GB)) + " GB";
+      newSizeAndUnits = df.format((float) bytes / ONE_GB) + " GB";
     } else if (bytes / ONE_MB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_MB)) + " MB";
+      newSizeAndUnits = df.format((float) bytes / ONE_MB) + " MB";
     } else if (bytes / ONE_KB > 0) {
-      newSizeAndUnits = String.valueOf(df.format((float) bytes / ONE_KB)) + " KB";
+      newSizeAndUnits = df.format((float) bytes / ONE_KB) + " KB";
     } else {
-      newSizeAndUnits = String.valueOf(bytes) + " bytes";
+      newSizeAndUnits = bytes + " bytes";
     }
 
     return newSizeAndUnits;

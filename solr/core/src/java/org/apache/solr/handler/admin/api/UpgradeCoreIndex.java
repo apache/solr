@@ -50,8 +50,8 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.index.LatestVersionMergePolicy;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
@@ -95,7 +95,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   public enum CoreIndexUpgradeStatus {
     UPGRADE_SUCCESSFUL,
     ERROR,
-    NO_UPGRADE_NEEDED;
+    NO_UPGRADE_NEEDED
   }
 
   private static final int RETRY_COUNT_FOR_SEGMENT_DELETION = 5;
@@ -377,7 +377,7 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
   }
 
   private void doCommit(SolrCore core) throws IOException {
-    try (LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+    try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       CommitUpdateCommand cmd = new CommitUpdateCommand(req, false); // optimize=false
       core.getUpdateHandler().commit(cmd);
     } catch (IOException ioEx) {
@@ -404,8 +404,8 @@ public class UpgradeCoreIndex extends CoreAdminAPIBase {
     // Exclude copy field targets to avoid duplicating values on reindex
     Set<String> nonStoredDVFields = docFetcher.getNonStoredDVsWithoutCopyTargets();
 
-    try (LocalSolrQueryRequest solrRequest =
-        new LocalSolrQueryRequest(core, new ModifiableSolrParams())) {
+    try (SolrQueryRequestBase solrRequest =
+        new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       SolrQueryResponse rsp = new SolrQueryResponse();
       UpdateRequestProcessor processor = processorChain.createProcessor(solrRequest, rsp);
       try {

@@ -36,8 +36,9 @@ import org.apache.solr.common.params.CommonAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.RefCounted;
 import org.junit.Before;
@@ -302,9 +303,8 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
         });
   }
 
-  private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion)
-      throws Exception {
-    RefCounted<org.apache.solr.search.SolrIndexSearcher> searcherRef = core.getSearcher();
+  private void setMinVersionForSegments(SolrCore core, Set<String> segments, Version minVersion) {
+    RefCounted<SolrIndexSearcher> searcherRef = core.getSearcher();
     try {
       final List<LeafReaderContext> leaves = searcherRef.get().getTopReaderContext().leaves();
       for (LeafReaderContext ctx : leaves) {
@@ -339,13 +339,10 @@ public class UpgradeCoreIndexActionTest extends SolrTestCaseJ4 {
     parentDoc.addChildDocument(childDoc);
 
     // Index the nested document
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-    try {
+    try (SolrQueryRequestBase req = new SolrQueryRequestBase(core, new ModifiableSolrParams())) {
       AddUpdateCommand cmd = new AddUpdateCommand(req);
       cmd.solrDoc = parentDoc;
       core.getUpdateHandler().addDoc(cmd);
-    } finally {
-      req.close();
     }
     assertU(commit("openSearcher", "true"));
 

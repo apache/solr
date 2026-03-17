@@ -950,7 +950,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                 "sortabledv_udvas asc"));
     assertTrue(
         "Should have 400 status when exporting sortabledv_m, it does not have useDocValuesAsStored='true'",
-        s.contains("\"status\":400}"));
+        s.contains("\"status\":400"));
     assertTrue(
         "Should have a cause when exporting sortabledv_m, it does not have useDocValuesAsStored='true'",
         s.contains("includeStoredFields=true"));
@@ -968,7 +968,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
                 "sortabledv_udvas asc"));
     assertTrue(
         "Should have 400 status when exporting sortabledv, it does not have useDocValuesAsStored='true'",
-        s.contains("\"status\":400}"));
+        s.contains("\"status\":400"));
     assertTrue(
         "Should have a cause when exporting sortabledv, it does not have useDocValuesAsStored='true'",
         s.contains("includeStoredFields=true"));

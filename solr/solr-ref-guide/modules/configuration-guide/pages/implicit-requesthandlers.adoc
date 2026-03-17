@@ -103,19 +103,15 @@ Segments:: Return info on last commit generation Lucene index segments.
 |`solr/<collection>/admin/segments` |{solr-javadocs}/core/org/apache/solr/handler/admin/SegmentsInfoRequestHandler.html[SegmentsInfoRequestHandler] |`_ADMIN_SEGMENTS`
 |===
 
-System Info:: Return server statistics and settings.
+Core Info:: Return core information.
 +
-*Documentation*: xref:system-info-handler.adoc[]
+*Documentation*: xref:core-info-handler.adoc[]
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
-|v1: `solr/admin/info/system`
-
-v2: `api/node/system` |{solr-javadocs}/core/org/apache/solr/handler/admin/SystemInfoHandler.html[SystemInfoHandler] |`_ADMIN_SYSTEM`
+|v1: `solr/<collection>/admin/info`|{solr-javadocs}/core/org/apache/solr/handler/admin/CoreInfoHandler.html[CoreInfoHandler] |
 |===
-+
-This endpoint can also take the collection or core name in the path (`solr/<collection>/admin/system` or `solr/<core>/admin/system`) which will include all of the system-level information and additional information about the specific core that served the request.
 
 Threads:: Return info on all JVM threads.
 +
@@ -367,3 +363,15 @@ The response will look similar to:
 Because implicit request handlers are not present in `solrconfig.xml`, configuration of their associated `default`, `invariant` and `appends` parameters may be edited via the xref:request-parameters-api.adoc[] using the paramset listed in the above table.
 However, other parameters, including SearchHandler components, may not be modified.
 The invariants and appends specified in the implicit configuration cannot be overridden.
+
+== How to Disable an Implicit Handler
+
+You may want to disable the loading of an implicit handler.
+This is supported by remapping the name of the handler to the `NoOpRequestHandler` in `solrconfig.xml`, which will return a 403 FORBIDDEN status code.
+
+For example, to disable the `/update/csv` handler you would re-define it in `solrconfig.xml` as:
+
+[source,xml]
+----
+<requestHandler name="/update/csv" class="solr.NoOpRequestHandler"></requestHandler>
+----

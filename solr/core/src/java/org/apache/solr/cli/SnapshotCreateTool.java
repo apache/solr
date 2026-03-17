@@ -33,7 +33,7 @@ public class SnapshotCreateTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of collection to be snapshot.")
-          .build();
+          .get();
 
   private static final Option SNAPSHOT_NAME_OPTION =
       Option.builder()
@@ -42,7 +42,7 @@ public class SnapshotCreateTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the snapshot to produce")
-          .build();
+          .get();
 
   public SnapshotCreateTool(ToolRuntime runtime) {
     super(runtime);

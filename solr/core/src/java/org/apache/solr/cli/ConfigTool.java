@@ -43,7 +43,7 @@ public class ConfigTool extends ToolBase {
           .argName("NAME")
           .required()
           .desc("Name of the collection.")
-          .build();
+          .get();
 
   private static final Option ACTION_OPTION =
       Option.builder("a")
@@ -52,7 +52,7 @@ public class ConfigTool extends ToolBase {
           .argName("ACTION")
           .desc(
               "Config API action, one of: set-property, unset-property, set-user-property, unset-user-property; default is 'set-property'.")
-          .build();
+          .get();
 
   private static final Option PROPERTY_OPTION =
       Option.builder()
@@ -62,7 +62,7 @@ public class ConfigTool extends ToolBase {
           .required()
           .desc(
               "Name of the Config API property to apply the action to, such as: 'updateHandler.autoSoftCommit.maxTime'.")
-          .build();
+          .get();
 
   private static final Option VALUE_OPTION =
       Option.builder("v")
@@ -70,7 +70,7 @@ public class ConfigTool extends ToolBase {
           .hasArg()
           .argName("VALUE")
           .desc("Set the property to this value; accepts JSON objects and strings.")
-          .build();
+          .get();
 
   public ConfigTool(ToolRuntime runtime) {
     super(runtime);
@@ -100,7 +100,7 @@ public class ConfigTool extends ToolBase {
     String property = cli.getOptionValue(PROPERTY_OPTION);
     String value = cli.getOptionValue(VALUE_OPTION);
 
-    // value is required unless the property is one of the unset- type.
+    // value is required unless the property is one of the "unset-" type.
     if (!action.contains("unset-") && value == null) {
       throw new MissingArgumentException("'value' is a required option.");
     }
