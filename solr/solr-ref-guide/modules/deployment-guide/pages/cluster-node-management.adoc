@@ -866,7 +866,7 @@ Please note that the node itself will remain as a live node after this operation
 
 [TIP]
 ====
-If the node is currently down and you aren't bringing it back, then this command removes the node from the cluster.
+If the node is currently down and you aren't bringing it back, then this command removes that node's replica entries from the cluster state (ZooKeeper), cleaning up references to its replicas. It does not change the node's liveness in `/live_nodes`, and the node may still rejoin the cluster if it is started again later.
 ====
 
 [tabs#deletenode-request]
