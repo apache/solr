@@ -147,6 +147,7 @@ import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrFieldCacheBean;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.security.AllowListUrlChecker;
+import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuditLoggerPlugin;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.AuthorizationPlugin;
@@ -2509,5 +2510,20 @@ public class CoreContainer {
             }
           }
         });
+  }
+
+  /**
+   * Audit an event if our audit plugin is installed and wants to audit this type of event.
+   *
+   * @param event the event to audit.
+   * @param eventType a Supplier to defer event creation and avoid gc load when auditing is not
+   *     enabled. Lambdas are preferred for this since they are easily inlined.
+   */
+  public void audit(Supplier<AuditEvent> event, AuditEvent.EventType eventType) {
+    if (getAuditLoggerPlugin() != null && getAuditLoggerPlugin().shouldLog(eventType)) {
+      // The lambda should get optimized out, and produce no GC load:
+      // https://medium.com/@reetesh043/how-lambda-expressions-work-internally-in-java-f2a6f0e0bc68
+      getAuditLoggerPlugin().doAudit(event.get());
+    }
   }
 }
