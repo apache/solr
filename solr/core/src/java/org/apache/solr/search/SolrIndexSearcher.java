@@ -2660,7 +2660,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // reader stats (numeric)
     toClose.add(
         solrMetricsContext.observableLongGauge(
-            "solr.core.indexsearcher.index.num.docs",
+            "solr.core.indexsearcher.index.num_docs",
             "Number of live docs in the index",
             obs -> {
               try {
@@ -2694,7 +2694,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     // size of the currently opened commit
     toClose.add(
         solrMetricsContext.observableDoubleGauge(
-            "solr.core.indexsearcher.index.commit.size",
+            "solr.core.indexsearcher.index.commit_size",
             "Size of the current index commit (megabytes)",
             obs -> {
               try {

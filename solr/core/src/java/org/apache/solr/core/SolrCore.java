@@ -1346,7 +1346,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     newSearcherMaxReachedCounter =
         new AttributedLongCounter(
             parentContext.longCounter(
-                "solr.core.searcher.warming.max",
+                "solr.core.searcher.warming_max",
                 "Total number of maximum concurrent warming searchers reached"),
             baseSearcherAttributes);
 
@@ -1367,7 +1367,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
     newSearcherWarmupTimer =
         new AttributedLongTimer(
             parentContext.longHistogram(
-                "solr.core.indexsearcher.open.warmup.time",
+                "solr.core.indexsearcher.open.warmup_time",
                 "Time to warmup new searchers",
                 OtelUnit.MILLISECONDS),
             baseSearcherAttributes);
@@ -1382,7 +1382,7 @@ public class SolrCore implements SolrInfoBean, Closeable {
 
     observables.add(
         parentContext.observableDoubleGauge(
-            "solr.core.disk.space",
+            "solr.core.disk_space",
             "Solr core disk space metrics",
             (observableDoubleMeasurement -> {
 

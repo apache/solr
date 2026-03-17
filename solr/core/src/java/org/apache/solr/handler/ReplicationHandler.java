@@ -908,7 +908,7 @@ public class ReplicationHandler extends RequestHandlerBase
 
     ObservableLongMeasurement isPollingDisabledMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr.core.replication.is_polling.disabled",
+            "solr.core.replication.is_polling_disabled",
             "Whether polling is disabled (1) or not (0)");
 
     ObservableLongMeasurement isReplicatingMetric =
@@ -918,19 +918,19 @@ public class ReplicationHandler extends RequestHandlerBase
 
     ObservableLongMeasurement timeElapsedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr.core.replication.time.elapsed",
+            "solr.core.replication.time_elapsed",
             "Time elapsed during replication in seconds",
             OtelUnit.SECONDS);
 
     ObservableLongMeasurement bytesDownloadedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr.core.replication.downloaded.size",
+            "solr.core.replication.downloaded_size",
             "Total bytes downloaded during replication",
             OtelUnit.BYTES);
 
     ObservableLongMeasurement downloadSpeedMetric =
         solrMetricsContext.longGaugeMeasurement(
-            "solr.core.replication.download.speed", "Download speed in bytes per second");
+            "solr.core.replication.download_speed", "Download speed in bytes per second");
 
     metricsCallback =
         solrMetricsContext.batchCallback(
