@@ -62,3 +62,8 @@ While README.md and CONTRIBUTING.md are mainly written for humans, this file is 
 - We use the "logchange" tooling to manage our changelog. See `dev-docs/changelog.adoc` for details and conventions
 - To scaffold a new changelog entry, run `gradlew writeChangelog`, and then edit the new file located in `changelog/unreleased/`.
 - Do not add a changelog entry before a JIRA issue or a Github PR is assigned, as one is required.
+
+## Agent Memory
+
+- Keep an incremental `learnings.md` in the repo root that tracks each contribution, PR, and notable discovery made by this agent. Add a fresh entry (with date, PR reference, and a concise summary) every time new work lands.
+- Referencing `learnings.md` ensures all future agents see the contribution history and reasoning without rereading PRs.
