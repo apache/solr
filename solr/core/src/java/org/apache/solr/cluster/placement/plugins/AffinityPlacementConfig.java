@@ -40,7 +40,7 @@ public class AffinityPlacementConfig implements PlacementPluginConfig {
    *
    * <p>Nodes on which this system property is not defined are considered being in the same
    * Availability Zone {@link #UNDEFINED_AVAILABILITY_ZONE} (hopefully the value of this constant is
-   * not the name of a real Availability Zone :) ).
+   * not the name of a real Availability Zone).
    */
   public static final String AVAILABILITY_ZONE_SYSPROP = "availability_zone";
 

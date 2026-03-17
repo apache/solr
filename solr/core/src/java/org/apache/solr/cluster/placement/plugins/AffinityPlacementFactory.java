@@ -77,8 +77,8 @@ import org.slf4j.LoggerFactory;
  * }' http://localhost:8983/api/cluster/plugin
  * </pre>
  *
- * <p>In order to delete the placement-plugin section (and fallback to either Legacy or rule
- * based placement if configured for a collection), execute:
+ * <p>In order to delete the placement-plugin section (and fallback to either Legacy or rule based
+ * placement if configured for a collection), execute:
  *
  * <pre>
  *

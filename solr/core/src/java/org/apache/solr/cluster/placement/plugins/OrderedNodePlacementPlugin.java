@@ -340,13 +340,14 @@ public abstract class OrderedNodePlacementPlugin implements PlacementPlugin {
   public void verifyAllowedModification(
       ModificationRequest modificationRequest, PlacementContext placementContext)
       throws PlacementException {
-    switch (modificationRequest) {
-      case DeleteShardsRequest deleteShardsRequest ->
-          log.warn("DeleteShardsRequest not implemented yet, skipping: {}", modificationRequest);
-      case DeleteCollectionRequest deleteCollectionRequest ->
-          verifyDeleteCollection(deleteCollectionRequest, placementContext);
-      case DeleteReplicasRequest deleteReplicasRequest -> verifyDeleteReplicas(deleteReplicasRequest, placementContext);
-      case null, default -> log.warn("unsupported request type, skipping: {}", modificationRequest);
+    if (modificationRequest instanceof DeleteShardsRequest) {
+      log.warn("DeleteShardsRequest not implemented yet, skipping: {}", modificationRequest);
+    } else if (modificationRequest instanceof DeleteCollectionRequest) {
+      verifyDeleteCollection((DeleteCollectionRequest) modificationRequest, placementContext);
+    } else if (modificationRequest instanceof DeleteReplicasRequest) {
+      verifyDeleteReplicas((DeleteReplicasRequest) modificationRequest, placementContext);
+    } else {
+      log.warn("unsupported request type, skipping: {}", modificationRequest);
     }
   }
 
