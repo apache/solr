@@ -49,23 +49,6 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
 
   public final boolean isV2Enabled = V2ApiUtils.isEnabled();
 
-  /** Enum to define action that needs to be processed. */
-  public enum Action {
-    /** Forwards the request via {@link jakarta.servlet.RequestDispatcher}. */
-    FORWARD,
-    /**
-     * Returns the control, and no further specific processing is needed. This is generally when an
-     * error is set and returned.
-     */
-    RETURN,
-    /** Retry the request. Currently used when a core isn't found, we refresh state, and retry. */
-    RETRY,
-    ADMIN,
-    REMOTEPROXY,
-    PROCESS,
-    ADMIN_OR_REMOTEPROXY
-  }
-
   public SolrDispatchFilter() {}
 
   @Override
@@ -128,8 +111,7 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
     // BUG? Important timing?
     ExecutorUtil.setServerThreadFlag(Boolean.TRUE);
     try {
-      Action result = call.call();
-      switch (result) {
+      switch (call.call()) {
         case RETRY -> {
           span.addEvent("SolrDispatchFilter RETRY");
           // RECURSION

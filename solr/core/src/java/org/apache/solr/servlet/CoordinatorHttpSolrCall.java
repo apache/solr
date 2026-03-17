@@ -150,7 +150,7 @@ public class CoordinatorHttpSolrCall extends HttpSolrCall {
   @Override
   protected void init() throws Exception {
     super.init();
-    if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
+    if (action == HttpSolrCall.Action.PROCESS && core != null) {
       solrReq = wrappedReq(solrReq, collectionName, this);
     }
   }

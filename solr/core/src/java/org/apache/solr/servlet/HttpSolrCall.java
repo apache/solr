@@ -21,12 +21,12 @@ import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.NODE_NAME_PROP;
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.FORWARD;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETRY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.FORWARD;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETRY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.RETURN;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
@@ -98,7 +98,6 @@ import org.apache.solr.security.AuthorizationContext.RequestType;
 import org.apache.solr.security.AuthorizationUtils;
 import org.apache.solr.security.HttpServletAuthorizationContext;
 import org.apache.solr.security.PublicKeyHandler;
-import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -141,6 +140,23 @@ public class HttpSolrCall {
   protected List<String> collectionsList;
 
   protected RequestType requestType;
+
+  /** Enum to define action that needs to be processed. */
+  public enum Action {
+    /** Forwards the request via {@link jakarta.servlet.RequestDispatcher}. */
+    FORWARD,
+    /**
+     * Returns the control, and no further specific processing is needed. This is generally when an
+     * error is set and returned.
+     */
+    RETURN,
+    /** Retry the request. Currently used when a core isn't found, we refresh state, and retry. */
+    RETRY,
+    ADMIN,
+    REMOTEPROXY,
+    PROCESS,
+    ADMIN_OR_REMOTEPROXY
+  }
 
   public HttpSolrCall(
       SolrDispatchFilter solrDispatchFilter,

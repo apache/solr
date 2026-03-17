@@ -22,6 +22,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.CoordinatorHttpSolrCall;
+import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.servlet.SolrDispatchFilter;
 
 public class CoordinatorV2HttpSolrCall extends V2HttpCall {
@@ -51,7 +52,7 @@ public class CoordinatorV2HttpSolrCall extends V2HttpCall {
   @Override
   protected void init() throws Exception {
     super.init();
-    if (action == SolrDispatchFilter.Action.PROCESS && core != null) {
+    if (action == HttpSolrCall.Action.PROCESS && core != null) {
       solrReq = CoordinatorHttpSolrCall.wrappedReq(solrReq, collectionName, this);
     }
   }

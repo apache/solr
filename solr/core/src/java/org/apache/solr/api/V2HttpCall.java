@@ -18,10 +18,10 @@
 package org.apache.solr.api;
 
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.ADMIN_OR_REMOTEPROXY;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.PROCESS;
-import static org.apache.solr.servlet.SolrDispatchFilter.Action.REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN;
+import static org.apache.solr.servlet.HttpSolrCall.Action.ADMIN_OR_REMOTEPROXY;
+import static org.apache.solr.servlet.HttpSolrCall.Action.PROCESS;
+import static org.apache.solr.servlet.HttpSolrCall.Action.REMOTEPROXY;
 
 import io.opentelemetry.api.trace.Span;
 import jakarta.servlet.http.HttpServletRequest;
