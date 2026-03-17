@@ -61,6 +61,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.servlet.AuthenticationFilter;
 import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.servlet.PathExclusionFilter;
 import org.apache.solr.servlet.RateLimitFilter;
@@ -118,6 +119,7 @@ public class JettySolrRunner {
   volatile FilterHolder pathExcludeFilter;
   volatile FilterHolder requiredFilter;
   volatile FilterHolder rateLimitFilter;
+  volatile FilterHolder authFilter;
   volatile FilterHolder dispatchFilter;
   private FilterHolder tracingFilter;
 
@@ -424,9 +426,13 @@ public class JettySolrRunner {
       rateLimitFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       rateLimitFilter.setHeldClass(RateLimitFilter.class);
 
-      // Ratelimit Requests
+      // Trace Requests
       tracingFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
       tracingFilter.setHeldClass(TracingFilter.class);
+
+      // Authenticate Requests
+      authFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
+      authFilter.setHeldClass(AuthenticationFilter.class);
 
       // This is our main workhorse
       dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
@@ -437,6 +443,7 @@ public class JettySolrRunner {
       root.addFilter(requiredFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(rateLimitFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(tracingFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
+      root.addFilter(authFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
       root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
       // Default servlet as a fall-through
