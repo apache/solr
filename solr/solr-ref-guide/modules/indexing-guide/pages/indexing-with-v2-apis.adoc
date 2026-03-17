@@ -1,0 +1,183 @@
+= Indexing with the V2 Update API
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+Solr's xref:configuration-guide:v2-api.adoc[v2 API] provides update endpoints under the `/api` path prefix.
+These endpoints accept the same document formats as the xref:indexing-with-update-handlers.adoc[v1 update handlers], with some important differences described below.
+
+NOTE: The v2 API is classified as "experimental" and may change in backwards-incompatible ways.
+
+== V2 Update Endpoint Paths
+
+For a SolrCloud collection the v2 update base path is:
+
+----
+/api/collections/{collection}/update
+----
+
+For a standalone core the v2 update base path is:
+
+----
+/api/cores/{core}/update
+----
+
+The following sub-paths are available:
+
+[width="100%",options="header",]
+|===
+|Path |Accepted Format |Notes
+|`/update` |JSON document or array of documents |Equivalent to v1 `/update/json/docs`; documents only (no JSON command syntax)
+|`/update/json` |JSON document or array of documents |Same behavior as `/update`; documents only (no JSON command syntax)
+|`/update/xml` |XML |Supports full XML update syntax (add, delete, commit, optimize)
+|`/update/csv` |CSV |Equivalent to v1 `/update/csv`
+|`/update/bin` |Javabin |Equivalent to v1 `/update` with `Content-Type: application/javabin`
+|===
+
+IMPORTANT: The v2 `/update` and `/update/json` endpoints are document-only: they process one or more JSON documents (either a single JSON object or an array of objects, like the v1 `/update/json/docs` path) and do *not* support the full xref:indexing-with-update-handlers.adoc#sending-json-update-commands[JSON update command syntax] (commit, delete, optimize within the request body).
+Use `/update/xml` for those operations, or issue commit/rollback via separate API calls.
+
+== JSON Document Indexing
+
+The v2 `/update` and `/update/json` endpoints both accept JSON document(s). The example below shows an array of documents:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update?commit=true' \
+  --data-binary '
+[
+  {
+    "id": "1",
+    "title": "Doc 1"
+  },
+  {
+    "id": "2",
+    "title": "Doc 2"
+  }
+]'
+----
+
+A single document can also be posted as a JSON object:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update?commit=true' \
+  --data-binary '
+{
+  "id": "1",
+  "title": "Doc 1"
+}'
+----
+
+Query parameters such as `commit`, `commitWithin`, and `overwrite` can be appended to the URL, as shown above.
+
+== XML Document Indexing
+
+The v2 `/update/xml` endpoint accepts the same XML format as the v1 `/update` handler and supports the full XML update syntax, including add, delete, commit, and optimize commands.
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml' \
+  --data-binary '
+<add>
+  <doc>
+    <field name="id">1</field>
+    <field name="title">Doc 1</field>
+  </doc>
+</add>'
+----
+
+Delete by ID and delete by query are also supported:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml?commit=true' \
+  --data-binary '
+<delete>
+  <id>1</id>
+  <query>title:unwanted</query>
+</delete>'
+----
+
+== CSV Document Indexing
+
+The v2 `/update/csv` endpoint accepts CSV-formatted documents and supports the same xref:indexing-with-update-handlers.adoc#csv-update-parameters[CSV update parameters] as the v1 handler:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: text/csv' \
+  'http://localhost:8983/api/collections/my_collection/update/csv?commit=true' \
+  --data-binary '
+id,title
+1,Doc 1
+2,Doc 2'
+----
+
+== Javabin Document Indexing
+
+The v2 `/update/bin` endpoint accepts documents in Javabin format, which is the native binary format used by SolrJ.
+This endpoint is primarily intended for use by SolrJ clients.
+
+== Commit and Rollback
+
+Because the v2 `/update` and `/update/json` endpoints do not support update commands in the request body, commits and rollbacks must be issued separately.
+Use the `commit=true` or `commitWithin=N` URL parameters to commit after indexing:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update?commit=true' \
+  --data-binary '[{"id":"1","title":"Doc 1"}]'
+----
+
+For a soft commit:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/json' \
+  'http://localhost:8983/api/collections/my_collection/update?softCommit=true' \
+  --data-binary '[{"id":"1","title":"Doc 1"}]'
+----
+
+Alternatively, use `/update/xml` to issue an explicit commit command:
+
+[source,bash]
+----
+curl -X POST -H 'Content-Type: application/xml' \
+  'http://localhost:8983/api/collections/my_collection/update/xml' \
+  --data-binary '<commit/>'
+----
+
+== Comparison with V1 Update Handlers
+
+The table below summarizes the key differences between the v1 and v2 update endpoints.
+
+[width="100%",options="header",]
+|===
+|Feature |V1 |V2
+|Base path |`/solr/{collection}/update` |`/api/collections/{collection}/update`
+|JSON documents |`/update` or `/update/json/docs` |`/update` or `/update/json`
+|JSON update commands (commit/delete/optimize) |`/update` |Not supported via `/update` or `/update/json`; use `/update/xml` or URL params
+|XML updates |`/update` (via Content-Type) |`/update/xml`
+|CSV updates |`/update/csv` |`/update/csv`
+|Javabin updates |`/update` (via Content-Type) |`/update/bin`
+|===
+
+For full details on the v1 update handlers, see xref:indexing-with-update-handlers.adoc[].

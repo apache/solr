@@ -17,52 +17,93 @@
 
 package org.apache.solr.handler.admin.api;
 
-import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.UPDATE_PERM;
 
-import org.apache.solr.api.EndPoint;
+import jakarta.inject.Inject;
+import org.apache.solr.api.JerseyResource;
+import org.apache.solr.client.api.endpoint.UpdateApi;
+import org.apache.solr.client.api.model.SolrJerseyResponse;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.UpdateRequestHandler;
+import org.apache.solr.jersey.APIConfigProvider;
+import org.apache.solr.jersey.PermissionName;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 
 /**
- * All v2 APIs that share a prefix of /update
+ * V2 API implementation for indexing documents.
  *
- * <p>Most of these v2 APIs are implemented as pure "pass-throughs" to the v1 code paths, but there
- * are a few exceptions: /update and /update/json are both rewritten to /update/json/docs.
+ * <p>These APIs delegate to the v1 {@link UpdateRequestHandler}. The {@code /update} and {@code
+ * /update/json} paths are rewritten to {@code /update/json/docs} so that JSON arrays of documents
+ * are processed by the JSON loader rather than the update-command loader.
  */
-public class UpdateAPI {
+public class UpdateAPI extends JerseyResource implements UpdateApi {
+
   private final UpdateRequestHandler updateRequestHandler;
+  private final SolrQueryRequest solrQueryRequest;
+  private final SolrQueryResponse solrQueryResponse;
 
-  public UpdateAPI(UpdateRequestHandler updateRequestHandler) {
-    this.updateRequestHandler = updateRequestHandler;
+  @Inject
+  public UpdateAPI(
+      UpdateRequestHandlerConfig handlerConfig,
+      SolrQueryRequest solrQueryRequest,
+      SolrQueryResponse solrQueryResponse) {
+    this.updateRequestHandler = handlerConfig.updateRequestHandler;
+    this.solrQueryRequest = solrQueryRequest;
+    this.solrQueryResponse = solrQueryResponse;
   }
 
-  @EndPoint(method = POST, path = "/update", permission = UPDATE_PERM)
-  public void update(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public SolrJerseyResponse update() throws Exception {
+    return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
-  @EndPoint(method = POST, path = "/update/xml", permission = UPDATE_PERM)
-  public void updateXml(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public SolrJerseyResponse updateJson() {
+    return handleUpdate(UpdateRequestHandler.DOC_PATH);
   }
 
-  @EndPoint(method = POST, path = "/update/csv", permission = UPDATE_PERM)
-  public void updateCsv(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public SolrJerseyResponse updateXml() {
+    return handleUpdate(null);
   }
 
-  @EndPoint(method = POST, path = "/update/json", permission = UPDATE_PERM)
-  public void updateJson(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    req.getContext().put(PATH, "/update/json/docs");
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public SolrJerseyResponse updateCsv() {
+    return handleUpdate(null);
   }
 
-  @EndPoint(method = POST, path = "/update/bin", permission = UPDATE_PERM)
-  public void updateJavabin(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
-    updateRequestHandler.handleRequest(req, rsp);
+  @Override
+  @PermissionName(UPDATE_PERM)
+  public SolrJerseyResponse updateBin() {
+    return handleUpdate(null);
   }
+
+  private SolrJerseyResponse handleUpdate(String pathOverride) {
+    final SolrJerseyResponse response = instantiateJerseyResponse(SolrJerseyResponse.class);
+    if (pathOverride != null) {
+      solrQueryRequest.getContext().put(PATH, pathOverride);
+    }
+    SolrCore.preDecorateResponse(solrQueryRequest, solrQueryResponse);
+    updateRequestHandler.handleRequest(solrQueryRequest, solrQueryResponse);
+    SolrCore.postDecorateResponse(updateRequestHandler, solrQueryRequest, solrQueryResponse);
+    rethrowAnyException(solrQueryResponse);
+    return response;
+  }
+
+  private void rethrowAnyException(SolrQueryResponse rsp) {
+    final Exception ex = rsp.getException();
+    if (ex instanceof SolrException solrEx) throw solrEx;
+    if (ex != null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ex);
+  }
+
+  /** Configuration object providing access to the {@link UpdateRequestHandler} instance. */
+  public record UpdateRequestHandlerConfig(UpdateRequestHandler updateRequestHandler)
+      implements APIConfigProvider.APIConfig {}
 }
