@@ -63,10 +63,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
@@ -92,10 +89,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     try (var client =
         new HttpJettySolrClient.Builder(solrTestRule.getBaseUrl() + "/debug/foo")
@@ -125,10 +119,7 @@ public class HttpJettySolrClientCompatibilityTest extends SolrTestCaseJ4 {
     EnvUtils.setProperty(
         ALLOW_PATHS_SYSPROP, ExternalPaths.SERVER_HOME.toAbsolutePath().toString());
     solrTestRule.startSolr(createTempDir(), new Properties(), jettyConfig);
-    solrTestRule
-        .newCollection(DEFAULT_TEST_COLLECTION_NAME)
-        .withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET)
-        .create();
+    solrTestRule.newCollection().withConfigSet(ExternalPaths.TECHPRODUCTS_CONFIGSET).create();
 
     System.clearProperty("solr.http1");
     try (var client =
