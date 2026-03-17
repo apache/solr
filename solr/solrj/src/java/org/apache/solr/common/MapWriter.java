@@ -18,7 +18,6 @@
 package org.apache.solr.common;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
@@ -153,5 +152,5 @@ public interface MapWriter extends MapSerializable, NavigableObject, JSONWriter.
   }
 
   @Deprecated // use SimpleOrderedMap.of()
-  MapWriter EMPTY = new MapWriterMap(Collections.emptyMap());
+  MapWriter EMPTY = new MapWriterMap(Map.of());
 }

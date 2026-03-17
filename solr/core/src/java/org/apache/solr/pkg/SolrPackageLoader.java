@@ -78,7 +78,7 @@ public class SolrPackageLoader implements Closeable {
   }
 
   public Map<String, SolrPackage> getPackages() {
-    return Collections.emptyMap();
+    return Map.of();
   }
 
   public void refreshPackageConf() {

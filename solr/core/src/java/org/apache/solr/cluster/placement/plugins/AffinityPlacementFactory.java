@@ -337,7 +337,7 @@ public class AffinityPlacementFactory implements PlacementPluginFactory<Affinity
       Optional<String> nodePropOpt =
           attrValues.getSystemProperty(node, AffinityPlacementConfig.NODE_TYPE_SYSPROP);
       if (nodePropOpt.isEmpty()) {
-        nodeType = Collections.emptySet();
+        nodeType = Set.of();
       } else {
         nodeType = new HashSet<>(StrUtils.splitSmart(nodePropOpt.get(), ','));
       }

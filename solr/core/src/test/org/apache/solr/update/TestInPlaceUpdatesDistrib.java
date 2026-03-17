@@ -572,7 +572,7 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
     // create 10 more segments
     for (int i = 0; i < 10; i++) {
-      buildRandomIndex(101.0F, Collections.emptyList());
+      buildRandomIndex(101.0F, List.of());
     }
 
     index("id", id, "inplace_updatable_float", map("inc", "1"));

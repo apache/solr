@@ -23,7 +23,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
@@ -215,7 +214,7 @@ public class V2NodeAPIMappingTest extends SolrTestCaseJ4 {
         new SolrQueryRequestBase(null, solrParams) {
           @Override
           public List<CommandOperation> getCommands(boolean validateInput) {
-            if (v2RequestBody == null) return Collections.emptyList();
+            if (v2RequestBody == null) return List.of();
             return ApiBag.getCommandOperations(
                 new ContentStreamBase.StringStream(v2RequestBody), api.getCommandSchema(), true);
           }

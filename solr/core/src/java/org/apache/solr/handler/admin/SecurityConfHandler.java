@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -214,7 +213,7 @@ public abstract class SecurityConfHandler extends RequestHandlerBase
    * object defaults to EMPTY_MAP if not set
    */
   public static class SecurityConfig {
-    private Map<String, Object> data = Collections.emptyMap();
+    private Map<String, Object> data = Map.of();
     private int version = -1;
 
     public SecurityConfig() {}

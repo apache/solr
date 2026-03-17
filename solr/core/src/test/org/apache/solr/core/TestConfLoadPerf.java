@@ -25,7 +25,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -55,10 +54,7 @@ public class TestConfLoadPerf extends SolrTestCaseJ4 {
 
     SolrResourceLoader srl =
         new SolrResourceLoader(
-            "temp",
-            Collections.emptyList(),
-            container.solrHome,
-            container.getResourceLoader().classLoader) {
+            "temp", List.of(), container.solrHome, container.getResourceLoader().classLoader) {
 
           // instance initializer block
           {

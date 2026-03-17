@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -113,7 +112,7 @@ public class TermVectorComponent extends SearchComponent {
           ? fieldNames
           :
           // return empty set indicating no fields should be used
-          Collections.emptySet();
+          Set.of();
     }
 
     // otherwise us the raw fldList as is, no special parsing or globs

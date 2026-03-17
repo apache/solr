@@ -80,9 +80,7 @@ public abstract class ShardToShardJoinAbstract extends SolrCloudTestCase {
     PluginMeta plugin = new PluginMeta();
     plugin.name = PlacementPluginFactory.PLUGIN_NAME;
     plugin.klass = StubShardAffinityPlacementFactory.class.getName();
-    plugin.config =
-        new AffinityPlacementConfig(
-            1, 2, Collections.emptyMap(), Map.of(toColl, fromColl), Map.of());
+    plugin.config = new AffinityPlacementConfig(1, 2, Map.of(), Map.of(toColl, fromColl), Map.of());
 
     V2Request req =
         new V2Request.Builder("/cluster/plugin")
