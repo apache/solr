@@ -423,12 +423,6 @@ public class HttpSolrCall {
       return RETURN;
     }
 
-    if (solrDispatchFilter.abortErrorMessage != null) {
-      sendError(500, solrDispatchFilter.abortErrorMessage);
-      cores.audit(() -> new AuditEvent(ERROR, getReq()), ERROR);
-      return RETURN;
-    }
-
     try {
       init();
 

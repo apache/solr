@@ -44,8 +44,6 @@ import org.slf4j.LoggerFactory;
 public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServlet
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  protected String abortErrorMessage = null;
-
   private HttpSolrCallFactory solrCallFactory;
   private CoreContainerProvider containerProvider;
 
@@ -69,19 +67,6 @@ public class SolrDispatchFilter extends HttpServlet { // TODO rename to SolrServ
   }
 
   public SolrDispatchFilter() {}
-
-  public static final String PROPERTIES_ATTRIBUTE = "solr.properties";
-
-  public static final String SOLRHOME_ATTRIBUTE = "solr.solr.home";
-
-  public static final String SOLR_INSTALL_DIR_ATTRIBUTE = "solr.install.dir";
-
-  public static final String SOLR_CONFIGSET_DEFAULT_CONFDIR_ATTRIBUTE =
-      "solr.configset.default.confdir";
-
-  public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
-
-  public static final String SOLR_LOG_LEVEL = "solr.log.level";
 
   @Override
   public void init(ServletConfig config) throws ServletException {

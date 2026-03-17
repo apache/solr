@@ -49,7 +49,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.servlet.SolrDispatchFilter;
+import org.apache.solr.servlet.CoreContainerProvider;
 import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.DOMConfigNode;
 import org.apache.solr.util.DataConfigNode;
@@ -180,12 +180,12 @@ public class SolrXmlConfig {
             "solr.xml does not exist in " + configFile.getParent() + " cannot start Solr");
       }
       log.info("solr.xml not found in SOLR_HOME, using built-in default");
-      String solrInstallDir = System.getProperty(SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+      String solrInstallDir = System.getProperty(CoreContainerProvider.SOLR_INSTALL_DIR);
       if (solrInstallDir == null) {
         throw new SolrException(
             SolrException.ErrorCode.SERVER_ERROR,
             "Could not find default solr.xml file due to missing "
-                + SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE);
+                + CoreContainerProvider.SOLR_INSTALL_DIR);
       }
       configFile = Path.of(solrInstallDir).resolve("server").resolve("solr").resolve("solr.xml");
     }

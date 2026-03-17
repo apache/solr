@@ -17,11 +17,6 @@
 package org.apache.solr.servlet;
 
 import static org.apache.solr.core.NodeConfig.loadNodeConfig;
-import static org.apache.solr.servlet.SolrDispatchFilter.PROPERTIES_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLRHOME_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_INSTALL_DIR_ATTRIBUTE;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_LEVEL;
-import static org.apache.solr.servlet.SolrDispatchFilter.SOLR_LOG_MUTECONSOLE;
 
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletContextEvent;
@@ -61,6 +56,12 @@ import org.slf4j.LoggerFactory;
  * instance of solr.
  */
 public class CoreContainerProvider implements ServletContextListener {
+  public static final String SOLR_PROPERTIES = "solr.properties";
+  public static final String SOLR_SOLR_HOME = "solr.solr.home";
+  public static final String SOLR_INSTALL_DIR = "solr.install.dir";
+  public static final String SOLR_LOG_MUTECONSOLE = "solr.log.muteconsole";
+  public static final String SOLR_LOG_LEVEL = "solr.log.level";
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private CoreContainer cores;
 
@@ -145,7 +146,7 @@ public class CoreContainerProvider implements ServletContextListener {
       // caller
       Properties extraProperties =
           SolrXmlConfig.wrapAndSetZkHostFromSysPropIfNeeded(
-              (Properties) servletContext.getAttribute(PROPERTIES_ATTRIBUTE));
+              (Properties) servletContext.getAttribute(SOLR_PROPERTIES));
 
       StartupLoggingUtils.checkLogDir();
       if (log.isInfoEnabled()) {
@@ -209,8 +210,7 @@ public class CoreContainerProvider implements ServletContextListener {
           getSolrPort());
     }
     if (log.isInfoEnabled()) {
-      log.info(
-          "\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR_ATTRIBUTE));
+      log.info("\\__ \\/ _ \\ | '_|  Install dir: {}", System.getProperty(SOLR_INSTALL_DIR));
     }
     if (log.isInfoEnabled()) {
       log.info("|___/\\___/_|_|    Start time: {}", Instant.now());
@@ -295,8 +295,8 @@ public class CoreContainerProvider implements ServletContextListener {
   private static Path computeSolrHome(ServletContext servletContext) {
 
     // start with explicit check of servlet config...
-    String source = "servlet config: " + SOLRHOME_ATTRIBUTE;
-    String home = (String) servletContext.getAttribute(SOLRHOME_ATTRIBUTE);
+    String source = "servlet config: " + SOLR_SOLR_HOME;
+    String home = (String) servletContext.getAttribute(SOLR_SOLR_HOME);
 
     if (null == home) {
       final String lookup = "java:comp/env/solr/home";

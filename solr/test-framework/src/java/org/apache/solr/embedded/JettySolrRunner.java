@@ -386,9 +386,8 @@ public class JettySolrRunner {
               nodeProperties.setProperty("hostPort", Integer.toString(port));
 
               root.getServletContext()
-                  .setAttribute(SolrDispatchFilter.PROPERTIES_ATTRIBUTE, nodeProperties);
-              root.getServletContext()
-                  .setAttribute(SolrDispatchFilter.SOLRHOME_ATTRIBUTE, solrHome);
+                  .setAttribute(CoreContainerProvider.SOLR_PROPERTIES, nodeProperties);
+              root.getServletContext().setAttribute(CoreContainerProvider.SOLR_SOLR_HOME, solrHome);
 
               SSLConfigurationsFactory.current().init(); // normally happens in jetty-ssl.xml
 
