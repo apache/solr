@@ -16,6 +16,7 @@
  */
 package org.apache.solr.schema;
 
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 import static java.util.Collections.singletonMap;
 import static org.apache.solr.client.api.model.SchemaChange.OPERATION_TYPE_PROP;
@@ -36,7 +37,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.api.model.AddCopyFieldOperation;
 import org.apache.solr.client.api.model.DeleteCopyFieldOperation;
@@ -355,7 +355,7 @@ public class SchemaManager {
         final var deleteFieldTypeOp = (DeleteFieldTypeOperation) op;
         String name = ensureNotNull("name", deleteFieldTypeOp.name);
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(Set.of(name));
+          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFieldTypes(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete field type", e);
@@ -385,7 +385,7 @@ public class SchemaManager {
         final var deleteFieldOp = (DeleteFieldOperation) op;
         String name = ensureNotNull("name", deleteFieldOp.name);
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(Set.of(name));
+          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteFields(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete field", e);
@@ -399,7 +399,7 @@ public class SchemaManager {
         final var deleteDynFieldOp = (DeleteDynamicFieldOperation) op;
         String name = ensureNotNull("name", deleteDynFieldOp.name);
         try {
-          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(Set.of(name));
+          mgr.managedIndexSchema = mgr.managedIndexSchema.deleteDynamicFields(singleton(name));
           return true;
         } catch (Exception e) {
           log.error("Could not delete dynamic field", e);

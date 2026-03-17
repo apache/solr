@@ -22,9 +22,9 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Set;
 import org.apache.commons.io.file.PathUtils;
 import org.apache.lucene.tests.mockfile.FilterPath;
 import org.apache.solr.common.SolrInputDocument;
@@ -134,7 +134,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
-    assertEquals(0, schema.getCopyFieldProperties(true, Set.of(fieldName), null).size());
+    assertEquals(
+        0, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertU(commit());
     assertQ(
         req("id:4"),
@@ -158,7 +159,8 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     schema = h.getCore().getLatestSchema();
     assertNotNull(schema.getFieldOrNull(fieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
-    assertEquals(1, schema.getCopyFieldProperties(true, Set.of(fieldName), null).size());
+    assertEquals(
+        1, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertU(commit());
     assertQ(
         req("id:4"),
@@ -276,7 +278,11 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(strFieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
     assertEquals(
-        1, schema.getCopyFieldProperties(true, Set.of(fieldName), Set.of(strFieldName)).size());
+        1,
+        schema
+            .getCopyFieldProperties(
+                true, Collections.singleton(fieldName), Collections.singleton(strFieldName))
+            .size());
   }
 
   public void testStringWithCopyFieldAndMaxChars() throws Exception {
@@ -295,26 +301,30 @@ public class AddSchemaFieldsUpdateProcessorFactoryTest extends UpdateProcessorTe
     assertNotNull(schema.getFieldOrNull(strFieldName));
     assertEquals("text", schema.getFieldType(fieldName).getTypeName());
     // We have three copyFields, one with maxChars 10 and two with maxChars 20
-    assertEquals(3, schema.getCopyFieldProperties(true, Set.of(fieldName), null).size());
+    assertEquals(
+        3, schema.getCopyFieldProperties(true, Collections.singleton(fieldName), null).size());
     assertEquals(
         "The configured maxChars cutoff does not exist on the copyField",
         10,
         schema
-            .getCopyFieldProperties(true, Set.of(fieldName), Set.of(strFieldName))
+            .getCopyFieldProperties(
+                true, Collections.singleton(fieldName), Collections.singleton(strFieldName))
             .get(0)
             .get("maxChars"));
     assertEquals(
         "The configured maxChars cutoff does not exist on the copyField",
         20,
         schema
-            .getCopyFieldProperties(true, Set.of(fieldName), Set.of(fieldName + "_t"))
+            .getCopyFieldProperties(
+                true, Collections.singleton(fieldName), Collections.singleton(fieldName + "_t"))
             .get(0)
             .get("maxChars"));
     assertEquals(
         "The configured maxChars cutoff does not exist on the copyField",
         20,
         schema
-            .getCopyFieldProperties(true, Set.of(fieldName), Set.of(fieldName + "2_t"))
+            .getCopyFieldProperties(
+                true, Collections.singleton(fieldName), Collections.singleton(fieldName + "2_t"))
             .get(0)
             .get("maxChars"));
   }

@@ -20,6 +20,7 @@ package org.apache.solr.core;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.exec.OS;
@@ -35,7 +36,7 @@ public final class SolrPaths {
   public static final Path ALL_PATH = Path.of("_ALL_");
 
   /** Special singleton path set containing only {@link #ALL_PATH}. */
-  private static final Set<Path> ALL_PATHS = Set.of(ALL_PATH);
+  private static final Set<Path> ALL_PATHS = Collections.singleton(ALL_PATH);
 
   private SolrPaths() {} // don't create this
 

@@ -17,6 +17,7 @@
 package org.apache.solr.response.transform;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import org.apache.solr.common.SolrDocument;
@@ -122,7 +123,7 @@ public class RawValueTransformerFactory extends TransformerFactory
 
     @Override
     public Collection<String> getRawFields() {
-      return Set.of(display);
+      return Collections.singleton(display);
     }
 
     @Override

@@ -22,11 +22,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.FieldDoc;
 import org.apache.lucene.search.ScoreDoc;
@@ -331,6 +331,6 @@ public class TopGroupsResultTransformer
 
   private Document retrieveDocument(
       final SchemaField uniqueField, int doc, SolrDocumentFetcher docFetcher) throws IOException {
-    return docFetcher.doc(doc, Set.of(uniqueField.getName()));
+    return docFetcher.doc(doc, Collections.singleton(uniqueField.getName()));
   }
 }

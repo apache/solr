@@ -26,11 +26,11 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.TreeSet;
 import org.apache.lucene.document.Document;
 import org.apache.solr.SolrTestCaseJ4;
@@ -182,7 +182,7 @@ public abstract class TaggerTestCase extends SolrTestCaseJ4 {
     SolrParams params = SolrParams.wrapDefaults(moreParams, baseParams);
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(), params) {};
     Iterable<ContentStream> stream =
-        Set.of((ContentStream) new ContentStreamBase.StringStream(doc));
+        Collections.singleton((ContentStream) new ContentStreamBase.StringStream(doc));
     req.setContentStreams(stream);
     return req;
   }

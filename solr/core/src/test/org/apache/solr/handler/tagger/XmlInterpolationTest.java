@@ -26,9 +26,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
@@ -203,7 +203,8 @@ public class XmlInterpolationTest extends TaggerTestCase {
   private String[] analyzeReturnTokens(String docText) {
     List<String> result = new ArrayList<>();
 
-    Reader filter = new HTMLStripCharFilter(new StringReader(docText), Set.of("unescaped"));
+    Reader filter =
+        new HTMLStripCharFilter(new StringReader(docText), Collections.singleton("unescaped"));
     WhitespaceTokenizer ts = new WhitespaceTokenizer();
     final CharTermAttribute termAttribute = ts.addAttribute(CharTermAttribute.class);
     try {

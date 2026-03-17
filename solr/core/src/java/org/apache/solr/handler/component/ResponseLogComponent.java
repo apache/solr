@@ -17,6 +17,7 @@
 package org.apache.solr.handler.component;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Set;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.ResultContext;
@@ -89,7 +90,7 @@ public class ResponseLogComponent extends SearchComponent {
 
     StringBuilder sb = new StringBuilder();
 
-    Set<String> fields = Set.of(schema.getUniqueKeyField().getName());
+    Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     for (DocIterator iter = dl.iterator(); iter.hasNext(); ) {
 
@@ -105,7 +106,7 @@ public class ResponseLogComponent extends SearchComponent {
       throws IOException {
 
     StringBuilder sb = new StringBuilder();
-    Set<String> fields = Set.of(schema.getUniqueKeyField().getName());
+    Set<String> fields = Collections.singleton(schema.getUniqueKeyField().getName());
     SolrDocumentFetcher docFetcher = searcher.getDocFetcher();
     for (DocIterator iter = dl.iterator(); iter.hasNext(); ) {
       sb.append(schema.printableUniqueKey(docFetcher.doc(iter.nextDoc(), fields)))

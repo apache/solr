@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -104,7 +105,7 @@ public class HttpSolrClient extends SolrClient {
   private static final Charset FALLBACK_CHARSET = StandardCharsets.UTF_8;
   private static final long serialVersionUID = -946812319974801896L;
 
-  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Set.of(429);
+  protected static final Set<Integer> UNMATCHED_ACCEPTED_ERROR_CODES = Collections.singleton(429);
 
   static final String USER_AGENT =
       "Solr[" + MethodHandles.lookup().lookupClass().getName() + "] " + SolrVersion.LATEST_STRING;

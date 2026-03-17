@@ -23,6 +23,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,7 +53,7 @@ public class DeleteCollectionCmd implements CollApiCmds.CollectionApiCommand {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Set<String> okayExceptions =
-      Set.of(NonExistentCoreException.class.getName());
+      Collections.singleton(NonExistentCoreException.class.getName());
 
   private final CollectionCommandContext ccc;
 

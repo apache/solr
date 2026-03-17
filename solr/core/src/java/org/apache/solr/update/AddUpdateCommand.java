@@ -19,8 +19,8 @@ package org.apache.solr.update;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
@@ -211,7 +211,7 @@ public class AddUpdateCommand extends UpdateCommand {
       final boolean ignoreNestedDocs = false; // throw an exception if found
       Document doc =
           DocumentBuilder.toDocument(solrDoc, req.getSchema(), forInPlaceUpdate, ignoreNestedDocs);
-      return Set.of(doc);
+      return Collections.singleton(doc);
     }
 
     List<SolrInputDocument> all = flatten(solrDoc);

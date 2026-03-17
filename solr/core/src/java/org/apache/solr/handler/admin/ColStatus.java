@@ -20,6 +20,7 @@ package org.apache.solr.handler.admin;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -77,7 +78,7 @@ public class ColStatus {
     if (col == null) {
       collections = clusterState.getCollectionNames();
     } else {
-      collections = Set.of(col);
+      collections = Collections.singleton(col);
     }
     boolean withFieldInfo = props.getBool(FIELD_INFO_PROP, false);
     boolean withCoreInfo = props.getBool(CORE_INFO_PROP, false);

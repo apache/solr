@@ -24,8 +24,8 @@ import io.opentelemetry.api.common.Attributes;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Optional;
-import java.util.Set;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
 import org.apache.solr.api.ApiSupport;
@@ -421,7 +421,8 @@ public abstract class RequestHandlerBase
 
   @Override
   public Collection<Api> getApis() {
-    return Set.of(new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
+    return Collections.singleton(
+        new ApiBag.ReqHandlerToApi(this, ApiBag.constructSpec(pluginInfo)));
   }
 
   /**

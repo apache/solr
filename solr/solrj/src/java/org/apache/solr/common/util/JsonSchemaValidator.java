@@ -19,6 +19,7 @@ package org.apache.solr.common.util;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -270,7 +271,7 @@ class RequiredValidator extends Validator<List<String>> {
             return false;
           }
           String subprop = requiredProp.substring(requiredProp.indexOf('.') + 1);
-          if (!validate(((Map) o).get(requiredProp), errs, Set.of(subprop))) {
+          if (!validate(((Map) o).get(requiredProp), errs, Collections.singleton(subprop))) {
             return false;
           }
         } else {

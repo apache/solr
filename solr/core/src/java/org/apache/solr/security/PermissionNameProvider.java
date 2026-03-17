@@ -24,11 +24,9 @@ import static java.util.Collections.unmodifiableSet;
 import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import org.apache.solr.common.util.SuppressForbidden;
 
 /**
  * A requestHandler should implement this interface to provide the well known permission at request
@@ -63,7 +61,6 @@ public interface PermissionNameProvider {
     final Set<String> collName;
 
     @SuppressWarnings({"unchecked"})
-    @SuppressForbidden(reason = "Set.of fails here")
     Name(String s, Object collName) {
       name = s;
       this.collName =
@@ -79,9 +76,12 @@ public interface PermissionNameProvider {
     }
   }
 
+  Set<String> NULL = singleton(null);
+  Set<String> ANY = singleton("*");
+
   Map<String, Name> values =
       unmodifiableMap(
-          Arrays.stream(Name.values()).collect(toMap(Name::getPermissionName, identity())));
+          asList(Name.values()).stream().collect(toMap(Name::getPermissionName, identity())));
 
   Name getPermissionName(AuthorizationContext request);
 }

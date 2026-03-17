@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -59,7 +58,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
         new ZkShardTerms(collection, "shard2", cluster.getZkClient())) {
       zkShardTerms.registerTerm("replica1");
       zkShardTerms.registerTerm("replica2");
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
     }
 
     // When new collection is created, the old term nodes will be removed
@@ -88,7 +87,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.registerTerm("replica2");
 
       // normal case when leader failed to send an update to replica
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), 0);
@@ -98,7 +97,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
 
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       assertEquals(zkShardTerms.getTerm("replica1"), 2);
       assertEquals(zkShardTerms.getTerm("replica2"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), -1);
@@ -107,7 +106,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       assertEquals(zkShardTerms.getTerm("replica2"), 2);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
 
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       assertEquals(zkShardTerms.getTerm("replica1"), 3);
       assertEquals(zkShardTerms.getTerm("replica2"), 2);
       assertEquals(zkShardTerms.getTerm("replica2_recovering"), 1);
@@ -119,9 +118,9 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.startRecovering("replica2");
       zkShardTerms.doneRecovering("replica2");
 
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       zkShardTerms.startRecovering("replica2");
-      zkShardTerms.ensureTermsIsHigher("replica1", Set.of("replica2"));
+      zkShardTerms.ensureTermsIsHigher("replica1", Collections.singleton("replica2"));
       zkShardTerms.startRecovering("replica2");
       assertEquals(zkShardTerms.getTerm("replica1"), 5);
       assertEquals(zkShardTerms.getTerm("replica2"), 5);
@@ -141,7 +140,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       zkShardTerms.registerTerm("replica2_rem");
 
       // normal case when leader failed to send an update to replica
-      zkShardTerms.ensureTermsIsHigher("replica1_rem", Set.of("replica2_rem"));
+      zkShardTerms.ensureTermsIsHigher("replica1_rem", Collections.singleton("replica2_rem"));
       zkShardTerms.startRecovering("replica2_rem");
       assertEquals(zkShardTerms.getTerm("replica2_rem"), 1);
       assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), 0);
@@ -168,7 +167,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
       assertEquals(0L, zkShardTerms.getTerm("rep2"));
     }
     waitFor(2, () -> rep1Terms.getTerms().size());
-    rep1Terms.ensureTermsIsHigher("rep1", Set.of("rep2"));
+    rep1Terms.ensureTermsIsHigher("rep1", Collections.singleton("rep2"));
     assertEquals(1L, rep1Terms.getTerm("rep1"));
     assertEquals(0L, rep1Terms.getTerm("rep2"));
 
@@ -266,7 +265,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     replicaTerms.addListener(watcher);
     replicaTerms.registerTerm("replica");
     waitFor(1, count::get);
-    leaderTerms.ensureTermsIsHigher("leader", Set.of("replica"));
+    leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     waitFor(2, count::get);
     replicaTerms.setTermEqualsToLeader("replica");
     waitFor(3, count::get);
@@ -281,7 +280,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     ZkShardTerms terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());
     terms.registerTerm("leader");
     terms.registerTerm("replica");
-    terms.ensureTermsIsHigher("leader", Set.of("replica"));
+    terms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     assertEquals(1L, terms.getTerm("leader"));
     terms.setTermToZero("leader");
     assertEquals(0L, terms.getTerm("leader"));
@@ -295,7 +294,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     leaderTerms.registerTerm("leader");
     replicaTerms.registerTerm("replica");
 
-    leaderTerms.ensureTermsIsHigher("leader", Set.of("replica"));
+    leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     waitFor(false, () -> replicaTerms.canBecomeLeader("replica"));
     waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica"));
 
@@ -318,7 +317,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     leaderTerms.registerTerm("leader");
     replicaTerms.registerTerm("replica");
 
-    leaderTerms.ensureTermsIsHigher("leader", Set.of("replica"));
+    leaderTerms.ensureTermsIsHigher("leader", Collections.singleton("replica"));
     waitFor(false, () -> replicaTerms.canBecomeLeader("replica"));
     waitFor(true, () -> leaderTerms.skipSendingUpdatesTo("replica"));
 

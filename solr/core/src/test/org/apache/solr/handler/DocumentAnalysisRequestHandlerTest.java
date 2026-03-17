@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 import org.apache.lucene.tests.analysis.MockTokenizer;
 import org.apache.solr.client.solrj.request.DocumentAnalysisRequest;
 import org.apache.solr.common.SolrInputDocument;
@@ -83,7 +83,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
         new SolrQueryRequestBase(h.getCore(), params) {
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Set.of(cs);
+            return Collections.singleton(cs);
           }
         };
 
@@ -154,7 +154,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
         new SolrQueryRequestBase(h.getCore(), params) {
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Set.of(cs);
+            return Collections.singleton(cs);
           }
         };
 
@@ -187,7 +187,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
         new SolrQueryRequestBase(h.getCore(), params) {
           @Override
           public Iterable<ContentStream> getContentStreams() {
-            return Set.of(cs);
+            return Collections.singleton(cs);
           }
         };
 

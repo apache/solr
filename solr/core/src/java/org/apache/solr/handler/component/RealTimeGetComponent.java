@@ -584,7 +584,10 @@ public class RealTimeGetComponent extends SearchComponent {
         searcher
             .getDocFetcher()
             .decorateDocValueFields(
-                doc, docid, Set.of(VERSION_FIELD), new DocValuesIteratorCache(searcher, false));
+                doc,
+                docid,
+                Collections.singleton(VERSION_FIELD),
+                new DocValuesIteratorCache(searcher, false));
       }
 
       long docVersion = (long) doc.getFirstValue(VERSION_FIELD);

@@ -376,7 +376,7 @@ public class CollectionHandlingUtils {
       BackupRepository repository, URI backupUri, BackupId backupId, CollectionCommandContext ccc)
       throws Exception {
     new DeleteBackupCmd(ccc)
-        .deleteBackupIds(backupUri, repository, Set.of(backupId), new NamedList<>());
+        .deleteBackupIds(backupUri, repository, Collections.singleton(backupId), new NamedList<>());
   }
 
   static void deleteBackup(
