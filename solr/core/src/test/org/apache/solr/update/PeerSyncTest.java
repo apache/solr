@@ -456,7 +456,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
   private static void testHandleVersionsWithRangesNoOther() {
     // no other, solitary us
     for (boolean completeList : new boolean[] {false, true}) {
-      List<Long> otherVersions = Collections.emptyList();
+      List<Long> otherVersions = List.of();
       List<Long> ourUpdates = Collections.singletonList(42L);
       assertEquals(1, ourUpdates.size());
       long ourLowThreshold = ourUpdates.get(0);

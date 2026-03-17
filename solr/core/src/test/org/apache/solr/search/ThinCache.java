@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -234,7 +233,7 @@ public class ThinCache<S, K, V> extends SolrCacheBase
     @SuppressWarnings("unchecked")
     ThinCache<S, K, V> other = (ThinCache<S, K, V>) old;
     long warmingStartTimeNanos = System.nanoTime();
-    List<HitCountEntry<K, V>> orderedEntries = Collections.emptyList();
+    List<HitCountEntry<K, V>> orderedEntries = List.of();
     // warm entries
     if (isAutowarmingOn()) {
       orderedEntries = new ArrayList<>(other.local.size() << 1); // oversize

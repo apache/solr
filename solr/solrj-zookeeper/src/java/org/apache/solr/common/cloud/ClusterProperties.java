@@ -20,7 +20,6 @@ package org.apache.solr.common.cloud;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +96,7 @@ public class ClusterProperties {
               Utils.fromJSON(client.getData(ZkStateReader.CLUSTER_PROPS, null, new Stat()));
       return properties;
     } catch (KeeperException.NoNodeException e) {
-      return Collections.emptyMap();
+      return Map.of();
     } catch (KeeperException | InterruptedException e) {
       throw new IOException("Error reading cluster property", SolrZkClient.checkInterrupted(e));
     }

@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -345,7 +344,7 @@ public class ZkDistributedQueue implements DistributedQueue {
   @Override
   public Map<String, Object> getStats() {
     if (stats == null) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     Map<String, Object> res = new HashMap<>();
     res.put("queueLength", stats.getQueueLength());

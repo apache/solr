@@ -16,7 +16,6 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -32,7 +31,7 @@ public class Cluster {
   private boolean otherTopics;
 
   public Cluster(List<String> labels, double score, List<String> docIds) {
-    this(labels, score, docIds, Collections.emptyList(), false);
+    this(labels, score, docIds, List.of(), false);
   }
 
   /**
@@ -46,10 +45,10 @@ public class Cluster {
       List<String> docIds,
       List<Cluster> subclusters,
       boolean otherTopics) {
-    this.labels = Objects.requireNonNullElse(labels, Collections.emptyList());
+    this.labels = Objects.requireNonNullElse(labels, List.of());
     this.score = score;
-    this.docIds = Objects.requireNonNullElse(docIds, Collections.emptyList());
-    this.subclusters = Objects.requireNonNullElse(subclusters, Collections.emptyList());
+    this.docIds = Objects.requireNonNullElse(docIds, List.of());
+    this.subclusters = Objects.requireNonNullElse(subclusters, List.of());
     this.otherTopics = otherTopics;
   }
 
