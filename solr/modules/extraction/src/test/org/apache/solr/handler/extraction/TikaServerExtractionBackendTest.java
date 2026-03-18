@@ -66,6 +66,9 @@ public class TikaServerExtractionBackendTest extends SolrTestCaseJ4 {
   @SuppressWarnings("resource")
   @BeforeClass
   public static void startTikaServer() {
+    Assume.assumeFalse(
+        "Skipping on s390x", "s390x".equalsIgnoreCase(System.getProperty("os.arch")));
+
     try {
       tika = new GenericContainer<>("apache/tika:3.2.3.0-full").withExposedPorts(9998);
       tika.start();
