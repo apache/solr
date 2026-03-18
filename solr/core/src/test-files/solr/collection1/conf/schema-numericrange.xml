@@ -16,8 +16,8 @@
  limitations under the License.
 -->
 
-<!-- Test schema for IntRangeField -->
-<schema name="intrange-test" version="1.7">
+<!-- Test schema for IntRangeField and LongRangeField -->
+<schema name="numericrange-test" version="1.7">
 
   <!-- Basic field types -->
   <fieldType name="string" class="solr.StrField" sortMissingLast="true" />
@@ -29,6 +29,12 @@
   <fieldType name="intrange2d" class="solr.numericrange.IntRangeField" numDimensions="2"/>
   <fieldType name="intrange3d" class="solr.numericrange.IntRangeField" numDimensions="3"/>
   <fieldType name="intrange4d" class="solr.numericrange.IntRangeField" numDimensions="4"/>
+
+  <!-- LongRangeField types with different dimensions -->
+  <fieldType name="longrange" class="solr.numericrange.LongRangeField" numDimensions="1"/>
+  <fieldType name="longrange2d" class="solr.numericrange.LongRangeField" numDimensions="2"/>
+  <fieldType name="longrange3d" class="solr.numericrange.LongRangeField" numDimensions="3"/>
+  <fieldType name="longrange4d" class="solr.numericrange.LongRangeField" numDimensions="4"/>
 
   <!-- Field definitions -->
   <field name="id" type="string" indexed="true" stored="true" required="true" multiValued="false"/>
@@ -47,6 +53,19 @@
 
   <!-- 4D IntRangeField (tesseract) -->
   <field name="tesseract" type="intrange4d" indexed="true" stored="true"/>
+
+  <!-- 1D LongRangeField -->
+  <field name="long_range" type="longrange" indexed="true" stored="true"/>
+  <field name="long_range_multi" type="longrange" indexed="true" stored="true" multiValued="true"/>
+
+  <!-- 2D LongRangeField (bounding box) -->
+  <field name="long_range_2d" type="longrange2d" indexed="true" stored="true"/>
+
+  <!-- 3D LongRangeField (bounding cube) -->
+  <field name="long_range_3d" type="longrange3d" indexed="true" stored="true"/>
+
+  <!-- 4D LongRangeField (tesseract) -->
+  <field name="long_range_4d" type="longrange4d" indexed="true" stored="true"/>
 
   <!-- Required by Solr -->
   <uniqueKey>id</uniqueKey>

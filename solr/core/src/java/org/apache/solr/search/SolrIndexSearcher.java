@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
@@ -82,6 +81,7 @@ import org.apache.lucene.search.TopScoreDocCollectorManager;
 import org.apache.lucene.search.TotalHitCountCollector;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.TotalHits.Relation;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -139,7 +139,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
-  private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Collections.emptyMap();
+  private static final Map<String, SolrCache<?, ?>> NO_GENERIC_CACHES = Map.of();
   private static final SolrCache<?, ?>[] NO_CACHES = new SolrCache<?, ?>[0];
 
   public static final int EXECUTOR_MAX_CPU_THREADS = Runtime.getRuntime().availableProcessors();
@@ -798,12 +798,24 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return qr;
   }
 
+  /**
+   * Override the default behavior to proxy to an anonymous {@link IndexSearcher} with {@link
+   * IndexSearcher#setTimeout} enabled, if and only if {@link QueryLimits#getCurrentLimits} are
+   * enabled.
+   *
+   * <p>It's important that this logic live in an overriden method that processes a query
+   * <em>after</em> the <code>Weight</code> has been computed, because some customer Solr <code>
+   * Query</code> classes expect a <code>SolrIndexSearcher</code> to be used for query rewrite and
+   * weight creation.
+   */
   @Override
-  public void search(Query query, Collector collector) throws IOException {
+  protected void searchLeaf(
+      LeafReaderContext ctx, int minDocId, int maxDocId, Weight weight, Collector collector)
+      throws IOException {
     QueryLimits queryLimits = QueryLimits.getCurrentLimits();
     if (!queryLimits.isLimitsEnabled()) {
       // no timeout.  Pass through to super class
-      super.search(query, collector);
+      super.searchLeaf(ctx, minDocId, maxDocId, weight, collector);
     } else {
       // Timeout enabled!  This impl is maybe a hack.  Use Lucene's IndexSearcher timeout.
       // But only some queries have it so don't use on "this" (SolrIndexSearcher), not to mention
@@ -814,9 +826,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           reader, core.getCoreContainer().getIndexSearcherExecutor()) { // cheap, actually!
         void searchWithTimeout() throws IOException {
           setTimeout(queryLimits); // Lucene's method name is less than ideal here...
-          // XXX Deprecated in Lucene 10, we should probably use search(Query, CollectorManager)
-          // instead
-          super.search(query, collector);
+          super.searchLeaf(ctx, minDocId, maxDocId, weight, collector);
           if (timedOut()) {
             throw new QueryLimitsExceededException(
                 "Limits exceeded! (search): " + queryLimits.limitStatusMessage());

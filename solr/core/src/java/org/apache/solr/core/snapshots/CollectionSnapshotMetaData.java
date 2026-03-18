@@ -18,7 +18,6 @@ package org.apache.solr.core.snapshots;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -125,8 +124,7 @@ public class CollectionSnapshotMetaData implements JSONWriter.Writable {
   private final List<CoreSnapshotMetaData> replicaSnapshots;
 
   public CollectionSnapshotMetaData(String name) {
-    this(
-        name, SnapshotStatus.InProgress, new Date(), Collections.<CoreSnapshotMetaData>emptyList());
+    this(name, SnapshotStatus.InProgress, new Date(), List.of());
   }
 
   public CollectionSnapshotMetaData(

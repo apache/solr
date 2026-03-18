@@ -50,7 +50,7 @@ public class TestDocValuesIteratorCache extends SolrTestCaseJ4 {
           // existence of multiple segments; if the merge policy happens to combine into a single
           // segment, no OrdinalMap will be built, throwing off our tests
           systemSetPropertySolrTestsMergePolicyFactory(NoMergePolicyFactory.class.getName());
-          startSolr(LuceneTestCase.createTempDir());
+          startSolr();
         }
       };
 

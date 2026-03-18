@@ -394,14 +394,14 @@ public class SolrXmlConfig {
 
   private static List<String> separateStrings(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptyList();
+      return List.of();
     }
     return Arrays.asList(COMMA_SEPARATED_PATTERN.split(commaSeparatedString));
   }
 
   private static Set<Path> separatePaths(String commaSeparatedString) {
     if (StrUtils.isNullOrEmpty(commaSeparatedString)) {
-      return Collections.emptySet();
+      return Set.of();
     }
     // Parse the list of paths. The special values '*' and '_ALL_' mean all paths.
     String[] pathStrings = COMMA_SEPARATED_PATTERN.split(commaSeparatedString);

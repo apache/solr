@@ -20,12 +20,14 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /** Response from /node/system */
 public class NodeSystemResponse extends SolrJerseyResponse {
 
-  @JsonProperty public String mode;
   @JsonProperty public String host;
+  @JsonProperty public String node;
+  @JsonProperty public String mode;
   @JsonProperty public String zkHost;
 
   @JsonProperty("solr_home")
@@ -42,7 +44,6 @@ public class NodeSystemResponse extends SolrJerseyResponse {
   @JsonProperty(value = "environment_color")
   public String environmentColor;
 
-  @JsonProperty public String node;
   @JsonProperty public Lucene lucene;
   @JsonProperty public JVM jvm;
   @JsonProperty public Security security;
@@ -55,8 +56,8 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public String authenticationPlugin;
     @JsonProperty public String authorizationPlugin;
     @JsonProperty public String username;
-    @JsonProperty public List<String> roles;
-    @JsonProperty public List<String> permissions;
+    @JsonProperty public Set<String> roles;
+    @JsonProperty public Set<String> permissions;
   }
 
   /** /node/system/lucene */
@@ -122,6 +123,6 @@ public class NodeSystemResponse extends SolrJerseyResponse {
     @JsonProperty public boolean available;
     @JsonProperty public long count;
     @JsonProperty public MemoryRaw memory;
-    @JsonProperty Map<String, Object> devices;
+    @JsonProperty public Map<String, Object> devices;
   }
 }

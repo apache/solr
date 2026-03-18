@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -415,8 +416,7 @@ public class CreateCollectionCmd implements CollApiCmds.CollectionApiCommand {
             nodeName, replicas.get(e.getKey()).getCoreName(), params, shardHandler);
       }
 
-      shardRequestTracker.processResponses(
-          results, shardHandler, false, null, Collections.emptySet());
+      shardRequestTracker.processResponses(results, shardHandler, false, null, Set.of());
       boolean failure =
           results.get("failure") != null
               && ((SimpleOrderedMap<?>) results.get("failure")).size() > 0;

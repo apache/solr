@@ -95,7 +95,7 @@ public class ClusterAPI {
       if (children != null && !children.isEmpty()) {
         result = new HashMap<>();
       } else {
-        return Collections.emptySet();
+        return Set.of();
       }
       for (String child : children) {
         Object c = readRecursive(path + "/" + child, zk, depth - 1);
@@ -190,7 +190,7 @@ public class ClusterAPI {
     try {
       return zk.listData(ZkStateReader.NODE_ROLES + "/" + role + "/" + mode);
     } catch (NoSuchElementException e) {
-      return Collections.emptyList();
+      return List.of();
     }
   }
 

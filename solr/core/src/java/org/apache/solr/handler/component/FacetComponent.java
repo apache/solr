@@ -21,7 +21,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -174,8 +173,8 @@ public class FacetComponent extends SearchComponent {
 
     private FacetContext(List<RangeFacetRequest> allRangeFacets, List<FacetBase> allQueryFacets) {
       // avoid NPEs, set to empty list if parameters are null
-      this.allRangeFacets = allRangeFacets == null ? Collections.emptyList() : allRangeFacets;
-      this.allQueryFacets = allQueryFacets == null ? Collections.emptyList() : allQueryFacets;
+      this.allRangeFacets = allRangeFacets == null ? List.of() : allRangeFacets;
+      this.allQueryFacets = allQueryFacets == null ? List.of() : allQueryFacets;
 
       taggedRangeFacets = new HashMap<>();
       for (RangeFacetRequest rf : this.allRangeFacets) {
@@ -244,7 +243,7 @@ public class FacetComponent extends SearchComponent {
      */
     public List<RangeFacetRequest> getRangeFacetRequestsForTag(String tag) {
       List<RangeFacetRequest> list = taggedRangeFacets.get(tag);
-      return list == null ? Collections.emptyList() : list;
+      return list == null ? List.of() : list;
     }
 
     /**
@@ -254,7 +253,7 @@ public class FacetComponent extends SearchComponent {
      */
     public List<FacetBase> getQueryFacetsForTag(String tag) {
       List<FacetBase> list = taggedQueryFacets.get(tag);
-      return list == null ? Collections.emptyList() : list;
+      return list == null ? List.of() : list;
     }
   }
 
@@ -1189,7 +1188,7 @@ public class FacetComponent extends SearchComponent {
       PivotFacet pivot = entry.getValue();
       List<NamedList<Object>> trimmedPivots = pivot.getTrimmedPivotsAsListOfNamedLists();
       if (null == trimmedPivots) {
-        trimmedPivots = Collections.<NamedList<Object>>emptyList();
+        trimmedPivots = List.of();
       }
 
       combinedPivotFacets.add(key, trimmedPivots);
@@ -1310,8 +1309,8 @@ public class FacetComponent extends SearchComponent {
     private String key; // label in the response for the result...
     // "foo" for {!key=foo}myfield
     SolrParams localParams; // any local params for the facet
-    private List<String> tags = Collections.emptyList();
-    private List<String> excludeTags = Collections.emptyList();
+    private List<String> tags = List.of();
+    private List<String> excludeTags = List.of();
     private int threadCount = -1;
 
     public FacetBase(ResponseBuilder rb, String facetType, String facetStr) {
@@ -1335,15 +1334,14 @@ public class FacetComponent extends SearchComponent {
         key = localParams.get(CommonParams.OUTPUT_KEY, key);
 
         String tagStr = localParams.get(CommonParams.TAG);
-        this.tags =
-            tagStr == null ? Collections.<String>emptyList() : StrUtils.splitSmart(tagStr, ',');
+        this.tags = tagStr == null ? List.of() : StrUtils.splitSmart(tagStr, ',');
 
         String threadStr = localParams.get(CommonParams.THREADS);
         this.threadCount = threadStr != null ? Integer.parseInt(threadStr) : -1;
 
         String excludeStr = localParams.get(CommonParams.EXCLUDE);
         if (StrUtils.isNullOrEmpty(excludeStr)) {
-          this.excludeTags = Collections.emptyList();
+          this.excludeTags = List.of();
         } else {
           this.excludeTags = StrUtils.splitSmart(excludeStr, ',');
         }

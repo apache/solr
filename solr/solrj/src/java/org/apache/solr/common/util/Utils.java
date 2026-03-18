@@ -284,7 +284,7 @@ public class Utils {
     // Need below check in both fromJSON methods since
     // utf8.length returns a NPE without this check.
     if (utf8 == null || utf8.length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     return fromJSON(utf8, 0, utf8.length);
   }
@@ -296,7 +296,7 @@ public class Utils {
   public static Object fromJSON(
       byte[] utf8, int offset, int length, Function<JSONParser, ObjectBuilder> fun) {
     if (utf8 == null || utf8.length == 0 || length == 0) {
-      return Collections.emptyMap();
+      return Map.of();
     }
     // convert directly from bytes to chars
     // and parse directly from that instead of going through

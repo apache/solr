@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -79,10 +78,10 @@ public class LangDetectLanguageIdentifierUpdateProcessor extends LanguageIdentif
       return solrLangList;
     } catch (LangDetectException e) {
       log.debug("Could not determine language, returning empty list: ", e);
-      return Collections.emptyList();
+      return List.of();
     } catch (IOException e) {
       log.warn("Could not determine language.", e);
-      return Collections.emptyList();
+      return List.of();
     }
   }
 }
