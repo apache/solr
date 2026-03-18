@@ -764,6 +764,10 @@ public class CoreContainer {
     }
     logging = LogWatcher.newRegisteredLogWatcher(cfg.getLogWatcherConfig(), loader);
 
+    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
+
+    initGpuMetricsService(); // Initialize GPU metrics service
+
     ClusterPluginsSource pluginsSource =
         ClusterPluginsSource.loadClusterPluginsSource(this, loader);
     containerPluginsRegistry =
@@ -780,10 +784,12 @@ public class CoreContainer {
     containerPluginsRegistry.registerListener(
         clusterEventProducerFactory.getPluginRegistryListener());
 
-    solrMetricsContext = new SolrMetricsContext(metricManager, NODE_REGISTRY);
-
-    // Initialize GPU metrics service
-    initGpuMetricsService();
+    // PublicKeyHandler was added to containerHandlers in the constructor before metrics were ready
+    containerHandlers
+        .get(PublicKeyHandler.PATH)
+        .initializeMetrics(
+            solrMetricsContext,
+            Attributes.builder().put(HANDLER_ATTR, PublicKeyHandler.PATH).build());
 
     shardHandlerFactory =
         ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);

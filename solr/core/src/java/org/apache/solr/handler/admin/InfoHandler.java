@@ -18,6 +18,7 @@ package org.apache.solr.handler.admin;
 
 import static org.apache.solr.common.params.CommonParams.PATH;
 
+import io.opentelemetry.api.common.Attributes;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +31,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -60,6 +62,17 @@ public class InfoHandler extends RequestHandlerBase {
 
   @Override
   public final void init(NamedList<?> args) {}
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
+    super.initializeMetrics(parentContext, attributes);
+    for (RequestHandlerBase handler : handlers.values()) {
+      if (handler.getSolrMetricsContext() == null) {
+        handler.initializeMetrics(parentContext, attributes);
+        getSolrMetricsContext().registerCloseable(handler);
+      }
+    }
+  }
 
   /**
    * The instance of CoreContainer this handler handles. This should be the CoreContainer instance

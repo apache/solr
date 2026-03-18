@@ -67,6 +67,16 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     CountLoggingHandler loggingHandler = new CountLoggingHandler(cores);
     CountSystemInfoHandler systemInfoHandler = new CountSystemInfoHandler(cores);
 
+    // Initialize metrics for these test handlers before setting them on InfoHandler
+    // Use a core's metrics context since we don't have direct access to container's context
+    var metricsContext = h.getCore().getCoreMetricManager().getSolrMetricsContext();
+    propHandler.initializeMetrics(metricsContext, io.opentelemetry.api.common.Attributes.empty());
+    threadHandler.initializeMetrics(metricsContext, io.opentelemetry.api.common.Attributes.empty());
+    loggingHandler.initializeMetrics(
+        metricsContext, io.opentelemetry.api.common.Attributes.empty());
+    systemInfoHandler.initializeMetrics(
+        metricsContext, io.opentelemetry.api.common.Attributes.empty());
+
     // set the request handlers
     infoHandler.setPropertiesHandler(propHandler);
     infoHandler.setThreadDumpHandler(threadHandler);
@@ -89,6 +99,12 @@ public class InfoHandlerTest extends SolrTestCaseJ4 {
     assertEquals(1, threadHandler.getRequestCount());
     assertEquals(1, loggingHandler.getRequestCount());
     assertEquals(1, systemInfoHandler.getRequestCount());
+
+    // Clean up test handlers
+    propHandler.close();
+    threadHandler.close();
+    loggingHandler.close();
+    systemInfoHandler.close();
   }
 
   // derived request handlers that count the number of request body counts made

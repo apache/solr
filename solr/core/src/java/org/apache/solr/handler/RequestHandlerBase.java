@@ -32,7 +32,6 @@ import org.apache.solr.api.ApiSupport;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginBag;
@@ -157,7 +156,8 @@ public abstract class RequestHandlerBase
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, Attributes attributes) {
-    IOUtils.closeQuietly(this.solrMetricsContext);
+    // May already be set if re-registering metrics during core swap/rename;
+    // reregisterCoreMetrics() closes the old context before re-calling initializeMetrics().
     this.solrMetricsContext = parentContext.getChildContext(this);
 
     metrics =
@@ -231,6 +231,8 @@ public abstract class RequestHandlerBase
 
   @Override
   public void handleRequest(SolrQueryRequest req, SolrQueryResponse rsp) {
+    assert metrics != null
+        : "initializeMetrics() must be called before handling requests on " + getClass().getName();
     if (publishCpuTime) {
       ThreadCpuTimer.beginContext(REQUEST_CPU_TIMER_CONTEXT);
     }

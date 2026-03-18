@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import io.opentelemetry.api.common.Attributes;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -405,7 +406,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRequestHandlerBaseException() {
+  public void testRequestHandlerBaseException() throws Exception {
     final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler =
         new RequestHandlerBase() {
@@ -425,11 +426,14 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
           }
         };
     handler.init(new NamedList<>());
+    handler.initializeMetrics(
+        h.getCore().getCoreMetricManager().getSolrMetricsContext(), Attributes.empty());
     SolrQueryResponse rsp = new SolrQueryResponse();
     SolrQueryRequest req = req();
     h.getCore().execute(handler, req, rsp);
     assertNotNull("should have found an exception", rsp.getException());
     req.close();
+    handler.close();
   }
 
   @Test

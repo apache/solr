@@ -21,6 +21,7 @@ import static org.apache.solr.api.ApiBag.HANDLER_NAME;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -59,13 +60,18 @@ import org.slf4j.LoggerFactory;
 public class PluginBag<T> implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private final Map<String, PluginHolder<T>> registry;
-  private final Map<String, PluginHolder<T>> immutableRegistry;
-  private String def;
+  // === Common to both V1 and V2 APIs ===
   private final Class<T> klass;
   private SolrCore core;
   private final SolrConfig.SolrPluginInfo meta;
+  private final List<PluginHolder<T>> allPlugins;
 
+  // === V1 ===
+  private final Map<String, PluginHolder<T>> registry;
+  private final Map<String, PluginHolder<T>> immutableRegistry;
+  private String def;
+
+  // === V2 ===
   private final boolean loadV2ApisIfPresent;
   private final ApiBag apiBag;
   private final ResourceConfig jerseyResources;
@@ -112,6 +118,8 @@ public class PluginBag<T> implements AutoCloseable {
     // implementations depending on thread safety needs.
     this.registry = needThreadSafety ? new ConcurrentHashMap<>() : new HashMap<>();
     this.immutableRegistry = Collections.unmodifiableMap(registry);
+    this.allPlugins =
+        needThreadSafety ? Collections.synchronizedList(new ArrayList<>()) : new ArrayList<>();
     meta = SolrConfig.classVsSolrPluginInfo.get(klass.getName());
     if (meta == null) {
       throw new SolrException(
@@ -225,13 +233,13 @@ public class PluginBag<T> implements AutoCloseable {
 
   @SuppressWarnings({"unchecked"})
   public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
-    Boolean registerApi = null;
-    Boolean disableHandler = null;
+    Boolean registerApi = null; // i.e. register for V2
+    Boolean disableV1 = null; // i.e. do *not* register for v1
     if (plugin.pluginInfo != null) {
       String registerAt = plugin.pluginInfo.attributes.get("registerPath");
       if (registerAt != null) {
         List<String> strs = StrUtils.splitSmart(registerAt, ',');
-        disableHandler = !strs.contains("/solr");
+        disableV1 = !strs.contains("/solr");
         registerApi = strs.contains("/v2");
       }
     }
@@ -241,7 +249,7 @@ public class PluginBag<T> implements AutoCloseable {
         T inst = plugin.get();
         if (inst instanceof ApiSupport apiSupport) {
           if (registerApi == null) registerApi = apiSupport.registerV2();
-          if (disableHandler == null) disableHandler = !apiSupport.registerV1();
+          if (disableV1 == null) disableV1 = !apiSupport.registerV1();
 
           if (registerApi && V2ApiUtils.isEnabled()) {
             Collection<Api> apis = apiSupport.getApis();
@@ -281,13 +289,18 @@ public class PluginBag<T> implements AutoCloseable {
           apiBag.registerLazy((PluginHolder<SolrRequestHandler>) plugin, plugin.pluginInfo);
       }
     }
-    if (disableHandler == null) disableHandler = Boolean.FALSE;
+    if (disableV1 == null) disableV1 = Boolean.FALSE;
     PluginHolder<T> old = null;
-    if (!disableHandler) old = registry.put(name, plugin);
+    if (!disableV1) {
+      old = registry.put(name, plugin);
+    }
+    allPlugins.add(plugin);
+
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
-    if (plugin.isLoaded() && !disableHandler) registerMBean(plugin.get(), core, name);
+    if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
     // old instance has been replaced - close it to prevent mem leaks
     if (old != null && old != plugin) {
+      allPlugins.remove(old);
       closeQuietly(old);
     }
     return old;
@@ -374,11 +387,11 @@ public class PluginBag<T> implements AutoCloseable {
   /** Close this registry. This will in turn call a close on all the contained plugins */
   @Override
   public void close() {
-    for (Map.Entry<String, PluginHolder<T>> e : registry.entrySet()) {
+    for (PluginHolder<T> holder : allPlugins) {
       try {
-        e.getValue().close();
+        holder.close();
       } catch (Exception exp) {
-        log.error("Error closing plugin {} of type : {}", e.getKey(), meta.getCleanTag(), exp);
+        log.error("Error closing plugin of type : {}", meta.getCleanTag(), exp);
       }
     }
   }
